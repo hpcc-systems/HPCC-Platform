@@ -778,7 +778,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>Instances</title>
 
-          <para><orderedlist>
+          <para>
+            <orderedlist>
               <listitem>
                 <para>Select <emphasis role="bold">Dali Server</emphasis> in
                 the Navigator panel on the left side.</para>
@@ -800,7 +801,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <para>Click the <inlinegraphic
                 fileref="images/GS-img01c.png" /> disk icon to save</para>
               </listitem>
-            </orderedlist></para>
+            </orderedlist>
+          </para>
         </sect3>
 
         <sect3 role="brk">
@@ -808,16 +810,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the DaliServer attributes.</para>
 
-          <para><graphic fileref="images/CM-img04-1.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img04-1.jpg" vendor="configmgrSS" />
+          </para>
 
-          <para></para>
+          <para />
 
           <!--configMgr-Dali-Server-Include-XXX1-->
 
-          <para><xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='da.t1'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='da.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <?hard-pagebreak ?>
@@ -828,16 +833,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes the attributes configuring how Dali
           handles the system data store.</para>
 
-          <para><graphic fileref="images/CM-img04-2.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img04-2.jpg" vendor="configmgrSS" />
+          </para>
 
-          <para></para>
+          <para />
 
           <!--configMgr-Dali-Server-Include-XXX2-->
 
-          <para><xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='da.t2'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='da.t2'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <?hard-pagebreak ?>
@@ -847,14 +855,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the DaliServer LDAP tab.</para>
 
-          <para><graphic fileref="images/CM-img04-4.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img04-4.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-DaliServer-LDAP-Include-XXX3-->
 
-          <para><xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='da.t4'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='da.t4'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -877,14 +888,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the DaliServerPlugin attributes.</para>
 
-          <para><graphic fileref="images/Cass2.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/Cass2.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-daplugin-Include-->
 
-          <para><xi:include href="../XMLGeneration/xml/daliplugin.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='daplug.t'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/daliplugin.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='daplug.t'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3 role="brk">
@@ -897,8 +911,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           for more details about configuring a Cassandra server as a system
           datastore.</para>
 
-          <para><informaltable colsep="1" frame="all"
-              id="daliplugoptionstable" rowsep="1">
+          <para>
+            <informaltable colsep="1" frame="all" id="daliplugoptionstable"
+                           rowsep="1">
               <tgroup cols="2">
                 <colspec align="left" colwidth="125.55pt" />
 
@@ -938,13 +953,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   <row>
                     <entry>prefixsize</entry>
 
-                    <entry><para>An integer value specifying the minimum
-                    number of characters that must be provided when wildcard
-                    searching in the repository. Larger values will be more
-                    efficient but also more restrictive on users. The default
-                    is 2. As with partitions, this value only takes effect
-                    when a new Cassandra workunit repository is
-                    created.</para></entry>
+                    <entry>
+                      <para>An integer value specifying the minimum number of
+                      characters that must be provided when wildcard searching
+                      in the repository. Larger values will be more efficient
+                      but also more restrictive on users. The default is 2. As
+                      with partitions, this value only takes effect when a new
+                      Cassandra workunit repository is created.</para>
+                    </entry>
                   </row>
 
                   <row>
@@ -970,7 +986,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable></para>
+            </informaltable>
+          </para>
         </sect3>
       </sect2>
 
@@ -1004,8 +1021,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               role="bold">Select All</emphasis> box, then press the <emphasis
               role="bold">OK</emphasis> button.</para>
 
-              <para><graphic fileref="images/CM-img12.jpg"
-              vendor="configmgrSS" /></para>
+              <para>
+                <graphic fileref="images/CM-img12.jpg" vendor="configmgrSS" />
+              </para>
             </listitem>
 
             <listitem>
@@ -1022,14 +1040,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the Dafilesrv attributes.</para>
 
-          <para><graphic fileref="images/CM-img12-1.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img12-1.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-DaFileSrv-Include-XXX4-->
 
-          <para><xi:include href="../XMLGeneration/xml/dafilesrv.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='daFs.t'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/dafilesrv.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='daFs.t'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
       </sect2>
 
@@ -1067,14 +1088,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the DfuServer attributes.</para>
 
-          <para><graphic fileref="images/CM-img05-1.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img05-1.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-DFUSrvr-Attr-Include-XXX6-->
 
-          <para><xi:include href="../XMLGeneration/xml/dfuserver.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='DF.t1'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/dfuserver.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='DF.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3 role="brk">
@@ -1082,14 +1106,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the DfuServer SSH Options..</para>
 
-          <para><graphic fileref="images/CM-img05-2.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img05-2.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-DFUSrvr-SSH-Include-XXX7-->
 
-          <para><xi:include href="../XMLGeneration/xml/dfuserver.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='DF.t2'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/dfuserver.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='DF.t2'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -1108,10 +1135,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         components to determine the directories they will use for various
         functions.</para>
 
-        <para><graphic fileref="images/CM-161a.jpg"
-        vendor="configmgrSS" /></para>
+        <para>
+          <graphic fileref="images/CM-161a.jpg" vendor="configmgrSS" />
+        </para>
 
-        <para></para>
+        <para />
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="3">
@@ -1127,7 +1155,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </row>
 
               <row>
-                <entry><emphasis role="bold">log</emphasis></entry>
+                <entry>
+                  <emphasis role="bold">log</emphasis>
+                </entry>
 
                 <entry>/var/log/[NAME]/[INST]</entry>
 
@@ -1135,7 +1165,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </row>
 
               <row>
-                <entry><emphasis role="bold">temp</emphasis></entry>
+                <entry>
+                  <emphasis role="bold">temp</emphasis>
+                </entry>
 
                 <entry>/var/lib/[NAME]/[INST]/temp</entry>
 
@@ -1143,41 +1175,51 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </row>
 
               <row>
-                <entry><emphasis role="bold">data</emphasis></entry>
+                <entry>
+                  <emphasis role="bold">data</emphasis>
+                </entry>
 
-                <entry></entry>
+                <entry />
 
                 <entry>Base Location for data files</entry>
               </row>
 
               <row>
-                <entry><emphasis role="bold">data2</emphasis></entry>
+                <entry>
+                  <emphasis role="bold">data2</emphasis>
+                </entry>
 
-                <entry></entry>
+                <entry />
 
                 <entry>Base Location for 2nd copy of roxie data</entry>
               </row>
 
               <row>
-                <entry><emphasis role="bold">data3</emphasis></entry>
+                <entry>
+                  <emphasis role="bold">data3</emphasis>
+                </entry>
 
-                <entry></entry>
+                <entry />
 
                 <entry>Reserved for future use</entry>
               </row>
 
               <row>
-                <entry><emphasis role="bold">mirror</emphasis></entry>
+                <entry>
+                  <emphasis role="bold">mirror</emphasis>
+                </entry>
 
-                <entry></entry>
+                <entry />
 
                 <entry>Base Location for mirror data files</entry>
               </row>
 
               <row>
-                <entry><emphasis role="bold">query</emphasis></entry>
+                <entry>
+                  <emphasis role="bold">query</emphasis>
+                </entry>
 
-                <entry></entry>
+                <entry />
 
                 <entry>Base Location for Queries</entry>
               </row>
@@ -1201,7 +1243,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
         <para>To add a drop zone:</para>
 
-        <para><orderedlist>
+        <para>
+          <orderedlist>
             <listitem>
               <para>Right-click on the Navigator panel on the left side and
               choose <emphasis role="bold">New Components</emphasis></para>
@@ -1210,7 +1253,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <listitem>
               <para>Select <emphasis role="bold">Drop Zone</emphasis></para>
             </listitem>
-          </orderedlist></para>
+          </orderedlist>
+        </para>
 
         <sect3>
           <title>Drop Zone Attributes</title>
@@ -1221,7 +1265,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>To change the drop zone attributes:</para>
 
-          <para><orderedlist>
+          <para>
+            <orderedlist>
               <listitem>
                 <para>On the <emphasis role="bold">Attributes</emphasis> tab,
                 select the Attribute to modify.</para>
@@ -1240,14 +1285,18 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <listitem>
                 <para>Click the disk icon to save.</para>
               </listitem>
-            </orderedlist></para>
+            </orderedlist>
+          </para>
 
-          <para><graphic fileref="images/CM-img06.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img06.jpg" vendor="configmgrSS" />
+          </para>
 
-          <para><xi:include href="../XMLGeneration/xml/dropzone.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='dz.t1'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/dropzone.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='dz.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
           <!-- /*Attribute table***replace with dynamically generated table*/
           <informaltable>
@@ -1355,15 +1404,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the EclAgent Attributes tab.</para>
 
-          <para><graphic fileref="images/CM-img07-1.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img07-1.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-ECLAgent-Attr-Include-XXX8-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/eclagent_config.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='EA.t1'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/eclagent_config.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='EA.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3 role="brk">
@@ -1371,15 +1422,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the EclAgent Options tab.</para>
 
-          <para><graphic fileref="images/CM-img07-2.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img07-2.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-ECLAgent-Options-Include-XXX9-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/eclagent_config.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='EA.t2'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/eclagent_config.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='EA.t2'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -1397,7 +1450,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>Ecl CC Server Instances</title>
 
-          <para><orderedlist>
+          <para>
+            <orderedlist>
               <listitem>
                 <para>Select Ecl CC Server - myeclccserver in the Navigator
                 panel on the left side.</para>
@@ -1417,7 +1471,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <para>Click the <inlinegraphic
                 fileref="images/GS-img01c.png" /> disk icon to save</para>
               </listitem>
-            </orderedlist></para>
+            </orderedlist>
+          </para>
         </sect3>
 
         <sect3 role="brk">
@@ -1426,15 +1481,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes the Ecl CC Server Attributes
           tab.</para>
 
-          <para><graphic fileref="images/CM-ECLCC-02.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-ECLCC-02.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--ECLCCServer-Include-cc.t2-XXX-X-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/eclccserver.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='cc.t2'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/eclccserver.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='cc.t2'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -1448,7 +1505,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <!--This feature allows the user to configure any options pertinent to the Ecl CC Server Process -->
 
-          <para></para>
+          <para />
         </sect3>
 
         <sect3>
@@ -1494,15 +1551,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the EclScheduler Attributes tab.</para>
 
-          <para><graphic fileref="images/CM-160.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-160.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-DaliServer-LDAP-Include-XXX-XI-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/eclscheduler.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='ecl.sched'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/eclscheduler.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='ecl.sched'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -1550,14 +1609,23 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the Esp - myesp Attributes tab.</para>
 
-          <para><graphic fileref="images/CM-img08-1.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img08-1.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--MyESP-Include-ESP.t6-XXX12-->
 
-          <para><xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='ESP.t6'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='ESP.t6'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
+
+          <!--***Move to XSD for 2.0***-->
+
+          <para>Persistent HTTP connections can cause backwards compatibility
+          issues with non-standard HTTP clients. You can disable this feature
+          by setting <emphasis>maxPersistentRequests</emphasis> to 0. </para>
         </sect3>
 
         <sect3 role="brk">
@@ -1567,8 +1635,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           This tab requires additional steps to configure the service
           bindings.</para>
 
-          <para><graphic fileref="images/CM-img08-2.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img08-2.jpg" vendor="configmgrSS" />
+          </para>
 
           <para>You must first add the service bindings in the first table
           (Right-click, add). Then you would configure the attributes in the
@@ -1577,9 +1646,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <!--MyESP-Include-ESP.t1-XXXIII-->
 
-          <para><xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='ESP.t1'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='ESP.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
           <?hard-pagebreak ?>
 
@@ -1588,15 +1659,21 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <!--MyESP-Include-ES.t2-XXX-14-->
 
-          <para><xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='ESP.t2'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='ESP.t2'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
-          <para><!--MyESP-Include-ES.t3-XXX-15--><!-- <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
+          <para>
+            <!--MyESP-Include-ES.t3-XXX-15-->
+
+            <!-- <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='ES.t3'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />  --></para>
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />  -->
+          </para>
 
-          <para></para>
+          <para />
         </sect3>
 
         <?hard-pagebreak ?>
@@ -1607,19 +1684,23 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes the Esp - myesp Service Authentication
           tab.</para>
 
-          <para><graphic fileref="images/CM-img08-3.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img08-3.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--MyESP-Authentication-ES.t4-XXX-16-->
 
-          <para><xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='ESP.t4'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='ESP.t4'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
           <para>Additional information about the available Authentication
           methods:</para>
 
-          <para><informaltable colsep="1" frame="all" rowsep="1">
+          <para>
+            <informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec colwidth="111.50pt" />
 
@@ -1660,7 +1741,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable></para>
+            </informaltable>
+          </para>
         </sect3>
 
         <sect3 role="brk">
@@ -1693,8 +1775,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the Esp - myesp HTTPS tab.</para>
 
-          <para><graphic fileref="images/CM-img08-4.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS" />
+          </para>
 
           <para>The <emphasis role="bold">cipherList</emphasis> attribute
           allows you to set the ordered list of available ciphers for use by
@@ -1703,9 +1786,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <!--MyESP-HTTPS.t5-XXX-17-->
 
-          <para><xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='ESP.t5'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='ESP.t5'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -1729,31 +1814,38 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>Ecl Watch allows you to configure options for the ECL Watch
           utility.</para>
 
-          <para><graphic fileref="images/CM-009.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-009.jpg" vendor="configmgrSS" />
+          </para>
 
-          <para><emphasis role="bold">ECL Watch Attribute
-          definitions</emphasis></para>
+          <para>
+            <emphasis role="bold">ECL Watch Attribute definitions</emphasis>
+          </para>
 
           <!--ECLWa-Include-TBLZ-1-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='SMC-T01'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='SMC-T01'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
-          <para><emphasis role="bold">ECL Watch Monitoring
-          attributes</emphasis></para>
+          <para>
+            <emphasis role="bold">ECL Watch Monitoring attributes</emphasis>
+          </para>
 
           <!--ECLWa-Include-TBLZ-2-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='SMC-T03'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='SMC-T03'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
-          <para><emphasis role="bold">Configuring ELK Log Visualization
-          integration</emphasis></para>
+          <para>
+            <emphasis role="bold">Configuring ELK Log Visualization
+            integration</emphasis>
+          </para>
 
           <para>HPCC provides a mechanism to integrate ELK (ElasticSearch,
           Logstash, and Kibana) based visualizations into ECL Watch. This
@@ -1768,10 +1860,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>The ELK Log Visualization tab in ECL Watch:</para>
 
-          <para><xi:include
-          href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='SMC-T02'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='SMC-T02'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
           <para>To configure the ELK visualization integration, provide the
           following information: <orderedlist>
@@ -1796,7 +1889,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </listitem>
             </orderedlist></para>
 
-          <para></para>
+          <para />
         </sect3>
 
         <sect3 id="cfgmgr_WsECL" role="brk">
@@ -1805,17 +1898,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>The WsECL service allows you to configure options for the
           WsECL utility.</para>
 
-          <para><graphic fileref="images/CM-010.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-010.jpg" vendor="configmgrSS" />
+          </para>
 
           <para>The Ws ECL configuration attributes.</para>
 
           <!--WsECL-Include-ZXX-1-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='MyWS2-T01'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='MyWS2-T01'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
           <?hard-pagebreak ?>
 
@@ -1823,19 +1918,21 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <!--WsECL-Include-ZXX-2-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='MyWS2-T02'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='MyWS2-T02'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
           <para>Ws ECL Target Restrictions table.</para>
 
           <!--WsECL-Include-ZXX-3-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='MyWS2-T03'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='MyWS2-T03'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
       </sect2>
 
@@ -1864,8 +1961,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <para>Right-click on a computer in the computer column, and
               select Add Instance.</para>
 
-              <para><graphic fileref="images/CM-190.jpg"
-              vendor="configmgrSS" /></para>
+              <para>
+                <graphic fileref="images/CM-190.jpg" vendor="configmgrSS" />
+              </para>
             </listitem>
 
             <listitem>
@@ -1874,8 +1972,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <para>Select all computers in the list, then press the <emphasis
               role="bold">OK</emphasis> button.</para>
 
-              <para><graphic fileref="images/CM-112-4.jpg"
-              vendor="configmgrSS" /></para>
+              <para>
+                <graphic fileref="images/CM-112-4.jpg" vendor="configmgrSS" />
+              </para>
             </listitem>
 
             <listitem>
@@ -1893,10 +1992,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <!--FTSlave-Include-XXX-18-->
 
-          <para><xi:include
-          href="../XMLGeneration/xml/ftslave_linux.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='FTS.t1'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/ftslave_linux.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='FTS.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -2002,9 +2102,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <!--configMgr-Sasha-t1-Include-XXX-20-->
 
-          <para><xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='sh.t1'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='sh.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <?hard-pagebreak ?>
@@ -2015,16 +2117,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes the SashaServer Process Archiver
           tab.</para>
 
-          <para><graphic fileref="images/CM-img17-1.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img17-1.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-Sasha-Archiver-Include-XXX-21-->
 
-          <para><xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='sh.t2'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='sh.t2'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
-          <para></para>
+          <para />
         </sect3>
 
         <sect3 role="brk">
@@ -2033,14 +2138,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes the SashaServer Process Coalescer
           tab.</para>
 
-          <para><graphic fileref="images/CM-img17-2.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img17-2.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-Sasha-Coaleser-Include-XXX-22-->
 
-          <para><xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='sh.t3'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='sh.t3'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <?hard-pagebreak ?>
@@ -2051,14 +2159,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes the SashaServer Process DfuXref
           tab.</para>
 
-          <para><graphic fileref="images/CM-img17-3.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img17-3.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-Sasha-DfuXref-Include-XXX-23-->
 
-          <para><xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='sh.t4'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='sh.t4'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <?hard-pagebreak ?>
@@ -2069,16 +2180,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes the SashaServer Process DfuExpiry
           tab.</para>
 
-          <para><graphic fileref="images/CM-img17-4.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img17-4.jpg" vendor="configmgrSS" />
+          </para>
 
-          <para></para>
+          <para />
 
           <!--configMgr-Sasha-DfuExpiry-Include-XXX-24-->
 
-          <para><xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='sh.t5'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='sh.t5'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <?hard-pagebreak ?>
@@ -2089,14 +2203,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes the SashaServer Process ThorQMon
           tab.</para>
 
-          <para><graphic fileref="images/CM-img17-5.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img17-5.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-Sasha-ThorQMon-IncludeXXX-25-->
 
-          <para><xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='sh.t6'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='sh.t6'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <?hard-pagebreak ?>
@@ -2107,14 +2224,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes the SashaServer Process
           DaFileSrvMonitor tab.</para>
 
-          <para><graphic fileref="images/CM-img17-6.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img17-6.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-Sasha-DafiSrvMon-Include-XXX26-->
 
-          <para><xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='sh.t7'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='sh.t7'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -2160,8 +2280,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <para>right-click on the Topology and select Add Master.</para>
 
-            <para><graphic fileref="images/CM-img13.jpg"
-            vendor="configmgrSS" /></para>
+            <para>
+              <graphic fileref="images/CM-img13.jpg" vendor="configmgrSS" />
+            </para>
           </listitem>
 
           <listitem>
@@ -2170,8 +2291,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <para>Select a computer from the list, then press the OK
             button.</para>
 
-            <para><graphic fileref="images/CM-112-5.jpg"
-            vendor="configmgrSS" /></para>
+            <para>
+              <graphic fileref="images/CM-112-5.jpg" vendor="configmgrSS" />
+            </para>
           </listitem>
 
           <listitem>
@@ -2179,8 +2301,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <para>Right-click on the Master and select Add Slaves.</para>
 
-            <para><graphic fileref="images/CM-111.jpg"
-            vendor="configmgrSS" /></para>
+            <para>
+              <graphic fileref="images/CM-111.jpg" vendor="configmgrSS" />
+            </para>
           </listitem>
 
           <listitem>
@@ -2194,8 +2317,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             vendor="configmgrSS" />The Nodes now display below the Thor Master
             node.</para>
 
-            <para><graphic fileref="images/CM-img14.jpg"
-            vendor="configmgrSS" /></para>
+            <para>
+              <graphic fileref="images/CM-img14.jpg" vendor="configmgrSS" />
+            </para>
           </listitem>
 
           <listitem>
@@ -2208,8 +2332,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <para>Select the Attributes tab.</para>
 
-            <para><graphic fileref="images/CM-img15.jpg"
-            vendor="configmgrSS" /></para>
+            <para>
+              <graphic fileref="images/CM-img15.jpg" vendor="configmgrSS" />
+            </para>
           </listitem>
 
           <listitem>
@@ -2253,10 +2378,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <para>Select the <emphasis role="bold">Replace Master</emphasis>
               option.</para>
 
-              <para><graphic fileref="images/CM-111-2.jpg"
-              vendor="configmgrSS" /></para>
+              <para>
+                <graphic fileref="images/CM-111-2.jpg" vendor="configmgrSS" />
+              </para>
 
-              <para><informaltable colsep="1" frame="all" rowsep="1">
+              <para>
+                <informaltable colsep="1" frame="all" rowsep="1">
                   <?dbfo keep-together="always"?>
 
                   <tgroup cols="2">
@@ -2266,8 +2393,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                     <tbody>
                       <row>
-                        <entry><inlinegraphic
-                        fileref="images/caution.png" /></entry>
+                        <entry>
+                          <inlinegraphic fileref="images/caution.png" />
+                        </entry>
 
                         <entry>You should only use this feature when initially
                         setting up your system. If there is data on the nodes
@@ -2276,7 +2404,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                       </row>
                     </tbody>
                   </tgroup>
-                </informaltable></para>
+                </informaltable>
+              </para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -2288,8 +2417,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the Thor Cluster Attributes tab.</para>
 
-          <para><graphic fileref="images/CM-img18-1.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img18-1.jpg" vendor="configmgrSS" />
+          </para>
 
           <sect4 id="ThorMemorySettings">
             <title>Thor Memory Settings</title>
@@ -2342,9 +2472,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <!--configMgr-Thor-Attribute-Include-XXX-->
 
-            <para><xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
-            xpointer="xpointer(//*[@id='Th.t1'])"
-            xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+            <para>
+              <xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
+                          xpointer="xpointer(//*[@id='Th.t1'])"
+                          xmlns:xi="http://www.w3.org/2001/XInclude" />
+            </para>
           </sect4>
         </sect3>
 
@@ -2359,14 +2491,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the ThorCluster SSH Options tab.</para>
 
-          <para><graphic fileref="images/CM-img18-2.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img18-2.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-Thor-SSH-Include-XXX-->
 
-          <para><xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='Th.t3'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='Th.t3'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -2382,14 +2517,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>This section describes the ThorCluster Swap Node tab.</para>
 
-          <para><graphic fileref="images/CM-img18-4.jpg"
-          vendor="configmgrSS" /></para>
+          <para>
+            <graphic fileref="images/CM-img18-4.jpg" vendor="configmgrSS" />
+          </para>
 
           <!--configMgr-Thor-SwapNode-Include-XXX-->
 
-          <para><xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
-          xpointer="xpointer(//*[@id='Th.t4'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          <para>
+            <xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='Th.t4'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <?hard-pagebreak ?>
@@ -2438,8 +2576,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <para>Right-click the Roxie Servers and select
             <guimenuitem>Reconfigure Servers</guimenuitem>.</para>
 
-            <para><graphic fileref="images/CM-112.jpg"
-            vendor="configmgrSS" /></para>
+            <para>
+              <graphic fileref="images/CM-112.jpg" vendor="configmgrSS" />
+            </para>
           </listitem>
 
           <listitem>
@@ -2448,8 +2587,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <para>Select the computers to use as Servers from the list, then
             press the OK button.</para>
 
-            <para><graphic fileref="images/CM-112-2.jpg"
-            vendor="configmgrSS" /></para>
+            <para>
+              <graphic fileref="images/CM-112-2.jpg" vendor="configmgrSS" />
+            </para>
           </listitem>
 
           <listitem>
@@ -2463,8 +2603,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <para>Select the redundancy scheme to use. Typically, this is
             cyclic redundancy, as shown below.</para>
 
-            <para><graphic fileref="images/CM-112-1.jpg"
-            vendor="configmgrSS" /></para>
+            <para>
+              <graphic fileref="images/CM-112-1.jpg" vendor="configmgrSS" />
+            </para>
           </listitem>
 
           <listitem>
@@ -2498,13 +2639,35 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <sect2>
-        <title></title>
+        <title />
 
         <sect3>
           <title>Additional Roxie Configuration items</title>
 
-          <para><emphasis role="bold">Add Servers to Roxie
-          Farm</emphasis></para>
+          <!--***Move to XSD for 2.0***-->
+
+          <para>
+            <emphasis role="bold">Persistent Connections to Roxie</emphasis>
+
+            
+          </para>
+
+          <para>Persistent connections can cause backwards compatibility
+          issues with non-standard HTTP clients. You can disable this feature
+          by setting <emphasis>maxHttpConnectionRequests</emphasis> to either
+          0 or 1.</para>
+
+          <para>In addition, persistent connections can affect Roxie load
+          balancing. If this is a concern, you can adjust
+          <emphasis>maxHttpConnectionRequests</emphasis> and
+          <emphasis>maxHttpKeepAliveWait</emphasis> values to optimize how
+          long all the transactions from a particular persistent connection go
+          to a single node rather than being distributed across the
+          cluster.</para>
+
+          <para>
+            <emphasis role="bold">Add Servers to Roxie Farm</emphasis>
+          </para>
 
           <para>To add servers to a Roxie farm</para>
 
@@ -2588,8 +2751,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
         <para>This section describes the topology tab.</para>
 
-        <para><graphic fileref="images/CM-img20.jpg" vendor="configmgrSS" />
-        <informaltable colsep="0" frame="none" rowsep="0">
+        <para>
+          <graphic fileref="images/CM-img20.jpg" vendor="configmgrSS" />
+
+          <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -2603,31 +2768,40 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 </row>
 
                 <row>
-                  <entry><emphasis>Topology</emphasis></entry>
+                  <entry>
+                    <emphasis>Topology</emphasis>
+                  </entry>
 
                   <entry>describes the system topology</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis>Cluster - thor</emphasis></entry>
+                  <entry>
+                    <emphasis>Cluster - thor</emphasis>
+                  </entry>
 
                   <entry>describes the Thor clusters</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis>Cluster - hthor</emphasis></entry>
+                  <entry>
+                    <emphasis>Cluster - hthor</emphasis>
+                  </entry>
 
                   <entry>describes the hthor clusters</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis>Cluster - roxie</emphasis></entry>
+                  <entry>
+                    <emphasis>Cluster - roxie</emphasis>
+                  </entry>
 
                   <entry>describes the Roxie clusters</entry>
                 </row>
               </tbody>
             </tgroup>
-          </informaltable></para>
+          </informaltable>
+        </para>
 
         <sect3 id="Propogate-configuration-changes" role="brk">
           <title>Distribute Configuration Changes to all Nodes</title>
@@ -2635,13 +2809,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>Once your environment is set up as desired, you must copy the
           configuration file to the other nodes.</para>
 
-          <para></para>
+          <para />
 
           <orderedlist>
             <listitem>
               <para>If it is running, stop the system</para>
 
-              <para><informaltable colsep="1" frame="all" rowsep="1">
+              <para>
+                <informaltable colsep="1" frame="all" rowsep="1">
                   <?dbfo keep-together="always"?>
 
                   <tgroup cols="2">
@@ -2651,15 +2826,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                     <tbody>
                       <row>
-                        <entry><inlinegraphic
-                        fileref="images/caution.png" /></entry>
+                        <entry>
+                          <inlinegraphic fileref="images/caution.png" />
+                        </entry>
 
                         <entry>Be sure system is stopped before attempting to
                         copy the Environment.xml file.</entry>
                       </row>
                     </tbody>
                   </tgroup>
-                </informaltable></para>
+                </informaltable>
+              </para>
             </listitem>
 
             <listitem>
@@ -2684,14 +2861,14 @@ sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.ba
               <programlisting># for example
 sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
-              <para></para>
+              <para />
             </listitem>
 
             <listitem>
               <para>Copy the /etc/HPCCSystems/environment.xml to the
               /etc/HPCCSystems/ on every node.</para>
 
-              <para></para>
+              <para />
             </listitem>
 
             <listitem>
