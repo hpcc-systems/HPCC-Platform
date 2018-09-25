@@ -194,7 +194,7 @@
                                     <!--DOC-Autobuild-code-->
                                     <xs:annotation>
                                         <xs:appinfo>
-                                            <docid>ESP.t2</docid>
+                                            <docid>ESP.t8</docid>
                                         </xs:appinfo>
                                     </xs:annotation>
                                     <xs:attribute name="include" use="optional" default="Yes">
