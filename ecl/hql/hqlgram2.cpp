@@ -6169,9 +6169,22 @@ void HqlGram::reportErrorUnexpectedX(const attribute& errpos, IAtom * unexpected
     reportError(ERR_UNEXPECTED_ATTRX, errpos, "Unexpected attribute %s", str(unexpected));
 }
 
+static bool includeError(HqlLookupContext & ctx, WarnErrorCategory category)
+{
+    if (ctx.syntaxChecking() && !ctx.ignoreCache())
+    {
+        if (category==CategorySyntax && category==CategoryError)
+            return true;
+        else
+            return false;
+    }
+    else
+        return true;
+}
+
 void HqlGram::doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
 {
-	if (!lookupCtx.syntaxCheckingUsingCache() || category==CategorySyntax || category==CategoryError)
+	if (includeError(lookupCtx, category))
 	{
 		Owned<IError> error = createError(category, queryDefaultSeverity(category), warnNo, msg, filename, lineno, column, pos);
 		report(error);
@@ -6216,7 +6229,7 @@ void HqlGram::reportError(int errNo, const char *msg, int lineno, int column, in
 
 void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const ECLlocation & pos, const char* format, ...)
 {
-    if (errorHandler && !errorDisabled && (!lookupCtx.syntaxCheckingUsingCache() || category==CategorySyntax || category==CategoryError))
+    if (errorHandler && !errorDisabled && includeError(lookupCtx, category))
     {
         va_list args;
         va_start(args, format);
@@ -6229,7 +6242,7 @@ void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const ECLloc
 
 void HqlGram::reportWarning(WarnErrorCategory category, ErrorSeverity severity, int warnNo, const ECLlocation & pos, const char* format, ...)
 {
-    if (errorHandler && !errorDisabled && (!lookupCtx.syntaxCheckingUsingCache() || category==CategorySyntax || category==CategoryError))
+    if (errorHandler && !errorDisabled && includeError(lookupCtx, category))
     {
         StringBuffer msg;
         va_list args;
@@ -6244,7 +6257,7 @@ void HqlGram::reportWarning(WarnErrorCategory category, ErrorSeverity severity, 
 void HqlGram::reportWarningVa(WarnErrorCategory category, int warnNo, const attribute& a, const char* format, va_list args)
 {
     const ECLlocation & pos = a.pos;
-    if (errorHandler && !errorDisabled && (!lookupCtx.syntaxCheckingUsingCache() || category==CategorySyntax || category==CategoryError))
+    if (errorHandler && !errorDisabled && includeError(lookupCtx, category))
     {
         Owned<IError> error = createErrorVA(category, queryDefaultSeverity(category), warnNo, pos, format, args);
         report(error);
@@ -6253,7 +6266,7 @@ void HqlGram::reportWarningVa(WarnErrorCategory category, int warnNo, const attr
 
 void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, int lineno, int column)
 {
-    if (errorHandler && !errorDisabled && (!lookupCtx.syntaxCheckingUsingCache() || category==CategorySyntax || category==CategoryError))
+    if (errorHandler && !errorDisabled && includeError(lookupCtx, category))
         doReportWarning(category, warnNo, msg, querySourcePathText(), lineno, column, 0);
 }
 
@@ -12280,7 +12293,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     attrCtx.noteBeginAttribute(scope, contents, name);
 
     // Use simplified definition if syntax checking
-    if (!ctx.regenerateCache() && ctx.syntaxCheckingUsingCache() && !ctx.ignoreCache())
+    if (!ctx.regenerateCache() && ctx.syntaxChecking() && ctx.hasCacheLocation() && !ctx.ignoreCache())
     {
         HqlParseContext & parseContext = ctx.queryParseContext();
         Owned<IEclCachedDefinition> cached = parseContext.cache->getDefinition(fullName);

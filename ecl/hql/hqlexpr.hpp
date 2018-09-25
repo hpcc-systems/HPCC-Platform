@@ -1022,7 +1022,6 @@ public:
     inline bool syntaxChecking() const { return parseCtx.isSyntaxChecking(); }
     inline bool regenerateCache() const { return parseCtx.regenerateCache; }
     inline bool hasCacheLocation() const { return parseCtx.hasCacheLocation();}
-    inline bool syntaxCheckingUsingCache() const { return parseCtx.isSyntaxChecking() && parseCtx.hasCacheLocation(); }
     inline bool checkSimpleDef() const { return parseCtx.checkSimpleDef; }
     inline bool ignoreCache() const { return parseCtx.ignoreCache; }
     inline bool createCache(IHqlExpression * simplified, bool isMacro) { return parseCtx.createCache(simplified, isMacro); }
