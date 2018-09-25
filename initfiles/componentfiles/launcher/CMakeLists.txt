@@ -17,3 +17,11 @@
 
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/hpcc-systems.desktop DESTINATION share COMPONENT Runtime )
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/LN.png DESTINATION share COMPONENT Runtime )
+
+if(PLATFORM)
+    SET_DEPENDENCIES(CPACK_DEBIAN_PACKAGE_DEPENDS xterm)
+    configure_file(hpcc-systems-desktop.install.in hpcc-systems-desktop.install @ONLY)
+    configure_file(hpcc-systems-desktop.uninstall.in hpcc-systems-desktop.uninstall @ONLY)
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/hpcc-systems-desktop.install DESTINATION etc/init.d/install COMPONENT Runtime)
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/hpcc-systems-desktop.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime)
+endif()
