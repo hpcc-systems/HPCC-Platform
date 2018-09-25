@@ -110,9 +110,9 @@ IPropertyTree* Hardware::addComputer(IPropertyTree *params)
   IpAddress ipAddr;
 
   sbIp.clear();
-  if ((ip == NULL) || (ip == ""))
+  if (!ip || !*ip)
   {
-    if ((computerName == NULL) || (computerName == ""))
+    if (!computerName || !*computerName)
       throw MakeStringException(CfgEnvErrorCode::InvalidParams, "Cannot add a computer without both ip and name.");
     else
     {
@@ -141,13 +141,9 @@ IPropertyTree* Hardware::addComputer(IPropertyTree *params)
 
   StringBuffer sbName;
   sbName.clear();
-  if ((computerName == NULL) || (computerName == ""))
+  if (!computerName || !*computerName)
   {
-    if (ip && (ip == "."))
-       sbName.append("localhost");
-    else
-    {
-      if ((namePrefix == NULL) || (namePrefix == ""))
+      if (!namePrefix || !*namePrefix)
       {
         unsigned x;
         ipAddr.ipset(sbIp.str());
@@ -158,7 +154,6 @@ IPropertyTree* Hardware::addComputer(IPropertyTree *params)
         sbName.append(namePrefix);
 
       getUniqueName(pHardwareTree, sbName, XML_TAG_COMPUTER, "");
-    }
   }
   else
   {
