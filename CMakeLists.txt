@@ -163,6 +163,7 @@ if ( PLUGIN )
     HPCC_ADD_SUBDIRECTORY (plugins/mysql "MYSQLEMBED")
     HPCC_ADD_SUBDIRECTORY (plugins/exampleplugin "EXAMPLEPLUGIN")
     HPCC_ADD_SUBDIRECTORY (plugins/couchbase "COUCHBASEEMBED")
+    HPCC_ADD_SUBDIRECTORY (plugins/spark "SPARK")
 elseif ( NOT MAKE_DOCS_ONLY )
     HPCC_ADD_SUBDIRECTORY (system)
     HPCC_ADD_SUBDIRECTORY (initfiles)
@@ -200,10 +201,6 @@ endif(APPLE OR WIN32)
 if(APPLE)
     HPCC_ADD_SUBDIRECTORY(package)
 endif(APPLE)
-
-if(USE_SPARK)
-    HPCC_ADD_SUBDIRECTORY(spark "PLATFORM")
-endif(USE_SPARK)
 
 ###
 ## CPack install and packaging setup.

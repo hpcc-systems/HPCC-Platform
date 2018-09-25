@@ -26,7 +26,8 @@ cmake_minimum_required(VERSION 3.3)
 
 project(spark-integration)
 
-if(USE_SPARK)
+if(SPARK)
+    ADD_PLUGIN(spark PACKAGES Java MINVERSION 1.8.0)
 
     if(SPARK_URL)
         string( REPLACE "\/" ";" SPARK_URL_LIST ${SPARK_URL} )
@@ -131,6 +132,7 @@ if(USE_SPARK)
         DESTINATION "jars/spark/"
         )
 
+    
     configure_file(spark-defaults.conf.in spark-defaults.conf @ONLY)
     configure_file(spark-env.sh.in spark-env.sh @ONLY)
     install(
@@ -141,4 +143,33 @@ if(USE_SPARK)
         DESTINATION "externals/spark-hadoop/conf"
         )
 
-endif(USE_SPARK)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/sparkthor.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/sparkthor.sh" @ONLY)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/sparkthor-worker.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/sparkthor-worker.sh" @ONLY)
+    install(PROGRAMS 
+        ${CMAKE_CURRENT_BINARY_DIR}/sparkthor.sh
+        ${CMAKE_CURRENT_BINARY_DIR}/sparkthor-worker.sh
+        DESTINATION sbin COMPONENT Runtime)
+
+    configure_file(init_sparkthor.in init_sparkthor @ONLY)
+    install(
+        PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/init_sparkthor
+        DESTINATION ${EXEC_DIR}
+        COMPONENT Runtime)
+    
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl @ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/spark-defaults.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl @ONLY)
+    install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsd
+        ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
+        ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl
+        DESTINATION componentfiles/configxml
+        COMPONENT Runtime)
+        
+    configure_file(sparkthor@instance.service.in sparkthor@.service @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sparkthor@.service DESTINATION etc/systemd/system COMPONENT Systemd)
+
+    if(PLATFORM)
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/sparkthor-service.install DESTINATION etc/init.d/install COMPONENT Systemd)
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/sparkthor-service.uninstall DESTINATION etc/init.d/uninstall COMPONENT Systemd)
+    endif(PLATFORM)
+endif(SPARK)

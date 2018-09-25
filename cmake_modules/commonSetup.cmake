@@ -99,7 +99,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_PYTHON3 "Enable python3 language support for platform build" ON)
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
   option(JLIB_ONLY  "Build JLIB for other projects such as Configurator, Ganglia Monitoring, etc" OFF)
-  option(USE_SPARK  "Packaging Spark with HPCC" OFF)
   # Generates code that is more efficient, but will cause problems if target platforms do not support it.
   if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" ON)
@@ -150,6 +149,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     SQLITE3EMBED
     KAFKA
     COUCHBASEEMBED
+    SPARK
     EXAMPLEPLUGIN)
     foreach(plugin ${PLUGINS_LIST})
         option(${plugin} "Create a package with ONLY the ${plugin} plugin" OFF)

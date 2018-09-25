@@ -25,40 +25,6 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/RoxieTopology.xsl ${CMAKE_CURRENT_BIN
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/thor.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/thor.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/thor.xsl ${CMAKE_CURRENT_BINARY_DIR}/thor.xsl)
 
-if(USE_SPARK)
-    set(SPARKTHOR_ENV_ENTRY "|.//SparkThorProcess")
-    set(SPARKTHOR_BUILDSET_ENTRY
-"            <BuildSet installSet=\"deploy_map.xml\"
-                name=\"sparkthor\"
-                path=\"componentfiles/sparkthor\"
-                processName=\"SparkThorProcess\"
-                schema=\"sparkThor.xsd\"/>")
-    set(SPARKTHOR_CGENCOMPLIST_LINUX_ENTRY
-"  <Component name=\"sparkthor\" processName=\"SparkThor\" schema=\"sparkThor.xsd\">
-     <File name=\"sparkThor.xsl\" method=\"xslt\" destName=\"spark-env.sh\"/>
-     <File name=\"spark-defaults.xsl\" method=\"xslt\" destName=\"spark-defaults.conf\"/>
-   </Component>")
-    set(SPARKTHOR_CGENCOMPLIST_WIN_ENTRY
-"  <Component name=\"sparkthor\" processName=\"SparkThor\" schema=\"sparkThor.xsd\">
-    <File name=\"sparkThor.xsl\" method=\"xslt\" destName=\"spark-env.conf\"/>
-    <File name=\"spark-defaults.xsl\" method=\"xslt\" destName=\"spark-defaults.conf\"/>
-  </Component>")
-    configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsl.in
-        ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
-        @ONLY)
-    configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/spark-defaults.xsl.in
-        ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl
-        @ONLY)
-    install(
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsd
-              ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
-              ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl
-        DESTINATION componentfiles/configxml
-        COMPONENT Runtime)
-endif()
-
 configure_file(environment.xsd.in environment.xsd @ONLY)
 configure_file(cgencomplist_linux.xml.in cgencomplist_linux.xml @ONLY)
 configure_file(cgencomplist_win.xml.in cgencomplist_win.xml @ONLY)

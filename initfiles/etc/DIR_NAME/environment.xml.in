@@ -906,8 +906,8 @@
              directory="/var/lib/HPCCSystems/mysparkthor"
              name="s1"
              netAddress="."/>
-  </SparkThorProcess>
-  @SPARK_ENV_E@
+   </SparkThorProcess>
+   @SPARK_ENV_F@
  </Software>
  <EnvSettings>
   <pid>${PID_PATH}</pid>
@@ -1248,7 +1248,7 @@
              path="componentfiles/sparkthor"
              processName="SparkThorProcess"
              schema="sparkThor.xsd"/>
-   @SPARK_ENV_E@
+   @SPARK_ENV_F@
   </Build>
  </Programs>
 </Environment>
