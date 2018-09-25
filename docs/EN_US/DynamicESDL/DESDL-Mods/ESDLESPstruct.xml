@@ -13,8 +13,7 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>
-ESPstruct NameBlock
+  <programlisting>ESPstruct NameBlock
 
 {
     string FirstName;
@@ -22,5 +21,11 @@ ESPstruct NameBlock
     string LastName;
     int Age;
 };
-   </programlisting>
+
+ESPstruct NameBlockExtended:NameBlock
+
+{
+    string SSN;
+    string partyAffilition;
+};</programlisting>
 </sect1>
