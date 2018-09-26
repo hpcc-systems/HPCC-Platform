@@ -44,24 +44,27 @@ class XSDSchemaParser : public SchemaParser
 
         XSDSchemaParser() { };
         virtual bool doParse(const std::string &configPath, const std::string &masterConfigFile,  const std::map<std::string, std::string> &cfgParms) override;
-        virtual void parseXSD(const pt::ptree &tree);
-        virtual void parseXSD(const std::string &filename);
-        virtual std::string getXSDAttributeValue(const pt::ptree &tree, const std::string &attriName, bool throwIfNotPresent=true, const std::string &defaultVal = (std::string(""))) const;
-        virtual void parseAttributeGroup(const pt::ptree &attributeTree);
-        virtual std::shared_ptr<SchemaValue> parseAttribute(const pt::ptree &attr);
+        void parseXSD(const pt::ptree &tree);
+        void parseXSD(const std::string &fullyQualifiedPath);
+        std::string getXSDAttributeValue(const pt::ptree &tree, const std::string &attriName, bool throwIfNotPresent=true, const std::string &defaultVal = (std::string(""))) const;
+        void parseAttributeGroup(const pt::ptree &attributeTree);
+        std::shared_ptr<SchemaValue> parseAttribute(const pt::ptree &attr);
 
-        virtual void parseSimpleType(const pt::ptree &typeTree);
-        virtual void parseComplexType(const pt::ptree &typeTree);
-        virtual void parseElement(const pt::ptree &elemTree);
-        virtual void parseAnnotation(const pt::ptree &elemTree);
-        virtual void parseAppInfo(const pt::ptree &elemTree);
+        void parseSimpleType(const pt::ptree &typeTree);
+        void parseComplexType(const pt::ptree &typeTree);
+        void parseElement(const pt::ptree &elemTree);
+        void parseAnnotation(const pt::ptree &elemTree);
+        void parseAppInfo(const pt::ptree &elemTree);
+        void processXSDFiles(const std::string &path, const std::string &ignore);
+        void processSchemaInsert(const pt::ptree &elemTree);
 
-        virtual std::shared_ptr<SchemaType> getType(const pt::ptree &typeTree, bool nameRequired=true);
-        virtual std::shared_ptr<SchemaValue> getSchemaValue(const pt::ptree &attr);
+        std::shared_ptr<SchemaType> getType(const pt::ptree &typeTree, bool nameRequired);
+        std::shared_ptr<SchemaValue> getSchemaValue(const pt::ptree &attr);
 
-        virtual void parseIntegerTypeLimits(const pt::ptree &restrictTree, std::shared_ptr<SchemaTypeIntegerLimits> &pIntegerLimits);
-        virtual void parseStringTypeLimits(const pt::ptree &restrictTree, std::shared_ptr<SchemaTypeStringLimits> &pStringLimits);
-        virtual void parseAllowedValue(const pt::ptree &allowedValueTree, SchemaTypeLimits *pTypeLimits);
+        void parseIntegerTypeLimits(const pt::ptree &restrictTree, std::shared_ptr<SchemaTypeIntegerLimits> &pIntegerLimits);
+        void parseStringTypeLimits(const pt::ptree &restrictTree, std::shared_ptr<SchemaTypeStringLimits> &pStringLimits);
+        void parseAllowedValue(const pt::ptree &allowedValueTree, SchemaTypeLimits *pTypeLimits);
+
 
     protected:
 

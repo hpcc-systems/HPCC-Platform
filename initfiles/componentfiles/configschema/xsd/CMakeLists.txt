@@ -18,13 +18,11 @@
 FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esp.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_smc.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl2.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/hardware.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/types.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/dafilesrv.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/dali.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/environment.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclagent.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/buildset.xml
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configschema/xsd COMPONENT Runtime)

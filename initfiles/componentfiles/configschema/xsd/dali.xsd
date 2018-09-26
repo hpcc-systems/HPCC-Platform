@@ -18,97 +18,147 @@
 -->
 
 <xs:schema
-        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormhpcc:presetValue="qualified" attributeFormhpcc:presetValue="unqualified"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
         xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:complexType name="dali">
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="DaliServerProcess" hpcc:class="component" hpcc:category="Dali Server" hpcc:itemType="dali"
+                    hpcc:displayName="Dali Server" hpcc:docid="da.t1" minOccurs="1" maxOccurs="1">
+            <xs:complexType>
+                <xs:attributeGroup name="store" hpcc:groupByName="Store" hpcc:docid="da.t2">
+                    <xs:attribute name="lightweightCoalesce" type="xs:boolean" hpcc:displayName="Lightweight Coalesce"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Enable non memory loaded consolidation of store"/>
+                    <xs:attribute name="IdlePeriod" type="xs:nonNegativeInteger" hpcc:displayName="Idle Period (s)"
+                                  hpcc:presetValue="600"
+                                  hpcc:tooltip="Period of client to server quiet time to trigger store save"/>
+                    <xs:attribute name="IdleRate" type="xs:nonNegativeInteger" hpcc:displayName="Idle Rate (units?)"
+                                  hpcc:presetValue="10"
+                                  hpcc:tooltip="Number of transaction per minute to be considered quiet time"/>
+                    <xs:attribute name="MinTime" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Min Time Between Lightweight Store Saves (s)"
+                                  hpcc:presetValue="86400"
+                                  hpcc:tooltip="Minimum amount of time between lightweight store saves"/>
+                    <xs:attribute name="StartTime" type="timeOfDay"
+                                  hpcc:displayName="Start Time for Coalesce Checking (hh:mm:ss)"
+                                  hpcc:tooltip="Start time of lightweight coalesce checking"/>
+                    <xs:attribute name="EndTime" type="timeOfDay"
+                                  hpcc:displayName="End Time for Coalesce Checking (hh:mm:ss)"
+                                  hpcc:tooltip="End time of lightweight coalesce checking"/>
+                    <xs:attribute name="keepStores" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Number Old Saves to Keep" hpcc:presetValue="10"
+                                  hpcc:tooltip="Number of old saved stores to keep"/>
+                    <xs:attribute name="recoverFromIncErrors" type="xs:boolean"
+                                  hpcc:displayName="Enable Autorecover for Delta Files" hpcc:presetValue="true"
+                                  hpcc:tooltip="Switch on to autorecover from corruption to delta files on load"/>
+                </xs:attributeGroup>
+                <xs:attributeGroup name="backup" hpcc:groupByName="Backup" hpcc:docid="da.t3">
+                    <xs:attribute name="backupComputer" hpcc:displayName="Backup Computer" type="nodeName"
+                                  use="required"
+                                  hpcc:sourceKey="computer_name"
+                                  hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"/>
+                    <xs:attribute name="asyncBackup" type="xs:boolean" hpcc:displayName="Async Backup"
+                                  hpcc:presetValue="true" hpcc:tooltip="Asynchronous backup of transactions"/>
+                    <xs:attribute name="useNFSBackupMount" type="xs:boolean" hpcc:displayName="Use NFS Backup Mount"
+                                  hpcc:presetValue="false" hpcc:tooltip="Create and use a NFS mount point for backups"/>
+                    <xs:attribute name="backupLargeWarningThreshold" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Backup Warning Threshold" hpcc:presetValue="50"
+                                  hpcc:tooltip="Transaction granularity of pending backups to begin issue warnings about backlog"/>
+                    <xs:attribute name="backupSoftQueueLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Backup Soft Queue Limit" hpcc:presetValue="200"
+                                  hpcc:tooltip="Number of transactions above which the backup queue will start introducing delays until the backup queue decreases below this limit"/>
+                    <xs:attribute name="backupSoftQueueLimitDelay" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Backup Soft Queue Limit Delay (s)" hpcc:presetValue="200"
+                                  hpcc:tooltip="The maximum delay to introduce when the backupSoftQueueLimit has been introduced"/>
+                </xs:attributeGroup>
+                <xs:attributeGroup name="dfs" hpcc:groupByName="DFS" hpcc:docid="da.t5">
+                    <xs:attribute name="forceGroupUpdate" type="xs:boolean" hpcc:displayName="Force Group Update"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Force group updates on startup, if environment mismatch"/>
+                    <xs:attribute name="numThreads" type="xs:nonNegativeInteger" hpcc:displayName="Number of Threads"
+                                  hpcc:presetValue="30" hpcc:tootip="Number of threads to use to process DFS requests"/>
+                </xs:attributeGroup>
 
-        <xs:attributeGroup name="store" hpcc:groupByName="Store" hpcc:docid="da.t2">
-            <xs:attribute name="lightweightCoalesce" type="xs:boolean" hpcc:displayName="Lightweight Coalesce" hpcc:presetValue="true" hpcc:tooltip="Enable non memory loaded consolidation of store"/>
-            <xs:attribute name="IdlePeriod" type="xs:nonNegativeInteger" hpcc:displayName="Idle Period (s)" hpcc:presetValue="600" hpcc:tooltip="Period of client to server quiet time to trigger store save"/>
-            <xs:attribute name="IdleRate" type="xs:nonNegativeInteger" hpcc:displayName="Idle Rate (units?)" hpcc:presetValue="10" hpcc:tooltip="Number of transaction per minute to be considered quiet time"/>
-            <xs:attribute name="MinTime" type="xs:nonNegativeInteger" hpcc:displayName="Min Time Between Lightweight Store Saves (s)" hpcc:presetValue="86400" hpcc:tooltip="Minimum amount of time between lightweight store saves"/>
-            <xs:attribute name="StartTime" type="timeOfDay" hpcc:displayName="Start Time for Coalesce Checking (hh:mm:ss)" hpcc:tooltip="Start time of lightweight coalesce checking"/>
-            <xs:attribute name="EndTime" type="timeOfDay" hpcc:displayName="End Time for Coalesce Checking (hh:mm:ss)" hpcc:tooltip="End time of lightweight coalesce checking"/>
-            <xs:attribute name="keepStores" type="xs:nonNegativeInteger" hpcc:displayName="Number Old Saves to Keep" hpcc:presetValue="10" hpcc:tooltip="Number of old saved stores to keep"/>
-            <xs:attribute name="recoverFromIncErrors" type="xs:boolean" hpcc:displayName="Enable Autorecover for Delta Files" hpcc:presetValue="true" hpcc:tooltip="Switch on to autorecover from corruption to delta files on load"/>
-        </xs:attributeGroup>
-
-        <xs:attributeGroup name="backup" hpcc:groupByName="Backup" hpcc:docid="da.t3">
-            <xs:attribute name="backupComputer" hpcc:displayName="Backup Computer" type="nodeName" use="required"
-                          hpcc:sourceKey="computer_name" hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"/>
-            <xs:attribute name="asyncBackup" type="xs:boolean" hpcc:displayName="Async Backup" hpcc:presetValue="true" hpcc:tooltip="Asynchronous backup of transactions"/>
-            <xs:attribute name="useNFSBackupMount" type="xs:boolean" hpcc:displayName="Use NFS Backup Mount" hpcc:presetValue="false" hpcc:tooltip="Create and use a NFS mount point for backups"/>
-            <xs:attribute name="backupLargeWarningThreshold" type="xs:nonNegativeInteger" hpcc:displayName="Backup Warning Threshold" hpcc:presetValue="50" hpcc:tooltip="Transaction granularity of pending backups to begin issue warnings about backlog"/>
-            <xs:attribute name="backupSoftQueueLimit" type="xs:nonNegativeInteger" hpcc:displayName="Backup Soft Queue Limit" hpcc:presetValue="200" hpcc:tooltip="Number of transactions above which the backup queue will start introducing delays until the backup queue decreases below this limit"/>
-            <xs:attribute name="backupSoftQueueLimitDelay" type="xs:nonNegativeInteger" hpcc:displayName="Backup Soft Queue Limit Delay (s)" hpcc:presetValue="200" hpcc:tooltip="The maximum delay to introduce when the backupSoftQueueLimit has been introduced"/>
-        </xs:attributeGroup>
-
-        <xs:attributeGroup name="dfs" hpcc:groupByName="DFS" hpcc:docid="da.t5">
-            <xs:attribute name="forceGroupUpdate" type="xs:boolean" hpcc:displayName="Force Group Update" hpcc:presetValue="false" hpcc:tooltip="Force group updates on startup, if environment mismatch"/>
-            <xs:attribute name="numThreads" type="xs:nonNegativeInteger" hpcc:displayName="Number of Threads" hpcc:presetValue="30" hpcc:tootip="Number of threads to use to process DFS requests"/>
-        </xs:attributeGroup>
-
-        <xs:attributeGroup name="ldap" hpcc:groupByName="LDAP" hpcc:docid="da.t4">
-            <xs:attribute name="ldapServer" type="xs:string" hpcc:diaplayName="LDAP Server" hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
-                          hpcc:requiredIf="/Environment/Software/LDAPServerProcess" hpcc:tooltip="The LDAPserver to be used for authentication"/>
-            <xs:attribute name="ldapProtocol" hpcc:presetValue="ldap" hpcc:displayName="LDAP Protocol" hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
-                          hpcc:requiredIf="/Environment/Software/LDAPServerProcess" hpcc:tooltip="The protocol to use - standard ldap or LDAP over SSL">
-                <xs:simpleType>
-                    <xs:restriction base="xs:string">
-                        <xs:enumeration value="ldap" hpcc:description=""/>
-                        <xs:enumeration value="ldaps" hpcc:description=""/>
-                    </xs:restriction>
-                </xs:simpleType>
-            </xs:attribute>
-            <xs:attribute name="authMethod" type="xs:string" hpcc:presetValue="kerberos" hpcc:displayName="LDAP Auth Method" hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
-                          hpcc:requiredIf=".[@ldapProtocol=('ldap','ldaps')]" hpcc:tooltip="The protocol to use for LDAP authentication">
-                <xs:simpleType>
-                    <xs:restriction base="xs:string">
-                        <xs:enumeration value="kerberos" hpcc:description=""/>
-                        <xs:enumeration value="simple" hpcc:description=""/>
-                    </xs:restriction>
-                </xs:simpleType>
-            </xs:attribute>
-            <xs:attribute name="filesDefaultUser" type="xs:string" hpcc:displayName="Files Default User" hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
-                          hpcc:tooltip="The default username for Files access (ActiveDirectory)"/>
-            <xs:attribute name="filesDefaultPassword" type="xs:string" hpcc:modifiers="password" hpcc:displayName="Files Default Password" hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
-                          hpcc:tooltip="The default password for filesDefaultUser"/>
-            <xs:attribute name="reqSignatureExpiry" type="xs:string" hpcc:diaplsyName="Signature Expiration (minutes)" hpcc:presetValue="10" hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
-                          hpcc:tooltip="Lifetime in minutes of a permissions request digital signature"/>
-            <xs:attribute name="checkScopeScans" type="xs:boolean" hpcc:displayName="Check Scope Scans" hpcc:presetValue="true" hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
-                          hpcc:tooltip="Enable LDAP checking for all logical file listings"/>
-        </xs:attributeGroup>
-
-        <xs:sequence>
-            <xs:element name="DaliServerProcess" hpcc:class="component" hpcc:category="Dali Server" hpcc:itemType="dali" hpcc:displayName="Dali Server"  hpcc:docid="da.t1" minOccurs="1" maxOccurs="1">
-                <xs:complexType>
-                    <xs:sequence>
-                        <xs:element name="Instance" hpcc:itemType="hwinstance" minOccurs="1" maxOccurs="1" hpcc:class="elementSet">
-                            <xs:complexType>
-                                <xs:attributeGroup ref="computerNodeReference"/>
-                                <xs:attribute name="directory" type="absolutePath" hpcc:hidden="true"/>
-                                <xs:attribute name="port" type="xs:string" use="required" hpcc:displayName="Port" hpcc:tooltip="Control port"/>
-                            </xs:complexType>
-                        </xs:element>
-                        <xs:element name="Notes" type="usernotes"  hpcc:displayName="Notes"/>
-                    </xs:sequence>
-                    <xs:attributeGroup ref="buildInfo"/>
-                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="dali"
-                                  hpcc:uniqueKey="daliprocess_name" hpcc:tooltip="Name for this Dali process"/>
-                    <xs:attribute name="description" type="xs:string" hpcc:displayName="Description" hpcc:presetValue="Dali Server process" hpcc:tooltip="Description for this process"/>
-                    <xs:attribute name="msgLevel" type="xs:nonNegativeInteger" hpcc:displayName="Message Level" hpcc:presetValue="100" hpcc:tooltip="Severity threshold for reporting errors in log file"/>
-                    <xs:attribute name="dataPath" type="absolutePath" hpcc:displayName="Data Path" hpcc:tooltip="Full path to directory where Dali's data files are stored"
-                                  hpcc:modifiers="changeWarning" hpcc:warning="Warn: This is the path for critical data for the Dali server and must be changed with care! Please refer to the documentation for more details"/>
-                    <xs:attribute name="LogDir" type="absolutePath" hpcc:displayName="Log Directory" hpcc:tooltip="Full path to directory where server log files are stored"/>
-                    <xs:attribute name="AuditLogDir" type="absolutePath" hpcc:displayName="Audit Log Directory" hpcc:tooltip="Full path to directory where audit log files are stored"/>
-                    <xs:attribute name="environment" type="absolutePath" hpcc:displayName="Environment" use="required" hpcc:tooltip="Full path to an XML file containing an Environment to use"/>
-                    <xs:attributeGroup ref="store"/>
-                    <xs:attributeGroup ref="backup"/>
-                    <xs:attributeGroup ref="dfs"/>
-                    <xs:attributeGroup ref="ldap"/>
-                </xs:complexType>
-            </xs:element>
-        </xs:sequence>
-    </xs:complexType>
+                <xs:attributeGroup name="ldap" hpcc:groupByName="LDAP" hpcc:docid="da.t4">
+                    <xs:attribute name="ldapServer" type="xs:string" hpcc:diaplayName="LDAP Server"
+                                  hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:requiredIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:tooltip="The LDAPserver to be used for authentication"/>
+                    <xs:attribute name="ldapProtocol" hpcc:presetValue="ldap" hpcc:displayName="LDAP Protocol"
+                                  hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:requiredIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:tooltip="The protocol to use - standard ldap or LDAP over SSL">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:enumeration value="ldap" hpcc:description=""/>
+                                <xs:enumeration value="ldaps" hpcc:description=""/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="authMethod" type="xs:string" hpcc:presetValue="kerberos"
+                                  hpcc:displayName="LDAP Auth Method"
+                                  hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:requiredIf=".[@ldapProtocol=('ldap','ldaps')]"
+                                  hpcc:tooltip="The protocol to use for LDAP authentication">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:enumeration value="kerberos" hpcc:description=""/>
+                                <xs:enumeration value="simple" hpcc:description=""/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="filesDefaultUser" type="xs:string" hpcc:displayName="Files Default User"
+                                  hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:tooltip="The default username for Files access (ActiveDirectory)"/>
+                    <xs:attribute name="filesDefaultPassword" type="xs:string" hpcc:modifiers="password"
+                                  hpcc:displayName="Files Default Password"
+                                  hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:tooltip="The default password for filesDefaultUser"/>
+                    <xs:attribute name="reqSignatureExpiry" type="xs:string"
+                                  hpcc:diaplsyName="Signature Expiration (minutes)" hpcc:presetValue="10"
+                                  hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:tooltip="Lifetime in minutes of a permissions request digital signature"/>
+                    <xs:attribute name="checkScopeScans" type="xs:boolean" hpcc:displayName="Check Scope Scans"
+                                  hpcc:presetValue="true" hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:tooltip="Enable LDAP checking for all logical file listings"/>
+                </xs:attributeGroup>
+                <xs:sequence>
+                    <xs:element name="Instance" hpcc:itemType="hwinstance" minOccurs="1" maxOccurs="1"
+                                hpcc:class="elementSet"
+                                hpcc:requiredInstanceComponents="/Evnironment/Software/[#itemType='dafilesrv']">
+                        <xs:complexType>
+                            <xs:attributeGroup ref="computerNodeReference"/>
+                            <xs:attribute name="directory" type="absolutePath" hpcc:hidden="true"/>
+                            <xs:attribute name="port" type="xs:string" use="required" hpcc:displayName="Port"
+                                          hpcc:tooltip="Control port"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Notes" type="usernotes" hpcc:displayName="Notes"/>
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name"
+                              hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="dali"
+                              hpcc:uniqueKey="daliprocess_name" hpcc:tooltip="Name for this Dali process"/>
+                <xs:attribute name="description" type="xs:string" hpcc:displayName="Description"
+                              hpcc:presetValue="Dali Server process" hpcc:tooltip="Description for this process"/>
+                <xs:attribute name="msgLevel" type="xs:nonNegativeInteger" hpcc:displayName="Message Level"
+                              hpcc:presetValue="100"
+                              hpcc:tooltip="Severity threshold for reporting errors in log file"/>
+                <xs:attribute name="dataPath" type="absolutePath" hpcc:displayName="Data Path"
+                              hpcc:tooltip="Full path to directory where Dali's data files are stored"
+                              hpcc:modifiers="changeWarning"
+                              hpcc:warning="Warn: This is the path for critical data for the Dali server and must be changed with care! Please refer to the documentation for more details"/>
+                <xs:attribute name="LogDir" type="absolutePath" hpcc:displayName="Log Directory"
+                              hpcc:tooltip="Full path to directory where server log files are stored"/>
+                <xs:attribute name="AuditLogDir" type="absolutePath" hpcc:displayName="Audit Log Directory"
+                              hpcc:tooltip="Full path to directory where audit log files are stored"/>
+                <xs:attribute name="environment" type="absolutePath" hpcc:displayName="Environment" use="required"
+                              hpcc:tooltip="Full path to an XML file containing an Environment to use"/>
+                <xs:attributeGroup ref="store"/>
+                <xs:attributeGroup ref="backup"/>
+                <xs:attributeGroup ref="dfs"/>
+                <xs:attributeGroup ref="ldap"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
 </xs:schema>

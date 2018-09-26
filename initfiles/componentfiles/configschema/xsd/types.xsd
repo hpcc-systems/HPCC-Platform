@@ -17,8 +17,8 @@
 ################################################################################
  -->
 <xs:schema
-    xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
-    xmlns:hpcc="someurl">
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someurl">
     <xs:simpleType name="percent">
         <xs:restriction base="xs:integer">
             <xs:minInclusive value="0"/>
@@ -46,7 +46,8 @@
 
     <xs:simpleType name="ipV4Address">
         <xs:restriction base="xs:string">
-            <xs:pattern value="\A(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\z"/>
+            <xs:pattern
+                    value="\A(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\z"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -77,16 +78,21 @@
     </xs:simpleType>
 
     <xs:attributeGroup name="computerNodeReference">
-        <xs:attribute name="computer" hpcc:displayName="Computer" type="nodeName" use="required" hpcc:sourceKey="computer_name"
-            hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]" hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue"
-            hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
-        <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="required" hpcc:readOnly="true"
-            hpcc:sourceKey="computer_netaddress" hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
+        <xs:attribute name="computer" hpcc:displayName="Computer" type="nodeName" use="required"
+                      hpcc:sourceKey="computer_name"
+                      hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"
+                      hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue"
+                      hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
+        <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="required"
+                      hpcc:readOnly="true"
+                      hpcc:sourceKey="computer_netaddress"
+                      hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
     </xs:attributeGroup>
 
     <xs:complexType name="hwinstance">
         <xs:sequence>
-            <xs:element name="Instance" hpcc:displayName="Instances" hpcc:class="elementSet" minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="Instance" hpcc:displayName="Instances" hpcc:class="elementSet" minOccurs="0"
+                        maxOccurs="unbounded">
                 <xs:complexType>
                     <xs:attributeGroup ref="computerNodeReference"/>
                 </xs:complexType>
@@ -96,12 +102,14 @@
 
     <xs:complexType name="usernotes">
         <xs:seqeunce>
-            <xs:element name="Notes" hpcc:displayName="Notes" hpcc:class="elementSet" minOcurrs="1" maxOccurs="unbounded"/>
+            <xs:element name="Notes" hpcc:displayName="Notes" hpcc:class="elementSet" minOccurs="1"
+                        maxOccurs="unbounded"/>
             <xs:complexType name="note">
                 <xs:sequence>
                     <xs:element name="Note" type="xs:string" minOccurs="0"/>
                 </xs:sequence>
-                <xs:attribute name="severity" hpcc:displayName="Severity" use="optional" hpcc:presetValue="Minor" hpcc:tooltip="Significance of this note">
+                <xs:attribute name="severity" hpcc:displayName="Severity" use="optional" hpcc:presetValue="Minor"
+                              hpcc:tooltip="Significance of this note">
                     <xs:simpleType>
                         <xs:restriction base="xs:string">
                             <xs:enumeration value="Minor"/>
@@ -110,89 +118,93 @@
                         </xs:restriction>
                     </xs:simpleType>
                 </xs:attribute>
-                <xs:attribute name="date" hpcc:displayName="Date/Time" type="AutoTimeStampType" use="optional" hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
-                <xs:attribute name="computer" hpcc:displayName="Computer" type="xs:string" use="optional" hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
-                <xs:attribute name="user" hpcc:displayName="User" type="AutoUseridType" use="optional" hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
+                <xs:attribute name="date" hpcc:displayName="Date/Time" type="AutoTimeStampType" use="optional"
+                              hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
+                <xs:attribute name="computer" hpcc:displayName="Computer" type="xs:string" use="optional"
+                              hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
+                <xs:attribute name="user" hpcc:displayName="User" type="AutoUseridType" use="optional"
+                              hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
             </xs:complexType>
         </xs:seqeunce>
     </xs:complexType>
 
     <xs:complexType name="espservice_properties">
         <xs:sequence>
-            <xs:element name="Properties" minOccurs="0" maxOccurs="1" hpcc:hidden="true">
+            <xs:element name="Authenticate" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="access" type="xs:string"/>
+                    <xs:attribute name="description" type="xs:string"/>
+                    <xs:attribute name="path" type="xs:string"/>
+                    <xs:attribute name="required" type="xs:string"/>
+                    <xs:attribute name="resource" type="xs:string"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="AuthenticateFeature" hpcc:class="elementSet" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attribute name="description" type="xs:string"/>
+                    <xs:attribute name="path" type="xs:string"/>
+                    <xs:attribute name="resource" type="xs:string"/>
+                    <xs:attribute name="service" type="xs:string"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="ProcessFilters" hpcc:hidden="true" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
                     <xs:sequence>
-                        <xs:element name="Authenticate" minOccurs="0" maxOccurs="1">
-                            <xs:complexType>
-                                <xs:attribute name="access" type="xs:string"/>
-                                <xs:attribute name="description" type="xs:string"/>
-                                <xs:attribute name="path" type="xs:string"/>
-                                <xs:attribute name="required" type="xs:string"/>
-                                <xs:attribute name="resource" type="xs:string"/>
-                            </xs:complexType>
-                        </xs:element>
-                        <xs:element name="AuthenticateFeature" hpcc:class="elementSet" minOccurs="0" maxOccurs="unbounded">
-                            <xs:complexType>
-                                <xs:attribute name="description" type="xs:string"/>
-                                <xs:attribute name="path" type="xs:string"/>
-                                <xs:attribute name="resource" type="xs:string"/>
-                                <xs:attribute name="service" type="xs:string"/>
-                            </xs:complexType>
-                        </xs:element>
-                        <xs:element name="ProcessFilters" hpcc:hidden="true" minOccurs="0" maxOccurs="1">
+                        <xs:element name="Platform" minOccurs="0" maxOccurs="unbounded">
                             <xs:complexType>
                                 <xs:sequence>
-                                    <xs:element name="Platform" minOccurs="0" maxOccurs="unbounded">
+                                    <xs:element name="ProcessFilter" minOccurs="0" type="xs:string">
                                         <xs:complexType>
                                             <xs:sequence>
-                                                <xs:element name="ProcessFilter" minOccurs="0" type="xs:string">
+                                                <xs:element name="Process" minOccurs="0" maxOccurs="unbounded">
                                                     <xs:complexType>
-                                                        <xs:sequence>
-                                                            <xs:element name="Process" minOccurs="0" maxOccurs="unbounded">
-                                                                <xs:complextype>
-                                                                    <xs:attribute name="name" type="xs:string" use="required"/>
-                                                                </xs:complexType>
-                                                            </xs:element>
-                                                        </xs:sequence>
                                                         <xs:attribute name="name" type="xs:string" use="required"/>
-                                                        <xs:attribute name="multipleInstances" type="xs:boolean" hpcc:presetValue="false" use="optional"/>
                                                     </xs:complexType>
                                                 </xs:element>
                                             </xs:sequence>
-                                            <xs:attribute name="name" type="xs:string">
-                                                <xs:simpleType>
-                                                    <xs:restriction base="xs:string">
-                                                        <xs:enumeration value="Windows"/>
-                                                        <xs:enumeration value="Linux"/>
-                                                    </xs:restriction>
-                                                </xs:simpleType>
-                                            </xs:attribute>
+                                            <xs:attribute name="name" type="xs:string" use="required"/>
+                                            <xs:attribute name="multipleInstances" type="xs:boolean"
+                                                          hpcc:presetValue="false" use="optional"/>
                                         </xs:complexType>
                                     </xs:element>
                                 </xs:sequence>
+                                <xs:attribute name="name" type="xs:string">
+                                    <xs:simpleType>
+                                        <xs:restriction base="xs:string">
+                                            <xs:enumeration value="Windows"/>
+                                            <xs:enumeration value="Linux"/>
+                                        </xs:restriction>
+                                    </xs:simpleType>
+                                </xs:attribute>
                             </xs:complexType>
                         </xs:element>
                     </xs:sequence>
-                    <xs:attribute name="defaultPort" type="xs:string"/>
-                    <xs:attribute name="defaultResourcesBasedn" type="xs:string"/>
-                    <xs:attribute name="defaultSecurePort" type="xs:string"/>
-                    <xs:attribute name="type" type="xs:string"/>
                 </xs:complexType>
             </xs:element>
         </xs:sequence>
+        <xs:attribute name="defaultPort" type="xs:string"/>
+        <xs:attribute name="defaultResourcesBasedn" type="xs:string"/>
+        <xs:attribute name="defaultSecurePort" type="xs:string"/>
+        <xs:attribute name="type" type="xs:string"/>
     </xs:complexType>
 
     <xs:attributeGroup name="buildInfo" hpcc:groupByName="Attributes">
-        <xs:attribute name="build" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="fixedValue" hpcc:autoGenerateValue="_"/>
-        <xs:attribute name="buildSet" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="configProperty" hpcc:autoGenerateValue="componentName"/>
+        <xs:attribute name="build" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="fixedValue"
+                      hpcc:autoGenerateValue="_"/>
+        <xs:attribute name="buildSet" type="xs:string" use="required" hpcc:hidden="true"
+                      hpcc:autoGenerateType="configProperty" hpcc:autoGenerateValue="componentName"/>
     </xs:attributeGroup>
 
 
     <xs:attributeGroup name="secmgrplugin_reqd">
         <xs:attribute name="type" type="SecurityManager" use="required" hpcc:hidden="true" hpcc:readOnly="true"/>
-        <xs:attribute name="libName" type="xs:string" use="required" hpcc:displayName="Library Name" hpcc:tooltip="The Security Manager plugin library name (.so)"/>
-        <xs:attribute name="instanceFactoryName" type="xs:string" use="required" hpcc:displayName="Instance Factory Method Name" hpcc:presetValue="createInstance"
+        <xs:attribute name="libName" type="xs:string" use="required" hpcc:displayName="Library Name"
+                      hpcc:tooltip="The Security Manager plugin library name (.so)"/>
+        <xs:attribute name="instanceFactoryName" type="xs:string" use="required"
+                      hpcc:displayName="Instance Factory Method Name" hpcc:presetValue="createInstance"
                       hpcc:tooltip="Name of the factory method to create the Security Manager instacne"/>
-        <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:uniqueKey="secmgrplugin_name" hpcc:tooltip="Name for this SingleUser Security Manager instance"/>
+        <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name"
+                      hpcc:uniqueKey="secmgrplugin_name"
+                      hpcc:tooltip="Name for this SingleUser Security Manager instance"/>
     </xs:attributeGroup>
 </xs:schema>

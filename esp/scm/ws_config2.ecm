@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -52,10 +52,12 @@ ESPresponse StatusResponse
 ESPrequest OpenSessionRequest
 {
     string Username;
-    string SchemaPath("");        // location of configuration schema environmentFiles
-    string MasterSchemaFile("");  // name of master schema control file
-    string SourcePath("");        // path to envrionment files
-    string ActivePath("");        // path to active environment file ("" for none)
+    string SchemaPath("");          // location of configuration schema environmentFiles
+    string MasterSchemaFile("");    // name of master schema control file
+    string SourcePath("");          // path to envrionment files
+    string ActivePath("");          // path to active environment file ("" for none)
+    string PluginPaths("");         // comma separated list of paths
+    string SupportLibs("");         // comma separated list of support libraries to load
 };
 
 
@@ -204,9 +206,9 @@ ESPstruct AttributeType
     string     Tooltip("");
     ESPstruct  TypeInfo Type;
     string     CurrentValue("");
-    string     DefaultValue("");
+    string     ForcedValue("");
     bool       IsPresentInEnvironment;
-    string     DefaultInCode("");
+    string     PresetValue("");
     bool       Required(true);
     bool       ReadOnly(false);
     bool       Hidden(false);

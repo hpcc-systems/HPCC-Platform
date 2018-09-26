@@ -17,13 +17,19 @@
 
 #include "SchemaParser.hpp"
 #include "Exceptions.hpp"
+#include "Utils.hpp"
 
 
-bool SchemaParser::parse(const std::string &configPath, const std::string &masterConfigFile,  const std::map<std::string, std::string> &cfgParms)
+bool SchemaParser::parse(const std::string &configPath, const std::string &masterConfigFile, const std::map<std::string, std::string> &cfgParms)
 {
     bool rc = true;
     try
     {
+        auto pluginPathsIt = cfgParms.find("plugin_paths");
+        if (pluginPathsIt != cfgParms.end())
+        {
+            m_pluginPaths = splitString(pluginPathsIt->second, ",");
+        }
         doParse(configPath, masterConfigFile, cfgParms);
     }
     catch (const ParseException &pe)

@@ -74,24 +74,29 @@ void  AddRequiredInstancesSupport::validate(const std::shared_ptr<SchemaItem> &p
 void AddRequiredInstancesSupport::addInstance(const std::shared_ptr<EnvironmentNode> &pEventNode, const std::shared_ptr<EnvironmentNode> &pTargetNode, Status &status) const
 {
     std::pair<std::string, std::string> attrValues;
-    std::vector<std::shared_ptr<SchemaValue>> attributes;
     std::vector<NameValue> initAttributeValues;
 
     //
     // Generate a list of attribute values for each schema attribute in the node being inserted that has a value in the
     // event node, then insert it.
-    pTargetNode->getSchemaItem()->getChild("Instance")->getAttributes(attributes);
-    for (auto &daInstAttr: attributes)
+    std::vector<std::shared_ptr<SchemaItem>> children;
+    pTargetNode->getSchemaItem()->getChildren(children, "Instance");
+    if (!children.empty())
     {
-        std::shared_ptr<EnvironmentValue> pEventAttr = pEventNode->getAttribute(daInstAttr->getName());
-        if (pEventAttr)
+        std::vector<std::shared_ptr<SchemaValue>> attributes;
+        children[0]->getAttributes(attributes);
+        for (auto &daInstAttr: attributes)
         {
-            std::string eventAttrValue = pEventAttr->getValue();
-            if (!eventAttrValue.empty())
+            std::shared_ptr<EnvironmentValue> pEventAttr = pEventNode->getAttribute(daInstAttr->getName());
+            if (pEventAttr)
             {
-                initAttributeValues.emplace_back(NameValue(daInstAttr->getName(), eventAttrValue));
+                std::string eventAttrValue = pEventAttr->getValue();
+                if (!eventAttrValue.empty())
+                {
+                    initAttributeValues.emplace_back(NameValue(daInstAttr->getName(), eventAttrValue));
+                }
             }
         }
+        m_pEnvMgr->addNewEnvironmentNode(pTargetNode, children[0], initAttributeValues, status);
     }
-    m_pEnvMgr->addNewEnvironmentNode(pTargetNode, pTargetNode->getSchemaItem()->getChild("Instance"), initAttributeValues, status);
 }

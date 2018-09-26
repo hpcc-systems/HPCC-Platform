@@ -21,14 +21,12 @@
         xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
         xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:complexType name="secmgr_singleuser">
-        <xs:sequence>
-            <xs:element name="SingleUserSecMgr" hpcc:class="component" hpcc:category="Security Manager"
-                        hpcc:itemType="secmgr_singleuser" hpcc:displayName="Single User">
-                <xs:complexType>
-                    <xs:attributeGroup ref="secmgrplugin_reqd" hpcc:presetValue="libName=libsingleUserSecurity.so"/>
-                </xs:complexType>
-            </xs:element>
-        </xs:sequence>
-    </xs:complexType>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="SingleUserSecMgr" hpcc:class="component" hpcc:category="Security Manager"
+                    hpcc:itemType="secmgr_singleuser" hpcc:displayName="Single User">
+            <xs:complexType>
+                <xs:attributeGroup ref="secmgrplugin_reqd" hpcc:presetValue="libName=libsingleUserSecurity.so"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
 </xs:schema>

@@ -37,9 +37,9 @@ class DECL_EXPORT EnvironmentValue
         ~EnvironmentValue() { }
         bool setValue(const std::string &value, Status *pStatus, bool forceSet=false);
         bool isValueSet() const { return !m_value.empty(); }
-        const std::string &getValue() const { return m_value.empty() ? getDefaultValue() : m_value;  }
-        const std::string &getDefaultValue() const { return m_pSchemaValue->getDefaultValue(); }
-        bool hasDefaultValue() const { return m_pSchemaValue->hasDefaultValue(); }
+        const std::string &getValue() const { return m_value.empty() ? getForcedValue() : m_value;  }
+        const std::string &getForcedValue() const { return m_pSchemaValue->getForcedValue(); }
+        bool hasForcedValue() const { return m_pSchemaValue->hasForcedValue(); }
         const std::shared_ptr<SchemaValue> &getSchemaValue() const { return m_pSchemaValue;  }
         const std::string &getName() const { return m_name;  }
         bool wasForced() const { return m_forcedSet; }

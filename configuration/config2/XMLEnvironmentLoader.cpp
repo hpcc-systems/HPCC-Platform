@@ -45,7 +45,13 @@ std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentLoader::load(std::is
             }
             else
             {
-                pParseRootSchemaItem = pSchemaItem->getChild(envIt->first);
+                std::vector<std::shared_ptr<SchemaItem>> children;
+                pSchemaItem->getChildren(children, envIt->first);
+                if (children.empty())
+                {
+                    throw (ParseException("Unable to start parsing environment, root node element " + envIt->first + " not found"));
+                }
+                pParseRootSchemaItem = children[0];
             }
 
             pEnvNode = std::make_shared<EnvironmentNode>(pParseRootSchemaItem, envIt->first);  // caller may need to set the parent
@@ -114,14 +120,20 @@ void XMLEnvironmentLoader::parse(const pt::ptree &envTree, const std::shared_ptr
         else
         {
             std::string typeName = it->second.get("<xmlattr>.buildSet", "");
+            std::vector<std::shared_ptr<SchemaItem>> children;
             std::shared_ptr<SchemaItem> pSchemaItem;
-            if (!typeName.empty())
+            pConfigItem->getChildren(children, elemName, typeName);
+            if (children.empty())
             {
-                pSchemaItem = pConfigItem->getChildByItemType(elemName, typeName);
+                pSchemaItem = std::make_shared<SchemaItem>(elemName, "default", pConfigItem);  // default item if none found
+            }
+            else if (children.size() > 1)
+            {
+                throw (ParseException("Ambiguous element found during parsing, unable to find schem item, element name = " + elemName + ", itemType = " + typeName));
             }
             else
             {
-                pSchemaItem = pConfigItem->getChild(elemName);
+                pSchemaItem = children[0];
             }
 
             // If no schema item is found, that's ok, the node just has no defined configuration

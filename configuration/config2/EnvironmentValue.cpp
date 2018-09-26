@@ -93,9 +93,9 @@ void EnvironmentValue::validate(Status &status, const std::string &myId) const
             status.addMsg(statusMsg::error, myId, m_name, "Required value has not been set");
         }
 
-        if (m_pSchemaValue->hasDefaultValue())
+        if (m_pSchemaValue->hasForcedValue())
         {
-            std::string msg = "No value provided, default value of " + m_pSchemaValue->getDefaultValue() + " will be used.";
+            std::string msg = "No value provided, default value of " + m_pSchemaValue->getForcedValue() + " will be used.";
             status.addMsg(statusMsg::warning, myId, m_name, msg);
         }
     }

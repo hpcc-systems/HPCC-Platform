@@ -46,7 +46,7 @@ SchemaValue::SchemaValue(const SchemaValue &value)
     m_autoGenerateValue = value.m_autoGenerateValue;
     m_autoGenerateType = value.m_autoGenerateType;
     bitMask = value.bitMask;
-    m_default = value.m_default;
+    m_forcedValue = value.m_forcedValue;
     m_tooltip = value.m_tooltip;
     m_modifiers = value.m_modifiers;
     m_valueLimitRuleType = value.m_valueLimitRuleType;

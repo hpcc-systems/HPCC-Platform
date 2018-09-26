@@ -41,9 +41,9 @@ class DECL_EXPORT SchemaValue
         const std::string &getDisplayName() const { return m_displayName; }
         void setRequired(bool reqd) { bitMask.m_required = reqd; }
         bool isRequired() const { return bitMask.m_required; }
-        void setDefaultValue(const std::string &dflt) { m_default = dflt; }
-        const std::string &getDefaultValue() const { return m_default; }
-        bool hasDefaultValue() const { return !m_default.empty(); }
+        void setForcedValue(const std::string &dflt) { m_forcedValue = dflt; }
+        const std::string &getForcedValue() const { return m_forcedValue; }
+        bool hasForcedValue() const { return !m_forcedValue.empty(); }
         void setReadOnly(bool readOnly) { bitMask.m_readOnly = readOnly; }
         bool isReadOnly() const { return bitMask.m_readOnly; }
         void setHiddenIf(const std::string &hiddenIf) { m_hiddenIf = hiddenIf; }
@@ -81,8 +81,8 @@ class DECL_EXPORT SchemaValue
         void setAutoGenerateValue(const std::string &value) { m_autoGenerateValue = value; }
         const std::string &getAutoGenerateValue() const { return m_autoGenerateValue; }
         void getAllKeyRefValues(std::vector<std::string> &keyRefValues) const;
-        void setCodeDefault(const std::string &value) { m_codeDefault = value; }
-        const std::string &getCodeDefault() const { return m_codeDefault; }
+        void setPresetValue(const std::string &value) { m_presetValue = value; }
+        const std::string &getPresetValue() const { return m_presetValue; }
         void setValueLimitRuleType(const std::string &type) { m_valueLimitRuleType = type; }
         const std::string &getValueLimitRuleType() { return m_valueLimitRuleType; }
         void setValueLimitRuleData(const std::string &data) { m_valueLimitRuleData = data; }
@@ -97,8 +97,6 @@ class DECL_EXPORT SchemaValue
 
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!
         std::shared_ptr<SchemaType> m_pType;
-        std::vector<std::weak_ptr<EnvironmentValue>> m_envValues;
-        std::vector<std::shared_ptr<SchemaValue>> m_mirrorToSchemaValues;
         std::string m_name;
         std::string m_displayName;
         std::string m_mirrorFromPath;
@@ -122,12 +120,16 @@ class DECL_EXPORT SchemaValue
         } bitMask;
 
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!
-        std::string m_default;        // value written to environment if no user value supplied
-        std::string m_codeDefault;    // informational value nform user code default if no value supplied
+        std::string m_forcedValue;        // value written to environment if no user value supplied
+        std::string m_presetValue;    // informational value nform user code default if no value supplied
         std::string m_tooltip;
         std::vector<std::string> m_modifiers;
-        std::vector<std::weak_ptr<SchemaValue>> m_pUniqueValueSetRefs;    // this value serves as the key from which values are valid
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!
+
+        // These values are NOT copied in the copy constructor
+        std::vector<std::weak_ptr<EnvironmentValue>> m_envValues;
+        std::vector<std::shared_ptr<SchemaValue>> m_mirrorToSchemaValues;
+        std::vector<std::weak_ptr<SchemaValue>> m_pUniqueValueSetRefs;    // this value serves as the key from which values are valid
 };
 
 #endif // _CONFIG2_VALUE_HPP_
