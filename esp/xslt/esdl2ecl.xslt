@@ -20,6 +20,7 @@
     <xsl:output method="text" version="1.0" encoding="UTF-8" indent="yes"/>
     <xsl:param name="sourceFileName" select="'UNKNOWN'"/>
     <xsl:param name="importsList" select="''"/>
+    <xsl:param name="utf8strings" select="'yes'"/>
     <xsl:variable name="docname" select="/expesdl/esxdl/@name"/>
     <xsl:template match="/">
         <xsl:apply-templates select="expesdl"/>
@@ -109,7 +110,7 @@ END;
 	</xsl:template>
 	<xsl:template match="EsdlArray[@type='string']|EsdlList[@type='string']">
 		<xsl:if test="not(@ecl_hide) and (@ecl_keep or not(@get_data_from))">
-        <xsl:text disable-output-escaping="yes">	SET OF STRING </xsl:text><xsl:call-template name="output_ecl_name"/>
+        <xsl:text disable-output-escaping="yes">	SET OF </xsl:text><xsl:call-template name="output_ecl_stringtype"/><xsl:text> </xsl:text><xsl:call-template name="output_ecl_name"/>
         <xsl:text disable-output-escaping="yes"> {XPATH('</xsl:text>
 		<xsl:choose>
 			<xsl:when test="name(.) ='EsdlArray'">
@@ -176,7 +177,7 @@ END;
 			<xsl:text disable-output-escaping="yes">
 </xsl:text>
 			<xsl:apply-templates select="*"/>
-            <xsl:if test="@element and not(*[@name='Content_'])">	STRING Content_ {XPATH('')};
+            <xsl:if test="@element and not(*[@name='Content_'])"><xsl:text>	</xsl:text><xsl:call-template name="output_ecl_stringtype"/><xsl:text> </xsl:text> Content_ {XPATH('')};
 </xsl:if>
             <xsl:text disable-output-escaping="yes">END;
 
@@ -239,6 +240,13 @@ END;
 
 </xsl:template>
 
+<xsl:template name="output_ecl_stringtype">
+  <xsl:choose>
+    <xsl:when test="$utf8strings='yes'">UTF8</xsl:when>
+    <xsl:otherwise>STRING</xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
 <xsl:template name="output_basic_type">
 	<xsl:param name="basic_type" select="@type"/>
 	<xsl:param name="size" select="@max_len"/>
@@ -249,12 +257,12 @@ END;
         <xsl:when test="$basic_type='short'"><xsl:text disable-output-escaping="yes">INTEGER2</xsl:text></xsl:when>
         <xsl:when test="$basic_type='int64'"><xsl:text disable-output-escaping="yes">INTEGER8</xsl:text></xsl:when>
         <xsl:when test="$basic_type='bool'"><xsl:text disable-output-escaping="yes">BOOLEAN</xsl:text></xsl:when>
-        <xsl:when test="$basic_type='string'"><xsl:text disable-output-escaping="yes">STRING</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
+        <xsl:when test="$basic_type='string'"><xsl:call-template name="output_ecl_stringtype"/><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
         <xsl:when test="$basic_type='double'"><xsl:text disable-output-escaping="yes">REAL8</xsl:text></xsl:when>
         <xsl:when test="$basic_type='float'"><xsl:text disable-output-escaping="yes">REAL4</xsl:text></xsl:when>
         <xsl:when test="$basic_type='base64Binary'"><xsl:text disable-output-escaping="yes">STRING</xsl:text></xsl:when>
 		<xsl:when test="$basic_type"><xsl:value-of select="$basic_type"/><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
-        <xsl:otherwise><xsl:text disable-output-escaping="yes">STRING</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:otherwise>
+        <xsl:otherwise><xsl:call-template name="output_ecl_stringtype"/><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
 
