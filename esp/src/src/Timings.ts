@@ -31,7 +31,7 @@ export class Timings {
                 ScopeTypes: []
             },
             NestedFilter: {
-                Depth: 0,
+                Depth: 999999,
                 ScopeTypes: []
             },
             PropertiesToReturn: {
