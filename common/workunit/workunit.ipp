@@ -603,7 +603,7 @@ public:
     virtual void unsubscribe();
     virtual bool aborting() const;
 protected:
-    virtual void notify(WUSubscribeOptions) { abortDirty = true; }
+    virtual void notify(WUSubscribeOptions, unsigned, const void *) override { abortDirty = true; }
     Owned<IWorkUnitWatcher> abortWatcher;
     mutable bool abortDirty;
     mutable bool abortState;
@@ -723,6 +723,7 @@ class WorkUnitWaiter : public CInterface, implements IAbortHandler, implements I
 {
     Semaphore changed;
     Owned<IWorkUnitWatcher> watcher;
+    bool aborted;
 public:
     IMPLEMENT_IINTERFACE;
     WorkUnitWaiter(const char *wuid, WUSubscribeOptions watchFor)
@@ -735,19 +736,10 @@ public:
     {
         unsubscribe();
     }
-    void notify(WUSubscribeOptions flags)
-    {
-        changed.signal();
-    }
+    bool isAborted() const { return aborted; }
     bool wait(unsigned timeout)
     {
         return changed.wait(timeout) && !aborted;
-    }
-    bool onAbort()
-    {
-        aborted = true;
-        changed.signal();
-        return false;
     }
     void unsubscribe()
     {
@@ -757,7 +749,18 @@ public:
             watcher.clear();
         }
     }
-    bool aborted;
+// IWorkUnitSubscriber
+    virtual void notify(WUSubscribeOptions flags, unsigned valueLen, const void *valueData) override
+    {
+        changed.signal();
+    }
+// IAbortHandler
+    virtual bool onAbort() override
+    {
+        aborted = true;
+        changed.signal();
+        return false;
+    }
 };
 
 #define PROGRESS_FORMAT_V 2

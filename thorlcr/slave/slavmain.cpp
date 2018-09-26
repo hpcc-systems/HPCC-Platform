@@ -1939,6 +1939,13 @@ public:
                         CJobSlave *job = jobs.find(jobKey.get());
                         if (job)
                         {
+                            bool dumpInfo;
+                            msg.read(dumpInfo);
+                            if (dumpInfo)
+                            {
+                                StringBuffer dumpInfoCmd;
+                                checkAndDumpAbortInfo(job->getOpt("dumpInfoCmd", dumpInfoCmd));
+                            }
                             graph_id gid;
                             msg.read(gid);
                             for (unsigned c=0; c<job->queryJobChannels(); c++)

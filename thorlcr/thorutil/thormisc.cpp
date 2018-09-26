@@ -1480,3 +1480,37 @@ bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &
     }
     return false;
 }
+
+void checkAndDumpAbortInfo(const char *cmd)
+{
+    try
+    {
+        StringBuffer dumpInfoCmd(cmd);
+        if (dumpInfoCmd.length())
+        {
+            /* add some params that might be useful to script
+             * 1) Thor instance name
+             * 2) base port
+             * 3) exe path
+             * 4) PID
+             */
+            const char *myInstanceName = globals->queryProp("@name");
+            unsigned myBasePort = getMachinePortBase();
+            StringBuffer exePath(queryCurrentProcessPath());
+            if (0 == exePath.length())
+                exePath.append("process-name-unknown");
+            unsigned pid = GetCurrentProcessId();
+            dumpInfoCmd.appendf(" %s %u %s %u", myInstanceName, myBasePort, exePath.str(), pid);
+        }
+        else
+            getDebuggerGetStacksCmd(dumpInfoCmd);
+        StringBuffer cmdOutput;
+        unsigned retCode = getCommandOutput(cmdOutput, dumpInfoCmd, "slave dump info", globals->queryProp("@allowedPipePrograms"));
+        PROGLOG("\n%s, return code = %u\n%s\n", dumpInfoCmd.str(), retCode, cmdOutput.str());
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, nullptr);
+        e->Release();
+    }
+}
