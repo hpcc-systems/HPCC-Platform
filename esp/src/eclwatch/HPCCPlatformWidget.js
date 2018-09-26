@@ -483,6 +483,7 @@ define([
                             cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
                             window.location.reload();
                             context.storage.setItem("Status", "logged_out");
+                            cookie("Status", "", { expires: -1 });
                         }
                     });
                 });
