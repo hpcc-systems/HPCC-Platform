@@ -15,14 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
-#include "ws_config2Service.hpp"
+#include "ws_configmgrService.hpp"
 
 
-class Cws_config2SoapBindingEx : public Cws_config2SoapBinding
+class Cws_configMgrSoapBindingEx : public Cws_configmgrSoapBinding
 {
 public:
-    Cws_config2SoapBindingEx(http_soap_log_level level=hsl_none) : Cws_config2SoapBinding(level)  { }
-    Cws_config2SoapBindingEx(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level=hsl_none) : Cws_config2SoapBinding(cfg, bindname, procname, level)   {  }
+    Cws_configMgrSoapBindingEx(http_soap_log_level level=hsl_none) : Cws_configmgrSoapBinding(level)  { }
+    Cws_configMgrSoapBindingEx(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level=hsl_none) : Cws_configmgrSoapBinding(cfg, bindname, procname, level)   {  }
     //virtual const char* getRootPage(IEspContext* ctx)  {  return "config2html";  }
 
 

@@ -1,8 +1,7 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems.
 #
-#    All rights reserved. This program is free software: you can redistribute it
-#    and/or modify
+#    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
 #    You may obtain a copy of the License at
 #
@@ -14,9 +13,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-configure_file("esp.xml.in" "esp.xml")
-install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/esp.xml
-    DESTINATION etc/${DIR_NAME}/config2mgr
-    COMPONENT Runtime
-    )
+
+HPCC_ADD_SUBDIRECTORY (configmgrlib)
+HPCC_ADD_SUBDIRECTORY (hpcc_support)
