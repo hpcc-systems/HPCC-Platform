@@ -112,6 +112,42 @@ export class WUScopeController {
         });
     }
 
+    _showSubgraphs = true;
+    showSubgraphs(): boolean;
+    showSubgraphs(_: boolean): this;
+    showSubgraphs(_?: boolean): boolean | this {
+        if (!arguments.length) return this._showSubgraphs;
+        this._showSubgraphs = _;
+        return this;
+    }
+
+    _showIcon = true;
+    showIcon(): boolean;
+    showIcon(_: boolean): this;
+    showIcon(_?: boolean): boolean | this {
+        if (!arguments.length) return this._showIcon;
+        this._showIcon = _;
+        return this;
+    }
+
+    _vertexLabelTpl = "%Label%";
+    vertexLabelTpl(): string;
+    vertexLabelTpl(_: string): this;
+    vertexLabelTpl(_?: string): string | this {
+        if (!arguments.length) return this._vertexLabelTpl;
+        this._vertexLabelTpl = _;
+        return this;
+    }
+
+    _edgeLabelTpl = "%Label%\n%NumRowsProcessed%";
+    edgeLabelTpl(): string;
+    edgeLabelTpl(_: string): this;
+    edgeLabelTpl(_?: string): string | this {
+        if (!arguments.length) return this._edgeLabelTpl;
+        this._edgeLabelTpl = _;
+        return this;
+    }
+
     disabled(): number[];
     disabled(_: number[]): this;
     disabled(_?: number[]): number[] | this {
@@ -212,8 +248,16 @@ export class WUScopeController {
         for (const key in sgColors) {
             const sgColor = sgColors[key];
             if (sgColor.total === sgColor.finished) {
-                // sgColor.sg.borderColor(...);
+                sgColor.sg.border_colorStroke(FINISHED_STROKE);
+            } else if (sgColor.finished > 0) {
+                sgColor.sg.border_colorStroke(ACTIVE_STROKE);
+            } else {
+                sgColor.sg.border_colorStroke(UNKNOWN_STROKE);
             }
+        }
+
+        if (!this.showSubgraphs()) {
+            retVal.subgraphs = [];
         }
 
         if (!this.collapsedOnce && retVal.vertices.length >= 100) {
@@ -227,6 +271,7 @@ export class WUScopeController {
     }
 
     format(labelTpl, obj) {
+        labelTpl = labelTpl.split("\\n").join("\n");
         let retVal = "";
         let lpos = labelTpl.indexOf("%");
         let rpos = -1;
@@ -242,7 +287,7 @@ export class WUScopeController {
             lpos = labelTpl.indexOf("%", rpos + 1);
         }
         retVal += labelTpl.substring(rpos + 1, labelTpl.length);
-        return retVal.split("\n").filter(d => d.trim().length > 0).join("\n");
+        return retVal.split("\n").filter(d => d.trim().length > 0).map(d => decodeHtml(d)).join("\n");
     }
 
     createSubgraph(subgraph: ScopeSubgraph): Subgraph {
@@ -262,8 +307,8 @@ export class WUScopeController {
 
     createVertex(vertex: ScopeVertex): VertexType {
         let v = this.verticesMap[vertex._.Id];
+        const attrs = vertex._.rawAttrs();
         if (!v) {
-            const attrs = vertex._.rawAttrs();
             if (vertex._.ScopeType === "dummy") {
                 const parent = this.subgraphsMap[vertex.parent._.Id];
                 v = new Icon()
@@ -285,7 +330,6 @@ export class WUScopeController {
                     .textbox_shape_colorStroke(UNKNOWN_STROKE)
                     .textbox_shape_colorFill(UNKNOWN_FILL)
                     .textbox_text_colorFill(Palette.textColor(UNKNOWN_FILL))
-                    .text(decodeHtml(attrs["Label"]))
                     ;
                 const annotations = [];
                 if (vertex._.hasAttr("Definition")) {
@@ -310,6 +354,13 @@ export class WUScopeController {
             }
             this.verticesMap[vertex._.Id] = v;
             this.rVerticesMap[v.id()] = vertex;
+        }
+        if (v instanceof Vertex) {
+            const label = this.format(this.vertexLabelTpl(), attrs);
+            v
+                .icon_diameter(this.showIcon() ? 24 : 0)
+                .text(label)
+                ;
         }
         return v;
     }
@@ -387,8 +438,9 @@ export class WUScopeController {
         const e = this.createEdge(edge);
         if (e) {
             const attrs = edge._.rawAttrs();
-            const label = this.format("%Label%\n%NumRowsProcessed%", attrs);
-            e.text(decodeHtml(label))
+            const formattedAttrs = edge._.formattedAttrs();
+            const label = this.format(this.edgeLabelTpl(), formattedAttrs);
+            e.text(label)
             const numSlaves = parseInt(attrs["NumSlaves"]);
             const numStarts = parseInt(attrs["NumStarts"]);
             const numStops = parseInt(attrs["NumStops"]);

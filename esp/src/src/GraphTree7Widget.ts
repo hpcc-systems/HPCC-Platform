@@ -18,7 +18,7 @@ import { Graph as GraphWidget, Subgraph, Vertex } from "@hpcc-js/graph";
 import * as _Widget from "hpcc/_Widget";
 import { Grid } from "./ESPUtil";
 import * as WsWorkunits from "./WsWorkunits";
-import * as Utility from "./Utility";
+import { debounce, getImageURL, Persist } from "./Utility";
 
 // @ts-ignore
 import * as template from "dojo/text!hpcc/templates/GraphTree7Widget.html";
@@ -30,6 +30,7 @@ import "dijit/layout/StackContainer";
 import "dijit/layout/StackController";
 import "dijit/layout/ContentPane";
 import "dijit/Dialog";
+import "dijit/Fieldset";
 import "dijit/form/TextBox";
 import "dijit/form/SimpleTextarea";
 import "dijit/form/NumberSpinner";
@@ -72,6 +73,9 @@ export class GraphTree7Widget {
     _hostPage;
     wuid = "";
     graphName = "";
+    optionsDropDown = null;
+    optionsForm = null;
+    _optionsDefault = null;
     subgraphsGrid = null;
     verticesGrid = null;
     edgesGrid = null;
@@ -88,6 +92,7 @@ export class GraphTree7Widget {
     protected subgraphsStore = new GraphStore("Id");
     protected verticesStore = new GraphStore("Id");
     protected edgesStore = new GraphStore("Id");
+    private persist = new Persist("GraphTree7Widget");
 
     constructor() {
         this._gc.minClick = (sg: Subgraph) => {
@@ -99,6 +104,20 @@ export class GraphTree7Widget {
                 this.syncSelectionFrom(this._graph);
             });
         };
+    }
+
+    //  Options ---
+
+    _onOptionsApply() {
+        var optionsValues = this.optionsForm.getValues();
+        this.persist.setObj("options", optionsValues);
+        this.optionsDropDown.closeDropDown();
+        this.loadGraph();
+    }
+
+    _onOptionsReset() {
+        this.optionsForm.setValues(this._optionsDefault);
+        this.loadGraph();
     }
 
     //  Data ---
@@ -147,6 +166,11 @@ export class GraphTree7Widget {
         topic.subscribe(this.id + "OverviewTabContainer-selectChild", function (topic) {
             context.refreshActionState();
         });
+        this.optionsDropDown = registry.byId(this.id + "OptionsDropDown");
+        this.optionsForm = registry.byId(this.id + "OptionsForm");
+        this._optionsDefault = this.optionsForm.getValues();
+        const options = this.persist.getObj("options", this._optionsDefault);
+        this.optionsForm.setValues(options);
     }
 
     startup(args) {
@@ -378,7 +402,14 @@ export class GraphTree7Widget {
     }
 
     loadGraph(callback?) {
-        this._gc.disabled(this._legend.disabled());
+        const options = this.optionsForm.getValues();
+        this._gc
+            .showSubgraphs(options.subgraph.length)
+            .showIcon(options.vicon.length)
+            .vertexLabelTpl(options.vlabel)
+            .edgeLabelTpl(options.elabel)
+            .disabled(this._legend.disabled())
+            ;
         this._graph
             .data(this._gc.graphData(), true)
             .render(callback)
@@ -416,7 +447,7 @@ export class GraphTree7Widget {
         var subgraphs = this._gc.subgraphStoreData();
         this.subgraphsStore.setData(subgraphs);
         const context = this;
-        const img = Utility.getImageURL("folder.png");
+        const img = getImageURL("folder.png");
         var columns = [
             {
                 label: this.i18n.ID, field: "Id", width: 54,
@@ -446,7 +477,7 @@ export class GraphTree7Widget {
             {
                 label: this.i18n.ID, field: "Id", width: 54,
                 formatter: function (_id, row) {
-                    var img = Utility.getImageURL("file.png");
+                    var img = getImageURL("file.png");
                     return "<img src='" + img + "'/>&nbsp;" + _id;
                 }
             },
@@ -539,7 +570,7 @@ export class GraphTree7Widget {
     }
 }
 
-GraphTree7Widget.prototype._syncSelectionFrom = Utility.debounce(function (this: GraphTree7Widget, sourceControlOrGlobalIDs) {
+GraphTree7Widget.prototype._syncSelectionFrom = debounce(function (this: GraphTree7Widget, sourceControlOrGlobalIDs) {
     this.inSyncSelectionFrom = true;
     var sourceControl = sourceControlOrGlobalIDs instanceof Array ? null : sourceControlOrGlobalIDs;
     var selectedGlobalIDs = sourceControlOrGlobalIDs instanceof Array ? sourceControlOrGlobalIDs : [];

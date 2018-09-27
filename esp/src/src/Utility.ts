@@ -736,3 +736,46 @@ export function DynamicDialogForm(object) {
     }
     return table;
 }
+
+export class Persist {
+
+    private id: string;
+
+    constructor(id) {
+        this.id = "hpcc__Persist" + id + "_";
+    }
+    remove(key) {
+        if (typeof (Storage) !== "undefined") {
+            localStorage.removeItem(this.id + key);
+        }
+    }
+    set(key, val) {
+        if (typeof (Storage) !== "undefined") {
+            localStorage.setItem(this.id + key, val);
+        }
+    }
+    setObj(key, val) {
+        this.set(key, JSON.stringify(val));
+    }
+    get(key, defValue?) {
+        if (typeof (Storage) !== "undefined") {
+            var retVal = localStorage.getItem(this.id + key);
+            return retVal === null ? defValue : retVal;
+        }
+        return "";
+    }
+    getObj(key, defVal?) {
+        try {
+            return JSON.parse(this.get(key, defVal));
+        } catch (e) {
+            return {};
+        }
+    }
+    exists(key) {
+        if (typeof (Storage) !== "undefined") {
+            var retVal = localStorage.getItem(this.id + key);
+            return retVal === null;
+        }
+        return false;
+    }
+}

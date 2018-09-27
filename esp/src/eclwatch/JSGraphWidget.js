@@ -10,54 +10,14 @@ define([
     "@hpcc-js/graph",
     "@hpcc-js/layout",
 
-    "src/WsWorkunits",
     "hpcc/GraphWidget",
     "src/ESPGraph",
+    "src/Utility",
 
     "css!font-awesome/css/font-awesome.css"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Evented,
     hpccCommon, hpccGraph, hpccLayout,
-    WsWorkunits, GraphWidget, ESPGraph) {
-
-        var Persist = declare([], {
-            constructor: function (id) {
-                this.id = "JSGraphWidget" + id + "_";
-            },
-            remove: function (key) {
-                if (typeof (Storage) !== "undefined") {
-                    localStorage.removeItem(this.id + key);
-                }
-            },
-            set: function (key, val) {
-                if (typeof (Storage) !== "undefined") {
-                    localStorage.setItem(this.id + key, val);
-                }
-            },
-            setObj: function (key, val) {
-                this.set(key, JSON.stringify(val));
-            },
-            get: function (key, defValue) {
-                if (typeof (Storage) !== "undefined") {
-                    var retVal = localStorage.getItem(this.id + key);
-                    return retVal === null ? defValue : retVal;
-                }
-                return "";
-            },
-            getObj: function (key, defVal) {
-                try {
-                    return JSON.parse(this.get(key, defVal));
-                } catch (e) {
-                    return {};
-                }
-            },
-            exists: function (key) {
-                if (typeof (Storage) !== "undefined") {
-                    var retVal = localStorage.getItem(this.id + key);
-                    return retVal === null;
-                }
-                return false;
-            }
-        });
+    GraphWidget, ESPGraph, Utility) {
 
         var faCharFactory = function (kind) {
             switch (kind) {
@@ -546,7 +506,7 @@ define([
 
             createPlugin: function () {
                 if (!this.hasPlugin()) {
-                    this.persist = new Persist(this._persistID || "");
+                    this.persist = new Utility.Persist(this._persistID || "");
                     var context = this;
                     context._plugin = new JSPlugin(context.graphContentPane.domNode);
                     context._plugin._optionsDefault = context.optionsForm.getValues();
