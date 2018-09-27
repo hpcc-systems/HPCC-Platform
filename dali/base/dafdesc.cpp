@@ -432,14 +432,12 @@ public:
             GroupType groupType;
             group.setown(resolver->lookup(name.get(), defaultDir, groupType));
             // MORE - common some of this with checkClusterName?
-            if (mspec.defaultBaseDir.isEmpty())
-            {
+            bool baseDirChanged = mspec.defaultBaseDir.isEmpty() || !strsame(mspec.defaultBaseDir, defaultDir);
+            if (baseDirChanged)
                 mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
-            }
-            if (mspec.defaultCopies>1 && mspec.defaultReplicateDir.isEmpty())
-            {
+
+            if (mspec.defaultCopies>1 && (mspec.defaultReplicateDir.isEmpty() || baseDirChanged))
                 mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
-            }
         }
         else
             checkClusterName(resolver);
