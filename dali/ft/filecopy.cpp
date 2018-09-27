@@ -543,6 +543,7 @@ int FileSizeThread::run()
                     thisSize = io->size();
                 }
                 cur->size = thisSize;
+                thisFile->getTime(nullptr, &cur->modifiedTime, nullptr);
                 break;
             }
             if (copy==1)
@@ -1793,12 +1794,17 @@ void FileSprayer::gatherFileSizes(bool errorIfMissing)
 
 void FileSprayer::afterGatherFileSizes()
 {
-
     if (!copyCompressed)
     {
+        StringBuffer dateStr, tailStr;
         ForEachItemIn(idx2, sources)
         {
             FilePartInfo & cur = sources.item(idx2);
+
+            LOG(MCdebugProgress, job, "%9u:%s (size: %llu bytes, last modified: %s)",
+                                       idx2, cur.filename.getTail(tailStr.clear()).str(), cur.size,
+                                       cur.modifiedTime.getString(dateStr.clear(), true).str()
+                                       );
             cur.offset = totalSize;
             totalSize += cur.size;
             if (cur.size % srcFormat.getUnitSize())
@@ -1810,6 +1816,8 @@ void FileSprayer::afterGatherFileSizes()
                     throwError2(DFTERR_InputIsInvalidMultiple, cur.filename.getRemotePath(s).str(), srcFormat.getUnitSize());
             }
         }
+        LOG(MCdebugProgress, job, "----------------------------------------------");
+        LOG(MCdebugProgress, job, "All together: %llu bytes in %u file(s)", totalSize, sources.ordinality());
     }
 }
 
@@ -2529,9 +2537,6 @@ void FileSprayer::setSource(IDistributedFile * source)
 void FileSprayer::setSource(IFileDescriptor * source)
 {
     setSource(source, 0, 1);
-
-    //Now get the size of the files directly (to check they exist).  If they don't exist then switch to the backup instead.
-    gatherFileSizes(false);
 }
 
 
@@ -2563,7 +2568,8 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
                 FilePartInfo & next = * new FilePartInfo(rfn);
                 Owned<IPartDescriptor> part = source->getPart(idx);
                 next.extractExtra(*part);
-                next.size = multi.getSize(i);
+                // don't set the following here - force to check disk
+                //next.size = multi.getSize(i);
                 sources.append(next);
             }
 
@@ -2585,6 +2591,9 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
     if (sources.ordinality() == 0)
         LOG(MCuserWarning, unknownJob, "The wildcarded source did not match any filenames");
 //      throwError(DFTERR_NoFilesMatchWildcard);
+
+    //Now get the size of the files directly (to check they exist).  If they don't exist then switch to the backup instead.
+    gatherFileSizes(false);
 }
 
 
