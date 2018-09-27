@@ -331,7 +331,8 @@ public:
             if (!helper->diskAccessRequired() || dataFileDesc)
             {
                 bool localKey = indexFile->queryAttributes().getPropBool("@local");
-                local = localKey || container.queryLocalData();
+                bool partitionKey = indexFile->queryAttributes().hasProp("@partitionFieldMask");
+                local = (localKey && !partitionKey) || container.queryLocalData();
                 if (local)
                 {
                     remoteKeyedLookup = false;
@@ -402,7 +403,7 @@ public:
                     initMb.append(remoteKeyedLookup);
                     initMb.append(remoteKeyedFetch);
                     initMb.append(superIndexWidth); // 0 if not superIndex
-                    if (localKey)
+                    if (localKey && !partitionKey)
                         keyHasTlk = false; // JCSMORE, not used at least for now
                     initMb.append(keyHasTlk);
                     if (keyHasTlk)

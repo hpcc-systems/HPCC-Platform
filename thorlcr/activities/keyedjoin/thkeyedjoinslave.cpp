@@ -1551,7 +1551,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     std::vector<mptag_t> tags;
     std::vector<RelaxedAtomic<unsigned __int64>> statsArr; // (seeks, scans, accepted, prefiltered, postfiltered, diskSeeks, diskAccepted, diskRejected)
     unsigned numStats = 0;
-    bool local = false;
 
     enum HandlerType { ht_remotekeylookup, ht_localkeylookup, ht_localfetch, ht_remotefetch };
     CHandlerContainer keyLookupHandlers;
@@ -1571,6 +1570,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     unsigned totalDataParts = 0;
     unsigned superWidth = 0;
     unsigned totalIndexParts = 0;
+    bool partitionKey = false;
     std::vector<FPosTableEntry> globalFPosToSlaveMap; // maps fpos->part
     std::vector<unsigned> indexPartToSlaveMap;
     std::vector<unsigned> dataPartToSlaveMap;
@@ -1801,21 +1801,49 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 helper->createSegmentMonitors(&keyManager, keyedFieldsRow);
                 keyManager.finishSegmentMonitors();
                 keyManager.reset();
-                while (keyManager.lookup(false))
+                if (partitionKey)
                 {
-                    offset_t slave = extractFpos(&keyManager);
-                    if (slave) // don't bail out if part0 match, test again for 'real' tlk match.
+                    unsigned partNo = keyManager.getPartition();  // Returns 0 if no partition info, or filter cannot be partitioned
+                    if (partNo)
                     {
-                        unsigned partNo = (unsigned)slave;
                         partNo = superWidth ? superWidth*whichKm+(partNo-1) : partNo-1;
-                        if (container.queryLocalData())
+                        if (!container.queryLocalData() || keyLookupHandlers.queryHandler(partNo))
                         {
-                            if (nullptr == keyLookupHandlers.queryHandler(partNo))
-                                continue;
+                            if (!indexLookupRow)
+                                indexLookupRow.setown(preparePendingLookupRow(keyFieldsRowBuilder.getUnfinalizedClear(), keyFieldsRowBuilder.getMaxLength(), lhsRow, keyedFieldsRowSize));
+                            queueLookupForPart(partNo, indexLookupRow);
                         }
+                    }
+                    else
+                    {
                         if (!indexLookupRow)
                             indexLookupRow.setown(preparePendingLookupRow(keyFieldsRowBuilder.getUnfinalizedClear(), keyFieldsRowBuilder.getMaxLength(), lhsRow, keyedFieldsRowSize));
-                        queueLookupForPart(partNo, indexLookupRow);
+                        for (unsigned p=0; p<totalIndexParts; p++)
+                        {
+                            CLookupHandler *lookupHandler = keyLookupHandlers.queryHandler(p);
+                            if (lookupHandler)
+                                queueLookupForPart(p, indexLookupRow);
+                        }
+                    }
+                }
+                else
+                {
+                    while (keyManager.lookup(false))
+                    {
+                        offset_t slave = extractFpos(&keyManager);
+                        if (slave) // don't bail out if part0 match, test again for 'real' tlk match.
+                        {
+                            unsigned partNo = (unsigned)slave;
+                            partNo = superWidth ? superWidth*whichKm+(partNo-1) : partNo-1;
+                            if (container.queryLocalData())
+                            {
+                                if (nullptr == keyLookupHandlers.queryHandler(partNo))
+                                    continue;
+                            }
+                            if (!indexLookupRow)
+                                indexLookupRow.setown(preparePendingLookupRow(keyFieldsRowBuilder.getUnfinalizedClear(), keyFieldsRowBuilder.getMaxLength(), lhsRow, keyedFieldsRowSize));
+                            queueLookupForPart(partNo, indexLookupRow);
+                        }
                     }
                 }
                 keyManager.releaseSegmentMonitors();
@@ -2341,8 +2369,8 @@ public:
             {
                 deserializePartFileDescriptors(data, allIndexParts);
                 IFileDescriptor &indexFileDesc = allIndexParts.item(0).queryOwner();
-                localKey = indexFileDesc.queryProperties().getPropBool("@local", false);
-                local = localKey || container.queryLocalData();
+                partitionKey = indexFileDesc.queryProperties().hasProp("@partitionFieldMask");
+                localKey = !partitionKey && indexFileDesc.queryProperties().getPropBool("@local", false);
 
                 unsigned numMappedParts;
                 data.read(numMappedParts);
