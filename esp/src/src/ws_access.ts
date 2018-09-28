@@ -65,6 +65,7 @@ var ResourcesStore = declare([Memory], {
             action: "update"
         };
         lang.mixin(request, row);
+        delete request['__hpcc_parent'];
         PermissionAction({
             request: request
         });
