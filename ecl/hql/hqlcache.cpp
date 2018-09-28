@@ -133,7 +133,6 @@ protected:
         return EclCachedDefinition::calcUpToDate(optionHash);
     }
 
-
     const char * queryName() const { return cacheTree ? cacheTree->queryProp("@name") : nullptr; }
 
 private:

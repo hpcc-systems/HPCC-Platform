@@ -921,7 +921,7 @@ public:
     void beginMetaScope() { metaStack.append(*new FileParseMeta); }
     void beginMetaScope(FileParseMeta & active) { metaStack.append(OLINK(active)); }
     void endMetaScope() { metaStack.pop(); }
-    bool createCache(const char *simplifiedEcl, bool isMacro);
+    bool createCache(const char * simplifiedEcl, bool isMacro);
     inline FileParseMeta & curMeta() { return metaStack.tos(); }
     inline bool hasCacheLocation( ) const { return !metaOptions.cacheLocation.isEmpty();}
 public:
@@ -954,6 +954,7 @@ public:
     unsigned numAttribsSimplified = 0;
     unsigned numAttribsProcessed = 0;
     unsigned numAttribsFromCache = 0;
+    unsigned numSimplifiedTooComplex = 0;
 
 private:
     void createDependencyEntry(IHqlScope * scope, IIdAtom * name);
@@ -1032,6 +1033,7 @@ public:
     inline void incrementAttribsSimplified() { ++parseCtx.numAttribsSimplified; }
     inline void incrementAttribsProcessed() { ++parseCtx.numAttribsProcessed; }
     inline void incrementAttribsFromCache() { ++parseCtx.numAttribsFromCache; }
+    inline void incrementSimplifiedTooComplex() { ++parseCtx.numSimplifiedTooComplex; }
     inline bool neverSimplify(const char *fullname) { return parseCtx.neverSimplify(fullname); }
 protected:
 
