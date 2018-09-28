@@ -34,6 +34,7 @@ protected:
     Owned<CSlavePartMapping> mapping;
     bool nofilter = false;
     bool localKey = false;
+    bool partitionKey = false;
     ProgressInfoArray progressInfoArr;
     UnsignedArray progressKinds;
     Owned<ProgressInfo> inputProgress;
@@ -164,10 +165,18 @@ protected:
                 indexBaseHelper->createSegmentMonitors(tlk);
                 tlk->finishSegmentMonitors();
                 tlk->reset();
-                unsigned slavePart = tlk->getPartition();  // Returns 0 if no partition info, or filter cannot be partitioned
-                if (slavePart)
+                if (partitionKey)
                 {
-                    performPartLookup.replace(true, slavePart-1);
+                    unsigned slavePart = tlk->getPartition();  // Returns 0 if no partition info, or filter cannot be partitioned
+                    if (slavePart)
+                        performPartLookup.replace(true, slavePart-1);
+                    else
+                    {
+                        // if not partitionable filter, all parts need to be used
+                        unsigned nparts = f->numParts();
+                        for (unsigned p=0; p<f->numParts(); p++)
+                            performPartLookup.replace(true, p);
+                    }
                 }
                 else
                 {
@@ -215,7 +224,8 @@ public:
             if (!isFileKey(index))
                 throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", helperFileName.get());
 
-            localKey = index->queryAttributes().getPropBool("@local") && !index->queryAttributes().hasProp("@partitionFieldMask");
+            partitionKey = index->queryAttributes().hasProp("@partitionFieldMask");
+            localKey = index->queryAttributes().getPropBool("@local") && !partitionKey;
 
             if (container.queryLocalData() && !localKey)
                 throw MakeActivityException(this, 0, "Index Read cannot be LOCAL unless supplied index is local");

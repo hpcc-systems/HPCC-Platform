@@ -32,6 +32,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 #option ('layoutTranslation', useTranslation);
 #onwarning (4523, ignore);
 #onwarning (5402, ignore);
+#onwarning (4522, ignore);
 
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
@@ -44,3 +45,9 @@ OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 1)));
 OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 3)));
 OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 7)));
 OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 22)));
+OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 1) OR KEYED(DG_parentId = 22))); // testing key filter that cannot be partitioned
+
+// test partitoned key with keyed join
+inds := DATASET(COUNT(Files.DG_IntIndex), TRANSFORM({unsigned id}, SELF.id := COUNTER-1));
+COUNT(JOIN(inds, Files.DG_IntIndex, LEFT.id=RIGHT.DG_parentId));
+COUNT(JOIN(inds, Files.DG_IntIndex, RIGHT.DG_parentId IN [1,22,LEFT.id])); // tests filter that cannot be partitioned
