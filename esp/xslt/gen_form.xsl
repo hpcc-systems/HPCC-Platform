@@ -271,12 +271,12 @@
                     <td>
                      <input type='button' value='Options &gt;&gt;' onclick='show_hide(document.getElementById("option_span"));'/>
                      <span id='option_span' style='display:none'>
-                        <input type='checkbox' id='esp_dest' name='esp_dest' value='0' onclick='onClickDest(this.checked, document.getElementById("dest_url"));'>Destination</input>
+                        <input type='checkbox' id='esp_dest' name='esp_dest' value='0' onclick='onClickDest(this.checked, document.getElementById("dest_url"));'/><label for='esp_dest'>Destination</label>
                         <input id='dest_url' name='dest_url' style='display:none' type='text' size='80'></input><br/> 
-                        <input type='checkbox' id='esp_validate' name='esp_validate' onclick='onClickValidate(this.checked)'>Validate response against Schema</input><br/> 
+                        <input type='checkbox' id='esp_validate' name='esp_validate' onclick='onClickValidate(this.checked)'/><label for='esp_validate'>Validate response against Schema</label><br/> 
                         <!-- NOT IMPLEMETED YET!
                         <input type='checkbox' id='esp_soap' name='esp_soap' onclick='onClickSoap(this.checked)'>Send as Soap</input><br/> -->
-                        <input type='checkbox' id='esp_sort_result' name='esp_sort_result' onclick='onClickSort(this.checked)'>Sort Result XML alphabetically</input><br/>
+                        <input type='checkbox' id='esp_sort_result' name='esp_sort_result' onclick='onClickSort(this.checked)'/><label for='esp_sort_result'>Sort Result XML alphabetically</label><br/>
                       </span>
                     </td>
                   </tr>

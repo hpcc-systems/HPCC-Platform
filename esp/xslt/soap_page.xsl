@@ -771,7 +771,7 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
                                    <input type="button" value="Remove Empty" onclick="onClearEmptyFields(true, false)"/>
                                    <input type="button" value="Remove Zeros" onclick="onClearEmptyFields(false, true)"/>
                                    <xsl:if test="$inhouseUser">&nbsp;<input id="import" type="button" value="Import..." onclick="onImportConciseRequest()"/></xsl:if>
-                                   <input type="checkbox" id="prettify_req" checked="true" onclick="onPrettifyXML('req_body','prettify_req')">Prettify XML</input>  
+                                   <input type="checkbox" id="prettify_req" checked="true" onclick="onPrettifyXML('req_body','prettify_req')"/><label for='prettify_req'>Prettify XML</label>  
                                  </td></tr>
                            </table>   
                         </td>
@@ -804,7 +804,7 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
                        <table width="100%">
                           <tr>
                         <!--td> <b>Response Body:</b>  </td-->
-                        <td align="right"><input type="checkbox" id="prettify_resp" checked="true" onclick="onPrettifyXML('resp_body','prettify_resp')">Prettify XML</input>  </td>
+                        <td align="right"><input type="checkbox" id="prettify_resp" checked="true" onclick="onPrettifyXML('resp_body','prettify_resp')"/><label for='prettify_resp'>Prettify XML</label>  </td>
                         </tr>
                        </table>
                        </td>
@@ -819,7 +819,7 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
                 </tr>
                     <tr>
                         <td align="center" colspan="2"> 
-                            <input type="button" id="sendButton" value="Send Request" onclick="onSendRequest()"/>  <input type="checkbox" checked="true" id="check_req"> Check well-formness before send</input>
+                            <input type="button" id="sendButton" value="Send Request" onclick="onSendRequest()"/>  <input type="checkbox" checked="true" id="check_req"/><label for='check_req'>Check well-formness before send</label>
                         </td>
                     </tr>
                 

@@ -493,7 +493,7 @@
                <tr>
                   <td/>
                   <td>
-                      <input type="checkbox" id="NoSourceCsvSeparator" name="NoSourceCsvSeparator" value="1" onclick="return setSourceCsvSeparator(this)">No Separator</input>
+                      <label><input type="checkbox" id="NoSourceCsvSeparator" name="NoSourceCsvSeparator" value="1" onclick="return setSourceCsvSeparator(this)"/>No Separator</label>
                   </td>
                </tr>
                <tr>

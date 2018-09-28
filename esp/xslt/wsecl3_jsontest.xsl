@@ -112,7 +112,7 @@
     <tr>
       <td align="center" colspan="2">
         <input type="button" id="sendButton" value="Send Request"/>
-        <input type="checkbox" checked="true" id="check_req"> Check well-formness before send</input>
+        <input type="checkbox" checked="true" id="check_req"/><label for='check_req'>Check well-formness before send</label>
       </td>
     </tr>
     </table>

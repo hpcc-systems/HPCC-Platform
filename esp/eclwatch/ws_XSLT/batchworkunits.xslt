@@ -378,7 +378,7 @@
                             <td><b>Batch Workunits</b>
                             </td>
                             <td>
-                                <input type="checkbox"  id="AutoRefresh" value="Auto Refresh" onclick="setAutoRefresh(this);"/> Auto Refresh
+                                <label><input type="checkbox"  id="AutoRefresh" value="Auto Refresh" onclick="setAutoRefresh(this);"/>Auto Refresh</label>
                             </td>
                             <td>
                                 <select size="1" id="AutoRefreshTimer" onchange="setReloadTimeout(options[selectedIndex].value);">
@@ -853,16 +853,14 @@
       <td>
          <xsl:choose>
             <xsl:when test="ColumnSize=1">
-               <input type="checkbox" id="ShowColumns_i{$index}" name="ShowColumns_i{$index}" 
-                   value="" onclick="menuHandler('_col_{$index}', true);" checked = "0">
-                 <xsl:value-of select="ColumnLabel"/>
-                 </input>
+               <label><input type="checkbox" id="ShowColumns_i{$index}" name="ShowColumns_i{$index}" 
+                   value="" onclick="menuHandler('_col_{$index}', true);" checked = "0"/>
+               <xsl:value-of select="ColumnLabel"/></label>
             </xsl:when>
             <xsl:otherwise>
-               <input type="checkbox" id="ShowColumns_i{$index}" name="ShowColumns_i{$index}" 
-                   value="" onclick="menuHandler('_col_{$index}', true);">
-                 <xsl:value-of select="ColumnLabel"/>
-                 </input>
+               <label><input type="checkbox" id="ShowColumns_i{$index}" name="ShowColumns_i{$index}" 
+                   value="" onclick="menuHandler('_col_{$index}', true);"/>
+               <xsl:value-of select="ColumnLabel"/></label>
             </xsl:otherwise>
          </xsl:choose>
       </td>

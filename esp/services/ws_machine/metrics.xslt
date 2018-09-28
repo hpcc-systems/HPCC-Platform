@@ -481,7 +481,7 @@
             <table>
               <tr>
                 <td>
-                  <input type="checkbox" id="autoUpdateChk" onclick="AutoUpdateMetrics(this.checked)">
+                  <label><input type="checkbox" id="autoUpdateChk" onclick="AutoUpdateMetrics(this.checked)"/>
                     <!--xsl:choose>
                       <xsl:when test="$autoUpdate = true">
                         <xsl:attribute name="checked">true</xsl:attribute>a
@@ -491,7 +491,7 @@
                       </xsl:otherwise>
                     </xsl:choose-->
                     <xsl:value-of select="$hpccStrings/st[@id='AutoUpdateMetricsWhenViewColumnsChanging']"/>
-                  </input>
+                  </label>
                 </td>
                 <td>
                   <input type="button" id="updateMetriceBtn" value="{$hpccStrings/st[@id='UpdateMetricsNow']}" onclick="UpdateMetricesNow(true)">
@@ -520,11 +520,13 @@
                <table>
                   <tr>
                      <th id="selectAll1" colspan="5">
-                       <input type="checkbox" id="SelectAllCheckBox" title="{$hpccStrings/st[@id='SelectDeselectAll']}" onclick="selectAll0(this.checked)">
+                       <label><input type="checkbox" id="SelectAllCheckBox" title="{$hpccStrings/st[@id='SelectDeselectAll']}" onclick="selectAll0(this.checked)">
                          <xsl:if test="$selectAllChecked &gt; 0">
                            <xsl:attribute name="checked">true</xsl:attribute>
                          </xsl:if>
-                       <xsl:value-of select="$hpccStrings/st[@id='SelectAllOrNone']"/></input>
+                        </input>
+                       <xsl:value-of select="$hpccStrings/st[@id='SelectAllOrNone']"/>
+                      </label>
                      </th>
                   </tr>
                </table>

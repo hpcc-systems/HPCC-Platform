@@ -142,7 +142,7 @@
                         <div id="ToolTip"/>
                         </td-->
                         <td>
-                            <input type="checkbox"  id="AutoRefreshBtn" value="Auto Refresh" onclick="setAutoRefresh(this);"/> Auto Refresh
+                            <label><input type="checkbox"  id="AutoRefreshBtn" value="Auto Refresh" onclick="setAutoRefresh(this);"/>Auto Refresh</label>
                         </td>
                         <td>
                             <select size="1" id="AutoRefreshTimer" onchange="setReloadTimeout(options[selectedIndex].value);">
