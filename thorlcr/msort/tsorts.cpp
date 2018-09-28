@@ -845,11 +845,11 @@ public:
         MemoryBuffer mb;
         CMemoryRowSerializer msz(mb);
 
-        const void *kp = rowArray.get(0);
+        const void *kp = rowArray.query(0);
         TraceRow("Min =", kp);
         rowToKeySerializer->serialize(msz, (const byte *)kp);
 
-        kp = rowArray.get(rowArray.ordinality()-1);
+        kp = rowArray.query(rowArray.ordinality()-1);
         TraceRow("Max =", kp);
         rowToKeySerializer->serialize(msz, (const byte *)kp);
 
