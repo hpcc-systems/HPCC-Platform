@@ -740,7 +740,7 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    virtual void beforeDispose();
+    virtual bool beforeDispose() override;
     
     ElevatorScanner(int file, size32_t recordSize);
     ~ElevatorScanner();
@@ -806,10 +806,11 @@ ElevatorScanner::~ElevatorScanner()
     PrintLog("Elevator scanner statistics: %" I64F "d reads (%" I64F "d bytes), %d scans", reads, reads*recordSize, scans);
 }
 
-void ElevatorScanner::beforeDispose()
+bool ElevatorScanner::beforeDispose()
 {
     stop();
     join();
+    return true;
 }
 
 void ElevatorScanner::fetch(offset_t fpos, void *buffer, IReceiver *receiver, IRecordFetchChannel *channel)
@@ -1143,7 +1144,7 @@ public:
         delete [] buffer;
     }
 
-    virtual void beforeDispose()
+    virtual bool beforeDispose() override
     {
         try
         {
@@ -1161,6 +1162,7 @@ public:
             DBGLOG("ERROR - Unknown exception in CBufferedIIOStream::flush ignored");
             assert(!"ERROR - Unknown exception in CBufferedIIOStream::flush ignored");
         }
+        return true;
     }
 
     virtual bool fillBuffer()

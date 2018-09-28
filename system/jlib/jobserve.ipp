@@ -68,10 +68,10 @@ protected:
 
 
 #define IMPLEMENT_IOBSERVABLE(PARENT, CHILD)                            \
-    virtual void beforeDispose()                                          \
-    {                                                                     \
-        CHILD.sendBroadcast(NotifyOnDispose, *this);                        \
-        PARENT::beforeDispose();                                            \
+    virtual bool beforeDispose() override                               \
+    {                                                                   \
+        CHILD.sendBroadcast(NotifyOnDispose, *this);                    \
+        return PARENT::beforeDispose();                                 \
     }                                                                   \
     virtual void addObserver(IObserver & _observer) { CHILD.addObserver(_observer); }               \
     virtual void removeObserver(IObserver & _observer) { CHILD.removeObserver(_observer); }

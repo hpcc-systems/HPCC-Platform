@@ -83,7 +83,7 @@ public:
     void addObserver(IObserver & observer);
     void removeObserver(IObserver & observer);
 
-    virtual void beforeDispose();
+    virtual bool beforeDispose() override;
 
 private:
     bool observed;

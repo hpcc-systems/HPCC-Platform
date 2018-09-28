@@ -630,7 +630,7 @@ public:
         if (globals->getPropBool("@replicateAsync", true))
             cancelReplicates(&activity, partDesc);
     }
-    virtual void beforeDispose() override
+    virtual bool beforeDispose() override
     {
         // Can't throw in destructor...
         // Note that if we do throw the CWriteHandler object is liable to be leaked...
@@ -638,7 +638,7 @@ public:
         if (aborted && *aborted)
         {
             primary->remove(); // i.e. never completed, so remove partial (temp) primary
-            return;
+            return true;
         }
         if (twFlags & TW_RenameToPrimary)
         {
@@ -698,6 +698,7 @@ public:
         }
         if (partDesc.numCopies()>1)
             _doReplicate(&activity, partDesc, iProgress);
+        return true;
     }
 // IFileIO impl.
     virtual size32_t read(offset_t pos, size32_t len, void * data) { return primaryio->read(pos, len, data); }

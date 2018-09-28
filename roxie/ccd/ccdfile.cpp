@@ -126,10 +126,11 @@ public:
         setFailure(); // ensures the open file count properly maintained
     }
 
-    virtual void beforeDispose()
+    virtual bool beforeDispose()
     {
         if (cached)
             cached->removeCache(this);
+        return true;
     }
 
     void setCache(const IRoxieFileCache *cache)
@@ -1947,7 +1948,7 @@ public:
             }
         }
     }
-    virtual void beforeDispose()
+    virtual bool beforeDispose() override
     {
         if (notifier)
             daliHelper->releaseSubscription(notifier);
@@ -1956,6 +1957,7 @@ public:
         {
             cached->removeCache(this);
         }
+        return true;
     }
     virtual unsigned numSubFiles() const
     {

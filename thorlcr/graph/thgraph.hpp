@@ -409,9 +409,10 @@ public:
     ~CGraphTempHandler()
     {
     }
-    virtual void beforeDispose()
+    virtual bool beforeDispose() override
     {
         clearTemps();
+        return true;
     }
     virtual bool removeTemp(const char *name) = 0;
 // IGraphTempHandler
@@ -844,7 +845,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CJobBase(ILoadedDllEntry *querySo, const char *graphName);
-    virtual void beforeDispose();
+    virtual bool beforeDispose() override;
     ~CJobBase();
 
     virtual void addChannel(IMPServer *mpServer) = 0;

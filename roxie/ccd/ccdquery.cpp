@@ -95,7 +95,7 @@ public:
         CriticalBlock b(dllCacheLock);
         dllCache.setValue(dllName, this);
     }
-    virtual void beforeDispose()
+    virtual bool beforeDispose() override
     {
         CriticalBlock b(dllCacheLock);
         // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table. 
@@ -103,6 +103,7 @@ public:
         CQueryDll *goer = dllCache.getValue(dllName);
         if (goer == this)
             dllCache.remove(dllName);
+        return true;
     }
     static const CQueryDll *getQueryDll(const char *dllName, bool isExe)
     {
@@ -1102,7 +1103,7 @@ public:
         return globalPackageSetManager->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
     }
 
-    virtual void beforeDispose()
+    virtual bool beforeDispose() override
     {
         // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table. 
         // So only remove from hash table if what we find there matches the item that is being deleted.
@@ -1111,6 +1112,7 @@ public:
         CQueryFactory *goer = queryMap.getValue(hv);
         if (goer == this)
             queryMap.remove(hv);
+        return true;
     }
 
     static IQueryFactory *getQueryFactory(hash64_t hashValue, unsigned channelNo)

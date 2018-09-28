@@ -36,7 +36,7 @@ class CRemoteConnection : public CConnectionBase, public CTrackChanges, implemen
 public:
     IMPLEMENT_IINTERFACE;
 
-    void beforeDispose()
+    virtual bool beforeDispose() override
     {
         if (connected)
         {
@@ -53,6 +53,7 @@ public:
             }
         }
         root.clear();
+        return true;
     }
 
     CRemoteConnection(ISDSConnectionManager &manager, ConnectionId connectionId, const char *xpath, SessionId sessionId, unsigned mode, unsigned timeout);
@@ -296,7 +297,7 @@ class CClientRemoteTree : implements ITrackChanges, public CRemoteTreeBase
 public:
     CClientRemoteTree(CRemoteConnection &conn, CPState _state=CPS_Unchanged);
     CClientRemoteTree(const char *name, IPTArrayValue *value, ChildMap *children, CRemoteConnection &conn, CPState _state=CPS_Unchanged);
-    virtual void beforeDispose() override;
+    virtual bool beforeDispose() override;
     void resetState(unsigned state, bool sub=false);
     inline bool queryStateChanges() const { return serverId && connection.queryStateChanges(); }
     inline unsigned queryState() { return state; }

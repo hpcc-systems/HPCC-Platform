@@ -234,9 +234,10 @@ private:
             return t ? t->stop() : true;
         }
 
-        virtual void beforeDispose()
+        virtual bool beforeDispose() override
         {
             tq.remove(this);
+            return true;
         }
 
     private:

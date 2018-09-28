@@ -229,7 +229,7 @@ public:
 
     CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser);
     void loadPTree(IPropertyTree *ptree);
-    void beforeDispose();
+    virtual bool beforeDispose() override;
     
     IPropertyTree *getUnpackedTree(bool includeProgress) const;
 
@@ -695,7 +695,7 @@ class WORKUNIT_API CWuGraphStats : public CInterfaceOf<IWUGraphStats>
 {
 public:
     CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id);
-    virtual void beforeDispose();
+    virtual bool beforeDispose() override;
     virtual IStatisticGatherer & queryStatsBuilder();
 protected:
     Owned<IPropertyTree> progress;

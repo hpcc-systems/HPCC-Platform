@@ -615,9 +615,10 @@ class CSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
 public:
     CSortAlgorithm() { elapsedCycles = 0; }
 
-    virtual void beforeDispose() override
+    virtual bool beforeDispose() override
     {
         reset();
+        return true;
     }
 
     virtual void getSortedGroup(ConstPointerArray & result)

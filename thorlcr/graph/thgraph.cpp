@@ -2707,11 +2707,12 @@ void CJobBase::init()
     PROGLOG("%s", tracing.str());
 }
 
-void CJobBase::beforeDispose()
+bool CJobBase::beforeDispose()
 {
     endJob();
     ForEachItemIn(c, jobChannels)
         jobChannels.item(c).clean();
+    return true;
 }
 
 CJobBase::~CJobBase()

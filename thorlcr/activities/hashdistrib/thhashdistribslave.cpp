@@ -1053,7 +1053,7 @@ public:
         ActPrintLog("targetWriterLimit : %d", targetWriterLimit);
     }
 
-    virtual void beforeDispose()
+    virtual bool beforeDispose() override
     {
         try
         {
@@ -1064,6 +1064,7 @@ public:
             ActPrintLog(e, "HDIST: CDistributor");
             e->Release();
         }
+        return true;
     }
 
     inline ICompressor *getCompressor()

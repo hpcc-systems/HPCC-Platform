@@ -86,7 +86,6 @@ public:
         }
         return false;
     }
-
 private:
     CSimpleInterfaceOf(const CSimpleInterfaceOf &) : xxcount(1) {};
     CSimpleInterfaceOf(CSimpleInterfaceOf &&) = delete;
@@ -117,7 +116,7 @@ template <class INTERFACE>
 class CInterfaceOf : public CSimpleInterfaceOf<INTERFACE>
 {
 public:
-    virtual void beforeDispose() {}
+    virtual bool beforeDispose() { return true; }
 
     inline bool isAlive() const         { return this->xxcount.load(std::memory_order_relaxed) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
 
@@ -132,7 +131,9 @@ public:
             {
                 try
                 {
-                    const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
+                    if (!const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose())
+                        return true;
+
                 }
                 catch (...)
                 {
@@ -147,7 +148,6 @@ public:
         }
         return false;
     }
-
 };
 
 class jlib_decl CInterface : public CInterfaceOf<CEmptyClass>

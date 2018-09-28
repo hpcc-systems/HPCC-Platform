@@ -53,7 +53,7 @@ ProcessSlaveActivity::ProcessSlaveActivity(CGraphElementBase *container) : CSlav
 {
 }
 
-void ProcessSlaveActivity::beforeDispose()
+bool ProcessSlaveActivity::beforeDispose()
 {
     // Note - we can't throw from the destructor, so do this in beforeDispose instead
     // If the exception is thrown then we are liable to leak the object, but we are dying anyway...
@@ -64,6 +64,7 @@ void ProcessSlaveActivity::beforeDispose()
     if (!threaded.join(FATAL_ACTJOIN_TIMEOUT))
         throw MakeThorFatal(NULL, TE_FailedToAbortSlaves, "Activity %" ACTPF "d failed to stop", container.queryId());
     ActPrintLog("AFTER ProcessSlaveActivity : joining process thread");
+    return true;
 }
 
 void ProcessSlaveActivity::startProcess(bool async)

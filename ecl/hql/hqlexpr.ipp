@@ -276,7 +276,7 @@ public:
     virtual void removeObserver(IObserver & observer) override;
     virtual unsigned getHash() const override;
     
-    virtual void beforeDispose() override;               // called before item is freed so whole object still valid
+    virtual bool beforeDispose() override;               // called before item is freed so whole object still valid
     virtual unsigned getSymbolFlags() const override;
 
 public:

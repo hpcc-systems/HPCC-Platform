@@ -1765,7 +1765,7 @@ public:
     CEndpointCS(CCritTable &_table, const SocketEndpoint &_ep) : table(_table), ep(_ep) { }
     const void *queryFindParam() const { return &ep; }
 
-    virtual void beforeDispose();
+    virtual bool beforeDispose();
 };
 
 class CCritTable : private SimpleHashTableOf<CEndpointCS, const SocketEndpoint>
@@ -1812,9 +1812,10 @@ MODULE_EXIT()
     delete dirCSTable;
 }
 
-void CEndpointCS::beforeDispose()
+bool CEndpointCS::beforeDispose()
 {
     table.removeExact(this);
+    return true;
 }
 
 class CRemoteFilteredFileIOBase : public CRemoteBase, implements IRemoteFileIO

@@ -221,7 +221,7 @@ private:
         }
     } connectWatcher;
 
-    virtual void beforeDispose()
+    virtual bool beforeDispose() override
     {
         CriticalBlock b(daliHelperCrit);
         disconnectSem.interrupt();
@@ -232,6 +232,7 @@ private:
             daliHelper = NULL;
         }
         connectWatcher.join();
+        return true;
     }
 
     // The cache is static since it outlives the dali connections

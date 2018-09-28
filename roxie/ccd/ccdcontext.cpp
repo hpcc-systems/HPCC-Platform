@@ -2463,12 +2463,13 @@ public:
             header = nullptr;
         }
     }
-    virtual void beforeDispose()
+    virtual bool beforeDispose() override
     {
         // NOTE: This is needed to ensure that owned activities are destroyed BEFORE I am,
         // to avoid pure virtual calls when they come to call noteProcessed()
         logctx.mergeStats(globalStats);
         childGraphs.releaseAll();
+        return true;
     }
 
     virtual IRoxieServerContext *queryServerContext()

@@ -990,7 +990,7 @@ public:
         ::Release(rowAllocator);
     }
 
-    virtual void beforeDispose() override
+    virtual bool beforeDispose() override
     {
         if (traceStartStop)
         {
@@ -1009,6 +1009,7 @@ public:
             DBGLOG("STATE: Activity %d destroyed but not reset", activityId);
             state = STATEreset;  // bit pointless but there you go... 
         }
+        return true;
     }
 
     const IResolvedFile *resolveLFNIndex(const char *filename, bool isOpt)

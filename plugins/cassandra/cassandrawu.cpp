@@ -2673,10 +2673,11 @@ public:
           parent(_parent)
         {
         }
-        virtual void beforeDispose()
+        virtual bool beforeDispose() override
         {
             CWuGraphStats::beforeDispose(); // Sets up progress - should contain a single child tree sqNN where nn==id
             parent->setGraphProgress(progress, progress->queryName(), id, creator);
+            return true;
         }
 
     protected:

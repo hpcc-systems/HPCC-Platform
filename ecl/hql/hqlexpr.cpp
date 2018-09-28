@@ -3914,7 +3914,7 @@ bool CHqlExpression::Release(void) const
 #endif
 
 
-void CHqlExpression::beforeDispose()
+bool CHqlExpression::beforeDispose()
 {
     CHECK_EXPR_SEQID(3);
 #ifdef CONSISTENCY_CHECK
@@ -3935,6 +3935,7 @@ void CHqlExpression::beforeDispose()
             exprCache->removeExact(this);
     }
     assertex(!(observed));
+    return true;
 }
 
 
