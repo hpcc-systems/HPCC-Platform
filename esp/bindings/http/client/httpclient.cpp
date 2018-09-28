@@ -128,9 +128,7 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
 }
 
 
-
-
-CHttpClient::CHttpClient(const char *proxy, const char* url) : m_proxy(proxy), m_url(url), m_disableKeepAlive(false), m_isPersistentSocket(false), m_numRequests(0)
+CHttpClient::CHttpClient(const char *proxy, const char* url) : m_proxy(proxy), m_url(url), m_disableKeepAlive(false), m_isPersistentSocket(false), m_numRequests(0), m_persistable(false)
 {
     StringBuffer protocol,username,password, host, port, path;
     Utils::SplitURL(url, protocol,username,password, host, port, path);
@@ -153,14 +151,14 @@ CHttpClient::CHttpClient(const char *proxy, const char* url) : m_proxy(proxy), m
 
 CHttpClient::~CHttpClient()
 {
-    if(m_socket)
+    if (m_socket)
     {
         Owned<ISocket> forRelease(m_socket);
-        if(m_isPersistentSocket)
+        if (m_isPersistentSocket)
         {
-            m_persistentHandler->doneUsing(m_socket, !m_disableKeepAlive, m_numRequests>1?(m_numRequests-1):0);
+            m_persistentHandler->doneUsing(m_socket, !m_disableKeepAlive && m_persistable, m_numRequests>1?(m_numRequests-1):0);
         }
-        else if(!m_disableKeepAlive)
+        else if (!m_disableKeepAlive && m_persistable)
         {
             m_persistentHandler->add(m_socket, &m_ep);
         }
@@ -213,7 +211,7 @@ void CHttpClient::setTimeOut(unsigned int timeout)
     m_readTimeoutSecs =  timeout;
 }
 
-int CHttpClient::connect(StringBuffer& errmsg)
+int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
 {
     SocketEndpoint ep;
 
@@ -244,7 +242,7 @@ int CHttpClient::connect(StringBuffer& errmsg)
             ep.port=80;
     }
     m_ep = ep;
-    Linked<ISocket> pSock = m_disableKeepAlive?nullptr:m_persistentHandler->getAvailable(&ep);
+    Linked<ISocket> pSock = (m_disableKeepAlive || forceNewConnection)?nullptr:m_persistentHandler->getAvailable(&ep);
     if(pSock)
     {
         m_isPersistentSocket = true;
@@ -303,11 +301,19 @@ int CHttpClient::connect(StringBuffer& errmsg)
 
 int CHttpClient::sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response)
 {
+    HttpClientErrCode ret = sendRequest(method, contenttype, request, response, false);
+    if (ret == HttpClientErrCode::PeerClosed)
+        ret = sendRequest(method, contenttype, request, response, true);
+    return static_cast<int>(ret);
+}
+
+HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, bool forceNewConnection)
+{
     StringBuffer errmsg;
-    if(connect(errmsg) < 0)
+    if (connect(errmsg, forceNewConnection) < 0)
     {
         response.append(errmsg);
-        return -1;
+        return HttpClientErrCode::Error;
     }
 
     Owned<CHttpRequest> httprequest;
@@ -376,8 +382,9 @@ int CHttpClient::sendRequest(const char* method, const char* contenttype, String
 
     if (m_readTimeoutSecs)
         httpresponse->setTimeOut(m_readTimeoutSecs);
-    httpresponse->receive(false, NULL);  // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
-
+    int ret = httpresponse->receive(false, NULL);  // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
+    if (ret < 0 && m_isPersistentSocket && httpresponse->getPeerClosed())
+        return HttpClientErrCode::PeerClosed;
 #ifdef COOKIE_HANDLING
     if(m_context)
     {
@@ -395,14 +402,13 @@ int CHttpClient::sendRequest(const char* method, const char* contenttype, String
 
     httpresponse->getContent(response);
 
-    if(!httpresponse->getPersistentEligible())
-        m_disableKeepAlive = true;
+    m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
 
     if (getEspLogLevel()>LogNormal)
         DBGLOG("Response content: %s", response.str());
 
-    return 0;
+    return HttpClientErrCode::OK;
 }
 
 void copyHeaders(CHttpMessage &copyTo, CHttpMessage &copyFrom)
@@ -453,6 +459,14 @@ void copyCookies(CHttpMessage &copyTo, CHttpMessage &copyFrom, const char *host)
 
 int CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response)
 {
+    HttpClientErrCode ret = proxyRequest(request, response, false);
+    if (ret == HttpClientErrCode::PeerClosed)
+        ret = proxyRequest(request, response, true);
+    return static_cast<int>(ret);
+}
+
+HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response, bool forceNewConnection)
+{
     CHttpRequest *forwardRequest = static_cast<CHttpRequest*>(request);
     assertex(forwardRequest != nullptr);
 
@@ -464,11 +478,11 @@ int CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response)
     assertex(forwardResponse != nullptr);
 
     StringBuffer errmsg;
-    if(connect(errmsg) < 0)
+    if (connect(errmsg, forceNewConnection) < 0)
     {
         forwardResponse->setContent(errmsg);
         forwardResponse->setContentType(HTTP_TYPE_TEXT_PLAIN);
-        return -1;
+        return HttpClientErrCode::Error;
     }
 
     Owned<CHttpRequest> httprequest = new CHttpRequest(*m_socket);
@@ -510,7 +524,9 @@ int CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response)
 
     if (m_readTimeoutSecs)
         httpresponse->setTimeOut(m_readTimeoutSecs);
-    httpresponse->receive(false, nullptr);
+    int ret = httpresponse->receive(false, nullptr);
+    if (ret < 0 && m_isPersistentSocket && httpresponse->getPeerClosed())
+        return HttpClientErrCode::PeerClosed;
 
     copyCookies(*forwardResponse, *httpresponse, m_host);
     copyHeaders(*forwardResponse, *httpresponse);
@@ -522,23 +538,30 @@ int CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response)
     forwardResponse->setContent(httpresponse->queryContent());
     forwardResponse->setContentType(httpresponse->getContentType(responseContentType));
 
-    if(!httpresponse->getPersistentEligible())
-        m_disableKeepAlive = true;
+    m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
 
     if (getEspLogLevel()>LogNormal)
         DBGLOG("Response content: %s", httpresponse->queryContent());
 
-    return 0;
+    return HttpClientErrCode::OK;
 }
 
 int CHttpClient::sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& content, StringBuffer& responseContent, StringBuffer& responseStatus, bool alwaysReadContent)
 {
+    HttpClientErrCode ret = sendRequest(headers, method, contenttype, content, responseContent, responseStatus, alwaysReadContent, false);
+    if (ret == HttpClientErrCode::PeerClosed)
+        ret = sendRequest(headers, method, contenttype, content, responseContent, responseStatus, alwaysReadContent, true);
+    return static_cast<int>(ret);
+}
+
+HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& content, StringBuffer& responseContent, StringBuffer& responseStatus, bool alwaysReadContent, bool forceNewConnection)
+{
     StringBuffer errmsg;
-    if(connect(errmsg) < 0)
+    if (connect(errmsg, forceNewConnection) < 0)
     {
         responseContent.append(errmsg);
-        return -1;
+        return HttpClientErrCode::Error;
     }
 
     Owned<CHttpRequest> httprequest;
@@ -625,7 +648,9 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
 
     if (m_readTimeoutSecs)
         httpresponse->setTimeOut(m_readTimeoutSecs);
-    httpresponse->receive(alwaysReadContent, me);  // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
+    int ret = httpresponse->receive(alwaysReadContent, me);  // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
+    if (ret < 0 && m_isPersistentSocket && httpresponse->getPeerClosed())
+        return HttpClientErrCode::PeerClosed;
 
 #ifdef COOKIE_HANDLING
     if(m_context)
@@ -645,14 +670,13 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
     httpresponse->getContent(responseContent);
     httpresponse->getStatus(responseStatus);
 
-    if(!httpresponse->getPersistentEligible())
-        m_disableKeepAlive = true;
+    m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
 
     if (getEspLogLevel()>LogNormal)
         DBGLOG("Response content: %s", responseContent.str());
 
-    return 0;
+    return HttpClientErrCode::OK;
 }
 
 int CHttpClient::sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent)
@@ -718,16 +742,24 @@ static void parseSoapFault(const char* content, StringBuffer& msg)
 
 int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
 {
+    HttpClientErrCode ret = postRequest(req, resp, false);
+    if (ret == HttpClientErrCode::PeerClosed)
+        ret = postRequest(req, resp, true);
+    return static_cast<int>(ret);
+}
+
+HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp, bool forceNewConnection)
+{
     CSoapRequest& request = *(dynamic_cast<CSoapRequest*>(&req));
     const char* requeststr = request.get_text();
     CSoapResponse& response = *(dynamic_cast<CSoapResponse*>(&resp));
 
     StringBuffer errmsg;
-    if(connect(errmsg) < 0 || !m_socket)
+    if (connect(errmsg, forceNewConnection) < 0 || !m_socket)
     {
         response.set_status(SOAP_CONNECTION_ERROR);
         response.set_err(errmsg);
-        return -1;
+        return HttpClientErrCode::Error;
     }
 
     Owned<CHttpRequest> httprequest(new CHttpRequest(*m_socket));
@@ -799,7 +831,9 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
 
     if (m_readTimeoutSecs)
         httpresponse->setTimeOut(m_readTimeoutSecs);
-    httpresponse->receive(true, me);
+    int ret = httpresponse->receive(true, me);
+    if (ret < 0 && m_isPersistentSocket && httpresponse->getPeerClosed())
+        return HttpClientErrCode::PeerClosed;
 
 #ifdef COOKIE_HANDLING
     if(m_context)
@@ -833,7 +867,7 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
     {
         response.set_status(SOAP_SERVER_ERROR);
         response.set_err(errmsg.str());
-        return -1;
+        return HttpClientErrCode::Error;
     }
     else if(statusClass == '4')
     {
@@ -847,7 +881,7 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
 
         response.set_err(errmsg.str());
         DBGLOG("SOAP_CLIENT_ERROR: %s", errmsg.str());
-        return -1;
+        return HttpClientErrCode::Error;
     }
     else if(statusClass == '5')
     {
@@ -859,7 +893,7 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
         response.set_err(errmsg.str());
         DBGLOG("SOAP_SERVER_ERROR: %s", errmsg.str());
 
-        return -1;
+        return HttpClientErrCode::Error;
     }
     else
     {
@@ -882,11 +916,10 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
         DBGLOG("SOAP_RPC_ERROR = %s", msg.str());
         response.set_status(SOAP_RPC_ERROR);
         response.set_err(msg);
-        return -1;
+        return HttpClientErrCode::Error;
     }
 
-    if(!httpresponse->getPersistentEligible())
-        m_disableKeepAlive = true;
+    m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
 
     StringBuffer contenttype;
@@ -908,7 +941,7 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
     if (errmsg.length())
         response.set_err(errmsg);
 
-    return 0;
+    return HttpClientErrCode::OK;
 }
 
 static Owned<CHttpClientContext> theHttpClientContext;

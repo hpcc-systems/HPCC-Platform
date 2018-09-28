@@ -2311,9 +2311,13 @@ int CHttpResponse::processHeaders(IMultiException *me)
 {
     char oneline[MAX_HTTP_HEADER_LEN + 1];
     int lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN, me);
-    if(lenread <= 0)
+    if (lenread <= 0)
+    {
+        if (lenread == 0)
+            m_peerClosed = true;
         return -1;
-    
+    }
+
     // Process "100 Continue" headers
     // Some HTTP/1.1 webservers may send back "100 Continue" before it reads the posted request body.
     while(Utils::strncasecmp(oneline, "HTTP/1.1 100", strlen("HTTP/1.1 100")) == 0)

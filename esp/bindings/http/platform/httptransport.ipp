@@ -73,6 +73,7 @@ protected:
     bool         m_isForm;
     bool         m_persistentEligible = false;
     bool         m_persistentEnabled = false;
+    bool         m_peerClosed = false;
 
     int m_paramCount;
     int m_attachCount;
@@ -261,6 +262,7 @@ public:
     virtual void setPersistentEligible(bool eligible) { m_persistentEligible = eligible; }
     virtual bool getPersistentEligible() { return m_persistentEligible; }
     virtual void setPersistentEnabled(bool enabled) { m_persistentEnabled = enabled; }
+    virtual bool getPeerClosed() { return m_peerClosed; }
 };
 
 
