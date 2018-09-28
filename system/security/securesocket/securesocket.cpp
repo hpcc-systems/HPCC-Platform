@@ -862,7 +862,6 @@ const char* strtok__(const char* s, const char* d, StringBuffer& tok)
     return s;
 }
 
-
 class CSecureSocketContext : implements ISecureSocketContext, public CInterface
 {
 private:
@@ -877,6 +876,11 @@ private:
     bool m_address_match;
     Owned<CStringSet> m_peers;
     StringAttr password;
+
+    void setSessionIdContext()
+    {
+        SSL_CTX_set_session_id_context(m_ctx, (const unsigned char*)"hpccsystems", 11);
+    }
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -896,6 +900,10 @@ public:
         {
             throw MakeStringException(-1, "ctx can't be created");
         }
+
+        if (sockettype == ServerSocket)
+            setSessionIdContext();
+
         SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
     }
 
@@ -915,6 +923,10 @@ public:
         {
             throw MakeStringException(-1, "ctx can't be created");
         }
+
+        if (sockettype == ServerSocket)
+            setSessionIdContext();
+
         password.set(passphrase);
         SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
@@ -958,6 +970,9 @@ public:
         {
             throw MakeStringException(-1, "ctx can't be created");
         }
+
+        if (sockettype == ServerSocket)
+            setSessionIdContext();
 
         const char *cipherList = config->queryProp("cipherList");
         if (!cipherList || !*cipherList)
