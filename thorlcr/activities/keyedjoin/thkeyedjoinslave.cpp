@@ -954,7 +954,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         CRemoteLookupHandler(CKeyedJoinSlave &_activity, IThorRowInterfaces *_rowIf, unsigned _lookupSlave)
             : CLookupHandler(_activity, _rowIf), lookupSlave(_lookupSlave)
         {
-            replyTag = activity.queryMPServer().createReplyTag();
+            /* NB: There is 1 KJ service per slave, not per channel
+             * create reply tag using slave IMPServer and use the slave ICommunicator
+             */
+            Owned<IMPServer> mpServer = getMPServer();
+            replyTag = mpServer->createReplyTag();
             comm = &activity.queryJob().queryNodeComm();
         }
         virtual void init() override
