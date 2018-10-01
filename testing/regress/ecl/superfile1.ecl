@@ -20,7 +20,7 @@ import Std.File AS FileServices;
 import Std.Str;
 import $.setup;
 
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 // Super File regression test
 

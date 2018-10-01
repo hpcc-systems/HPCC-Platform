@@ -25,12 +25,11 @@ import Std.File AS FileServices;
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 espIpPort := 'http://127.0.0.1:8010/FileSpray' : STORED('espIpPort');
 engine := thorlib.platform();
-prefix := '~regress::' + engine + '-';
-suffix := '-' + WORKUNIT;
+prefix := '~regress::' + engine + '::' + WORKUNIT + '::';
 
-sprayPrepFileName := prefix + 'spray_prep' + suffix;;
-desprayOutFileName := dropzonePath + 'file_for_spray' + suffix;
-sprayOutFileName := prefix + 'spray_wo_replication' + suffix;
+sprayPrepFileName := prefix + 'spray_prep';
+desprayOutFileName := dropzonePath + WORKUNIT + '-file_for_spray';
+sprayOutFileName := prefix + 'spray_wo_replication';
 sprayDestGroup := thorlib.group();
 
 unsigned VERBOSE := 0;

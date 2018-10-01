@@ -17,7 +17,7 @@
 
 #option('warnOnImplicitJoinLimit', false);
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 import std.system.thorlib;
 import Std.File AS FileServices;

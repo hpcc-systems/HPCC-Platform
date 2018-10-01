@@ -28,8 +28,7 @@ newIndexReadMapping := #IFDEFINED(root.newIndexReadMapping, false);
 import Std.File AS FileServices;
 
 import $.setup;
-prefix := setup.Files(false, false).IndexPrefix;
-suffix := '-' + WORKUNIT;
+prefix := setup.Files(false, false).IndexPrefix + WORKUNIT + '::';
 
 simple_rec := RECORD
   unsigned4 u4;
@@ -41,37 +40,37 @@ END;
 simple_ds := DATASET([{1,1,1,1},{2,2,2,2},{3,-3,3,-3},{4,4,4,4}], simple_rec);
 
 // Simple case - last field gets moved to fileposition and only 3 fields are considered keyed
-simpleName := prefix + '1_simple' + suffix + '.idx';
+simpleName := prefix + '1_simple.idx';
 simple := INDEX(simple_ds, {simple_ds}, simpleName);
 
 // All fields keyed, so no fileposition
-allkeyedName := prefix + '2_allkeyed' + suffix + '.idx';
+allkeyedName := prefix + '2_allkeyed.idx';
 allkeyed := INDEX(simple_ds, {simple_ds}, {}, allkeyedName);
 
 // Only one field, so fileposition
-onekeyedName := prefix + '3_onekeyed' + suffix + '.idx';
+onekeyedName := prefix + '3_onekeyed.idx';
 onekeyed := INDEX(simple_ds, {s4}, onekeyedName);
  
 // Check bias - keyed fields get bias (but only if signed), and so do unkeyed (except in filepos field)
-payloadbiasName := prefix + '4_payloadbias' + suffix + '.idx';
+payloadbiasName := prefix + '4_payloadbias.idx';
 payloadbias := INDEX(simple_ds, {u4},{s4,bu4,bs4}, payloadbiasName);
 
-payloadbias2Name := prefix + '5_payloadbias2' + suffix + '.idx';
+payloadbias2Name := prefix + '5_payloadbias2.idx';
 payloadbias2 := INDEX(simple_ds, {u4},{bu4,bs4,s4}, payloadbias2Name);
 
 // Check for tricky types - nested records in payload
-nestrecName := prefix + '6_nestrec' + suffix + '.idx';
+nestrecName := prefix + '6_nestrec.idx';
 nestrec :=  INDEX(simple_ds, {u4}, {simple_rec r := ROW({u4,s4,bu4,bs4}, simple_rec) }, nestrecName);
 
 // Check for unserializable types in payload
-unserializedName := prefix + '7_ifrec' + suffix + '.idx';
+unserializedName := prefix + '7_ifrec.idx';
 unserialized := INDEX(simple_ds, {u4}, { u4, ifblock(self.u4!=2) s4,END,bu4,bs4 }, unserializedName);
 
-unserialized2Name := prefix + '8_ifrec' + suffix + '.idx';
+unserialized2Name := prefix + '8_ifrec.idx';
 unserialized2 := INDEX(simple_ds, {u4}, { boolean b := u4!=2, ifblock(self.b) s4,bu4,bs4 END }, unserialized2Name);
 
 // Check for nested ifblocks
-unserialized3Name := prefix + '9_ifrec' + suffix + '.idx';
+unserialized3Name := prefix + '9_ifrec.idx';
 unserialized3 := INDEX(simple_ds, {u4}, { u4, ifblock(self.u4!=2) s4, ifblock(self.u4 != 2) bu4 END,END,bs4 }, unserialized3Name);
 
 // Check for tricky types - child datasets 
@@ -90,7 +89,7 @@ END;
 
 set_ds := DATASET([{1,[1,2,3],[1,2,3],[1,2,3]},{2,[2,3,4],[2,3,4],[2,3,4]},{3,[-3,-4,-5],[3,4,5],[-3,-4,-5]},{4,[4,5,6],[4,5,6],[4,5,6]}], set_rec);
 
-keyedsetName := prefix + '10_setrec' + suffix + '.idx';
+keyedsetName := prefix + '10_setrec.idx';
 keyedset := INDEX(set_ds, {u4},{s4,bu4,bs4 }, keyedsetName);
 
 // Check for multipart keys, noroot keys, etc

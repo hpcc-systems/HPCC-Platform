@@ -18,7 +18,7 @@
 // Super File regression test
 
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 import Std.System.Thorlib;
 import Std.File AS FileServices;

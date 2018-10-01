@@ -48,9 +48,9 @@ d := dataset([
             }
         ], houseRecord);
 
-output(d,,Files.filePrefix+'houses1',overwrite);
+output(d,,Files.QueryFilePrefix+'houses1',overwrite);
 
-houseTable := dataset(Files.filePrefix+'houses1', houseRecord, thor);
+houseTable := dataset(Files.QueryFilePrefix+'houses1', houseRecord, thor);
 
 //--- End of common ---
 

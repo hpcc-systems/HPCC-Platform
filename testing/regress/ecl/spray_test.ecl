@@ -24,19 +24,12 @@
 //version sprayFixed=false,sprayEmpty=true
 
 
-import std.system.thorlib;
 import Std.File AS FileServices;
 import $.setup;
 import ^ as root;
 
-jlib:= SERVICE
-    unsigned8 rtlTick() : library='jlib',eclrtl,entrypoint='rtlNano';
-END;
 
-
-engine := thorlib.platform();
-prefix := setup.Files(false, false).FilePrefix + '-' + engine + '-';
-suffix := '-' + jlib.rtlTick() : stored('startTime');
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 boolean sprayFixed := #IFDEFINED(root.sprayFixed, true);
 boolean sprayEmpty := #IFDEFINED(root.sprayEmpty, false);
@@ -59,20 +52,20 @@ allPeople := DATASET([ {'foo', 10, 1},
             ,Layout_Person);
 
 #if (sprayFixed)
-    sprayPrepFileName := prefix + 'spray_prep_fixed-' + suffix;
-    desprayOutFileName := dropzonePath + 'spray_input_fixed-' + suffix;
-    sprayOutFileName := prefix + 'spray_test_fixed-' + suffix;
+    sprayPrepFileName := prefix + 'spray_prep_fixed';
+    desprayOutFileName := dropzonePath + WORKUNIT + '-spray_input_fixed';
+    sprayOutFileName := prefix + 'spray_test_fixed';
     dsSetup := allPeople;
 #else
     #if (sprayEmpty)
-        sprayPrepFileName := prefix + 'spray_prep_empty-' + suffix;
-        desprayOutFileName := dropzonePath + 'spray_input_empty-' + suffix;
-        sprayOutFileName := prefix + 'spray_test_empty-' + suffix;
+        sprayPrepFileName := prefix + 'spray_prep_empty';
+        desprayOutFileName := dropzonePath + WORKUNIT + '-spray_input_empty';
+        sprayOutFileName := prefix + 'spray_test_empty';
         dsSetup := empty;
     #else
-        sprayPrepFileName := prefix + 'spray_prep-' + suffix;
-        desprayOutFileName := dropzonePath + 'spray_input-' + suffix;
-        sprayOutFileName := prefix + 'spray_test-' + suffix;
+        sprayPrepFileName := prefix + 'spray_prep';
+        desprayOutFileName := dropzonePath + WORKUNIT + '-spray_input';
+        sprayOutFileName := prefix + 'spray_test';
         dsSetup := allPeople;
     #end
 #end

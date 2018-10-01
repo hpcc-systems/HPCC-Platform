@@ -16,7 +16,7 @@
 ###############################################################################*/
 import Std;
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 //nohthor
 

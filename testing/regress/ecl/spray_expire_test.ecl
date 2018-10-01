@@ -21,7 +21,7 @@
 
 import Std.File AS FileServices;
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 
@@ -34,7 +34,7 @@ Layout_Person := RECORD
 END;
 
 sprayPrepFileName := prefix + 'spray_prep';
-desprayOutFileName := dropzonePath + 'spray_input';
+desprayOutFileName := dropzonePath + WORKUNIT + '-spray_input';
 sprayOutFileName := prefix + 'spray_test';
 
 allPeople := DATASET([ {'foo', 10, 1},

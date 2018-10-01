@@ -38,8 +38,7 @@ import Std.File AS FileServices;
 import ^ as root;
 
 engine := thorlib.platform();
-prefix := '~regress::' + engine + '-';
-suffix := '-' + WORKUNIT;
+prefix := '~regress::' + engine + '::' + WORKUNIT + '::';
 
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 
@@ -58,12 +57,12 @@ allPeople := DATASET([ {'foo', 10, 1},
                        {'baz', 32, 1}]
             ,Layout_Person);
 
-sprayPrepFileName := prefix + 'spray_prep' + suffix;
-sprayOutFileName := prefix + 'spray_test' + suffix;
-sprayOutFileName2 := prefix + 'spray_test2' + suffix;
+sprayPrepFileName := prefix + 'spray_prep' ;
+sprayOutFileName := prefix + 'spray_test';
+sprayOutFileName2 := prefix + 'spray_test2';
 dsSetup := allPeople;
-emptyDirPath := dropzonePath+'empty';
-notEmptyDirPath := dropzonePath+'notempty';
+emptyDirPath := dropzonePath+WORKUNIT+'-empty';
+notEmptyDirPath := dropzonePath+WORKUNIT+'-notempty';
 
 // Create an 'empty' directory
 FileServices.CreateExternalDirectory('.', emptyDirPath);
@@ -80,7 +79,7 @@ desprayRec := RECORD
   string msg;
 end;
 
-desprayOutFileName := notEmptyDirPath + '/'+ 'spray_input' + suffix;
+desprayOutFileName := notEmptyDirPath + '/'+ 'spray_input';
 
 // Despray it to 'notempty' dir in default drop zone
 desprayRec despray(desprayRec l) := TRANSFORM

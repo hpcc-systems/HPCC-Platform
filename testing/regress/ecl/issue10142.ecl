@@ -17,7 +17,7 @@
 
 IMPORT STD;
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 sf1 := prefix + 'test_sf';
 path1 := prefix + 'sf_name1';
@@ -39,6 +39,11 @@ ds2 := DATASET([
 
 IF(STD.File.SuperFileExists(sf1), STD.File.ClearSuperFile(sf1), STD.File.CreateSuperFile(sf1));
 
+string trimmedLogicalFilename(STRING filename) := FUNCTION
+    return std.str.FindReplace(std.str.ToLowerCase(trim(filename)), setup.Files(false, false).QueryFilePrefixId, '');
+end;
+
+
 ds3 := DATASET(sf1, {nRecord, string255 logicalFile{virtual(logicalfilename)}}, THOR);
 ds4 := DATASET(path1, {nRecord, string255 logicalFile{virtual(logicalfilename)}}, THOR);
 
@@ -51,8 +56,8 @@ SEQUENTIAL(
     STD.File.AddSuperFile(sf1, path2),
     STD.File.FinishSuperFileTransaction(),
 
-    OUTPUT(ds3),
-    OUTPUT(ds4),
+    OUTPUT(PROJECT(ds3, TRANSFORM(RECORDOF(ds3), SELF.logicalFile := trimmedLogicalFilename(LEFT.logicalFile); SELF := LEFT))),
+    OUTPUT(PROJECT(ds4, TRANSFORM(RECORDOF(ds4), SELF.logicalFile := trimmedLogicalFilename(LEFT.logicalFile); SELF := LEFT))),
 //    OUTPUT(FETCH(ds4, ds2, 0)); Gives internal error in compiler.
 
     // clean-up

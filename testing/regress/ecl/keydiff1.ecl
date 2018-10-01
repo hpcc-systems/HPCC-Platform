@@ -16,11 +16,10 @@
 ############################################################################## */
 
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 //noRoxie
 //noHthor
-import Std.System.ThorLib;
 import Std.File AS FileServices;
 
 unsigned numrecsbase := 1000000 : stored('numrecsbase');

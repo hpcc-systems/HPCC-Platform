@@ -17,7 +17,7 @@
 
 //nohthor
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 PeopleFileName := prefix + 'people_likely';
 

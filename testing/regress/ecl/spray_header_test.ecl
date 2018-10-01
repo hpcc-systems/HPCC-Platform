@@ -22,20 +22,14 @@
 //version isTerminated=false
 //version isTerminated=true
 
-import std.system.thorlib;
 import Std.File AS FileServices;
 import $.setup;
 import ^ as root;
 
-jlib:= SERVICE
-    unsigned8 rtlTick() : library='jlib',eclrtl,entrypoint='rtlNano';
-END;
 
 isTerminated := #IFDEFINED(root.isTerminated, false);
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
-engine := thorlib.platform();
-prefix := setup.Files(false, false).FilePrefix + engine + '-';
-suffix := '-' + jlib.rtlTick() : stored('startTime');
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 unsigned VERBOSE := 0;
 
@@ -50,19 +44,19 @@ END;
 header := DATASET([{'Id', 'Field1', 'Field2', 'Field3', 'Field4'}], Layout);
 
 #if (isTerminated)
-    sprayPrepFileName := prefix + 'spray_prep_terminated' + suffix;
+    sprayPrepFileName := prefix + 'spray_prep_terminated';
     // Create a one record CSV logical file with terminator a the end
     setupFile := output(header, , sprayPrepFileName, CSV, OVERWRITE);
 
-    desprayOutFileName := dropzonePath + prefix + 'spray_input_terminated' + suffix;
-    sprayOutFileName := prefix + 'spray_test_terminated' + suffix;
+    desprayOutFileName := dropzonePath + prefix + 'spray_input_terminated';
+    sprayOutFileName := prefix + 'spray_test_terminated';
 #else
-    sprayPrepFileName := prefix + 'spray_prep_not_terminated' + suffix;
+    sprayPrepFileName := prefix + 'spray_prep_not_terminated';
     // Create a one record CSV logical file without terminator a the end
     setupFile := output(header, , sprayPrepFileName, CSV(TERMINATOR('')), OVERWRITE);
 
-    desprayOutFileName := dropzonePath + prefix + 'spray_input_not_terminated' +  suffix;
-    sprayOutFileName := prefix + 'spray_test_not_terminated' + suffix;
+    desprayOutFileName := dropzonePath + prefix + 'spray_input_not_terminated';
+    sprayOutFileName := prefix + 'spray_test_not_terminated';
 #end
 
 rec := RECORD

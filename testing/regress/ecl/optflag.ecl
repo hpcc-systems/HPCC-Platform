@@ -16,7 +16,7 @@
 ############################################################################## */
 
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 #onwarning(4523, ignore);
 #onwarning(4522, ignore);
 
