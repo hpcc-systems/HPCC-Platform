@@ -98,8 +98,14 @@ class ECLcmd(Shell):
         results=''
         try:
             if eclfile.flushDiskCache():
-                clearOSCache()
-                pass
+                # At the moment it is not a critical problem if the clearOSCache()
+                # fails, the test case should execute anyway
+                try:
+                    clearOSCache(eclfile.getTaskId())
+                    pass
+                finally:
+                    # Go on
+                    pass
             #print "runCmd:", args
             results, stderr = self.__ECLcmd()(*args)
             logging.debug("%3d. results:'%s'", eclfile.getTaskId(),  results)
