@@ -223,6 +223,7 @@ unsigned __int64 getIPV4StatsValue(const IpAddress & ip)
 
 //--------------------------------------------------------------------------------------------------------------------
 
+const static unsigned __int64 oneMicroSecond = I64C(1000);
 const static unsigned __int64 oneMilliSecond = I64C(1000000);
 const static unsigned __int64 oneSecond = I64C(1000000000);
 const static unsigned __int64 oneMinute = I64C(60000000000);
@@ -232,8 +233,13 @@ const static unsigned __int64 oneDay = 24 * I64C(3600000000000);
 static void formatTime(StringBuffer & out, unsigned __int64 value)
 {
     //Aim to display at least 3 significant digits in the result string
-    if (value < oneMilliSecond)
+    if (value < oneMicroSecond)
         out.appendf("%uns", (unsigned)value);
+    else if (value < oneMilliSecond)
+    {
+        unsigned uvalue = (unsigned)value;
+        out.appendf("%u.%03uus", uvalue / 1000, uvalue % 1000);
+    }
     else if (value < oneSecond)
     {
         unsigned uvalue = (unsigned)value;
@@ -253,11 +259,11 @@ static void formatTime(StringBuffer & out, unsigned __int64 value)
         if (days > 0)
             out.appendf("%u days ", days);
         if (hours > 0 || days)
-            out.appendf("%u:%02u:%02u", hours, mins, secs);
+            out.appendf("%uh%02um%02us", hours, mins, secs);
         else if (mins >= 10)
-            out.appendf("%u:%02u", mins, secs);
+            out.appendf("%um%02us", mins, secs);
         else if (mins >= 1)
-            out.appendf("%u:%02u.%03u", mins, secs, ns / 1000000);
+            out.appendf("%um%02u.%03us", mins, secs, ns / 1000000);
         else
             out.appendf("%u.%03us", secs, ns / 1000000);
     }
