@@ -50,7 +50,7 @@ protected:
             return firstRow;
 
         CThorExpandingRowArray partialResults(*this, this, ers_allow, stableSort_none, true, numPartialResults);
-        if (hadElement)
+        if (firstRow)
             partialResults.setRow(0, firstRow);
         --numPartialResults;
 
@@ -161,7 +161,7 @@ public:
 
         OwnedConstThorRow next = inputStream->ungroupedNextRow();
         RtlDynamicRowBuilder resultcr(queryRowAllocator());
-        size32_t sz = helper->clearAggregate(resultcr);         
+        size32_t sz = helper->clearAggregate(resultcr);
         if (next)
         {
             hadElement = true;
@@ -184,7 +184,7 @@ public:
             sendResult(result.get(),queryRowSerializer(), 1); // send partial result
             return NULL;
         }
-        OwnedConstThorRow ret = getResult(resultcr.finalizeRowClear(sz));
+        OwnedConstThorRow ret = getResult(hadElement ? resultcr.finalizeRowClear(sz) : nullptr);
         if (ret)
         {
             dataLinkIncrement();
