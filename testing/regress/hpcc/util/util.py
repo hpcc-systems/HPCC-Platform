@@ -300,30 +300,32 @@ def checkHpccStatus():
     finally:
         pass
 
-def isSudoer():
+def isSudoer(testId = -1):
     retVal = False
     if 'linux' in sys.platform :
         myProc = subprocess.Popen(["timeout -k 2 2 sudo id && echo Access granted || echo Access denied"], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (myStdout,  myStderr) = myProc.communicate()
         result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
-        logging.debug("%3d. isSudoer() result is: '%s'",  -1, result)
+        logging.debug("%3d. isSudoer() result is: '%s'",  testId, result)
         if 'Access denied' not in myStdout:
             retVal = True
+        else:
+            logging.error("%3d. isSudoer() result is: '%s'",  testId, result)
 
     return retVal
 
-def clearOSCache():
+def clearOSCache(testId = -1):
     if 'linux' in sys.platform :
-        if isSudoer():
+        if isSudoer(testId):
             myProc = subprocess.Popen(["free; sudo -S sync; echo 3 | sudo tee /proc/sys/vm/drop_caches; free"], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (myStdout,  myStderr) = myProc.communicate()
             result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
-            logging.debug("%3d. clearOSCache() result is: '%s'",  -1, result)
+            logging.debug("%3d. clearOSCache() result is: '%s'",  testId, result)
         else:
             err = Error("7000")
-            logging.error("%s. clearOSCache error:%s" % (-1,  err))
-            logging.critical(traceback.format_exc())
+            logging.error("%s. clearOSCache error:%s" % (testId,  err))
+            logging.error(traceback.format_exc())
             raise Error(err)
     else:
-        logging.debug("%3d. clearOSCache() not supported on %s.",  -1, sys.platform)
+        logging.debug("%3d. clearOSCache() not supported on %s.", testId, sys.platform)
     pass
