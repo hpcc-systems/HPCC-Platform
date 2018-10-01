@@ -102,13 +102,15 @@ public:
 
 class graphmaster_decl CJobMaster : public CJobBase
 {
+    typedef CJobBase PARENT;
+
     Linked<IConstWorkUnit> workunit;
     Owned<IFatalHandler> fatalHandler;
     bool querySent, sendSo, spillsSaved;
     Int64Array nodeDiskUsage;
     bool nodeDiskUsageCached;
     StringArray createdFiles;
-    CSlaveMessageHandler *slaveMsgHandler;
+    Owned<CSlaveMessageHandler> slaveMsgHandler;
     SocketEndpoint agentEp;
     CriticalSection sendQueryCrit, spillCrit;
 
@@ -116,7 +118,7 @@ class graphmaster_decl CJobMaster : public CJobBase
 
 public:
     CJobMaster(IConstWorkUnit &workunit, const char *_graphName, ILoadedDllEntry *querySo, bool _sendSo, const SocketEndpoint &_agentEp);
-    ~CJobMaster();
+    virtual void endJob() override;
 
     virtual void addChannel(IMPServer *mpServer);
 

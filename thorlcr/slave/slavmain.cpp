@@ -1837,8 +1837,19 @@ public:
                             disableThorSlaveAsDaliClient();
 
                         PROGLOG("QueryDone, removing %s from jobs", key.get());
+                        Owned<IException> exception;
+                        try
+                        {
+                            job->endJob();
+                        }
+                        catch (IException *e)
+                        {
+                            exception.setown(e);
+                        }
                         jobs.removeExact(job);
                         PROGLOG("QueryDone, removed %s from jobs", key.get());
+                        if (exception)
+                            throw exception.getClear(); // NB: this will cause exception to be part of the reply to master
 
                         msg.clear();
                         msg.append(false);

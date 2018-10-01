@@ -157,7 +157,8 @@
 #define TE_SkewError                            TE_Base + 134
 #define TE_KERN                                 TE_Base + 135
 #define TE_WorkUnitAbortingDumpInfo             TE_Base + 136
-#define TE_Final                                TE_Base + 137       // keep this last
+#define TE_RowLeaksDetected                     TE_Base + 137
+#define TE_Final                                TE_Base + 138       // keep this last
 #define ISTHOREXCEPTION(n) (n > TE_Base && n < TE_Final)
 
 #endif

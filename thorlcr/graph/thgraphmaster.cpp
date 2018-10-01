@@ -1341,17 +1341,20 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     Owned<IMPServer> mpServer = getMPServer();
     addChannel(mpServer);
     slavemptag = allocateMPTag();
-    slaveMsgHandler = new CSlaveMessageHandler(*this, slavemptag);
+    slaveMsgHandler.setown(new CSlaveMessageHandler(*this, slavemptag));
     tmpHandler.setown(createTempHandler(true));
     xgmml.set(graphXGMML);
 }
 
-CJobMaster::~CJobMaster()
+void CJobMaster::endJob()
 {
-    if (slaveMsgHandler)
-        delete slaveMsgHandler;
+    if (jobEnded)
+        return;
+
+    slaveMsgHandler.clear();
     freeMPTag(slavemptag);
     tmpHandler.clear();
+    PARENT::endJob();
 }
 
 void CJobMaster::addChannel(IMPServer *mpServer)
