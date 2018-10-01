@@ -558,6 +558,7 @@ ESPrequest [nil_remove] DropZoneFileSearchRequest
 ESPresponse [exceptions_inline] DropZoneFileSearchResponse
 {
     ESParray<ESPStruct PhysicalFileStruct> Files;
+    [min_ver("1.16")] string Warning;
 };
 
 ESPrequest OpenSaveRequest
@@ -679,7 +680,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.15"),
+    version("1.16"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
