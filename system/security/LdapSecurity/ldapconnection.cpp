@@ -1417,6 +1417,16 @@ private:
     StringBuffer         m_pwscheme;
     bool                 m_domainPwdsNeverExpire;//no domain policy for password expiration
 
+    struct MemoryAttrItem : public CInterface, public MemoryAttr
+    {
+        MemoryAttrItem() : MemoryAttr() {}
+        MemoryAttrItem(unsigned len, const void * ptr) : MemoryAttr(len, ptr) {}
+
+    };
+    ReadWriteLock             m_unknownSIDCacheLock;
+    CIArrayOf<MemoryAttrItem> m_unknownSIDCache;//cache Security Identifier Structure (SID) of previously deleted/orphaned LDAP objects
+
+
 public:
     IMPLEMENT_IINTERFACE
 
@@ -2247,6 +2257,19 @@ public:
 
     bool lookupAccount(MemoryBuffer& sidbuf, StringBuffer& account_name, ACT_TYPE& act_type)
     {
+        {
+            int sidLen = sidbuf.length();
+            ReadLockBlock readLock(m_unknownSIDCacheLock);
+            ForEachItemIn(idx, m_unknownSIDCache)
+            {
+                MemoryAttrItem& sid = m_unknownSIDCache.item(idx);
+                if (sid.length()==sidLen  &&  0==memcmp(sid.bufferBase(), sidbuf.bufferBase(), sidLen))
+                {
+                    return false;
+                }
+            }
+        }
+
         char        *attribute;
         LDAPMessage *message;
 
@@ -2292,7 +2315,10 @@ public:
                 ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
                 if(ldap_count_entries(ld, searchResult) < 1)
                 {
-                    DBGLOG("CLdapClient::lookupAccount No entries found");
+                    MemoryAttrItem *pItem = new MemoryAttrItem();
+                    pItem->set(sidbuf.length(), sidbuf.bufferBase());
+                    WriteLockBlock writeLock(m_unknownSIDCacheLock);
+                    m_unknownSIDCache.append(*pItem);//remember orphaned SID so won't try to look up again
                     return false;
                 }
             }
