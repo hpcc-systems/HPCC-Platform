@@ -1796,6 +1796,14 @@ public:
     {
         char * ret = chunk;
         ChunkHeader * header = (ChunkHeader *)ret;
+
+        if (0 == getActivityId(allocatorId))
+        {
+            int x = 0;
+            ++x;
+        }
+
+
         header->allocatorId = (allocatorId & ACTIVITY_MASK) | ACTIVITY_MAGIC;
         header->count.store(1, std::memory_order_relaxed);
         ret += chunkHeaderSize;
@@ -6137,7 +6145,18 @@ ChunkedHeaplet * CFixedChunkedHeap::allocateHeaplet()
 void * CFixedChunkedHeap::allocate(unsigned activityId)
 {
     rowManager->beforeAllocate(chunkSize-FixedSizeHeaplet::chunkHeaderSize, activityId);
-    return doAllocateRow(activityId, defaultSpillCost);
+    void *ret = doAllocateRow(activityId, defaultSpillCost);
+    if ((ret == (void *)0x7fd295600088))
+    {
+        int x = 0;
+        ++x;
+    }
+    if ((ret == (void *)0x7fd295600088))
+    {
+        int x = 0;
+        ++x;
+    }
+    return ret;
 }
 
 

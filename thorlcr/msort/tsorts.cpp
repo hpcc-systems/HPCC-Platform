@@ -1030,7 +1030,7 @@ public:
         if (!*filename) // partition row wanted
         {
             if (partitionrow)
-                row.set(partitionrow.getClear());
+                row.setown(partitionrow.getClear());
         }
         else
         {
