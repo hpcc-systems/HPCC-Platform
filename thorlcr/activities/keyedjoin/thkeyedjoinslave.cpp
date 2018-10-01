@@ -258,7 +258,10 @@ public:
     {
         // NB: thread safe, because group limits and arrays have been handled/setup by this stage.
         if (hasFlag(GroupFlagLimitMask))
+        {
+            ReleaseRoxieRow(right);
             return;
+        }
         RowArray &rowArray = rowArrays[partNo];
         rowArray.rows[sequence].rhs = right;
         ++totalRows;
@@ -267,7 +270,10 @@ public:
     {
         CriticalBlock b(crit);
         if (hasFlag(GroupFlagLimitMask)) // NB: flag can be triggered asynchronously, via setAbortLimitHit() / setAtMostLimitHit()
+        {
+            ReleaseRoxieRow(right);
             return;
+        }
         join->addRowEntry(partNo, right, fpos, rowArrays, numRowArrays);
         ++totalRows;
     }
@@ -748,7 +754,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             IOutputMetaData *projectedFormat = helper->queryProjectedIndexRecordSize();
 
             RecordTranslationMode translationMode = getTranslationMode(activity);
-            const char *fname = helper->getIndexFileName();
+            OwnedRoxieString fname = helper->getIndexFileName();
             translator.setown(getTranslators(fname, expectedFormatCrc, helper->queryIndexRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode));
             if (translator)
                 keyManager.setLayoutTranslator(&translator->queryTranslator());
@@ -1672,7 +1678,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
             IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
             RecordTranslationMode translationMode = getTranslationMode(*this);
-            const char *fname = helper->getFileName();
+            OwnedRoxieString fname = helper->getFileName();
             partIO.translator = getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
             if (partIO.translator)
             {
