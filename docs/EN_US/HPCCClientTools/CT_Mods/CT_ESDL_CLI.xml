@@ -1230,9 +1230,8 @@
         <title>esdl bind-method</title>
 
         <para><emphasis role="bold">esdl bind-method
-        &lt;TargetESPProcessName&gt; &lt;TargetESPBindingName&gt;
-        &lt;TargetServiceName&gt; &lt;TargetServiceDefVersion&gt;
-        &lt;TargetMethodName&gt; [options]</emphasis></para>
+        &lt;TargetESDLBindingID&gt; &lt;TargetMethodName&gt;
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1242,29 +1241,10 @@
 
             <tbody>
               <row>
-                <entry>TargetESPProcessName</entry>
+                <entry>TargetESDLBindingID</entry>
 
-                <entry>The target ESP Process name</entry>
-              </row>
-
-              <row>
-                <entry>TargetESPBindingName</entry>
-
-                <entry>Either target ESP binding name</entry>
-              </row>
-
-              <row>
-                <entry>TargetServiceName</entry>
-
-                <entry>The name of the Service to bind (must already be
-                defined in dali.)</entry>
-              </row>
-
-              <row>
-                <entry>TargetServiceDefVersion</entry>
-
-                <entry>The version of the target service ESDL definition (must
-                exist in dali)</entry>
+                <entry>The id of the target ESDL binding (must exist in
+                Dali)</entry>
               </row>
 
               <row>
@@ -1355,7 +1335,7 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting>esdl bind-method myEsp myespbinding mySvc mySvc.1 myMthd1 --config myMethods.xml</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_unbind-method" role="brk">
