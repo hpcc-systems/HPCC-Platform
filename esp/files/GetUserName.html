@@ -77,29 +77,51 @@
                 display: none;
             }
         </style>
+        <script>dojoConfig = {async:true, parseOnLoad:false}</script>
+        <script src="/esp/files/dist/dojoLib.eclwatch.js"></script>
     </head>
     <body>
         <div id="container" class="container visible">
             <div class="formContainer">
-                <img src="eclwatch/img/Loginlogo.png" alt="HPCC Systems">
-                <p class="loginStr">Please log into ECL Watch</p>
+                <img id="logo" src="eclwatch/img/Loginlogo.png">
+                <p id="loginStr" class="loginStr"></p>
                 <div class="login">
                     <form method="POST" action="/esp/login">
-                        <input type="text" name="username" placeholder="username" class="loginStr" autofocus></input>
-                        <button class="loginStr" id="button" type="submit">Login</button>
+                        <input id="username" type="text" name="username" placeholder="username" class="loginStr" autofocus></input>
+                        <button class="loginStr" id="button" type="submit"></button>
                     </form>
                 </div>
             </div>
         </div>
-        <script>
-            var element = document.getElementById('container');
 
-            if (navigator.cookieEnabled) {
-                var element = document.getElementById("container");
-                element.classList.remove("visible");
-            } else {
-                alert("ECL Watch requires cookies enabled to continue.");
-            }
+        <script type="text/javascript">
+            require(["dojo/ready", "dojo/i18n", "dojo/i18n!hpcc/nls/hpcc"],
+                function(ready, i18n, nlsHPCC){
+                    ready(function(){
+                        var HPCCSystems = document.getElementById("logo");
+                        var loginStr = document.getElementById("loginStr");
+                        var error = document.getElementById("hidden_msg");
+                        var username = document.getElementById("username");
+                        var button = document.getElementById("button");
+                        var enableCookies = "";
+
+                        HPCCSystems.setAttribute("alt", nlsHPCC.HPCCSystems);
+                        loginStr.innerHTML = nlsHPCC.PleaseLogIntoECLWatch;
+                        username.innerHTML = nlsHPCC.Username;
+                        button.innerHTML = nlsHPCC.Login;
+                        enableCookies = nlsHPCC.PleaseEnableCookies;
+
+                        var element = document.getElementById('container');
+
+                        if (navigator.cookieEnabled) {
+                            var element = document.getElementById("container");
+                            element.classList.remove("visible");
+                        } else {
+                            alert(enableCookies);
+                        }
+                    });
+                }
+            );
         </script>
     </body>
 </html>
