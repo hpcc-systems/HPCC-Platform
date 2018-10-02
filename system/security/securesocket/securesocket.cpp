@@ -885,6 +885,11 @@ private:
     Owned<CStringSet> m_peers;
     StringAttr password;
 
+    void setSessionIdContext()
+    {
+        SSL_CTX_set_session_id_context(m_ctx, (const unsigned char*)"hpccsystems", 11);
+    }
+
 public:
     IMPLEMENT_IINTERFACE;
     CSecureSocketContext(SecureSocketType sockettype)
@@ -899,6 +904,9 @@ public:
             m_meth = SSLv23_server_method();
 
         m_ctx = SSL_CTX_new(m_meth);
+
+        if (sockettype == ServerSocket)
+            setSessionIdContext();
 
         if(!m_ctx)
         {
@@ -924,6 +932,10 @@ public:
         {
             throw MakeStringException(-1, "ctx can't be created");
         }
+
+        if (sockettype == ServerSocket)
+            setSessionIdContext();
+
         password.set(passphrase);
         SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
@@ -968,6 +980,9 @@ public:
         {
             throw MakeStringException(-1, "ctx can't be created");
         }
+
+        if (sockettype == ServerSocket)
+            setSessionIdContext();
 
         const char *cipherList = config->queryProp("cipherList");
         if (!cipherList || !*cipherList)
