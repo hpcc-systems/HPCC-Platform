@@ -43,7 +43,7 @@ protected:
 
 public:
     ProcessSlaveActivity(CGraphElementBase *container);
-    virtual void beforeDispose();
+    virtual bool beforeDispose() override;
 
     virtual void startProcess(bool async=true);
     virtual bool wait(unsigned timeout);

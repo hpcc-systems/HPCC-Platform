@@ -317,9 +317,10 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         CContext(CKJService &_service, CActivityContext *_activityCtx) : service(_service), activityCtx(_activityCtx)
         {
         }
-        virtual void beforeDispose() override
+        virtual bool beforeDispose() override
         {
             service.freeActivityContext(activityCtx.getClear());
+            return true;
         }
         CActivityContext *queryActivityCtx() const { return activityCtx; }
         void setTranslation(RecordTranslationMode _translationMode, IOutputMetaData *_publishedFormat, unsigned _publishedFormatCrc, IOutputMetaData *_projectedFormat)
@@ -2237,9 +2238,10 @@ public:
         backupHandler.clear();
         fipHandler.clear();
     }
-    virtual void beforeDispose() override
+    virtual bool beforeDispose() override
     {
         kjService->stop();
+        return true;
     }
 
 // IThorResource

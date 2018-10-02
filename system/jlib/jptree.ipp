@@ -44,7 +44,7 @@ public:
 typedef MapStringTo<IInterfacePtr, IInterfacePtr, MappingStringToOwned> MapStringToOwned;
 
 // case sensitive childmap
-class jlib_decl ChildMap : protected SuperHashTableOf<IPropertyTree, constcharptr>
+class jlib_decl ChildMap : public SuperHashTableOf<IPropertyTree, constcharptr>
 {
 protected:
 // SuperHashTable definitions
@@ -569,8 +569,6 @@ friend class ChildMap;
 public:
     PTree(byte _flags=ipt_none, IPTArrayValue *_value=nullptr, ChildMap *_children=nullptr);
     ~PTree();
-    virtual void beforeDispose() override { }
-
     virtual unsigned queryHash() const = 0;
     IPropertyTree *queryParent() { return parent; }
     IPropertyTree *queryChild(unsigned index);

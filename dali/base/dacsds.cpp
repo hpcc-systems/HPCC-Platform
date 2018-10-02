@@ -548,10 +548,11 @@ CClientRemoteTree::CClientRemoteTree(const char *name, IPTArrayValue *value, Chi
     assertex(!isnocase());
 }
 
-void CClientRemoteTree::beforeDispose()
+bool CClientRemoteTree::beforeDispose()
 {
     if (queryStateChanges())
         connection.clearChanges(*this);
+    return true;
 }
 
 void CClientRemoteTree::Link() const

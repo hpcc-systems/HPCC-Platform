@@ -1179,9 +1179,10 @@ public:
                 id = querySDS().subscribe(xpath, *subscriber, sub, !sub);
                 PROGLOG("Subscribed to %s", xpath);
             }
-            virtual void beforeDispose() override
+            virtual bool beforeDispose() override
             {
                 querySDS().unsubscribe(id);
+                return true;
             }
         };
         Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), RTM_LOCK_WRITE, INFINITE);

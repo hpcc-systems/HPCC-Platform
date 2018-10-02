@@ -190,7 +190,7 @@ CWuGraphStats::CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _cre
     }
 }
 
-void CWuGraphStats::beforeDispose()
+bool CWuGraphStats::beforeDispose()
 {
     Owned<IStatisticCollection> stats = collector->getResult();
 
@@ -221,6 +221,7 @@ void CWuGraphStats::beforeDispose()
     subgraph->setPropBin("Stats", compressed.length(), compressed.toByteArray());
     if (!progress->getPropBool("@stats", false))
         progress->setPropBool("@stats", true);
+    return true;
 }
 
 IStatisticGatherer & CWuGraphStats::queryStatsBuilder()
@@ -5940,7 +5941,7 @@ void CLocalWorkUnit::loadPTree(IPropertyTree *ptree)
     p.setown(ptree);
 }
 
-void CLocalWorkUnit::beforeDispose()
+bool CLocalWorkUnit::beforeDispose()
 {
     try
     {
@@ -5953,6 +5954,7 @@ void CLocalWorkUnit::beforeDispose()
         secUser.clear();
     }
     catch (IException *E) { LOG(MCexception(E, MSGCLS_warning), E, "Exception during ~CLocalWorkUnit"); E->Release(); }
+    return true;
 }
 
 void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)

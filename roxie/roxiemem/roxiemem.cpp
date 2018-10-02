@@ -2612,7 +2612,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual void *finalizeRow(void *final);
-    virtual void beforeDispose();
+    virtual bool beforeDispose() override;
 
     //This should never be called while rows are being allocated since that implies the row manager is being killed
     //too early.  => No need to protect with a critical section.
@@ -5594,10 +5594,11 @@ void CSlaveRowManager::throwHeapExhausted(unsigned allocatorId, unsigned pages)
 
 //================================================================================
 
-void CRoxieFixedRowHeapBase::beforeDispose()
+bool CRoxieFixedRowHeapBase::beforeDispose()
 {
     if (rowManager)
         rowManager->noteReleasedHeap(this);
+    return true;
 }
 
 void * CRoxieFixedRowHeapBase::finalizeRow(void *final)

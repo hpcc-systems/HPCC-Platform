@@ -545,9 +545,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             VStringBuffer log("%s (%p): %s", typeid(*this).name(), this, msg);
             PROGLOG("%s", log.str());
         }
-        virtual void beforeDispose() override
+        virtual bool beforeDispose() override
         {
             stop();
+            return true;
         }
         virtual void addPartNum(unsigned partCopy)
         {

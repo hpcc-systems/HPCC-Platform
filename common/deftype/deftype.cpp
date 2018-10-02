@@ -219,12 +219,13 @@ void CHashedTypeInfo::removeObserver(IObserver & observer)
 }
 
 
-void CHashedTypeInfo::beforeDispose()
+bool CHashedTypeInfo::beforeDispose()
 {
     CriticalBlock block(*typeCS);
     if (observed)
         globalTypeCache->removeExact(this);
     assertex(!observed);
+    return true;
 }
 
 

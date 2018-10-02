@@ -1599,6 +1599,164 @@ private:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingTest, "AtomicTimingTest");
+/*
+ * Fast Shared idea.
+ * On creation, we pull off a size-based per-thread free-chain
+ * Override beforeDispose and put on a per-thread free chain (up to some limit)
+ * Doesn't matter if we put onto a different free chain to the one we came from
+ * No locking needed
+ */
+
+template <size_t sz, unsigned max=10>
+class chain
+{
+    unsigned freecount = 0;
+    void *freechain = nullptr;
+public:
+    ~chain()
+    {
+        void *finger = freechain;
+        while (finger)
+        {
+            void *next = *(void**) finger;
+            //printf("free, this = %p\n", finger);
+            free(finger);
+            finger = next;
+        }
+    }
+    void *get()
+    {
+        assert(sz >= sizeof(void *));
+        if (freechain)
+        {
+            assert(freecount);
+            freecount--;
+            void *tmp = freechain;
+            freechain = *(void **) freechain;
+            //printf("New (cached), this = %p\n", tmp);
+            return tmp;
+        }
+        else
+        {
+            void * ret = malloc(sz);
+            //printf("New (uncached), this = %p\n", ret);
+            return ret;
+        }
+
+    }
+    void put(void *ptr)
+    {
+        if (freecount > max)
+        {
+            printf("Cache full, this = %p\n", ptr);
+            free(ptr);
+        }
+        else
+        {
+            * (void **) ptr = freechain;
+            freechain = (void *) ptr;
+            freecount++;
+        }
+    }
+};
+
+template <class BASE, unsigned max=10>
+class CCachedObjectOf : public BASE
+{
+    typedef CCachedObjectOf<BASE> SELF;
+public:
+    CCachedObjectOf<BASE>()
+    {
+        //printf("Constructor, this = %p\n", this);
+    }
+    void *operator new(size_t sz)
+    {
+        assert (sz == sizeof(SELF));
+        return freechain.get();
+    }
+    virtual bool beforeDispose() override
+    {
+        //printf("BeforeDispose, this = %p\n", this);
+        if (!BASE::beforeDispose())
+            return false;
+        this->~CCachedObjectOf<BASE>();  // Manually call destructor
+        freechain.put(this);
+        return false;  // Meaning don't delete as we already have
+    }
+private:
+    static thread_local chain<sizeof(BASE), max> freechain;
+};
+
+template <typename BASE, unsigned max>
+thread_local chain<sizeof(BASE), max> CCachedObjectOf<BASE, max>::freechain;
+
+class FastSharedTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(FastSharedTest);
+        CPPUNIT_TEST(test);
+    CPPUNIT_TEST_SUITE_END();
+public:
+    static void testCached(unsigned n)
+    {
+        for (unsigned i = 0; i < n; i++)
+        {
+            Owned<CCachedObjectOf<CInterface>> c1 = new CCachedObjectOf<CInterface>;
+            Owned<CCachedObjectOf<CInterface>> c2 = new CCachedObjectOf<CInterface>;
+            {
+                Owned<CCachedObjectOf<CInterface>> c3 = new CCachedObjectOf<CInterface>;
+                Owned<CCachedObjectOf<CInterface>> c4 = new CCachedObjectOf<CInterface>;
+            }
+            {
+                Owned<CCachedObjectOf<CInterface>> c5 = new CCachedObjectOf<CInterface>;
+                Owned<CCachedObjectOf<CInterface>> c6 = new CCachedObjectOf<CInterface>;
+            }
+        }
+    }
+
+    static void testUncached(unsigned n)
+    {
+        for (unsigned i = 0; i < n; i++)
+        {
+            Owned<CInterface> c1 = new CInterface;
+            Owned<CInterface> c2 = new CInterface;
+            {
+                Owned<CInterface> c3 = new CInterface;
+                Owned<CInterface> c4 = new CInterface;
+            }
+            {
+                Owned<CInterface> c5 = new CInterface;
+                Owned<CInterface> c6 = new CInterface;
+            }
+        }
+    }
+
+    void test()
+    {
+        unsigned start = msTick();
+        class casyncfor: public CAsyncFor
+        {
+            void Do(unsigned idx)
+            {
+                testCached(1000);
+            }
+        } afor;
+        afor.For(1000,1000);
+        DBGLOG("Cached took %d ms", msTick() - start);
+        start = msTick();
+        class casyncforU: public CAsyncFor
+        {
+            void Do(unsigned idx)
+            {
+                testUncached(1000);
+            }
+        } aforu;
+        aforu.For(1000,1000);
+        DBGLOG("Uncached took %d ms", msTick() - start);
+}
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(FastSharedTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(FastSharedTest, "FastSharedTest");
 
 
 #endif // _USE_CPPUNIT

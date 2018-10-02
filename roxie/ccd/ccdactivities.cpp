@@ -385,12 +385,13 @@ protected:
         ::Release(basehelper);
     }
 
-    virtual void beforeDispose() override
+    virtual bool beforeDispose() override
     {
         CRuntimeStatisticCollection merged(allStatistics);
         logctx.gatherStats(merged);
         if (defaultCollectFactoryStatistics)
             basefactory->mergeStats(merged);
+        return true;
     }
 
 public:

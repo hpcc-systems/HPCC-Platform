@@ -166,10 +166,6 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    void beforeDispose()
-    {
-    }
-
     CEspProtocol();
     virtual ~CEspProtocol();
 
