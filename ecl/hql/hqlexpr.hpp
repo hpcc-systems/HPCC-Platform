@@ -913,6 +913,7 @@ public:
     inline void setCheckSimpleDef() { checkSimpleDef = true; }
     inline void setRegenerateCache() { regenerateCache = true; }
     inline void setIgnoreCache() { ignoreCache = true; }
+    inline void setIgnoreSimplified() { ignoreSimplified = true; }
     void setNeverSimplify(const char *regex) { neverSimplifyRegEx.assign(regex, std::regex_constants::icase); neverSimplifyEnabled = true; };
     bool neverSimplify(const char *fullname) { return neverSimplifyEnabled? std::regex_match(fullname, neverSimplifyRegEx):false; };
     inline IPropertyTree * queryNestedDependTree() const { return nestedDependTree; }
@@ -945,6 +946,7 @@ public:
     bool checkSimpleDef = false;
     bool regenerateCache = false;
     bool ignoreCache = false;
+    bool ignoreSimplified = false;
     Linked<ICodegenContextCallback> codegenCtx;
     CIArrayOf<FileParseMeta> metaStack;
     IEclCachedDefinitionCollection * cache = nullptr;
@@ -1024,6 +1026,7 @@ public:
     inline bool hasCacheLocation() const { return parseCtx.hasCacheLocation();}
     inline bool checkSimpleDef() const { return parseCtx.checkSimpleDef; }
     inline bool ignoreCache() const { return parseCtx.ignoreCache; }
+    inline bool ignoreSimplified() const { return parseCtx.ignoreSimplified; }
     inline bool createCache(IHqlExpression * simplified, bool isMacro) { return parseCtx.createCache(simplified, isMacro); }
     void reportTiming(const char * name);
     inline void incrementAttribsSimplified() { ++parseCtx.numAttribsSimplified; }

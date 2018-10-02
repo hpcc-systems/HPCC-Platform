@@ -415,6 +415,7 @@ protected:
     bool optRegenerateCache = false;
     bool optIgnoreUnknownImport = false;
     bool optIgnoreCache = false;
+    bool optIgnoreSimplified = false;
     bool optExtraStats = false;
 
     mutable bool daliConnected = false;
@@ -1225,6 +1226,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             parseCtx.setRegenerateCache();
         if (optIgnoreCache)
             parseCtx.setIgnoreCache();
+        if (optIgnoreSimplified)
+            parseCtx.setIgnoreSimplified();
         if (neverSimplifyRegEx)
             parseCtx.setNeverSimplify(neverSimplifyRegEx.str());
 
@@ -2706,7 +2709,10 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optRegenerateCache, "--regeneratecache"))
         {
         }
-        else if (iter.matchFlag(optIgnoreCache, "--internalignorecache"))  // may generate cache but don't use to simplified expressions
+        else if (iter.matchFlag(optIgnoreCache, "--internalignorecache"))
+        {
+        }
+        else if (iter.matchFlag(optIgnoreSimplified, "--ignoresimplified"))
         {
         }
         else if (iter.matchFlag(optExtraStats, "--internalextrastats"))
