@@ -6,7 +6,8 @@
 
   <para><indexterm>
       <primary>ESPrequest</primary>
-    </indexterm>The request structure for a method.</para>
+    </indexterm>The request structure for a method. ESPrequests can be nested
+  and support inheritance.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
@@ -18,8 +19,16 @@ ESPrequest  MyQueryRequest
     string MiddleName;
     string LastName;
     string Sortby;
- 
     bool Descending(false);
+
 };
+
+ESPrequest MyQueryRequestExtended:MyQueryRequest
+
+{
+    string SSN;
+
+};
+
    </programlisting>
 </sect1>

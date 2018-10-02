@@ -6,7 +6,8 @@
 
   <para><indexterm>
       <primary>ESPresponse</primary>
-    </indexterm>The response structure for a method.</para>
+    </indexterm>The response structure for a method. ESPresponses can be
+  nested and support inheritance.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
@@ -17,5 +18,14 @@
     string MiddleName;
     string LastName;
  
-};  </programlisting>
+};  
+
+ESPresponse MyQueryResponseExtended:MyQueryResponse
+
+{
+    string SSN;
+    string partyAffilition;
+};
+
+</programlisting>
 </sect1>
