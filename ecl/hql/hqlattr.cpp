@@ -3028,6 +3028,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_pipe:
     case no_translated:
     case no_datasetfromdictionary:
+    case no_simplified:
         //MORE could improve each of these
         info.setUnknown(RCMdisk);
         break;

@@ -2738,7 +2738,7 @@ actionStmt
                                 parser->reportError(ERR_EXPECTED_INDEX,$3,"Expected an index");
                             if (!isKey($5.queryExpr()))
                                 parser->reportError(ERR_EXPECTED_INDEX,$5,"Expected an index");
-                            if (!recordTypesMatch($3.queryExpr(), $5.queryExpr()))
+                            if (!parser->recordTypesMatch($3.queryExpr(), $5.queryExpr()))
                                 parser->reportError(ERR_TYPEMISMATCH_RECORD, $4, "Indexes must have the same structure");
                             parser->normalizeExpression($7, type_string, false);
 
@@ -5935,6 +5935,12 @@ primexpr1
 
     | '(' expression ')'    
                         {   $$.inherit($2); }
+    | __SIMPLIFIED__ '(' recordDef ')'
+                    {
+                        OwnedHqlExpr record = $3.getExpr();
+                        $$.setExpr(createDataset(no_simplified, record.getClear()));
+                        $$.setPosition($1);
+                    }
     | __SIMPLIFIED__ '(' scalarType ')'
                         {
                             ITypeInfo *type = $3.getType();
@@ -8505,7 +8511,7 @@ simpleDataSet
                             else
                                 cond = createConstant(true);
 
-                            if (!recordTypesMatch(ds, tr))
+                            if (!parser->recordTypesMatch(ds, tr))
                                 parser->reportError(ERR_TRANSFORM_TYPE_MISMATCH,$5,"Type returned from transform must match the source dataset type");
                             $$.setExpr(createDataset(no_rollup, ds, createComma(cond, tr, attr, LINK(seq))));
                             parser->checkDistribution($3, $$.queryExpr(), false);
@@ -9003,7 +9009,7 @@ simpleDataSet
                             parser->saveDiskAccessInformation($1, extra);
                             if (transform)
                             {
-                                if (!recordTypesMatch(dataset, transform))
+                                if (!parser->recordTypesMatch(dataset, transform))
                                 {
                                     parser->reportError(ERR_TRANSFORM_TYPE_MISMATCH, $5,"Type returned from transform must match the source dataset type");
                                     transform.setown(parser->createClearTransform(dataset->queryRecord(), $5));

@@ -556,6 +556,8 @@ public:
     IHqlExpression *createINExpression(node_operator op, IHqlExpression *expr, IHqlExpression *set, attribute &errpos);
     IHqlExpression * createLoopCondition(IHqlExpression * left, IHqlExpression * arg1, IHqlExpression * arg2, IHqlExpression * seq, IHqlExpression * rowsid);
     void setTemplateAttribute();
+    bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right);
+    bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right);
     void warnIfFoldsToConstant(IHqlExpression * expr, const attribute & errpos);
     void warnIfRecordPacked(IHqlExpression * expr, const attribute & errpos);
     void warnIfRecordPacked(const attribute & errpos) { warnIfRecordPacked(errpos.queryExpr(), errpos); }

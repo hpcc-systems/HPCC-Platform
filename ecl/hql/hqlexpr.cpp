@@ -2262,6 +2262,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_none:
     case no_null:
     case no_anon:
+    case no_simplified:
     case no_pseudods:
     case no_all:
     case no_table:
@@ -2716,6 +2717,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_funcdef:
     case no_null:
     case no_anon:
+    case no_simplified:
     case no_pseudods:
     case no_all:
     case no_keyindex:
@@ -2987,6 +2989,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_normalize:
     case no_null:
     case no_anon:
+    case no_simplified:
     case no_pseudods:
     case no_all:
     case no_none:
@@ -6746,6 +6749,7 @@ void CHqlDataset::cacheParent()
     case no_getresult:
     case no_null:
     case no_anon:
+    case no_simplified:
     case no_pseudods:
     case no_activetable:
     case no_alias:
@@ -11526,6 +11530,7 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
     case no_null:
     case no_fail:
     case no_anon:
+    case no_simplified:
     case no_workunit_dataset:
     case no_getgraphresult:
     case no_getresult:

@@ -2802,10 +2802,15 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         //case no_count:
         //case no_if:
         case no_simplified:
-            s.append(getEclOpString(no));
-            s.append('(');
-            getTypeString(expr->queryType(), s);
-            s.append(')');
+            if (expr->isDataset())
+                defaultToECL(expr, s, inType);
+            else
+            {
+                s.append(getEclOpString(no));
+                s.append('(');
+                getTypeString(expr->queryType(), s);
+                s.append(')');
+            }
             break;
         default:
             defaultToECL(expr, s, inType);

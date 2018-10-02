@@ -477,7 +477,7 @@ HqlGram::~HqlGram()
     defaultRealType->Release();
 
     cleanCurTransform();
-}                        
+}
 
 int HqlGram::yyLex(attribute * yylval, const short * activeState)
 {
@@ -1729,9 +1729,9 @@ void HqlGram::doAddAssignment(IHqlExpression * transform, IHqlExpression * _fiel
         rhsType.setown(alien->getLogicalType());
     }
 
-    if (!fldType->assignableFrom(rhsType))
+    if (!lookupCtx.syntaxChecking() && !fldType->assignableFrom(rhsType))
     {
-        StringBuffer msg("Can not assign ");
+        StringBuffer msg("Cannot assign ");
         getFriendlyTypeStr(rhsType,msg).append(" to ");
         getFriendlyTypeStr(fldType,msg).append(" (field ");
         getFldName(field,msg).append(")");
@@ -1915,7 +1915,7 @@ void HqlGram::addAssignall(IHqlExpression *tgt, IHqlExpression *src, const attri
     IHqlExpression * srcRecord = src->queryRecord();
     IHqlExpression * tgtRecord = tgt->queryRecord();
 
-    if (srcRecord && tgtRecord && recordTypesMatch(srcRecord, tgtRecord) && (tgtOp != no_self) && !haveAssignedToChildren(tgt))
+    if ((!lookupCtx.syntaxChecking() || lookupCtx.ignoreSimplified()) && srcRecord && tgtRecord && recordTypesMatch(srcRecord, tgtRecord) && (tgtOp != no_self) && !haveAssignedToChildren(tgt))
     {
         doAddAssignment(curTransform, tgt, src, errpos);
         return;
@@ -2296,7 +2296,7 @@ void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpr
                             appendTransformAssign(curTransform, targetSelected, castChild, errpos);
                         modified = true;
                     }
-                    else if (!insideTemplateFunction())
+                    else if (!lookupCtx.syntaxChecking() && !insideTemplateFunction())
                     {
                         StringBuffer fldName;
                         getFldName(selected,fldName);
@@ -6195,11 +6195,11 @@ static bool includeError(HqlLookupContext & ctx, WarnErrorCategory category)
 
 void HqlGram::doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
 {
-	if (includeError(lookupCtx, category))
-	{
-		Owned<IError> error = createError(category, queryDefaultSeverity(category), warnNo, msg, filename, lineno, column, pos);
-		report(error);
-	}
+    if (includeError(lookupCtx, category))
+    {
+        Owned<IError> error = createError(category, queryDefaultSeverity(category), warnNo, msg, filename, lineno, column, pos);
+        report(error);
+    }
 }
 
 void HqlGram::reportMacroExpansionPosition(IError * warning, HqlLex * lexer)
@@ -6671,7 +6671,6 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
             }
             return LINK(actual);
         }
-        
         if (formal->isFunction())
         {
             if (errpos)
@@ -6721,7 +6720,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
     default:
         if (formalTC == type_row)
             formalType = formalType->queryChildType();
-        if (!formalType->assignableFrom(actualType->queryPromotedType()))
+        if (!lookupCtx.syntaxChecking() && !formalType->assignableFrom(actualType->queryPromotedType()))
         {
             if (errpos)
             {
@@ -8199,6 +8198,8 @@ bool HqlGram::isFilteredDiskFile(IHqlExpression * expr)
 
 void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
 {
+    if (lookupCtx.syntaxChecking())
+        return;
     bool lonly = join->hasAttribute(leftonlyAtom);
     bool ronly = join->hasAttribute(rightonlyAtom);
     bool fonly = join->hasAttribute(fullonlyAtom);
@@ -12279,6 +12280,21 @@ void HqlGram::setTemplateAttribute()
 #endif
 }
 
+bool HqlGram::recordTypesMatch(ITypeInfo * left, ITypeInfo * right)
+{
+    if (lookupCtx.syntaxChecking())
+        return true;
+    else
+        return ::recordTypesMatch(left,right);
+}
+
+bool HqlGram::recordTypesMatch(IHqlExpression * left, IHqlExpression * right)
+{
+    if (lookupCtx.syntaxChecking())
+        return true;
+    else
+        return ::recordTypesMatch(left,right);
+}
 
 IHqlExpression * reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *scope, HqlLookupContext & ctx, bool hasFieldMap)
 {
@@ -12532,16 +12548,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
             {
                 regenerateDefinition(simplified, simplifiedEcl);
                 // Ensure the simplified expression is less complex
-                if (simplifiedEcl.length()<contents->length())
-                {
-                    if (ctx.checkSimpleDef())
-                    {
-                        simplifiedEcl.append("\n/* Simplified expression expression tree:\n");
-                        EclIR::getIRText(simplifiedEcl, 0, queryLocationIndependent(simplified));
-                        simplifiedEcl.append("*/\n");
-                    }
-                }
-                else
+                if (simplifiedEcl.length()>contents->length())
                 {
                     // Simplified expr is more complex, so blank out plain text ecl string
                     // to ensure it's not written to cache or used for verifying
@@ -12557,7 +12564,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
                 ctx.incrementAttribsSimplified();
 
                 if (ctx.checkSimpleDef())
-                    verifySimplifiedDefinition(parsed, simplified, simplifiedEcl, attrCtx);
+                    verifySimplifiedDefinition(parsed, simplified, simplifiedEcl, fullName, attrCtx);
 
                 if (simplified != parsed && useSimplified)
                     scope->defineSymbol(LINK(simplified));
@@ -12594,7 +12601,7 @@ IHqlExpression * parseDefinition(const char * ecl, IIdAtom * name, MultiErrorRec
     return scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
 }
 
-bool verifySimplifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplifiedDefinition, const char * simplifiedEcl, HqlLookupContext & ctx)
+bool verifySimplifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplifiedDefinition, const char * simplifiedEcl, const char * fullName, HqlLookupContext & ctx)
 {
     MultiErrorReceiver errors;
 
@@ -12602,14 +12609,15 @@ bool verifySimplifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simpli
     if (!parsed)
     {
 #ifdef _DEBUG
-        DBGLOG("Failed to parse simplified definition");
+        DBGLOG("Failed to parse simplified definition: %s\n", fullName);
         StringBuffer orig;
         EclIR::getIRText(orig, 0, queryLocationIndependent(origExpr));
         DBGLOG("Original:\n%s\n", orig.str());
         StringBuffer t1;
         EclIR::getIRText(t1, 0, queryLocationIndependent(simplifiedDefinition));
+        DBGLOG("Simplified ECL:\n%s\n", simplifiedEcl);
         DBGLOG("Simplified:\n%s\n", t1.str());
-        DBGLOG("Regenerated:\n---\n%s\n---\n", simplifiedEcl);
+
 #endif
         ctx.errs->reportError(ERR_INTERNALEXCEPTION, "Failed to parse simplified definition",0,0,0,0);
         return false;
@@ -12623,14 +12631,15 @@ bool verifySimplifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simpli
         if (!streq(t1, t2))
         {
 #ifdef _DEBUG
+            DBGLOG("Failed to verify simplified definition: %s\n", fullName);
             StringBuffer orig;
             EclIR::getIRText(orig, 0, queryLocationIndependent(origExpr));
-            DBGLOG("Original:\n%s\n", orig.str());
+            DBGLOG("Original:\n%s\n(Original)\n", orig.str());
 #endif
-            DBGLOG("Simplified:\n%s\n", t1.str());
+            DBGLOG("Simplified ECL:\n%s\n", simplifiedEcl);
+            DBGLOG("Simplified(t1):\n%s\n(Simplified)\n", t1.str());
 #ifdef _DEBUG
-            DBGLOG("Regenerated:\n---\n%s\n---\n", simplifiedEcl);
-            DBGLOG("Parsed:\n%s", t2.str());
+            DBGLOG("Regenerated(t2):\n%s\n(Regenerated)\n", t2.str());
 #endif
 
             ctx.errs->reportError(ERR_INTERNALEXCEPTION, "Failed verification of simplified definition",0,0,0,0);

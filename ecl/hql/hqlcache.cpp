@@ -20,6 +20,8 @@
 #include "hqlcache.hpp"
 #include "hqlcollect.hpp"
 #include "hqlexpr.hpp"
+#include "hqltrans.ipp"
+#include "hqlattr.hpp"
 #include "hqlutil.hpp"
 #include "hqlerrors.hpp"
 #include "junicode.hpp"
@@ -340,6 +342,134 @@ void convertSelectsToPath(StringBuffer & filename, const char * eclPath)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+static HqlTransformerInfo HqlSimplifiedRecordTransformerInfo("HqlSimplifiedRecordTransformer");
+class HqlSimplifiedRecordTransformer : public QuickHqlTransformer
+{
+public:
+    HqlSimplifiedRecordTransformer() : QuickHqlTransformer(HqlSimplifiedRecordTransformerInfo, nullptr)
+    {
+    }
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr)
+    {
+        IHqlExpression * body = expr->queryBody(false);
+        if (expr != body)
+            return transform(body);
+
+        node_operator op = expr->getOperator();
+        switch (op)
+        {
+        case no_record:
+            {
+                HqlExprArray children;
+                bool same = true;
+                ForEachChild(idx, expr)
+                {
+                    IHqlExpression * cur = expr->queryChild(idx);
+                    if (!cur->isAttribute())
+                    {
+                        OwnedHqlExpr mapped = transform(cur);
+                        if (mapped != cur)
+                            same = false;
+                        children.append(*(mapped.getClear()));
+                    }
+                    else
+                        same = false;
+                }
+                if (same)
+                    return LINK(expr);
+                return expr->clone(children);
+            }
+        case no_field:
+            {
+                ITypeInfo * type = expr->queryType();
+                if (type->getTypeCode()==type_alien)
+                    throw MakeStringExceptionDirect(0, "Cannot simplify record");
+                HqlExprArray children;
+                bool same = true;
+                ForEachChild(idx, expr)
+                {
+                    IHqlExpression * cur = expr->queryChild(idx);
+                    if (cur->isAttribute())
+                    {
+                        //Ignore _implicitFpos_Atom's as it cannot be written to the cache
+                        if (cur->queryName()==_implicitFpos_Atom)
+                            same = false;
+                        else
+                        {
+                            HqlExprArray attrs;
+                            bool same2 = true;
+                            ForEachChild(idx2, cur)
+                            {
+                                IHqlExpression * attr = cur->queryChild(idx2)->queryBody();
+                                if (!attr->isConstant())
+                                    throw MakeStringExceptionDirect(0, "Cannot simplify record");
+                                if (attr->isAttribute())
+                                {
+                                    attrs.append(*(LINK(attr)));
+                                }
+                                else
+                                {
+                                    IValue * val = attr->queryValue();
+                                    if (!val)
+                                        throw MakeStringExceptionDirect(0, "Cannot simplify record");
+                                    //For numeric constants values of attributes, it is not possible to specify the type of the number
+                                    //in the generated cache.  The parser treats numbers as INTEGER8 by default.  Here, regardless of
+                                    //the exact numeric type of an attribute's value, generate it as the default integer type (INTEGER8)
+                                    if (val->getTypeCode()==type_int)
+                                        attrs.append(*createConstant(val->getIntValue()));
+                                    else
+                                        attrs.append(*createConstant(LINK(attr)));
+                                    same2 = false;
+                                }
+                            }
+                            if (same2)
+                            {
+                                children.append(*(LINK(cur)));
+                            }
+                            else
+                            {
+                                OwnedHqlExpr newattr = cur->queryBody()->clone(attrs);
+                                children.append(*(newattr.getClear()));
+                                same = false;
+                            }
+                        }
+                    }
+                    else
+                        same = false;
+                }
+                OwnedITypeInfo newType = transformType(type);
+
+                if (type != newType)
+                    return createField(expr->queryId(), newType.getClear(), children);
+
+                if (same)
+                    return LINK(expr);
+                return expr->clone(children);
+            }
+        case no_param:
+            {
+                ITypeInfo * type = expr->queryType();
+                OwnedITypeInfo newType = transformType(type);
+                HqlExprArray children;
+                transformChildren(expr, children);      // could just unwind
+                return createParameter(expr->queryId(), UnadornedParameterIndex, newType.getClear(), children);
+            }
+        }
+
+        return QuickHqlTransformer::createTransformed(expr);
+    }
+
+protected:
+    virtual ITypeInfo * transformType(ITypeInfo * type) override
+    {
+        if (type->queryModifier() == typemod_original)
+            return transformType(type->queryTypeBase()); //Strip all original annotations
+
+        return QuickHqlTransformer::transformType(type);
+    }
+
+};
 
 static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type)
 {
@@ -359,6 +489,23 @@ static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type)
     case type_int:
         {
             return createValue(no_simplified, LINK(type));
+        }
+    case type_table:
+        {
+            IHqlExpression * origRecord = queryOriginalRecord(type);
+            // TODO: add support for nested child tables (current not generated correctly in cache)
+            if (getNumChildTables(origRecord)>0)
+                return nullptr;
+            try
+            {
+                HqlSimplifiedRecordTransformer simplifiedRecTransformer;
+                return createDataset(no_simplified, simplifiedRecTransformer.createTransformed(origRecord)); 
+            }
+            catch (IException *e)
+            {
+                e->Release();
+                return nullptr;
+            }
         }
     }
 
@@ -393,6 +540,7 @@ static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr)
             case type_enumerated:
             case type_groupedtable:
             case type_dictionary:
+            case type_function:
                 return nullptr;
             }
             funcArgs.append(*createParameter(param->queryId(),(unsigned)expr->querySequenceExtra(), getFullyUnqualifiedType(param->queryType()), dummyAttrs));
@@ -427,13 +575,22 @@ static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr)
     case no_typedef:
     case no_enum:
     case no_macro:
+    case no_keyindex:
         return nullptr;
+    case no_table:
+        if (getNumChildTables(expr)>0)
+            return nullptr;
+        break;
     }
     Owned<ITypeInfo> type = getFullyUnqualifiedType(expr->queryType());
     if (!type)
         return nullptr;
 
-    return createSimplifiedDefinitionFromType(type);
+    OwnedHqlExpr simplified = createSimplifiedDefinitionFromType(type);
+    if (type->getTypeCode()==type_table && simplified && !recordTypesMatch(simplified,expr))
+        return nullptr;
+
+    return simplified.getClear();
 }
 
 IHqlExpression * createSimplifiedDefinition(IHqlExpression * expr)

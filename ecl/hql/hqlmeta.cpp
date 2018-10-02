@@ -2216,6 +2216,7 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
     case no_null:
     case no_fail:
     case no_anon:
+    case no_simplified:
     case no_pseudods:
     case no_skip:
     case no_all:
@@ -2987,6 +2988,7 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
     case no_xmlproject:
     case no_null:
     case no_anon:
+    case no_simplified:
     case no_pseudods:
     case no_all:
     case no_workunit_dataset:
@@ -3062,6 +3064,7 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
     case no_null:
     case no_fail:
     case no_anon:
+    case no_simplified:
     case no_pseudods:
     case no_skip:
     case no_all:
