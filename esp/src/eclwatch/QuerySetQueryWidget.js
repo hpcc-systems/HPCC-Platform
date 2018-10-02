@@ -540,7 +540,7 @@ define([
                     var success = false;
                     arrayUtil.forEach(this.recreateQueriesGrid.store.data, function (item, idx) {
                         var request = domForm.toObject(context.id + "RecreateForm");
-                        request.Republish === "off" ? request.Republish = 1 : request.Republish = 0;
+                        request.Republish === "on" ? request.Republish = 0 : request.Republish = 1;
                         request.AllowForeignFiles === "off" ? request.AllowForeignFiles = 0 : request.AllowForeignFiles = 1;
                         request.UpdateDfs === "off" ? request.UpdateDfs = 0 : request.UpdateDfs = 1;
                         request.UpdateSuperFiles === "off" ? request.UpdateSuperFiles = 0 : request.UpdateSuperFiles = 1;
