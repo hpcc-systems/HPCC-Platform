@@ -5970,21 +5970,40 @@ void CWsDfuEx::getFileMeta(StringBuffer &metaInfoStr, IDistributedFile &file, IU
     JBASE64_Encode(compressedMetaInfoMb.bytes(), compressedMetaInfoMb.length(), metaInfoStr, false);
 }
 
-StringBuffer &CWsDfuEx::getFileDafilesrvKeyName(StringBuffer &keyPairName, IDistributedFile &file)
+void CWsDfuEx::getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &retPort, bool &retSecure, IDistributedFile &file)
 {
+    retPort = DEFAULT_ROWSERVICE_PORT;
+    retSecure = false;
     unsigned numClusters = file.numClusters();
     for (unsigned c=0; c<numClusters; c++)
     {
         StringBuffer clusterName;
         const char *cluster = file.getClusterName(c, clusterName.clear()).str();
         const char *_keyPairName = env->getClusterKeyPairName(cluster);
+        Owned<IConstDaFileSrvInfo> daFileSrvInfo = env->getDaFileSrvGroupInfo(cluster);
+        unsigned port = DEFAULT_ROWSERVICE_PORT;
+        bool secure = false;
+        if (daFileSrvInfo)
+        {
+            port = daFileSrvInfo->getPort();
+            secure = daFileSrvInfo->getSecure();
+        }
         if (0 == c)
+        {
             keyPairName.set(_keyPairName);
-        else if (!strsame(keyPairName, _keyPairName))
-            throwStringExceptionV(0, "Configuration issue - file '%s' is on multiple clusters, keys for file access must match", file.queryLogicalName());
+            retPort = port;
+            retSecure = secure;
+        }
+        else
+        {
+            if (!strsame(keyPairName, _keyPairName))
+                throwStringExceptionV(0, "Configuration issue - file '%s' is on multiple clusters, keys for file access must match", file.queryLogicalName());
+            if (retPort != port)
+                throwStringExceptionV(0, "Configuration issue - file '%s' is on multiple clusters, dafilesrv's port for file access must match", file.queryLogicalName());
+            if (retSecure != secure)
+                throwStringExceptionV(0, "Configuration issue - file '%s' is on multiple clusters, dafilesrv's security setting for file access must match", file.queryLogicalName());
+        }
     }
-
-    return keyPairName;
 }
 
 void CWsDfuEx::getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAccessFlags accessType, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp)
@@ -6069,12 +6088,16 @@ void CWsDfuEx::getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAc
     expiryDt.getString(expiryTimeStr);
 
     StringBuffer keyPairName;
-    getFileDafilesrvKeyName(keyPairName, *df);
+    unsigned port;
+    bool secure;
+    getFileDafilesrvConfiguration(keyPairName, port, secure, *df);
 
     StringBuffer metaInfo;
     getFileMeta(metaInfo, *df, udesc, role, expiryTimeStr, keyPairName, req);
     resp.setMetaInfoBlob(metaInfo);
     resp.setExpiryTime(expiryTimeStr);
+    resp.setFileAccessPort(port);
+    resp.setFileAccessSSL(secure);
 }
 
 

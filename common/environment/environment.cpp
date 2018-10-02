@@ -273,6 +273,7 @@ public:
         synchronized procedure(safeCache);
         return fileAccessUrl.length() ? fileAccessUrl.str() : nullptr;
     }
+    virtual IConstDaFileSrvInfo *getDaFileSrvGroupInfo(const char *name) const override;
 };
 
 class CLockedEnvironment : implements IEnvironment, public CInterface
@@ -393,6 +394,8 @@ public:
             { return c->getPrivateKeyPath(keyPairName); }
     virtual const char *getFileAccessUrl() const
             { return c->getFileAccessUrl(); }
+    virtual IConstDaFileSrvInfo *getDaFileSrvGroupInfo(const char *name) const override
+            { return c->getDaFileSrvGroupInfo(name); }
 };
 
 void CLockedEnvironment::commit()
@@ -1128,6 +1131,29 @@ public:
 };
 #endif
 
+class CConstDaFileSrvInfo : public CConstEnvBase, implements IConstDaFileSrvInfo
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_ICONSTENVBASE;
+    CConstDaFileSrvInfo(const CLocalEnvironment *env, IPropertyTree *root) : CConstEnvBase(env, root)
+    {
+    }
+    virtual const char *getName() const override
+    {
+        return root->queryProp("@name");
+    }
+    virtual unsigned getPort() const override
+    {
+        return root->getPropInt("@rowServicePort");
+    }
+    virtual bool getSecure() const override
+    {
+        return root->getPropBool("@rowServiceSSL");
+    }
+};
+
+
 //==========================================================================================
 
 CLocalEnvironment::CLocalEnvironment(const char* environmentFile)
@@ -1775,6 +1801,24 @@ bool CLocalEnvironment::isDropZoneRestrictionEnabled() const
     }
 
     return dropZoneRestrictionEnabled;
+}
+
+IConstDaFileSrvInfo *CLocalEnvironment::getDaFileSrvGroupInfo(const char *name) const
+{
+    if (!name)
+        return nullptr;
+    VStringBuffer xpath("Software/DafilesrvGroup[@name=\"%s\"]", name);
+    synchronized procedure(safeCache);
+    IConstEnvBase *cached = getCache(xpath.str());
+    if (!cached)
+    {
+        IPropertyTree *d = p->queryPropTree(xpath.str());
+        if (!d)
+            return nullptr;
+        cached = new CConstDaFileSrvInfo(this, d);
+        setCache(xpath.str(), cached);
+    }
+    return (IConstDaFileSrvInfo *) cached;
 }
 
 //==========================================================================================

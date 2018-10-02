@@ -238,7 +238,7 @@ private:
     void parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray);
     unsigned getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName,
         IArrayOf<IEspDFUPartLocations> &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies);
-    StringBuffer &getFileDafilesrvKeyName(StringBuffer &keyPairName, IDistributedFile &file);
+    void getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &port, bool &secure, IDistributedFile &file);
     void getFileMeta(StringBuffer &metaInfo, IDistributedFile &file, IUserDescriptor *user, CFileAccessRole role, const char *expiryTime, const char *keyPairName, IConstDFUFileAccessRequest &req);
     void getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAccessFlags accessType, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp);
 

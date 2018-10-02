@@ -58,6 +58,7 @@
 #define MP_END_PORT                     7500
 
 #define SECURE_DAFILESRV_PORT           7600 // aka daliservix
+#define DEFAULT_ROWSERVICE_PORT         7601
 
 //ESP SERVICES
 //INSECURE

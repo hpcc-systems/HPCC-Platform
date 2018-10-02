@@ -868,6 +868,9 @@ ESPresponse [exceptions_inline] DFUFileAccessResponse
     
     binary RecordTypeInfoBin;   // optional
     string RecordTypeInfoJson;  // optional
+    
+    int fileAccessPort;
+    bool fileAccessSSL;
 };
 
 //  ===========================================================================
