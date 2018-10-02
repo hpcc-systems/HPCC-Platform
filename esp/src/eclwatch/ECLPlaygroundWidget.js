@@ -15,7 +15,7 @@ define([
     "hpcc/_Widget",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
-    "hpcc/JSGraphWidget",
+    "src/Graph7Widget",
     "hpcc/ECLPlaygroundResultsWidget",
     "src/ESPWorkunit",
     "src/ESPQuery",
@@ -27,14 +27,14 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, xhr, dom, query,
     BorderContainer, TabContainer, ContentPane, registry,
-    _Widget, EclSourceWidget, TargetSelectWidget, JSGraphWidget, ResultsWidget, ESPWorkunit, ESPQuery, Utility,
+    _Widget, EclSourceWidget, TargetSelectWidget, Graph7Widget, ResultsWidget, ESPWorkunit, ESPQuery, Utility,
     template) {
         return declare("ECLPlaygroundWidget", [_Widget], {
             templateString: template,
             baseClass: "ECLPlaygroundWidget",
             i18n: nlsHPCC,
 
-            graphType: "JSGraphWidget",
+            graphType: "Graph7Widget",
             wu: null,
             editorControl: null,
             graphControl: null,
@@ -116,10 +116,7 @@ define([
                     this.watchWU();
                 } else {
                     this.initSamples();
-                    this.graphControl.watchSelect(this.sampleSelectWidget);
                 }
-                this.graphControl.watchSplitter(this.borderContainer.getSplitter("right"));
-                this.graphControl.watchSplitter(this.borderContainer.getSplitter("bottom"));
 
                 this.graphControl.onDoubleClick = function (globalID, keyState) {
                     if (keyState && context.main.KeyState_Shift) {
@@ -150,9 +147,7 @@ define([
             initGraph: function () {
                 var context = this;
                 this.graphControl = registry.byId(this.id + "GraphControl");
-                this.graphControl.showNextPrevious(false);
-                this.graphControl.showDistance(false);
-                this.graphControl.showSyncSelection(false);
+                this.graphControl.init({});
                 this.graphControl.onSelectionChanged = function (items) {
                     context.editorControl.clearHighlightLines();
                     for (var i = 0; i < items.length; ++i) {
@@ -267,17 +262,10 @@ define([
             },
 
             displayGraphs: function (graphs) {
-                var fetchedCount = 0;
-                for (var i = 0; i < graphs.length; ++i) {
-                    var context = this;
-                    this.wu.fetchGraphXgmml(i, null, function (xgmml) {
-                        ++fetchedCount;
-                        context.graphControl.loadXGMML(xgmml, fetchedCount > 1);
-                        if (fetchedCount === graphs.length) {
-                            context.graphControl.startLayout("dot");
-                        }
-                    });
-                }
+                this.graphControl.params = {
+                    Wuid: this.wu.Wuid
+                };
+                this.graphControl.doInit(this.wu.Wuid);
             },
 
             displayAll: function (workunit) {
