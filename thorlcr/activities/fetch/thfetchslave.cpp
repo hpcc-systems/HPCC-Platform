@@ -338,7 +338,8 @@ public:
             unsigned projectedFormatCrc = fetchBaseHelper->getProjectedFormatCrc();
             IOutputMetaData *projectedFormat = fetchBaseHelper->queryProjectedDiskRecordSize();
             RecordTranslationMode translationMode = getTranslationMode(*this);
-            getLayoutTranslations(translators, fetchBaseHelper->getFileName(), parts, translationMode, expectedFormatCrc, fetchBaseHelper->queryDiskRecordSize(), projectedFormatCrc, projectedFormat);
+            OwnedRoxieString fileName = fetchBaseHelper->getFileName();
+            getLayoutTranslations(translators, fileName, parts, translationMode, expectedFormatCrc, fetchBaseHelper->queryDiskRecordSize(), projectedFormatCrc, projectedFormat);
             ForEachItemIn(p, parts)
             {
                 const ITranslator *translator = translators.item(p);
@@ -476,7 +477,8 @@ public:
         }
 
         Owned<IThorRowInterfaces> rowIf = createRowInterfaces(queryRowMetaData());
-        fetchStream = createFetchStream(*this, keyInIf, rowIf, abortSoon, fetchBaseHelper->getFileName(), parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp);
+        OwnedRoxieString fileName = fetchBaseHelper->getFileName();
+        fetchStream = createFetchStream(*this, keyInIf, rowIf, abortSoon, fileName, parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp);
         fetchStreamOut = fetchStream->queryOutput();
         fetchStream->start(keyIn);
         initializeFileParts();

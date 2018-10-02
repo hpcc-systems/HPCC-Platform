@@ -247,7 +247,8 @@ public:
                 }
                 else
                 {
-                    Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, expectedFormatCrc, expectedFormat, projectedFormatCrc, projectedFormat);
+                    OwnedRoxieString fileName = helper->getFileName();
+                    Owned<const ITranslator> translator = getLayoutTranslation(fileName, part, translationMode, expectedFormatCrc, expectedFormat, projectedFormatCrc, projectedFormat);
                     if (translator)
                         klManager->setLayoutTranslator(&translator->queryTranslator());
                     translators.append(translator.getClear());
