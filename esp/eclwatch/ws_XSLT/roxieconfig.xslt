@@ -263,10 +263,10 @@
                   <div id="ListDeployedQueriesFilterGroup" style="padding-bottom:5px">
                     Query search:
                     <input id="ListDeployedQueriesFilter" type="text" onkeypress="checkForEnter(event);" onchange="doFilter(event);" />&#160;
-                    <input id="ListDeployedQueriesFilterSuspended" type="checkbox" onclick="doFilter(event);" />&#160;Suspended
-                    <input id="ListDeployedQueriesFilterAliases" type="checkbox" onclick="doFilter(event);" />&#160;Aliases
-                    <input id="ListDeployedQueriesFilterLibrary" type="checkbox" onclick="doFilter(event);" />&#160;Library
-                    <input id="ListDeployedQueriesFilterUsesLibrary" type="checkbox" onclick="doFilter(event);" />&#160;Uses Library
+                    <label><input id="ListDeployedQueriesFilterSuspended" type="checkbox" onclick="doFilter(event);" />&#160;Suspended</label>
+                    <label><input id="ListDeployedQueriesFilterAliases" type="checkbox" onclick="doFilter(event);" />&#160;Aliases</label>
+                    <label><input id="ListDeployedQueriesFilterLibrary" type="checkbox" onclick="doFilter(event);" />&#160;Library</label>
+                    <label><input id="ListDeployedQueriesFilterUsesLibrary" type="checkbox" onclick="doFilter(event);" />&#160;Uses Library</label>
                   </div>
                   <div id="dt_ListDeployedQueries" style="height: 100px; width: 90%"></div>
                   <div style="text-align:left; width:98%; padding-top:5px; padding-bottom:5px">
@@ -292,15 +292,15 @@
                         <button type="button" id="buttonSuspendQueries1" name="buttonSuspendQueries1" disabled="true" onclick="toggleQueries();">Toggle Suspend</button>
                       </span>
                     </span>
-                    <input type="checkbox" name="checkNotifyRoxie1" id="checkNotifyRoxie1" checked="true" onclick="setNotifyRoxie(this.checked);">Notify Roxie?</input>
+                    <label><input type="checkbox" name="checkNotifyRoxie1" id="checkNotifyRoxie1" checked="true" onclick="setNotifyRoxie(this.checked);"/>Notify Roxie?</label>
                   </div>
                 </div>
                 <div>
                   <div id="Div1" style="padding-bottom:5px">
                     Query search:
                     <input id="ListDeployedDataOnlyQueriesFilter" type="text" onkeypress="checkForEnter(event);" onchange="filterDeployedQueries();" />
-                    <input id="ListDeployedDataOnlyQueriesFilterSuspended" type="checkbox" onclick="doFilter(event);" />&#160;Suspended
-                    <input id="ListDeployedDataOnlyQueriesFilterAliases" type="checkbox" onclick="doFilter(event);" />&#160;Aliases
+                    <label><input id="ListDeployedDataOnlyQueriesFilterSuspended" type="checkbox" onclick="doFilter(event);" />&#160;Suspended</label>
+                    <label><input id="ListDeployedDataOnlyQueriesFilterAliases" type="checkbox" onclick="doFilter(event);" />&#160;Aliases</label>
                   </div>
                   <div id="dt_ListDeployedDataOnlyQueries"></div>
                   <div style="text-align:left; width:98%; padding-top:5px">

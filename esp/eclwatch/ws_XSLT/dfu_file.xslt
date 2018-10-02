@@ -398,7 +398,7 @@
             <tr>
                 <td>
                     <xsl:if test="Item[1]">
-                        <input type="checkbox" id="removeSuperfile" name="removeSuperfile" title="Remove Superfile when the file has no subfile" disabled="true">Remove Superfile</input>
+                        <label><input type="checkbox" id="removeSuperfile" name="removeSuperfile" title="Remove Superfile when the file has no subfile" disabled="true"/>Remove Superfile</label>
                     </xsl:if>
                 </td>
             </tr>

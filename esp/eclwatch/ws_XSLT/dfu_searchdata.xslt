@@ -1109,14 +1109,12 @@
                   <td>
                     <xsl:choose>
                       <xsl:when test="$disableUppercaseTranslation = 1">
-                        <input type="checkbox" id="DisableUppercaseTranslation" style="fontsize:small;" checked="checked" onclick="disableUppercaseTranslation=this.checked;">
-                          Disable Auto Uppercase
-                        </input>
+                        <label><input type="checkbox" id="DisableUppercaseTranslation" style="fontsize:small;" checked="checked" onclick="disableUppercaseTranslation=this.checked;"/>
+                        Disable Auto Uppercase</label>
                       </xsl:when>
                       <xsl:otherwise>
-                      <input type="checkbox" id="DisableUppercaseTranslation" style="fontsize:small;" onclick="disableUppercaseTranslation=this.checked;">
-                        Disable Auto Uppercase
-                      </input>
+                      <label><input type="checkbox" id="DisableUppercaseTranslation" style="fontsize:small;" onclick="disableUppercaseTranslation=this.checked;"/>
+                      Disable Auto Uppercase</label>
                       </xsl:otherwise>
                     </xsl:choose>
                   </td>

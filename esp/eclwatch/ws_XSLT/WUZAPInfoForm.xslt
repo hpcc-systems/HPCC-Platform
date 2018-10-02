@@ -181,7 +181,7 @@
                             <tr>
                                 <td></td>
                                 <td>
-                                    <input type="checkbox" title="Include Thor Slave logs" id="IncludeThorSlaveLog" name="IncludeThorSlaveLog">Include Thor Slave logs (It may take a long time to report the logs from multiple Thor Slave nodes.)</input>
+                                    <label><input type="checkbox" title="Include Thor Slave logs" id="IncludeThorSlaveLog" name="IncludeThorSlaveLog"/>Include Thor Slave logs (It may take a long time to report the logs from multiple Thor Slave nodes.)</label>
                                 </td>
                             </tr>
                             <tr>
