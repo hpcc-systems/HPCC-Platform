@@ -432,6 +432,7 @@ void CWriteMasterBase::slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
         StringBuffer timeStr;
         modifiedTime.getString(timeStr);
         props.setProp("@modified", timeStr.str());
+        props.setPropInt64("@recordCount", slaveProcessed);
     }
 }
 

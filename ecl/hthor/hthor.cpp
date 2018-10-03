@@ -659,6 +659,7 @@ void CHThorDiskWriteActivity::publish()
     }
     else
         attrs->setPropInt64("@size", fileSize);
+    attrs->setPropInt64("@recordCount", numRecords);
     CDateTime createTime, modifiedTime, accessedTime;
     file->getTime(&createTime, &modifiedTime, &accessedTime);
     // round file time down to nearest sec. Nanosec accurancy is not preserved elsewhere and can lead to mismatch later.
@@ -1199,6 +1200,7 @@ void CHThorIndexWriteActivity::execute()
         attrs.set(&desc->queryPart(0)->queryProperties());
     }
     attrs->setPropInt64("@size", indexFileSize);
+    attrs->setPropInt64("@recordCount", reccount);
 
     CDateTime createTime, modifiedTime, accessedTime;
     file->getTime(&createTime, &modifiedTime, &accessedTime);
