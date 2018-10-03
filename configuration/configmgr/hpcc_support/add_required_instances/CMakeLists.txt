@@ -35,6 +35,6 @@ INCLUDE_DIRECTORIES(
 
 ADD_DEFINITIONS( -D_USRDLL -DCFGSUPPORT_DAFILESRV_LIB)
 HPCC_ADD_LIBRARY( cfgsupport_addrequiredinstances SHARED ${SRCS} )
-TARGET_LINK_LIBRARIES( cfgsupport_addrequiredinstances jlib )
+TARGET_LINK_LIBRARIES( cfgsupport_addrequiredinstances configmgr jlib )
 
 INSTALL ( TARGETS cfgsupport_addrequiredinstances RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

@@ -46,7 +46,7 @@ include_directories (
          ./../../system/security/shared
          ./../../common/deftype
          ./../../system/security/cryptohelper
-         ./../../configuration/config2
+         ./../../configuration/configmgr/configmgrlib
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
@@ -62,7 +62,7 @@ target_link_libraries ( unittests
          dalibase
          deftype
          libbase58
-         config2
+         configmgr
          ${CPPUNIT_LIBRARIES}
     )
 
