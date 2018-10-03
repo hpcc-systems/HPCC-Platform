@@ -2835,23 +2835,16 @@ bool CFileSprayEx::checkDropZoneIPAndPath(double clientVersion, const char* drop
     return false;
 }
 
-void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* path, IArrayOf<IEspPhysicalFileStruct>& files)
+void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& files)
 {
     Owned<IEspPhysicalFileStruct> aFile = createPhysicalFileStruct();
 
-    const char pathSep = getPathSepChar(path); 
     const char* pName = strrchr(name, pathSep);
     if (!pName)
-    {
         aFile->setName(name);
-        aFile->setPath(path);
-    }
     else
     {
-        StringBuffer sPath = path;
-        unsigned len = strlen(path);
-        if (sPath.charAt(len - 1) != pathSep)
-            sPath.append(pathSep);
+        StringBuffer sPath;
         sPath.append(pName - name, name);
         aFile->setPath(sPath.str());
 
@@ -2882,6 +2875,7 @@ void CFileSprayEx::searchDropZoneFiles(IEspContext& context, IpAddress& ip, cons
     if(!f->isDirectory())
         throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", dir);
 
+    const char pathSep = getPathSepChar(dir); 
     Owned<IDirectoryIterator> di = f->directoryFiles(nameFilter, true, true);
     ForEach(*di)
     {
@@ -2894,7 +2888,7 @@ void CFileSprayEx::searchDropZoneFiles(IEspContext& context, IpAddress& ip, cons
         if (filesFound > dropZoneFileSearchMaxFiles)
             break;
 
-        addDropZoneFile(context, di, fname.str(), dir, files);
+        addDropZoneFile(context, di, fname.str(), pathSep, files);
     }
 }
 

@@ -149,7 +149,7 @@ protected:
     bool getOneDFUWorkunit(IEspContext& context, const char* wuid, IEspGetDFUWorkunitsResponse& resp);
     void getDropZoneInfoByIP(double clientVersion, const char* destIP, const char* destFile, StringBuffer& path, StringBuffer& mask);
     bool checkDropZoneIPAndPath(double clientVersion, const char* dropZone, const char* netAddr, const char* path);
-    void addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* path, IArrayOf<IEspPhysicalFileStruct>&files);
+    void addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char pathSep, IArrayOf<IEspPhysicalFileStruct>&files);
     void searchDropZoneFiles(IEspContext& context, IpAddress& ip, const char* dir, const char* nameFilter, IArrayOf<IEspPhysicalFileStruct>& files, unsigned& filesFound);
     void setDFUServerQueueReq(const char* dfuServerQueue, IDFUWorkUnit* wu);
     void setUserAuth(IEspContext &context, IDFUWorkUnit* wu);
