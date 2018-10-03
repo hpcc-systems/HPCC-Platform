@@ -359,7 +359,17 @@ void XSDSchemaParser::parseElement(const pt::ptree &elemTree)
     std::string insertLimitData = elemTree.get("<xmlattr>.hpcc:insertLimitData", "");
     unsigned minOccurs = elemTree.get<unsigned>("<xmlattr>.minOccurs", 1);
     std::string maxOccursStr = elemTree.get("<xmlattr>.maxOccurs", "1");
-    unsigned maxOccurs = (maxOccursStr != "unbounded") ? stoi(maxOccursStr) : UINT_MAX;
+    unsigned maxOccurs;
+
+    try
+    {
+        maxOccurs = (maxOccursStr != "unbounded") ? stoi(maxOccursStr) : UINT_MAX;
+    }
+    catch(...)
+    {
+        std::string msg = "Invalid maxOccurs value: '" + maxOccursStr + "', Unable to convert to a number in element = '" + elementName;
+        throw(ParseException(msg));
+    }
 
     if (category == "root")
     {
