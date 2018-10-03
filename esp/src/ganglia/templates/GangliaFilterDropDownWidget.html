@@ -1,0 +1,17 @@
+<span class="${baseClass}">
+    <!-- <img id="${id}IconFilter" src="${dojoConfig.urlInfo.resourcePath}/img/noFilter.png" class="iconNoFilter" /> -->
+    <div id="${id}FilterDropDown" data-dojo-type="dijit.form.DropDownButton">
+        <span>${i18n.Metrics}</span>
+        <div class="toolTip" data-dojo-type="dijit.TooltipDialog">
+            <div id="${id}FilterForm" style="width:${_width}" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                <div id="${id}TableContainer" class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                    <span data-dojo-attach-point="containerNode"></span>
+                </div>
+                <div class="dijitDialogPaneActionBar">
+                    <button id="${id}FilterClear" style="float:left" data-dojo-attach-event="onClick:_onFilterClear" data-dojo-type="dijit.form.Button">${i18n.Clear}</button>
+                    <button id="${id}FilterApply" type="submit" data-dojo-attach-event="onClick:_onFilterApply" data-dojo-type="dijit.form.Button">${i18n.GenerateGraph}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</span>

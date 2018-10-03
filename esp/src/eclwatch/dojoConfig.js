@@ -21,6 +21,7 @@ function getConfig(env) {
         paths: {
             "hpcc": baseUrl + "/eclwatch",
             "src": baseUrl + "/lib/src",
+            "ganglia": baseUrl + "/ganglia",
             "templates": baseUrl + "/eclwatch/templates",
             "ecl": baseUrl + "/eclwatch/ecl",
             "css": baseUrl + "/loader/css",

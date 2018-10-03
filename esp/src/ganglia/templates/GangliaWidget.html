@@ -1,0 +1,27 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}_Custom" style="width: 100%; height: 100%" data-dojo-props="title:'${i18n.CustomMonitoring}', iconClass:'iconGanglia'" data-dojo-type="dijit.layout.BorderContainer">
+                <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Filter" data-dojo-type="GangliaFilterDropDownWidget">
+                       <input id="${id}ClusterTargetSelect" title="${i18n.Cluster}:" name="Clusters" colspan="2" data-dojo-props="trim: true, placeHolder:'${i18n.Cluster}'" data-dojo-type="dijit.form.FilteringSelect" />
+                        <input id="${id}ServerTargetSelect" title="${i18n.Server}:" name="Servers" colspan="2" data-dojo-props="trim: true, placeHolder:'${i18n.Server}'" data-dojo-type="dijit.form.FilteringSelect" />
+                        <input id="${id}MetricsTargetSelect" title="${i18n.Metrics}:" name="Metrics" colspan="2" data-dojo-props="trim: true, placeHolder:'${i18n.Metrics}'" data-dojo-type="dijit.form.FilteringSelect" />
+                        <select id="${id}FromGanliaDateRange" style="width:197px;" title="${i18n.FromDate}:" name="From" colspan="2" data-dojo-props="trim: true, placeHolder:'${i18n.FromDate}'" data-dojo-type="dijit.form.Select" />
+                            <option value="Year" id="${id}Year">Year</option>
+                            <option value="Month" id="${id}Month">Month</option>
+                            <option value="Week" id="${id}Week">Week</option>
+                            <option value="Day" id="${id}Day">Day</option>
+                            <option value="Hour" id="${id}Hour">Hour</option>
+                        </select>
+                    </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <!-- <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewpage}</div> -->
+                </div>
+                <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}graphs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
