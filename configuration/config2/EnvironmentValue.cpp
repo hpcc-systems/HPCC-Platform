@@ -18,6 +18,15 @@
 #include "EnvironmentValue.hpp"
 #include "EnvironmentNode.hpp"
 
+
+EnvironmentValue::~EnvironmentValue()
+{
+    //
+    // Tell the schema vallue that we are going away
+    m_pSchemaValue->removeEnvironmentValue(shared_from_this());
+}
+
+
 bool EnvironmentValue::setValue(const std::string &value, Status *pStatus, bool forceSet)
 {
     bool rc = true;

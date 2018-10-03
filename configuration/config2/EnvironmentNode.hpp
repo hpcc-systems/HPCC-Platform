@@ -39,7 +39,8 @@ class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<Environm
         ~EnvironmentNode() { }
         const std::string &getName() const { return m_name;  }
         void addChild(std::shared_ptr<EnvironmentNode> pNode);
-        bool removeChild(std::shared_ptr<EnvironmentNode> pNode);
+        bool removeChild(std::shared_ptr<EnvironmentNode> pNode, std::vector<std::string> &removedNodeIds);
+        void removeAllChildren(std::vector<std::string> &removedNodeIds);
         void getChildren(std::vector<std::shared_ptr<EnvironmentNode>> &children, const std::string &name=std::string("")) const;
         bool hasChildren() const { return m_children.size() != 0; }
         int getNumChildren() const { return m_children.size(); }

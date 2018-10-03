@@ -28,18 +28,31 @@ void EnvironmentNode::addChild(std::shared_ptr<EnvironmentNode> pNode)
 }
 
 
-bool EnvironmentNode::removeChild(const std::shared_ptr<EnvironmentNode> pNode)
+bool EnvironmentNode::removeChild(const std::shared_ptr<EnvironmentNode> pNode, std::vector<std::string> &removedNodeIds)
 {
     bool removed = false;
     for (auto it=m_children.begin(); it!= m_children.end() && !removed; ++it)
     {
         if (pNode == it->second)
         {
+            pNode->removeAllChildren(removedNodeIds);
+            removedNodeIds.emplace_back(pNode->getId());
             m_children.erase(it);
             removed = true;
         }
     }
     return removed;
+}
+
+
+void EnvironmentNode::removeAllChildren(std::vector<std::string> &removedNodeIds)
+{
+    for (auto &childNodeIt: m_children)
+    {
+        childNodeIt.second->removeAllChildren(removedNodeIds);
+        removedNodeIds.emplace_back(childNodeIt.second->getId());
+    }
+    m_children.clear();
 }
 
 
