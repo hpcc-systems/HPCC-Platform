@@ -449,7 +449,7 @@ class CDaliTestsStress : public CppUnit::TestFixture
         CPPUNIT_TEST(testSDSSubs);
         CPPUNIT_TEST(testSDSSubs2);
         CPPUNIT_TEST(testFiles);
-        CPPUNIT_TEST(testGroups);
+//        CPPUNIT_TEST(testGroups); // Skipped, because test has bugs that are fixed as part of larger change in HPCC-18617, in 7.0
         CPPUNIT_TEST(testMultiCluster);
 #ifndef COMPAT
         CPPUNIT_TEST(testDF1);
