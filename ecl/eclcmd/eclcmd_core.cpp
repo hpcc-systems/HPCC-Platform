@@ -1914,6 +1914,7 @@ public:
         }
         else
             outputFile.set(".").append(PATHSEPSTR);
+
         outputFile.append("ZAPReport_").append(optWuid.get());
         if (!optUsername.isEmpty())
             outputFile.append('_').append(optUsername.get());
@@ -1929,7 +1930,7 @@ public:
         EclCmdURL eclCmdURL("WsWorkunits", !streq(optServer, ".") ? optServer : "localhost", optPort, optSSL, urlTail.str());
 
         //Create CURL command
-        StringBuffer curlCommand = "curl";
+        StringBuffer curlCommand = "curl -v -X post";
         if (!optUsername.isEmpty())
         {
             curlCommand.append(" -u ").append(optUsername.get());
@@ -1947,6 +1948,10 @@ public:
             fprintf(stderr, "Failed to run zapgen command %s\n", curlCommand.str());
             return false;
         }
+
+        bool isOk = true;
+        bool removeOutFile = false;
+
         if (pipe->hasError())
         {
             StringBuffer errMsg;
@@ -1959,15 +1964,39 @@ public:
             if ((strstr(errMsg.str(), "Warning") != nullptr) || (strstr(errMsg.str(), "Failed") != nullptr))
             {
                 fprintf(stderr, "Zapgen command returns with error:\n%s\n", errMsg.str());
-                return false;
+                isOk = false;
+                removeOutFile = true; // It contains the authentication error message only
             }
-            else if (optVerbose)
-                fprintf(stderr, "Zapgen command returns with:\n%s\n", errMsg.str());
+            else if (strstr(errMsg.str(), "Authentication problem") != nullptr)
+            {
+                fprintf(stderr, "\nZapgen command returned with an authentication problem. Please check your credentials.\n");
+                isOk = false;
+                removeOutFile = true; // It contains the authentication error message only
+            }
+            else if (strstr(errMsg.str(), "401 Unauthorized") != nullptr)
+            {
+                fprintf(stderr, "Zapgen command needs to authenticate, please provide credentials.\n");
+                isOk = false;
+                removeOutFile = true; // It contains the authentication error message only
+            }
+
+            if (optVerbose)
+                fprintf(stderr, "Zapgen command returned with:\n%s\n", errMsg.str());
 
         }
 
-        fprintf(stdout, "ZAP file written into %s.\n", outputFile.str());
-        return 0;
+        if (isOk)
+        {
+            fprintf(stdout, "ZAP file written to %s.\n", outputFile.str());
+            return 0;
+        }
+        else
+        {
+            Owned<IFile> file = createIFile(outputFile.str());
+            if (file->exists() && (removeOutFile || (0 == file->size())))
+                file->remove();
+            return 1;
+        }
     }
 
     virtual void usage()
