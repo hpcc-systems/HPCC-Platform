@@ -2134,7 +2134,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
             args.remove(i1);
             args.append(*createAttribute(sortedAtom));
             args.append(*createLocalAttribute());
-            args.append(*createAttribute(indexAtom, LINK(index->queryChild(3))));
+            args.append(*createExprAttribute(indexAtom, LINK(index->queryChild(3))));
             return expr->clone(args);
         }
     }
