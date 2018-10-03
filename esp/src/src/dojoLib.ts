@@ -11,3 +11,7 @@ import * as _dom from "dojo/dom";
 export const dom:any = _dom;
 import * as _on from "dojo/on";
 export const on:any = _on;
+import "dojo/i18n";
+// @ts-ignore
+import * as _nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
+export const nlsHPCC: any = _nlsHPCC;
