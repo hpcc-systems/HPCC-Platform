@@ -446,6 +446,9 @@ export function resolve(hpccWidget, callback) {
         case "FullResultWidget":
             require(["hpcc/FullResultWidget"], doLoad);
             break;
+        case "GangliaWidget":
+            require(["hpcc/GangliaWidget"], doLoad);
+            break;
         case "GetDFUWorkunitsWidget":
             require(["hpcc/GetDFUWorkunitsWidget"], doLoad);
             break;
