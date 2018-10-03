@@ -75,6 +75,13 @@ public:
     virtual IHttpClient* createHttpClient(const char* proxy, const char* url);
 };
 
+enum class HttpClientErrCode
+{
+    PeerClosed = -2,
+    Error = -1,
+    OK = 0
+};
+
 class CHttpClient : implements IHttpClient, public CInterface
 {
 
@@ -95,6 +102,7 @@ private:
     StringBuffer m_proxy;
     ISocket*   m_socket;
     bool          m_disableKeepAlive;
+    bool       m_persistable;
 
     unsigned m_connectTimeoutMs = HTTP_CLIENT_DEFAULT_CONNECT_TIMEOUT;
     unsigned m_readTimeoutSecs = 0;
@@ -108,7 +116,12 @@ private:
     int m_numRequests = 0;
     SocketEndpoint m_ep;
 
-    virtual int connect(StringBuffer& errmsg);
+    virtual int connect(StringBuffer& errmsg, bool forceNewConnection);
+
+    HttpClientErrCode sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, bool forceNewConnection);
+    HttpClientErrCode sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent, bool forceNewConnection);
+    HttpClientErrCode proxyRequest(IHttpMessage *request, IHttpMessage *response,  bool forceNewConnection);
+    HttpClientErrCode postRequest(ISoapMessage &req, ISoapMessage& resp, bool forceNewConnection);
 
 public:
     IMPLEMENT_IINTERFACE;
