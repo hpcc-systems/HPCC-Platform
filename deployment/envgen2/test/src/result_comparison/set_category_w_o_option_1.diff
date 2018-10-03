@@ -1,4 +1,4 @@
-461c461
+473c473
 <    <Category dir="/var/log/[NAME]/[INST]" name="log"/>
 ---
 >    <Category dir="/var/logs/[NAME]/mylogs2[INST]" name="log"/>

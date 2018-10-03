@@ -14,30 +14,24 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+#ifndef _SWBACKUPNODE_HPP_
+#define _SWBACKUPNODE_HPP_
 
-#ifndef _CONFIGENVERROR_HPP_
-#define _CONFIGENVERROR_HPP_
+#include "EnvHelper.hpp"
+#include "SWProcess.hpp"
 
-enum CfgEnvErrorCode
+namespace ech
 {
-   OK=0,
 
-   ComponentExists=1000,
+class SWBackupNode : public SWProcess
+{
+public:
+    SWBackupNode(const char* name, EnvHelper * envHelper);
+    virtual unsigned add(IPropertyTree *params);
 
-   InvalidParams=2000,
-   NullPointer=2001,
-   UnknownCompoent=2002,
-   CannotCreateCompoent=2003,
-   UnknownTask=2004,
-   MissingRequiredParam=2005,
+//protected:
 
-   InvalidIPRange=2100,
-   InvalidIP=2101,
-   NoIPAddress=2102,
-
-   NonInteger=2200,
-   OutOfRange=2201
 };
 
-
+}
 #endif

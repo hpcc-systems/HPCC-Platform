@@ -353,7 +353,13 @@
                 defaultResourcesBasedn="ou=EspServices,ou=ecl"
                 defaultSecurePort="18043"
                 plugin="esdl_svc_engine"
-                type="DynamicESDL"/>
+                type="DynamicESDL">
+     <Authenticate access="Access"
+                   description="DESDLServiceAccess"
+                   path="/"
+                   required="Read"
+                   resource="Access"/>
+    </Properties>
    </BuildSet>
    <BuildSet deployable="no"
              installSet="deploy_map.xml"
@@ -411,6 +417,12 @@
   </Build>
  </Programs>
  <Software>
+  <BackupNodeProcess build="_"
+                     buildSet="backupnode"
+                     description="BackupNode process"
+                     name="mybackupnode">
+   <NodeGroup interval="24" name="mythor"/>
+  </BackupNodeProcess>
   <DafilesrvProcess build="_"
                     buildSet="dafilesrv"
                     description="DaFileSrv process"
@@ -507,6 +519,7 @@
                       enableSysLog="true"
                       generatePrecompiledHeader="true"
                       maxEclccProcesses="4"
+                      monitorInterval="60"
                       name="myeclccserver"
                       traceLevel="1">
    <Instance computer="node002015"
@@ -540,11 +553,13 @@
               logResponses="false"
               maxBacklogQueueSize="200"
               maxConcurrentThreads="0"
+              MaxFileAccessExpirySeconds="86400"
               MaxPageCacheItems="1000"
               maxPersistentIdleTime="60"
               maxPersistentRequests="100"
               maxRequestEntityLength="8000000"
               name="myesp"
+              namespaceScheme="basic"
               PageCacheTimeoutSeconds="600"
               perfReportDelay="60"
               portalurl="http://hpccsystems.com/download"
@@ -742,7 +757,7 @@
           enableVerification="false"
           organization="Customer of HPCCSystems"
           organizationalUnit=""
-          passphrase="hpccsystems-platform"
+          passphrase=""
           privateKeyFileName="/home/hpcc/certificate/key.pem"
           regenerateCredentials="false"
           requireAddressMatch="false"
@@ -763,7 +778,7 @@
               defaultTargetCluster=""
               description="ESP services for SMC"
               disableUppercaseTranslation="false"
-              elasticSearchAdresses=""
+              elasticSearchAddresses=""
               elasticSearchPort="9200"
               enableLogDaliConnection="false"
               enableSystemUseRewrite="false"
@@ -772,7 +787,7 @@
               kibanaAddress="localhost"
               kibanaEntryPointURI=""
               kibanaPort="5601"
-              logStashAdresses=""
+              logStashAddresses=""
               logStashPort=""
               monitorDaliFileServer="false"
               name="EclWatch"
@@ -785,7 +800,12 @@
               viewTimeout="1000"
               warnIfCpuLoadOver="95"
               warnIfFreeMemoryUnder="5"
-              warnIfFreeStorageUnder="5">
+              warnIfFreeStorageUnder="5"
+              ZAPEmailFrom=""
+              ZAPEmailMaxAttachmentSize=""
+              ZAPEmailServer=""
+              ZAPEmailServerPort=""
+              ZAPEmailTo="">
    <Properties defaultPort="8010"
                defaultResourcesBasedn="ou=SMC,ou=EspServices,ou=ecl"
                defaultSecurePort="18010"
@@ -988,6 +1008,7 @@
                 channelsPerNode="1"
                 checkCompleted="true"
                 checkFileDate="true"
+                collectFactoryStatistics="true"
                 copyResources="false"
                 coresPerQuery="0"
                 cyclicOffset="1"
@@ -1060,6 +1081,9 @@
                 multicastBase="239.1.1.1"
                 multicastLast="239.1.254.254"
                 multicastTTL="1"
+                mysqlCacheCheckPeriod="10000"
+                mysqlCacheTimeoutPeriod="60000"
+                mysqlConnectionCacheSize="10"
                 name="myroxie"
                 nodeCacheMem="100"
                 nodeCachePreload="false"

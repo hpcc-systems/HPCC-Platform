@@ -3,7 +3,7 @@
 <             domain="localdomain"
 <             name="node002015"
 <             netAddress="."/>
-421,429c417
+433,441c429
 <                     version="1">
 <    <Instance computer="node002015"
 <              directory="/var/lib/HPCCSystems/mydafilesrv"
@@ -15,7 +15,7 @@
 <   </DafilesrvProcess>
 ---
 >                     version="1"/>
-434,440c422
+446,452c434
 <                      recoverFromIncErrors="true">
 <    <Instance computer="node002015"
 <              directory="/var/lib/HPCCSystems/mydali"
@@ -25,16 +25,16 @@
 <   </DaliServerProcess>
 ---
 >                      recoverFromIncErrors="true"/>
-450,453d431
+462,465d443
 <    <Instance computer="node002015"
 <              directory="/var/lib/HPCCSystems/mydfuserver"
 <              name="s1"
 <              netAddress="."/>
-479c457
+491c469
 <    <ServerList server="."/>
 ---
 >    <ServerList server=""/>
-496,501c474
+508,513c486
 <                    wuQueueName="myeclagent_queue">
 <    <Instance computer="node002015"
 <              directory="/var/lib/HPCCSystems/myeclagent"
@@ -43,7 +43,7 @@
 <   </EclAgentProcess>
 ---
 >                    wuQueueName="myeclagent_queue"/>
-511,516c484
+524,529c497
 <                       traceLevel="1">
 <    <Instance computer="node002015"
 <              directory="/var/lib/HPCCSystems/myeclccserver"
@@ -52,7 +52,7 @@
 <   </EclCCServerProcess>
 ---
 >                       traceLevel="1"/>
-521,526c489
+534,539c502
 <                        name="myeclscheduler">
 <    <Instance computer="node002015"
 <              directory="/var/lib/HPCCSystems/myeclscheduler"
@@ -61,21 +61,13 @@
 <   </EclSchedulerProcess>
 ---
 >                        name="myeclscheduler"/>
-751,755d713
+766,770d728
 <    <Instance computer="node002015"
 <              directory="/var/lib/HPCCSystems/myesp"
 <              FQDN=""
 <              name="s"
 <              netAddress="."/>
-766c724
-<               elasticSearchAdresses=""
----
->               elasticSearchAddresses=""
-775c733
-<               logStashAdresses=""
----
->               logStashAddresses=""
-971,1136c929
+991,1160c949
 <                   version="1">
 <    <Instance computer="node002015"
 <              directory="/var/lib/HPCCSystems/myftslave"
@@ -96,6 +88,7 @@
 <                 channelsPerNode="1"
 <                 checkCompleted="true"
 <                 checkFileDate="true"
+<                 collectFactoryStatistics="true"
 <                 copyResources="false"
 <                 coresPerQuery="0"
 <                 cyclicOffset="1"
@@ -168,6 +161,9 @@
 <                 multicastBase="239.1.1.1"
 <                 multicastLast="239.1.254.254"
 <                 multicastTTL="1"
+<                 mysqlCacheCheckPeriod="10000"
+<                 mysqlCacheTimeoutPeriod="60000"
+<                 mysqlConnectionCacheSize="10"
 <                 name="myroxie"
 <                 nodeCacheMem="100"
 <                 nodeCachePreload="false"
@@ -244,7 +240,7 @@
 <   </RoxieCluster>
 ---
 >                   version="1"/>
-1188,1230c981
+1212,1254c1001
 <                       xrefMaxScanThreads="500">
 <    <Instance computer="node002015"
 <              directory="/var/lib/HPCCSystems/mysasha"
@@ -290,7 +286,7 @@
 <   </ThorCluster>
 ---
 >                       xrefMaxScanThreads="500"/>
-1236,1252d986
+1260,1276d1006
 <    </Cluster>
 <    <Cluster alias="" name="thor" prefix="thor">
 <     <EclAgentProcess process="myeclagent"/>

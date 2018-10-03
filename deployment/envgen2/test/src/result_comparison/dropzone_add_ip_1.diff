@@ -3,7 +3,7 @@
 >             domain="localdomain"
 >             name="node000010"
 >             netAddress="1.0.0.10"/>
-428a433,439
+440a445,451
 >    <Instance computer="node000010"
 >              directory="/var/lib/HPCCSystems/mydafilesrv"
 >              name="s"
@@ -11,9 +11,9 @@
 >              parallelRequestLimit="20"
 >              throttleCPULimit="75"
 >              throttleDelayMs="5000"/>
-479a491
+491a503
 >    <ServerList name="s" server="1.0.0.10"/>
-975a988,992
+995a1008,1012
 >              program="/opt/HPCCSystems/bin/ftslave"/>
 >    <Instance computer="node000010"
 >              directory="/var/lib/HPCCSystems/myftslave"

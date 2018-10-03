@@ -2,12 +2,19 @@
 >   <Computer computerType="linuxmachine"
 >             domain="localdomain"
 >             name="node000010"
->             netAddress="1.1.0.10"/>
-437a442,448
+>             netAddress="40.1.0.10"/>
+423a428,431
+>    <Instance computer="node000010"
+>              directory="/var/lib/HPCCSystems/mybackupnode"
+>              name="s"
+>              netAddress="40.1.0.10"/>
+424a433
+>    <NodeGroup interval="24" name="newthorgroup"/>
+437a447,453
 >              parallelRequestLimit="20"
 >              throttleCPULimit="75"
 >              throttleDelayMs="5000"/>
 >    <Instance computer="node000010"
 >              directory="/var/lib/HPCCSystems/mydafilesrv"
 >              name="s"
->              netAddress="1.1.0.10"
+>              netAddress="40.1.0.10"

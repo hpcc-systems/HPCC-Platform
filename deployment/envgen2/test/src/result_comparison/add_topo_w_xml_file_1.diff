@@ -1,4 +1,4 @@
-1253a1254,1259
+1277a1278,1283
 >    <Cluster alias="" name="thor2" prefix="thor2">
 >     <EclAgentProcess process="myeclagent2"/>
 >     <EclCCServerProcess process="myeclccserver2"/>

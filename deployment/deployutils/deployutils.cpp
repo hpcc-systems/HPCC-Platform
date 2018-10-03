@@ -3890,6 +3890,39 @@ void getTempPath(char* tempPath, unsigned int bufsize, const char* subdir/*=NULL
 }
 #endif
 
+int   validateBackupNode(IPropertyTree * pEnvRoot, StringBuffer &sbErrMsg)
+{
+   int errCount = 0;
+   StringBuffer xpath;
+   xpath.clear().appendf("%s/BackupNodeProcess", XML_TAG_SOFTWARE);
+   Owned<IPropertyTreeIterator> backupNodeIter = pEnvRoot->getElements(xpath.str());
+   if (backupNodeIter == NULL) return errCount;
+   ForEach(*backupNodeIter)
+   {
+      IPropertyTree* pBackupNodeTree = &backupNodeIter->query();
+      Owned<IPropertyTreeIterator> backupNodeInstIter = pBackupNodeTree->getElements("Instance");
+      ForEach(*backupNodeInstIter)
+      {
+         IPropertyTree* pBackupNodeInstTree = &backupNodeInstIter->query();
+         const char * computerName =  pBackupNodeInstTree->queryProp(XML_ATTR_COMPUTER);
+         xpath.clear().appendf("%s/ThorCluster", XML_TAG_SOFTWARE);
+         if (computerName && *computerName)
+         {
+            xpath.clear().appendf("%s/ThorCluster/ThorMasterProcess[@computer=\"%s\"]/%s", XML_TAG_SOFTWARE, computerName, XML_ATTR_NAME);
+            if (pEnvRoot->queryProp(xpath.str()))
+            {
+               sbErrMsg.appendf("Error: a BackupNodeProcess instance has the same computer %s as thor master node\n", computerName);
+               errCount++;
+            }
+         }
+      }
+   }
+
+   return errCount;
+
+
+}
+
 bool validateEnv(IConstEnvironment* pConstEnv, bool abortOnException)
 {
   char tempdir[_MAX_PATH];
@@ -3919,12 +3952,19 @@ bool validateEnv(IConstEnvironment* pConstEnv, bool abortOnException)
     configGenMgr->deploy(DEFLAGS_CONFIGFILES, DEBACKUP_NONE, false, false);
     deleteRecursive(tempdir);
     const char* msg = callback.getErrorMsg();
+
+    StringBuffer sbErrMsg;
+    sbErrMsg.clear();
+    int bkupErrCount = validateBackupNode(pEnvRoot, sbErrMsg);
+
     if (msg && *msg)
+       sbErrMsg.append(msg).append("\n");
+
+    if (!sbErrMsg.isEmpty())
     {
       StringBuffer sb("Errors or warnings were found when validating the environment.\n\n");
-      sb.append(msg).append("\n");
-      sb.appendf("Total errors/warnings: %d", callback.getErrorCount() - 1);
-      throw MakeStringExceptionDirect(-1, sb.str());
+      sb.appendf("Total errors/warnings: %d", callback.getErrorCount() - 1 + bkupErrCount);
+      throw MakeStringExceptionDirect(-1, sbErrMsg.str());
     }
   }
   catch(IException* e)
