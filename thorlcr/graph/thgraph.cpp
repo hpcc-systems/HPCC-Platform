@@ -2697,6 +2697,7 @@ void CJobBase::init()
     memorySpillAtPercentage = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
     sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
     sharedMemoryMB = globalMemoryMB*sharedMemoryLimitPercentage/100;
+    failOnLeaks = getOptBool("failOnLeaks");
 
     PROGLOG("Global memory size = %d MB, shared memory = %d%%, memory spill at = %d%%", globalMemoryMB, sharedMemoryLimitPercentage, memorySpillAtPercentage);
     StringBuffer tracing("maxActivityCores = ");
@@ -2710,17 +2711,6 @@ void CJobBase::init()
 void CJobBase::beforeDispose()
 {
     endJob();
-    ForEachItemIn(c, jobChannels)
-        jobChannels.item(c).clean();
-}
-
-CJobBase::~CJobBase()
-{
-    jobChannels.kill(); // avoiding circular references. Kill before other CJobBase components are destroyed that channels reference.
-    ::Release(userDesc);
-    ::Release(pluginMap);
-
-    traceMemUsage();
 }
 
 CJobChannel &CJobBase::queryJobChannel(unsigned c) const
@@ -2771,10 +2761,60 @@ void CJobBase::startJob()
 
 void CJobBase::endJob()
 {
+    if (jobEnded)
+        return;
+
+    jobEnded = true;
     setPerformanceMonitorHook(nullptr);
     LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
     clearKeyStoreCache(true);
     PrintMemoryStatusLog();
+
+    Owned<IMultiException> exceptions;
+    ForEachItemIn(c, jobChannels)
+    {
+        try
+        {
+            jobChannels.item(c).clean();
+        }
+        catch (IException *e)
+        {
+            if (!exceptions)
+                exceptions.setown(makeMultiException());
+            exceptions->append(*LINK(e));
+        }
+    }
+
+    try
+    {
+        jobChannels.kill(); // avoiding circular references. Kill before other CJobBase components are destroyed that channels reference.
+        ::Release(userDesc);
+        ::Release(pluginMap);
+
+        traceMemUsage();
+
+        if (numChannels > 1) // if only 1 - then channel allocator is same as sharedAllocator, leaks will be reported by the single channel
+            checkAndReportLeaks(sharedAllocator->queryRowManager());
+    }
+    catch (IException *e)
+    {
+        if (!exceptions)
+            exceptions.setown(makeMultiException());
+        exceptions->append(*LINK(e));
+    }
+    if (exceptions && exceptions->ordinality())
+        throw exceptions.getClear();
+}
+
+void CJobBase::checkAndReportLeaks(roxiemem::IRowManager *rowManager)
+{
+    if (!failOnLeaks) // NB: leaks reported by row manager destructor anyway
+        return;
+    if (rowManager->allocated())
+    {
+        rowManager->reportLeaks();
+        throw MakeThorException(TE_RowLeaksDetected, "Row leaks detected");
+    }
 }
 
 bool CJobBase::queryForceLogging(graph_id graphId, bool def) const
@@ -2887,12 +2927,8 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
 
 CJobChannel::~CJobChannel()
 {
-    queryRowManager()->reportMemoryUsage(false);
-    PROGLOG("CJobBase resetting memory manager");
-    thorAllocator.clear();
-    wait();
-    clean();
-    codeCtx.clear();
+    if (!cleaned)
+        clean();
 }
 
 INode *CJobChannel::queryMyNode()
@@ -2952,12 +2988,26 @@ IThorGraphIterator *CJobChannel::getSubGraphs()
 
 void CJobChannel::clean()
 {
+    if (cleaned)
+        return;
+
+    cleaned = true;
+    wait();
+
+    queryRowManager()->reportMemoryUsage(false);
+    PROGLOG("CJobBase resetting memory manager");
+
     if (graphExecutor)
     {
         graphExecutor->queryGraphPool().stopAll();
         graphExecutor.clear();
     }
     subGraphs.kill();
+
+    job.checkAndReportLeaks(thorAllocator->queryRowManager());
+
+    thorAllocator.clear();
+    codeCtx.clear();
 }
 
 void CJobChannel::startGraph(CGraphBase &graph, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract)

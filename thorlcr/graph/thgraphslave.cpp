@@ -1691,6 +1691,9 @@ void CJobSlave::startJob()
 
 void CJobSlave::endJob()
 {
+    if (jobEnded)
+        return;
+
     queryThor().queryKeyedJoinService().reset();
     PARENT::endJob();
 }

@@ -825,6 +825,8 @@ protected:
     unsigned memorySpillAtPercentage, sharedMemoryLimitPercentage;
     CriticalSection sharedAllocatorCrit;
     Owned<IThorAllocator> sharedAllocator;
+    bool jobEnded = false;
+    bool failOnLeaks = false;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -844,8 +846,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CJobBase(ILoadedDllEntry *querySo, const char *graphName);
-    virtual void beforeDispose();
-    ~CJobBase();
+    virtual void beforeDispose() override;
 
     virtual void addChannel(IMPServer *mpServer) = 0;
     CJobChannel &queryJobChannel(unsigned c) const;
@@ -870,6 +871,7 @@ public:
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(IPropertyTree &xgmml);
 
+    void checkAndReportLeaks(roxiemem::IRowManager *rowManager);
     bool queryUseCheckpoints() const;
     bool queryPausing() const { return pausing; }
     bool queryResumed() const { return resumed; }
@@ -951,6 +953,7 @@ protected:
     Owned<CThorCodeContextBase> codeCtx;
     Owned<CThorCodeContextBase> sharedMemCodeCtx;
     unsigned channel;
+    bool cleaned = false;
 
     void removeAssociates(CGraphBase &graph)
     {
