@@ -31,7 +31,7 @@
 #include "jencrypt.hpp"
 #include "jerror.hpp"
 #ifdef _WIN32
-#include <mmsystem.h> // for timeGetTime 
+#include <mmsystem.h> // for timeGetTime
 #include <float.h> //for _isnan and _fpclass
 #else
 #include <unistd.h> // read()
@@ -144,7 +144,7 @@ bool j_isinf(double x)
 #ifdef _WIN32
 void MilliSleep(unsigned milli)
 {
-    Sleep(milli); 
+    Sleep(milli);
 }
 
 #else
@@ -155,7 +155,7 @@ void MilliSleep(unsigned milli)
         unsigned target = msTick()+milli;
         for (;;) {
             timespec sleepTime;
-            
+
             if (milli>=1000)
             {
                 sleepTime.tv_sec = milli/1000;
@@ -176,7 +176,7 @@ void MilliSleep(unsigned milli)
         }
     }
     else
-        ThreadYield();  // 0 means  yield 
+        ThreadYield();  // 0 means  yield
 
 }
 
@@ -186,7 +186,7 @@ void MilliSleep(unsigned milli)
 
 
 long atolong_l(const char * s,int l)
-{ 
+{
     char t[32];
     memcpy(t,s,l);
     t[l]=0;
@@ -194,7 +194,7 @@ long atolong_l(const char * s,int l)
 }
 
 int  atoi_l(const char * s,int l)
-{ 
+{
     char t[32];
     memcpy(t,s,l);
     t[l]=0;
@@ -218,10 +218,10 @@ __int64 atoi64_l(const char * s,int l)
         l--;
         s++;
     }
-    
+
     while (l>0 && isdigit(*s))
     {
-        result = 10 * result + ((*s) - '0'); 
+        result = 10 * result + ((*s) - '0');
         l--;
         s++;
     }
@@ -236,10 +236,10 @@ __int64 atoi64_l(const char * s,int l)
 static char *_itoa(unsigned long n, char *str, int b, bool sign)
 {
     char *s = str;
-    
+
     if (sign)
         n = -n;
-    
+
     do
     {
         byte d = n % b;
@@ -249,7 +249,7 @@ static char *_itoa(unsigned long n, char *str, int b, bool sign)
     if (sign)
         *(s++) = '-';
     *s = '\0';
-    
+
     // reverse
     char *s2 = str;
     s--;
@@ -259,7 +259,7 @@ static char *_itoa(unsigned long n, char *str, int b, bool sign)
         *(s2++) = *s;
         *(s--) = tc;
     }
-    
+
     return str;
 }
 char *itoa(int n, char *str, int b)
@@ -285,7 +285,7 @@ void packNumber(char * target, const char * source, unsigned slen)
         if (c == ' ') c = '0';
         next = (next << 4) + (c - '0');
         slen--;
-        
+
         if ((slen & 1) == 0)
         {
             *target++ = next;
@@ -302,7 +302,7 @@ void unpackNumber(char * target, const char * source, unsigned tlen)
         *target = '0' + *source++;
         tlen--;
     }
-    
+
     while (tlen)
     {
         unsigned char next = *source++;
@@ -414,7 +414,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
     StringBuffer tmp;
     if (name&&isPathSepChar(*name)&&isPathSepChar(name[1])) {
         RemoteFilename rfn;
-        rfn.setRemotePath(name); 
+        rfn.setRemotePath(name);
         SocketEndpoint ep;
         if (!rfn.isLocal()) {
             // I guess could copy to a temporary location but currently just fail
@@ -592,8 +592,8 @@ IPluggableFactory *loadPlugin(const IPropertyTree *pluginInfo)
   clashes (being paranoid).  This should mean if a temporary ID is allocated 1,000,000,000
   times a second, then we won't repeat until 400 years later - assuming the machine stays
   alive for that long.
-  
-    Using a 32 bit number we loop after about an hour if we allocated 1,000,000 a second - 
+
+    Using a 32 bit number we loop after about an hour if we allocated 1,000,000 a second -
     not an unreasonable estimate for the future.
 */
 
@@ -601,7 +601,7 @@ static unique_id_t nextTemporaryId;
 
 StringBuffer & appendUniqueId(StringBuffer & target, unique_id_t value)
 {
-    //Just generate a temporary name from the __int64 - 
+    //Just generate a temporary name from the __int64 -
     //Don't care about the format, therfore use base 32 in reverse order.
     while (value)
     {
@@ -756,7 +756,7 @@ int numtostr(char *dst, __int64 _value)
         }
         *(--tmp) = ((char)v3)+'0';
     }
-    
+
     int diff = (int)(end-tmp);
 #ifdef USEMEMCPY
     memcpy(dst, tmp, diff+1);
@@ -811,7 +811,7 @@ int numtostr(char *dst, unsigned __int64 value)
         }
         *(--tmp) = ((char)v3)+'0';
     }
-    
+
     int diff = (int)(end-tmp);
 #ifdef USEMEMCPY
     memcpy(dst, tmp, diff+1);
@@ -838,12 +838,12 @@ class CRandom: public IRandomNumberGenerator, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRandom() 
-    { 
-        seed((unsigned)get_cycles_now()); 
+    CRandom()
+    {
+        seed((unsigned)get_cycles_now());
     }
-    
-    void seed(unsigned su) 
+
+    void seed(unsigned su)
     {
         ptr = HISTORYMAX;
         lower = 23;
@@ -851,7 +851,7 @@ public:
 
         double s = 91648253+su;
         double a = 1389796;
-        double m = 2147483647;  
+        double m = 2147483647;
         unsigned i;
         for (i=0;i<HISTORYSIZE;i++) { // just used for initialization
             s *= a;
@@ -860,7 +860,7 @@ public:
             history[i] = (unsigned)s;
         }
     }
-    
+
 
     unsigned next()
     {
@@ -880,7 +880,7 @@ public:
         return ret;
     }
 
-} RandomMain; 
+} RandomMain;
 
 static CriticalSection gobalRandomSect;
 
@@ -892,7 +892,7 @@ unsigned getRandom()
 
 void seedRandom(unsigned seed)
 {
-    CriticalBlock block(gobalRandomSect); 
+    CriticalBlock block(gobalRandomSect);
     RandomMain.seed(seed);
 }
 
@@ -990,9 +990,9 @@ public:
         return idx<num;
     }
 
-    bool next() 
+    bool next()
     {
-        if (idx<num) 
+        if (idx<num)
             idx++;
         return isValid();
     }
@@ -1002,14 +1002,14 @@ public:
         return lookup(idx);
     }
 
-    unsigned lookup(unsigned i) 
+    unsigned lookup(unsigned i)
     {
         if (!seq)
             first();
         return seq[i%num];
     }
 
-    void seed(unsigned su) 
+    void seed(unsigned su)
     {
         rand.seed(su);
     }
@@ -1028,7 +1028,7 @@ bool isCIdentifier(const char* id)
 {
     if (id==NULL || *id==0)
         return false;
-    
+
     if (!isalpha(*id) && *id!='_')
         return false;
 
@@ -1182,7 +1182,7 @@ void JBASE64_Encode(const void *data, long length, StringBuffer &out, bool addLi
 
 //
 // Decode the input in a base64 format
-// 
+//
 // const char *in -> The string to be decoded
 // StringBuffer & out       -> Decoded string here
 //
@@ -1462,7 +1462,7 @@ void JBASE32_Decode(const char *bi,StringBuffer &out)
         o = ((b[6] & 0x07) << 5) | (b[7] & 0x1f);
         if (!o) return;
         out.append(o);
-    }           
+    }
 }
 
 
@@ -1476,7 +1476,7 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
         c = ',';
     else if (*delim&&!delim[1])
         c = *delim;
-    else 
+    else
         c = 0;
     StringBuffer str;
     unsigned dstlen=dst.ordinality();
@@ -1511,7 +1511,7 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
         }
         else
             dst.append(str.str());
-        if (!*e) 
+        if (!*e)
             break;
         s = e+1;
     }
@@ -1577,31 +1577,31 @@ unsigned usTick()
 #else
 #ifdef CLOCK_MONOTONIC
 static bool use_gettimeofday=false;
-unsigned msTick() 
-{ 
+unsigned msTick()
+{
     if (!use_gettimeofday) {
         timespec tm;
         if (clock_gettime(CLOCK_MONOTONIC, &tm)>=0)
-            return tm.tv_sec*1000+(tm.tv_nsec/1000000); 
+            return tm.tv_sec*1000+(tm.tv_nsec/1000000);
         use_gettimeofday = true;
         fprintf(stderr,"clock_gettime CLOCK_MONOTONIC returns %d",errno);   // don't use PROGLOG
     }
     struct timeval tm;
     gettimeofday(&tm,NULL);
-    return tm.tv_sec*1000+(tm.tv_usec/1000); 
+    return tm.tv_sec*1000+(tm.tv_usec/1000);
 }
-unsigned usTick() 
-{ 
+unsigned usTick()
+{
     if (!use_gettimeofday) {
         timespec tm;
         if (clock_gettime(CLOCK_MONOTONIC, &tm)>=0)
-            return tm.tv_sec*1000000+(tm.tv_nsec/1000); 
+            return tm.tv_sec*1000000+(tm.tv_nsec/1000);
         use_gettimeofday = true;
         fprintf(stderr,"clock_gettime CLOCK_MONOTONIC returns %d",errno);   // don't use PROGLOG
     }
     struct timeval tm;
     gettimeofday(&tm,NULL);
-    return tm.tv_sec*1000000+tm.tv_usec; 
+    return tm.tv_sec*1000000+tm.tv_usec;
 }
 #elif __APPLE__
 
@@ -1619,17 +1619,17 @@ unsigned msTick()
 
 #else
 #warning "clock_gettime(CLOCK_MONOTONIC) not supported"
-unsigned msTick() 
-{ 
+unsigned msTick()
+{
   struct timeval tm;
   gettimeofday(&tm,NULL);
-  return tm.tv_sec*1000+(tm.tv_usec/1000); 
+  return tm.tv_sec*1000+(tm.tv_usec/1000);
 }
-unsigned usTick() 
-{ 
+unsigned usTick()
+{
   struct timeval tm;
   gettimeofday(&tm,NULL);
-  return tm.tv_sec*1000000+tm.tv_usec; 
+  return tm.tv_sec*1000000+tm.tv_usec;
 }
 #endif
 #endif
@@ -1702,18 +1702,18 @@ void initThreadLocal(int len, void* val)
         CriticalBlock b(tlscrit);
         if(dwTlsIndex == -1)
         {
-            if ((dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES) 
-                throw MakeStringException(-1, "TlsAlloc failed"); 
+            if ((dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES)
+                throw MakeStringException(-1, "TlsAlloc failed");
         }
     }
 
-    LPVOID lpvData; 
-    
-    lpvData = TlsGetValue(dwTlsIndex); 
-    if (lpvData != 0) 
-        LocalFree((HLOCAL) lpvData); 
-    
-    // Initialize the TLS index for this thread. 
+    LPVOID lpvData;
+
+    lpvData = TlsGetValue(dwTlsIndex);
+    if (lpvData != 0)
+        LocalFree((HLOCAL) lpvData);
+
+    // Initialize the TLS index for this thread.
     lpvData = (LPVOID) LocalAlloc(LPTR, len);
     memcpy((char*)lpvData, val, len);
     if (! TlsSetValue(dwTlsIndex, lpvData))
@@ -1733,10 +1733,10 @@ void clearThreadLocal()
     if(dwTlsIndex == -1)
         return;
 
-    LPVOID lpvData = TlsGetValue(dwTlsIndex); 
-    if (lpvData != 0) 
+    LPVOID lpvData = TlsGetValue(dwTlsIndex);
+    if (lpvData != 0)
     {
-        LocalFree((HLOCAL) lpvData);  
+        LocalFree((HLOCAL) lpvData);
         if (! TlsSetValue(dwTlsIndex, NULL))
             throw MakeStringException(-1, "TlsSetValue error");
     }
@@ -1755,7 +1755,7 @@ static void buffer_destroy(void * buf)
         free(buf);
 }
 
-// Allocate the key 
+// Allocate the key
 static void buffer_key_alloc()
 {
     pthread_key_create(&buffer_key, buffer_destroy);
@@ -1795,12 +1795,12 @@ StringBuffer &expandMask(StringBuffer &buf, const char *mask, unsigned p, unsign
                         buf.append(p+1);
                         next = 0;
                         s+=2;
-                    }   
+                    }
                     else if (pc=='N') {
                         buf.append(n);
                         next = 0;
                         s+=2;
-                    }   
+                    }
                 }
             }
             if (next)
@@ -1950,7 +1950,7 @@ public:
         if (usertoken != (HANDLE)-1)
             CloseHandle(usertoken);
     }
-    bool login(const char *user, const char *passwd) 
+    bool login(const char *user, const char *passwd)
     {
         name.clear();
         if (usertoken != (HANDLE)-1)
@@ -1998,24 +1998,24 @@ class CLinuxAuthenticatedUser: implements IAuthenticatedUser, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    bool login(const char *user, const char *passwd) 
+    bool login(const char *user, const char *passwd)
     {
         name.clear();
         const char *ut = strchr(user,'\\');
-        if (ut) 
+        if (ut)
             user = ut+1; // remove windows domain
         struct passwd *pw;
         char *epasswd;
-        if ((pw = getpwnam(user)) == NULL) 
+        if ((pw = getpwnam(user)) == NULL)
             return false;
         struct spwd *spwd = getspnam(user);
-        if (spwd) 
+        if (spwd)
             epasswd = spwd->sp_pwdp;
         else
             epasswd = pw->pw_passwd;
-        if (!epasswd||!*epasswd) 
+        if (!epasswd||!*epasswd)
             return false;
-        if (strcmp(crypt(passwd,epasswd),epasswd)!=0) 
+        if (strcmp(crypt(passwd,epasswd),epasswd)!=0)
             return false;
         uid = pw->pw_uid;
         gid = pw->pw_gid;
@@ -2106,7 +2106,7 @@ StringBuffer &genUUID(StringBuffer &out, bool nocase)
     time(&t);
     uuidbin[2] = (unsigned)t;
     uuidbin[3] = msTick();
-    uuidbin[4]++;  
+    uuidbin[4]++;
     byte *in = (byte *)uuidbin;
     if (nocase) {
         encode5_32(in,out);
@@ -2125,7 +2125,7 @@ StringBuffer &genUUID(StringBuffer &out, bool nocase)
         tmp[2] = in[16];
         encode3_64(tmp,out);
         encode3_64(in+17,out);
-    }       
+    }
     lock.leave();
     return out;
 }
@@ -2163,7 +2163,7 @@ MODULE_EXIT()
     delete namedCountHT;
 }
 
-NamedCount::NamedCount() 
+NamedCount::NamedCount()
 {
     ht = NULL;
 }
@@ -2184,7 +2184,7 @@ StringBuffer &dumpNamedCounts(StringBuffer &str)
 //==============================================================
 // class OffsetToString
 
-OffsetToString::OffsetToString(offset_t offset) 
+OffsetToString::OffsetToString(offset_t offset)
 {
 #if defined(_MSC_VER) && !defined (_POSIX_) && (__STDC__ || _INTEGRAL_MAX_BITS < 64)
     // fpos_t is defined as struct (see <stdio.h> in VC)
@@ -2193,7 +2193,7 @@ OffsetToString::OffsetToString(offset_t offset)
 #else
     m_buffer.append(offset);
 #endif
-}   
+}
 /* Gentoo libc version omits these symbols which are directly          */
 /* referenced by some 3rd party libraries (sybase, Hasp).  Until these */
 /* libs get updated, provide linkable symbols within jlib for these... */
@@ -2217,7 +2217,7 @@ From ftp://ftp.isi.edu/in-notes/rfc1738.txt:
         http://<user>:<password>@<host>:<port>/<url-path>
 
    Some or all of the parts "<user>:<password>@", ":<password>",
-   ":<port>", and "/<url-path>" may be excluded.  
+   ":<port>", and "/<url-path>" may be excluded.
 
    The user name (and password), if present, are followed by a
    commercial at-sign "@". Within the user and password field, any ":",
@@ -2234,7 +2234,7 @@ jlib_decl StringBuffer& encodeUrlUseridPassword(StringBuffer& out, const char* i
         case ':': out.append("%3A"); break;
         case '@': out.append("%40"); break;
         case '/': out.append("%2F"); break;
-        
+
         // these are not in the spec, but IE/Firefox has trouble if left un-encoded
         case '%': out.append("%25"); break;
 
@@ -2249,16 +2249,16 @@ jlib_decl StringBuffer& encodeUrlUseridPassword(StringBuffer& out, const char* i
     return out;
 }
 
-inline bool isHexChar(char c) 
-{ 
-    return (c>='0' && c<='9') 
+inline bool isHexChar(char c)
+{
+    return (c>='0' && c<='9')
         || (c>='A' && c<='F')
         || (c>='a' && c<='f');
 }
 
 int hexValue(char c)
 {
-    return (c>='0' && c<='9') ? c-'0' : 
+    return (c>='0' && c<='9') ? c-'0' :
         ((c>='A' && (c<='F') ? c-'A'+10 : c-'a'+10));
 }
 
@@ -2272,7 +2272,7 @@ jlib_decl StringBuffer& decodeUrlUseridPassword(StringBuffer& out, const char* i
             int x = (hexValue(c1)<<4) + hexValue(c2);
             out.appendf("%c",x);
             p += 2;
-        } 
+        }
         else
             out.appendf("%c",*p);
     }
@@ -2287,7 +2287,7 @@ StringBuffer jlib_decl passwordInput(const char* prompt, StringBuffer& passwd)
     size32_t entrylen = passwd.length();
     for (;;) {
         char c = getch();
-        if (c == '\r') 
+        if (c == '\r')
             break;
         if (c == '\b') {
             if (passwd.length()>entrylen) {
@@ -2297,12 +2297,12 @@ StringBuffer jlib_decl passwordInput(const char* prompt, StringBuffer& passwd)
         }
         else {
             passwd.append(c);
-            printf("*"); 
+            printf("*");
         }
     }
     printf("\n");
 #else
-    // unfortuantely linux tty can't easily support using '*' hiding
+    // Unfortunately Linux tty can't easily support using '*' hiding
     sigset_t    saved_signals;
     sigset_t    set_signals;
     struct termios saved_term;
@@ -2334,6 +2334,8 @@ StringBuffer jlib_decl passwordInput(const char* prompt, StringBuffer& passwd)
     sigprocmask(SIG_SETMASK, &saved_signals, 0);
     if (term!=stdin)
         fclose(term);
+    fprintf(stdout, "\n");
+    fflush(stdout);
     if (err)
         throw makeOsException(err);
 #endif
@@ -2534,7 +2536,7 @@ static IPropertyTree *getOSSdirTree()
     Owned<IPropertyTree> envtree = getHPCCEnvironment();
     if (envtree) {
         IPropertyTree *ret = envtree->queryPropTree("Software/Directories");
-        if (ret) 
+        if (ret)
             return createPTreeFromIPT(ret);
     }
     return NULL;
@@ -2567,7 +2569,7 @@ StringBuffer &getFileAccessUrl(StringBuffer &out)
 bool getConfigurationDirectory(const IPropertyTree *useTree, const char *category, const char *component, const char *instance, StringBuffer &dirout)
 {
     Linked<const IPropertyTree> dirtree = useTree;
-    if (!dirtree) 
+    if (!dirtree)
         dirtree.setown(getOSSdirTree());
     if (dirtree && category && *category)
     {
@@ -2701,7 +2703,7 @@ static StringAttr processPath;
 const char * queryCurrentProcessPath()
 {
     CriticalBlock block(sect);
-    if (processPath.isEmpty()) 
+    if (processPath.isEmpty())
     {
 #if _WIN32
         HMODULE hModule = GetModuleHandle(NULL);
@@ -2709,14 +2711,14 @@ const char * queryCurrentProcessPath()
         if (GetModuleFileName(hModule, path, MAX_PATH) != 0)
             processPath.set(path);
 #elif defined (__APPLE__)
-        char path[PATH_MAX]; 
-        uint32_t size = sizeof(path); 
+        char path[PATH_MAX];
+        uint32_t size = sizeof(path);
         ssize_t len = _NSGetExecutablePath(path, &size);
         switch(len)
         {
         case -1:
             {
-                char * biggerPath = new char[size]; 
+                char * biggerPath = new char[size];
                 if (_NSGetExecutablePath(biggerPath, &size) == 0)
                     processPath.set(biggerPath);
                 delete [] biggerPath;
@@ -2729,7 +2731,7 @@ const char * queryCurrentProcessPath()
             break;
         }
 #else
-        char path[PATH_MAX + 1];   
+        char path[PATH_MAX + 1];
         ssize_t len = readlink("/proc/self/exe", path, PATH_MAX);
         if (len != -1)
         {
@@ -2762,9 +2764,9 @@ bool getPackageFolder(StringBuffer & path)
 }
 
 
-inline bool isOctChar(char c) 
-{ 
-    return (c>='0' && c<'8'); 
+inline bool isOctChar(char c)
+{
+    return (c>='0' && c<'8');
 }
 
 inline int octValue(char c)
@@ -2773,7 +2775,7 @@ inline int octValue(char c)
 }
 
 int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvout)
-{ 
+{
     mb.append((char)0);
     size32_t arg[256];
     int argc = 0;
@@ -2801,15 +2803,15 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
                         argc++;
                     }
                     if (c) {
-                        if (argc==256) 
+                        if (argc==256)
                             throw makeStringException(-1, "parseCommandLine: too many arguments");
                         arg[argc] = 0;
                     }
                 }
-                if (c) 
+                if (c)
                     continue;
                 argvout = (const char **)mb.reserve(argc*sizeof(const char *));
-                for (int i=0;i<argc;i++) 
+                for (int i=0;i<argc;i++)
                     argvout[i] = arg[i]+(const char *)mb.bufferBase();
                 return argc;
             }
@@ -2839,7 +2841,7 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
                             c = 0;
                             if (isHexChar(*cmdline)) {
                                 c = hexValue(*(cmdline++));
-                                if (isHexChar(*cmdline)) 
+                                if (isHexChar(*cmdline))
                                     c = ((byte)c*16)+hexValue(*(cmdline++));
                             }
                         }
@@ -2849,7 +2851,7 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
                             c = octValue(c);
                             if (isOctChar(*cmdline)) {
                                 c = ((byte)c*8)+octValue(*(cmdline++));
-                                if (isOctChar(*cmdline)) 
+                                if (isOctChar(*cmdline))
                                     c = ((byte)c*8)+octValue(*(cmdline++));
                             }
                         }
@@ -2859,7 +2861,7 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
             }
             break;
         }
-        if (!arg[argc]) 
+        if (!arg[argc])
             arg[argc] = mb.length();
         mb.append(c);
     }
@@ -2950,11 +2952,11 @@ static int doTests()
     const char* ps[] = {
         "ABCD", "@BCD", "%BCD","&BCD","A CD","A/CD", "A@@%%A","A&%/@"
     };
-    
+
     const int N = sizeof(ps)/sizeof(char*);
     for (int i=0; i<N; i++)
     {
-        StringBuffer raw, encoded;  
+        StringBuffer raw, encoded;
         encodeUrlUseridPassword(encoded,ps[i]);
         printf("Encoded: %s\n", encoded.str());
         decodeUrlUseridPassword(raw,encoded);
