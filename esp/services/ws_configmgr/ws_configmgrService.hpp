@@ -15,27 +15,27 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _WSCONFIG2_HPP_
-#define _WSCONFIG2_HPP_
+#ifndef _WSCONFIGMGR_HPP_
+#define _WSCONFIGMGR_HPP_
 
-#include "ws_config2.hpp"
-#include "ws_config2_esp.ipp"
+#include "ws_configmgr.hpp"
+#include "ws_configmgr_esp.ipp"
 #include <string>
 #include "XSDSchemaParser.hpp"
 #include "EnvironmentMgr.hpp"
 #include "XMLEnvironmentMgr.hpp"
-#include "ws_config2Session.hpp"
+#include "ws_configmgrSession.hpp"
 
 
 class Status;
 
-class Cws_config2Ex : public Cws_config2
+class Cws_configMgrEx : public Cws_configmgr
 {
 public:
     IMPLEMENT_IINTERFACE
 
-    Cws_config2Ex();
-    virtual ~Cws_config2Ex();
+    Cws_configMgrEx();
+    virtual ~Cws_configMgrEx();
 
     virtual bool onGetNode(IEspContext &context, IEspGetNodeRequest &req, IEspGetNodeResponse &resp);
     virtual bool onSetValues(IEspContext &context, IEspSetValuesRequest &req, IEspStatusResponse &resp);
@@ -80,4 +80,4 @@ private:
     unsigned m_sessionKey;
 };
 
-#endif // _WSCONFIG2_HPP_
+#endif // _WSCONFIGMGR_HPP_

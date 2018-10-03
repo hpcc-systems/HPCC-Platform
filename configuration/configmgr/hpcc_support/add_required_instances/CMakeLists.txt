@@ -28,13 +28,13 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../configmgrlib
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/oss
 )
 
 ADD_DEFINITIONS( -D_USRDLL -DCFGSUPPORT_DAFILESRV_LIB)
 HPCC_ADD_LIBRARY( cfgsupport_addrequiredinstances SHARED ${SRCS} )
-TARGET_LINK_LIBRARIES( cfgsupport_addrequiredinstances config2 jlib )
+TARGET_LINK_LIBRARIES( cfgsupport_addrequiredinstances jlib )
 
 INSTALL ( TARGETS cfgsupport_addrequiredinstances RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

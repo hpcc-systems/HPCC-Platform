@@ -16,14 +16,14 @@
 #
 ###############################################################################
 
-project(ws_config2)
+project(ws_configmgr)
 
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set(SRCS
-    ${ESPSCM_GENERATED_DIR}/ws_config2_esp.cpp
-    ws_config2Service.cpp
-    ws_config2_plugin.cpp
+    ${ESPSCM_GENERATED_DIR}/ws_configmgr_esp.cpp
+        ws_configmgrService.cpp
+        ws_configmgr_plugin.cpp
     )
 
 include_directories(
@@ -46,35 +46,33 @@ include_directories(
     ${HPCC_SOURCE_DIR}/esp/http/platform
     ${HPCC_SOURCE_DIR}/system/mp
     ${HPCC_SOURCE_DIR}/system/xmllib
-    ${HPCC_SOURCE_DIR}/configuration/config2
+    ${HPCC_SOURCE_DIR}/configuration/configmgr/configmgrlib
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/oss
-    ${CMAKE_BINARY_DIR}/esp/services/ws_config2
+    ${CMAKE_BINARY_DIR}/esp/services/ws_configmgr
     )
 
 add_definitions(-D_USRDLL)
 
-HPCC_ADD_LIBRARY(ws_config2 SHARED ${SRCS})
+HPCC_ADD_LIBRARY(ws_configmgr SHARED ${SRCS})
 install(
-    TARGETS ws_config2
+    TARGETS ws_configmgr
     RUNTIME DESTINATION ${EXEC_DIR}
     LIBRARY DESTINATION ${LIB_DIR}
     COMPONENT Runtime
     )
-add_dependencies(ws_config2 espscm config2)
-target_link_libraries(ws_config2
+add_dependencies(ws_configmgr espscm configmgr)
+target_link_libraries(ws_configmgr
     jlib
     xmllib
     esphttp
     environment
     dllserver
-    config2
+    configmgr
     )
 
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_config2
+    target_link_libraries ( ws_configmgr
         securesocket
     )
 ENDIF()
-
-

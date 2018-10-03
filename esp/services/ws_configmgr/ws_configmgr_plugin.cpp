@@ -17,14 +17,14 @@
 
 #pragma warning (disable : 4786)
 
-#include "ws_config2_esp.ipp"
+#include "ws_configmgr_esp.ipp"
 
 //ESP Bindings
 #include "http/platform/httpprot.hpp"
 
 //ESP Service
-#include "ws_config2Service.hpp"
-#include "ws_config2_binding.hpp"
+#include "ws_configmgrService.hpp"
+#include "ws_configmgr_binding.hpp"
 
 #include "espplugin.hpp"
 
@@ -33,9 +33,9 @@ extern "C"
 
 ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-   if (strcmp(type, "ws_config2")==0)
+   if (strcmp(type, "ws_configmgr")==0)
    {
-      Cws_config2Ex* service = new Cws_config2Ex;
+      Cws_configMgrEx* service = new Cws_configMgrEx;
       service->init(cfg, process, name);
       return service;
    }
@@ -44,9 +44,9 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
 
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-   if (strcmp(type, "ws_config2SoapBinding")==0)
+   if (strcmp(type, "ws_configMgrSoapBinding")==0)
    {
-        return new Cws_config2SoapBindingEx(cfg, name, process);
+        return new Cws_configMgrSoapBindingEx(cfg, name, process);
    }
 
    return NULL;

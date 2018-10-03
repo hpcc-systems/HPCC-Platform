@@ -18,15 +18,11 @@
 -->
 <Environment>
   <Software>
-    <EspProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" description="ESP server" componentfilesDir="${COMPONENTFILES_PATH}" enableSEHMapping="true" enableSNMP="false" formOptionsAccess="false" httpConfigAccess="true" logDir="${LOG_PATH}/config2mgr" logLevel="10" logRequests="true" logResponses="true" txSummaryLevel="1" txSummaryResourceReq="false" maxBacklogQueueSize="200" maxConcurrentThreads="0" name="config2mgr" perfReportDelay="60" computer="localhost" directory="${PID_PATH}/config2mgr">
+    <EspProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" description="ESP server" componentfilesDir="${COMPONENTFILES_PATH}" enableSEHMapping="true" enableSNMP="false" formOptionsAccess="false" httpConfigAccess="true" logDir="${LOG_PATH}/config2mgr" logLevel="10" logRequests="true" logResponses="true" txSummaryLevel="1" txSummaryResourceReq="false" maxBacklogQueueSize="200" maxConcurrentThreads="0" name="configmgr" perfReportDelay="60" computer="localhost" directory="${PID_PATH}/config2mgr">
       <Environment/>
       <EspProtocol name="http" type="http_protocol" plugin="esphttp" maxRequestEntityLength="8000000"/>
-      <EspService name="ws_config2_esp" type="ws_config2" plugin="libws_config2.so">
-        <LocalEnvFile>${CONFIG_DIR}/${ENV_XML_FILE}</LocalEnvFile>
-        <LocalConfFile>${INSTALL_DIR}/etc/${DIR_NAME}/config2mgr/config2mgr.conf</LocalConfFile>
-        <LocalEnvConfFile>${CONFIG_DIR}/${ENV_CONF_FILE}</LocalEnvConfFile>
-      </EspService>
-      <EspBinding name="ws_config2_binding" service="ws_config2_esp" protocol="http" type="ws_config2SoapBinding" plugin="libws_config2.so" netAddress="0.0.0.0" port="8020" defaultBinding="true"></EspBinding>
+      <EspService name="configmgr" type="ws_configmgr" plugin="libws_configmgr.so"/>
+      <EspBinding name="configmgr_binding" service="configmgr" protocol="http" type="ws_configmgrSoapBinding" plugin="libws_configmgr.so" netAddress="0.0.0.0" port="8020" defaultBinding="true"></EspBinding>
     </EspProcess>
   </Software>
 </Environment>

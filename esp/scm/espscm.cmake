@@ -40,7 +40,7 @@ set ( ESPSCM_SRCS
       ws_esdlconfig.ecm
       ws_loggingservice.ecm
       ws_espcontrol.ecm
-      ws_config2.ecm
+      ws_configmgr.ecm
       ws_elk.ecm
     )
 
@@ -64,9 +64,9 @@ foreach ( loop_var ${ESPSCM_SRCS} )
     set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}_esp.ipp PROPERTIES GENERATED TRUE)
     set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}.xml PROPERTIES GENERATED TRUE)
     set ( ESP_GENERATED_INCLUDES ${ESP_GENERATED_INCLUDES} ${ESPSCM_GENERATED_DIR}/${result}.esp ${ESPSCM_GENERATED_DIR}/${result}.hpp ${ESPSCM_GENERATED_DIR}/${result}.int ${ESPSCM_GENERATED_DIR}/${result}.ipp ${ESPSCM_GENERATED_DIR}/${result}_esp.ipp ${ESPSCM_GENERATED_DIR}/${result}.xml )
-    if ( PLATFORM )    
+    if ( PLATFORM )
         Install( FILES ${ESPSCM_GENERATED_DIR}/${result}.xml DESTINATION componentfiles/esdl_files COMPONENT Runtime )
-    endif ( PLATFORM )    
+    endif ( PLATFORM )
 endforeach ( loop_var ${ESPSCM_SRCS} )
 
 include_directories ( ${ESPSCM_GENERATED_DIR} )

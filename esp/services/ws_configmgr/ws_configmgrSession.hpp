@@ -16,8 +16,8 @@
 ############################################################################## */
 
 
-#ifndef _CONFIG2SERVICE_SESSION_HPP_
-#define _CONFIG2SERVICE_SESSION_HPP_
+#ifndef _CONFIGMGRSERVICE_SESSION_HPP_
+#define _CONFIGMGRSERVICE_SESSION_HPP_
 
 
 #include "EnvironmentMgr.hpp"

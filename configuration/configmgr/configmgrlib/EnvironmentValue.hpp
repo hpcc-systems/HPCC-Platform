@@ -25,7 +25,7 @@
 
 class EnvironmentNode;
 
-class DECL_EXPORT EnvironmentValue
+class DECL_EXPORT EnvironmentValue : public std::enable_shared_from_this<EnvironmentValue>
 {
     public:
 
@@ -34,7 +34,7 @@ class DECL_EXPORT EnvironmentValue
         EnvironmentValue(const std::shared_ptr<EnvironmentNode> &pMyNode, const std::shared_ptr<SchemaValue> &pCfgValue, const std::string &name, const std::string initValue) :
             EnvironmentValue(pMyNode, pCfgValue, name) { m_value = initValue; }
 
-        ~EnvironmentValue() { }
+        ~EnvironmentValue();
         bool setValue(const std::string &value, Status *pStatus, bool forceSet=false);
         bool isValueSet() const { return !m_value.empty(); }
         const std::string &getValue() const { return m_value.empty() ? getForcedValue() : m_value;  }
