@@ -134,7 +134,8 @@
             <entry><emphasis role="bold">SINGLE</emphasis></entry>
 
             <entry>Optional. Specifies to keep a single PERSIST. The name of
-            the persist file is the same as the name of the persist.</entry>
+            the persist file is the same as the name of the persist. The
+            default is MULTIPLE(-1) which retains all.</entry>
           </row>
 
           <row>
@@ -143,14 +144,15 @@
             <entry>Optional. Specifies to keep different versions of the
             PERSIST. The name of the persist file generated is a combination
             of the name supplied suffixed with a 32-bit value derived from the
-            ECL.</entry>
+            ECL. </entry>
           </row>
 
           <row>
             <entry><emphasis>count</emphasis></entry>
 
             <entry>Optional. The number of versions of a PERSIST to keep. If
-            omitted, the system default is used.</entry>
+            omitted, the system default is used. If set to -1, then an
+            unlimited number are kept.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -175,11 +177,16 @@
   <emphasis>attribute</emphasis> is used in the computation. This gives a kind
   of "compute in anticipation" capability.</para>
 
-  <para></para>
+  <para>You can use #OPTION to override the default settings, as shown in the
+  example. </para>
 
   <para>Example:</para>
 
-  <programlisting>  CountPeople := COUNT(Person) : PERSIST('PeopleCount');
+  <programlisting>// #OPTION ('multiplePersistInstances', true|false); // if true retains MULTIPLE, if false SINGLE
+// #OPTION ('defaultNumPersistInstances', &lt;n&gt;);      // the number to retain if MULTIPLE allowed. 
+                                                     // Defaults to -1 (retain all)
+
+  CountPeople := COUNT(Person) : PERSIST('PeopleCount');
   //Makes CountPeople available for use in all subsequent work units
   
   sPeople := SORT(Person,Person.per_first_name) :
@@ -199,5 +206,6 @@
 
   <para>See Also: <link linkend="STORED">STORED</link>, <link
   linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link
-  linkend="CHECKPOINT">CHECKPOINT</link></para>
+  linkend="CHECKPOINT">CHECKPOINT</link>, <link
+  linkend="_OPTION">#OPTION</link></para>
 </sect1>
