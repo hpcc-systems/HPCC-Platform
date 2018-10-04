@@ -97,10 +97,10 @@ export function espTime2SecondsTests() {
     }, this);
 }
 
-export function convertedSize (intsize: number): string {
-    const unitConversion = ["Bytes","KB","MB","GB","TB","PB","EB","ZB","YB"];
-    const x = Math.floor(Math.log(intsize)/ Math.log(1024));
-    return (intsize/ Math.pow(1024,x)).toFixed(2) + " " + unitConversion[x];
+export function convertedSize(intsize: number): string {
+    const unitConversion = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    const x = Math.floor(Math.log(intsize) / Math.log(1024));
+    return (intsize / Math.pow(1024, x)).toFixed(2) + " " + unitConversion[x];
 }
 
 export function unitTest(size, unit) {
@@ -455,8 +455,14 @@ export function resolve(hpccWidget, callback) {
         case "GraphPageWidget":
             require(["hpcc/GraphPageWidget"], doLoad);
             break;
-        case "GraphsWidget":
-            require(["hpcc/GraphsWidget"], doLoad);
+        case "GraphsWUWidget":
+            require(["hpcc/GraphsWUWidget"], doLoad);
+            break;
+        case "GraphsQueryWidget":
+            require(["hpcc/GraphsQueryWidget"], doLoad);
+            break;
+        case "GraphsLFWidget":
+            require(["hpcc/GraphsLFWidget"], doLoad);
             break;
         case "GraphTreeWidget":
             require(["src/GraphTreeWidget"], doLoad);
