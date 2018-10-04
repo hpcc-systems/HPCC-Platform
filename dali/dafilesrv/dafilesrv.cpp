@@ -471,12 +471,13 @@ int main(int argc,char **argv)
         }
         keyPairInfo = env->queryPropTree("EnvSettings/Keys");
     }
+
+#ifndef _USE_OPENSSL
     if (dedicatedRowServicePort)
     {
-#ifdef _USE_OPENSSL
         dedicatedRowServiceSSL = false;
-#endif
     }
+#endif
 
     // these should really be in env, but currently they are not ...
     listenep.port = port;
