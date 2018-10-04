@@ -350,6 +350,15 @@ void EsdlServiceImpl::addMethodLevelRequestTransform(const char *method, IProper
     }
 }
 
+static void ensureMergeOrderedPTree(Owned<IPropertyTree> &target, IPropertyTree *src)
+{
+    if (!src)
+        return;
+    if (!target)
+        target.setown(createPTree(ipt_ordered));
+    mergePTree(target, src);
+}
+
 void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 {
     VStringBuffer xpath("Definition[@esdlservice='%s']/Methods", service);
@@ -358,10 +367,13 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 
     if (target_cfg)
     {
-        IPropertyTree * customRequestTransform = nullptr;
+        Owned<IPropertyTree> serviceCrt;
         try
         {
-            customRequestTransform = target_cfg->queryPropTree("xsdl:CustomRequestTransform");
+            ensureMergeOrderedPTree(serviceCrt, target_cfg->queryPropTree("xsdl:CustomRequestTransform"));
+            Owned<IPropertyTreeIterator> transforms =  target_cfg->getElements("Transforms/xsdl:CustomRequestTransform");
+            ForEach(*transforms)
+                ensureMergeOrderedPTree(serviceCrt, &transforms->query());
         }
         catch (IPTreeException *e)
         {
@@ -374,7 +386,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             e->Release();
         }
 
-        addServiceLevelRequestTransform(customRequestTransform);
+        addServiceLevelRequestTransform(serviceCrt);
 
         m_pServiceMethodTargets.setown(createPTree(ipt_caseInsensitive));
         Owned<IPropertyTreeIterator> itns = target_cfg->getElements("Method");
@@ -401,10 +413,13 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             m_methodCRTransformErrors.remove(method);
             m_customRequestTransformMap.remove(method);
 
-            IPropertyTree * customRequestTransform = nullptr;
+            Owned<IPropertyTree> methodCrt;
             try
             {
-                customRequestTransform = methodCfg.queryPropTree("xsdl:CustomRequestTransform");
+                ensureMergeOrderedPTree(methodCrt, methodCfg.queryPropTree("xsdl:CustomRequestTransform"));
+                Owned<IPropertyTreeIterator> transforms =  methodCfg.getElements("Transforms/xsdl:CustomRequestTransform");
+                ForEach(*transforms)
+                    ensureMergeOrderedPTree(methodCrt, &transforms->query());
             }
             catch (IException *e)
             {
@@ -417,7 +432,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
                 e->Release();
             }
 
-            addMethodLevelRequestTransform(method, methodCfg, customRequestTransform);
+            addMethodLevelRequestTransform(method, methodCfg, methodCrt);
 
             const char *type = methodCfg.queryProp("@querytype");
             if (type && strieq(type, "java"))
