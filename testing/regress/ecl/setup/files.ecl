@@ -19,6 +19,7 @@
 
 import $.TS;
 import ^ as root;
+import std.str;
 
 //define constants
 EXPORT files(boolean multiPart, boolean useLocal, boolean useTranslation = false) := module
@@ -62,6 +63,10 @@ SHARED STRING _indexPrefix := '~regress::' +
   EXPORT filePrefix := #IFDEFINED(root.filePrefix, _filePrefix);
   EXPORT indexPrefix := #IFDEFINED(root.filePrefix, _indexPrefix);
 #end
+
+EXPORT QueryFilePrefixId := __TARGET_PLATFORM__ + '::' + Str.ToLowerCase(WORKUNIT) + '::';
+EXPORT QueryFilePrefix := filePrefix + QueryFilePrefixId;
+
 EXPORT DG_FileOut              := filePrefix + 'DG_';
 EXPORT DG_IndexOut             := indexPrefix + 'DG_';
 EXPORT DG_ParentFileOut        := filePrefix + 'DG_Parent.d00';

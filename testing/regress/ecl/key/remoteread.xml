@@ -9,14 +9,14 @@
 <Dataset name='Result 5'>
 </Dataset>
 <Dataset name='Result 6'>
- <Row><fname>John      </fname><lname>Smith     </lname><age>42</age><logicalfile>regress::single::remoteread                       </logicalfile><fpos>0</fpos></Row>
- <Row><fname>Bob       </fname><lname>Brown     </lname><age>29</age><logicalfile>regress::single::remoteread                       </logicalfile><fpos>28</fpos></Row>
- <Row><fname>Samuel    </fname><lname>Jackson   </lname><age>58</age><logicalfile>regress::single::remoteread                       </logicalfile><fpos>56</fpos></Row>
+ <Row><fname>John      </fname><lname>Smith     </lname><age>42</age><logicalfile>regress::single::remoteread</logicalfile><fpos>0</fpos></Row>
+ <Row><fname>Bob       </fname><lname>Brown     </lname><age>29</age><logicalfile>regress::single::remoteread</logicalfile><fpos>28</fpos></Row>
+ <Row><fname>Samuel    </fname><lname>Jackson   </lname><age>58</age><logicalfile>regress::single::remoteread</logicalfile><fpos>56</fpos></Row>
 </Dataset>
 <Dataset name='Result 7'>
- <Row><fname>John      </fname><lname>Smith     </lname><age>42</age><logicalfile>regress::single::remoteread_comp                  </logicalfile><fpos>0</fpos></Row>
- <Row><fname>Bob       </fname><lname>Brown     </lname><age>29</age><logicalfile>regress::single::remoteread_comp                  </logicalfile><fpos>28</fpos></Row>
- <Row><fname>Samuel    </fname><lname>Jackson   </lname><age>58</age><logicalfile>regress::single::remoteread_comp                  </logicalfile><fpos>56</fpos></Row>
+ <Row><fname>John      </fname><lname>Smith     </lname><age>42</age><logicalfile>regress::single::remoteread_comp</logicalfile><fpos>0</fpos></Row>
+ <Row><fname>Bob       </fname><lname>Brown     </lname><age>29</age><logicalfile>regress::single::remoteread_comp</logicalfile><fpos>28</fpos></Row>
+ <Row><fname>Samuel    </fname><lname>Jackson   </lname><age>58</age><logicalfile>regress::single::remoteread_comp</logicalfile><fpos>56</fpos></Row>
 </Dataset>
 <Dataset name='Result 8'>
  <Row><fname>Bob       </fname><lname>Brown     </lname><age>29</age></Row>

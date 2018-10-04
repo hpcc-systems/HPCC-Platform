@@ -22,6 +22,7 @@
 #option('layoutTranslation', true);
 
 import Std.File AS FileServices;
+import Std.System.Thorlib;
 import ^ as root;
 optRemoteRead := #IFDEFINED(root.optRemoteRead, false);
 optCompression := #IFDEFINED(root.optCompression, '');
@@ -34,14 +35,13 @@ optCompression := #IFDEFINED(root.optCompression, '');
 
 IMPORT STD;
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
-suffix := '-' + WORKUNIT;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
-fname := prefix + 'remoteread' + suffix;
-fname_comp := prefix + 'remoteread_comp' + suffix;
-fname_index := prefix + 'remoteread_index' + suffix;
-fname_large := prefix + 'remoteread_large' + suffix;
-fname_large_out := prefix + 'remoteread_largeout' + suffix;
+fname := prefix + 'remoteread';
+fname_comp := prefix + 'remoteread_comp';
+fname_index := prefix + 'remoteread_index';
+fname_large := prefix + 'remoteread_large';
+fname_large_out := prefix + 'remoteread_largeout';
 
 rec := RECORD
  string10 fname;
@@ -54,7 +54,7 @@ i := INDEX(inds, { fname }, { lname, age }, fname_index);
 
 
 rec_vf := RECORD(rec)
- string50 logicalFile{virtual(logicalfilename)};
+ string logicalFile{virtual(logicalfilename)};
  unsigned8 fpos{virtual(fileposition)};
 // unsigned8 local_fpos{virtual(localfileposition)}; // NB: Don't include in test, because will vary per engine per file width written
 END;
@@ -67,7 +67,7 @@ rec_vf_trans := RECORD
 END;
 
 string trimmedLogicalFilename(STRING filename) := FUNCTION
-    return filename[1..(std.str.find(std.str.ToLowerCase(trim(filename)), '-w')-1)];
+    return std.str.FindReplace(std.str.ToLowerCase(trim(filename)), setup.Files(false, false).QueryFilePrefixId, '');
 end;
 
 ds := project(DATASET(fname, rec_vf, FLAT), transform(rec_vf, SELF.logicalFile := trimmedLogicalFilename(LEFT.logicalFile); SELF := LEFT;));

@@ -19,7 +19,7 @@
 #onwarning (4523, ignore);
 
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 xRec := RECORD
     integer x;

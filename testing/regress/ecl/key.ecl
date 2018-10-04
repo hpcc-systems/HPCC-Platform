@@ -17,7 +17,7 @@
 
 import std.system.thorlib;
 import $.setup;
-prefix := setup.Files(false, false).IndexPrefix;
+prefix := setup.Files(false, false).IndexPrefix + WORKUNIT + '::';
 
 trec := RECORD
  unsigned1 key;

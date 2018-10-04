@@ -17,7 +17,7 @@
 
 import Std.File;
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 rec := RECORD
     STRING6 name;

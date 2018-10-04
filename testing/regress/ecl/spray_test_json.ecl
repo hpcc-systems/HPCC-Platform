@@ -25,11 +25,9 @@
 
 import std.system.thorlib;
 import Std.File AS FileServices;
+import $.setup;
 import ^ as root;
 
-jlib:= SERVICE
-    unsigned8 rtlTick() : library='jlib',eclrtl,entrypoint='rtlNano';
-END;
 
 isSmallFile := #IFDEFINED(root.isSmallFile, true);
 
@@ -37,8 +35,7 @@ isUnBallanced := #IFDEFINED(root.isUnBallanced, false);
 
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 engine := thorlib.platform() : stored('thor');
-prefix := engine + '-';
-suffix := '-' + jlib.rtlTick() : stored('startTime');
+prefix := setup.Files(false, false).QueryFilePrefix;
 nodes := thorlib.nodes();
 
 unsigned VERBOSE := 0;
@@ -83,7 +80,7 @@ manyPeople := DATASET(nodes * 100,
 
 SrcAddrIp := '.';
 File := 'persons';
-OriginalDataFile := prefix + File + suffix;
+OriginalDataFile := prefix + File;
 
 //  Outputs  ---
 setupPeople := OUTPUT(somePeople,,OriginalDataFile, JSON, OVERWRITE);
@@ -114,7 +111,7 @@ desprayRec doDespray(desprayRec l) := TRANSFORM
  end;
 
 // This should be fine based on valid target file path and SrcAddIp
-DesprayTargetFile1 := dropzonePath + File + suffix;
+DesprayTargetFile1 := dropzonePath + WORKUNIT + '-' + File;
 dst2 := NOFOLD(DATASET([{OriginalDataFile, DesprayTargetFile1, SrcAddrIp, True, '', ''}], desprayRec));
 
 p2 := NOTHOR(PROJECT(NOFOLD(dst2), doDespray(LEFT)));
@@ -139,7 +136,7 @@ sprayRec := RECORD
   string msg;
 end;
 
-SprayTargetFileName := prefix + 'spray_test-' + suffix;
+SprayTargetFileName := prefix + 'spray_test';
 
 //To spray a JSON file we use XML Spray
 sprayRec doSpray(sprayRec l) := TRANSFORM

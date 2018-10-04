@@ -16,7 +16,7 @@
 ##############################################################################*/
 
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 //skip type=roxie nodfu       
 
 // testing compressed->compressed, expanded->compressed, and compressed->expanded copies

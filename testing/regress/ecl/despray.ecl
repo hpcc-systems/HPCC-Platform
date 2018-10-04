@@ -27,19 +27,12 @@
 //nohthor
 //class=spray
 
-import std.system.thorlib;
 import $.setup;
 import Std.File AS FileServices;
 
-jlib:= SERVICE
-    unsigned8 rtlTick() : library='jlib',eclrtl,entrypoint='rtlNano';
-END;
-
 
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
-engine := thorlib.platform() : stored('thor');
-prefix := setup.Files(false, false).FilePrefix + '-' + engine + '-';
-suffix := '-' + jlib.rtlTick() : stored('startTime');
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 unsigned VERBOSE := 0;
 
@@ -56,7 +49,8 @@ allPeople := DATASET([ {1,'Fred','Smith'},
 SrcAddrIp := '.';
 SrcAddrLocalhost := 'localhost';
 File := 'persons';
-SourceFile := prefix + File + suffix;
+SourceFile := prefix + File;
+DestFileName := WORKUNIT + '-' + File;
 
 //  Outputs  ---
 setupPeople := output(allPeople, , SourceFile, OVERWRITE);
@@ -89,7 +83,7 @@ end;
 
 
 // This should be fine based on valid target file path and SrcAddIp
-DestFile1 := dropzonePath + File;
+DestFile1 := dropzonePath + DestFileName;
 dst2 := NOFOLD(DATASET([{SourceFile, DestFile1, SrcAddrIp, True, '', ''}], rec));
 
 p2 := PROJECT(NOFOLD(dst2), t(LEFT));
@@ -130,7 +124,7 @@ c3 := CATCH(NOFOLD(p3), ONFAIL(TRANSFORM(rec,
 
 
 // This should fail based on '/./' used in target path
-DestFile4 := dropzonePath + './' + File;
+DestFile4 := dropzonePath + './' + DestFileName;
 dst4 := NOFOLD(DATASET([{SourceFile, DestFile4, SrcAddrIp, True, '', ''}], rec));
 
 p4 := PROJECT(NOFOLD(dst4), t(LEFT));
@@ -151,7 +145,7 @@ c4 := CATCH(NOFOLD(p4), ONFAIL(TRANSFORM(rec,
 
 
 // This should fail based on '/../' used in target path
-DestFile5 := dropzonePath + '../' + File;
+DestFile5 := dropzonePath + '../' + DestFileName;
 dst5 := NOFOLD(DATASET([{SourceFile, DestFile5, SrcAddrIp, True, '', ''}], rec));
 
 p5 := PROJECT(NOFOLD(dst5), t(LEFT));
@@ -173,7 +167,7 @@ c5 := CATCH(NOFOLD(p5), ONFAIL(TRANSFORM(rec,
 
 // This should fail based on
 // not an existing dropzone path used in target file path
-DestFile6 := '/var/lib/HPCCSystems/mydropzona/' + File;
+DestFile6 := '/var/lib/HPCCSystems/mydropzona/' + DestFileName;
 dst6 := NOFOLD(DATASET([{SourceFile, DestFile6, SrcAddrIp, True, '', ''}], rec));
 
 p6 := PROJECT(NOFOLD(dst6), t(LEFT));
@@ -238,7 +232,7 @@ c8 := CATCH(NOFOLD(p8), ONFAIL(TRANSFORM(rec,
 
 
 // This should pass based on valid target file path and valid source address used
-DestFile9 := dropzonePath + 'test/' + prefix + File + suffix;
+DestFile9 := dropzonePath + 'test/' + prefix + File;
 dst9 := NOFOLD(DATASET([{SourceFile, DestFile9, SrcAddrIp, True, '', ''}], rec));
 
 p9 := PROJECT(NOFOLD(dst9), t(LEFT));

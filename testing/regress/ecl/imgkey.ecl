@@ -19,7 +19,7 @@
 
 #option('warnOnImplicitReadLimit', false);
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 vstring(integer i) := TYPE
     export integer physicallength(string s) := i;

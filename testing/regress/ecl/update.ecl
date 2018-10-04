@@ -18,10 +18,11 @@
 //noRoxie
 //nolocal
 
+#onwarning(10125, ignore); // ignore UPDATE 'up to date' messages, so that output is consistent across engines
 
 import Std.File AS FileServices;
 import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 baserec := RECORD
     STRING6 name{xpath('thisisthename')};
