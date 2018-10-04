@@ -1201,16 +1201,16 @@ void HqlParseContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression
             if (parentScope)
             {
                 const char * moduleName = parentScope->queryFullName();
-                if (moduleName)
-                {
-                    VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, str(expr->queryName()));
+                if (!moduleName)
+                    moduleName = "";
 
-                    if (!meta.dependencies->queryPropTree(xpath.str()))
-                    {
-                        IPropertyTree * depend = meta.dependencies->addPropTree("Depend");
-                        depend->setProp("@module", moduleName);
-                        depend->setProp("@name", str(expr->queryName()));
-                    }
+                VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, str(expr->queryName()));
+
+                if (!meta.dependencies->queryPropTree(xpath.str()))
+                {
+                    IPropertyTree * depend = meta.dependencies->addPropTree("Depend");
+                    depend->setProp("@module", moduleName);
+                    depend->setProp("@name", str(expr->queryName()));
                 }
             }
         }
