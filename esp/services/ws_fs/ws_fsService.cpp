@@ -2907,7 +2907,19 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
         const char* nameFilter = req.getNameFilter();
         if (isEmptyString(nameFilter))
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Name Filter not specified.");
-        if (streq(nameFilter, "*"))
+
+        bool validNameFilter = false;
+        const char* pNameFilter = nameFilter;
+        while (!isEmptyString(pNameFilter))
+        {
+            if (*pNameFilter != '*')
+            {
+                validNameFilter = true;
+                break;
+            }
+            pNameFilter++;
+        }
+        if (!validNameFilter)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Name Filter '*'");
 
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
