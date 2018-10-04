@@ -426,14 +426,14 @@ int main(int argc,char **argv)
             StringBuffer ipStr;
             queryHostIP().getIpText(ipStr);
             VStringBuffer daFileSrvPath("Instance[@netAddress=\"%s\"]", ipStr.str());
-            IPropertyTree *_dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
-            if (_dafileSrvInstance)
+            IPropertyTree *dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
+            if (dafileSrvInstance)
             {
-                Owned<IPropertyTree> dafileSrvInstance;
+                Owned<IPropertyTree> _dafileSrvInstance;
 
                 // check if there's a DaFileSrvGroup
                 if (isEmptyString(groupName))
-                    groupName = _dafileSrvInstance->queryProp("@group");
+                    groupName = dafileSrvInstance->queryProp("@group");
 
                 if (!isEmptyString(groupName))
                 {
@@ -442,12 +442,12 @@ int main(int argc,char **argv)
                     if (daFileSrvGroup)
                     {
                         // create a copy of the instance settings and merge in any from group info.
-                        dafileSrvInstance.setown(createPTreeFromIPT(_dafileSrvInstance));
+                        _dafileSrvInstance.setown(createPTreeFromIPT(dafileSrvInstance));
 
                         // any group settings override defaults
-                        synchronizePTree(dafileSrvInstance, daFileSrvGroup, false);
+                        synchronizePTree(_dafileSrvInstance, daFileSrvGroup, false);
 
-                        _dafileSrvInstance = dafileSrvInstance;
+                        dafileSrvInstance = _dafileSrvInstance;
                     }
                 }
                 maxThreads = dafileSrvInstance->getPropInt("@maxThreads", maxThreads);
