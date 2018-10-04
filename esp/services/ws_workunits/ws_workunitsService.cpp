@@ -137,8 +137,6 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                 {
                 case CECLWUActions_Restore:
                 {
-                    ensureWsWorkunitAccess(context, wuid, SecAccess_Full);
-
                     SocketEndpoint ep;
                     if (params->hasProp("sashaServerIP"))
                         ep.set(params->queryProp("sashaServerIP"), params->getPropInt("sashaServerPort"));
@@ -164,6 +162,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                     cmd->getId(0,reply);
 
                     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
+                    ensureWsWorkunitAccess(context, wuid, SecAccess_Full);
                     break;
                 }
                 case CECLWUActions_EventDeschedule:
