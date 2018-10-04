@@ -573,7 +573,7 @@ bool CMasterGraphElement::checkUpdate()
         {
             IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper();
             doCheckUpdate = 0 != (helper->getFlags() & TIWupdate);
-            filename.set(helper->getFileName());
+            filename.setown(helper->getFileName());
             helper->getUpdateCRCs(eclCRC, totalCRC);
             break;
         }
@@ -585,7 +585,7 @@ bool CMasterGraphElement::checkUpdate()
         {
             IHThorDiskWriteArg *helper = (IHThorDiskWriteArg *)queryHelper();
             doCheckUpdate = 0 != (helper->getFlags() & TDWupdate);
-            filename.set(helper->getFileName());
+            filename.setown(helper->getFileName());
             helper->getUpdateCRCs(eclCRC, totalCRC);
             if (TAKdiskwrite == getKind())
                 temporary = 0 != (helper->getFlags() & (TDXtemporary|TDXjobtemp));

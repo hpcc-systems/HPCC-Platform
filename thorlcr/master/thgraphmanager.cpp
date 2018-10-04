@@ -830,7 +830,6 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         wu->setTracingValue("ThorBuild", BUILD_TAG);
         updateWorkUnitLog(*wu);
     }
-    Owned<IException> exception;
     workunit.forceReload();
     StringAttr wuid(workunit.queryWuid());
     const char *totalTimeStr = "Total thor time";
@@ -888,6 +887,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     PROGLOG("Running graph=%s", job->queryGraphName());
     addJob(*job);
     bool allDone = false;
+    Owned<IException> exception;
     try
     {
         struct CounterBlock
@@ -921,11 +921,16 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         
         removeJob(*job);
     }
-    catch (IException *)
+    catch (IException *e)
     {
-        removeJob(*job);
-        setWuid(NULL);
-        throw;
+        exception.setown(e);
+    }
+    job->endJob();
+    removeJob(*job);
+    if (exception)
+    {
+        setWuid(nullptr);
+        throw exception.getClear();
     }
     job.clear();
     PROGLOG("Finished wuid=%s, graph=%s", wuid.str(), graphName);
