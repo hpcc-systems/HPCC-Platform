@@ -2336,7 +2336,29 @@ IFileDescriptor *createFileDescriptor(const char *lname,IGroup *grp,IPropertyTre
     return res;
 }
 
+IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType, const char *groupName, IGroup *group)
+{
+    StringBuffer partMask;
+    unsigned parts = group->ordinality();
+    getPartMask(partMask, lname, parts);
 
+    StringBuffer curDir, defaultDir;
+    if (!getConfigurationDirectory(nullptr, "data", clusterType, groupName, defaultDir))
+        makePhysicalPartName(lname, 0, 0, curDir, false, DFD_OSdefault); // legacy
+    else
+        makePhysicalPartName(lname, 0, 0, curDir, false, SepCharBaseOs(getPathSepChar(defaultDir)), defaultDir.str());
+
+    Owned<IFileDescriptor> fileDesc = createFileDescriptor();
+    fileDesc->setNumParts(parts);
+    fileDesc->setPartMask(partMask);
+    fileDesc->setDefaultDir(curDir);
+
+    ClusterPartDiskMapSpec mspec;
+    mspec.defaultCopies = DFD_DefaultCopies;
+    fileDesc->addCluster(groupName, group, mspec);
+
+    return fileDesc.getClear();
+}
 
 IFileDescriptor *deserializeFileDescriptor(MemoryBuffer &mb)
 {

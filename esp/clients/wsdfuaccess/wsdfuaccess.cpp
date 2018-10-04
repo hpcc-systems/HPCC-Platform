@@ -50,6 +50,7 @@ bool getFileAccess(StringBuffer &metaInfo, const char *serviceUrl, const char *j
     dfuClient->setUsernameToken(user, token, "");
 
     Owned<IClientDFUFileAccessRequest> dfuReq = dfuClient->createDFUFileAccessRequest();
+    IEspDFUFileAccessRequestBase &requestBase = dfuReq->updateRequestBase();
 
     CDfsLogicalFileName lfn;
     lfn.set(logicalName);
@@ -58,12 +59,12 @@ bool getFileAccess(StringBuffer &metaInfo, const char *serviceUrl, const char *j
     lfn.getCluster(cluster);
     lfn.get(lfnName); // remove cluster if present
 
-    dfuReq->setName(lfnName);
-    dfuReq->setCluster(cluster);
-    dfuReq->setExpirySeconds(expirySecs);
-    dfuReq->setAccessRole(CFileAccessRole_Engine);
-    dfuReq->setAccessType(translateToCSecAccessAccessType(access));
-    dfuReq->setJobId(jobId);
+    requestBase.setName(lfnName);
+    requestBase.setCluster(cluster);
+    requestBase.setExpirySeconds(expirySecs);
+    requestBase.setAccessRole(CFileAccessRole_Engine);
+    requestBase.setAccessType(translateToCSecAccessAccessType(access));
+    requestBase.setJobId(jobId);
 
     Owned<IClientDFUFileAccessResponse> dfuResp = dfuClient->DFUFileAccess(dfuReq);
 
@@ -71,7 +72,7 @@ bool getFileAccess(StringBuffer &metaInfo, const char *serviceUrl, const char *j
     if (excep->ordinality() > 0)
         throw LINK((IMultiException *)excep); // JCSMORE - const IException.. not caught in general..
 
-    metaInfo.append(dfuResp->getMetaInfoBlob());
+    metaInfo.append(dfuResp->getAccessInfo().getMetaInfoBlob());
     return true;
 }
 

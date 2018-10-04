@@ -131,7 +131,6 @@ public:
 
 class CWsDfuEx : public CWsDfu
 {
-private:
     Owned<IXslProcessor> m_xsl;
     Mutex m_superfilemutex;
     unsigned nodeGroupCacheTimeout;
@@ -170,6 +169,8 @@ public:
     virtual bool onListHistory(IEspContext &context, IEspListHistoryRequest &req, IEspListHistoryResponse &resp);
     virtual bool onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req, IEspEraseHistoryResponse &resp);
     virtual bool onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp);
+    virtual bool onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &req, IEspDFUFileCreateResponse &resp);
+    virtual bool onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest &req, IEspDFUFilePublishResponse &resp);
 
 private:
     const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
@@ -236,11 +237,14 @@ private:
     void queryFieldNames(IEspContext &context, const char *fileName, const char *cluster,
         unsigned __int64 fieldMask, StringArray &fieldNames);
     void parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray);
-    unsigned getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName,
-        IArrayOf<IEspDFUPartLocations> &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies);
+    void getFilePartsInfo(IEspContext &context, IFileDescriptor *fdesc, unsigned numParts, bool forFileCreate, IEspDFUFileAccessInfo &accessInfo);
     void getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &port, bool &secure, IDistributedFile &file);
-    void getFileMeta(StringBuffer &metaInfo, IDistributedFile &file, IUserDescriptor *user, CFileAccessRole role, const char *expiryTime, const char *keyPairName, IConstDFUFileAccessRequest &req);
-    void getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAccessFlags accessType, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp);
+    void getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &retPort, bool &retSecure, const char *cluster);
+    void getFileMeta(StringBuffer &metaInfo, StringBuffer &expiryTime, const char *fileName, IFileDescriptor *fDesc, IUserDescriptor *user, const char *jobID, const char *keyPairName, IConstDFUFileAccessRequestBase &req);
+    void getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAccessFlags accessType, IConstDFUFileAccessRequestBase &req, IEspDFUFileAccessInfo &accessInfo);
+    IGroup *getDFUFileIGroup(const char *clusterName, ClusterType clusterType, const char *clusterTypeEx, StringArray &locations, StringBuffer &groupName);
+    void exportRecordDefinitionBinaryType(const char *recordDefinition, MemoryBuffer &layoutBin);
+    void getFileAccessBeforePublish(IEspContext &context, const char *logicalName, const char *cluster, const char *jobId, MemoryBuffer& layoutBin, IFileDescriptor *fileDesc, IUserDescriptor *udesc, IConstDFUFileAccessRequestBase &req, IEspDFUFileCreateResponse &resp);
 
     bool attachServiceToDali() override
     {

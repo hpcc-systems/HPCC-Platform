@@ -7269,6 +7269,55 @@ extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, con
     return ret;
 }
 
+extern WORKUNIT_API StringBuffer &getClusterGroupName(StringBuffer &ret, const char *cluster)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    Owned<IPropertyTree> root = &env->getPTree();
+    StringBuffer path;
+    path.set("Software/ThorCluster[@name=\"").append(cluster).append("\"]");
+    IPropertyTree * child = root->queryPropTree(path);
+    if (child)
+    {
+        return getClusterGroupName(*child, ret);
+    }
+    path.set("Software/RoxieCluster[@name=\"").append(cluster).append("\"]");
+    child = root->queryPropTree(path);
+    if (child)
+    {
+        return getClusterGroupName(*child, ret);
+    }
+    path.set("Software/EclAgentProcess[@name=\"").append(cluster).append("\"]");
+    child = root->queryPropTree(path);
+    if (child)
+    {
+        return ret.setf("hthor__%s", cluster);
+    }
+
+    return ret;
+}
+
+extern WORKUNIT_API ClusterType getClusterTypeByClusterName(const char *cluster)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    Owned<IPropertyTree> root = &env->getPTree();
+    StringBuffer path;
+    path.set("Software/ThorCluster[@name=\"").append(cluster).append("\"]");
+    if (root->hasProp(path))
+        return ThorLCRCluster;
+
+    path.set("Software/RoxieCluster[@name=\"").append(cluster).append("\"]");
+    if (root->hasProp(path))
+        return RoxieCluster;
+
+    path.set("Software/EclAgentProcess[@name=\"").append(cluster).append("\"]");
+    if (root->hasProp(path))
+        return HThorCluster;
+
+    return NoCluster;
+}
+
 extern WORKUNIT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster)
 {
     return ret.append(cluster).append(ROXIE_QUEUE_EXT);
