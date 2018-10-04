@@ -686,6 +686,9 @@ export function resolve(hpccWidget, callback) {
         case "XrefQueryWidget":
             require(["hpcc/XrefQueryWidget"], doLoad);
             break;
+        case "GangliaWidget":
+            require(["ganglia/GangliaWidget"], doLoad);
+            break;
         default:
             console.log("case \"" + hpccWidget + "\":\n" +
                 "    require([\"hpcc/" + hpccWidget + "\"], doLoad);\n" +

@@ -1,0 +1,41 @@
+{
+  "width": "400",
+  "height": "150",
+  "defaultSelectedTab": "Network - Hour",
+  "tabs": [
+   {
+        "name": "Network",
+        "metrics":[
+                ["bytes_in", "bytes_out"],
+                ["packetsSent", "packetsSent_s", "packetsReceived", "packetsReceived_s", "packetsAbandoned", "packetsAbandoned_s", "packetsRetried", "packetsRetried_s"]
+      ],
+        "time":["Hour","Day"]
+   },
+   {
+        "name": "Queries",
+        "metrics":[
+                ["queryCount", "queryCount_s"],
+                ["loQueryCount", "loQueryCount_s", "hiQueryCount", "hiQueryCount_s", "hiQueryFailed", "slaQueryCount", "loQueryActive"],
+                ["unknownQueryFailed", "unknownMin", "unknownMax"]
+      ],
+      "time":["Hour","Week"]
+   },
+   {
+        "name": "Sytem Disk and CPU",
+        "metrics" :[
+                ["disk_free", "disk_total"],
+                ["cpu_aidle", "cpu_idle", "cpu_nice", "cpu_num", "cpu_system", "cpu_user", "cpu_wio"]
+        ],
+        "time":["Day","Week"]
+   },
+   {
+        "name": "Performance and Health",
+        "metrics" :[
+                ["restarts"],
+                ["activitiesStarted", "globalLocks", "retriesNeeded"],
+                ["nodesLoaded"]
+        ],
+        "time":["Hour", "Week", "Month"]
+  }
+  ]
+}
