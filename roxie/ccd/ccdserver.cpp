@@ -11791,6 +11791,8 @@ public:
             fileProps.setPropBool("@encrypted", true);
 
         fileProps.setPropInt64("@recordCount", processed);
+        partProps.setPropInt64("@recordCount", processed);
+
         unsigned flags = helper.getFlags();
         if (flags & TDWpersist)
             fileProps.setPropBool("@persistent", true);
@@ -12331,6 +12333,7 @@ public:
             attrs.set(&desc->queryPart(0)->queryProperties());
         }
         attrs->setPropInt64("@size", indexFileSize);
+        attrs->setPropInt64("@recordCount", reccount);
 
         CDateTime createTime, modifiedTime, accessedTime;
         writer->queryFile()->getTime(&createTime, &modifiedTime, &accessedTime);

@@ -298,6 +298,7 @@ public:
                 CDateTime modifiedTime(mb);
                 IPropertyTree &props = partDesc->queryProperties();
                 props.setPropInt64("@size", size);
+                props.setPropInt64("@recordCount", r);
                 StringBuffer dateStr;
                 props.setProp("@modified", modifiedTime.getString(dateStr).str());
                 unsigned crc;

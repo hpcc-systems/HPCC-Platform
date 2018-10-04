@@ -84,6 +84,8 @@ public:
         {
             IHThorSpillArg *helper = (IHThorSpillArg *)queryHelper();
             container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), helper->getTempUsageCount(), TDXtemporary & helper->getFlags(), getDiskOutputKind(helper->getFlags()), &clusters);
+            IPropertyTree &props = fileDesc->queryProperties();
+            props.setPropInt64("@recordCount", recordsProcessed);
             queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc);
         }
     }
@@ -109,6 +111,7 @@ public:
             IPartDescriptor *partDesc = fileDesc->queryPart(slaveIdx);
             IPropertyTree &props = partDesc->queryProperties();
             props.setPropInt64("@size", size);
+            props.setPropInt64("@recordCount", slaveProcessed);
             if (fileDesc->isCompressed())
                 props.setPropInt64("@compressedSize", physicalSize);
             props.setPropInt("@fileCrc", fileCrc);
