@@ -25,6 +25,34 @@
                     <div data-dojo-attach-event="onClick:_onZoomToPlus" data-dojo-props="iconClass:'fa fa-plus', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomPlus}</div>
                     <div data-dojo-attach-event="onClick:_onZoomToMinus" data-dojo-props="iconClass:'fa fa-minus', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomMinus}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}OptionsDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.Options}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}OptionsForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="hpcc.TableContainer">
+                                    <input title="${i18n.Subgraphs}:" name="subgraph" checked data-dojo-type="dijit.form.CheckBox" />
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Activities}</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input title="${i18n.Icon}:" name="vicon" checked data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Label}:" name="vlabel" value="%Label%" style="width: 95%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Edges}</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input title="${i18n.Label}:" name="elabel" value="%Label%\n%NumRowsProcessed%" style="width: 95%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onOptionsApply" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
+                                    <button data-dojo-attach-event="onClick:_onOptionsReset" data-dojo-type="dijit.form.Button">${i18n.Defaults}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                        <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <span id="${id}GraphStatus" ></span>
                 </div>
             </div>
