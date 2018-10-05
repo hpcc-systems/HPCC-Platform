@@ -3802,12 +3802,15 @@ void _synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool remove
  * presevers ordering of matching elements.
  * If removeTargetsNotInSource = true (default) elements in the target not present in the source will be removed
  */
-void synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool removeTargetsNotInSource)
+void synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool removeTargetsNotInSource, bool rootsMustMatch)
 {
-    const char *srcName = source->queryName();
-    const char *tgtName = target->queryName();
-    if (0 != strcmp(srcName, tgtName))
-        throw MakeIPTException(PTreeExcpt_Unsupported, "Cannot synchronize if root nodes mismatch");
+    if (rootsMustMatch)
+    {
+        const char *srcName = source->queryName();
+        const char *tgtName = target->queryName();
+        if (0 != strcmp(srcName, tgtName))
+            throw MakeIPTException(PTreeExcpt_Unsupported, "Cannot synchronize if root nodes mismatch");
+    }
     _synchronizePTree(target, source, removeTargetsNotInSource);
 }
 

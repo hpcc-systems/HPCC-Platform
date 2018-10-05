@@ -397,9 +397,25 @@ int main(int argc,char **argv)
         if (instanceName.length())
             dafilesrvPath.appendf("[@name=\"%s\"]", instanceName.str());
         IPropertyTree *daFileSrv = env->queryPropTree(dafilesrvPath);
+        Owned<IPropertyTree> _dafileSrv;
+
         if (daFileSrv)
         {
-            // global DaFileSrv settings:
+            const char *componentGroupName = daFileSrv->queryProp("@group");
+            if (!isEmptyString(componentGroupName))
+            {
+                VStringBuffer dafilesrvGroupPath("Software/DafilesrvGroup[@name=\"%s\"]", componentGroupName);
+                IPropertyTree *daFileSrvGroup = env->queryPropTree(dafilesrvGroupPath);
+                if (daFileSrvGroup)
+                {
+                    // create a copy of the group settings and merge in (overwrite) with the component settings, i.e. any group settings become defaults
+                    _dafileSrv.setown(createPTreeFromIPT(daFileSrvGroup));
+                    synchronizePTree(_dafileSrv, daFileSrv, false, false);
+                    daFileSrv = _dafileSrv;
+                }
+            }
+
+            // Component level DaFileSrv settings:
 
             maxThreads = daFileSrv->getPropInt("@maxThreads", DEFAULT_THREADLIMIT);
             maxThreadsDelayMs = daFileSrv->getPropInt("@maxThreadsDelayMs", DEFAULT_THREADLIMITDELAYMS);
@@ -419,8 +435,6 @@ int main(int argc,char **argv)
             dedicatedRowServiceSSL = daFileSrv->getPropBool("@rowServiceSSL", defaultDedicatedRowServiceSSL);
             rowServiceOnStdPort = daFileSrv->getPropBool("@rowServiceOnStdPort", defaultRowServiceOnStdPort);
 
-            const char *groupName = daFileSrv->queryProp("@group");
-
             // any overrides by Instance definitions?
             // NB: This won't work if netAddress is "." or if we start supporting hostnames there
             StringBuffer ipStr;
@@ -432,21 +446,16 @@ int main(int argc,char **argv)
                 Owned<IPropertyTree> _dafileSrvInstance;
 
                 // check if there's a DaFileSrvGroup
-                if (isEmptyString(groupName))
-                    groupName = dafileSrvInstance->queryProp("@group");
-
-                if (!isEmptyString(groupName))
+                const char *instanceGroupName = dafileSrvInstance->queryProp("@group");
+                if (!isEmptyString(instanceGroupName) && (isEmptyString(componentGroupName) || !strsame(instanceGroupName, componentGroupName))) // i.e. only if different
                 {
-                    VStringBuffer dafilesrvGroupPath("Software/DafilesrvGroup[@name=\"%s\"]", groupName);
+                    VStringBuffer dafilesrvGroupPath("Software/DafilesrvGroup[@name=\"%s\"]", instanceGroupName);
                     IPropertyTree *daFileSrvGroup = env->queryPropTree(dafilesrvGroupPath);
                     if (daFileSrvGroup)
                     {
-                        // create a copy of the instance settings and merge in any from group info.
-                        _dafileSrvInstance.setown(createPTreeFromIPT(dafileSrvInstance));
-
-                        // any group settings override defaults
-                        synchronizePTree(_dafileSrvInstance, daFileSrvGroup, false);
-
+                        // create a copy of the group settings and merge in (overwrite) with the instance settings, i.e. any group settings become defaults
+                        _dafileSrvInstance.setown(createPTreeFromIPT(daFileSrvGroup));
+                        synchronizePTree(_dafileSrvInstance, dafileSrvInstance, false, false);
                         dafileSrvInstance = _dafileSrvInstance;
                     }
                 }
@@ -465,8 +474,8 @@ int main(int argc,char **argv)
                 throttleSlowQueueLimit = dafileSrvInstance->getPropInt("@throttleSlowQueueLimit", throttleSlowQueueLimit);
 
                 dedicatedRowServicePort = dafileSrvInstance->getPropInt("@rowServicePort", dedicatedRowServicePort);
-                dedicatedRowServiceSSL = daFileSrv->getPropBool("@rowServiceSSL", dedicatedRowServiceSSL);
-                rowServiceOnStdPort = daFileSrv->getPropBool("@rowServiceOnStdPort", rowServiceOnStdPort);
+                dedicatedRowServiceSSL = dafileSrvInstance->getPropBool("@rowServiceSSL", dedicatedRowServiceSSL);
+                rowServiceOnStdPort = dafileSrvInstance->getPropBool("@rowServiceOnStdPort", rowServiceOnStdPort);
             }
         }
         keyPairInfo = env->queryPropTree("EnvSettings/Keys");
@@ -841,7 +850,7 @@ int main(int argc,char **argv)
     PROGLOG("Version: %s", verstring);
     PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
     if (dedicatedRowServicePort)
-        PROGLOG("Row service port = %u", dedicatedRowServicePort);
+        PROGLOG("Row service port = %u%s", dedicatedRowServicePort, dedicatedRowServiceSSL ? " SECURE" : "");
 
     server.setown(createRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy, keyPairInfo));
     server->setThrottle(ThrottleStd, parallelRequestLimit, throttleDelayMs, throttleCPULimit);

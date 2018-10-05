@@ -207,7 +207,7 @@ jlib_decl IPullPTreeReader *createPullJSONStringReader(const char *json, IPTreeN
 jlib_decl IPullPTreeReader *createPullJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions=ptr_ignoreWhiteSpace);
 
 jlib_decl void mergePTree(IPropertyTree *target, IPropertyTree *toMerge);
-jlib_decl void synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool removeTargetsNotInSource=true);
+jlib_decl void synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool removeTargetsNotInSource=true, bool rootsMustMatch=true);
 jlib_decl IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath);
 jlib_decl bool areMatchingPTrees(IPropertyTree * left, IPropertyTree * right);
 
