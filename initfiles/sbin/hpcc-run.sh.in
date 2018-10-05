@@ -141,11 +141,19 @@ if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
         echo "\$IP: Cannot SSH to host."
         exit 1
     else
-        if use_systemd; then
+        if which systemd 2>&1 1>/dev/null; then
             if [[ -z "${comp}" ]]; then
-                CMD="sudo systemctl ${arg} hpccsystems-platform.target"
+                if [[ "${arg}" == "status" ]]; then
+                    CMD="sudo /bin/systemctl list-dependencies hpccsystems-platform.target"
+                else
+                    CMD="sudo /bin/systemctl ${arg} hpccsystems-platform.target"
+                fi
             else
-                CMD="sudo systemctl ${arg} ${comp}"
+                if [[ "${arg}" == "status" ]]; then
+                    CMD="sudo /bin/systemctl list-dependencies ${comp}"
+                else
+                    CMD="sudo /bin/systemctl ${arg} ${comp}"
+                fi
             fi
         else
             CMD="sudo ${INIT_PATH}/$_action $_args"
