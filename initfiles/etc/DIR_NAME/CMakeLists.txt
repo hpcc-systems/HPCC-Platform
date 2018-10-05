@@ -62,8 +62,8 @@ if(NOT "${DESTDIR}" STREQUAL "")
         DEPENDS ${dirlist})
 
     add_custom_command(OUTPUT ${CONFIG_DIR}/genenvrules.conf
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf ${CONFIG_DIR}
-        DEPENDS configure_directories ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf)
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/genenvrules.conf ${CONFIG_DIR}
+        DEPENDS configure_directories ${CMAKE_CURRENT_BINARY_DIR}/genenvrules.conf)
     add_custom_target(configure_genenvrules_conf
         DEPENDS ${CONFIG_DIR}/genenvrules.conf)
 
