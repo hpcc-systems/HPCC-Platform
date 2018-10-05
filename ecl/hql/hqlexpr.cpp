@@ -1120,10 +1120,13 @@ bool HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool is
         writeStringToStream(*stream, ">\n");
         if (curMeta().dependencies)
             saveXML(*stream, curMeta().dependencies, 0, XML_Embed|XML_LineBreak);
-        writeStringToStream(*stream, "<Simplified>\n");
 
-        encodeXML(ecl, *stream, 0, -1, false);
-        writeStringToStream(*stream, "</Simplified>\n");
+        if (ecl.length())
+        {
+            writeStringToStream(*stream, "<Simplified>\n");
+            encodeXML(ecl, *stream, 0, -1, false);
+            writeStringToStream(*stream, "</Simplified>\n");
+        }
         writeStringToStream(*stream, "</Cache>\n");
         stream->flush();
     }
