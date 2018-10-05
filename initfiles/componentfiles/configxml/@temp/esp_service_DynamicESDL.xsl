@@ -20,6 +20,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default" xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-result-prefixes="seisint set">
     <xsl:import href="esp_service.xsl"/>
     <xsl:import href="logging_agent.xsl"/>
+    <xsl:import href="wslogserviceespagent.xsl"/>
 
     <xsl:template match="EspService">
         <xsl:param name="bindingNode"/>
@@ -72,14 +73,24 @@
                 <LoggingManager name="{$managerNode/@name}">
                     <xsl:for-each select="$managerNode/ESPLoggingAgent">
                         <xsl:variable name="agentName" select="@ESPLoggingAgent"/>
-                        <xsl:variable name="agentNode" select="/Environment/Software/ESPLoggingAgent[@name=$agentName]"/>
-                        <xsl:if test="not($agentNode)">
-                            <xsl:message terminate="yes">An ESP Logging Agent <xsl:value-of select="$agentName"/>  for <xsl:value-of select="$managerNode/@name"/> is undefined!</xsl:message>
-                        </xsl:if>
-                        <xsl:call-template name="ESPLoggingAgent">
-                            <xsl:with-param name="agentName" select="$agentName"/>
-                            <xsl:with-param name="agentNode" select="$agentNode"/>
-                        </xsl:call-template>
+                        <xsl:variable name="espLoggingAgentNode" select="/Environment/Software/ESPLoggingAgent[@name=$agentName]"/>
+                        <xsl:variable name="wsLogServiceESPAgentNode" select="/Environment/Software/WsLogServiceESPAgent[@name=$agentName]"/>
+                        <xsl:choose>
+                            <xsl:when test="($espLoggingAgentNode)">
+                                <xsl:call-template name="ESPLoggingAgent">
+                                    <xsl:with-param name="agentName" select="$agentName"/>
+                                    <xsl:with-param name="agentNode" select="$espLoggingAgentNode"/>
+                                </xsl:call-template>
+                            </xsl:when>
+                            <xsl:when test="($wsLogServiceESPAgentNode)">
+                                <xsl:call-template name="WsLogServiceESPAgent">
+                                    <xsl:with-param name="managerNode" select="$managerNode"/>
+                                </xsl:call-template>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:message terminate="yes">ESP Logging Agent is undefined for <xsl:value-of select="$managerName"/> !</xsl:message>
+                            </xsl:otherwise>
+                        </xsl:choose>
                     </xsl:for-each>
                 </LoggingManager>
 

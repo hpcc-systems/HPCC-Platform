@@ -20,6 +20,8 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"
 xmlns:set="http://exslt.org/sets">
+    <xsl:import href="esp_logging_transid.xsl"/>
+
     <xsl:template name="LogSourceMap">
         <xsl:param name="agentNode"/>
         <LogSourceMap>
@@ -168,15 +170,11 @@ xmlns:set="http://exslt.org/sets">
             <xsl:if test="string($agentNode/@MaxServerWaitingSeconds) != ''">
                 <MaxServerWaitingSeconds><xsl:value-of select="$agentNode/@MaxServerWaitingSeconds"/></MaxServerWaitingSeconds>
             </xsl:if>
-            <xsl:if test="string($agentNode/@MaxTransIDLength) != ''">
-                <MaxTransIDLength><xsl:value-of select="$agentNode/@MaxTransIDLength"/></MaxTransIDLength>
-            </xsl:if>
-            <xsl:if test="string($agentNode/@MaxTransIDSequenceNumber) != ''">
-                <MaxTransIDSequenceNumber><xsl:value-of select="$agentNode/@MaxTransIDSequenceNumber"/></MaxTransIDSequenceNumber>
-            </xsl:if>
-            <xsl:if test="string($agentNode/@MaxTransSeedTimeoutMinutes) != ''">
-                <MaxTransSeedTimeoutMinutes><xsl:value-of select="$agentNode/@MaxTransSeedTimeoutMinutes"/></MaxTransSeedTimeoutMinutes>
-            </xsl:if>
+
+            <xsl:call-template name="EspLoggingTransactionID">
+                <xsl:with-param name="agentNode" select="$agentNode"/>
+            </xsl:call-template>
+
             <xsl:call-template name="LogBasic">
                 <xsl:with-param name="agentNode" select="$agentNode"/>
             </xsl:call-template>
