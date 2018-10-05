@@ -46,6 +46,7 @@ define([
             _width: "480px",
             lockDialogWidget: null,
             storage: null,
+            idleFired: null,
 
             postCreate: function (args) {
                 this.inherited(arguments);
@@ -102,7 +103,6 @@ define([
                             password: this.unlockPassword.get("value")
                         }
                     }).then(function (response) {
-
                         if (response.UnlockResponse.Error === 0) {
                             if (context.unlockStatus.innerHTML !== "") {
                                 context.unlockStatus.innerHTML = "";
@@ -116,6 +116,16 @@ define([
                             cookie("Status", "Unlocked");
                             context.storage.removeItem("Status");
                             context.storage.setItem("Status", "Unlocked");
+                            if (context.idleFired) {
+                                dojo.publish("hpcc/brToaster", {
+                                    Exceptions: [{
+                                        Source: context.i18n.ECLWatchSessionManagement,
+                                        Message: context.i18n.YourScreenWasLocked,
+                                        duration: -1
+                                    }]
+                                });
+                                context.idleFired = null;
+                            }
                         } else {
                             context.unlockStatus.innerHTML = response.UnlockResponse.Message;
                             cookie("Status", "Locked");
@@ -124,7 +134,7 @@ define([
                 }
             },
 
-            _onLock: function (event) {
+            _onLock: function (idleCreator) {
                 var context = this;
 
                 on(this.unlockPassword, "keypress", function (event) {
@@ -133,7 +143,18 @@ define([
                     }
                 });
 
-                if (cookie("Status") === "Unlocked") {
+                if (idleCreator) {
+                    context.idleFired = true;
+                    context.unlockDialog.show();
+                    domClass.add("SessionLock", "overlay");
+                    context.unlockUserName.set("value", cookie("User"));
+                    topic.publish("hpcc/session_management_status", {
+                        status: "Locked"
+                    });
+                    cookie("Status", "Locked");
+                    context.storage.removeItem("Status");
+                    context.storage.setItem("Status", "Locked");
+                } else if (cookie("Status") === "Unlocked") {
                     xhr("esp/lock", {
                         method: "post",
                     }).then(function(response){
