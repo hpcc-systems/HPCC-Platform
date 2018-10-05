@@ -73,6 +73,7 @@ define([
                     context.refreshHRef();
                     context.refreshGrid();
                 });
+                this.refreshGrid();
             },
 
             initDiskUsageGrid: function () {

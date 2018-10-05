@@ -5,6 +5,7 @@ import * as Memory from "dojo/store/Memory";
 import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as topic from "dojo/topic";
+import * as Deferred from "dojo/_base/Deferred";
 
 import * as parser from "dojox/xml/parser";
 
@@ -28,7 +29,9 @@ var DiskUsageStore = declare([Memory], {
                 query.CountBy = "Date";
                 break;
         }
-        var results = DFUSpace({
+        var deferredResults = new Deferred();
+        deferredResults.total = new Deferred();
+        DFUSpace({
             request: query
         }).then(lang.hitch(this, function (response) {
             var data = [];
@@ -62,9 +65,10 @@ var DiskUsageStore = declare([Memory], {
                 })
             }
             this.setData(data);
-            return this.data;
+            deferredResults.resolve(data);
+            deferredResults.total.resolve(data.length);
         }));
-        return QueryResults(results);
+        return QueryResults(deferredResults);
     }
 });
 
