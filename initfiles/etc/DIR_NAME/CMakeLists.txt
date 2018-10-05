@@ -20,18 +20,20 @@ if(NOT WSSQL_SERVICE)
     set(WSSQL_SERVICE_BLOCK_E "-->")
 endif(NOT WSSQL_SERVICE)
 
+if(NOT SPARK)
+    set(SPARK_ENV_S "<!-- Built with -DSPARK=OFF ")
+    set(SPARK_ENV_F "-->")
+    set(DNG_SPARKTHOR ",sparkthor")
+endif(NOT SPARK)
+
 if(NOT "${CUSTOM_PACKAGE_SUFFIX}" STREQUAL "")
     set(version_file_prefix "${CUSTOM_PACKAGE_SUFFIX}_")
 endif()
 
-if(NOT USE_SPARK)
-    set(SPARK_ENV_S "<!-- Built with -DUSE_SPARK=OFF ")
-    set(SPARK_ENV_E "-->")
-endif(NOT USE_SPARK)
-
 configure_file("version.in" "version")
 configure_file("environment.conf.in" "environment.conf" IMMEDIATE)
 configure_file("environment.xml.in" "environment.xml" IMMEDIATE)
+configure_file("genenvrules.conf.in" "genenvrules.conf" @ONLY)
 foreach(iFILES
         ${CMAKE_CURRENT_BINARY_DIR}/environment.conf
         ${CMAKE_CURRENT_BINARY_DIR}/version)
@@ -40,7 +42,7 @@ endforeach(iFILES)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.conf DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/genenvrules.conf DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime)
 
 add_subdirectory(configmgr)
 add_subdirectory(config2mgr)

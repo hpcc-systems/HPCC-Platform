@@ -39,11 +39,3 @@ FOREACH( iFILES
 )
     install ( PROGRAMS ${iFILES} DESTINATION ${EXEC_DIR} COMPONENT Runtime )
 ENDFOREACH ( iFILES )
-
-if(USE_SPARK)
-    configure_file(init_sparkthor.in init_sparkthor @ONLY)
-    install(
-        PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/init_sparkthor
-        DESTINATION ${EXEC_DIR}
-        COMPONENT Runtime)
-endif()

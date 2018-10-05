@@ -29,8 +29,7 @@ set(componentList
     sasha
     thor
     thorslave
-    backupnode
-    sparkthor)
+    backupnode)
 
 set(dafilesrv "dafilesrv" "-L ${LOG_PATH} -I %i -D" "")
 set(dali "daserver" "--daemon %i" "dafilesrv.service")
