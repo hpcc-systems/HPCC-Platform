@@ -226,7 +226,7 @@
                   <row>
                     <entry>attribute</entry>
 
-                    <entry>values</entry>
+                    <entry>description</entry>
 
                     <entry>default</entry>
 
@@ -358,8 +358,8 @@
         </listitem>
 
         <listitem>
-          <para>Specify a Spark Master Node; Select the Spark Master Instances
-          tab. Right-click on the Instances table and choose <emphasis
+          <para>Specify a Spark Master Node; Select the Instances tab.
+          Right-click on the Instances table and choose <emphasis
           role="bold">Add Instances </emphasis></para>
 
           <para>Add the instance of your Spark master node.</para>
@@ -556,7 +556,7 @@
       <para>The first parameter <emphasis>connectionString</emphasis> contains
       the same information as <emphasis>HpccFile</emphasis> only using a
       single connection string. It should be in the following format:
-      {http|https}://{ECLWATCHHOST}:{ECLWATCHPORT} </para>
+      {http|https}://{ECLWATCHHOST}:{ECLWATCHPORT}</para>
 
       <para>The constructor will attempt to connect to HPCC. This connection
       will then be used for any subsequent calls to
