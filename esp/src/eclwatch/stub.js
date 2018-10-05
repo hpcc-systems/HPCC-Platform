@@ -63,10 +63,10 @@ define([
             idleWatcher.on("active", function () {
                 _resetESPTime();
             });
-            idleWatcher.on("idle", function () {
+            idleWatcher.on("idle", function (idleCreator) {
                 idleWatcher.stop();
                 var LockDialog = new LockDialogWidget({});
-                LockDialog._onLock();
+                LockDialog._onLock(idleCreator);
             });
             idleWatcher.start();
             monitorLockClick.unlocked();
@@ -97,6 +97,8 @@ define([
                     monitorLockClick.unlocked();
                 } else  if (publishedMessage.status === "Locked") {
                     monitorLockClick.locked();
+                } else if (publishedMessage.status === "DoIdle") {
+                    idleWatcher.fireIdle();
                 }
             })
 

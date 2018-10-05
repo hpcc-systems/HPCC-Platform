@@ -6,6 +6,7 @@ import * as Deferred from "dojo/_base/Deferred";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as topic from "dojo/topic";
 import * as cookie from "dojo/cookie";
+import * as ESPUtil from "./ESPUtil";
 
 import * as hpccComms from "@hpcc-js/comms";
 
@@ -84,6 +85,17 @@ class RequestHelper {
         }
 
         return retVal.then(function (response) {
+            if (lang.exists("Exceptions.Exception", response)) {
+                if (response.Exceptions.Exception.Code === "401") {
+                    if (cookie("Status") === "Unlocked") {
+                        topic.publish("hpcc/session_management_status", {
+                            status: "DoIdle"
+                        });
+                    }
+                    cookie("Status", "Locked");
+                    ESPUtil.LocalStorage.removeItem("Status");
+                }
+            }
             params.load(response);
             return response;
         }).catch(function (error) {

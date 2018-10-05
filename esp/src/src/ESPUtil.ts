@@ -295,12 +295,10 @@ export var LocalStorage = dojo.declare([Evented], {
 
 export var MonitorLockClick = dojo.declare([Evented], {
     unlocked: function () {
-        var context = this;
-        context.emit("unlocked", {});
+        this.emit("unlocked", {});
     },
     locked: function () {
-        var context = this;
-        context.emit("locked", {});
+        this.emit("locked", {});
     }
 });
 
@@ -308,6 +306,10 @@ export var IdleWatcher = dojo.declare([Evented], {
     constructor: function (idleDuration) {
         idleDuration = idleDuration || 30 * 1000;
         this._idleDuration = idleDuration;
+    },
+
+    fireIdle: function () {
+        this.emit("idle", {status: "firedIdle"});
     },
 
     start: function () {
