@@ -1961,7 +1961,7 @@ public:
             while ((len = pipe->readError(errBuffSize, err)) > 0)
                 errMsg.append(err, 0, len);
 
-            if ((strstr(errMsg.str(), "Warning") != nullptr) || (strstr(errMsg.str(), "Failed") != nullptr))
+            if ((strstr(errMsg.str(), "Warning") != nullptr) || (strstr(errMsg.str(), "* Failed to connect to") != nullptr))
             {
                 fprintf(stderr, "Zapgen command returns with error:\n%s\n", errMsg.str());
                 isOk = false;
