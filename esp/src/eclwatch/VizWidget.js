@@ -11,23 +11,22 @@ define([
     "dojo/promise/all",
 
     "dijit/registry",
-    "dijit/layout/ContentPane",
     "dijit/form/Select",
-    "dijit/form/CheckBox",
 
     "dgrid/editor",
 
-    "@hpcc-js/common",
+    "d3-collection",
+    "d3-array",
 
-    "hpcc/TableContainer",
     "hpcc/_Widget",
     "src/ESPWorkunit",
     "src/WsWorkunits",
-    "hpcc/SelectionGridWidget",
     "src/Utility",
 
     "dojo/text!../templates/VizWidget.html",
 
+    "hpcc/TableContainer",
+    "hpcc/SelectionGridWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
@@ -40,10 +39,10 @@ define([
     "dijit/Fieldset"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
-    registry, ContentPane, Select, CheckBox,
+    registry, Select,
     editor,
-    hpccCommon,
-    TableContainer, _Widget, ESPWorkunit, WsWorkunits, SelectionGridWidget, Utility,
+    d3Collection, d3Array,
+    _Widget, ESPWorkunit, WsWorkunits, Utility,
     template) {
         return declare("VizWidget", [_Widget], {
             templateString: template,
@@ -411,7 +410,7 @@ define([
                     }
                 }, this);
                 var context = this;
-                var data = hpccCommon.nest()
+                var data = d3Collection.nest()
                     .key(function (d) { return d[request.label] })
                     .rollup(function (leaves) {
                         var retVal = {
@@ -423,7 +422,7 @@ define([
                                         retVal[row.id] = leaves.length;
                                         break;
                                     default:
-                                        retVal[row.id] = hpccCommon[row.aggregation || "mean"](leaves, function (d) {
+                                        retVal[row.id] = d3Array[row.aggregation || "mean"](leaves, function (d) {
                                             return d[row.field];
                                         });
                                         break;
