@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include "espcontext.hpp"
 #include "esdl_svc_custom.hpp"
 
 //
@@ -288,13 +289,14 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
 {
     if (request.length()!=0)
     {
-#if defined(_DEBUG)
-        DBGLOG("ORIGINAL REQUEST: %s", request.str());
+        if (getEspLogLevel() >= LogMax)
+        {
+            DBGLOG("ORIGINAL REQUEST: %s", request.str());
+            StringBuffer marshalled;
+            toXML(bindingCfg, marshalled.clear());
+            DBGLOG("INCOMING CONFIG: %s", marshalled.str());
+        }
 
-        StringBuffer marshalled;
-        toXML(bindingCfg, marshalled.clear());
-        DBGLOG("INCOMING CONFIG: %s", marshalled.str());
-#endif
         Owned<IXpathContext> xpathContext = getXpathContext(request.str());
 
         VStringBuffer ver("%g", context->getClientVersion());
@@ -329,9 +331,6 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
         }
         toXML(thereq, request.clear());
 
-#if defined(_DEBUG)
-        DBGLOG("MODIFIED REQUEST: %s", request.str());
-#endif
-
+        ESPLOG(LogMax,"MODIFIED REQUEST: %s", request.str());
     }
 }

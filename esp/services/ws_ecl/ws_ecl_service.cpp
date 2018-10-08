@@ -1546,8 +1546,7 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
 
         StringBuffer schemaXml;
         getSchema(schemaXml, context, request, wsinfo);
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("request schema: %s", schemaXml.str());
+        ESPLOG(LogMax,"request schema: %s", schemaXml.str());
         Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
         if (schema.get())
         {
@@ -1583,8 +1582,7 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
 
         StringBuffer schemaXml;
         getSchema(schemaXml, context, request, wsinfo);
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("request schema: %s", schemaXml.str());
+        ESPLOG(LogMax,"request schema: %s", schemaXml.str());
         Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
         if (schema.get())
         {
