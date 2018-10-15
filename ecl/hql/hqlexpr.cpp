@@ -9185,7 +9185,11 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned look
         if (resolvedOp == no_merge_nomatch)
             return NULL;
         if (resolvedOp != no_nobody)
+        {
+            //Resolving from a merged scope, means that the resolved item will be a global symbol
+            ctx.noteExternalLookup(this, resolved);
             return resolved.getClear();
+        }
     }
     else
     {
