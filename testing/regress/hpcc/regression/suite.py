@@ -20,6 +20,9 @@
 import os
 import time
 import glob
+import copy
+import logging
+import traceback
 
 from ..util.ecl.file import ECLFile
 from ..common.error import Error
@@ -127,6 +130,30 @@ class Suite:
 
         if exceptions != '':
             raise Error("6006", err="%s" % (exceptions))
+
+        if self.args.runcount > 1:
+            multipleInstances = []
+            for ecl in self.suite:
+                for instance in range(self.args.runcount):
+                    try:
+                        newEcl = copy.copy(ecl)
+                    except:
+                        logging.debug( e, extra={'taskId':-1})
+                        logging.debug("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':-1} )
+                        pass
+                    newEcl.appendJobNameSuffix("rteloop%02d" % (instance+1))
+                    if self.args.flushDiskCache:
+                        # Apply flushDiskCachePolicy
+                        if self.args.flushDiskCachePolicy == 1 and instance != 0:
+                            # Clear flushDiskCache flag all futher instances
+                            newEcl.setFlushDiskCache(False)
+
+                        # If flushDiskCache is enabled then in the newEcl flushDiskCache
+                        # is already enabled so not need to do any further action to clear cache every time
+
+                    multipleInstances.append(newEcl)
+            self.suite = multipleInstances
+        pass
 
     def addFileToSuite(self, eclfile):
         haveVersions = eclfile.testVesion()
