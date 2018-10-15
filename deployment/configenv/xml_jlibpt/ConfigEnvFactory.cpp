@@ -14,32 +14,26 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-#ifndef _CONFIGENVFACTORY_HPP_
-#define _CONFIGENVFACTORY_HPP_
 
-#include <cstddef>
 #include "jiface.hpp"
 #include "jliball.hpp"
 
-
 #include "IConfigEnv.hpp"
-#include "ConfigEnv.hpp"
-
-interface IPropertyTree;
-//interface IConfigEnv<IPropertyTree, StringBuffer>;
-//interface IConfigComp;
+#include "ConfigEnvFactory.hpp"
 
 namespace ech
 {
 
-//template<class PTTYPE, class SB>
-class configenv_decl ConfigEnvFactory
+IConfigEnv<IPropertyTree,StringBuffer> * ConfigEnvFactory::getIConfigEnv(IPropertyTree *config)
 {
-public:
-    static IConfigEnv<IPropertyTree, StringBuffer> * getIConfigEnv(IPropertyTree *config);
-    static void destroy(IConfigEnv<IPropertyTree, StringBuffer> * iCfgEnv);
-};
+    return  new ConfigEnv(config);
+}
+
+void ConfigEnvFactory::destroy( IConfigEnv<IPropertyTree,StringBuffer> * iCfgEnv)
+{
+    ConfigEnv * cfgEnv = (ConfigEnv *) iCfgEnv;
+    delete cfgEnv;
+}
 
 }
 
-#endif
