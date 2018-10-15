@@ -6062,7 +6062,7 @@ ECLRTL_API IRowStream * createRowStream(size32_t count, const byte * * rowset)
 
 //The following are provided to provide compatibility with 6.x so that the dll can be loaded
 //Defined at the end of the file so they cannot cause any code to accidently call them.
-__declspec(noreturn) void jlib_decl throwIncompatible() __attribute__((noreturn));
+__declspec(noreturn) void throwIncompatible() __attribute__((noreturn));
 void throwIncompatible() { rtlFail(0, "Attempt to execute incompatible query version"); }
 
 ECLRTL_API int rtlSearchTableStringN(unsigned count, char * * table, unsigned width, const char * search) { throwIncompatible(); }

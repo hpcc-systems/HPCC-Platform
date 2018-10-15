@@ -55,6 +55,7 @@ set (    SRCS
          ../common/GenEnvRules.cpp
          EnvHelper.cpp
          ComponentBase.cpp
+         ConfigEnvFactory.cpp
          SWComponentBase.cpp
          Hardware.cpp
          Programs.cpp
