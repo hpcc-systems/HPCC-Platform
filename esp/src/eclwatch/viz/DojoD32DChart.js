@@ -46,8 +46,26 @@ define([
                             ;
                         deferred.resolve(this.chart);
                         break;
+                    case "RADIAL_BAR":
+                        this.chart = new hpccChart.RadialBar()
+                            .target(_target.domNodeID)
+                            ;
+                        deferred.resolve(this.chart);
+                        break;
                     case "WORD_CLOUD":
-                        this.chart = new hpccOther.WordCloud()
+                        this.chart = new hpccChart.WordCloud()
+                            .target(_target.domNodeID)
+                            ;
+                        deferred.resolve(this.chart);
+                        break;
+                    case "HEX_BIN":
+                        this.chart = new hpccChart.HexBin()
+                            .target(_target.domNodeID)
+                            ;
+                        deferred.resolve(this.chart);
+                        break;
+                    case "CONTOUR":
+                        this.chart = new hpccChart.Contour()
                             .target(_target.domNodeID)
                             ;
                         deferred.resolve(this.chart);

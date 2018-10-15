@@ -287,9 +287,13 @@ export const visualisations = [
     { value: "DojoD3NDChart AREA", label: "Area Chart" },
     { value: "DojoD3NDChart STEP", label: "Step Chart" },
     { value: "DojoD3NDChart SCATTER", label: "Scatter Chart" },
+    { value: "DojoD3NDChart RADAR", label: "Radar Chart" },
     { value: "DojoD32DChart BUBBLE", label: "Bubble Chart" },
     { value: "DojoD32DChart PIE", label: "Pie Chart" },
+    { value: "DojoD32DChart RADIAL_BAR", label: "Radial Bar" },
     { value: "DojoD32DChart WORD_CLOUD", label: "Word Cloud" },
+    { value: "DojoD32DChart HEX_BIN", label: "Hex Bin" },
+    { value: "DojoD32DChart CONTOUR", label: "Contour" },
     { value: "DojoD3Choropleth COUNTRY", label: "Country Choropleth" },
     { value: "DojoD3Choropleth STATE", label: "US State Choropleth" },
     { value: "DojoD3Choropleth COUNTY", label: "US County Choropleth" }

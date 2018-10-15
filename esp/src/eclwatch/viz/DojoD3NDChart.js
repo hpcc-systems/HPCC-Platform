@@ -74,6 +74,12 @@ define([
                             ;
                         deferred.resolve(this.chart);
                         break;
+                    case "RADAR":
+                        this.chart = new hpccChart.Radar()
+                            .target(_target.domNodeID)
+                            ;
+                        deferred.resolve(this.chart);
+                        break;
                     default:
                         console.log("Invalid visualization:  " + this._chartType)
                         deferred.resolve(null);
