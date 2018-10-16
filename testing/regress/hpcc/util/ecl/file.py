@@ -85,9 +85,8 @@ class ECLFile:
         self.args = args
         self.eclccWarning = ''
         self.eclccWarningChanges = ''
-        self.jobNameSuffix = args.jobnamesuffix
-        if self.jobNameSuffix != '':
-            self.jobNameSuffix = '-' + self.jobNameSuffix
+        # Replace all '-' and ' ' with '_' to keep the whole suffix as one part
+        self.jobNameSuffix = args.jobnamesuffix.replace('-',  '_').replace(' ','_')
 
         self.isFlushDiskCache = False
         if self.args.flushDiskCache:
@@ -517,10 +516,16 @@ class ECLFile:
         pass
         
     def setJobname(self,  timestamp):
+        # jobname = <basename>[-<version>][-#<suffix>]-<timestamp>
         self.jobname = self.basename + self.jobnameVersion
+        if len(self.jobNameSuffix) > 0:
+            pos = 0
+            if self.jobNameSuffix[pos] == '-':
+                pos = 1
+            self.jobname += '-#' + self.jobNameSuffix[pos:]
+
         if len(timestamp) > 0:
             self.jobname += "-" + timestamp
-        self.jobname += self.jobNameSuffix
 
     def getJobname(self):
         return self.jobname
@@ -641,3 +646,10 @@ class ECLFile:
     def flushDiskCache(self):
         logging.debug("%3d. isFlushDiskCache (ecl:'%s'): '%s')" % (self.taskId,  self.ecl, str(self.isFlushDiskCache)))
         return self.isFlushDiskCache
+
+    def setFlushDiskCache(self, state):
+        logging.debug("%3d. setFlushDiskCache (ecl:'%s'): '%s')" % (self.taskId,  self.ecl, str(state)))
+        self.isFlushDiskCache = state
+
+    def appendJobNameSuffix(self,  string):
+        self.jobNameSuffix += '_' + string.replace('-',  '_');

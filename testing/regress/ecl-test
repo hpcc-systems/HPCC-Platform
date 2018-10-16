@@ -200,6 +200,10 @@ class RegressMain:
                                 metavar="suffix")
         executionParser.add_argument('--flushDiskCache', help="Flush OS (Linux) Disk Cache before execute ECL code (sudo privileges needed). Ignored when --pq <n>  > 1"
                                 , action = 'store_true')
+        executionParser.add_argument('--flushDiskCachePolicy', help="Set flush disk cache policy. The default is 1 to clear before firts run only. For 2 to clear before every runs.",
+                                type=checkPqParam,  default = 1,   metavar="flushDiskCachePolicy")
+        executionParser.add_argument('--runcount', help="Execute individual test case(s) in given times. Default value is 1",
+                                type=checkPqParam,  default = 1,   metavar="runcount")
 
 
         parser = argparse.ArgumentParser(prog=prog, description=description,  parents=[helperParser, commonParser,  executionParser])

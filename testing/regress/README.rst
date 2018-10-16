@@ -70,9 +70,12 @@ Result:
 |        --handleEclccWarningFile, -w
 |                                 Create/overwrite/delete ECLCC warning file.
 |        --jobnamesuffix suffix   Specify workunit job name suffix.
-|        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code
-|                                 (sudo privileges needed). Ignored when --pq <n> > 1
+|        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code (sudo privileges needed). Ignored when --pq <n> > 1
+|        --flushDiskCachePolicy flushDiskCachePolicy
+|                                 Set flush disk cache policy. The default is 1 to clear before first run only. For 2 to clear before every run.
+|        --runcount runcount      Execute individual test case(s) in given times. Default value is 1
 |
+
 
 Important!
     There is a bug in Python argparse library whichis impacts the quoted parameters. So either in -X or -f or both contains a value with space(s) inside then the whole argument should be put in double quote!
@@ -120,6 +123,9 @@ Result:
 |                                 Specify workunit job name suffix.
 |        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code
 |                                 (sudo privileges needed). Ignored when --pq <n> > 1
+|        --flushDiskCachePolicy flushDiskCachePolicy
+|                                 Set flush disk cache policy. The default is 1 to clear before first run only. For 2 to clear before every run.
+|        --runcount runcount      Execute individual test case(s) in given times. Default value is 1
 |        --clusters               Print target clusters from config (ecl-test.json by
 |                                 default).
 |        --setup                  Print testcases executed in setup.
@@ -189,6 +195,9 @@ Result:
 |        --jobnamesuffix suffix   Specify workunit job name suffix.
 |        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code
 |                                 (sudo privileges needed). Ignored when --pq <n> > 1
+|        --flushDiskCachePolicy flushDiskCachePolicy
+|                                 Set flush disk cache policy. The default is 1 to clear before first run only. For 2 to clear before every run.
+|        --runcount runcount      Execute individual test case(s) in given times. Default value is 1
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
 |                                 Run the setup on target cluster(s). If target = 'all'
 |                                 then run setup on all clusters. If not defined then
@@ -253,6 +262,9 @@ Result:
 |        --jobnamesuffix suffix   Specify workunit job name suffix.
 |        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code
 |                                 (sudo privileges needed). Ignored when --pq <n> > 1
+|        --flushDiskCachePolicy flushDiskCachePolicy
+|                                 Set flush disk cache policy. The default is 1 to clear before first run only. For 2 to clear before every run.
+|        --runcount runcount      Execute individual test case(s) in given times. Default value is 1
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
 |                                 Run the cluster(s) suite. If target = 'all' then run
 |                                 suite on all clusters. If not defined then default
@@ -323,6 +335,9 @@ Result:
 |        --jobnamesuffix suffix
 |                                 Specify workunit job name suffix.
 |        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code (sudo privileges needed). Ignored when --pq <n> > 1
+|        --flushDiskCachePolicy flushDiskCachePolicy
+|                                 Set flush disk cache policy. The default is 1 to clear before first run only. For 2 to clear before every run.
+|        --runcount runcount      Execute individual test case(s) in given times. Default value is 1
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
 |                                 Target cluster(s) for query to run. If target = 'all'
 |                                 then run query on all clusters. If not defined then
