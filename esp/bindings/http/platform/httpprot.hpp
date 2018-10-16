@@ -127,9 +127,6 @@ public:
 class esp_http_decl CSecureHttpProtocol : public CEspProtocol
 {
 private:
-    StringBuffer m_certfile;
-    StringBuffer m_privkeyfile;
-    StringBuffer m_passphrase;
     Owned<ISecureSocketContext> m_ssctx;
 
     Owned<IPropertyTree> m_config;

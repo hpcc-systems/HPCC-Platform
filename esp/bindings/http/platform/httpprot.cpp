@@ -233,24 +233,21 @@ CSecureHttpProtocol::CSecureHttpProtocol(IPropertyTree* cfg)
     if(cfg != NULL)
     {
         m_config.setown(cfg);
-        cfg->getProp("certificate", m_certfile);
-        if(m_certfile.length() == 0)
+
+        //ensure keys are specified. Passphrase is optional
+        StringBuffer sb;
+        cfg->getProp("certificate", sb);
+        if(sb.length() == 0)
         {
             throw MakeStringException(-1, "certificate file not specified in config file");
         }
-        cfg->getProp("privatekey", m_privkeyfile);
-        if(m_privkeyfile.length() == 0)
+
+        cfg->getProp("privatekey", sb.clear());
+        if(sb.length() == 0)
         {
             throw MakeStringException(-1, "private key file not specified in config file");
         }
-        StringBuffer pphrase;
-        cfg->getProp("passphrase", pphrase);
-        if(pphrase.length() == 0)
-        {
-            throw MakeStringException(-1, "passphrase not specified in config file");
-        }
 
-        //m_ssctx.setown(createSecureSocketContextEx(m_certfile.str(), m_privkeyfile.str(), m_passphrase.str(), ServerSocket));
         createSecureSocketContextEx2_t xproc = NULL;
         IEspPlugin *pplg = loadPlugin(SSLIB);
         if (pplg)
