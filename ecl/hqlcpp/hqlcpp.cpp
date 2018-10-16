@@ -2347,6 +2347,8 @@ bool HqlCppTranslator::hasAddress(BuildCtx & ctx, IHqlExpression * expr)
         }
     case no_typetransfer:
         return hasAddress(ctx, expr->queryChild(0));
+    case no_constant:
+        return isTypePassedByAddress(expr->queryType());
     default:
         return false;
     }
@@ -4577,6 +4579,9 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, IHqlExpression * expr, CHql
     if (op == no_alias)
     {
         doBuildExprAlias(ctx, expr, &tgt, NULL);
+        //very unusually an alias may generate a function call (e.g., for an int6 - this ensures it is forced into a variable).
+        if (!hasAddress(ctx, tgt.expr))
+            ensureHasAddress(ctx, tgt);
         return;
     }
 
