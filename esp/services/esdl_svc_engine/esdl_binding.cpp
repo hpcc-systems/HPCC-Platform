@@ -2360,7 +2360,7 @@ int EsdlBindingImpl::onGetXForm(IEspContext &context,
         StringBuffer schema;
         context.addOptions(ESPCTX_ALL_ANNOTATION);
         getSchema(schema, context, request, serv, method, true);
-        DBGLOG("Schema: %s", schema.str());
+        ESPLOG(LogMax,"Schema: %s", schema.str());
 
         Owned<IXslTransform> xform = xslp->createXslTransform();
         xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/gen_form.xsl").str());
