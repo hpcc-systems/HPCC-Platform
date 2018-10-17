@@ -36,7 +36,7 @@ mpTraceLevel=0
 
 #Specify location of HPCC PKI public/private key files
 # note: if HPCCPassPhrase specified it must be encrypted
-#HPCCPassPhrase=XC+0Byt45EYD6qV5++8HW+lgsYB/nGud8FtgrubKdLk=
+#HPCCPassPhrase=
 #HPCCCertificateFile=${HOME_DIR}/${RUNTIME_USER}/certificate/certificate.pem
 #HPCCPublicKeyFile=${HOME_DIR}/${RUNTIME_USER}/certificate/public.key.pem
 #HPCCPrivateKeyFile=${HOME_DIR}/${RUNTIME_USER}/certificate/key.pem
