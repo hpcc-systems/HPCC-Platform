@@ -241,7 +241,7 @@ interface IEspLogAgent : extends IInterface
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
     virtual void getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID) = 0;
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
-    virtual void filterLogContent(IEspUpdateLogRequestWrap* req) = 0;
+    virtual IEspUpdateLogRequestWrap* filterLogContent(IEspUpdateLogRequestWrap* req) = 0;
 };
 
 class CESPLogContentGroupFilters : public CInterface, implements IInterface
@@ -281,7 +281,7 @@ public:
     CLogContentFilter() {};
 
     void readAllLogFilters(IPropertyTree* cfg);
-    void filterLogContent(IEspUpdateLogRequestWrap* req);
+    IEspUpdateLogRequestWrap* filterLogContent(IEspUpdateLogRequestWrap* req);
 };
 
 class LOGGINGCOMMON_API CDBLogAgentBase : public CInterface, implements IEspLogAgent
@@ -316,6 +316,6 @@ public:
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
     virtual void getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID);
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
-    virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
+    virtual IEspUpdateLogRequestWrap* filterLogContent(IEspUpdateLogRequestWrap* req);
 };
 #endif  //_LOGGINGAGENT_HPP__
