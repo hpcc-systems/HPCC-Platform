@@ -158,9 +158,9 @@ bool CLogThread::queueLog(IEspUpdateLogRequest* logRequest)
 bool CLogThread::queueLog(IEspUpdateLogRequestWrap* logRequest)
 {
     unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
-    logAgent->filterLogContent(logRequest);
+    Owned<IEspUpdateLogRequestWrap> logRequestFiltered = logAgent->filterLogContent(logRequest);
     ESPLOG(LogNormal, "LThread:filterLog: %dms\n", msTick() -  startTime);
-    return enqueue(logRequest);
+    return enqueue(logRequestFiltered);
 }
 
 bool CLogThread::enqueue(IEspUpdateLogRequestWrap* logRequest)

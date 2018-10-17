@@ -143,7 +143,7 @@ void CLogContentFilter::filterLogContentTree(StringArray& filters, IPropertyTree
     }
 }
 
-void CLogContentFilter::filterLogContent(IEspUpdateLogRequestWrap* req)
+IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogRequestWrap* req)
 {
     const char* logContent = req->getUpdateLogRequest();
     Owned<IPropertyTree> logRequestTree = req->getLogRequestTree();
@@ -294,8 +294,8 @@ void CLogContentFilter::filterLogContent(IEspUpdateLogRequestWrap* req)
     StringBuffer updateLogRequestXML;
     toXML(updateLogRequestTree, updateLogRequestXML);
     ESPLOG(LogMax, "filtered content and option: <%s>", updateLogRequestXML.str());
-    req->clearOriginalContent();
-    req->setUpdateLogRequest(updateLogRequestXML.str());
+
+    return new CUpdateLogRequestWrap(req->getGUID(), req->getOption(), updateLogRequestXML.str());
 }
 
 void CDBLogAgentBase::readDBCfg(IPropertyTree* cfg, StringBuffer& server, StringBuffer& dbUser, StringBuffer& dbPassword)
@@ -550,7 +550,8 @@ void CDBLogAgentBase::getTransactionID(StringAttrMapping* transFields, StringBuf
     //Not implemented
 }
 
-void CDBLogAgentBase::filterLogContent(IEspUpdateLogRequestWrap* req)
+IEspUpdateLogRequestWrap* CDBLogAgentBase::filterLogContent(IEspUpdateLogRequestWrap* req)
 {
     //No filter in CDBSQLLogAgent
+    return req;
 }
