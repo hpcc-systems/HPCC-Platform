@@ -921,7 +921,7 @@ public:
     void beginMetaScope() { metaStack.append(*new FileParseMeta); }
     void beginMetaScope(FileParseMeta & active) { metaStack.append(OLINK(active)); }
     void endMetaScope() { metaStack.pop(); }
-    bool createCache(IHqlExpression * simplifiedDefinition, bool isMacro);
+    bool createCache(const char *simplifiedEcl, bool isMacro);
     inline FileParseMeta & curMeta() { return metaStack.tos(); }
     inline bool hasCacheLocation( ) const { return !metaOptions.cacheLocation.isEmpty();}
 public:
@@ -1027,7 +1027,7 @@ public:
     inline bool checkSimpleDef() const { return parseCtx.checkSimpleDef; }
     inline bool ignoreCache() const { return parseCtx.ignoreCache; }
     inline bool ignoreSimplified() const { return parseCtx.ignoreSimplified; }
-    inline bool createCache(IHqlExpression * simplified, bool isMacro) { return parseCtx.createCache(simplified, isMacro); }
+    inline bool createCache(const char * simplifiedEcl, bool isMacro) { return parseCtx.createCache(simplifiedEcl, isMacro); }
     void reportTiming(const char * name);
     inline void incrementAttribsSimplified() { ++parseCtx.numAttribsSimplified; }
     inline void incrementAttribsProcessed() { ++parseCtx.numAttribsProcessed; }

@@ -12349,17 +12349,31 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
             bool useSimplified = ctx.syntaxChecking() && !ctx.ignoreSimplified();
 
             OwnedHqlExpr simplified;
+            StringBuffer simplifiedEcl;
             if (!isMacro && !ctx.ignoreSimplified() &&
                 (updateCache || ctx.checkSimpleDef() || useSimplified) && !ctx.neverSimplify(fullName))
                 simplified.setown(createSimplifiedDefinition(parsed));
+
+            // create plain text ecl representation of the simplified expression (if it will be needed later)
+            if (simplified && (updateCache||ctx.checkSimpleDef()))
+            {
+                regenerateDefinition(simplified, simplifiedEcl);
+                if (ctx.checkSimpleDef())
+                {
+                    // Dump of simplified expression in an ecl comment for diagnostics
+                    simplifiedEcl.append("\n/* Simplified expression IR:\n");
+                    EclIR::getIRText(simplifiedEcl, 0, queryLocationIndependent(simplified));
+                    simplifiedEcl.append("*/\n");
+                }
+            }
             if (updateCache)
-                attrCtx.createCache(simplified, isMacro);
+                attrCtx.createCache(simplifiedEcl, isMacro);
             if (simplified)
             {
                 ctx.incrementAttribsSimplified();
 
                 if (ctx.checkSimpleDef())
-                    verifySimpifiedDefinition(parsed, simplified, attrCtx);
+                    verifySimplifiedDefinition(parsed, simplified, simplifiedEcl, attrCtx);
 
                 if (simplified != parsed && useSimplified)
                     scope->defineSymbol(LINK(simplified));
@@ -12396,13 +12410,11 @@ IHqlExpression * parseDefinition(const char * ecl, IIdAtom * name, MultiErrorRec
     return scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
 }
 
-bool verifySimpifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplifiedDefinition, HqlLookupContext & ctx)
+bool verifySimplifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplifiedDefinition, const char * simplifiedEcl, HqlLookupContext & ctx)
 {
     MultiErrorReceiver errors;
-    StringBuffer ecl;
 
-    regenerateDefinition(simplifiedDefinition, ecl);
-    OwnedHqlExpr parsed = parseDefinition(ecl, simplifiedDefinition->queryId(), errors);
+    OwnedHqlExpr parsed = parseDefinition(simplifiedEcl, simplifiedDefinition->queryId(), errors);
     if (!parsed)
     {
 #ifdef _DEBUG
@@ -12413,7 +12425,7 @@ bool verifySimpifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplif
         StringBuffer t1;
         EclIR::getIRText(t1, 0, queryLocationIndependent(simplifiedDefinition));
         DBGLOG("Simplified:\n%s\n", t1.str());
-        DBGLOG("Regenerated:\n---\n%s\n---\n", ecl.str());
+        DBGLOG("Regenerated:\n---\n%s\n---\n", simplifiedEcl);
 #endif
         ctx.errs->reportError(ERR_INTERNALEXCEPTION, "Failed to parse simplified definition",0,0,0,0);
         return false;
@@ -12433,7 +12445,7 @@ bool verifySimpifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplif
 #endif
             DBGLOG("Simplified:\n%s\n", t1.str());
 #ifdef _DEBUG
-            DBGLOG("Regenerated:\n---\n%s\n---\n", ecl.str());
+            DBGLOG("Regenerated:\n---\n%s\n---\n", simplifiedEcl);
             DBGLOG("Parsed:\n%s", t2.str());
 #endif
 
