@@ -6171,7 +6171,7 @@ void HqlGram::reportErrorUnexpectedX(const attribute& errpos, IAtom * unexpected
 
 static bool includeError(HqlLookupContext & ctx, WarnErrorCategory category)
 {
-    if (ctx.syntaxChecking() && !ctx.ignoreCache())
+    if (ctx.syntaxChecking() && !ctx.ignoreSimplified())
     {
         if (category==CategorySyntax || category==CategoryError)
             return true;
@@ -12287,18 +12287,25 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
     return (prevErrors == ctx.errs->errCount());
 }
 
+// If ctx.hasCacheLocation() then the cache entry is always updated with the dependency information (unless it is unavailable i.e. a forward scope)
+// If ctx.ignoreSimplified() then the expressions are never simplified and the parsing behaves the same way as 6.x
+// if ctx.ignoreCache() then the contents of the cache are not used, but the cache is still updated
+// if ctx.regenerateCache() then the contents of the cache are not used and the cache is forced to be updated
+// if ctx.checkSimpleDef() then simplified definitions are created and checked - even if there is no cache configured.
 void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * name, const char * fullName)
 {
     bool alreadySimplified = false;
+    bool cacheUptoDate = false;
     HqlLookupContext attrCtx(ctx);
     attrCtx.noteBeginAttribute(scope, contents, name);
 
-    // Use simplified definition if syntax checking
-    if (!ctx.regenerateCache() && ctx.syntaxChecking() && ctx.hasCacheLocation() && !ctx.ignoreCache())
+    // Check if cache is up to date and obtain simplified definition from cache
+    if (ctx.hasCacheLocation() && !ctx.regenerateCache())
     {
         HqlParseContext & parseContext = ctx.queryParseContext();
         Owned<IEclCachedDefinition> cached = parseContext.cache->getDefinition(fullName);
-        if (cached->isUpToDate(parseContext.optionHash))
+        cacheUptoDate = cached->isUpToDate(parseContext.optionHash);
+        if (cacheUptoDate && ctx.syntaxChecking() && !ctx.ignoreSimplified() && !ctx.ignoreCache())
         {
             IFileContents * cachecontents = cached->querySimplifiedEcl();
             if (cachecontents)
@@ -12329,30 +12336,34 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
         throw;
     }
     OwnedHqlExpr parsed = scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
-    bool canCache = false;
-    bool isMacro = false;
-    bool neverSimplify = false;
-    if (parsed)
-    {
-        canCache = (parsed->getOperator() != no_forwardscope) && !alreadySimplified ;
-        isMacro = parsed->isMacro();
-        neverSimplify = isMacro || ctx.neverSimplify(fullName);
-    }
     ctx.incrementAttribsProcessed();
-    if (canCache && (ctx.syntaxChecking() || ctx.hasCacheLocation()))
+
+    if (parsed && !alreadySimplified)
     {
-        OwnedHqlExpr simplified = neverSimplify ? nullptr : createSimplifiedDefinition(parsed);
-        if (ctx.hasCacheLocation())
-            attrCtx.createCache(simplified, isMacro);
-        if (simplified)
+        //Forward scopes cannot be cached because the dependencies are not known as it is parsed
+        const bool canCache = parsed->getOperator() != no_forwardscope;
+        if (canCache)
         {
-            ctx.incrementAttribsSimplified();
+            const bool isMacro = parsed->isMacro();
+            bool updateCache = ctx.hasCacheLocation() && (!cacheUptoDate || ctx.regenerateCache());
+            bool useSimplified = ctx.syntaxChecking() && !ctx.ignoreSimplified();
 
-            if (ctx.checkSimpleDef())
-                verifySimpifiedDefinition(parsed, simplified, attrCtx);
+            OwnedHqlExpr simplified;
+            if (!isMacro && !ctx.ignoreSimplified() &&
+                (updateCache || ctx.checkSimpleDef() || useSimplified) && !ctx.neverSimplify(fullName))
+                simplified.setown(createSimplifiedDefinition(parsed));
+            if (updateCache)
+                attrCtx.createCache(simplified, isMacro);
+            if (simplified)
+            {
+                ctx.incrementAttribsSimplified();
 
-            if (simplified != parsed && ctx.syntaxChecking() && !ctx.ignoreCache())
-                scope->defineSymbol(LINK(simplified));
+                if (ctx.checkSimpleDef())
+                    verifySimpifiedDefinition(parsed, simplified, attrCtx);
+
+                if (simplified != parsed && useSimplified)
+                    scope->defineSymbol(LINK(simplified));
+            }
         }
     }
 
