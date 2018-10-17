@@ -464,8 +464,8 @@ MTimeSection::~MTimeSection()
     cycle_t end_time = get_cycles_now();
     if (master)
         master->addTiming(scope, end_time-start_time);
-    else
-        display_time(title, end_time-start_time);
+    else if (scope)
+        display_time(scope, end_time-start_time);
 }
 
 class TimeSectionInfo : public MappingBase 

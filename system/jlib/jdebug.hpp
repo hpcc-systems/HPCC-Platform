@@ -185,7 +185,6 @@ public:
   ~MTimeSection();
 protected:
   const char * scope;
-  const char *    title;
   cycle_t         start_time;
   ITimeReporter *master;
 };
