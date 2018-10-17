@@ -270,12 +270,14 @@
 
               <para>If it is running stop the HPCC system (on every node),
               using a command such as this:</para>
-
-              <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
-                          xpointer="element(/1)"
-                          xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-              <variablelist>
+ 
+ <programlisting> sudo systemctl stop hpccsystems-platform.target</programlisting> 			  
+	  <!--commentedOut-per-HPCC-20681-->
+		  <!--            <xi:include href="../common/SysDStop.xml"
+		                  xpointer="element(/1)"
+                          xmlns:xi="http://www.w3.org/2001/XInclude" />    -->
+ 
+			<variablelist>
                 <varlistentry>
                   <term>Note:</term>
 

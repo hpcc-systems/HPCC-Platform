@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2
+id="wutool"
+role="brk"
+xmlns:xi="http://www.w3.org/2001/XInclude"
+><title
+><emphasis
+role="bold"
+>Using wutool </emphasis
+></title
+><para
+><emphasis
+role="bold"
+>wutool <indexterm
+><primary
+>wutool</primary
+></indexterm
+></emphasis
+><emphasis
+>action </emphasis
+><emphasis
+role="bold"
+>[WUID=nnn </emphasis
+><emphasis
+role="bold"
+>] [ DALISERVER=ip | CASSANDRASERVER=ip] [option=value]</emphasis
+></para
+><para
+>The wutool is a command line utility used to maintain your Workunit store. It can be found in /opt/HPCCSystems/bin/ on any server where the platform has been installed. You can use this utility to export your Workunits from a Dali server and then import into a Cassandra data store. You can also use it to import archived workunits on a Sasha server.</para
+><informaltable
+colsep="1"
+frame="all"
+rowsep="1"
+><tgroup
+cols="2"
+><colspec
+align="left"
+colwidth="125.55pt"
+></colspec
+><colspec
+></colspec
+><tbody
+><row
+><entry
+><emphasis
+role="bold"
+>Actions</emphasis
+></entry
+><entry
+><ns:textPlaceholder
+xmlns:ns="http://www.xmlmind.com/xmleditor/namespace/clipboard"
+></ns:textPlaceholder
+></entry
+></row
+><row
+><entry
+>list &lt;workunits&gt;</entry
+><entry
+>List workunits.</entry
+></row
+><row
+><entry
+>dump &lt;workunits&gt;</entry
+><entry
+>Dump xml for specified workunits.</entry
+></row
+><row
+><entry
+>delete &lt;workunits&gt;</entry
+><entry
+>Delete workunits.</entry
+></row
+><row
+><entry
+>results &lt;workunits&gt;</entry
+><entry
+>Dump results from specified workunits.</entry
+></row
+><row
+><entry
+>archive &lt;workunits&gt;</entry
+><entry
+>Archive specified Workunits to xml files. The following options are supported: <para
+>[TO=&lt;directory&gt;] </para
+><para
+>[DEL=1] </para
+><para
+>[DELETERESULTS=1] </para
+><para
+>[INCLUDEFILES=1]</para
+></entry
+></row
+><row
+><entry
+>restore &lt;filenames&gt;</entry
+><entry
+>Restore from xml files. [INCLUDEFILES=1]</entry
+></row
+><row
+><entry
+>orphans</entry
+><entry
+>Delete orphaned information from store</entry
+></row
+><row
+><entry
+>cleanup [days=NN]</entry
+><entry
+>Delete workunits older than NN days</entry
+></row
+><row
+><entry
+>validate</entry
+><entry
+>Check contents of workunit repository for errors. [FIX=1] will try to repair any issues found.</entry
+></row
+><row
+><entry
+>clear</entry
+><entry
+>Delete entire workunit repository (requires entire=1 repository=1)</entry
+></row
+><row
+><entry
+>initialize</entry
+><entry
+>Initialize new workunit repository</entry
+></row
+></tbody
+></tgroup
+></informaltable
+><para
+>&lt;workunits&gt; can be specified on the command line or can be specified using a filter owner=XXXX. If omitted, all workunits are selected.</para
+><para
+><informaltable
+colsep="1"
+frame="all"
+rowsep="1"
+><tgroup
+cols="2"
+><colspec
+align="left"
+colwidth="300pt"
+></colspec
+><colspec
+></colspec
+><tbody
+><row
+><entry
+><emphasis
+role="bold"
+>Options </emphasis
+><para
+>(These options are valid if CASSANDRASERVER is specified)</para
+></entry
+><entry
+><ns:textPlaceholder
+xmlns:ns="http://www.xmlmind.com/xmleditor/namespace/clipboard"
+></ns:textPlaceholder
+></entry
+></row
+><row
+><entry
+>CASSANDRA_KEYSPACE<para
+><ns:textPlaceholder
+xmlns:ns="http://www.xmlmind.com/xmleditor/namespace/clipboard"
+></ns:textPlaceholder
+></para
+></entry
+><entry
+>Cassandra keyspace. default is hpcc.</entry
+></row
+><row
+><entry
+>CASSANDRA_USER</entry
+><entry
+>Cassandra username to use (if needed).</entry
+></row
+><row
+><entry
+>CASSANDRA_PASSWORD</entry
+><entry
+>Cassandra password to use (if needed).</entry
+></row
+><row
+><entry
+>TRACELEVEL</entry
+><entry
+>Trace level (1-10)</entry
+></row
+></tbody
+></tgroup
+></informaltable
+>Examples:</para
+><para
+><programlisting
+>/opt/HPCCSystems/bin/wutool archive DALISERVER=. del=1
+
+/opt/HPCCSystems/bin/wutool restore *.xml CASSANDRASERVER=192.168.56.120 CASSANDRA_KEYSPACE=hpcc2 </programlisting
+></para
+></sect2
+>
+
