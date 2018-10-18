@@ -210,6 +210,10 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                 return nullptr;
 
             name.setLength(name.length()-4);
+            //The .xml has been removed from the file name.
+            //If the name still contains a '.', the file is not a WU file.
+            if (strchr(name.str(), '.'))
+                return nullptr;
             name.toUpperCase();
             const char *wuid = name.str();
             if ((name.length()>6) && strieq(wuid+name.length()-6, "_HINTS"))
