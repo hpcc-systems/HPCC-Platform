@@ -359,7 +359,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
                         CHttpThread *workthread = new CHttpThread(accepted.getLink(), apport, CEspProtocol::getViewConfig(), true, m_ssctx.get(), persistentHandler);
                         workthread->setMaxRequestEntityLength(getMaxRequestEntityLength());
                         workthread->start();
-                        DBGLOG("Request processing thread started.");
+                        ESPLOG(LogMax, "Request processing thread started.");
                         workthread->Release();
                     }
                 }
@@ -437,16 +437,16 @@ bool CHttpThread::onRequest()
     Owned<ISecureSocket> secure_sock;
     if(m_is_ssl && m_ssctx && m_persistentHandler == nullptr)
     {
-        DBGLOG("Creating secure socket");
+        ESPLOG(LogMax, "Creating secure socket");
         secure_sock.setown(m_ssctx->createSecureSocket(m_socket.getLink(), getEspLogLevel()));
         int res = 0;
         try
         {
-            DBGLOG("Accepting from secure socket");
+            ESPLOG(LogMax, "Accepting from secure socket");
             res = secure_sock->secure_accept();
             if(res < 0)
             {
-                DBGLOG("Error accepting from secure socket");
+                ESPLOG(LogMin, "Error accepting from secure socket");
                 return false;
             }
         }
@@ -462,7 +462,7 @@ bool CHttpThread::onRequest()
             DBGLOG("Unknown exception accepting from secure socket");
             return false;
         }
-        DBGLOG("Request from secure socket");
+        ESPLOG(LogMax, "Request from secure socket");
         m_socket.set(secure_sock);
         httpserver.setown(new CEspHttpServer(*secure_sock.get(), m_apport, m_viewConfig, getMaxRequestEntityLength()));
     }
