@@ -33,6 +33,7 @@ interface IPersistentHandler : implements IInterface
     virtual void doneUsing(ISocket* sock, bool keep, unsigned usesOverOne = 0) = 0;
     virtual Linked<ISocket> getAvailable(SocketEndpoint* ep = nullptr) = 0;
     virtual void stop(bool wait) = 0;
+    virtual bool inDoNotReuseList(SocketEndpoint* ep) = 0;
 };
 
 interface IPersistentSelectNotify
@@ -40,6 +41,6 @@ interface IPersistentSelectNotify
     virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* handler) = 0;
 };
 
-IPersistentHandler* createPersistentHandler(IPersistentSelectNotify* notify, int maxIdleTime = DEFAULT_MAX_PERSISTENT_IDLE_TIME, int maxReqs = DEFAULT_MAX_PERSISTENT_REQUESTS, PersistentLogLevel loglevel=PersistentLogLevel::PLogMin);
+IPersistentHandler* createPersistentHandler(IPersistentSelectNotify* notify, int maxIdleTime = DEFAULT_MAX_PERSISTENT_IDLE_TIME, int maxReqs = DEFAULT_MAX_PERSISTENT_REQUESTS, PersistentLogLevel loglevel=PersistentLogLevel::PLogMin, bool enableDoNotReuseList=false);
 
 #endif //__PERSISTENT_HPP__
