@@ -1071,7 +1071,7 @@ bool HqlParseContext::checkEndMeta()
     return wasGathering;
 }
 
-bool HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool isMacro)
+bool HqlParseContext::createCache(const char *simplifiedEcl, bool isMacro)
 {
     StringBuffer fullName;
     StringBuffer baseFilename;
@@ -1080,23 +1080,12 @@ bool HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool is
     if (!baseFilename)
         return false;
 
+    // This is actually checked in parseAttribute - consider removing
     if (!regenerateCache)
     {
         Owned<IEclCachedDefinition> cached = cache->getDefinition(fullName);
         if (cached->isUpToDate(optionHash))
             return false;
-    }
-
-    StringBuffer ecl;
-    if (simplifiedDefinition)
-    {
-        regenerateDefinition(simplifiedDefinition, ecl);
-        if (checkSimpleDef)
-        {
-            ecl.append("\n/* Simplified expression IR:\n");
-            EclIR::getIRText(ecl, 0, queryLocationIndependent(simplifiedDefinition));
-            ecl.append("*/\n");
-        }
     }
 
     recursiveCreateDirectoryForFile(baseFilename);
@@ -1121,10 +1110,10 @@ bool HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool is
         if (curMeta().dependencies)
             saveXML(*stream, curMeta().dependencies, 0, XML_Embed|XML_LineBreak);
 
-        if (ecl.length())
+        if (simplifiedEcl && *simplifiedEcl)
         {
             writeStringToStream(*stream, "<Simplified>\n");
-            encodeXML(ecl, *stream, 0, -1, false);
+            encodeXML(simplifiedEcl, *stream, 0, -1, false);
             writeStringToStream(*stream, "</Simplified>\n");
         }
         writeStringToStream(*stream, "</Cache>\n");
