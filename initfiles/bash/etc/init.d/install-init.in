@@ -235,10 +235,10 @@ if [ ! -d ${homePath}/certificate ]; then
 fi
 
 if [ ! -e ${homePath}/certificate/key.pem ]; then
-    ssh-keygen -t rsa -N hpccsystems-platform -f ${homePath}/certificate/key.pem \
+    ssh-keygen -t rsa -N '' -f ${homePath}/certificate/key.pem \
         1>/dev/null 2>&1
     openssl rsa -in ${homePath}/certificate/key.pem -pubout \
-        -out ${homePath}/certificate/public.key.pem -passin pass:hpccsystems-platform
+        -out ${homePath}/certificate/public.key.pem 
     chmod 0644 ${homePath}/certificate/public.key.pem
     rm -f ${homePath}/certificate/key.pem.pub
     printf "RSA key installed for user %-28s ..." "$user"
@@ -250,8 +250,8 @@ fi
 
 if [ ! -e ${homePath}/certificate/certificate.pem ]; then
     openssl req -new -key ${homePath}/certificate/key.pem -keyform PEM -x509 \
-        -days 365 -out ${homePath}/certificate/certificate.pem -passin \
-        pass:hpccsystems-platform -passout pass:hpccsystems-platform -batch 1>/dev/null 2>&1
+        -days 365 -out ${homePath}/certificate/certificate.pem \
+        -batch 1>/dev/null 2>&1
     printf "Self Signed Certificate installed for user %-12s ..." "$user"
     log_success_msg
 else
