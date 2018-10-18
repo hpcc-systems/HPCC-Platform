@@ -899,9 +899,15 @@ void EsdlServiceImpl::handleEchoTest(const char *mthName,
     const char* valueIn = req->queryProp("ValueIn");
     StringBuffer encoded;
     if (format == ESPSerializationJSON)
-        out.appendf("{\n\t\"%sResponse\":\n{\t\t\"ValueOut\": \"%s\"\n\t\t}\n}", mthName, encodeJSON(encoded,valueIn).str());
+    {
+        encodeJSON(encoded, valueIn);
+        out.appendf("{\n\t\"%sResponse\":\n{\t\t\"ValueOut\": \"%s\"\n\t\t}\n}", mthName, encoded.str());
+    }
     else
-        out.appendf("<%sResponse><ValueOut>%s</ValueOut></%sResponse>", mthName, encodeXML(valueIn,encoded), mthName);
+    {
+        encodeXML(valueIn, encoded);
+        out.appendf("<%sResponse><ValueOut>%s</ValueOut></%sResponse>", mthName, encoded.str(), mthName);
+    }
 }
 
 void EsdlServiceImpl::handlePingRequest(const char *mthName,StringBuffer &out,ESPSerializationFormat format)
