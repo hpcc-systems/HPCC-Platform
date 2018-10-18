@@ -6434,16 +6434,18 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
 
         VStringBuffer jobId("Publish %s on %s", newFileName.str(), clusterName);
         Owned<IFileDescriptor> fileDesc = createFileDescriptor(tempFileName, clusterTypeEx, groupName, group);
-        fileDesc->queryProperties().setProp("@job", jobId);
-        if (!userId.isEmpty())
-            fileDesc->queryProperties().setProp("@owner", userId);
+        Owned<IDistributedFile> oldFile = queryDistributedFileDirectory().createNew(fileDesc);
+        oldFile->validate();
 
-        Owned<IDistributedFile> newFile = queryDistributedFileDirectory().createNew(fileDesc);
-        newFile->validate();
-
-        if (!newFile->renamePhysicalPartFiles(newFileName.str(), nullptr, nullptr, nullptr))
+        if (!oldFile->renamePhysicalPartFiles(newFileName.str(), nullptr, nullptr, nullptr))
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed in renamePhysicalPartFiles %s.", newFileName.str());
 
+        Owned<IFileDescriptor> newFileDesc = createFileDescriptor(newFileName, clusterTypeEx, groupName, group);
+        newFileDesc->queryProperties().setProp("@job", jobId);
+        if (!userId.isEmpty())
+            newFileDesc->queryProperties().setProp("@owner", userId);
+
+        Owned<IDistributedFile> newFile = queryDistributedFileDirectory().createNew(newFileDesc);
         newFile->setAccessed();
         newFile->setECL(recordDefinition);
         newFile->queryAttributes().setPropBin("_rtlType", layoutBin.length(), layoutBin.toByteArray());
