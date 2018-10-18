@@ -1722,6 +1722,11 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 xpointer="xpointer(//*[@id='CassandraWUStorage'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="HPCCSystemAdmin/SA-Mods/WUTool.xml"
+                xpointer="xpointer(//*[@id='wutool'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+				
+				
     <sect1 id="Redefining_Thor_Nodes">
       <title>Redefining nodes in a Thor Cluster</title>
 
