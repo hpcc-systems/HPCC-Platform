@@ -213,6 +213,13 @@ void CHttpClient::setTimeOut(unsigned int timeout)
 
 int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
 {
+    if (m_socket != nullptr)
+    {
+        if(m_isPersistentSocket)
+            m_persistentHandler->doneUsing(m_socket, false, 0);
+        close();
+    }
+
     SocketEndpoint ep;
 
     if(m_proxy.length() == 0)
@@ -261,10 +268,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
                 int res = securesocket->secure_connect();
                 if(res < 0)
                 {
-                    m_socket->shutdown();
-                    m_socket->close();
-                    m_socket->Release();
-                    m_socket = nullptr;
+                    close();
                 }
                 else
                 {
@@ -297,6 +301,16 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
     }
 
     return 0;
+}
+
+void CHttpClient::close()
+{
+    if (m_socket == nullptr)
+        return;
+    m_socket->shutdown();
+    m_socket->close();
+    m_socket->Release();
+    m_socket = nullptr;
 }
 
 int CHttpClient::sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response)

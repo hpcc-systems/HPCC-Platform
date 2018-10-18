@@ -117,6 +117,7 @@ private:
     SocketEndpoint m_ep;
 
     virtual int connect(StringBuffer& errmsg, bool forceNewConnection);
+    void close();
 
     HttpClientErrCode sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, bool forceNewConnection);
     HttpClientErrCode sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent, bool forceNewConnection);
