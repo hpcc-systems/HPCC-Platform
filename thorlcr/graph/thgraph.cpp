@@ -2358,6 +2358,7 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                             GraphPrintLog(graph, e, "graphDone");
                             e->Release();
                         }
+                        graphInfo.clear(); // NB: at this point the graph will be destroyed
                         if (e)
                             throw e.getClear();
                         if (!nextGraphInfo)
