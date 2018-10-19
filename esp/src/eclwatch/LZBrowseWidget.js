@@ -381,7 +381,7 @@ define([
                         var request = domForm.toObject(this.id + formID);
                         var item = selections[0];
                         lang.mixin(request, {
-                            sourceIP: selections[0].DropZone.NetAddress,
+                            sourceIP: item.NetAddress,
                             nosplit: true
                         });
                         var sourcePath = "";
