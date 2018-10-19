@@ -1385,6 +1385,34 @@ void CIfBlockInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ct
     ctx.associateExpr(sizeOfIfBlock, cachedSize.expr);
 }
 
+void CIfBlockInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, int direction)
+{
+    //MORE: This should really associate offset of the ifblock with the offset of its first child as well.
+    CHqlBoundExpr boundOffset;
+    buildOffset(translator, ctx, selector, boundOffset);
+
+    //NB: Sizeof(ifblock) has an unusual representation...
+    OwnedHqlExpr sizeOfIfBlock = createValue(no_sizeof, makeIntType(4,false), createSelectExpr(LINK(selector->queryExpr()), LINK(column)));
+    CHqlBoundTarget cachedSize;
+    cachedSize.expr.setown(ctx.getTempDeclare(sizetType, queryZero()));
+
+    //MORE: Should also conditionally set a variable to the size of the ifblock to simplify subsequent generated code
+    OwnedHqlExpr cond = selector->queryRootRow()->bindToRow(condition, queryRootSelf());
+    CHqlBoundExpr bound;
+    translator.buildSimpleExpr(ctx, cond, bound);
+    BuildCtx condctx(ctx);
+    condctx.addFilter(bound.expr);
+
+    //MORE: This test could be avoided if the first child is *actually* variable length
+    ensureTargetAvailable(translator, condctx, selector, CContainerInfo::getTotalMinimumSize());
+    CContainerInfo::buildClear(translator, condctx, selector, direction);
+
+    //Avoid recalculating the size outside of the ifblock()
+    translator.buildExprAssign(condctx, cachedSize, sizeOfIfBlock);
+
+    ctx.associateExpr(sizeOfIfBlock, cachedSize.expr);
+}
+
 void CIfBlockInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr cond = selector->queryRootRow()->bindToRow(condition, queryRootSelf());
