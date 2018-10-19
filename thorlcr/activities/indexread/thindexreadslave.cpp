@@ -238,7 +238,8 @@ public:
                     if (!keyIndexSet)
                     {
                         keyIndexSet.setown(createKeyIndexSet());
-                        Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, expectedFormatCrc, expectedFormat, projectedFormatCrc, projectedFormat);
+                        OwnedRoxieString fileName = helper->getFileName();
+                        Owned<const ITranslator> translator = getLayoutTranslation(fileName, part, translationMode, expectedFormatCrc, expectedFormat, projectedFormatCrc, projectedFormat);
                         translators.append(translator.getClear());
                     }
                     keyIndexSet->addIndex(keyIndex.getClear());
