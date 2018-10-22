@@ -1080,14 +1080,6 @@ bool HqlParseContext::createCache(const char *simplifiedEcl, bool isMacro)
     if (!baseFilename)
         return false;
 
-    // This is actually checked in parseAttribute - consider removing
-    if (!regenerateCache)
-    {
-        Owned<IEclCachedDefinition> cached = cache->getDefinition(fullName);
-        if (cached->isUpToDate(optionHash))
-            return false;
-    }
-
     recursiveCreateDirectoryForFile(baseFilename);
     StringBuffer filename(baseFilename);
     filename.append(".cache");
