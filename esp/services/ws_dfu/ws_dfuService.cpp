@@ -2226,6 +2226,9 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             FileDetails.setBlooms(bloomList);
     }
 
+    if ((version >= 1.40) && df->queryAttributes().hasProp("@expireDays"))
+        FileDetails.setExpireDays(df->queryAttributes().getPropInt("@expireDays"));
+
     //#14280
     IDistributedSuperFile *sf = df->querySuperFile();
     if(sf)
