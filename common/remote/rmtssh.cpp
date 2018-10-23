@@ -453,6 +453,8 @@ public:
         }
         CriticalBlock block(sect);
         done.append(i);
+        if ((retcode == 255) && outbuf.isEmpty())
+            outbuf.setf("SSH failed to connect %s: %s", slaves.item(i), cmd.str());
         replytext.append(outbuf.str());
         reply.append((unsigned)retcode);
     }
