@@ -123,7 +123,7 @@
               This can be done using the install-cluster.sh script which is
               provided with HPCC. Use the following command:</para>
 
-              <programlisting>/opt/HPCCSystems/sbin/install-cluster.sh &lt;hpccsystems-plugin-spark&gt;</programlisting>
+              <programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh &lt;hpccsystems-plugin-spark&gt;</programlisting>
 
               <para>More details including other options that may be used with
               this command are included in the appendix of Installing and
