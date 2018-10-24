@@ -263,6 +263,11 @@ public:
     void getRequestContent(IEspContext &context, StringBuffer & req, CHttpRequest* request, const char * servicename, const char * methodname, const char *ns, unsigned flags);
     void setXslProcessor(IInterface *xslp){}
 
+    int getMethodProperty(IEspContext &context, const char *serv, const char *method, StringBuffer &page, const char *propname, const char *dfault);
+
+    virtual int getMethodDescription(IEspContext &context, const char *serv, const char *method, StringBuffer &page) override;
+    virtual int getMethodHelp(IEspContext &context, const char *serv, const char *method, StringBuffer &page) override;
+
     int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods);
 
     StringBuffer & getServiceName(StringBuffer & resp)
