@@ -597,6 +597,11 @@ var TopologyTreeStore = declare([ESPTree.Store], {
                 var retVal = [];
                 if (lang.exists("TpTargetClusterQueryResponse.TpTargetClusters", response)) {
                     arrayUtil.forEach(response.TpTargetClusterQueryResponse.TpTargetClusters.TpTargetCluster, function (item, idx) {
+                        if (item.Type === "HoleCluster") {
+                            lang.mixin(item, {
+                                Type: "HthorCluster"
+                            });
+                        }
                         if (!clusterTypes[item.Type]) {
                             clusterTypes[item.Type] = createTreeItem(TargetClusterType, item.Type, context.rootItem, { Name: item.Type })
                             retVal.push(clusterTypes[item.Type]);
