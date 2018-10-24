@@ -38,6 +38,7 @@ import "dijit/form/DropDownButton";
 import "dijit/form/Select";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
+import "dijit/TooltipDialog"
 
 import declareDecorator from './DeclareDecorator';
 import { WUScopeController } from "./WUScopeController";

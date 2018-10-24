@@ -521,6 +521,9 @@ export function resolve(hpccWidget, callback) {
         case "LibrariesUsedWidget":
             require(["hpcc/LibrariesUsedWidget"], doLoad);
             break;
+        case "LogsWidget":
+            require(["hpcc/HelpersWidget"], doLoad);
+            break;
         case "LogWidget":
             require(["hpcc/LogWidget"], doLoad);
             break;
