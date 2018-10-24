@@ -466,9 +466,11 @@ class Esdl2Transformer : public CInterface, implements IEsdlTransformer
 private:
     Owned<IEsdlDefinition> m_def;
 
+    ReadWriteLock rwTypeLock;
     EsdlBaseArray types;  //elements and arrays
     EsdlBaseMap type_map;
 
+    ReadWriteLock rwMethodLock;
     EsdlMethodArray methods;  //elements and arrays
     EsdlMethodMap meth_map;
 
@@ -482,7 +484,11 @@ public:
 
     virtual ~Esdl2Transformer();
 
+    Esdl2Base **readType(const char *name);
     Esdl2Base* queryType(const char* name);
+
+    void setMethodInfo(const char *name, Esdl2Method *method);
+    Esdl2Method **readMethodInfo(const char *method);
     IEsdlMethodInfo *queryMethodInfo(const char* service,const char *method);
 
     void serialize(StringBuffer &out);
