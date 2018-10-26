@@ -188,39 +188,64 @@ define([
                 theForm.set('action', action);
                 return true;
             },
+
             _onDelete: function (event) {
-                if (confirm('Delete selected packages?')) {
-                    var context = this;
-                    WsPackageMaps.deletePackageMap(this.packagesGrid.selection.getSelected()).then(function (response) {
-                        context.packagesGrid.rowSelectCell.toggleAllSelection(false);
-                        context.refreshGrid(response.DeletePackageResponse);
-                        return response;
-                    }, function (err) {
-                        context.showErrors(err);
-                        return err;
+                var context = this;
+                var selection = this.packagesGrid.getSelected();
+
+                if (confirm(this.i18n.DeleteSelectedPackages)) {
+                    arrayUtil.forEach(selection, function (item, idx) {
+                        WsPackageMaps.deletePackageMap({
+                            request: {
+                                PackageMap: item.Id,
+                                Target: item.Target,
+                                Process: item.Process
+                            }
+                        }).then(function(response){
+                            if (lang.exists("DeletePackageResponse.status", response)) {
+                                if (response.DeletePackageResponse.status.Code === 0) {
+                                    context.refreshGrid();
+                                }
+                            }
+                        });
                     });
                 }
             },
+
             _onActivate: function (event) {
                 var context = this;
-                WsPackageMaps.activatePackageMap(this.packagesGrid.selection.getSelected()).then(function (response) {
-                    context.packagesGrid.rowSelectCell.toggleAllSelection(false);
-                    context.refreshGrid();
-                    return response;
-                }, function (err) {
-                    context.showErrors(err);
-                    return err;
+                var selection = this.packagesGrid.getSelected();
+
+                WsPackageMaps.activatePackageMap({
+                    request: {
+                        Target: selection[0].Target,
+                        Process: selection[0].Process,
+                        PackageMap: selection[0].Id
+                    }
+                }).then(function (response){
+                    if (lang.exists("ActivatePackageResponse.status", response)) {
+                        if (response.ActivatePackageResponse.status.Code === 0) {
+                            context.refreshGrid();
+                        }
+                    }
                 });
             },
             _onDeactivate: function (event) {
                 var context = this;
-                WsPackageMaps.deactivatePackageMap(this.packagesGrid.selection.getSelected()).then(function (response) {
-                    context.packagesGrid.rowSelectCell.toggleAllSelection(false);
-                    context.refreshGrid();
-                    return response;
-                }, function (err) {
-                    context.showErrors(err);
-                    return err;
+                var selection = this.packagesGrid.getSelected();
+
+                WsPackageMaps.deactivatePackageMap({
+                    request: {
+                        Target: selection[0].Target,
+                        Process: selection[0].Process,
+                        PackageMap: selection[0].Id
+                    }
+                }).then(function (response){
+                    if (lang.exists("DeActivatePackageResponse.status", response)) {
+                        if (response.DeActivatePackageResponse.status.Code === 0) {
+                            context.refreshGrid();
+                        }
+                    }
                 });
             },
 
