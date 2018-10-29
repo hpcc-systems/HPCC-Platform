@@ -282,7 +282,6 @@
           enableVerification="false"
           organization="Customer of HPCCSystems"
           organizationalUnit=""
-          passphrase="XC+0Byt45EYD6qV5++8HW+lgsYB/nGud8FtgrubKdLk="
           privateKeyFileName="@HOME_DIR@/@RUNTIME_USER@/certificate/key.pem"
           regenerateCredentials="false"
           requireAddressMatch="false"
@@ -934,6 +933,12 @@
   <lock>${LOCK_PATH}</lock>
   <configs>${CONFIG_DIR}</configs>
   <path>${INSTALL_DIR}</path>
+  <Keys>
+   <KeyPair name="mythor" publicKey="@HOME_DIR@/@RUNTIME_USER@/certificate/public.key.pem" privateKey="@HOME_DIR@/@RUNTIME_USER@/certificate/key.pem"/>
+   <Cluster name="mythor" keyPairName="mythor"/>
+   <Cluster name="myroxie" keyPairName="mythor"/>
+   <Cluster name="hthor__myeclagent" keyPairName="mythor"/>
+  </Keys>
  </EnvSettings>
  <Programs>
   <Build name="_" url="${INSTALL_DIR}">

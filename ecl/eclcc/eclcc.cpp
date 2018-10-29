@@ -1246,6 +1246,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             parseCtx.globalDependTree.setown(createPTree(ipt_fast)); //to locate associated manifests, keep separate from user specified MetaOptions
         if (optGenerateMeta || optIncludeMeta)
         {
+            //Currently the meta information is generated as a side-effect of parsing the attributes, so disable
+            //using the simplified expressions if meta information is requested.  HPCC-20716 will improve this.
+            parseCtx.setIgnoreCache();
+
             HqlParseContext::MetaOptions options;
             options.includePublicDefinitions = instance.wu->getDebugValueBool("metaIncludePublic", true);
             options.includePrivateDefinitions = instance.wu->getDebugValueBool("metaIncludePrivate", true);

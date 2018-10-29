@@ -12,6 +12,9 @@ define([
 ], function (declare, lang, arrayUtil, Deferred,
     hpccMap,
     DojoD3, Mapping) {
+
+        hpccMap.topoJsonFolder("/esp/files/dist/TopoJSON");
+
         return declare([Mapping, DojoD3], {
             mapping: {
                 choropleth: {
@@ -56,9 +59,6 @@ define([
                     default:
                         console.log("Invalid visualization:  " + this._chartType)
                         deferred.resolve(null);
-                }
-                if (this.chart) {
-                    this.chart._topoJsonFolder = require.toUrl("@hpcc-js/TopoJSON");
                 }
                 return deferred.promise;
             },
