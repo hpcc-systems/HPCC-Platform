@@ -1310,12 +1310,7 @@ bool CLdapSecManager::updateUserPassword(ISecUser& user, const char* newPassword
         return false;
     }
 
-    //Update password if authenticated
     bool ok = m_ldap_client->updateUserPassword(user, newPassword, currPassword);
-    if(ok && m_permissionsCache->isCacheEnabled() && !m_usercache_off)
-    {
-        m_permissionsCache->removeFromUserCache(user);
-    }
     return ok;
 }
 
