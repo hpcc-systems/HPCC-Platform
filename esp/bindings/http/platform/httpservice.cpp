@@ -1573,7 +1573,8 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        sendException(authReq, 401, "Authentication failed: invalid session ID.");
+        m_request->queryContext()->setResponseFormat(ESPSerializationJSON); //ECLwatch code can only support JSON for now.
+        sendException(authReq, 401, "Authentication failed: invalid session. Please relogin by refreshing the page.");
         ESPLOG(LogMin, "Authentication failed: invalid session ID '%u'. clearSessionCookies() called for the session.", sessionID);
         return authFailed;
     }
@@ -1584,7 +1585,8 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        sendException(authReq, 401, "Authentication failed: network address for ESP session changed.");
+        m_request->queryContext()->setResponseFormat(ESPSerializationJSON); //ECLwatch code can only support JSON for now.
+        sendException(authReq, 401, "Authentication failed: network address for ESP session changed. Please relogin by refreshing the page.");
         ESPLOG(LogMin, "Authentication failed: session ID %u from IP %s. ", sessionID, peer.str());
         return authFailed;
     }
