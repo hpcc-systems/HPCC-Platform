@@ -56,27 +56,29 @@ bool Cws_accountEx::onUpdateUser(IEspContext &context, IEspUpdateUserRequest & r
         }
 
         const char* oldpass = req.getOldpass();
-        if(oldpass == NULL || strcmp(oldpass, user->credentials().getPassword()) != 0)
+        if(oldpass == nullptr)
         {
             resp.setRetcode(-1);
-            resp.setMessage("Username/password don't match.");
+            resp.setMessage("Current password must be provided.");
             return false;
         }
 
         const char* newpass1 = req.getNewpass1();
         const char* newpass2 = req.getNewpass2();
-        if(newpass1 == NULL || newpass2 == NULL || strlen(newpass1) < 4 || strlen(newpass2) < 4)
+        if(newpass1 == NULL || newpass2 == NULL || strlen(newpass1) < 8 || strlen(newpass2) < 8)
         {
             resp.setRetcode(-1);
-            resp.setMessage("New password must be 4 characters or longer.");
+            resp.setMessage("New password must be 8 characters or longer.");
             return false;
         }
+
         if(strcmp(newpass1, newpass2) != 0)
         {
             resp.setRetcode(-1);
             resp.setMessage("Password and retype don't match.");
             return false;
         }
+
         if(strcmp(oldpass, newpass1) == 0)
         {
             resp.setRetcode(-1);

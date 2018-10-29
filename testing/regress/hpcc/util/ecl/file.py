@@ -81,7 +81,7 @@ class ECLFile:
         self.isVersions=False
         self.version=''
         self.versionId=0
-        self.timeout = 0
+        self.timeout = int(args.timeout)
         self.args = args
         self.eclccWarning = ''
         self.eclccWarningChanges = ''
