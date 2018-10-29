@@ -156,15 +156,6 @@ if(SPARK)
         DESTINATION ${EXEC_DIR}
         COMPONENT Runtime)
     
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl @ONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/spark-defaults.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl @ONLY)
-    install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsd
-        ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
-        ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl
-        DESTINATION componentfiles/configxml
-        COMPONENT Runtime)
-        
     configure_file(sparkthor@instance.service.in sparkthor@.service @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sparkthor@.service DESTINATION etc/systemd/system COMPONENT Systemd)
 

@@ -125,20 +125,21 @@ class RegressMain:
         # Go through the cluster list
         for cluster in self.targetClusters:
             self.args.target = cluster
-            if  self.args.pq :
-                self.regress.runSuiteP(cluster, self.regress.Setup(self.args))
-            else:
+            if  self.args.pq in (0, 1):
                 self.regress.runSuite(cluster, self.regress.Setup(self.args))
+            else:
+                self.regress.runSuiteP(cluster, self.regress.Setup(self.args))
 
     def run(self):
         # Go through the cluster list
         for cluster in self.targetClusters:
             self.regress.bootstrap(cluster, self.args)
             self.args.target = cluster
-            if  self.args.pq :
-                self.regress.runSuiteP(cluster, self.regress.suites[cluster])
-            else:
+            if  self.args.pq in (0, 1):
                 self.regress.runSuite(cluster, self.regress.suites[cluster])
+            else:
+                self.regress.runSuiteP(cluster, self.regress.suites[cluster])
+
 
     def main(self):
         prog = "ecl-test"
