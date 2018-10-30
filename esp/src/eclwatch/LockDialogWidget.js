@@ -97,6 +97,7 @@ define([
 
                 if (this.unlockForm.validate()) {
                     cookie("Status", "login_attempt");
+                    cookie("ESPSessionReq", "true");
                     WsAccount.Unlock({
                         request: {
                             username: this.unlockUserName.get("value"),
