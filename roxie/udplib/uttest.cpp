@@ -60,7 +60,8 @@ void usage()
     exit(1);
 }
 
-const char *multicastIP = "239.1.1.1";
+const char *multicastIPStr = "239.1.1.1";
+IpAddress multicastIP(multicastIPStr);
 unsigned udpNumQs = 1;
 unsigned numNodes;
 unsigned myIndex;

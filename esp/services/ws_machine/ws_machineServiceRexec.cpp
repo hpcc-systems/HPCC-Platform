@@ -125,7 +125,7 @@ public:
             {
                 IFRunSSH * connection = createFRunSSH();
                 connection->init(m_sCommand.str(),NULL,NULL,NULL,5,0);
-                connection->exec(m_sAddress.str(),NULL,true);
+                connection->exec(IpAddress(m_sAddress.str()),NULL,true);
             }
         }
         // CFRunSSH uses a MakeStringExceptionDirect throw to pass code and result string to caller
