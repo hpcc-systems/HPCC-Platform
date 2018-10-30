@@ -935,7 +935,11 @@ EspAuthState CEspHttpServer::checkUserAuth()
 
     AuthType domainAuthType = authReq.authBinding->getDomainAuthType();
     authReq.ctx->setDomainAuthType(domainAuthType);
-    if (authorizationHeader.isEmpty() && domainAuthType != AuthPerRequestOnly)
+
+    StringBuffer sessionReqCookie;
+    readCookie(SESSION_REQ_COOKIE, sessionReqCookie);
+    //The SESSION_REQ_COOKIE is set when the first ESP request is forworded to a login page.
+    if (!sessionReqCookie.isEmpty() && domainAuthType != AuthPerRequestOnly)
     {//Try session based authentication now.
         EspAuthState authState = checkUserAuthPerSession(authReq);
         if (authState != authUnknown)
@@ -1690,6 +1694,7 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
     clearCookie(authReq.authBinding->querySessionIDCookieName());
     clearCookie(SESSION_AUTH_OK_COOKIE);
     clearCookie(SESSION_TIMEOUT_COOKIE);
+    clearCookie(SESSION_REQ_COOKIE);
     if (lock)
     {
         sendLockResponse(true, false, "Locked");
@@ -1757,6 +1762,7 @@ void CEspHttpServer::askUserLogin(EspAuthRequest& authReq, const char* msg)
     }
     if (!isEmptyString(msg))
         addCookie(SESSION_AUTH_MSG_COOKIE, msg, 0, false); //time out when browser is closed
+    addCookie(SESSION_REQ_COOKIE, "true", 0, true);
     m_response->redirect(*m_request, authReq.authBinding->queryLoginURL());
 }
 
