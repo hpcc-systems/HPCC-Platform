@@ -101,6 +101,7 @@ protected:
     void resetSessionTimeout(EspAuthRequest& authReq, unsigned sessionID, StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
     void sendException(EspAuthRequest& authReq, unsigned code, const char* msg);
     void sendMessage(const char* msg, const char* msgType);
+    bool isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName);
     IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
 
 public:

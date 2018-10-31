@@ -1187,9 +1187,8 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq, St
     if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
         return authSucceeded;//Give the permission to send out some pages used for login or logout.
 
-    if (!authorizationHeader.isEmpty() && (authReq.serviceName.isEmpty() || authReq.methodName.isEmpty()
-        || !strieq(authReq.serviceName.str(), "esp") || (!strieq(authReq.methodName.str(), "login")
-        && !strieq(authReq.methodName.str(), "unlock"))))
+    if (!authorizationHeader.isEmpty() && !isServiceMethodReq(authReq, "esp", "login")
+        && !isServiceMethodReq(authReq, "esp", "unlock"))
         return authUnknown;
 
     StringBuffer urlCookie;
@@ -1904,6 +1903,15 @@ const char* CEspHttpServer::readCookie(const char* cookieName, StringBuffer& coo
     if (sessionIDCookie)
         cookieValue.append(sessionIDCookie->getValue());
     return cookieValue.str();
+}
+
+bool CEspHttpServer::isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName)
+{
+    if (authReq.serviceName.isEmpty() || !strieq(authReq.serviceName.str(), serviceName))
+        return false;
+    if (authReq.methodName.isEmpty() || !strieq(authReq.methodName.str(), methodName))
+        return false;
+    return true;
 }
 
 bool CEspHttpServer::persistentEligible()
