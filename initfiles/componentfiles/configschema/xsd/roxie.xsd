@@ -1,0 +1,640 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="RoxieCluster" hpcc:displayName="Roxie Cluster" hpcc:itemType="roxie" minOccurs="0"
+                    maxOccurs="unbounded" hpcc:class="component" hpcc:category="Roxie">
+            <xs:complexType>
+
+                <xs:attributeGroup name="ldap" hpcc:groupByName="LDAP">
+                    <xs:attribute name="ldapUser" type="xs:string" hpcc:displayName="LDAP User" hpcc:presetValue="roxie"
+                                  hpcc:tooltip="Specifies the user name for LDAP file access checking"/>
+                    <xs:attribute name="ldapPassword" type="xs:string" hpcc:displayName="LDAP User Password"
+                                  hpcc:modifiers="password" hpcc:requiredIf=".[@ldapUser]"
+                                  hpcc:tooltip="Specifies the user name for LDAP file access checking"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="options" hpcc:groupByName="Options">
+                    <xs:attribute name="affinity" type="xs:nonNegativeInteger" hpcc:displayName="Affinity"
+                                  hpcc:presetValue="0"
+                                  hpcc:tooltip="If non-zero, binds the roxie process to use the specified cores only (bitmask)"/>
+                    <xs:attribute name="allFilesDynamic" type="xs:boolean" hpcc:displayName="All Files Dynamic"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="If enabled, files will be resolved per-query and not locked between queries"/>
+                    <xs:attribute name="backgroundCopyClass" hpcc:displayName="Background Copy Class"
+                                  hpcc:presetValue="none"
+                                  hpcc:tooltip="Specify an IONICE class for the background copy thread">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:enumeration value="none" hpcc:displayName="None" hpcc:description=""/>
+                                <xs:enumeration value="best-effort" hpcc:displayName="Best Effort" hpcc:description=""/>
+                                <xs:enumeration value="idle" hpcc:displayName="Idle" hpcc:description=""/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="backgroundCopyPrio" hpcc:displayName="Background Copy Priority"
+                                  type="xs:nonNegativeInteger" hpcc:presetValue="0"
+                                  hpcc:tooltip="Specify an IONICE value for the background copy thread, if backgroundCopyClass set to best-effort"/>
+                    <xs:attribute name="callbackRetries" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Callback Retries" hpcc:presetValue="3"
+                                  hpcc:tooltip="Number of retries before callbacks from agents to server are aborted"/>
+                    <xs:attribute name="callbackTimeout" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Callback Timeout" hpcc:presetValue="5000"
+                                  hpcc:tooltip="Timeout (ms) before callbacks from agents to server are resent"/>
+                    <xs:attribute name="checkFileDate" type="xs:boolean" hpcc:displayName="Check File Date"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Compare file dates of physical files with the information in DFS"/>
+                    <xs:attribute name="collectFactoryStatistics" type="xs:boolean"
+                                  hpcc:displayName="Gather Factory Statistics" hpcc:presetValue="true"
+                                  hpcc:tooltip="Accumulate summary statistics for all queries"/>
+                    <xs:attribute name="copyResources" type="xs:boolean" hpcc:displayName="Copy Resources"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Copies any missing data files/keys from the position they were in when query was deployed"/>
+                    <xs:attribute name="coresPerQuery" type="xs:nonNegativeInteger" hpcc:displayName="Cores Per Query"
+                                  hpcc:presetValue="0"
+                                  hpcc:tooltip="If non-zero, binds each incoming query to use the specified number of cores only"/>
+                    <xs:attribute name="debugPermitted" type="xs:boolean" hpcc:displayName="Debug Permitted"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Allow the ECL query debugger to attach to queries on this Roxie"/>
+                    <xs:attribute name="defaultHighPriorityTimeLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default High Priority Time Limit (ms)" hpcc:presetValue="0"
+                                  hpcc:tooltip="Maximum run time (ms) for any single active high-priority query (if not overriden)"/>
+                    <xs:attribute name="defaultHighPriorityTimeWarning" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default High Priority Time Warning (ms)" hpcc:presetValue="5000"
+                                  hpcc:tooltip="Time (ms) before generating SNMP warning for a high-priority query (if not overriden)"/>
+                    <xs:attribute name="defaultLowPriorityTimeLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Low Priority Time Limit (ms)" hpcc:presetValue="0"
+                                  hpcc:tooltip="Maximum run time (ms) for any single active low-priority query (if not overriden)"/>
+                    <xs:attribute name="defaultLowPriorityTimeWarning" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Low Priority Time Warning (ms)" hpcc:presetValue="0"
+                                  hpcc:tooltip="Time (ms) before generating SNMP warning for a low-priority query (if not overriden)"/>
+                    <xs:attribute name="defaultMemoryLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Memory Limit (bytes)" hpcc:presetValue="0"
+                                  hpcc:tooltip="Maximum amount of memory available for row data in any single active query (if not overriden)"/>
+                    <xs:attribute name="defaultSLAPriorityTimeLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default SLA Priority Time Limit (ms)" hpcc:presetValue="0"
+                                  hpcc:tooltip="Maximum run time (ms) for any single active SLA-high-priority query (if not overriden)"/>
+                    <xs:attribute name="defaultSLAPriorityTimeWarning" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default SLA Priority Time Warning (ms)" hpcc:presetValue="5000"
+                                  hpcc:tooltip="Time (ms) before generating SNMP warning for a SLA-high-priority query (if not overriden)"/>
+                    <xs:attribute name="defaultStripLeadingWhitespace" type="xs:boolean"
+                                  hpcc:displayName="Default Strip Leading Whitespace" hpcc:presetValue="true"
+                                  hpcc:tooltip="Default value for stripping leading whitespace in input XML values"/>
+                    <xs:attribute name="enableKeyDiff" type="xs:boolean" hpcc:displayName="Enable Key Diff"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Enable / Disable key diff functionality in roxie"/>
+                    <xs:attribute name="enableSysLog" type="xs:boolean" hpcc:displayName="Enable Sys Log"
+                                  hpcc:presetValue="true" hpcc:tooltip="Enable use of syslog for monitoring"/>
+                    <xs:attribute name="flushJHtreeCacheOnOOM" type="xs:boolean"
+                                  hpcc:displayName="flushJHtreeCacheOnOOM" hpcc:presetValue="true"
+                                  hpcc:tooltip="Should the index node memory allocation flush the cache and retry if memory allocation fails"/>
+                    <xs:attribute name="fieldTranslationEnabled" hpcc:displayName="Enable Field Translation"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Enables translation (where possible) of mismatched index layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:enumeration value="false" hpcc:displayName="False" hpcc:desciption=""/>
+                                <xs:enumeration value="true" hpcc:displayName="true" hpcc:description=""/>
+                                <xs:enumeration value="payload" hpcc:displayName="Payload" hpcc:description=""/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="highTimeout" type="xs:nonNegativeInteger" hpcc:displayName="High Timeout (ms)"
+                                  hpcc:presetValue="2000"
+                                  hpcc:tooltip="Timeout (ms) before high priority requests are resent to agents"/>
+                    <xs:attribute name="httpCallerIdHeader" type="xs:string" hpcc:displayName="http Caller ID Header"
+                                  hpcc:presetValue="HPCC-Caller-Id"
+                                  hpcc:tooltip="HTTP Header field to use for sending and receiving CallerId"/>
+                    <xs:attribute name="httpGlobalIdHeader" type="xs:string" hpcc:displayName="http Global ID Header"
+                                  hpcc:presetValue="HPCC-Global-Id"
+                                  hpcc:tooltip="HTTP Header field to use for sending and receiving GlobalId"/>
+                    <xs:attribute name="ignoreOrphans" type="xs:boolean" hpcc:displayName="Ignore Orphans"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Treat out-of-date local files as if they were not present"/>
+                    <xs:attribute name="lazyOpen" hpcc:displayName="Ignore Orphans" hpcc:presetValue="smart"
+                                  hpcc:tooltip="Delay opening files until first use. Select smart to use lazy mode only after a restart">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:enumeration value="false" hpcc:displayName="False" hpcc:description=""/>
+                                <xs:enumeration value="true" hpcc:displayName="True" hpcc:description=""/>
+                                <xs:enumeration value="smart" hpcc:displayName="Smart" hpcc:description=""/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="localFilesExpire" type="xs:integer" hpcc:displayName="Local Files Expire (ms)"
+                                  hpcc:presetValue="-1"
+                                  hpcc:tooltip="Period (ms) of inactivity before a local datafile handle is closed"/>
+                    <xs:attribute name="localSlave" type="xs:boolean" hpcc:displayName="Local Slave"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="All Roxie servers talk only to their embedded agent"/>
+                    <xs:attribute name="lockSuperFiles" type="xs:boolean" hpcc:displayName="Lock SuperFiles"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="If enabled, superfiles will be locked while queries that use them are loaded"/>
+                    <xs:attribute name="lowTimeout" type="xs:nonNegativeInteger" hpcc:displayName="Low Timeout (ms)"
+                                  hpcc:presetValue="10000"
+                                  hpcc:tooltip="Timeout (ms) before low priority requests are resent to agents"/>
+                    <xs:attribute name="maxLocalFilesOpen" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Max Local Files Open" hpcc:presetValue="4000"
+                                  hpcc:tooltip="Maximum number of local files to keep open"/>
+                    <xs:attribute name="maxRemoteFilesOpen" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Max Remote Files Open" hpcc:presetValue="1000"
+                                  hpcc:tooltip="Maximum number of remote files to keep open"/>
+                    <xs:attribute name="minFreeDiskSpace" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Mininum Free Disk Space (bytes)" hpcc:presetValue="1073741824"
+                                  hpcc:tooltip="Minimum amount of disk space needed to be available for file copy to succeed"/>
+                    <xs:attribute name="minLocalFilesOpen" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Minumum Local Files Open" hpcc:presetValue="2000"
+                                  hpcc:tooltip="Minimum number of local files to keep open"/>
+                    <xs:attribute name="minRemoteFilesOpen" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Minimum Remote Files Open" hpcc:presetValue="500"
+                                  hpcc:tooltip="Minimum number of remote files to keep open"/>
+                    <xs:attribute name="monitorDaliFileServer" type="xs:boolean"
+                                  hpcc:displayName="Monitor Dali File Server" hpcc:presetValue="false"
+                                  hpcc:tooltip="Warn if dafilesrv process is not running on computers"/>
+                    <xs:attribute name="preferredSubnet" type="ipV4Address" hpcc:displayName="Preferred Subnet"
+                                  hpcc:presetValue="" hpcc:tooltip="Preferred subnet to use for multi-NIC machines"/>
+                    <xs:attribute name="preferredSubnetMask" type="ipV4Address" hpcc:displayName="Preferred Subnet Mask"
+                                  hpcc:presetValue=""
+                                  hpcc:tooltip="Preferred subnet mask to use for multi-NIC machines"/>
+                    <xs:attribute name="preloadOnceData" type="xs:boolean" hpcc:displayName="Preload Once Data"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Evaluate : ONCE sections of queries at query load time"/>
+                    <xs:attribute name="prestartSlaveThreads" type="xs:boolean"
+                                  hpcc:displayName="Prestart Slave Threads" hpcc:presetValue="true"
+                                  hpcc:tooltip="Prestart slave worker threads at startup"/>
+                    <xs:attribute name="reloadRetriesFailed" type="xs:boolean" hpcc:displayName="Reload Retries Failed"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Retry loading of failed queries whenever QuerySet reloads"/>
+                    <xs:attribute name="remoteFilesExpire" type="xs:integer" hpcc:displayName="Remte Files Expire (ms)"
+                                  hpcc:presetValue="3600000"
+                                  hpcc:tooltip="Period (ms) of inactivity before a remote datafile handle is closed"/>
+                    <xs:attribute name="serverThreads" type="xs:nonNegativeInteger" hpcc:displayName="Server Threads"
+                                  hpcc:presetValue="30"
+                                  hpcc:tooltip="Default number of threads processing Roxie server requests (if not specifed on Servers tab)"/>
+                    <xs:attribute name="siteCertificate" type="xs:string" hpcc:displayName="Site Certificate"
+                                  hpcc:tooltip="Name of the site certificate component that is used for security"/>
+                    <xs:attribute name="slaTimeout" type="xs:nonNegativeInteger" hpcc:displayName="SLA Timeout (ms)"
+                                  hpcc:presetValue="2000"
+                                  hpcc:tooltip="Timeout (ms) before SLA high priority requests are resent to agents"/>
+                    <xs:attribute name="slaveQueryReleaseDelaySeconds" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Slave Query Release Delay (s)" hpcc:presetValue="60"
+                                  hpcc:tooltip="Delay before unregistering slave queries to allow in-flight to complete. Files are locked until query is unregistered"/>
+                    <xs:attribute name="slaveThreads" type="xs:nonNegativeInteger" hpcc:displayName="Slave Threads"
+                                  hpcc:presetValue="30" hpcc:tooltip="Number of threads processing agent requests"/>
+                    <xs:attribute name="statsExpiryTime" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Stats Expire Time (s)" hpcc:presetValue="3600"
+                                  hpcc:tooltip="Time (seconds) that detailed reporting stats are kept"/>
+                    <xs:attribute name="totalMemoryLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Total Memory Limit (bytes)" hpcc:presetValue="1073741824"
+                                  hpcc:tooltip="Maximum amount of memory available for row data in all active queries"/>
+                    <xs:attribute name="heapUseHugePages" type="xs:boolean" hpcc:displayName="Use Heap Huge Pages"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Allow roxie to use memory from huge pages if they have been configured"/>
+                    <xs:attribute name="heapUseTransparentHugePages" type="xs:boolean"
+                                  hpcc:displayName="Use Heap Transparent Huge Pages" hpcc:presetValue="true"
+                                  hpcc:tooltip="Allow roxie to use memory from transparent huge pages"/>
+                    <xs:attribute name="heapRetainMemory" type="xs:boolean" hpcc:displayName="Retain Heap Memory"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Retain and do not return unused memory to the operating system"/>
+                    <xs:attribute name="trapTooManyActiveQueries" type="xs:boolean"
+                                  hpcc:displayName="Trap Too Many Active Queries" hpcc:presetValue="true"
+                                  hpcc:tooltip="should an SNMP trap get sent when too many active query error occurs"/>
+                    <xs:attribute name="useHardLink" type="xs:boolean" hpcc:displayName="Use Hard Link"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="If the data file exists on the current machine but in a different directory than roxie expects - create a hard link"/>
+                    <xs:attribute name="useMemoryMappedIndexes" type="xs:boolean"
+                                  hpcc:displayName="Use Memory Mapped Indices" hpcc:presetValue="false"
+                                  hpcc:tooltip="Using memory-mapped files when merging multiple result streams from row-compressed indexes"/>
+                    <xs:attribute name="useRemoteResources" type="xs:boolean" hpcc:displayName="Use Remote Resources"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Reads any missing data files/keys from the position they were in when deployed"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="redundancy" hpcc:groupByName="Redundancy">
+                    <xs:attribute name="cyclicOffset" type="xs:nonNegativeInteger" hpcc:displayName="Cyclic Offset"
+                                  hpcc:presetValue="1" hpcc:tooltip="Offset for cyclic redundancy mode"/>
+                    <xs:attribute name="channelsPerNode" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Channels Per Node" hpcc:presetValue="1"
+                                  hpcc:tooltip="Number of channels/data locations to use per node, in overloaded mode"/>
+                    <xs:attribute name="numDataCopies" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Number Data Copies" hpcc:presetValue="1"
+                                  hpcc:tooltip="Number of copies of the data in redundant modes"/>
+                    <xs:attribute name="slaveConfig" hpcc:displayName="Slave Config"
+                                  hpcc:tooltip="Roxie data redundancy mode">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:enumeration value="simple" hpcc:displayName="Simple" hpcc:description=""/>
+                                <xs:enumeration value="overloaded" hpcc:displayName="Overloaded" hpcc:description=""/>
+                                <xs:enumeration value="full redundancy" hpcc:displayName="Full Redundancy"
+                                                hpcc:description=""/>
+                                <xs:enumeration value="cyclic redundancy" hpcc:displayName="Cyclic Redundancy"
+                                                hpcc:description=""/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="tracing" hpcc:groupByName="Tracing">
+                    <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" hpcc:displayName="Trace Level"
+                                  hpcc:presetValue="1"
+                                  hpcc:tooltip="Level of detail in reporting (set to 0 for none, 1 for normal, > 1 or more for extended)"/>
+                    <xs:attribute name="logFullQueries" type="xs:boolean" hpcc:displayName="Log Full Queries"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Log full text (unless blindLogging) and resource usage of all queries received"/>
+                    <xs:attribute name="blindLogging" type="xs:boolean" hpcc:displayName="Blind Logging"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Suppress all logging of any data or query text"/>
+                    <xs:attribute name="memTraceLevel" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Memory Trace Level" hpcc:presetValue="1"
+                                  hpcc:tooltip="Level of detail in reporting mem mgr information(set to 0 for none, 1 for normal, >1 or more for extended)"/>
+                    <xs:attribute name="miscDebugTraceLevel" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Misc Debug Trace Level" hpcc:presetValue="0"
+                                  hpcc:tooltip="Level of miscellaneous debug tracing unrelated to all other tracing(set to 0 for none, 1 for normal, >1 or more for extended)"/>
+                    <xs:attribute name="soapTraceLevel" type="xs:nonNegativeInteger" hpcc:displayName="Soap trace Level"
+                                  hpcc:presetValue="1"
+                                  hpcc:tooltip="Level of detail in reporting SOAPCALL information(set to 0 for none, 1 for normal, >1 or more for extended)"/>
+                    <xs:attribute name="traceEnabled" type="xs:boolean" hpcc:displayName="Trace Enabled"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="TRACE activity output enabled by default (can be overridden in workunit or query)"/>
+                    <xs:attribute name="traceLimit" type="xs:nonNegativeInteger" hpcc:displayName="Trace Limit"
+                                  hpcc:presetValue="10" hpcc:tooltip="Number of rows output by TRACE activity"/>
+                    <xs:attribute name="udpTraceLevel" type="xs:nonNegativeInteger" hpcc:displayName="UDP Trace Level"
+                                  hpcc:presetValue="1"
+                                  hpcc:tooltip="Level of detail in reporting udp information(set to 0 for none, 1 for normal, >1 or more for extended)"/>
+                    <xs:attribute name="useLogQueue" type="xs:boolean" hpcc:displayName="Use Log Queue"
+                                  hpcc:presetValue="true" hpcc:tooltip="Queue logs messages"/>
+                    <xs:attribute name="logQueueDrop" type="xs:nonNegativeInteger" hpcc:displayName="Log Queue Drop"
+                                  hpcc:presetValue="32"
+                                  hpcc:tooltip="Specifies the number of log messages which will be dropped if the maximum length of the queue of unhandled messages is exceeded"/>
+                    <xs:attribute name="logQueueLen" type="xs:nonNegativeInteger" hpcc:displayName="Log Queue Length"
+                                  hpcc:presetValue="512"
+                                  hpcc:tooltip="Specifies the maximum length of the queue of unhandled log messages. Messages will be dropped if this is exceeded"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="udp" hpcc:groupByName="UDP">
+                    <xs:attribute name="roxieMulticastEnabled" type="xs:boolean"
+                                  hpcc:displayName="Enable Roxie Multicast" hpcc:presetValue="true"
+                                  hpcc:tooltip="Controls whether multicast is used to communicate between nodes"/>
+                    <xs:attribute name="udpFlowSocketsSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Flow Socket Size (bytes)" hpcc:presetValue="131071"
+                                  hpcc:tooltip="Controls the read socket buffer size of the UDP layer flow control sockets"/>
+                    <xs:attribute name="udpInlineCollation" type="xs:boolean" hpcc:displayName="UDP Inline Collation"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Controls whether UDP packets are collated on the reading thread or queued up for collation on a separate thread"/>
+                    <xs:attribute name="udpInlineCollationPacketLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Inline Colation Packet Limit" hpcc:presetValue="50"
+                                  hpcc:tooltip="Controls how many UDP packets requested at once when inline collation selected"/>
+                    <xs:attribute name="udpLocalWriteSocketSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Local Write Socket Size (bytes)" hpcc:presetValue="131071"
+                                  hpcc:tooltip="Controls the write socket buffer size of the local UDP sockets (Agent to Server on same node)"/>
+                    <xs:attribute name="udpMaxRetryTimedoutReqs" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Max Retry Timedout Reqs" hpcc:presetValue="0"
+                                  hpcc:tooltip="Controls the Max number of agent 'request to send' to be retried. 0 means keep retrying forever"/>
+                    <xs:attribute name="udpMaxSlotsPerClient" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Log Queue Length" hpcc:presetValue="2147483647"
+                                  hpcc:tooltip="UDP transport layer slots per client"/>
+                    <xs:attribute name="udpMulticastBufferSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Multicast Buffer Size (bytes)" hpcc:presetValue="131071"
+                                  hpcc:tooltip="Controls the read socket buffer size of the UDP multicast sockets"/>
+                    <xs:attribute name="udpOutQsPriority" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Quality of Service Priority" hpcc:presetValue="0"
+                                  hpcc:tooltip="Turns on/off Priority weight-based for output queues (0 round-robin no priority - old logic, 1 round-robin new logic, 2 and higher is factor of priority)"/>
+                    <xs:attribute name="udpQueueSize" type="xs:nonNegativeInteger" hpcc:displayName="UDP Queue Size"
+                                  hpcc:presetValue="100" hpcc:tooltip="UDP transport layer receive queue size"/>
+                    <xs:attribute name="udpRequestToSendTimeout" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Request To Send Timeout (units?)" hpcc:presetValue="0"
+                                  hpcc:tooltip="Controls the timeout value agent udp will wait for permission to send from a Roxie server, in milliseconds. Specify 0 to calcuate automatically"/>
+                    <xs:attribute name="udpResendEnabled" type="xs:boolean" hpcc:displayName="Enable UDP Resend"
+                                  hpcc:presetValue="false" hpcc:tooltip="UDP transport layer packet resend ability"/>
+                    <xs:attribute name="udpRetryBusySenders" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Retry Busy Senders" hpcc:presetValue="0"
+                                  hpcc:tooltip="Controls the number of times Roxie server will repeat search for an idle sender when requesting new data"/>
+                    <xs:attribute name="udpSendQueueSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Send Queue Size" hpcc:presetValue="50"
+                                  hpcc:tooltip="UDP transport layer send queue size"/>
+                    <xs:attribute name="udpSnifferEnabled" type="xs:boolean" hpcc:displayName="Enable UDP Sniffer"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Enable the UDP multicast sniffer for tracking which senders are busy"/>
+                    <xs:attribute name="udpSnifferReadThreadPriority" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Sniffer Read Thread Priority" hpcc:presetValue="3"
+                                  hpcc:tooltip="If non-zero, run the sniffer read thread at elevated priority level"/>
+                    <xs:attribute name="udpSnifferSendThreadPriority" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Sniffer Send Thread Priority" hpcc:presetValue="3"
+                                  hpcc:tooltip="If non-zero, run the sniffer send thread at elevated priority level"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="cache" hpcc:groupByName="Cache">
+                    <xs:attribute name="blobCacheMem" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Blob Cache Memory Size (Mb)" hpcc:presetValue="0"
+                                  hpcc:tooltip="Size (in Mb) of blob index page cache"/>
+                    <xs:attribute name="serverSideCacheSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Server Side Cache Size" hpcc:presetValue="0"
+                                  hpcc:tooltip="Number of agent results to cache on Roxie server"/>
+                    <xs:attribute name="leafCacheMem" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Leaf Cache Memory Size (Mb)" hpcc:presetValue="50"
+                                  hpcc:tooltip="Size (in Mb) of leaf index page cache"/>
+                    <xs:attribute name="nodeCachePreload" type="xs:boolean" hpcc:displayName="Enable Node Cache Preload"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Prefill the node cache with all non-leaf pages from all indexes"/>
+                    <xs:attribute name="nodeCacheMem" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Node Cache Memory Size (Mb)" hpcc:presetValue="100"
+                                  hpcc:tooltip="Size (in Mb) of non-leaf index page cache"/>
+                    <xs:attribute name="mysqlCacheCheckPeriod" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="MySQL Cache Check Period(ms)" hpcc:presetValue="10000"
+                                  hpcc:tooltip="Time to wait (ms) between checking if any cached MySQL connections can be closed"/>
+                    <xs:attribute name="mysqlCacheTimeoutPeriod" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="MySQL Cache Timeout Period(ms)" hpcc:presetValue="60000"
+                                  hpcc:tooltip="Time to wait (ms) before closing a cached MySQL connection"/>
+                    <xs:attribute name="mysqlConnectionCacheSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="MySQL Connection Cache Size" hpcc:presetValue="10"
+                                  hpcc:tooltip="Number of MySQL connections to hold in cache"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="ssh" hpcc:groupByName="SSH">
+                    <xs:attribute name="SSHidentityfile" type="absolutePath" hpcc:displayName="SSH IdentityFile"
+                                  hpcc:presetValue="${HOME}/.ssh/id_rsa"
+                                  hpcc:tooltip="location of identity file (private key) on Thor master"/>
+                    <xs:attribute name="SSHusername" type="xs:string" hpcc:displayName="SSH Username"
+                                  hpcc:presetValue="hpcc" hpcc:tooltip="Username to use when running Thor slaves"/>
+                    <xs:attribute name="SSHpassword" type="xs:string" hpcc:modifiers="password"
+                                  hpcc:displayName="SSH Password"
+                                  hpcc:tooltip="Fixed password - only required if no identity file present NB **insecure**"/>
+                    <xs:attribute name="SSHtimeout" type="xs:nonNegativeInteger" hpcc:displayName="SSH Timeout (s)"
+                                  hpcc:presetValue="0" hpcc:tooltip="Timeout in seconds for SSH connects"/>
+                    <xs:attribute name="SSHretries" type="xs:nonNegativeInteger" hpcc:displayName="SSH Retries"
+                                  hpcc:presetValue="3" hpcc:tooltip="Number of times to retry failed connect"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="debug" hpcc:groupByName="Debug">
+                    <xs:attribute name="checkCompleted" type="xs:boolean" hpcc:displayName="Check Completed"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Check pending replies when agent gets a retry request"/>
+                    <xs:attribute name="dafilesrvLookupTimeout" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="DaFileserv Lookup Timeout (ms)" hpcc:presetValue="10000"
+                                  hpcc:tooltip="Maximum time (in milliseconds) dafilesrv will wait before timing out the first time through the list"/>
+                    <xs:attribute name="defaultConcatPreload" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Concat Preload" hpcc:presetValue="0"
+                                  hpcc:tooltip="Default concat preload"/>
+                    <xs:attribute name="defaultFetchPreload" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Fetch Preload" hpcc:presetValue="0"
+                                  hpcc:tooltip="Default fetch preload"/>
+                    <xs:attribute name="defaultFullKeyedJoinPreload" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Full Keyed Join Preload" hpcc:presetValue="0"
+                                  hpcc:tooltip="Default full keyed join preload"/>
+                    <xs:attribute name="defaultKeyedJoinPreload" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Keyed Join Preload" hpcc:presetValue="0"
+                                  hpcc:tooltip="Default keyed join preload"/>
+                    <xs:attribute name="defaultParallelJoinPreload" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Parallel Join Preload" hpcc:presetValue="0"
+                                  hpcc:tooltip="Default parallel join preload"/>
+                    <xs:attribute name="defaultPrefetchProjectPreload" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Prefetch Project Preload" hpcc:presetValue="10"
+                                  hpcc:tooltip="Default prefetch value for PROJECT,PREFETCH activity"/>
+                    <xs:attribute name="diskReadBufferSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Disk Read Buffer Size (bytes)" hpcc:presetValue="65536"
+                                  hpcc:tooltip="Default buffer size for disk read operations"/>
+                    <xs:attribute name="doIbytiDelay" type="xs:boolean" hpcc:displayName="Enable IBYTI Ddelay Logic"
+                                  hpcc:presetValue="true" hpcc:tooltip="Enables the IBYTI delay logic in the agents"/>
+                    <xs:attribute name="enableHeartBeat" type="xs:boolean" hpcc:displayName="Enable Heartbeat"
+                                  hpcc:presetValue="true" hpcc:tooltip="Enable HeartBeat messages to clients"/>
+                    <xs:attribute name="fastLaneQueue" type="xs:boolean" hpcc:displayName="Enable Fast Lane Queue"
+                                  hpcc:presetValue="true" hpcc:tooltip="special fast-lane queue for simple queries"/>
+                    <xs:attribute name="forceStdLog" type="xs:boolean" hpcc:displayName="Force Std Log Output"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Force log output to stderr even when redirected to null"/>
+                    <xs:attribute name="ignoreMissingFiles" type="xs:boolean" hpcc:displayName="Ignore Missing Files"
+                                  hpcc:presetValue="false" hpcc:tooltip="Ignore missing files"/>
+                    <xs:attribute name="indexReadChunkSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Index Read Chunk Size" hpcc:presetValue="60000"
+                                  hpcc:tooltip="Break up results from indexRead (and other remote activities) every N bytes"/>
+                    <xs:attribute name="initIbytiDelay" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Init IBYTI Delay Time (ms)" hpcc:presetValue="100"
+                                  hpcc:tooltip="Initial time (in milliseconds) a secondary agent will wait for an IBYTI packet from a primary peer"/>
+                    <xs:attribute name="jumboFrames" type="xs:boolean" hpcc:displayName="Jumbo Frames"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Set to true if using jumbo frames (MTU=9000) on the network"/>
+                    <xs:attribute name="linuxYield" type="xs:boolean" hpcc:displayName="Linux Yield"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Yield to scheduler in some tight loops. May help latency on uniprocessor machines"/>
+                    <xs:attribute name="maxBlockSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Maximum Block Size (bytes)" hpcc:presetValue="10000000"
+                                  hpcc:tooltip="Max size of block read from client socket"/>
+                    <xs:attribute name="maxLockAttempts" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Maximum Lock Attempts" hpcc:presetValue="5"
+                                  hpcc:tooltip="Number of retries to get lock for global queries"/>
+                    <xs:attribute name="memoryStatsInterval" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Memory Stats Interval (s)" hpcc:presetValue="60"
+                                  hpcc:tooltip="Interval (in seconds) between reports on Roxie heap usage"/>
+                    <xs:attribute name="memTraceSizeLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Memory trace Size Limit (bytes?)" hpcc:presetValue="0"
+                                  hpcc:tooltip="Generate stacktrace whenever a request is made for a row larger than this threshold (0 to disable)"/>
+                    <xs:attribute name="parallelAggregate" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Parallel Aggregate" hpcc:presetValue="0"
+                                  hpcc:tooltip="Number of parallel threads to use for in-memory aggregate processing. Set to 0 to use one per CPU, 1 to disable parallel processing of in-memory aggregates"/>
+                    <xs:attribute name="perChannelFlowLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Per Channel Flow Limit" hpcc:presetValue="10"
+                                  hpcc:tooltip="Number of pending queries permitted per channel (per active activity) before blocking"/>
+                    <xs:attribute name="pingInterval" type="xs:nonNegativeInteger" hpcc:displayName="Ping Interval (s)"
+                                  hpcc:presetValue="60"
+                                  hpcc:tooltip="Interval (in seconds) between Roxie server ping tests"/>
+                    <xs:attribute name="preabortIndexReadsThreshold" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Pre Abort Index Reads Threshold" hpcc:presetValue="100"
+                                  hpcc:tooltip="Use seek to precheck keyed limits (i.e. assume ,COUNT) on index reads if limit greater than this value"/>
+                    <xs:attribute name="preabortKeyedJoinsThreshold" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Pre Abort Keyed Joins Threshold" hpcc:presetValue="100"
+                                  hpcc:tooltip="Use seek to precheck limits on keyed joins if limit greater than this value"/>
+                    <xs:attribute name="simpleLocalKeyedJoins" type="xs:boolean"
+                                  hpcc:displayName="Simple Local Keyed Joins" hpcc:presetValue="true"
+                                  hpcc:tooltip="Enable single-threaded local keyed joins"/>
+                    <xs:attribute name="socketCheckInterval" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Socket Check Interval (ms)" hpcc:presetValue="5000"
+                                  hpcc:tooltip="Interval (ms) between checks that client socket is still open"/>
+                    <xs:attribute name="systemMonitorInterval" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="System Monitor Interval (ms?)" hpcc:presetValue="60000"
+                                  hpcc:tooltip="How often to send an 'alive' message"/>
+                </xs:attributeGroup>
+
+                <xs:sequence>
+
+                    <!-- the element set may need to relate to how current config manager displays these as children of
+                         Roxie Ports, each child being named based on the 'name' attribute below,
+                         Also, they are currently collected under the Ports tab in current config mgr -->
+                    <xs:element name="RoxieFarmProcess" hpcc:displayName="Roxie Ports" maxOccurs="unbounded" hpcc:class="elementSet">
+                        <xs:complexType>
+                            <xs:attribute name="port" hpcc:displayName="Port" type="xs:nonNegativeInteger"
+                                          use="required" hpcc:presetValue="9876"
+                                          hpcc:tooltip="the network port on which the Roxie servers accept connections"/>
+                            <xs:attribute name="numThreads" hpcc:displayName="Number of Threads"
+                                          type="xs:nonNegativeInteger" hpcc:presetValue="30"
+                                          hpcc:tooltip="Number of simultaneous queries Roxie servers will accept on this port"/>
+                            <xs:attribute name="listenQueue" hpcc:displayName="Listen Queue Connections"
+                                          type="xs:nonNegativeInteger" hpcc:presetValue="200"
+                                          hpcc:tooltip="Number of pending connections that can be accepted"/>
+                            <xs:attribute name="requestArrayThreads" hpcc:displayName="Request Array Threads"
+                                          type="xs:nonNegativeInteger" hpcc:presetValue="5"
+                                          hpcc:tooltip="Number of simultaneous queries Roxie servers will process using the MERGE option of SOAPCALL"/>
+                            <xs:attribute name="aclName" hpcc:displayName="ACL" type="xs:string"
+                                          hpcc:tooltip="Name of any Access Control List to use"/>
+                            <xs:attribute name="protocol" hpcc:displayName="Protocol" use="required"
+                                          hpcc:presetValue="native" hpcc:tooltip="Protocol to use">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:string">
+                                        <xs:enumeration value="native" hpcc:description=""/>
+                                        <xs:enumeration value="ssl" hpcc:description=""/>
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:attribute>
+                            <xs:attribute name="passphrase" hpcc:displayName="Pass Phrase" hpcc:modifiers="password"
+                                          hpcc:requiredIf=".[@certificateFilename]"
+                                          type="xs:string" hpcc:tooltip="Pass phrase for cert"/>
+                            <xs:attribute name="certificateFileName" hpcc:displayName="Certificate Filename"
+                                          type="xs:string" hpcc:tooltip="Path to certificate filename"/>
+                            <xs:attribute name="privateKeyFileName" hpcc:displayName="Private Key Filename"
+                                          type="xs:string"
+                                          hpcc:tooltip="Path to private key filename"/>
+                        </xs:complexType>
+                    </xs:element>
+
+                    <!-- the element set may need to relate to how current config manager displays these as children of
+                         Roxie Servers, each child being named based on the 'name' attribute below,
+                         Also, these are currently configured using a dialog where the user selects the computers
+                         Perhaps an hpcc:class that indicates an xpath to a set of nodes that can serve as allowable values -->
+                    <xs:element name="RoxieServerProcess" hpcc:displayName="Servers" maxOccurs="unbounded" hpcc:class="elementSet">
+                        <xs:complexType>
+                            <xs:attribute name="name" type="xs:string" use="required" hpcc:readOnly="true"
+                                          hpcc:autoGenerateType="siblingValue" hpcc:autoGenerateValue="computer"
+                                          hpcc:sourceKey="computer_name"
+                                          hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"/>
+                            <xs:attributeGroup ref="computerNodeReference"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <!--<xs:element name="ACL" hpcc:displayName="Access Control Lists" maxOccurs="unbounded">-->
+                        <!--<xs:complexType>-->
+                            <!--<xs:sequence>-->
+                                <!--<xs:element name="BaseList" minOccurs="0" maxOccurs="unbounded" -->
+                                            <!--hpcc:tooltip="Base Access Control Lists (Ordered List)">-->
+                                    <!--<xs:complexType>-->
+                                        <!--<xs:attribute name="name" type="xs:string" hpcc:displayName="Name"-->
+                                                      <!--use="required" hpcc:uniqueKey="roxieaclbaselist_name"-->
+                                                      <!--hpcc:tooltip="Name of another Access Control List to extend"/>-->
+                                    <!--</xs:complexType>-->
+                                <!--</xs:element>-->
+                                <!--<xs:element name="Access" minOccurs="0" maxOccurs="unbounded"-->
+                                            <!--hpcc:tooltip="Access Rules (Ordered List)">-->
+                                    <!--<xs:complexType>-->
+                                        <!--<xs:attribute name="allow" hpcc:displayName="Allow" use="required"-->
+                                                      <!--hpcc:presetValue="yes">-->
+                                            <!--<xs:simpleType>-->
+                                                <!--<xs:restriction base="xs:string">-->
+                                                    <!--<xs:enumeration value="yes" hpcc:description=""/>-->
+                                                    <!--<xs:enumeration value="no" hpcc:description=""/>-->
+                                                <!--</xs:restriction>-->
+                                            <!--</xs:simpleType>-->
+                                        <!--</xs:attribute>-->
+                                        <!--<xs:attribute name="ip" type="ipV4Address" hpcc:displayName="IP Address"-->
+                                                      <!--hpcc:presetValue="0.0.0.0"-->
+                                                      <!--hpcc:tooltip="IP Address of target system"/>-->
+                                        <!--<xs:attribute name="mask" type="ipV4Address" hpcc:displayName="Internet Mask"-->
+                                                      <!--hpcc:presetValue="255.255.255.255"-->
+                                                      <!--hpcc:tooltip="Internet address mask"/>-->
+                                        <!--<xs:attribute name="query" type="xs:string" hpcc:displayName="Query Wildcard"-->
+                                                      <!--hpcc:presetValue=".*"-->
+                                                      <!--hpcc:tooltip="wildcard for queries to allow/disallow"/>-->
+                                        <!--<xs:attribute name="errorCode" type="xs:nonNegativeInteger"-->
+                                                      <!--hpcc:displayName="Error Code"-->
+                                                      <!--hpcc:tooltip="optional error code to associate with the query"/>-->
+                                        <!--<xs:attribute name="error" type="xs:string" hpcc:displayName="Error Message"-->
+                                                      <!--hpcc:tooltip="optional error message to associate with the query"/>-->
+                                        <!--<xs:attribute name="name" type="xs:string" hpcc:displayName="Name"-->
+                                                      <!--use="required" hpcc:autoGenerateType="prefix_"-->
+                                                      <!--hpcc:autoGenerateValue="ACLrule"-->
+                                                      <!--hpcc:uniqueKey="roxieaclaccess_name"-->
+                                                      <!--hpcc:tooltip="Name of this Access Control Rule"/>-->
+                                    <!--</xs:complexType>-->
+                                <!--</xs:element>-->
+                            <!--</xs:sequence>-->
+                            <!--<xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"-->
+                                          <!--hpcc:uniqueKey="roxieacl_name" hpcc:autoGenerateType="prefix_"-->
+                                          <!--hpcc:autoGenerateValue="ACL"/>-->
+                        <!--</xs:complexType>-->
+                    <!--</xs:element>-->
+                    <xs:element name="PreferredCluster" hpcc:displayName="Preferred Clusters" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_"
+                                          hpcc:autoGenerateValue="PreferredCluster"
+                                          hpcc:uniqueKey="roxiepreferredcluster_name"
+                                          hpcc:tooltip="Name of the cluster"/>
+                            <xs:attribute name="priority" type="xs:integer" use="required"
+                                          hpcc:tooltip="Priority (negative to disable)"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="UserMetric" hpcc:displayName="User Metrics" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_"
+                                          hpcc:autoGenerateValue="UserMetric"
+                                          hpcc:uniqueKey="roxieusermetric_name" hpcc:tooltip="Name of this metric"/>
+                            <xs:attribute name="regex" type="xs:integer" use="required"
+                                          hpcc:tooltip="Expression to match"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Notes" type="usernotes" hpcc:displayName="Notes" maxOccurs="unbounded"/>
+
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"
+                              hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="roxie"
+                              hpcc:uniqueKey="roxiecluster_name" hpcc:tooltip="Name for this process"/>
+                <xs:attribute name="description" type="xs:string" hpcc:displayName="Description"
+                              hpcc:presetValue="Roxie cluster" hpcc:tooltip="Description for this process"/>
+                <xs:attribute name="daliServers" type="xs:string" hpcc:displayName="Dali Server"
+                              hpcc:tooltip="Specifies the dali server to which this roxie is attached"/>
+                <xs:attribute name="lockDali" type="xs:boolean" hpcc:displayName="Lock Dali" hpcc:presetValue="false"
+                              hpcc:tooltip="If set, Roxie will use cached info from dali only, and will not connect to dali or refresh the cache"/>
+                <xs:attribute name="multicastBase" type="ipV4Address" hpcc:displayName="Multicast Base IP Address"
+                              hpcc:presetValue="239.1.1.1"
+                              hpcc:tooltip="The base multicast IP for this roxie cluster. Multicast ranges must not overlap for any roxie clusters in the same multicast domain"/>
+                <xs:attribute name="multicastLast" type="ipV4Address" hpcc:displayName="Multicast Last IP Address"
+                              hpcc:presetValue="239.1.254.254"
+                              hpcc:tooltip="The last multicast IP available for this roxie cluster. Multicast ranges must not overlap for any roxie clusters in the same multicast domain"/>
+                <xs:attribute name="multicastTTL" type="xs:nonNegativeInteger" hpcc:displayName="Multicast Time To Live"
+                              hpcc:presetValue="1"
+                              hpcc:tooltip="The multicast TTL (Time To Live) setting for this roxie cluster.  Zero means do not explicitly set TTL, and use the default OS setting"/>
+                <xs:attribute name="directory" type="absolutePath" hpcc:displayName="Directory"
+                              hpcc:presetValue="${EXEC_PREFIX}/lib/${DIR_NAME}/roxie/"
+                              hpcc:tooltip="Specifies the directory to which the software will be deployed"/>
+                <!-- @XSD_PLUGIN_DEFINITION@ LN injects an attribute!! THIS WILL BE REPLACED   -->
+                <xs:attribute name="pluginsPath" type="relativePath" hpcc:displayName="Plugins Path"
+                              hpcc:presetValue="${PLUGINS_PATH}"
+                              hpcc:tooltip="Alternate path where plugin files are deployed (./plugins is assumed if not specified)"/>
+
+                <xs:attributeGroup ref="ldap"/>
+                <xs:attributeGroup ref="options"/>
+                <xs:attributeGroup ref="redundancy"/>
+                <xs:attributeGroup ref="tracing"/>
+                <xs:attributeGroup ref="udp"/>
+                <xs:attributeGroup ref="cache"/>
+                <xs:attributeGroup ref="ssh"/>
+                <xs:attributeGroup ref="debug"/>
+
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>
