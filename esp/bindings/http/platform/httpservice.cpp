@@ -935,9 +935,9 @@ EspAuthState CEspHttpServer::checkUserAuth()
 
     AuthType domainAuthType = authReq.authBinding->getDomainAuthType();
     authReq.ctx->setDomainAuthType(domainAuthType);
-    if (authorizationHeader.isEmpty() && domainAuthType != AuthPerRequestOnly)
+    if (domainAuthType != AuthPerRequestOnly)
     {//Try session based authentication now.
-        EspAuthState authState = checkUserAuthPerSession(authReq);
+        EspAuthState authState = checkUserAuthPerSession(authReq, authorizationHeader);
         if (authState != authUnknown)
             return authState;
     }
@@ -1176,7 +1176,7 @@ bool CEspHttpServer::isAuthRequiredForBinding(EspAuthRequest& authReq)
     return true;
 }
 
-EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
+EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq, StringBuffer& authorizationHeader)
 {
     ESPLOG(LogMax, "checkUserAuthPerSession");
 
@@ -1184,8 +1184,13 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
     if (sessionID > 0)
         return authExistingSession(authReq, sessionID);//Check session based authentication using this session ID.
 
-    if ((authReq.authBinding->getDomainAuthType() != AuthPerRequestOnly) && authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
+    if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
         return authSucceeded;//Give the permission to send out some pages used for login or logout.
+
+    if (!authorizationHeader.isEmpty() && (authReq.serviceName.isEmpty() || authReq.methodName.isEmpty()
+        || !strieq(authReq.serviceName.str(), "esp") || (!strieq(authReq.methodName.str(), "login")
+        && !strieq(authReq.methodName.str(), "unlock"))))
+        return authUnknown;
 
     StringBuffer urlCookie;
     readCookie(SESSION_START_URL_COOKIE, urlCookie);

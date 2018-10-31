@@ -77,7 +77,7 @@ protected:
     void readAuthRequest(EspAuthRequest& req);
     EspAuthState preCheckAuth(EspAuthRequest& authReq);
     EspAuthState checkUserAuthPerRequest(EspAuthRequest& authReq);
-    EspAuthState checkUserAuthPerSession(EspAuthRequest& authReq);
+    EspAuthState checkUserAuthPerSession(EspAuthRequest& authReq, StringBuffer& authorizationHeader);
     EspAuthState authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL, bool unlock);
     EspAuthState authExistingSession(EspAuthRequest& req, unsigned sessionID);
     void logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* domainSessions, bool lock);
