@@ -235,7 +235,7 @@ void XSDSchemaParser::parseAttributeGroup(const pt::ptree &attributeTree)
         pXSDValueSetParaser->setGroupByName(groupByName);
         pXSDValueSetParaser->parseXSD(attributeTree.get_child("", pt::ptree()));
         m_pSchemaItem->addSchemaType(pValueSet, groupName);
-        m_pSchemaItem->setProperty("attribute_group_default_overrides", getXSDAttributeValue(attributeTree, "<xmlattr>.hpcc:defaultInCodeOverrides", false, ""));
+        m_pSchemaItem->setProperty("attribute_group_default_overrides", getXSDAttributeValue(attributeTree, "<xmlattr>.hpcc:presetValue", false, ""));
     }
 
     //
