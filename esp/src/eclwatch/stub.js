@@ -30,12 +30,13 @@ define([
     ESPUtil, Utility, LockDialogWidget,
     entities, Toaster) {
 
-        var IDLE_TIMEOUT = cookie("ESPSessionTimeoutSeconds") * 1000;
+        var espTimeoutSeconds = cookie("ESPSessionTimeoutSeconds") || 600;  // 10 Minutes?
+        var IDLE_TIMEOUT = espTimeoutSeconds * 1000;
         var SESSION_RESET_FREQ = 30 * 1000;
         var idleWatcher;
         var monitorLockClick;
         var _prevReset = Date.now();
-        var sessionIsActive = cookie("ESPSessionTimeoutSeconds");
+        var sessionIsActive = espTimeoutSeconds;
 
         function _resetESPTime(evt) {
             if (Date.now() - _prevReset > SESSION_RESET_FREQ) {

@@ -305,18 +305,18 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         	case EINVAL:
         		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
         				"(EINVAL The alignment argument was not a power of two, or was not a multiple of sizeof(void *)!)",
-        		                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
+        		                    (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
         		break;
 
         	case ENOMEM:
         		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
         				"(ENOMEM There was insufficient memory to fulfill the allocation request.)",
-        		        		                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
+        		        		                    (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
         		break;
 
         	default:
         		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d",
-        		                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
+        		                    (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
         		break;
 
         	}
@@ -335,12 +335,8 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
                 {
                     //If we notify heapBlockSize items at a time it will always be a multiple of hugePageSize so shouldn't trigger defragmentation
                     heapNotifyUnusedEachBlock = !retainMemory;
-                    DBGLOG("Transparent huge pages used for roxiemem heap");
                 }
-                else
-                {
-                    DBGLOG("Transparent huge pages used for roxiemem heap");
-                }
+                DBGLOG("Transparent huge pages used for roxiemem heap");
             }
         }
         else

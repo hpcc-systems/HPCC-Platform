@@ -1924,7 +1924,7 @@ public:
         StringBuffer urlTail("/WUCreateAndDownloadZAPInfo?Wuid=");
         urlTail.append(optWuid.get());
         if (optIncThorSlave)
-            urlTail.append("&IncludeThorSlaveLog=true");
+            urlTail.append("&IncludeThorSlaveLog=on");
         if (!optProblemDesc.isEmpty())
             urlTail.append("&ProblemDescription=").append(optProblemDesc.get());
         EclCmdURL eclCmdURL("WsWorkunits", !streq(optServer, ".") ? optServer : "localhost", optPort, optSSL, urlTail.str());

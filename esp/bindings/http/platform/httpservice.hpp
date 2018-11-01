@@ -77,7 +77,7 @@ protected:
     void readAuthRequest(EspAuthRequest& req);
     EspAuthState preCheckAuth(EspAuthRequest& authReq);
     EspAuthState checkUserAuthPerRequest(EspAuthRequest& authReq);
-    EspAuthState checkUserAuthPerSession(EspAuthRequest& authReq);
+    EspAuthState checkUserAuthPerSession(EspAuthRequest& authReq, StringBuffer& authorizationHeader);
     EspAuthState authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL, bool unlock);
     EspAuthState authExistingSession(EspAuthRequest& req, unsigned sessionID);
     void logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* domainSessions, bool lock);
@@ -101,6 +101,7 @@ protected:
     void resetSessionTimeout(EspAuthRequest& authReq, unsigned sessionID, StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
     void sendException(EspAuthRequest& authReq, unsigned code, const char* msg);
     void sendMessage(const char* msg, const char* msgType);
+    bool isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName);
     IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
 
 public:
