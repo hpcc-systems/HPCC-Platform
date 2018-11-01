@@ -757,6 +757,8 @@ IHqlExpression * HqlThorBoundaryTransformer::createTransformed(IHqlExpression * 
     case no_sizeof:
     case no_offsetof:
         return getTransformedChildren(expr);
+    case no_mapto:
+        return NewHqlTransformer::createTransformed(expr);
     }
 
     //Unusually, wrap the expression in a thor node before processing annotations.
