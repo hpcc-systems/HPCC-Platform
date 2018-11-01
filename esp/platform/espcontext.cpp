@@ -680,9 +680,11 @@ void CEspContext::updateTraceSummaryHeader()
         }
         if (!reqSummary.isEmpty())
             m_txSummary->set("req", reqSummary.str());
-
         if (m_hasException)
-            m_txSummary->set(VStringBuffer("exception@%ums", m_exceptionTime), m_exceptionCode);
+        {
+            m_txSummary->set("excepttime", m_exceptionTime);
+            m_txSummary->set("exceptcode", m_exceptionCode);
+        }
     }
 }
 

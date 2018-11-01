@@ -935,9 +935,9 @@ EspAuthState CEspHttpServer::checkUserAuth()
 
     AuthType domainAuthType = authReq.authBinding->getDomainAuthType();
     authReq.ctx->setDomainAuthType(domainAuthType);
-    if (authorizationHeader.isEmpty() && domainAuthType != AuthPerRequestOnly)
+    if (domainAuthType != AuthPerRequestOnly)
     {//Try session based authentication now.
-        EspAuthState authState = checkUserAuthPerSession(authReq);
+        EspAuthState authState = checkUserAuthPerSession(authReq, authorizationHeader);
         if (authState != authUnknown)
             return authState;
     }
@@ -1176,7 +1176,7 @@ bool CEspHttpServer::isAuthRequiredForBinding(EspAuthRequest& authReq)
     return true;
 }
 
-EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
+EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq, StringBuffer& authorizationHeader)
 {
     ESPLOG(LogMax, "checkUserAuthPerSession");
 
@@ -1184,8 +1184,12 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
     if (sessionID > 0)
         return authExistingSession(authReq, sessionID);//Check session based authentication using this session ID.
 
-    if ((authReq.authBinding->getDomainAuthType() != AuthPerRequestOnly) && authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
+    if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
         return authSucceeded;//Give the permission to send out some pages used for login or logout.
+
+    if (!authorizationHeader.isEmpty() && !isServiceMethodReq(authReq, "esp", "login")
+        && !isServiceMethodReq(authReq, "esp", "unlock"))
+        return authUnknown;
 
     StringBuffer urlCookie;
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
@@ -1899,6 +1903,15 @@ const char* CEspHttpServer::readCookie(const char* cookieName, StringBuffer& coo
     if (sessionIDCookie)
         cookieValue.append(sessionIDCookie->getValue());
     return cookieValue.str();
+}
+
+bool CEspHttpServer::isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName)
+{
+    if (authReq.serviceName.isEmpty() || !strieq(authReq.serviceName.str(), serviceName))
+        return false;
+    if (authReq.methodName.isEmpty() || !strieq(authReq.methodName.str(), methodName))
+        return false;
+    return true;
 }
 
 bool CEspHttpServer::persistentEligible()
