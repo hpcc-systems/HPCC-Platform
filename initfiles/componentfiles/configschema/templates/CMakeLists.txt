@@ -14,5 +14,4 @@
 #    limitations under the License.
 ################################################################################
 
-ADD_SUBDIRECTORY(xsd)
-ADD_SUBDIRECTORY(templates)
+ADD_SUBDIRECTORY(schema)

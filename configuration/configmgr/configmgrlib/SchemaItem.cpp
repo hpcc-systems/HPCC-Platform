@@ -68,7 +68,8 @@ SchemaItem::SchemaItem(const SchemaItem &item)
     // Make a copy of the children now
     for (auto childIt = item.m_children.begin(); childIt != item.m_children.end(); ++childIt)
     {
-        addChild(std::make_shared<SchemaItem>(*(childIt->second)));
+        std::shared_ptr<SchemaItem> pChild = std::make_shared<SchemaItem>((*(childIt->second)));
+        addChild(pChild);
     }
 
     //
@@ -223,7 +224,18 @@ void SchemaItem::insertSchemaType(const std::shared_ptr<SchemaItem> pTypeItem)
     for (auto childIt = typeChildren.begin(); childIt != typeChildren.end(); ++childIt)
     {
         std::shared_ptr<SchemaItem> pNewItem = std::make_shared<SchemaItem>(*(*childIt));
+        pNewItem->setParentForChildren(shared_from_this());
         addChild(pNewItem);
+    }
+}
+
+
+void SchemaItem::setParentForChildren(std::shared_ptr<SchemaItem> pParent)
+{
+    setParent(pParent);
+    for (auto &childIt: m_children)
+    {
+        childIt.second->setParentForChildren(shared_from_this());
     }
 }
 

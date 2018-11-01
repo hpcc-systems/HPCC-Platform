@@ -929,8 +929,8 @@ void Cws_configMgrEx::getAttributes(const std::shared_ptr<EnvironmentNode> &pEnv
                                 for (auto &depIt: (*valueIt).getDependencies())
                                 {
                                     Owned<IEspDependentValueType> pDep = createDependentValueType();
-                                    pDep->setAttributeName(depIt.m_attribute.c_str());
-                                    pDep->setAttributeValue(depIt.m_value.c_str());
+                                    pDep->setAttributeName(depIt.name.c_str());
+                                    pDep->setAttributeValue(depIt.value.c_str());
                                     dependencies.append(*pDep.getLink());
                                 }
                                 pChoice->setDependencies(dependencies);

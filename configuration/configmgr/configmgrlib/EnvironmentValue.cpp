@@ -22,8 +22,8 @@
 EnvironmentValue::~EnvironmentValue()
 {
     //
-    // Tell the schema vallue that we are going away
-    m_pSchemaValue->removeEnvironmentValue(shared_from_this());
+    // Tell the schema value that we are going away
+    m_pSchemaValue->removeEnvironmentValue(this);
 }
 
 
@@ -58,9 +58,33 @@ bool EnvironmentValue::setValue(const std::string &value, Status *pStatus, bool 
             }
         }
 
-        if (rc)
-            m_pSchemaValue->mirrorValueToEnvironment(oldValue, value, pStatus);
 
+        //
+        // If the value was set successfull...
+        if (rc)
+        {
+            //
+            // See if the new value has dependent values, set them
+            std::vector<AllowedValue> allowedValues;
+            std::shared_ptr<EnvironmentNode> pMyEnvNode = m_pMyEnvNode.lock();
+            m_pSchemaValue->getAllowedValues(allowedValues, pMyEnvNode);
+            for (auto &allowedValue: allowedValues)
+            {
+                if (value == allowedValue.m_value)
+                {
+                    if (allowedValue.hasDependencies())
+                    {
+                        Status tempStatus;  // assumpition is that dependent values will set properly
+                        pMyEnvNode->setAttributeValues(allowedValue.getDependencies(), tempStatus, false, false);
+                        break;   // done!
+                    }
+                }
+            }
+
+            //
+            // Mirro this value throughout the environment if needed
+            m_pSchemaValue->mirrorValueToEnvironment(oldValue, value, pStatus);
+        }
     }
     return rc;
 }

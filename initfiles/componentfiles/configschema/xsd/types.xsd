@@ -101,31 +101,28 @@
     </xs:complexType>
 
     <xs:complexType name="usernotes">
-        <xs:seqeunce>
-            <xs:element name="Notes" hpcc:displayName="Notes" hpcc:class="elementSet" minOccurs="1"
-                        maxOccurs="unbounded"/>
-            <xs:complexType name="note">
-                <xs:sequence>
-                    <xs:element name="Note" type="xs:string" minOccurs="0"/>
-                </xs:sequence>
-                <xs:attribute name="severity" hpcc:displayName="Severity" use="optional" hpcc:presetValue="Minor"
-                              hpcc:tooltip="Significance of this note">
-                    <xs:simpleType>
-                        <xs:restriction base="xs:string">
-                            <xs:enumeration value="Minor"/>
-                            <xs:enumeration value="Normal"/>
-                            <xs:enumeration value="Critical"/>
-                        </xs:restriction>
-                    </xs:simpleType>
-                </xs:attribute>
-                <xs:attribute name="date" hpcc:displayName="Date/Time" type="AutoTimeStampType" use="optional"
-                              hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
-                <xs:attribute name="computer" hpcc:displayName="Computer" type="xs:string" use="optional"
-                              hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
-                <xs:attribute name="user" hpcc:displayName="User" type="AutoUseridType" use="optional"
-                              hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
-            </xs:complexType>
-        </xs:seqeunce>
+        <xs:sequence>
+            <xs:element name="Note" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="severity" hpcc:displayName="Severity" hpcc:presetValue="Minor"
+                                  hpcc:tooltip="Significance of this note">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:enumeration value="Minor"/>
+                                <xs:enumeration value="Normal"/>
+                                <xs:enumeration value="Critical"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="date" hpcc:displayName="Date/Time" type="AutoTimeStampType"
+                                  hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
+                    <xs:attribute name="computer" hpcc:displayName="Computer" type="xs:string"
+                                  hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
+                    <xs:attribute name="user" hpcc:displayName="User" type="AutoUseridType"
+                                  hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="espservice_properties">

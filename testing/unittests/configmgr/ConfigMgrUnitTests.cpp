@@ -25,7 +25,7 @@
 #include <cppunit/TestFixture.h>
 #include "unittests.hpp"
 
-// Config2 manager includes
+// Config manager includes
 #include "SchemaItem.hpp"
 #include "InsertableItem.hpp"
 #include "jexcept.hpp"

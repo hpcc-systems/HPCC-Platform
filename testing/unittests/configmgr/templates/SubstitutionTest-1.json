@@ -1,0 +1,62 @@
+{
+    "name" : "test",
+    "type" : "modification",
+    "description" : "add a subchild to an existing node in an environment",
+    "inputs" : [
+        {
+            "name" : "name",
+            "type" : "string",
+            "value" : "myname"
+        },
+        {
+            "name" : "numsystems",
+            "type" : "string",
+            "value" : "10"
+        },
+        {
+            "name" : "ccnum",
+            "type" : "string",
+            "value" : "2"
+        },
+        {
+            "name" : "hwips",
+            "type" : "iprange",
+            "value" : "1.2.3.1-10"
+        },
+        {
+            "name" : "baseip",
+            "type" : "ipaddress",
+            "value" : "1.2.3.1"
+        },
+        {
+            "name" : "systemips",
+            "type" : "iprange",
+            "prepared_value" : "{{baseip}}*{{numsystems}}"
+        }
+    ],
+    "operations" : [
+        {
+            "action" : "noop",
+            "path" : "/Root/Child1",
+            "count" : "{{numsystems}}",
+            "attributes" : [
+                {
+                    "name" : "name",
+                    "value" : "{{name}}"
+                },
+                {
+                    "name" : "ipaddress",
+                    "value" : "{{hwips}}"
+                },
+                {
+                    "name" : "daliIp",
+                    "value" : "{{hwips[0]}}"
+                },
+                {
+                    "name" : "ccIp",
+                    "value" : "{{hwips[{{numsystems}}-{{ccnum}}]}}"
+                }
+            ]
+        }
+    ]
+}

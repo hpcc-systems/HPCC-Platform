@@ -80,6 +80,7 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         bool isHidden() const { return m_hidden; }
 
         void setParent(const std::shared_ptr<SchemaItem> &parent) { m_pParent = parent; }
+        void setParentForChildren(std::shared_ptr<SchemaItem> pParent);
         std::shared_ptr<SchemaItem> getSchemaRoot();
         void processEvent(const std::string &eventType, const std::shared_ptr<EnvironmentNode> &pEnvNode) const;
         void addEventHandler(const std::shared_ptr<EnvironmentEventHandler> &pHandler) { m_eventHandlers.push_back(pHandler); }

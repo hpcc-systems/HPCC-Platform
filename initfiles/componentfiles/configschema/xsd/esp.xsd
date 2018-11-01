@@ -312,7 +312,7 @@
                                           hpcc:tooltip="Enter the fully qualified domain name"/>
                         </xs:complexType>
                     </xs:element>
-                    <xs:element name="Notes" type="usernotes" hpcc:displayName="Notes"/>
+                    <xs:element name="Notes" type="usernotes" hpcc:displayName="Notes" minOccurs="0" maxOccurs="unbounded"/>
                 </xs:sequence>
 
                 <xs:attributeGroup ref="buildInfo"/>

@@ -40,6 +40,16 @@ if (USE_BOOST_REGEX)
         InsertableItem.cpp
         ConfigPath.cpp
         EnvSupportLib.cpp
+        mod_template_support/EnvModTemplate.cpp
+        mod_template_support/Input.cpp
+        mod_template_support/TemplateException.cpp
+        mod_template_support/Operation.cpp
+        mod_template_support/OperationCreateNode.cpp
+        mod_template_support/Inputs.cpp
+        mod_template_support/IPAddressRangeInput.cpp
+        mod_template_support/IPAddressInput.cpp
+        mod_template_support/HostNameInput.cpp
+        mod_template_support/OperationNoop.cpp
     )
 
     INCLUDE_DIRECTORIES(
@@ -49,6 +59,7 @@ if (USE_BOOST_REGEX)
         ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/../hpcc_support
+        ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
         ${CMAKE_BINARY_DIR}
         ${CMAKE_BINARY_DIR}/oss
     )
