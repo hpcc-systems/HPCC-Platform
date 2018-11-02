@@ -1049,7 +1049,6 @@ EXPORT Date_t AdjustCalendar(Date_t date,
                              INTEGER4 day_delta = 0) :=
     TimeLib.AdjustCalendar(date, year_delta, month_delta, day_delta);
 
-
 /**
  * Helper function.  Calculates the 1-based week number of a date, starting from
  * a reference date.  Week 1 always contains the reference date, and week 2
@@ -1078,6 +1077,92 @@ SHARED WeekNumForDate(Date_t date, Date_t referenceDate, UNSIGNED1 startingDayOf
     weekNum := IF(startingDayOfWeek > referenceDayOfWeek, weekNum0 + 1, weekNum0);
 
     RETURN weekNum;
+END;
+
+/**
+ * Returns a number representing the day of the week indicated by the given date in ISO-8601.
+ * The date must be in the Gregorian calendar after the year 1600.
+ *
+ * @param date          A Date_t value.
+ * @return              A number 1-7 representing the day of the week, where 1 = Monday.
+ */
+EXPORT ISODayOfWeekFromDate(Date_t d) := ((DayOfWeek(d) + 5) % 7) + 1;		
+
+/**
+ * Helper function to figure out the number of weeks for a given year.
+ * For more details, see: https://en.wikipedia.org/wiki/ISO_week_date#Weeks_per_year
+ *
+ * @param date          A Date_t value.
+ * @return              Number between 0 and 6 to help figure out whether year is long (53 weeks) or short (52 weeks).
+ */
+SHARED ISOWeeksP(INTEGER2 year) := (year + TRUNCATE(year/4) - TRUNCATE(year/100) + TRUNCATE(year/400)) % 7;
+
+/**
+ * Returns true for years with 53 weeks, and false for years with 52 weeks.
+ *
+ * @param date          A Date_t value.
+ * @return              TRUE if year is a long year (i.e. 53 weeks), FALSE otherwise.
+ */
+EXPORT ISOIsLongYear(INTEGER2 year) := (ISOWeeksP(year) = 4 OR ISOWeeksP(year - 1) = 3);
+
+/**
+ * Returns a number representing the maximum number of weeks for the year from date.
+ *
+ * @param date          A Date_t value.
+ * @return              The number 52 for short years and 53 for long ones.
+ */
+EXPORT ISOWeeksFromDate(Date_t d) := 52 + IF(ISOIsLongYear(Year(d)), 1, 0);
+
+/**
+ * Returns a number representing the raw week number of the given date.
+ *
+ * @param date          A Date_t value.
+ * @return              A number from 1 to 53.
+ */
+EXPORT ISORawWeekNumForDate(Date_t d) := TRUNCATE((DayOfYear(d) - ISODayOfWeekFromDate(d) + 10) / 7);
+
+/**
+ * Returns the ISO 1-based week number and year, of that week number, of a date.
+ * First day(s) of a year may be in the previous year's last week number.
+ * This is an ISO-8601 implementation of computing week numbers ("week dates").
+ *
+ * @param date          A Date_t value.
+ * @return              A number 1-53 representing the week number in a year, 
+ *                      and year 1600+ representing the year of that week number
+ *                      (could be previous year from given date).
+ */
+EXPORT ISOWeekNumWeekDayAndYearFromDate(Date_t d) := FUNCTION
+    givenYear := Year(d); 
+    lastDayPreviousYear := DateFromParts(givenYear - 1, 12, 31);
+    lastWeekPreviousYear := ISOWeeksFromDate(lastDayPreviousYear);
+    lastDayGivenYear := DateFromParts(givenYear, 12, 31);
+    lastWeekGivenYear := ISOWeeksFromDate(lastDayGivenYear);
+    rawWeekNumber := ISORawWeekNumForDate(d);
+    weekNumber := IF(rawWeekNumber < 1, lastWeekPreviousYear, IF(rawWeekNumber > lastWeekGivenYear, 1, rawWeekNumber));
+    weekNumberYear := (givenYear + IF(rawWeekNumber < 1, -1, IF(rawWeekNumber > lastWeekGivenYear, 1, 0)));
+    weekDay := ISODayOfWeekFromDate(d);
+    result := MODULE
+        EXPORT weekNumber := weekNumber;
+        EXPORT year := weekNumberYear;
+        EXPORT weekDay := weekDay;
+    END;
+    RETURN result;
+END;
+
+/**
+ * Returns the ISO-8601 week date in extended (e.g. 2018-W23-7) or 
+ * compact (e.g. 2018W237) form.
+ * This is an ISO-8601 implementation of computing week numbers ("week dates").
+ *
+ * @param date          A Date_t value.
+ * @return              A number 1-53 representing the week number in a year, 
+ *                      and year 1600+ representing the year of that week number
+ *                      (could be previous year from given date).
+ */
+EXPORT ISOWeekDate(Date_t d, BOOLEAN extended = FALSE) := FUNCTION
+    ISOWeekNumWeekDayAndYear := ISOWeekNumWeekDayAndYearFromDate(d);
+    sep := IF(extended, '-', '');
+    RETURN INTFORMAT(ISOWeekNumWeekDayAndYear.year, 4, 1) + sep + 'W' + INTFORMAT(ISOWeekNumWeekDayAndYear.weeknumber, 2, 1) + sep + ISOWeekNumWeekDayAndYear.weekday;
 END;
 
 /**
