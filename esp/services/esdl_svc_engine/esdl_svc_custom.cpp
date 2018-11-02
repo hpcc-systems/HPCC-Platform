@@ -306,6 +306,23 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
         auto user = context->queryUser();
         if (user)
         {
+            static const std::map<SecUserStatus, const char*> statusLabels =
+            {
+#define STATUS_LABEL_NODE(s) { s, #s }
+                STATUS_LABEL_NODE(SecUserStatus_Inhouse),
+                STATUS_LABEL_NODE(SecUserStatus_Active),
+                STATUS_LABEL_NODE(SecUserStatus_Exempt),
+                STATUS_LABEL_NODE(SecUserStatus_FreeTrial),
+                STATUS_LABEL_NODE(SecUserStatus_csdemo),
+                STATUS_LABEL_NODE(SecUserStatus_Rollover),
+                STATUS_LABEL_NODE(SecUserStatus_Suspended),
+                STATUS_LABEL_NODE(SecUserStatus_Terminated),
+                STATUS_LABEL_NODE(SecUserStatus_TrialExpired),
+                STATUS_LABEL_NODE(SecUserStatus_Status_Hold),
+                STATUS_LABEL_NODE(SecUserStatus_Unknown),
+#undef STATUS_LABEL_NODE
+            };
+
             Owned<IPropertyIterator> userPropIt = user->getPropertyIterator();
             ForEach(*userPropIt)
             {
@@ -313,6 +330,22 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
                 if (name && *name)
                     xpathContext->addVariable(name, user->getProperty(name));
             }
+
+            auto it = statusLabels.find(user->getStatus());
+
+            xpathContext->addVariable("espUserName", user->getName());
+            xpathContext->addVariable("espUserRealm", user->getRealm() ? user->getRealm() : "");
+            xpathContext->addVariable("espUserPeer", user->getPeer() ? user->getPeer() : "");
+            xpathContext->addVariable("espUserStatus", VStringBuffer("%d", int(user->getStatus())));
+            if (it != statusLabels.end())
+                xpathContext->addVariable("espUserStatusString", it->second);
+            else
+                throw MakeStringException(-1, "encountered unexpected secure user status (%d) while processing transform", int(user->getStatus()));
+        }
+        else
+        {
+            // enable transforms to distinguish secure versus insecure requests
+            xpathContext->addVariable("espUserName", "");
         }
 
         Owned<IPropertyTreeIterator> configParams = bindingCfg->getElements("Transform/Param");
