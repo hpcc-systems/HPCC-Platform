@@ -265,6 +265,7 @@ public:
     bool onWUClusterJobXLS(IEspContext &context, IEspWUClusterJobXLSRequest &req, IEspWUClusterJobXLSResponse &resp);
     bool onWUClusterJobSummaryXLS(IEspContext &context, IEspWUClusterJobSummaryXLSRequest &req, IEspWUClusterJobSummaryXLSResponse &resp);
     bool onWUGetThorJobQueue(IEspContext &context, IEspWUGetThorJobQueueRequest &req, IEspWUGetThorJobQueueResponse &resp);
+    bool onWUGetThorJobList(IEspContext &context, IEspWUGetThorJobListRequest &req, IEspWUGetThorJobListResponse &resp);
 
     bool onWUCDebug(IEspContext &context, IEspWUDebugRequest &req, IEspWUDebugResponse &resp);
     bool onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp);
@@ -326,6 +327,16 @@ private:
     const char* gatherECLException(IArrayOf<IConstECLException> &exceptions, StringBuffer &exceptionMsg);
     void addEclDefinitionActionResult(const char *eclDefinition, const char *result, const char *wuid,
         const char *queryID, const char* strAction, bool logResult, IArrayOf<IConstWUEclDefinitionActionResult> &results);
+    void checkAddToInProgressECLJobList(double version, const char* wuid, const char* graph,
+        const char* subGraph, const char* cluster, const char* startTime, const char* endTime,
+        IArrayOf<IEspECLJob>& eclJobList, IArrayOf<IEspECLJob>& inProgressECLJobList);
+    void getInProgressThorJobsFromAuditLog(double version, CDateTime& queryAuditLogFrom, CDateTime& queryAuditLogTo,
+        const char* queryAuditLogToStr, const char* cluster, IArrayOf<IEspECLJob>& eclJobList,
+        IArrayOf<IEspECLJob>& inProgressECLJobList);
+    void getPreviousInProgressThorJobsFromAuditLog(double version, CDateTime queryAuditLogFrom, const char *queryAuditLogToStr,
+        const char *cluster, IArrayOf<IEspECLJob> &eclJobList, IArrayOf<IEspECLJob> &inProgressECLJobList);
+    bool getThorJobsFromAuditLog(double version, CDateTime &queryAuditLogFrom, CDateTime &queryAuditLogTo,
+        const char *cluster, unsigned maxJobsToReturn, IArrayOf<IEspECLJob> &eclJobList);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
