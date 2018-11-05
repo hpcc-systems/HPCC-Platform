@@ -2974,7 +2974,7 @@ bool WsWuJobQueueAuditInfo::checkNewThorQueueItem(IEspThorQueue* tq, unsigned sh
             bAdd = true;
         if (!checkSameStrings(tq->getConnectedThors(), tq0.getConnectedThors()))
             bAdd = true;
-        if (!checkSameStrings(tq->getConnectedThors(), tq0.getConnectedThors()))
+        if (!checkSameStrings(tq->getWaitingThors(), tq0.getWaitingThors()))
             bAdd = true;
         if (!checkSameStrings(tq->getRunningWU1(), tq0.getRunningWU1()))
             bAdd = true;
