@@ -87,7 +87,7 @@ rec1 checksort(rec1 l, rec1 r) := TRANSFORM
   self := r;
 END;
 
-rollup_ds := ROLLUP(ROLLUP(sds,checksort(LEFT, RIGHT),TRUE,LOCAL),checksort(LEFT, RIGHT),TRUE);
+rollup_ds := NOFOLD(ROLLUP(NOFOLD(ROLLUP(sds,checksort(LEFT, RIGHT),TRUE,LOCAL)),checksort(LEFT, RIGHT),TRUE));
 
 
 test5 := SEQUENTIAL(
@@ -107,7 +107,7 @@ rec1 checkdist(rec1 l, rec1 r) := TRANSFORM
 END;
 
 test6 := SEQUENTIAL(
-  OUTPUT(COUNT(ROLLUP(hds,checkdist(LEFT, RIGHT),TRUE,LOCAL))),
+  OUTPUT(COUNT(NOFOLD(ROLLUP(hds,checkdist(LEFT, RIGHT),TRUE,LOCAL)))),
   OUTPUT('test6 read/dist done')
 );
 
