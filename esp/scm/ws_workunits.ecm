@@ -1041,6 +1041,22 @@ ESPresponse [exceptions_inline] WUClusterJobSummaryXLSResponse
     [http_content("application/octet-stream")] binary Result;
 };
 
+ESPrequest [nil_remove] WUGetThorJobQueueRequest
+{
+    string Cluster;
+    string StartDate;
+    string EndDate;
+    unsigned MaxJobQueueItemsToReturn(0);
+};
+
+ESPresponse [exceptions_inline] WUGetThorJobQueueResponse
+{
+    int LongestQueue;
+    int MaxThorConnected;
+    ESParray<ESPstruct ThorQueue> QueueList;
+    string Warning;
+};
+
 ESPrequest GVCAjaxGraphRequest
 {
     string Name;
@@ -2234,7 +2250,7 @@ ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
 // ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.73"), default_client_version("1.73"), cache_group("ESPWsWUs"),
+    version("1.74"), default_client_version("1.74"), cache_group("ESPWsWUs"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -2320,6 +2336,7 @@ ESPservice [
     ESPmethod [min_ver("1.71")] WUDetails(WUDetailsRequest, WUDetailsResponse);
     ESPmethod [cache_seconds(600), min_ver("1.71")] WUDetailsMeta(WUDetailsMetaRequest, WUDetailsMetaResponse);
     ESPmethod [clear_cache_group, min_ver("1.72")] WUEclDefinitionAction(WUEclDefinitionActionRequest, WUEclDefinitionActionResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.74")] WUGetThorJobQueue(WUGetThorJobQueueRequest, WUGetThorJobQueueResponse);
 };
 
 
