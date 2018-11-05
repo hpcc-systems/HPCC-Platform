@@ -80,7 +80,7 @@ class jlib_decl IpAddress
 public:
     IpAddress()                                         { ipset(NULL); }
     IpAddress(const IpAddress& other)                   { ipset(other); }
-    IpAddress(const char *text)                         { ipset(text); }
+    explicit IpAddress(const char *text)                { ipset(text); }
     
     bool ipset(const char *text);                       // sets to NULL if fails or text=NULL   
     void ipset(const IpAddress& other)                  { memcpy(&netaddr,&other.netaddr,sizeof(netaddr)); }
