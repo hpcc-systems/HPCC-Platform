@@ -412,6 +412,13 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="loginLogoURL" type="xs:string" use="optional" default="/esp/files/eclwatch/img/Loginlogo.png">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>URL to Login Logo</tooltip>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
                         <xs:attribute name="getUserNameURL" type="xs:string" use="optional" default="/esp/files/GetUserName.html">
                             <xs:annotation>
                                 <xs:appinfo>
@@ -473,11 +480,19 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="loginLogoURL" type="xs:string" use="optional" default="/esp/files/eclwatch/img/Loginlogo.png">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>URL to Login Logo</tooltip>
+                                    <colIndex>4</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
                         <xs:attribute name="logoutURL" type="xs:string" use="optional" default="">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Logout URL</tooltip>
-                                    <colIndex>4</colIndex>
+                                    <colIndex>5</colIndex>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
@@ -485,7 +500,7 @@
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Inactive session duration, in minutes, that is used to timeout a session on ESP client. Specify 0 for default timeout, -1 for never time out.</tooltip>
-                                    <colIndex>5</colIndex>
+                                    <colIndex>6</colIndex>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
@@ -493,7 +508,7 @@
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Considering network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.\nIf serverSessionTimeoutMinutes is less than clientSessionTimeoutMinutes, serverSessionTimeoutMinutes = 2 * clientSessionTimeoutMinutes. -1 for never time out.</tooltip>
-                                    <colIndex>6</colIndex>
+                                    <colIndex>7</colIndex>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
@@ -502,7 +517,7 @@
                                 <xs:appinfo>
                                     <width>50</width>
                                     <tooltip>unrestricted resources for user authentication</tooltip>
-                                    <colIndex>7</colIndex>
+                                    <colIndex>8</colIndex>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
@@ -511,7 +526,7 @@
                                 <xs:appinfo>
                                     <width>50</width>
                                     <tooltip>After authentication, requests are redirected to the home page.</tooltip>
-                                    <colIndex>8</colIndex>
+                                    <colIndex>9</colIndex>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>

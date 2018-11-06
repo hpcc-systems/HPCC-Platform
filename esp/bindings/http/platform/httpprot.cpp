@@ -474,6 +474,7 @@ bool CHttpThread::onRequest()
     time_t t = time(NULL);  
     initThreadLocal(sizeof(t), &t);
 
+    httpserver->setIsSSL(m_is_ssl);
     httpserver->processRequest();
 
     if (m_persistentHandler == nullptr)

@@ -162,6 +162,7 @@ private:
     StringBuffer            sessionIDCookieName;
     AuthType                domainAuthType;
 
+    StringAttr              loginLogoURL;
     StringAttr              loginURL;
     StringAttr              logoutURL;
     int                     clientSessionTimeoutSeconds = 60 * ESP_SESSION_TIMEOUT;
@@ -361,6 +362,7 @@ public:
     const char* queryESPSessionSDSPath() const { return espSessionSDSPath.str(); }
     const char* querySessionIDCookieName() const { return sessionIDCookieName.str(); }
     AuthType getDomainAuthType() const { return domainAuthType; }
+    const char* queryLoginLogoURL() const { return loginLogoURL.get(); }
     const char* queryLoginURL() const { return loginURL.get(); }
     const char* queryLogoutURL() const { return logoutURL.get(); }
     int getClientSessionTimeoutSeconds() const { return clientSessionTimeoutSeconds; }
