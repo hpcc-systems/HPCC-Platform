@@ -34,7 +34,7 @@ xmlns:set="http://exslt.org/sets">
         </xsl:if>
         <xsl:variable name="loggingServerUrl" select="$loggingServer/@Url"/>
         <xsl:if test="string($loggingServerUrl) = ''">
-            <xsl:message terminate="yes">Logging Server URL is undefined!</xsl:message>
+            <xsl:message terminate="yes">Logging Server URL is undefined for <xsl:value-of select="$agentName"/>!</xsl:message>
         </xsl:if>
         <xsl:variable name="logDataXPath" select="$agentNode/LogDataXPath"/>
         <xsl:if test="not($logDataXPath)">
