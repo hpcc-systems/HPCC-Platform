@@ -9655,6 +9655,12 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
             targetScope = activeScope.privateScope;
         }
     }
+    if (isParametered && expr->isFunction())
+    {
+        expr.setown(createNullExpr(expr->queryType()->queryChildType()));
+        reportError(HQLERR_CannotDefineFunctionFunction, idattr.pos, HQLERR_CannotDefineFunctionFunction_Text);
+    }
+
     OwnedHqlExpr normalized = normalizeFunctionExpression(defineid, expr, failure, isParametered, activeScope.activeParameters, activeScope.createDefaults(), modifiers);
     defineSymbolInScope(targetScope, defineid, normalized, idattr, assignPos, semiColonPos);
 
