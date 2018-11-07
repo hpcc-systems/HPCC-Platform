@@ -270,6 +270,7 @@ void CEsdlCustomTransformChoose::toDBGLog ()
 CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree &currentTransform)
 {
     m_name.set(currentTransform.queryProp("@name"));
+    m_target.set(currentTransform.queryProp("@target"));
     DBGLOG("Compiling custom ESDL Transform: '%s'", m_name.str());
 
     Owned<IPropertyTreeIterator> conditionalIterator = currentTransform.getElements("xsdl:choose");
@@ -285,7 +286,7 @@ CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree &currentTransform)
 #endif
 }
 
-void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer & request, IPropertyTree * bindingCfg)
+void CEsdlCustomTransform::processTransform(IEspContext * context, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg)
 {
     if (request.length()!=0)
     {
@@ -357,12 +358,16 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
             }
         }
 
-        Owned<IPropertyTree> thereq = createPTreeFromXMLString(request.str());
+        Owned<IPropertyTree> theroot = createPTreeFromXMLString(request.str());
+        StringBuffer xpath = m_target.str();
+        if (!xpath.length())
+            xpath.setf("soap:Body/%s/%s", mthdef.queryMethodName(), mthdef.queryRequestType()); //This default gives us backward compatibility with only being able to write to the actual request
+        IPropertyTree *thereq = theroot->queryPropTree(xpath.str());  //get pointer to the write-able area
         ForEachItemIn(currConditionalIndex, m_customTransformClauses)
         {
             m_customTransformClauses.item(currConditionalIndex).process(context, thereq, xpathContext);
         }
-        toXML(thereq, request.clear());
+        toXML(theroot, request.clear());
 
         ESPLOG(LogMax,"MODIFIED REQUEST: %s", request.str());
     }

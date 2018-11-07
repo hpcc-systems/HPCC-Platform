@@ -660,14 +660,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             reqcontent.set(reqWriter->str());
             context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
 
-            if (crt)
-            {
-                context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
-                crt->processTransform(&context, reqcontent, m_oEspBindingCfg.get());
-                context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
-            }
-
-            handleFinalRequest(context, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy);
+            handleFinalRequest(context, crt, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy);
             context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq");
 
             if (isPublishedQuery(implType))
@@ -831,6 +824,7 @@ void EsdlServiceImpl::getSoapError( StringBuffer& out,
 }
 
 void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
+                                         IEsdlCustomTransform *crt,
                                          Owned<IPropertyTree> &tgtcfg,
                                          Owned<IPropertyTree> &tgtctx,
                                          IEsdlDefService &srvdef,
@@ -879,7 +873,16 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
 
     const char *tgtUrl = tgtcfg->queryProp("@url");
     if (tgtUrl && *tgtUrl)
+    {
+        if (crt)
+        {
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
+            crt->processTransform(&context, mthdef, soapmsg, m_oEspBindingCfg.get());
+            context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
+        }
+
         sendTargetSOAP(context, tgtcfg.get(), soapmsg.str(), out, isproxy, NULL);
+    }
     else
     {
         ESPLOG(LogMax,"No target URL configured for %s",mthdef.queryMethodName());
