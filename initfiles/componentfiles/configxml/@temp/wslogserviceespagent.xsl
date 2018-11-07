@@ -36,8 +36,7 @@ xmlns:set="http://exslt.org/sets">
         <xsl:if test="string($loggingServerUrl) = ''">
             <xsl:message terminate="yes">Logging Server URL is undefined for <xsl:value-of select="$agentName"/>!</xsl:message>
         </xsl:if>
-        <xsl:variable name="logDataXPath" select="$agentNode/LogDataXPath"/>
-        <xsl:if test="not($logDataXPath)">
+        <xsl:if test="not($agentNode/LogDataItem[1]) and not($agentNode/LogInfo[1])">
             <xsl:message terminate="yes">Log Data XPath is undefined for <xsl:value-of select="$agentName"/> </xsl:message>
         </xsl:if>
 
@@ -73,44 +72,11 @@ xmlns:set="http://exslt.org/sets">
             </xsl:call-template>
                 
             <LogDataXPath>
-                <xsl:if test="string($logDataXPath/@IP) != ''">
-                    <IP><xsl:value-of select="$logDataXPath/@IP"/></IP>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@UserName) != ''">
-                    <UserName><xsl:value-of select="$logDataXPath/@UserName"/></UserName>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@ServiceName) != ''">
-                    <ServiceName><xsl:value-of select="$logDataXPath/@ServiceName"/></ServiceName>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@RecordCount) != ''">
-                    <RecordCount><xsl:value-of select="$logDataXPath/@RecordCount"/></RecordCount>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@DomainName) != ''">
-                    <DomainName><xsl:value-of select="$logDataXPath/@DomainName"/></DomainName>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@GUID) != ''">
-                    <GUID><xsl:value-of select="$logDataXPath/@GUID"/></GUID>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@BlindLogging) != ''">
-                    <BlindLogging><xsl:value-of select="$logDataXPath/@BlindLogging"/></BlindLogging>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@EncryptedLogging) != ''">
-                    <EncryptedLogging><xsl:value-of select="$logDataXPath/@EncryptedLogging"/></EncryptedLogging>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@ForwardLog) != ''">
-                    <ForwardLog><xsl:value-of select="$logDataXPath/@ForwardLog"/></ForwardLog>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@RawLogInformation) != ''">
-                    <RawLogInformation><xsl:value-of select="$logDataXPath/@RawLogInformation"/></RawLogInformation>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@CompressBlobs) != ''">
-                    <CompressBlobs><xsl:value-of select="$logDataXPath/@CompressBlobs"/></CompressBlobs>
-                </xsl:if>
-                <xsl:if test="string($logDataXPath/@WorkunitID) != ''">
-                    <WorkunitID><xsl:value-of select="$logDataXPath/@WorkunitID"/></WorkunitID>
-                </xsl:if>
+                <xsl:for-each select="$agentNode/LogDataItem">
+                    <LogDataItem name="{current()/@name}" XPath="{current()/@xpath}" xsl="{current()/@xsl}" default="{current()/@default}"/>
+                </xsl:for-each>
                 <xsl:for-each select="$agentNode/LogInfo">
-                    <LogInfo name="{current()/@name}" valueXPath="{current()/@valueXPath}" dataXPath="{current()/@dataXPath}" multipleValue="{current()/@multipleValue}" multipleData="{current()/@multipleData}" encodeValue="{current()/@encodeValue}" encodeData="{current()/@encodeData}"/>
+                    <LogInfo name="{current()/@name}" default="{current()/@default}" XPath="{current()/@xpath}" xsl="{current()/@xsl}" multiple="{current()/@multiple}" encode="{current()/@encode}" type="{current()/@type}"/>
                 </xsl:for-each>
             </LogDataXPath>
         </LogAgent>
