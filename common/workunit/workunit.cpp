@@ -11568,7 +11568,7 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
         return str.append("Unrecognized workunit format");
 }
 
-extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool splitStats)
+extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool regressionTest)
 {
     const IExtendedWUInterface *ewu = queryExtendedWU(wu);
     if (ewu)
@@ -11576,19 +11576,36 @@ extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const
         Linked<IPropertyTree> p;
         if (unpack||includeProgress)
             p.setown(ewu->getUnpackedTree(includeProgress));
+        else if (regressionTest)
+            p.setown(createPTreeFromIPT(ewu->queryPTree()));
         else
             p.set(ewu->queryPTree());
         if (hidePasswords)
             return exportWorkUnitToXMLFileWithHiddenPasswords(p, filename, extraXmlFlags);
-        if (splitStats)
+
+        if (regressionTest)
         {
-            StringBuffer statsFilename;
-            statsFilename.append(filename).append(".stats");
+            //This removes any items from the xml that will vary from run to run, so they can be binary compared from run to run
+            //The following attributes change with the build.  Simpler to remove rather than needing to updated each build
+            p->removeProp("@buildVersion");
+            p->removeProp("@eclVersion");
+            p->removeProp("@hash");
+
+            //Remove statistics, and extract them to a separate file
             IPropertyTree * stats = p->queryPropTree("Statistics");
             if (stats)
             {
+                StringBuffer statsFilename;
+                statsFilename.append(filename).append(".stats");
                 saveXML(statsFilename, stats, 0, (XML_Format|XML_SortTags|extraXmlFlags) & ~XML_LineBreakAttributes);
                 p->removeProp("Statistics");
+            }
+            //Now remove timestamps from exceptions
+            Owned<IPropertyTreeIterator> elems = p->getElements("Exceptions/Exception", iptiter_sort);
+            ForEach(*elems)
+            {
+                IPropertyTree &elem = elems->query();
+                elem.removeProp("@time");
             }
         }
         saveXML(filename, p, 0, XML_Format|XML_SortTags|extraXmlFlags);
