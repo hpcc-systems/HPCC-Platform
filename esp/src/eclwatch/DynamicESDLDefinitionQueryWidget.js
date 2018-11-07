@@ -41,6 +41,13 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            if (params.Id) {
+                this.grid.select(params.Id);
+                this.definitionWidget.init({
+                    Id: params.Id
+                });
+            }
+
             this._refreshActionState();
             this.refreshGrid();
             this.addContextMenuItems();
