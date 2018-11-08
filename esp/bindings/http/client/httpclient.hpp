@@ -48,7 +48,7 @@ interface IHttpClientContext : extends IInterface
 };
 
 
-ESPHTTP_API IHttpClientContext* getHttpClientContext();
-ESPHTTP_API IHttpClientContext* createHttpClientContext(IPropertyTree* config);
+esp_http_decl IHttpClientContext* getHttpClientContext();
+esp_http_decl IHttpClientContext* createHttpClientContext(IPropertyTree* config);
 
 #endif

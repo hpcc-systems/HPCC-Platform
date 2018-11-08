@@ -28,7 +28,7 @@
 namespace cryptohelper
 {
 
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
 
 const unsigned aesMaxKeySize = 256/8; // 256 bits
 const unsigned aesBlockSize = 128/8; // 128 bits
@@ -43,7 +43,7 @@ jlib_decl size32_t aesEncryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inS
 jlib_decl size32_t aesDecryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const void *inBytes, const CLoadedKey &privateKey);
 
 
-#endif // end of #if defined(_USE_OPENSSL) && !defined(_WIN32)
+#endif // end of #if defined(_USE_OPENSSL)
 
 } // end of namespace cryptohelper
 

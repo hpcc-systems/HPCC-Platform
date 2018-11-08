@@ -17,17 +17,13 @@
 
 #pragma warning(disable : 4786)
 
-#ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl DECL_EXPORT
-#else
-    #define esp_http_decl DECL_IMPORT
-#endif
+
 //Jlib
 #include "jliball.hpp"
 
 //ESP Bindings
 #include "httpclient.ipp"
-#include "http/platform/httptransport.ipp"
+#include "http/platform/httptransport.hpp"
 #include "securesocket.hpp"
 #include "bindutil.hpp"
 #include "espplugin.ipp"
