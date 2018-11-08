@@ -34,7 +34,7 @@
 
 static const bool defaultRowServiceOnStdPort = true;
 static const bool defaultDedicatedRowServiceSSL = false;
-
+static const char* defaultRowSericeConfiguration = "RowSvc";
 
 
 #include "remoteerr.hpp"
@@ -386,6 +386,7 @@ int main(int argc,char **argv)
     unsigned throttleSlowQueueLimit = DEFAULT_SLOWCMD_THROTTLEQUEUELIMIT;
 
     unsigned dedicatedRowServicePort = DEFAULT_ROWSERVICE_PORT;
+	StringAttr rowServiceConfiguration = defaultRowSericeConfiguration;
     bool dedicatedRowServiceSSL = defaultDedicatedRowServiceSSL;
     bool rowServiceOnStdPort = defaultRowServiceOnStdPort;
 
@@ -434,6 +435,8 @@ int main(int argc,char **argv)
             dedicatedRowServicePort = daFileSrv->getPropInt("@rowServicePort", DEFAULT_ROWSERVICE_PORT);
             dedicatedRowServiceSSL = daFileSrv->getPropBool("@rowServiceSSL", defaultDedicatedRowServiceSSL);
             rowServiceOnStdPort = daFileSrv->getPropBool("@rowServiceOnStdPort", defaultRowServiceOnStdPort);
+			if (daFileSrv->queryProp("@rowServiceConfiguration"))
+				rowServiceConfiguration = daFileSrv->queryProp("@rowServiceConfiguration");
 
             // any overrides by Instance definitions?
             // NB: This won't work if netAddress is "." or if we start supporting hostnames there

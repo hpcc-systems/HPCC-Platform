@@ -37,7 +37,7 @@ class EnvSupportLib
 
     private:
 
-        void *m_libHandle;
+        HINSTANCE m_libHandle;
         std::string m_libName;
         HPCCConfigSupport *m_pSupportLib;
 };

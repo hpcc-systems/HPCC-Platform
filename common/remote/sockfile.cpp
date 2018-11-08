@@ -4508,7 +4508,7 @@ void checkExpiryTime(IPropertyTree &metaInfo)
     {
         expiryTimeDt.setString(expiryTime);
     }
-    catch (IException *e)
+    catch (IException * /*e*/)
     {
         throw createDafsException(DAFSERR_cmdstream_invalidexpiry, "createRemoteActivity: invalid expiry specification");
     }

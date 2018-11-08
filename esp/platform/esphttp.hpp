@@ -19,9 +19,9 @@
 #define _ESPHTTP_HPP__
 
 #ifdef ESPHTTP_EXPORTS
-    #define ESPHTTP_API DECL_EXPORT
+    #define esp_http_decl DECL_EXPORT
 #else
-    #define ESPHTTP_API DECL_IMPORT
+    #define esp_http_decl DECL_IMPORT
 #endif
 
 #define ENABLE_NEW_SECURITY 

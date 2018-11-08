@@ -20,8 +20,9 @@
 #include "XMLEnvironmentMgr.hpp"
 #include "InsertableItem.hpp"
 #include "Utils.hpp"
+#ifndef WIN32
 #include <dlfcn.h>
-
+#endif
 std::atomic_int EnvironmentMgr::m_key(1);
 
 EnvironmentMgr *getEnvironmentMgrInstance(const EnvironmentType envType)
@@ -297,7 +298,7 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
     std::vector<NameValue> empty;
     for (auto &pCfgChild: cfgItemChildren)
     {
-        for (int i = 0; i<pCfgChild->getMinInstances(); ++i)
+        for (unsigned i = 0; i<pCfgChild->getMinInstances(); ++i)
         {
             addNewEnvironmentNode(pNewEnvNode, pCfgChild, empty, status);
         }

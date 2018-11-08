@@ -53,5 +53,5 @@ if (WIN32)
 target_link_libraries ( archivefile
     ${ZLIB_LIBRARIES}
     ${BZIP2_LIBRARIES}
-    )
+)
 endif (WIN32)
