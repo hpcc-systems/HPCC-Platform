@@ -40,6 +40,8 @@ set (    SRCS
          hidl_utils.cpp 
          hidlcomp.cpp 
          main.cpp 
+         hidlgram.y
+         hidllex.l
     )
 
 include_directories ( 
@@ -48,7 +50,9 @@ include_directories (
          ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-set_source_files_properties (${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
+IF (NOT WIN32)
+  set_source_files_properties (${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
+ENDIF()
 
 ADD_DEFINITIONS( -D_CONSOLE)
 HPCC_ADD_EXECUTABLE ( hidl ${SRCS} )

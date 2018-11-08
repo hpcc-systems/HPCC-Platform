@@ -2254,7 +2254,7 @@ bool RowCursor::findNextRange(unsigned field)
             //if (filter.incrementValue(currentRow))
             //    nextUnmatchedRange = 0;
             //else
-            nextUnmatchedRange = -1U;
+            nextUnmatchedRange = unsigned(-1);
             return false;
         }
 

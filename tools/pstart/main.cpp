@@ -17,6 +17,7 @@
 
 #include "win32.hpp"
 #include <stdio.h>
+#include <platform.h>
 
 int main(int argc, char** argv)
 {

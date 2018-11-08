@@ -53,7 +53,7 @@ EnvSupportLib::~EnvSupportLib()
 {
     if (m_libHandle != nullptr)
     {
-        CloseSharedObject(m_libHandle);
+        FreeSharedObject(m_libHandle);
         m_libHandle = nullptr;
     }
 }

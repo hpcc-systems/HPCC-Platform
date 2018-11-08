@@ -25,20 +25,23 @@
 project( esdl-xml )
 
 set ( SRCS
-         ${CMAKE_CURRENT_SOURCE_DIR}/esdl2xml.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/../esdlcmd/esdlcmdutils.cpp
-    )
+	${CMAKE_CURRENT_SOURCE_DIR}/esdl2xml.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/../esdlcmd/esdlcmdutils.cpp
+)
 
 include_directories (
-         ${CMAKE_CURRENT_BINARY_DIR}   # for generated .h file
-         ${HPCC_SOURCE_DIR}/system/include
-         ${HPCC_SOURCE_DIR}/system/jlib
-         ${HPCC_SOURCE_DIR}/tools/esdlcomp
-         ${HPCC_SOURCE_DIR}/tools/esdlcmd
-         ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+	${CMAKE_CURRENT_BINARY_DIR}   # for generated .h file
+	${HPCC_SOURCE_DIR}/system/include
+	${HPCC_SOURCE_DIR}/system/jlib
+	${HPCC_SOURCE_DIR}/tools/esdlcomp
+	${HPCC_SOURCE_DIR}/tools/esdlcmd
+	${CMAKE_CURRENT_SOURCE_DIR}
+)
 
-ADD_DEFINITIONS( -D_CONSOLE -O0 )
+ADD_DEFINITIONS( -D_CONSOLE )
+IF (NOT WIN32)
+	ADD_DEFINITIONS( -O0 )
+ENDIF()
 
 HPCC_ADD_EXECUTABLE ( esdl-xml ${SRCS} )
 
@@ -50,5 +53,6 @@ if ( UNIX )
 endif ( UNIX )
 
 target_link_libraries ( esdl-xml
-                        jlib
-                        esdlcomp)
+	jlib
+	esdlcomp
+)

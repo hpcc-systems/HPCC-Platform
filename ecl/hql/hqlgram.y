@@ -13027,7 +13027,7 @@ yybackup:
   if (yyn == YYPACT_NINF)
     goto yydefault;
 
-yyprocesschar:
+// yyprocesschar: // unsed label
   yytoken = YYTRANSLATE (yychar);
 
   /* If the proper action on seeing token YYTOKEN is to reduce or to

@@ -81,7 +81,7 @@ void toEp(SocketEndpoint & ep, LPCSTR epTxt)
 {
     char * tmp = static_cast <char *> (alloca(strlen(epTxt) + 1));
     strcpy(tmp, epTxt);
-    for(int i = strlen(tmp); i >= 0; i--)       
+    for(unsigned i = (unsigned)strlen(tmp); i >= 0; i--)       
     {
         if(*(tmp + i) == ':')
         {   

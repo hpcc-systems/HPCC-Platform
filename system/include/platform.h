@@ -1,4 +1,4 @@
-/*##############################################################################
+﻿/*##############################################################################
 
     HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
@@ -113,7 +113,9 @@ typedef memsize_t rowsize_t;
 #if defined(_WIN32)
 
 #define _CRT_SECURE_NO_WARNINGS
+#ifndef NO_WARN_MBCS_MFC_DEPRECATION
 #define NO_WARN_MBCS_MFC_DEPRECATION
+#endif
 
 #if (_MSC_VER>=1300)
 #pragma warning(disable:4996)
@@ -172,7 +174,6 @@ typedef memsize_t rowsize_t;
 #define LoadSucceeded(h)           ((memsize_t)h >= 32)
 #define GetSharedObjectError()     GetLastError()
 #define GetSharedObjectErrorString() strerror(errno)
-#define CloseSharedObject(h)        FreeLibrary(h)
 #define strtok_r(a,b,c)            j_strtok_r(a,b,c)
 #define __builtin_prefetch(addr)   _mm_prefetch((const char *)(addr), _MM_HINT_T0)
 
@@ -208,48 +209,23 @@ typedef unsigned long MaxCard;
 #define S_IRWXG (S_IXGRP|S_IWGRP|S_IRGRP)
 #define S_IRWXO (S_IXGRP|S_IWGRP|S_IRGRP)
 
-// MSVC 2008 in debug (perhaps other versions too) will throw exception if negative passed (see bug: #32013)
-#if (_MSC_VER>=1400) // >=vs2005
+// These are define, but never used.
+/*
 #define strictmsvc_isalpha(c) isalpha(c)
-#define isalpha(c) isalpha((const unsigned char)(c))
-
+#define strictmsvc_isalpha(c) isalpha(c)
 #define strictmsvc_isupper(c) isupper(c)
-#define isupper(c) isupper((const unsigned char)(c))
-
 #define strictmsvc_islower(c) islower(c)
-#define islower(c) islower((const unsigned char)(c))
-
 #define strictmsvc_isdigit(c) isdigit(c)
-#define isdigit(c) isdigit((const unsigned char)(c))
-
 #define strictmsvc_isxdigit(c) isxdigit(c)
-#define isxdigit(c) isxdigit((const unsigned char)(c))
-
 #define strictmsvc_isspace(c) isspace(c)
-#define isspace(c) isspace((const unsigned char)(c))
-
 #define strictmsvc_ispunct(c) ispunct(c)
-#define ispunct(c) ispunct((const unsigned char)(c))
-
 #define strictmsvc_isalnum(c) isalnum(c)
-#define isalnum(c) isalnum((const unsigned char)(c))
-
 #define strictmsvc_isprint(c) isprint(c)
-#define isprint(c) isprint((const unsigned char)(c))
-
 #define strictmsvc_isgraph(c) isgraph(c)
-#define isgraph(c) isgraph((const unsigned char)(c))
-
 #define strictmsvc_iscntrl(c) iscntrl(c)
-#define iscntrl(c) iscntrl((const unsigned char)(c))
-
 #define strictmsvc_tolower(c) tolower(c)
-#define tolower(c) tolower((const unsigned char)(c))
-
 #define strictmsvc_toupper(c) toupper(c)
-#define toupper(c) toupper((const unsigned char)(c))
-
-#endif // (_MSC_VER>=1400)
+*/
 
 #define likely(x)       (x)
 #define unlikely(x)     (x)
@@ -470,7 +446,6 @@ typedef int socklen_t;
 #define LoadSucceeded(h)            (h != NULL)
 #define GetSharedObjectError()      errno
 #define GetSharedObjectErrorString() dlerror()
-#define CloseSharedObject(h)        dlclose(h)
 
 #define ThreadId pthread_t
 #define MutexId pthread_mutex_t

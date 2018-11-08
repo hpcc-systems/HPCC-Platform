@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include <platform.h>
 #include "win32.hpp"
 #include "winprocess.hpp"
 #include "Tlhelp32.h"

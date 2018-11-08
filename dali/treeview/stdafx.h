@@ -29,6 +29,9 @@
 
 #define VC_EXTRALEAN        // Exclude rarely-used stuff from Windows headers
 
+//warning: _WIN32_WINNT not defined. Defaulting to _WIN32_WINNT_MAXVER (see WinSDKVer.h)
+#define _WIN32_WINNT _WIN32_WINNT_MAXVER
+
 #include <afxwin.h>         // MFC core and standard components
 #include <afxext.h>         // MFC extensions
 #include <afxdtctl.h>       // MFC support for Internet Explorer 4 Common Controls

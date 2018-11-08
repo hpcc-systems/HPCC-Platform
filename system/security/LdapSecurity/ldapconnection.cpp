@@ -4931,7 +4931,7 @@ private:
     {
         char *grp_values[] = {(char*)groupdn, NULL};
         LDAPMod grp_attr = {
-            (action != NULL && stricmp(action, "delete") == 0)?LDAP_MOD_DELETE:LDAP_MOD_ADD,
+            (action != NULL && stricmp(action, "delete") == 0)?(unsigned)LDAP_MOD_DELETE: (unsigned)LDAP_MOD_ADD,
             "memberOf",
             grp_values
         };
@@ -4967,7 +4967,7 @@ private:
 
         char *member_values[] = {(char*)userdn, NULL};
         LDAPMod member_attr = {
-            (action != NULL && stricmp(action, "delete") == 0)?LDAP_MOD_DELETE:LDAP_MOD_ADD,
+            (action != NULL && stricmp(action, "delete") == 0)? (unsigned)LDAP_MOD_DELETE: (unsigned)LDAP_MOD_ADD,
             (char*)memberfieldname,
             member_values
         };

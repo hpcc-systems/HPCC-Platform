@@ -103,7 +103,7 @@ BOOL CTreeviewApp::InitInstance()
 
     CTreeviewDlg dlg(inFilename);
     m_pMainWnd = &dlg;
-    int nResponse = dlg.DoModal();
+    INT_PTR nResponse = dlg.DoModal();
     if (nResponse == IDOK)
     {
 

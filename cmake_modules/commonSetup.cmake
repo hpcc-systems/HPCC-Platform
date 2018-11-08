@@ -79,9 +79,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   IF (WIN32)
-     option(USE_NATIVE_LIBRARIES "thirdparty libraries are in EXTERNALS_DIRECTORY" OFF)
+     option(USE_NATIVE_LIBRARIES "Search standard OS locations (otherwise in EXTERNALS_DIRECTORY) for 3rd party libraries" OFF)
   ELSE()
-     option(USE_NATIVE_LIBRARIES "Search standard OS locations for thirdparty libraries" ON)
+     option(USE_NATIVE_LIBRARIES "Search standard OS locations (otherwise in EXTERNALS_DIRECTORY) for 3rd party libraries" ON)
   ENDIF()
 
   option(USE_GIT_DESCRIBE "Use git describe to generate build tag" ON)
@@ -391,10 +391,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     IF (NOT ALL_WARNINGS_ON)
       set (WARNINGS_IGNORE "/wd4267 /wd4244 /wd6340 /wd6297 /wd4018 /wd4302 /wd4311 /wd4320 /wd4800") # data conversion warnings
       set (WARNINGS_IGNORE "${WARNINGS_IGNORE} /wd4251 /wd4275") # dll-interface for used by clients
-      set (WARNINGS_IGNORE "${WARNINGS_IGNORE} /wd6246")   # local variable hidden by outter scope
+      set (WARNINGS_IGNORE "${WARNINGS_IGNORE} /wd6246")   # local variable hidden by outer scope
       set (WARNINGS_IGNORE "${WARNINGS_IGNORE} /wd6031")   # Return value ignored
       set (WARNINGS_IGNORE "${WARNINGS_IGNORE} /wd4005")   # MACRO redef: same value
-      set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${WARNINGS_IGNORE}")
+      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNINGS_IGNORE}")
     ENDIF()
 
 

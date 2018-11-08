@@ -17,6 +17,7 @@
     #include <fcntl.h>
     #include <share.h>
     #include <sys\stat.h>
+    #pragma warning(disable:4065) // switch statement contains 'default' but no 'case' labels
 #endif
 #include "hidlcomp.h"
 

@@ -849,6 +849,11 @@ size32_t CSocket::avail_read()
 
 #define PRE_CONN_UNREACH_ELIM  100
 
+IJSOCK_Exception* createJSocketException(int err, const char* msg)
+{
+    return new SocketException(err, msg);
+}
+
 int CSocket::pre_connect (bool block)
 {
     if (NULL == hostname || '\0' == (*hostname))
