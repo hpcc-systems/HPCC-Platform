@@ -80,6 +80,7 @@ target_link_libraries(
     ${XERCES_LIBRARIES}
     jlib
     xmllib
+    workunit
     dalibase
     )
 
