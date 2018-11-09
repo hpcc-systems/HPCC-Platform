@@ -5724,7 +5724,7 @@ ITypeInfo *HqlGram::checkNumericGetType(attribute &a1)
 }
 
 
-IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute & recordAttr)
+IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute & recordAttr, IHqlExpression * attrs)
 {
     OwnedHqlExpr list = listAttr.getExpr();
     OwnedHqlExpr record = recordAttr.getExpr();
@@ -5737,7 +5737,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
     if ((list->getOperator() == no_list) && (list->numChildren() == 0))
     {
         OwnedHqlExpr list = createValue(no_null);
-        OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
+        OwnedHqlExpr table = createDataset(no_temptable, LINK(list), createComma(record.getClear(), LINK(attrs)));
         return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
     }
 
@@ -5777,7 +5777,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
     else if (childType && !field->queryType()->assignableFrom(childType))
         reportError(ERR_RECORD_NOT_MATCH_SET, recordAttr, "The field in the record does not match the type of the set elements");
     
-    OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
+    OwnedHqlExpr table = createDataset(no_temptable, LINK(list), createComma(record.getClear(), LINK(attrs)));
     return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
 }
 

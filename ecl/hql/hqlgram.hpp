@@ -842,7 +842,7 @@ protected:
     IHqlExpression * createClearTransform(IHqlExpression * record, const attribute & errpos);
     IHqlExpression * createDefaultAssignTransform(IHqlExpression * record, IHqlExpression * rowValue, const attribute & errpos);
     IHqlExpression * createDefaultProjectDataset(IHqlExpression * record, IHqlExpression * src, const attribute & errpos);
-    IHqlExpression * createDatasetFromList(attribute & listAttr, attribute & recordAttr);
+    IHqlExpression * createDatasetFromList(attribute & listAttr, attribute & recordAttr, IHqlExpression * attrs);
     IHqlExpression * getUnadornedRecord(IHqlExpression * record);
 
     void checkConditionalAggregates(IIdAtom * name, IHqlExpression * value, const attribute & errpos);
