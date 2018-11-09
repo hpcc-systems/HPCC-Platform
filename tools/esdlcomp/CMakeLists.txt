@@ -38,6 +38,8 @@ set ( SRCS
         ${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/esdlcomp.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/esdl_utils.cpp
+        esdlgram.y
+        esdllex.l
     )
 
 include_directories (

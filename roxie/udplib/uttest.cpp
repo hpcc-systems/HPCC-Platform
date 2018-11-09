@@ -624,14 +624,14 @@ int main(int argc, char * argv[] )
             if (strcmp(ip, "--udpQueueSize")==0)
             {
                 c++;
-                if (c==argc || !isdigit(*argv[c]))
+                if (c==argc || !isdigit_char(*argv[c]))
                     usage();
                 udpQueueSize = atoi(argv[c]);
             }
             if (strcmp(ip, "--udpRTSTimeout")==0)
             {
                 c++;
-                if (c==argc || !isdigit(*argv[c]))
+                if (c==argc || !isdigit_char(*argv[c]))
                     usage();
                 udpRequestToSendTimeout = atoi(argv[c]);
             }
@@ -710,10 +710,10 @@ int main(int argc, char * argv[] )
             else
                 usage();
         }
-        else if (dash && isdigit(dash[1]) && dash>ip && isdigit(dash[-1]))
+        else if (dash && isdigit_char(dash[1]) && dash>ip && isdigit_char(dash[-1]))
         {
             const char *startrange = dash-1;
-            while (isdigit(startrange[-1]))
+            while (isdigit_char(startrange[-1]))
                 startrange--;
             char *endptr;
             unsigned firstnum = atoi(startrange);

@@ -128,7 +128,7 @@ class CFRunSSH: public CInterface, implements IFRunSSH
         FILE *slavesFile  = fopen(slavesfile.get(), "rt");
         if( !slavesFile) {
             const char * s = slavesfile.get();
-            while (*s&&(isdigit(*s)||(*s=='.')||(*s==',')||(*s==':')||(*s=='-')||(*s=='*')))
+            while (*s&&(isdigit_char(*s)||(*s=='.')||(*s==',')||(*s==':')||(*s=='-')||(*s=='*')))
                 s++;
             if (!*s) {
                 SocketEndpointArray sa;
@@ -152,10 +152,10 @@ class CFRunSSH: public CInterface, implements IFRunSSH
                 *hash = 0;
             char *finger = inbuf;
             for (;;) {
-                while (isspace(*finger))
+                while (isspace_char(*finger))
                     finger++;
                 char *start = finger;
-                while (*finger && !isspace(*finger))
+                while (*finger && !isspace_char(*finger))
                     finger++;
                 if (finger > start) {
                     slave.set(start, finger - start);
@@ -198,12 +198,12 @@ public:
             if (arg[0]=='-') {
                 arg++;
                 const char *parm = (arg[1]==':')?(arg+2):(arg+1);
-                switch (toupper(*arg)) {
+                switch (toupper_char(*arg)) {
                     case 'N':
                         numthreads = *parm?atoi(parm):numthreads;
                         break;
                     case 'T':
-                        if (toupper(arg[1])=='R') {
+                        if (toupper_char(arg[1])=='R') {
                             parm = (arg[2]==':')?(arg+3):(arg+2);
                             treeroot.set(parm);
                             break;
@@ -239,7 +239,7 @@ public:
                         break;
                     case 'P':
 #ifdef _WIN32
-                        if (toupper(arg[1])=='L') {
+                        if (toupper_char(arg[1])=='L') {
                             useplink = true;
                             break;
                         }
@@ -247,13 +247,13 @@ public:
                         parm = (arg[2]==':')?(arg+3):(arg+2);
                         if (!*parm)
                             break;
-                        if (toupper(arg[1])=='W') {
+                        if (toupper_char(arg[1])=='W') {
                             StringBuffer buf;
                             encrypt(buf,parm);
                             password.set(buf.str());
                             break;
                         }
-                        else if (toupper(arg[1])=='E') {
+                        else if (toupper_char(arg[1])=='E') {
                             password.set(parm);
                             break;
                         }

@@ -519,12 +519,12 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
         else
         {
             const char *dash = strchr(ip, '-');
-            if (dash && isdigit(dash[1]) && dash>ip && isdigit(dash[-1]))
+            if (dash && isdigit_char(dash[1]) && dash>ip && isdigit_char(dash[-1]))
             {
                 if (persistConnections)
                     UNIMPLEMENTED;
                 const char *startrange = dash-1;
-                while (isdigit(startrange[-1]))
+                while (isdigit_char(startrange[-1]))
                     startrange--;
                 char *endptr;
                 unsigned firstnum = atoi(startrange);
@@ -1095,7 +1095,7 @@ int main(int argc, char **argv)
                         else
                         {
                             query = buffer;
-                            while (isspace(*query)) query++;
+                            while (isspace_char(*query)) query++;
                             if (roxieLogMode)
                             {
                                 char *start = (char *) strchr(query, '<');

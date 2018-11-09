@@ -131,14 +131,14 @@ void process(const char *fname)
     while (fgets(ln,sizeof(ln),inFile)) {
         // format { NN,"SSS" }
         const char *s = ln;
-        while (*s&&isspace(*s))
+        while (*s&&isspace_char(*s))
             s++;
         if (*s=='{') {
             s++;
-            while (*s&&isspace(*s))
+            while (*s&&isspace_char(*s))
                 s++;
             unsigned res = 0;
-            while (*s&&isdigit(*s)) {
+            while (*s&&isdigit_char(*s)) {
                 res = 10*res+(*s-'0');
                 s++;    
             }
@@ -152,11 +152,11 @@ void process(const char *fname)
             }
             else
                 matches.append(lastpos);
-            while (*s&&isspace(*s))
+            while (*s&&isspace_char(*s))
                 s++;
             if (*s&&*s==',')
                 s++;
-            while (*s&&isspace(*s))
+            while (*s&&isspace_char(*s))
                 s++;
             if (*s&&*s=='"')
                 s++;

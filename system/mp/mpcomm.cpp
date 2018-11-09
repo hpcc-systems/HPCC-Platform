@@ -84,7 +84,11 @@
 
 static  CriticalSection verifysect;
 static  CriticalSection childprocesssect;
-static  UnsignedArray childprocesslist;
+#ifdef WIN32
+    static  PointerArray childprocesslist; // store HANDLE, which is void*
+#else
+    static  UnsignedArray childprocesslist;
+#endif
 
 // IPv6 TBD
 
@@ -3154,12 +3158,12 @@ void registerSelfDestructChildProcess(HANDLE handle)
 {
     CriticalBlock block(childprocesssect);
     if (handle!=(HANDLE)-1)
-        childprocesslist.append((unsigned)handle);
+        childprocesslist.append(handle);
 }
 
 void unregisterSelfDestructChildProcess(HANDLE handle)
 {
     CriticalBlock block(childprocesssect);
     if (handle!=(HANDLE)-1) 
-        childprocesslist.zap((unsigned)handle);
+        childprocesslist.zap(handle);
 }

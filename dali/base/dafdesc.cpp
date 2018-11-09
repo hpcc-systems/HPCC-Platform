@@ -353,7 +353,7 @@ static void removeDir(const char *name,const char *dir,StringBuffer &out)
     const char *s=name;
     const char *d=dir;
     if (d&&*d) {
-        while (*s&&(toupper(*s)==toupper(*d))) {
+        while (*s&&(toupper_char(*s)==toupper_char(*d))) {
             s++;
             d++;
         }
@@ -2567,7 +2567,7 @@ StringBuffer &getPartMask(StringBuffer &ret,const char *lname,unsigned partmax)
     char c;
     while ((c=*(m++))!=0) {
         if (c=='$') {
-            char pc = toupper(m[0]);
+            char pc = toupper_char(m[0]);
             if (pc&&(m[1]=='$')) {
                 switch (pc) {
                 case 'L':
@@ -2665,7 +2665,7 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
             lname = skipRoot(lname);
         }
         else if (validFNameChar(c))
-            result.append((char)tolower(c));
+            result.append((char)tolower_char(c));
         else
             result.appendf("%%%.2X", (int) c);
     }
@@ -2683,7 +2683,7 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
             const char *m = queryPartMask();
             while ((c=*(m++))!=0) {
                 if (c=='$') {
-                    char pc = toupper(m[0]);
+                    char pc = toupper_char(m[0]);
                     if (pc&&(m[1]=='$')) {
                         switch (pc) {
                         case 'P':

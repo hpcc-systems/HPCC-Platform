@@ -174,9 +174,9 @@ void MString::DoubleMetaphone(cString &metaph, cString &metaph2)
         current += 1;
     }
 
-    if (isdigit(GetAt(0)))
+    if (isdigit_char(GetAt(0)))
     {
-        while (isdigit(GetAt(current)) && current < length)
+        while (isdigit_char(GetAt(current)) && current < length)
         {
             MetaphAdd(GetAt(current));
             current++;

@@ -1109,7 +1109,7 @@ void CommonCSVWriter::outputDecimal(const void* field, unsigned size, unsigned p
         DecPushDecimal(field, size, precision);
         DecPopCString(sizeof(dec), dec);
         const char *finger = dec;
-        while(isspace(*finger)) finger++;
+        while(isspace_char(*finger)) finger++;
         v.append(finger);
     }
     addContentField(v.str(), fieldName);
@@ -1128,7 +1128,7 @@ void CommonCSVWriter::outputUDecimal(const void* field, unsigned size, unsigned 
         DecPushUDecimal(field, size, precision);
         DecPopCString(sizeof(dec), dec);
         const char *finger = dec;
-        while(isspace(*finger)) finger++;
+        while(isspace_char(*finger)) finger++;
         v.append(finger);
     }
     addContentField(v.str(), fieldName);
@@ -1774,7 +1774,7 @@ inline void outputEncodedXmlDecimal(const void *field, unsigned size, unsigned p
         DecPushDecimal(field, size, precision);
         DecPopCString(sizeof(dec), dec);
         const char *finger = dec;
-        while(isspace(*finger)) finger++;
+        while(isspace_char(*finger)) finger++;
         out.append(finger);
     }
     else
@@ -1796,7 +1796,7 @@ inline void outputEncodedXmlUDecimal(const void *field, unsigned size, unsigned 
         DecPushUDecimal(field, size, precision);
         DecPopCString(sizeof(dec), dec);
         const char *finger = dec;
-        while(isspace(*finger)) finger++;
+        while(isspace_char(*finger)) finger++;
         out.append(finger);
     }
     else

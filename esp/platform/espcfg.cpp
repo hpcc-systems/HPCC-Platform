@@ -89,20 +89,20 @@ StringBuffer &CVSBuildToEspVersion(char const * tag, StringBuffer & out)
 {
     unsigned build = 0;
     unsigned subbuild = 0;
-    while(!isdigit(*tag))
+    while(!isdigit_char(*tag))
     {
         if(!*tag) break;
         tag++;
     }
-    while(isdigit(*tag))
+    while(isdigit_char(*tag))
     {
         if(!*tag) break;
         build = 10*build + (*tag-'0');
         tag++;
     }
-    if(isalpha(*tag))
+    if(isalpha_char(*tag))
     {
-        if(islower(*tag))
+        if(islower_char(*tag))
             subbuild = *tag-'a'+1;
         else
             subbuild = *tag-'A'+1;

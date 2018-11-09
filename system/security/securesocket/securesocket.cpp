@@ -76,7 +76,7 @@ static int pem_passwd_cb(char* buf, int size, int rwflag, void* password)
 {
     strncpy(buf, (char*)password, size);
     buf[size - 1] = '\0';
-    return(strlen(buf));
+    return int(strlen(buf));
 }
 
 static void readBio(BIO* bio, StringBuffer& buf)
@@ -1044,7 +1044,7 @@ public:
                     break;
 
                 char*  onepeer = onepeerbuf.detach();
-                if (isdigit(*onepeer))
+                if (isdigit_char(*onepeer))
                 {
                     char *dash = strrchr(onepeer, '-');
                     if (dash)
@@ -1306,7 +1306,7 @@ public:
 
         const EVP_CIPHER *enc = EVP_des_ede3_cbc();
         pmem = BIO_new(BIO_s_mem());
-        PEM_write_bio_PrivateKey(pmem, pkey, enc, (unsigned char*)m_passphrase.get(), m_passphrase.length(), NULL, NULL);
+        PEM_write_bio_PrivateKey(pmem, pkey, enc, (unsigned char*)m_passphrase.get(), (int)m_passphrase.length(), NULL, NULL);
         readBio(pmem, privkey);
 
         cmem = BIO_new(BIO_s_mem());

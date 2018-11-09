@@ -1569,7 +1569,7 @@ void Cws_machineEx::readRunningProcesses(const char* response, CMachineInfoThrea
         bool isNumber = true;
         for (unsigned i = 0; i < pidStr.length(); i++)
         {
-            if (!isdigit(pidStr.charAt(i)))
+            if (!isdigit_char(pidStr.charAt(i)))
             {
                 isNumber = false;
                 break;

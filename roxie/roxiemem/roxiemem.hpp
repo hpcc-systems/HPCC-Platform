@@ -60,7 +60,7 @@
 #define UNKNOWN_ACTIVITY                123456789
 
 #define MAX_SIZE_DIRECT_BUCKET          2048                    // Sizes below this are directly mapped to a particular bucket
-#define ALLOC_ALIGNMENT                 sizeof(void *)          // Minimum alignment of data allocated from the heap manager
+#define ALLOC_ALIGNMENT                 (size32_t)sizeof(void *)          // Minimum alignment of data allocated from the heap manager
 #define PACKED_ALIGNMENT                4                       // Minimum alignment of packed blocks
 
 #define MAX_FRAC_ALLOCATOR              20

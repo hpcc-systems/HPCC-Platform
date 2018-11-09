@@ -36,7 +36,6 @@
 #include <openssl/rsa.h>
 #include <openssl/crypto.h>
 
-
 #ifdef WIN32
 #define HTMLPAGE_EXPORT _declspec(dllexport)
 #else

@@ -610,12 +610,12 @@ protected:
 
 inline bool isLeadingIdentChar(byte next)
 {
-    return isalpha(next) || (next == '_') || (next == '$');
+    return isalpha_char(next) || (next == '_') || (next == '$');
 }
 
 inline bool isTrailingIdentChar(byte next)
 {
-    return isalnum(next) || (next == '_') || (next == '$');
+    return isalnum_char(next) || (next == '_') || (next == '$');
 }
 
 //MORE: This should really use the hqllexer - especially if it gets any more complex!
@@ -624,7 +624,7 @@ unsigned MappingParser::lexToken()
     const byte * buffer = (const byte *)input;
     unsigned cur = offset;
 
-    while ((cur < lenInput) && isspace(buffer[cur]))
+    while ((cur < lenInput) && isspace_char(buffer[cur]))
         cur++;
 
     if (cur < lenInput)
@@ -637,11 +637,11 @@ unsigned MappingParser::lexToken()
                 cur++;
             tokenType = TokId;
         }
-        else if (isdigit(next) ||
-                 ((next == '-') && (cur+1 < lenInput) && isdigit(buffer[cur+1])))
+        else if (isdigit_char(next) ||
+                 ((next == '-') && (cur+1 < lenInput) && isdigit_char(buffer[cur+1])))
         {
             cur++;
-            while ((cur < lenInput) && (isdigit(buffer[cur])))
+            while ((cur < lenInput) && (isdigit_char(buffer[cur])))
                 cur++;
             tokenType = TokInt;
         }

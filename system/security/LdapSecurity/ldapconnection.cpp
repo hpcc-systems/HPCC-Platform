@@ -161,7 +161,7 @@ public:
             char *ip = strtok_r(copyFullText, "|", &saveptr);
             while (ip != NULL)
             {
-                if (isdigit(*ip))
+                if (isdigit_char(*ip))
                 {
                     char *dash = strrchr(ip, '-');
                     if (dash)

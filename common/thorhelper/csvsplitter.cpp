@@ -450,7 +450,7 @@ void CSVOutputStream::writeUnicode(size32_t len, const UChar * data)
 }
 
 #ifndef _USE_ICU
-static inline bool u_isspace(UChar next) { return isspace((byte)next); }
+static inline bool u_isspace(UChar next) { return isspace_char((byte)next); }
 #endif
 
 void CSVOutputStream::writeUtf8(size32_t len, const char * data)

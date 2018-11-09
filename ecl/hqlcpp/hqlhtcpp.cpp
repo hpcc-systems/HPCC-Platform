@@ -3079,7 +3079,7 @@ bool HqlCppTranslator::getInvariantMemberContext(BuildCtx & ctx, BuildCtx * * de
 
 void getMemberClassName(StringBuffer & className, const char * member)
 {
-    className.append((char)toupper(member[0])).append(member+1).append("Class");
+    className.append((char)toupper_char(member[0])).append(member+1).append("Class");
 }
 
 IHqlStmt * HqlCppTranslator::beginNestedClass(BuildCtx & ctx, const char * member, const char * bases, const char * memberExtra, ParentExtract * extract)
@@ -3093,7 +3093,7 @@ IHqlStmt * HqlCppTranslator::beginNestedClass(BuildCtx & ctx, const char * membe
     StringBuffer className;
     getMemberClassName(className, member);
 
-    begin.append("struct ").append((char)toupper(member[0])).append(member+1).append("Class");
+    begin.append("struct ").append((char)toupper_char(member[0])).append(member+1).append("Class");
     if (bases)
         begin.append(" : public ").append(bases);
     end.append(" ").append(member).append(memberExtra).append(";");
@@ -5447,9 +5447,9 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
                 while (*cur)
                 {
                     unsigned char c = *cur++;
-                    if (isalnum(c) || (c == '_'))
+                    if (isalnum_char(c) || (c == '_'))
                         fieldName.append(c);
-                    else if (isspace(c))
+                    else if (isspace_char(c))
                         fieldName.append('_');
                 }
 
@@ -19720,7 +19720,7 @@ void buildCompareFuncHelper(HqlCppTranslator & translator, ActivityInstance & in
     translator.buildCompareClass(instance.nestedctx, compareFuncName, sortList, dsRef, compareClassInstance);
 
     StringBuffer s;
-    s.set("virtual ICompare * query").append(static_cast<char>(toupper(compareFuncName[0]))).append(compareFuncName+1).append("() override");
+    s.set("virtual ICompare * query").append(static_cast<char>(toupper_char(compareFuncName[0]))).append(compareFuncName+1).append("() override");
     MemberFunction func(translator, instance.classctx, s, MFdynamicproto);
 
     s.set("return &").append(compareClassInstance).append(";");

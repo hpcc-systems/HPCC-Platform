@@ -1,4 +1,4 @@
-################################################################################
+﻿################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -390,10 +390,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     # Temporary disable warnings. Reenable them one by one to reexamine and fix them.
     IF (NOT ALL_WARNINGS_ON)
       set (WARNINGS_IGNORE "/wd4267 /wd4244 /wd6340 /wd6297 /wd4018 /wd4302 /wd4311 /wd4320 /wd4800")     # data conversion warnings
-       set (WARNINGS_IGNORE  "${WARNINGS_IGNORE} /wd4251 /wd4275")      # dll-interface for used by clients
+      set (WARNINGS_IGNORE  "${WARNINGS_IGNORE} /wd4251 /wd4275")      # dll-interface for used by clients
       set (WARNINGS_IGNORE  "${WARNINGS_IGNORE} /wd6246")   # local variable hidden by outter scope
       set (WARNINGS_IGNORE  "${WARNINGS_IGNORE} /wd6031")   # Return value ignored
       set (WARNINGS_IGNORE  "${WARNINGS_IGNORE} /wd4005")   # MACRO redef: same value
+      set (WARNINGS_IGNORE  "${WARNINGS_IGNORE} /wd4503")   # decorated name length exceeded, name was truncated
+      
       set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${WARNINGS_IGNORE}")
     ENDIF()
 

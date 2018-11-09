@@ -259,8 +259,8 @@ bool HashTable::keyeq(const void *key1, const void *key2, int ksize) const
             unsigned char *k2 = (unsigned char *) key2;
             for (;;)
             {
-                unsigned char c1 = toupper(*k1);
-                if (c1 != toupper(*k2))
+                unsigned char c1 = toupper_char(*k1);
+                if (c1 != toupper_char(*k2))
                     return false;
                 if (c1 == 0)
                     return true;
@@ -476,7 +476,7 @@ extern jlib_decl IAtom * createLowerCaseAtom(const char *value)
     const byte * src = (const byte *)value;
     char * lower = (char *)alloca(len+1);
     for (unsigned i=0; i < len; i++)
-        lower[i] = tolower(src[i]);
+        lower[i] = tolower_char(src[i]);
     lower[len] = 0;
 
     CriticalBlock crit(atomCrit);
@@ -491,7 +491,7 @@ extern jlib_decl IAtom * createLowerCaseAtom(const char *value, size32_t len)
     const byte * src = (const byte *)value;
     char * lower = (char *)alloca(len+1);
     for (unsigned i=0; i < len; i++)
-        lower[i] = tolower(src[i]);
+        lower[i] = tolower_char(src[i]);
     lower[len] = 0;
 
     CriticalBlock crit(atomCrit);

@@ -119,7 +119,7 @@ public:
         char *ep = Ptr + Len;
 
         while (sp < ep) {
-            *sp = toupper(*sp);
+            *sp = toupper_char(*sp);
             sp++;
         }
     }

@@ -64,7 +64,7 @@ MODULE_EXIT()
 }
 
 #ifndef _USE_ICU
-static inline bool u_isspace(UChar next) { return isspace((byte)next); }
+static inline bool u_isspace(UChar next) { return isspace_char((byte)next); }
 #endif
 
 //=============================================================================
@@ -140,9 +140,9 @@ bool rtlGetNormalizedUnicodeLocaleName(unsigned len, char const * in, char * out
             out[i] = '_';
             isPrimary = false;
         }
-        else if(isalpha(in[i]))
+        else if(isalpha_char(in[i]))
         {
-            out[i] = (isPrimary ? tolower(in[i]) : toupper(in[i]));
+            out[i] = (isPrimary ? tolower_char(in[i]) : toupper_char(in[i]));
         }
         else
         {
@@ -2316,7 +2316,7 @@ unsigned rtlTrimStrLenNonWhitespace(size32_t l, const char * t)
     while (l)
     {
         l--;
-        if (!isspace(t[l]))
+        if (!isspace_char(t[l]))
             len++;
     }
     return len;
@@ -2370,7 +2370,7 @@ void rtlTrimWS(unsigned & tlen, char * & tgt, unsigned slen, const char * src, b
         char * buffer = (char *)rtlMalloc(tlen);
         int ind = 0;
         for(unsigned i = 0; i < slen; i++) {
-            if (!isspace(src[i]))
+            if (!isspace_char(src[i]))
             {
                 buffer[ind] = src[i];
                 ind++;
@@ -2383,11 +2383,11 @@ void rtlTrimWS(unsigned & tlen, char * & tgt, unsigned slen, const char * src, b
         unsigned start = 0;
         while (right && slen)
         {
-            if (!isspace(src[slen-1]))
+            if (!isspace_char(src[slen-1]))
                 break;
             slen--;
         }
-        while (left && start < slen && isspace(src[start]))
+        while (left && start < slen && isspace_char(src[start]))
             start++;
         tlen = slen - start;
         tgt = rtlDupSubString(src + start, tlen);
@@ -2890,13 +2890,13 @@ ECLRTL_API int rtlPrefixDiffUnicode(unsigned l1, const UChar * p1, unsigned l2, 
 void rtlStringToLower(size32_t l, char * t)
 {
     for (;l--;t++)
-        *t = tolower(*t);
+        *t = tolower_char(*t);
 }
 
 void rtlStringToUpper(size32_t l, char * t)
 {
     for (;l--;t++)
-        *t = toupper(*t);
+        *t = toupper_char(*t);
 }
 
 #ifdef _USE_ICU
@@ -5075,7 +5075,7 @@ ECLRTL_API void rtlUtf8ToLower(size32_t l, char * t, char const * locale)
             return;
         }
 
-        *t++ = tolower(next);
+        *t++ = tolower_char(next);
     }
 }
 

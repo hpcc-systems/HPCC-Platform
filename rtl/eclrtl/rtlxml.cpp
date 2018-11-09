@@ -100,7 +100,7 @@ void outputXmlDecimal(const void *field, unsigned size, unsigned precision, cons
         temp.getCString(sizeof(dec), dec);
 
         const char *finger = dec;
-        while(isspace(*finger)) finger++;
+        while(isspace_char(*finger)) finger++;
         out.append(finger);
     }
     else
@@ -123,7 +123,7 @@ void outputXmlUDecimal(const void *field, unsigned size, unsigned precision, con
         temp.getCString(sizeof(dec), dec);
 
         const char *finger = dec;
-        while(isspace(*finger)) finger++;
+        while(isspace_char(*finger)) finger++;
         out.append(finger);
     }
     else
@@ -258,7 +258,7 @@ void outputJsonDecimal(const void *field, unsigned size, unsigned precision, con
         DecPushDecimal(field, size, precision);
         DecPopCString(sizeof(dec), dec);
         const char *finger = dec;
-        while(isspace(*finger)) finger++;
+        while(isspace_char(*finger)) finger++;
         out.append(finger);
     }
 }
@@ -274,7 +274,7 @@ void outputJsonUDecimal(const void *field, unsigned size, unsigned precision, co
         DecPushUDecimal(field, size, precision);
         DecPopCString(sizeof(dec), dec);
         const char *finger = dec;
-        while(isspace(*finger)) finger++;
+        while(isspace_char(*finger)) finger++;
         out.append(finger);
     }
 }

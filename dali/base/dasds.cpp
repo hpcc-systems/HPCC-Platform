@@ -784,7 +784,7 @@ public:
                     for (;;)
                     {
                         if ('\0' == *q) break;
-                        else if (!isdigit(*q)) { numeric = false; break; }
+                        else if (!isdigit_char(*q)) { numeric = false; break; }
                         else q++;
                     }
                     if (numeric)

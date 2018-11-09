@@ -6284,14 +6284,14 @@ inline bool iseol(char c) { return c == '\r' || c == '\n'; }
 
 static unsigned skipSpace(unsigned start, unsigned len, const char * buffer)
 {
-    while (start < len && isspace((byte)buffer[start]))
+    while (start < len && isspace_char((byte)buffer[start]))
         start++;
     return start;
 }
 
 static unsigned trimSpace(unsigned len, const char * buffer)
 {
-    while (len && isspace((byte)buffer[len-1]))
+    while (len && isspace_char((byte)buffer[len-1]))
         len--;
     return len;
 }
@@ -6343,7 +6343,7 @@ static bool matchOption(unsigned cur, unsigned max, const char * buffer, unsigne
         if (memicmp(buffer+cur, match, lenMatch) != 0)
             return false;
         cur += lenMatch;
-        if ((cur < max) && isalnum(buffer[cur]))
+        if ((cur < max) && isalnum_char(buffer[cur]))
             return false;
     }
     cur = skipSpace(cur, max, buffer);
@@ -7629,7 +7629,7 @@ bool ErrorSeverityMapper::addMapping(const char * category, const char * value)
         return false;
     }
 
-    if (isdigit(*category))
+    if (isdigit_char(*category))
     {
         unsigned errorCode = atoi(category);
         addOnWarning(errorCode, action);
@@ -7865,7 +7865,7 @@ StringBuffer & convertToValidLabel(StringBuffer &out, const char * in, unsigned 
     for (unsigned o = 0; o < inlen; o++)
     {
         unsigned char c = in[o];
-        if (isalnum(c))
+        if (isalnum_char(c))
             out.append(c);
         else
             out.append('_');

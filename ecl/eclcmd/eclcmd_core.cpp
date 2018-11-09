@@ -601,7 +601,7 @@ public:
         if (optInput.length())
         {
             const char *in = optInput.get();
-            while (*in && isspace(*in)) in++;
+            while (*in && isspace_char(*in)) in++;
             if (*in!='<')
             {
                 StringBuffer content;

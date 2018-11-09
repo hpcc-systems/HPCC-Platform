@@ -110,7 +110,7 @@ public:
         if (*finger)
         {
             finger++;
-            while (isspace(*finger))
+            while (isspace_char(*finger))
                 finger++;
             while (*finger)
                 val.append(*finger++);
@@ -201,7 +201,7 @@ public:
             if (*finger && *finger != '\n')
             {
                 finger++;
-                while (isspace(*finger) && *finger != '\n')
+                while (isspace_char(*finger) && *finger != '\n')
                     finger++;
                 while (*finger && *finger != '\n')
                     val.append(*finger++);

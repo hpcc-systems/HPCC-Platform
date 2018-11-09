@@ -40,7 +40,7 @@ static bool isInModule(HqlLookupContext & ctx, const char* module_name, const ch
 static StringBuffer& mangle(IErrorReceiver* errReceiver,const char* src, StringBuffer& mangled,bool demangle);
 static const char * skipws(const char * str)
 {
-    while (isspace(*str))
+    while (isspace_char(*str))
         str++;
     return str;
 }
@@ -490,10 +490,10 @@ void HqlLex::pushMacro(IHqlExpression *expr)
                 {
                     //Horrible.  Allow NAMED <id> := or <id> :=
                     const char * text = curParam.str();
-                    while (isspace((byte)*text)) text++;
+                    while (isspace_char((byte)*text)) text++;
                     if (memicmp(text, "NAMED", 5) == 0)
                         text += 5;
-                    while (isspace((byte)*text)) text++;
+                    while (isspace_char((byte)*text)) text++;
                     if (strlen(str(possibleName)) == strlen(text))
                     {
                         argumentName = possibleName;
@@ -2041,9 +2041,9 @@ static StringBuffer& mangle(IErrorReceiver* errReceiver,const char* src, StringB
     for (const char *finger = src; *finger!=0; finger++)
     {
         unsigned char c = *finger;
-        if (isalnum(c))
+        if (isalnum_char(c))
         {
-            if (finger == src && isdigit(c)) // a leading digit
+            if (finger == src && isdigit_char(c)) // a leading digit
             {
                 if (de)
                 {
@@ -2163,7 +2163,7 @@ int HqlLex::processStringLiteral(YYSTYPE & returnToken, char *CUR_TOKEN_TEXT, un
                 next = '\v';
                 finger++;
             }
-            else if (isdigit(next) && next < '8')
+            else if (isdigit_char(next) && next < '8')
             {
                 //Allow octal constants for ^Z etc.
                 unsigned value = 0;
@@ -2171,7 +2171,7 @@ int HqlLex::processStringLiteral(YYSTYPE & returnToken, char *CUR_TOKEN_TEXT, un
                 for (count=0; count < 3; count++)
                 {
                     next = finger[count+1];
-                    if (!isdigit(next) || next >= '8')
+                    if (!isdigit_char(next) || next >= '8')
                         break;
                     value = value * 8 + (next - '0');
                 }

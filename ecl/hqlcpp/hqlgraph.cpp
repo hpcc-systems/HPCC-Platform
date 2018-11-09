@@ -562,7 +562,7 @@ static void capitaliseOpText(StringBuffer & out, IHqlExpression * expr)
     {
         out.append(*opText);
         while (*++opText)
-            out.append((char)tolower(*opText));
+            out.append((char)tolower_char(*opText));
     }
 }
 

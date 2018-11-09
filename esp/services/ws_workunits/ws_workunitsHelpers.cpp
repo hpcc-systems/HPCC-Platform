@@ -712,10 +712,10 @@ void WsWuInfo::getDebugValues(IEspECLWorkunit &info, unsigned long flags)
 
 const char *getGraphNum(const char *s,unsigned &num)
 {
-    while (*s && !isdigit(*s))
+    while (*s && !isdigit_char(*s))
         s++;
     num = 0;
-    while (isdigit(*s))
+    while (isdigit_char(*s))
     {
         num = num*10+*s-'0';
         s++;

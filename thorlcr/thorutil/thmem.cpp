@@ -130,7 +130,7 @@ StringBuffer &getRecordString(const void *key, IOutputRowSerializer *serializer,
             first=false;
         else
             out.append(',');
-        if ((sz>=3)&&isprint(k[0])&&isprint(k[1])&&isprint(k[2])) {
+        if ((sz>=3)&&isprint_char(k[0])&&isprint_char(k[1])&&isprint_char(k[2])) {
             out.append('"');
             do {
                 out.append(*k);
@@ -140,7 +140,7 @@ StringBuffer &getRecordString(const void *key, IOutputRowSerializer *serializer,
                 if (out.length()>1024)
                     break;
                 k++;
-            } while (isprint(*k));
+            } while (isprint_char(*k));
             out.append('"');
         }
         if (out.length()>1024) {

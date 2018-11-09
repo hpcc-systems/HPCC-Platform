@@ -4879,7 +4879,7 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
             while (pShowColumns && *pShowColumns)
             {
                 StringBuffer buf;
-                while (pShowColumns && isdigit(pShowColumns[0]))
+                while (pShowColumns && isdigit_char(pShowColumns[0]))
                 {
                     buf.append(pShowColumns[0]);
                     pShowColumns++;

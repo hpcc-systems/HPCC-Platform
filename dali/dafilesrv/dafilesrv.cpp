@@ -437,7 +437,7 @@ int main(int argc,char **argv)
             rowServiceOnStdPort = daFileSrv->getPropBool("@rowServiceOnStdPort", defaultRowServiceOnStdPort);
 			if (daFileSrv->queryProp("@rowServiceConfiguration"))
 				rowServiceConfiguration = daFileSrv->queryProp("@rowServiceConfiguration");
-
+			
             // any overrides by Instance definitions?
             // NB: This won't work if netAddress is "." or if we start supporting hostnames there
             StringBuffer ipStr;
@@ -511,7 +511,7 @@ int main(int argc,char **argv)
             i++;
             requireauthenticate = true;
         }
-        else if ((argv[i][0]=='-')&&(toupper(argv[i][1])=='T')&&(!argv[i][2]||isdigit(argv[i][2]))) {
+        else if ((argv[i][0]=='-')&&(toupper_char(argv[i][1])=='T')&&(!argv[i][2]||isdigit_char(argv[i][2]))) {
             if (argv[i][2])
                 setDafsTrace(NULL,(byte)atoi(argv[i]+2));
             i++;
@@ -531,7 +531,7 @@ int main(int argc,char **argv)
         }
         else if ((argc>i+1)&&(stricmp(argv[i],"-addr")==0)) {
             i++;
-            if (strchr(argv[i],'.')||!isdigit(argv[i][0]))
+            if (strchr(argv[i],'.')||!isdigit_char(argv[i][0]))
                 listenep.set(argv[i], listenep.port);
             else
                 listenep.port = atoi(argv[i]);
@@ -598,7 +598,7 @@ int main(int argc,char **argv)
     }
 #endif
     if (argc > i) {
-        if (strchr(argv[i],'.')||!isdigit(argv[i][0]))
+        if (strchr(argv[i],'.')||!isdigit_char(argv[i][0]))
             listenep.set(argv[i], listenep.port);
         else
             listenep.port = atoi(argv[i]);

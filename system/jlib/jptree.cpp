@@ -375,7 +375,7 @@ inline static void readWildId(const char *&xpath, bool &wild)
 inline const char * readIndex(const char *xpath, StringAttr &index)
 {
     const char *start = xpath;
-    do { xpath++; } while (isdigit(*xpath));
+    do { xpath++; } while (isdigit_char(*xpath));
     index.set(start, (xpath - start));
     return xpath;
 }
@@ -389,7 +389,7 @@ inline static void readWildIdIndex(const char *&xpath, bool &wild)
     if ('[' == *xpath) // check for local index not iterative qualifier.
     {
         const char *end = xpath+1;
-        if (isdigit(*end)) {
+        if (isdigit_char(*end)) {
             StringAttr index;
             end = readIndex(end, index);
             if (']' != *end)
@@ -1755,7 +1755,7 @@ bool PTree::removeProp(const char *xpath)
         {
             ++xxpath;
             const char *digitStart = xxpath;
-            while (*xxpath && ']' != *xxpath && isdigit(*xxpath)) xxpath++;
+            while (*xxpath && ']' != *xxpath && isdigit_char(*xxpath)) xxpath++;
             assertex(*xxpath != '\0');
             if (']' == *xxpath) // so it's a digit index!
             {
@@ -2018,7 +2018,7 @@ restart:
         case '[':
         {
             ++xpath;
-            if (isdigit(*xpath)) {
+            if (isdigit_char(*xpath)) {
                 StringAttr index;
                 xpath = readIndex(xpath, index);
                 unsigned i = atoi(index.get());
@@ -2064,7 +2064,7 @@ restart:
                     if ((wild || child) && '[' == *xpath) // check for local index not iterative qualifier.
                     {
                         const char *xxpath = xpath+1;
-                        if (isdigit(*xxpath)) {
+                        if (isdigit_char(*xxpath)) {
                             StringAttr idxstr;
                             xxpath = readIndex(xxpath, idxstr);
                             if (']' != *xxpath)
@@ -2122,7 +2122,7 @@ restart:
                                 if ('[' == *xxpath)
                                 {
                                     ++xxpath;
-                                    if (isdigit(*xxpath))
+                                    if (isdigit_char(*xxpath))
                                     {
                                         StringAttr qualifier(start, (xxpath-1)-start);
                                         Owned<PTStackIterator> siter = new PTStackIterator(iter.getClear(), qualifier.get());
@@ -2796,7 +2796,7 @@ bool PTree::checkPattern(const char *&xxpath) const
         if (rhsEnd)
             break;
         xpath++;
-        if (!rhsBegin && tType && !isspace(*xpath))
+        if (!rhsBegin && tType && !isspace_char(*xpath))
             rhsBegin = xpath;
     }
     if (quote)
@@ -2812,7 +2812,7 @@ bool PTree::checkPattern(const char *&xxpath) const
             const char *c = rhsBegin;
             for (;;)
             {
-                if (!isdigit(*c++))
+                if (!isdigit_char(*c++))
                     throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS is an unquoted string");
                 if (c==rhsEnd) break;
             }
@@ -2869,7 +2869,7 @@ bool PTree::checkPattern(const char *&xxpath) const
 #ifdef WARNLEGACYCOMPARE
                     if (legacynumeric)
                     {
-                        if (isdigit(*rhs))
+                        if (isdigit_char(*rhs))
                             WARNLOG("Possible deprecated use of quoted numeric comparison operation: %s", xxpath);
                     }
 #endif
@@ -4021,7 +4021,7 @@ protected:
         {
             if (*c == '\0') break;
             readNext();
-            if (toupper(nextChar) != toupper(*c))
+            if (toupper_char(nextChar) != toupper_char(*c))
             {
                 if (msg)
                     error(msg);
@@ -4077,12 +4077,12 @@ protected:
     inline bool readNextToken();
     inline bool checkSkipWS()
     {
-        while (isspace(nextChar)) if (!checkReadNext()) return false;
+        while (isspace_char(nextChar)) if (!checkReadNext()) return false;
         return true;
     }
     inline void skipWS()
     {
-        while (isspace(nextChar)) readNext();
+        while (isspace_char(nextChar)) readNext();
     }
 };
 
@@ -4628,7 +4628,7 @@ restart:
         StringBuffer tagName;
         if (ignoreWhiteSpace)
             skipWS();
-        while (!isspace(nextChar) && nextChar != '>' && nextChar != '/')
+        while (!isspace_char(nextChar) && nextChar != '>' && nextChar != '/')
         {
             tagName.append(nextChar);
             readNext();
@@ -4660,7 +4660,7 @@ restart:
 
             attrName.setLength(1);
             attrval.clear();
-            while (nextChar && !isspace(nextChar) && nextChar != '=' && nextChar != '>' && nextChar != '/')
+            while (nextChar && !isspace_char(nextChar) && nextChar != '=' && nextChar != '>' && nextChar != '/')
             {
                 attrName.append(nextChar);
                 readNext();
@@ -4725,7 +4725,7 @@ restart:
                         {
                             if (ignoreWhiteSpace)
                             {
-                                while (l-- && isspace(mark.charAt(l)));
+                                while (l-- && isspace_char(mark.charAt(l)));
                                 mark.setLength(l+1);
                             }
                             tagText.ensureCapacity(mark.length());
@@ -4764,7 +4764,7 @@ restart:
                 }
                 readNext();
                 unsigned i = 0;
-                while (!isspace(nextChar) && nextChar != '>')
+                while (!isspace_char(nextChar) && nextChar != '>')
                 {
                     if ((i >= completeTagname.length()) ||
                         (nextChar != completeTagname.charAt(i++)))
@@ -4939,7 +4939,7 @@ public:
                 stack.append(*stateInfo);
                 if ('/' == nextChar)
                     error("Unmatched close tag encountered");
-                while (!isspace(nextChar) && nextChar != '>')
+                while (!isspace_char(nextChar) && nextChar != '>')
                 {
                     stateInfo->tag.append(nextChar);
                     readNext();
@@ -4993,7 +4993,7 @@ public:
 
                     attrName.setLength(1);
                     attrval.clear();
-                    while (nextChar && !isspace(nextChar) && nextChar != '=' && nextChar != '>' && nextChar != '/')
+                    while (nextChar && !isspace_char(nextChar) && nextChar != '=' && nextChar != '>' && nextChar != '/')
                     {
                         attrName.append(nextChar);
                         readNext();
@@ -5077,9 +5077,9 @@ public:
                             {
                                 const char *tb = mark.str();
                                 const char *t = tb+l-1;
-                                if (isspace(*t))
+                                if (isspace_char(*t))
                                 {
-                                    while (t != tb && isspace(*(--t)));
+                                    while (t != tb && isspace_char(*(--t)));
                                     mark.setLength((size32_t)(t-tb+1));
                                 }
                             }
@@ -5090,7 +5090,7 @@ public:
                         {
                             const char *m = mark.str();
                             const char *e = m+mark.length();
-                            do { if (!isspace(*m++)) error("Trailing content after close of root tag"); }
+                            do { if (!isspace_char(*m++)) error("Trailing content after close of root tag"); }
                             while (m!=e);
                         }
                         readNext();
@@ -5120,7 +5120,7 @@ public:
                         const char *es = m+mark.length();
                         do
                         { 
-                            if (!isspace(*m++))
+                            if (!isspace_char(*m++))
                             {
                                 e->Release();
                                 error("Trailing content after close of root tag");
@@ -5165,7 +5165,7 @@ public:
                 const char *te = t+stateInfo->tag.length();
                 for (;;)
                 {
-                    if (nextChar == '>' || isspace(nextChar))
+                    if (nextChar == '>' || isspace_char(nextChar))
                     {
                         if (t != te)
                             error("Mismatched opening and closing tags");
@@ -5483,12 +5483,12 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
                     const char * buff = static_cast<const char *>(thislevelbin.toByteArray());
                     const unsigned len = thislevelbin.length();
                     unsigned prefix = 0;
-                    while ((prefix < len) && isspace(buff[prefix]))
+                    while ((prefix < len) && isspace_char(buff[prefix]))
                         prefix++;
                     encodeXML(buff, out, ENCODE_WHITESPACE, prefix, true);
                     if (prefix != len) {    // check not all spaces
                         unsigned suffix = len;
-                        while (isspace(buff[suffix-1]))
+                        while (isspace_char(buff[suffix-1]))
                             suffix--;
                         encodeXML(buff+prefix, out, 0, suffix-prefix, true);
                         encodeXML(buff+suffix, out, ENCODE_WHITESPACE, len-suffix, true);
@@ -5508,12 +5508,12 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
             {
                 const char *m = thislevel;
                 const char *p = m;
-                while (isspace(*p)) 
+                while (isspace_char(*p))
                     p++;
                 encodeXML(m, out, ENCODE_WHITESPACE, p-m, true);
                 if (*p) {   // check not all spaces
                     const char *s = p+strlen(p);
-                    while (isspace(*(s-1)))
+                    while (isspace_char(*(s-1)))
                         s--;
                     assertex(s>p);
                     encodeXML(p, out, 0, s-p, true);
@@ -5828,7 +5828,7 @@ void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte fla
 
 static inline void skipWS(const char *&xpath)
 {
-    while (isspace(*xpath)) xpath++;
+    while (isspace_char(*xpath)) xpath++;
 }
 
 static void _validateXPathSyntax(const char *xpath);
@@ -5847,7 +5847,7 @@ static void validateQualifier(const char *&xxpath)
         case '\0':
             break;
         default:
-            if (!isspace(*xpath))
+            if (!isspace_char(*xpath))
             {
                 xpath++;
                 continue;
@@ -5925,7 +5925,7 @@ restart:
             case '[':
             {
                 ++xpath;
-                if (isdigit(*xpath))
+                if (isdigit_char(*xpath))
                 {
                     StringAttr index;
                     xpath = readIndex(xpath, index);
@@ -5957,7 +5957,7 @@ restart:
                     if ('[' == *xpath) // check for local index not iterative qualifier.
                     {
                         const char *xxpath = xpath+1;
-                        if (isdigit(*xxpath))
+                        if (isdigit_char(*xxpath))
                         {
                             StringAttr idxstr;
                             xxpath = readIndex(xxpath, idxstr);
@@ -5983,7 +5983,7 @@ restart:
                     StringAttr id(start, s);
                     if (!validateXMLTag(id))
                         throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Invalid xml tag: %s", id.get());
-                    while (isspace(*xpath)) xpath++;
+                    while (isspace_char(*xpath)) xpath++;
                     if ('\0' != *xpath)
                         throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Cannot have embedded attribute within path (must be tail component)");
                 }
@@ -6173,7 +6173,7 @@ void extractJavadoc(IPropertyTree * result, const char * text)
 
             text++;
             const char * start = text;
-            while (isalnum(*text))
+            while (isalnum_char(*text))
                 text++;
             if (start != text)
                 tagname.clear().append(text-start, start);
@@ -6540,11 +6540,11 @@ protected:
             readNext();
             //fall through
         default:
-            if (!isdigit(nextChar))
+            if (!isdigit_char(nextChar))
                 error("Bad value");
             type = elementTypeInteger;
             bool exponent = false;
-            while (isdigit(nextChar) || '.'==nextChar || 'e'==nextChar || 'E'==nextChar)
+            while (isdigit_char(nextChar) || '.'==nextChar || 'e'==nextChar || 'E'==nextChar)
             {
                 if ('e'==nextChar || 'E'==nextChar)
                 {
@@ -6555,7 +6555,7 @@ protected:
                     readNext();
                     if ('-'==nextChar)
                         type=elementTypeReal;
-                    else if (!isdigit(nextChar) && '+'!=nextChar)
+                    else if (!isdigit_char(nextChar) && '+'!=nextChar)
                         error("Bad value");
                 }
                 if ('.'==nextChar)
@@ -7360,7 +7360,7 @@ static void ensureHttpParameter(IPropertyTree *pt, StringBuffer &tag, const char
         return;
 
     unsigned idx = 1;
-    if (path && isdigit(*path))
+    if (path && isdigit_char(*path))
     {
         StringBuffer pos;
         path = nextHttpParameterTag(pos, path);

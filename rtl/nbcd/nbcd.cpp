@@ -817,7 +817,7 @@ void Decimal::setCString(const char * buffer)
     }
 
     const char * start = cur;
-    while (isdigit(*cur))
+    while (isdigit_char(*cur))
         cur++;
 
     unsigned numDigits = (cur-start);
@@ -839,7 +839,7 @@ void Decimal::setCString(const char * buffer)
         const char * start = cur;
         const char * limit = cur + maxPrecision;
         byte * digit = digits + zeroDigit;
-        while ((cur < limit) && (isdigit(*cur)))
+        while ((cur < limit) && (isdigit_char(*cur)))
             *--digit = *cur++ - '0';
         lsb = zeroDigit - (cur-start);
     }
@@ -971,7 +971,7 @@ void Decimal::setString(size32_t length, const char * buffer)
     }
 
     const char * start = cur;
-    while ((cur < limit) && (isdigit(*cur)))
+    while ((cur < limit) && (isdigit_char(*cur)))
         cur++;
 
     unsigned numDigits = (cur-start);
@@ -994,7 +994,7 @@ void Decimal::setString(size32_t length, const char * buffer)
         if (limit-cur > maxPrecision)
             limit = cur + maxPrecision;
         byte * digit = digits + zeroDigit;
-        while ((cur < limit) && (isdigit(*cur)))
+        while ((cur < limit) && (isdigit_char(*cur)))
             *--digit = *cur++ - '0';
         lsb = zeroDigit - (cur-start);
     }

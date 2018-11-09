@@ -78,7 +78,7 @@ public:
                 data.append(", ");
             data.append((unsigned)(byte)toByteArray()[i]);
         }
-        return buf.appendf("CMessageBuffer(%8X) tag=%d, sender=%s, replytag=%d, size== %d, data head = %s", (int)(long)toByteArray(), (int)tag, sender.getUrlStr(ep).str(), (int)replytag, length(), data.str());
+        return buf.appendf("CMessageBuffer(%8X) tag=%d, sender=%s, replytag=%d, size== %d, data head = %s", toByteArray(), (int)tag, sender.getUrlStr(ep).str(), (int)replytag, length(), data.str());
     }
 
     CMessageBuffer *clone()

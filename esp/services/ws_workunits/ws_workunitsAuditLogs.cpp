@@ -130,14 +130,14 @@ inline float timeStrToFloat(const char *timestr, float &val)
     int hours = 0;
     int mins = 0;
 
-    while(isdigit(*timestr))
+    while(isdigit_char(*timestr))
     {
         hours = 10 * hours + *timestr - '0';
         timestr++;
     }
     if(*timestr == ':')
         timestr++;
-    while(isdigit(*timestr))
+    while(isdigit_char(*timestr))
     {
         mins = 10 * mins + (*timestr - '0');
         timestr++;

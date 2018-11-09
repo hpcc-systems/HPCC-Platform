@@ -409,10 +409,10 @@ static void loadSlaves(const char *slavesName)
         char *finger = inbuf;
         for (;;)
         {
-            while (isspace(*finger))
+            while (isspace_char(*finger))
                 finger++;
             char *start = finger;
-            while (*finger && !isspace(*finger))
+            while (*finger && !isspace_char(*finger))
                 finger++;
             if (finger > start)
                 slaveIP[numSlaves ++].set(start, finger - start);
@@ -540,7 +540,7 @@ int main(int argc, const char *argv[])
         {
             while (arg)
             {
-                switch (toupper(arg[1]))
+                switch (toupper_char(arg[1]))
                 {
                 case 'A':
                     compressAll = true;

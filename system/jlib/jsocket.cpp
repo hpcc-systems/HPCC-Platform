@@ -849,6 +849,11 @@ size32_t CSocket::avail_read()
 
 #define PRE_CONN_UNREACH_ELIM  100
 
+IJSOCK_Exception* createJSocketException(int err, const char* msg)
+{
+    return new SocketException(err, msg);
+}
+
 int CSocket::pre_connect (bool block)
 {
     if (NULL == hostname || '\0' == (*hostname))
@@ -3152,7 +3157,7 @@ static bool decodeNumericIP(const char *text,unsigned *netaddr)
             return false;
         text = tmp.append(l-2,text);
     }
-    if (!isv6&&isdigit(text[0])) {
+    if (!isv6&&isdigit_char(text[0])) {
         if (_inet_pton(AF_INET, text, &netaddr[3])>0) {
             netaddr[2] = netaddr[3]?0xffff0000:0;  // check for NULL
             netaddr[1] = 0;
@@ -3309,7 +3314,7 @@ bool IpAddress::ipset(const char *text)
             return true;
         const char *s;
         for (s=text;*s;s++)
-            if (!isdigit(*s)&&(*s!=':')&&(*s!='.')) 
+            if (!isdigit_char(*s)&&(*s!=':')&&(*s!='.')) 
                 break;
         if (!*s)
             return ipset(NULL);
@@ -6132,7 +6137,7 @@ StringBuffer &SocketEndpointArray::getText(StringBuffer &text)
 inline const char *getnum(const char *s,unsigned &n)
 {
     n = 0;
-    while (isdigit(*s)) {
+    while (isdigit_char(*s)) {
         n = n*10+(*s-'0');
         s++;
     }
@@ -6174,7 +6179,7 @@ inline bool appendv4range(SocketEndpointArray *array,char *str,SocketEndpoint &e
             s = (char *)getnum(s+1,rep);
         }
         else {
-            if (!isdigit(*s))
+            if (!isdigit_char(*s))
                 notip = true;
             s++;
         }
@@ -6239,7 +6244,7 @@ void SocketEndpointArray::fromText(const char *text,unsigned defport)
     SocketEndpoint ep;
     bool eol = false;
     for (;;) {
-        while (isspace(*s)||(*s==','))
+        while (isspace_char(*s)||(*s==','))
             s++;
         if (!*s)
             break;
@@ -6247,7 +6252,7 @@ void SocketEndpointArray::fromText(const char *text,unsigned defport)
         if (*e=='[') {  // we have a IPv6
             while (*e&&(*e!=']'))
                 e++;
-            while ((*e!=',')&&!isspace(*e)) {
+            while ((*e!=',')&&!isspace_char(*e)) {
                 if (!*s) {
                     eol = true;
                     break;
@@ -6276,7 +6281,7 @@ void SocketEndpointArray::fromText(const char *text,unsigned defport)
                     eol = true;
                     break;
                 }
-            } while (!isspace(*e)&&(*e!=','));
+            } while (!isspace_char(*e)&&(*e!=','));
             *e = 0;
             if (isv6) {
                 ep.set(s,defport);

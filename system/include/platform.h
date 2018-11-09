@@ -211,43 +211,38 @@ typedef unsigned long MaxCard;
 // MSVC 2008 in debug (perhaps other versions too) will throw exception if negative passed (see bug: #32013)
 #if (_MSC_VER>=1400) // >=vs2005
 #define strictmsvc_isalpha(c) isalpha(c)
-#define isalpha(c) isalpha((const unsigned char)(c))
 
+// get rid off warning: pass signed char to unsigned parameter
+inline bool isspace_char(char c) { return isspace((unsigned char)c) != 0; }
+inline bool isdigit_char(char c) { return isdigit((unsigned char)c) != 0; }
+inline bool isalpha_char(char c) { return isalpha((unsigned char)c) != 0; }
+inline bool isprint_char(char c) { return isprint((unsigned char)c) != 0; }
+inline bool isblank_char(char c) { return isblank((unsigned char)c) != 0; }
+inline bool isupper_char(char c) { return isupper((unsigned char)c) != 0; }
+inline bool islower_char(char c) { return islower((unsigned char)c) != 0; }
+inline bool isalnum_char(char c) { return isalnum((unsigned char)c) != 0; }
+inline bool iscntrl_char(char c) { return iscntrl((unsigned char)c) != 0; }
+inline bool isxdigit_char(char c) { return isxdigit((unsigned char)c) != 0; }
+inline int toupper_char(char c) { return toupper((unsigned char)c); }
+inline int tolower_char(char c) { return tolower((unsigned char)c); }
+
+
+// These are define, but never used.
+/*
+#define strictmsvc_isalpha(c) isalpha(c)
 #define strictmsvc_isupper(c) isupper(c)
-#define isupper(c) isupper((const unsigned char)(c))
-
 #define strictmsvc_islower(c) islower(c)
-#define islower(c) islower((const unsigned char)(c))
-
 #define strictmsvc_isdigit(c) isdigit(c)
-#define isdigit(c) isdigit((const unsigned char)(c))
-
 #define strictmsvc_isxdigit(c) isxdigit(c)
-#define isxdigit(c) isxdigit((const unsigned char)(c))
-
 #define strictmsvc_isspace(c) isspace(c)
-#define isspace(c) isspace((const unsigned char)(c))
-
 #define strictmsvc_ispunct(c) ispunct(c)
-#define ispunct(c) ispunct((const unsigned char)(c))
-
 #define strictmsvc_isalnum(c) isalnum(c)
-#define isalnum(c) isalnum((const unsigned char)(c))
-
 #define strictmsvc_isprint(c) isprint(c)
-#define isprint(c) isprint((const unsigned char)(c))
-
 #define strictmsvc_isgraph(c) isgraph(c)
-#define isgraph(c) isgraph((const unsigned char)(c))
-
 #define strictmsvc_iscntrl(c) iscntrl(c)
-#define iscntrl(c) iscntrl((const unsigned char)(c))
-
 #define strictmsvc_tolower(c) tolower(c)
-#define tolower(c) tolower((const unsigned char)(c))
-
 #define strictmsvc_toupper(c) toupper(c)
-#define toupper(c) toupper((const unsigned char)(c))
+*/
 
 #endif // (_MSC_VER>=1400)
 

@@ -157,7 +157,7 @@ static void extractValueFromEnvOutput(StringBuffer &path, const char *specs, con
         {
             while (eol >= found)
             {
-                if (!isspace(*eol))
+                if (!isspace_char(*eol))
                     break;
                 eol--;
             }
@@ -423,10 +423,10 @@ public:
             if (!validVersions.find(version))
                 throw MakeStringException(0, "Illegal character in version string %s in bundle %s", version.get(), bundleName.str());
             cleanVersion.append(version).replace('.', '_');
-            if (isdigit(cleanVersion.charAt(0)))
+            if (isdigit_char(cleanVersion.charAt(0)))
                 cleanVersion.insert(0, "V");
             cleanName.set(name);
-            cleanName.setCharAt(0, toupper(cleanName.charAt(0)));
+            cleanName.setCharAt(0, toupper_char(cleanName.charAt(0)));
         }
         catch (IException *E)
         {

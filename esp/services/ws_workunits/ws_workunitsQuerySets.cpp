@@ -562,18 +562,18 @@ static inline void updateWarnTimeLimitSetting(IPropertyTree *queryTree, bool val
 
 static inline unsigned __int64 memoryLimitUInt64FromString(const char *value)
 {
-    if (!value || !*value || !isdigit(*value))
+    if (!value || !*value || !isdigit_char(*value))
         return 0;
     unsigned __int64 result = (*value - '0');
     const char *s = value+1;
-    while (isdigit(*s))
+    while (isdigit_char(*s))
     {
         result = 10 * result + ((*s) - '0');
         s++;
     }
     if (*s)
     {
-        const char unit = toupper(*s++);
+        const char unit = toupper_char(*s++);
         if (*s && !strieq("B", s)) //more?
             return 0;
         switch (unit)

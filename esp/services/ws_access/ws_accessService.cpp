@@ -3549,13 +3549,13 @@ bool Cws_accessEx::onUserPosix(IEspContext &context, IEspUserPosixRequest &req, 
             unsigned i;
             for(i = 0; i < strlen(gidnumber); i++)
             {
-                if(!isdigit(gidnumber[i]))
+                if(!isdigit_char(gidnumber[i]))
                     throw MakeStringException(ECLWATCH_ID_MUST_BE_ALL_DIGITS, "Group ID Number should be all digits");
             }
 
             for(i = 0; i < strlen(uidnumber); i++)
             {
-                if(!isdigit(uidnumber[i]))
+                if(!isdigit_char(uidnumber[i]))
                     throw MakeStringException(ECLWATCH_ID_MUST_BE_ALL_DIGITS, "User ID Number should be all digits");
             }
 

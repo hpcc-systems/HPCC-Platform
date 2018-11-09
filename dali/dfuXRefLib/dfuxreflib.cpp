@@ -838,7 +838,7 @@ static bool constructLogicalName(const char *fullname,const char *basedir,String
     max = 0;
     num = 0;
     // mask filename with $P$ extension or normal filename to logical name and num (0 for $P$) and max
-    while (*fullname&&(toupper(*fullname)==toupper(*basedir))) {
+    while (*fullname&&(toupper_char(*fullname)==toupper_char(*basedir))) {
         fullname++;
         basedir++;
     }
@@ -930,14 +930,14 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
         if ((c=='.')&&(name[1]=='_')) {
             unsigned pn = 0;
             const char *s = name+2;
-            while (*s&&isdigit(*s)) {
+            while (*s&&isdigit_char(*s)) {
                 pn = pn*10+(*s-'0');
                 s++;
             }
             if (pn&&(memicmp(s,"_of_",4)==0)) {
                 unsigned mn = 0;
                 s += 4;
-                while (*s&&isdigit(*s)) {
+                while (*s&&isdigit_char(*s)) {
                     mn = mn*10+(*s-'0');
                     s++;
                 }

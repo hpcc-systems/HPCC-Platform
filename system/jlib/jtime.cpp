@@ -123,7 +123,7 @@ static unsigned readDigits(char const * & str, unsigned numDigits)
     while(numDigits--)
     {
         char c = *str++;
-        if(!isdigit(c))
+        if(!isdigit_char(c))
             throwError1(JLIBERR_BadlyFormedDateTime, str);
         ret  = ret * 10 + (c - '0');
     }
@@ -244,7 +244,7 @@ void CDateTime::setString(char const * str, char const * * end, bool local)
         for(digits = 0; digits < 9; digits++)
         {
             char c = *++str;
-            if(!isdigit(c)) break;
+            if(!isdigit_char(c)) break;
             nano = nano * 10 + (c - '0');
         }
         while(digits++<9)
@@ -283,7 +283,7 @@ void CDateTime::setTimeString(char const * str, char const * * end, bool local)
         for(digits = 0; digits < 9; digits++)
         {
             char c = *++str;
-            if(!isdigit(c)) break;
+            if(!isdigit_char(c)) break;
             nano = nano * 10 + (c - '0');
         }
         while(digits++<9)
@@ -653,7 +653,7 @@ void CScmDateTime::setString(const char * pstr)
     char const * end;
     cdt.setString(pstr, &end, false);
     char sign = *end;
-    if (toupper(sign) == 'Z')
+    if (toupper_char(sign) == 'Z')
     {
         utcToLocalDelta = 0;
         end++;
@@ -858,7 +858,7 @@ inline const char *getnum(const char *s, unsigned &n,unsigned first,unsigned las
     // assumes first char is digit
     n = *s-'0';
     s++;
-    while (isdigit(*s)) {
+    while (isdigit_char(*s)) {
         n = n*10+(*s-'0');
         s++;
     }
@@ -872,7 +872,7 @@ inline const char *getnum(const char *s, unsigned &n,unsigned first,unsigned las
 inline const char *getnumorname(const char *s, unsigned &n,unsigned first,unsigned last)
 {
     n = NotFound;
-    if (isdigit(*s))
+    if (isdigit_char(*s))
         return getnum(s,n,first,last);
     if (last==6)  // dow 
         n = decodeDay(s);
@@ -900,7 +900,7 @@ static const char *parseCronItem(const char *s,UnsignedArray &a,unsigned first,u
             s++;
             if (*s=='/') {
                 s++;
-                if (isdigit(*s)) {
+                if (isdigit_char(*s)) {
                     s = getnum(s,n,first,last);
                     if (n)
                         for (unsigned i=first;i<=last;i+=n)
@@ -921,7 +921,7 @@ static const char *parseCronItem(const char *s,UnsignedArray &a,unsigned first,u
                         unsigned inc = 1;
                         if (*s=='/') { // inc
                             s++;
-                            if (isdigit(*s)) 
+                            if (isdigit_char(*s)) 
                                 s = getnum(s,inc,1,last);
                         }
                         if (n <= n2)
@@ -947,7 +947,7 @@ static const char *parseCronItem(const char *s,UnsignedArray &a,unsigned first,u
                     break;
             }
         }
-        while (isspace(*s))
+        while (isspace_char(*s))
             s++;                
     }
     return s;
@@ -957,7 +957,7 @@ static const char *parseCronItem(const char *s,UnsignedArray &a,unsigned first,u
 const char *CCronAtSchedule::set(const char *spec)
 {
     if (spec)
-        while (isspace(*spec))
+        while (isspace_char(*spec))
             spec++;
     spec = parseCronItem(spec,minutes,0,59);
     spec = parseCronItem(spec,hours,0,23);

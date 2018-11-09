@@ -133,7 +133,7 @@ Extended stats
 
 inline void skipSp(const char *&s)
 {
-    while (isspace(*s))
+    while (isspace_char(*s))
         s++;
 }
 
@@ -964,7 +964,7 @@ static bool matchExtract(const char * prefix, const char * line, memsize_t & val
     {
         char * tail = NULL;
         value = strtol(line+len, &tail, 10);
-        while (isspace(*tail))
+        while (isspace_char(*tail))
             tail++;
         if (strncmp(tail, "kB", 2) == 0)
             value *= 0x400;
@@ -1403,16 +1403,16 @@ public:
 private:
     char *skipnumfld(char *s, const char *&num)
     {
-        while (*s && isspace(*s))
+        while (*s && isspace_char(*s))
             s++;
         num = s;
         if ((*s=='-')||(*s=='+'))
             s++;
-        while (*s && isdigit(*s))
+        while (*s && isdigit_char(*s))
             s++;
         if (*s==' ')
             *(s++) = 0;      // terminate num
-        while (*s && isspace(*s))
+        while (*s && isspace_char(*s))
             s++;
         return s;
     }

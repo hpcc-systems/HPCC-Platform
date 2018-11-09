@@ -81,7 +81,7 @@ public:
     bool  strnequ(const char *s1,const char *s2,size32_t n);
     bool  eob(const char *s) { return s==findend; };
     bool  claeol(const char *s);
-    bool  equch(int c1,int c2) { if (nocase) return (toupper(c1)==toupper(c2)); return c1==c2; };
+    bool  equch(int c1,int c2) { if (nocase) return (toupper_char(c1)== toupper_char(c2)); return c1==c2; };
     void  adjustptrs(const char *e,size32_t lo,size32_t lr);
     size32_t rstrlen(const char *s) {size32_t l=0; while (s++!=findend) l++; return l; };
     bool clarion;
@@ -484,7 +484,7 @@ static void dosubstitute(RegExpr *re,StringBuffer &out,char *s)
       out.append(s);
       s = b+1;
     }
-    else if (!isdigit(c))
+    else if (!isdigit_char(c))
       continue;
     else {
       (*b++)=0;
@@ -1139,9 +1139,9 @@ void RECOMP::adjustptrs(const char *e,size32_t lo,size32_t lr)
 const char *RECOMP::rstrchr(const char *s,int c)
 {
   if (nocase) {
-    c = toupper(c);
+    c = toupper_char(c);
     while (s!=findend) {
-      if (toupper(*s)==c) return s;
+      if (toupper_char(*s)==c) return s;
       s++;
     }
   }
@@ -1159,7 +1159,7 @@ bool RECOMP::strnequ(const char *s1,const char *s2,size32_t n)
   if (findend-s1 < (signed)n) return false;
   if (nocase) {
     while (n--) {
-      if (toupper(*s1)!=toupper(*s2)) return false;
+      if (toupper_char(*s1)!= toupper_char(*s2)) return false;
       s1++;
       s2++;
     }
@@ -1197,16 +1197,16 @@ static char *SoundexCode(const char *s,int l,char *res)
       *r = '!';
       return res;
     }
-    if (isalpha(*s)) break;
+    if (isalpha_char(*s)) break;
     s++;
     l--;
   }
-  char c=toupper(*s);
+  char c= toupper_char(*s);
   *r = c;
   r++; s++;
   char dl = ((c>='A')&&(c<='Z'))?xlat[c-'A']:0;
   while (l&&*s) {
-    c = toupper(*s);
+    c = toupper_char(*s);
     s++;
     l--;
     if ((c>='A')&&(c<='Z')) {
@@ -1229,7 +1229,7 @@ static char *SoundexCode(const char *s,int l,char *res)
 
 inline bool matches(char cur, char next, bool nocase)
 {
-    return (nocase ? (toupper(cur)==toupper(next)) : cur == next);
+    return (nocase ? (toupper_char(cur)== toupper_char(next)) : cur == next);
 }
 
 /* Search for a pattern pat anywhere within the search string src */
@@ -1238,7 +1238,7 @@ static bool WildSubStringMatch(const char *src, size_t srclen, const char *pat, 
     //On entry the pattern to match contains at least one leading non '*' character
     char pat0 = pat[0];
     if (nocase)
-        pat0 = toupper(pat[0]);
+        pat0 = toupper_char(pat[0]);
 
     //Could special case '?' at the start of the string, but fairly unlikely.
     for (size_t srcdelta=0; srcdelta < srclen; srcdelta++)
@@ -1263,7 +1263,7 @@ static bool WildSubStringMatch(const char *src, size_t srclen, const char *pat, 
             {
                 for (;;)
                 {
-                    if (unlikely(toupper(src[srcdelta]) == pat0))
+                    if (unlikely(toupper_char(src[srcdelta]) == pat0))
                         break;
                     srcdelta++;
                     if (unlikely(srcdelta == srclen))
@@ -1421,7 +1421,7 @@ static bool WildMatchNreplace ( const char *src, int srclen, int srcidx,
         else if (next_char != '*') {
             if (nocase) {
                 if ((srcidx == srclen) ||
-                    (toupper(src[srcidx])!=toupper(next_char)))
+                    (toupper_char(src[srcidx])!= toupper_char(next_char)))
                     goto Fail;
             }
             else {

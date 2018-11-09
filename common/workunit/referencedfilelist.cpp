@@ -43,7 +43,7 @@ bool checkForeign(const char *lfn)
     if (strnicmp("foreign", lfn, l)==0)
     {
         lfn+=l;
-        while (isspace(*lfn))
+        while (isspace_char(*lfn))
             lfn++;
         if (lfn[0]==':' && lfn[1]==':')
             return true;

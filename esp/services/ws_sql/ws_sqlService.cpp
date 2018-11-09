@@ -1793,7 +1793,7 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
             recDef.appendf("\t%s", name);
             if (len > 0)
             {
-                if(isdigit(recDef.charAt(recDef.length() - 1)))
+                if(isdigit_char(recDef.charAt(recDef.length() - 1)))
                     recDef.append("_");
                 recDef.append(len);
             }

@@ -68,6 +68,7 @@ if(WSSQL_SERVICE)
         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
         ${HPCC_SOURCE_DIR}/esp/platform
+        ${HPCC_SOURCE_DIR}/esp/clients
         ${HPCC_SOURCE_DIR}/esp/services
         ${HPCC_SOURCE_DIR}/esp/services/ws_ecl
         ${HPCC_SOURCE_DIR}/esp/services/ws_workunits

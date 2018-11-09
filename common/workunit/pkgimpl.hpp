@@ -345,7 +345,7 @@ public:
             if (pkg)
                 return pkg;
             const char *tail = name + strlen(name)-1;
-            while (tail>name && isdigit(*tail))
+            while (tail>name && isdigit_char(*tail))
                 tail--;
             if (*tail=='.' && tail>name)
             {

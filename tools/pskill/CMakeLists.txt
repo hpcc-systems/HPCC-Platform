@@ -24,7 +24,11 @@
 project( pstart ) 
 
 if (WIN32)
-    include_directories (../../system/win32)
+    include_directories (
+       ../../system/win32
+       ../../system/include
+    )
+
     HPCC_ADD_EXECUTABLE ( pskill main.cpp )
     target_link_libraries ( pskill psapi.lib)
 endif ()

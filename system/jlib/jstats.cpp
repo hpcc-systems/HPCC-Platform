@@ -1284,7 +1284,7 @@ int StatsScopeId::compare(const StatsScopeId & other) const
 void StatsScopeId::describe(StringBuffer & description) const
 {
     const char * name = queryScopeTypeName(scopeType);
-    description.append((char)toupper(*name)).append(name+1);
+    description.append((char)toupper_char(*name)).append(name+1);
     switch (scopeType)
     {
     case SSTgraph:
@@ -1394,7 +1394,7 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
     case ActivityScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, ActivityScopePrefix))
         {
-            if (isdigit(text[strlen(ActivityScopePrefix)]))
+            if (isdigit_char(text[strlen(ActivityScopePrefix)]))
             {
                 unsigned id = strtoul(text + strlen(ActivityScopePrefix), next, 10);
                 setActivityId(id);
@@ -1405,7 +1405,7 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
     case GraphScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, GraphScopePrefix))
         {
-            if (isdigit(text[strlen(GraphScopePrefix)]))
+            if (isdigit_char(text[strlen(GraphScopePrefix)]))
             {
                 unsigned id = strtoul(text + strlen(GraphScopePrefix), next, 10);
                 setId(SSTgraph, id);
@@ -1416,7 +1416,7 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
     case SubGraphScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, SubGraphScopePrefix))
         {
-            if (isdigit(text[strlen(SubGraphScopePrefix)]))
+            if (isdigit_char(text[strlen(SubGraphScopePrefix)]))
             {
                 unsigned id = strtoul(text + strlen(SubGraphScopePrefix), next, 10);
                 setSubgraphId(id);
@@ -1428,7 +1428,7 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
         if (MATCHES_CONST_PREFIX(text, EdgeScopePrefix))
         {
             const char * underscore = strchr(text, '_');
-            if (!underscore || !isdigit(underscore[1]))
+            if (!underscore || !isdigit_char(underscore[1]))
                 return false;
             unsigned id1 = atoi(text + strlen(EdgeScopePrefix));
             unsigned id2 = strtoul(underscore+1, next, 10);
@@ -1444,7 +1444,7 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
         }
         break;
     case WorkflowScopePrefix[0]:
-        if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix) && isdigit(text[strlen(WorkflowScopePrefix)]))
+        if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix) && isdigit_char(text[strlen(WorkflowScopePrefix)]))
         {
             setWorkflowId(atoi(text+ strlen(WorkflowScopePrefix)));
             return true;
@@ -3197,7 +3197,7 @@ void StatisticsFilter::addFilter(const char * filter)
         //value[exact|low..high] where low and high are optional
         unsigned __int64 lowValue = 0;
         unsigned __int64 highValue = MaxStatisticValue;
-        if (isdigit(*value))
+        if (isdigit_char(*value))
             lowValue = (unsigned __int64)atoi64(value);
         const char * dotdot = strstr(value, "..");
         if (dotdot)

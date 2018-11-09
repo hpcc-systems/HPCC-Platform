@@ -751,7 +751,7 @@ void loadCmdProp(IPropertyTree *tree, const char *cmdProp)
     if (*cmdProp)
     {
         cmdProp++;
-        while (isspace(*cmdProp))
+        while (isspace_char(*cmdProp))
             cmdProp++;
         while (*cmdProp)
             val.append(*cmdProp++);

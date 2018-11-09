@@ -42,9 +42,9 @@ static bool localLooksLikeAWuid(const char * wuid)
         return false;
     if (wuid[0] != 'W')
         return false;
-    if (!isdigit(wuid[1]) || !isdigit(wuid[2]) || !isdigit(wuid[3]) || !isdigit(wuid[4]))
+    if (!isdigit_char(wuid[1]) || !isdigit_char(wuid[2]) || !isdigit_char(wuid[3]) || !isdigit_char(wuid[4]))
         return false;
-    if (!isdigit(wuid[5]) || !isdigit(wuid[6]) || !isdigit(wuid[7]) || !isdigit(wuid[8]))
+    if (!isdigit_char(wuid[5]) || !isdigit_char(wuid[6]) || !isdigit_char(wuid[7]) || !isdigit_char(wuid[8]))
         return false;
     return (wuid[9]=='-');
 }

@@ -414,7 +414,7 @@ public:
         if (optInput.length())
         {
             const char *in = optInput.get();
-            while (*in && isspace(*in)) in++;
+            while (*in && isspace_char(*in)) in++;
             if (*in!='<')
             {
                 StringBuffer content;
@@ -437,7 +437,7 @@ public:
         else
         {
             const char * portorname =  optPortOrName.get();
-            isdigit(*portorname) ? optTargetPort.set(portorname) : optBindingName.set(portorname);
+            isdigit_char(*portorname) ? optTargetPort.set(portorname) : optBindingName.set(portorname);
         }
 
         return EsdlPublishCmdCommon::finalizeOptions(globals);
@@ -918,7 +918,7 @@ public:
         if (optInput.length())
         {
             const char *in = optInput.get();
-            while (*in && isspace(*in)) in++;
+            while (*in && isspace_char(*in)) in++;
             if (*in!='<')
             {
                 StringBuffer content;

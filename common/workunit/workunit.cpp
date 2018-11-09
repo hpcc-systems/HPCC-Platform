@@ -2532,7 +2532,7 @@ WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
         case FOnested:
             if (strieq(arg, "all"))
                 setIncludeNesting(UINT_MAX);
-            else if (isdigit(*arg))
+            else if (isdigit_char(*arg))
                 setIncludeNesting(atoi(arg));
             else
                 throw makeStringExceptionV(0, "Expected a value for the nesting depth: %s", arg.str());
@@ -2564,7 +2564,7 @@ WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
             setMeasure(arg);
             break;
         case FOversion:
-            if (isdigit(*arg))
+            if (isdigit_char(*arg))
                 minVersion = atoi64(arg);
             else
                 throw makeStringExceptionV(0, "Expected a value for the version: %s", arg.str());
@@ -2764,7 +2764,7 @@ void WuScopeFilter::addRequiredStat(const char * filter)
 {
     const char * stat = filter;
     const char * cur = stat;
-    while (isalpha(*cur))
+    while (isalpha_char(*cur))
         cur++;
 
     StringBuffer statisticName(cur-stat, stat);
@@ -2773,7 +2773,7 @@ void WuScopeFilter::addRequiredStat(const char * filter)
         throw makeStringExceptionV(0, "Unknown statistic name '%s'", statisticName.str());
 
     //Skip any spaces before a comparison operator.
-    while (*cur && isspace(*cur))
+    while (*cur && isspace_char(*cur))
         cur++;
 
     //Save the operator, and skip over any non digits.
@@ -6058,7 +6058,7 @@ bool modifyAndWriteWorkUnitXML(char const * wuid, StringBuffer & buf, StringBuff
         while (bufStart != bufPtr)
         {
             --bufPtr;
-            if (!isspace(*bufPtr))
+            if (!isspace_char(*bufPtr))
                 break;
         }
         assertex('>' == *bufPtr);
@@ -12514,7 +12514,7 @@ const char * skipLeadingXml(const char * text)
 
     for (;;)
     {
-        if (isspace(*text))
+        if (isspace_char(*text))
             text++;
         else if (text[0] == '<' && text[1] == '?')
         {
@@ -13066,9 +13066,9 @@ bool looksLikeAWuid(const char * wuid, const char firstChar)
         return false;
     if (wuid[0] != firstChar)
         return false;
-    if (!isdigit(wuid[1]) || !isdigit(wuid[2]) || !isdigit(wuid[3]) || !isdigit(wuid[4]))
+    if (!isdigit_char(wuid[1]) || !isdigit_char(wuid[2]) || !isdigit_char(wuid[3]) || !isdigit_char(wuid[4]))
         return false;
-    if (!isdigit(wuid[5]) || !isdigit(wuid[6]) || !isdigit(wuid[7]) || !isdigit(wuid[8]))
+    if (!isdigit_char(wuid[5]) || !isdigit_char(wuid[6]) || !isdigit_char(wuid[7]) || !isdigit_char(wuid[8]))
         return false;
     return (wuid[9]=='-');
 }
@@ -13340,14 +13340,14 @@ bool isValidPriorityValue(const char *priority)
 
 bool isValidMemoryValue(const char *memoryUnit)
 {
-    if (isEmptyString(memoryUnit) || !isdigit(*memoryUnit))
+    if (isEmptyString(memoryUnit) || !isdigit_char(*memoryUnit))
         return false;
-    while (isdigit(*++memoryUnit));
+    while (isdigit_char(*++memoryUnit));
 
     if (!*memoryUnit)
         return true;
 
-    switch (toupper(*memoryUnit++))
+    switch (toupper_char(*memoryUnit++))
     {
         case 'E':
         case 'P':

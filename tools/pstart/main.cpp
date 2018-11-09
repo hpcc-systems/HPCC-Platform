@@ -17,6 +17,7 @@
 
 #include "win32.hpp"
 #include <stdio.h>
+#include <platform.h>
 
 int main(int argc, char** argv)
 {
@@ -24,7 +25,7 @@ int main(int argc, char** argv)
     PROCESS_INFORMATION pi;
 
     char* cmd=GetCommandLine();
-    while (isspace(*cmd)) cmd++;
+    while (isspace_char(*cmd)) cmd++;
     if (*cmd=='"') {
         cmd++;
         while (*cmd && *cmd != '"')
@@ -32,9 +33,9 @@ int main(int argc, char** argv)
         if (*cmd)
             cmd++;
     } else {
-        while (!isspace(*cmd)) cmd++;
+        while (!isspace_char(*cmd)) cmd++;
     }
-    while (isspace(*cmd)) cmd++;
+    while (isspace_char(*cmd)) cmd++;
 
     if(!::CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NEW_CONSOLE | NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi))
     {

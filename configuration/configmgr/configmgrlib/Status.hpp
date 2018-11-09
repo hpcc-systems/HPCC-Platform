@@ -24,7 +24,6 @@
 #include "platform.h"
 
 
-
 struct DECL_EXPORT statusMsg {
 
     enum msgLevel

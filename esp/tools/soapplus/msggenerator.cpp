@@ -206,7 +206,7 @@ void MessageGenerator::setXsdNamespace()
     if (s)
     {
         const char* start = s; 
-        while (!isspace(*start)) start--;
+        while (!isspace_char(*start)) start--;
         start++;
         if (strncmp(start,"xmlns:",6)==0)
             m_xsdNamespace.set(start+6,s-start-6);
@@ -302,7 +302,7 @@ void MessageGenerator::initCfgDefValues(const char* method)
 static bool isNotBlank(const char* s)
 {
     for (; *s != 0; s++)
-        if (!isspace(*s))
+        if (!isspace_char(*s))
             return true;
     return false;
 }

@@ -2035,7 +2035,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull(ICodeContext *ctx,
     StringBuffer _sourceLogicalName, _destinationLogicalName;
     constructLogicalName(wu, sourceLogicalName, _sourceLogicalName);
     // destination name assumed complete (so just skip ~ *)
-    while ((*destinationLogicalName=='~')||isspace(*destinationLogicalName))
+    while ((*destinationLogicalName=='~')||isspace_char(*destinationLogicalName))
         destinationLogicalName++;
     _destinationLogicalName.append(destinationLogicalName);
     if (strstr(_destinationLogicalName.str(),"::")==NULL)

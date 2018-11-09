@@ -689,7 +689,7 @@ IGroup *createIGroup(const char *endpointlist,unsigned short defport)
                 break;
             }
             if (*s==',') {
-                while (isspace(*s)) 
+                while (isspace_char(*s)) 
                     s++;
                 if ((*s=='=')||(*s=='*')) {
                     oldform = true;
