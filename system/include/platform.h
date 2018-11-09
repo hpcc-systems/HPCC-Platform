@@ -208,28 +208,10 @@ typedef unsigned long MaxCard;
 #define S_IRWXG (S_IXGRP|S_IWGRP|S_IRGRP)
 #define S_IRWXO (S_IXGRP|S_IWGRP|S_IRGRP)
 
-// MSVC 2008 in debug (perhaps other versions too) will throw exception if negative passed (see bug: #32013)
-#if (_MSC_VER>=1400) // >=vs2005
-#define strictmsvc_isalpha(c) isalpha(c)
-
-// get rid off warning: pass signed char to unsigned parameter
-inline bool isspace_char(char c) { return isspace((unsigned char)c) != 0; }
-inline bool isdigit_char(char c) { return isdigit((unsigned char)c) != 0; }
-inline bool isalpha_char(char c) { return isalpha((unsigned char)c) != 0; }
-inline bool isprint_char(char c) { return isprint((unsigned char)c) != 0; }
-inline bool isblank_char(char c) { return isblank((unsigned char)c) != 0; }
-inline bool isupper_char(char c) { return isupper((unsigned char)c) != 0; }
-inline bool islower_char(char c) { return islower((unsigned char)c) != 0; }
-inline bool isalnum_char(char c) { return isalnum((unsigned char)c) != 0; }
-inline bool iscntrl_char(char c) { return iscntrl((unsigned char)c) != 0; }
-inline bool isxdigit_char(char c) { return isxdigit((unsigned char)c) != 0; }
-inline int toupper_char(char c) { return toupper((unsigned char)c); }
-inline int tolower_char(char c) { return tolower((unsigned char)c); }
-
-
 // These are define, but never used.
 /*
-#define strictmsvc_isalpha(c) isalpha(c)
+#define strictmsvc_isalpha(c) isalpha(c)
+#define strictmsvc_isalpha(c) isalpha(c)
 #define strictmsvc_isupper(c) isupper(c)
 #define strictmsvc_islower(c) islower(c)
 #define strictmsvc_isdigit(c) isdigit(c)
@@ -243,8 +225,6 @@ inline int tolower_char(char c) { return tolower((unsigned char)c); }
 #define strictmsvc_tolower(c) tolower(c)
 #define strictmsvc_toupper(c) toupper(c)
 */
-
-#endif // (_MSC_VER>=1400)
 
 #define likely(x)       (x)
 #define unlikely(x)     (x)
@@ -500,6 +480,20 @@ typedef unsigned __int64 timestamp_type;
 #define pclose  _pclose
 #endif
 #endif
+
+// get rid off warning: pass signed char to unsigned parameter
+inline bool isspace_char(char c) { return isspace((unsigned char)c) != 0; }
+inline bool isdigit_char(char c) { return isdigit((unsigned char)c) != 0; }
+inline bool isalpha_char(char c) { return isalpha((unsigned char)c) != 0; }
+inline bool isprint_char(char c) { return isprint((unsigned char)c) != 0; }
+inline bool isblank_char(char c) { return isblank((unsigned char)c) != 0; }
+inline bool isupper_char(char c) { return isupper((unsigned char)c) != 0; }
+inline bool islower_char(char c) { return islower((unsigned char)c) != 0; }
+inline bool isalnum_char(char c) { return isalnum((unsigned char)c) != 0; }
+inline bool iscntrl_char(char c) { return iscntrl((unsigned char)c) != 0; }
+inline bool isxdigit_char(char c) { return isxdigit((unsigned char)c) != 0; }
+inline int toupper_char(char c) { return toupper((unsigned char)c); }
+inline int tolower_char(char c) { return tolower((unsigned char)c); }
 
 //Use the following DECL_XXX to annotate items that are exported from dlls, or objects that are thrown:
 //DECL_EXPORT for items that are exported from the dll containing the current file being compiled

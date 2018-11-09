@@ -54,13 +54,16 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
         if (rc != LDAP_SUCCESS)
             throw MakeStringException(-1, "ldap_get_option error - %s", ldap_err2string(rc));
 
-        // If SSL is not enabled, enable it.
+        // If SSL is not enabled, enable it
+#pragma warning(push)
+#pragma warning(disable:4312)
         if ((void*)lv != LDAP_OPT_ON)
         {
             rc = ldap_set_option(ld, LDAP_OPT_SSL, LDAP_OPT_ON);
             if (rc != LDAP_SUCCESS)
                 throw MakeStringException(-1, "ldap_set_option error - %s", ldap_err2string(rc));
         }
+#pragma warning(pop)
 
         ldap_set_option(ld, LDAP_OPT_SERVER_CERTIFICATE, verifyServerCert);
 #else

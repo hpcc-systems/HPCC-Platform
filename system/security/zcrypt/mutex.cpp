@@ -119,7 +119,7 @@ int ZMutex::unlockAll()
 void zsynchronized::throwLockException(unsigned timeout)
 {
     char exbuf[256];
-    sprintf(exbuf, "Can not lock - %d",timeout);
+    snprintf(exbuf,256,"Can not lock - %d",timeout);
     throw string(exbuf);
 }
 

@@ -196,7 +196,7 @@ std::string XSDSchemaParser::getXSDAttributeValue(const pt::ptree &tree, const s
     {
         value = tree.get<std::string>(attrName);
     }
-    catch (std::exception &e)
+    catch (std::exception & /*e*/)
     {
         if (throwIfNotPresent)
             throw(ParseException("Missing attribute " + attrName + "."));

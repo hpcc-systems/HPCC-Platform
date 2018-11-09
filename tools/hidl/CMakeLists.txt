@@ -34,7 +34,7 @@ add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hidllex.cpp
 )
 
 set (    SRCS 
-         hidlgram.y
+         ${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp
          ${CMAKE_CURRENT_BINARY_DIR}/hidllex.cpp
          hidl_esp_ng.cpp 
          hidl_utils.cpp 
