@@ -20764,24 +20764,34 @@ IRoxieServerActivityFactory *createRoxieServerIfActivityFactory(unsigned _id, un
 
 //=================================================================================
 
-class CRoxieServerActionBaseActivity : public CRoxieServerActivity
+class CRoxieServerActionBaseActivity : public CRoxieServerActivity, implements IThreaded
 {
     CriticalSection ecrit;
     Owned<IException> exception;
+    CThreadedPersistent threaded;
     bool executed;
 
+    unsigned parentExtractSize = 0;
+    const byte * parentExtract = nullptr;
 public:
     CRoxieServerActionBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_ctx, _factory, _probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), threaded("action", this)
     {
         executed = false;
     }
 
     virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) = 0; 
 
-    virtual void execute(unsigned parentExtractSize, const byte * parentExtract) 
+    virtual void execute(unsigned _parentExtractSize, const byte * _parentExtract)
     {
-        CriticalBlock b(ecrit);
+        parentExtractSize = _parentExtractSize;
+        parentExtract = _parentExtract;
+        threaded.start();
+    }
+
+    virtual void threadmain() override
+    {
+        CriticalBlock b(ecrit); // To ensure dependencies only executed once
         if (exception)
             throw(exception.getLink());
         if (!executed)

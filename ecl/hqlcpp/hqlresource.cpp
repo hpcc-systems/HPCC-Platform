@@ -3374,8 +3374,8 @@ bool ResourcerInfo::expandRatherThanSplit()
         case no_rows:
             //If executing in a child query then you'll have less thread contention if the iterator is duplicated
             //So should probably uncomment the following.
-            //return true;
-            return false;
+            return true;
+            //return false;
         default:
             return false;
         }
