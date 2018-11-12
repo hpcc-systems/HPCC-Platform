@@ -841,6 +841,7 @@ public:
     void Do(unsigned i)
     {
         activities.item(i).execute(parentExtractSize, parentExtract, false);
+        activities.item(i).join(false);
     }
 private:
     IRoxieServerActivityCopyArray & activities;
@@ -1334,11 +1335,13 @@ public:
 
     void executeDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
     {
-        //MORE: Create a filtered list and then use asyncfor
         ForEachItemIn(idx, dependencies)
         {
             if (dependencyControlIds.item(idx) == controlId)
+            {
                 dependencies.item(idx).execute(parentExtractSize, parentExtract, false); // MORE - could actually use true here...
+                dependencies.item(idx).join(false);
+            }
         }
     }
 
@@ -20790,17 +20793,40 @@ public:
 
     virtual void execute(unsigned _parentExtractSize, const byte * _parentExtract, bool useThread) override
     {
-        parentExtractSize = _parentExtractSize;
-        parentExtract = _parentExtract;
-        if (useThread)
-            threaded.start();
-        else
-            threadmain();
+        ecrit.enter(); // To ensure dependencies only executed once
+        try
+        {
+            if (exception)
+                throw(exception.getLink());
+            if (!executed)
+            {
+                parentExtractSize = _parentExtractSize;
+                parentExtract = _parentExtract;
+                if (useThread)
+                    threaded.start();
+                else
+                    threadmain();
+            }
+        }
+        catch (...)
+        {
+            ecrit.leave();
+            throw;
+        }
     }
     virtual void join(bool useThread) override
     {
-        if (useThread)
-            threaded.join();
+        try
+        {
+            if (useThread)
+                threaded.join();
+        }
+        catch(...)
+        {
+            ecrit.leave();
+            throw;
+        }
+        ecrit.leave();
     }
     virtual void threadmain() override
     {
@@ -27463,7 +27489,10 @@ public:
     void doExecute(unsigned parentExtractSize, const byte * parentExtract)
     {
         if (sinks.ordinality()==1)
+        {
             sinks.item(0).execute(parentExtractSize, parentExtract, false);
+            sinks.item(0).join(false);
+        }
 #ifdef PARALLEL_EXECUTE
         else if (!probeManager && !graphDefinition.isSequential())
         {
