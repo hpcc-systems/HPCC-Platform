@@ -83,12 +83,12 @@
 #define DEFAULT_PARALLEL_LOOP_THREADS       1
 
 #define PROBE
+#undef PARALLEL_EXECUTE
 #ifdef _DEBUG
 //#define FAKE_EXCEPTIONS
 //#define TRACE_JOINGROUPS
 //#define TRACE_SPLIT
 //#define _CHECK_HEAPSORT
-#undef PARALLEL_EXECUTE
 //#define TRACE_SEEK_REQUESTS
 #endif
 
