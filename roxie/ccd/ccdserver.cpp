@@ -88,7 +88,7 @@
 //#define TRACE_JOINGROUPS
 //#define TRACE_SPLIT
 //#define _CHECK_HEAPSORT
-//#undef PARALLEL_EXECUTE
+#undef PARALLEL_EXECUTE
 //#define TRACE_SEEK_REQUESTS
 #endif
 
@@ -840,7 +840,7 @@ public:
         activities(_activities), parentExtractSize(_parentExtractSize), parentExtract(_parentExtract) { }
     void Do(unsigned i)
     {
-        activities.item(i).execute(parentExtractSize, parentExtract);
+        activities.item(i).execute(parentExtractSize, parentExtract, false);
     }
 private:
     IRoxieServerActivityCopyArray & activities;
@@ -1338,7 +1338,7 @@ public:
         ForEachItemIn(idx, dependencies)
         {
             if (dependencyControlIds.item(idx) == controlId)
-                dependencies.item(idx).execute(parentExtractSize, parentExtract);
+                dependencies.item(idx).execute(parentExtractSize, parentExtract, false); // MORE - could actually use true here...
         }
     }
 
@@ -1470,9 +1470,13 @@ public:
     }
 
     // Sink activities should override this....
-    virtual void execute(unsigned parentExtractSize, const byte * parentExtract) 
+    virtual void execute(unsigned parentExtractSize, const byte * parentExtract, bool useThread)
     {
         throw MakeStringException(ROXIE_SINK, "Internal error: execute() requires a sink");
+    }
+    virtual void join(bool useThread)
+    {
+        throw MakeStringException(ROXIE_SINK, "Internal error: join() requires a sink");
     }
 
     virtual void executeChild(size32_t & retSize, void * & ret, unsigned parentExtractSize, const byte * parentExtract)
@@ -2838,8 +2842,9 @@ public:
 
     virtual void onExecute() = 0;
 
-    virtual void execute(unsigned parentExtractSize, const byte * parentExtract) 
+    virtual void execute(unsigned parentExtractSize, const byte * parentExtract, bool useThread)
     {
+        // MORE - why not use persistent thread here?
         CriticalBlock b(ecrit);
         if (exception)
             throw exception.getLink();
@@ -2869,6 +2874,7 @@ public:
             }
         }
     }
+    virtual void join(bool useThread) {}
 
 };
 
@@ -20782,13 +20788,20 @@ public:
 
     virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) = 0; 
 
-    virtual void execute(unsigned _parentExtractSize, const byte * _parentExtract)
+    virtual void execute(unsigned _parentExtractSize, const byte * _parentExtract, bool useThread) override
     {
         parentExtractSize = _parentExtractSize;
         parentExtract = _parentExtract;
-        threaded.start();
+        if (useThread)
+            threaded.start();
+        else
+            threadmain();
     }
-
+    virtual void join(bool useThread) override
+    {
+        if (useThread)
+            threaded.join();
+    }
     virtual void threadmain() override
     {
         CriticalBlock b(ecrit); // To ensure dependencies only executed once
@@ -20898,7 +20911,11 @@ public:
 #else
         ForEachItemIn(idx, dependencies)
         {
-            dependencies.item(idx).execute(parentExtractSize, parentExtract);
+            dependencies.item(idx).execute(parentExtractSize, parentExtract, idx != dependencies.ordinality()-1);
+        }
+        ForEachItemIn(idx2, dependencies)
+        {
+            dependencies.item(idx2).join(idx != dependencies.ordinality()-1);
         }
 #endif
     }
@@ -27446,7 +27463,7 @@ public:
     void doExecute(unsigned parentExtractSize, const byte * parentExtract)
     {
         if (sinks.ordinality()==1)
-            sinks.item(0).execute(parentExtractSize, parentExtract);
+            sinks.item(0).execute(parentExtractSize, parentExtract, false);
 #ifdef PARALLEL_EXECUTE
         else if (!probeManager && !graphDefinition.isSequential())
         {
@@ -27482,7 +27499,12 @@ public:
             ForEachItemIn(idx, sinks)
             {
                 IRoxieServerActivity &sink = sinks.item(idx);
-                sink.execute(parentExtractSize, parentExtract);
+                sink.execute(parentExtractSize, parentExtract, idx != sinks.ordinality()-1);
+            }
+            ForEachItemIn(idx2, sinks)
+            {
+                IRoxieServerActivity &sink = sinks.item(idx2);
+                sink.join(idx2 != sinks.ordinality()-1);
             }
         }
     }

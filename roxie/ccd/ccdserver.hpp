@@ -151,7 +151,8 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void setInput(unsigned idx, unsigned sourceIdx, IFinalRoxieInput *in) = 0;
     virtual IFinalRoxieInput *queryOutput(unsigned idx) = 0;
     virtual IFinalRoxieInput *queryInput(unsigned idx) const = 0;
-    virtual void execute(unsigned parentExtractSize, const byte *parentExtract) = 0;
+    virtual void execute(unsigned parentExtractSize, const byte *parentExtract, bool useThread) = 0;
+    virtual void join(bool useThread) = 0;
     virtual void onCreate(IHThorArg *colocalArg) = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) = 0;  // Use StrandFlags values for flags
