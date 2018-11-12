@@ -674,4 +674,136 @@ class Base58Test : public CppUnit::TestFixture
 CPPUNIT_TEST_SUITE_REGISTRATION( Base58Test );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( Base58Test, "Base58Test" );
 
+thread_local unsigned temp = 0;  // Avoids clever compilers optimizing everything away
+static unsigned skip(unsigned j)
+{
+    temp += j;
+    return j+1;
+}
+static unsigned call_from_thread(unsigned count)
+{
+    unsigned tot = count;
+    for (int j = 0; j < count; j++)
+        tot += skip(j);
+    return tot;
+}
+
+class ThreadedPersistStressTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( ThreadedPersistStressTest  );
+        CPPUNIT_TEST(testThreads);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testThreads()
+    {
+        testThreadsX(0);
+        testThreadsX(1);
+        testThreadsX(2);
+        testThreadsX(3);
+    }
+    void testThreadsX(unsigned mode)
+    {
+        unsigned iters = 10000;
+        testThreadsXX(mode, 10, iters);
+        testThreadsXX(mode, 1000, iters);
+        testThreadsXX(mode, 2000, iters);
+        testThreadsXX(mode, 4000, iters);
+        testThreadsXX(mode, 8000, iters);
+        testThreadsXX(mode, 16000, iters);
+        testThreadsXX(mode, 32000, iters);
+        testThreadsXX(mode, 64000, iters);
+    }
+    void testThreadsXX(unsigned mode, unsigned count, unsigned iters)
+    {
+        unsigned start = msTick();
+        class Thread : public IThreaded
+        {
+        public:
+            Thread(unsigned _count) : count(_count) {}
+            virtual void threadmain() override
+            {
+                ret = call_from_thread(count);
+            }
+            unsigned count;
+            unsigned ret = 0;
+        } t1(count), t2(count), t3(count);
+        switch (mode)
+        {
+        case 0:
+        {
+            unsigned ret = 0;
+            CThreadedPersistent thread1("1", &t1), thread2("2", &t2), thread3("3", &t3);
+            for (unsigned i = 0; i < iters; i++)
+            {
+                thread1.start();
+                thread2.start();
+                thread3.start();
+                ret = call_from_thread(count);
+                thread1.join();
+                thread2.join();
+                thread3.join();
+            }
+            ret += t1.ret + t2.ret + t3.ret;
+            DBGLOG("ThreadedPersistant %d , %d, %d", count, msTick() - start, ret);
+            break;
+        }
+        case 1:
+        {
+            unsigned ret = 0;
+            for (unsigned i = 0; i < iters; i++)
+            {
+                t1.threadmain();
+                t2.threadmain();
+                t3.threadmain();
+                ret = call_from_thread(count);
+            }
+            ret += t1.ret + t2.ret + t3.ret;
+            DBGLOG("Sequential %d , %d, %d", count, msTick() - start, ret);
+            break;
+        }
+        case 2:
+        {
+            unsigned ret = 0;
+            CThreaded tthread1("1", &t1), tthread2("2", &t2), tthread3("3", &t3);
+            for (unsigned i = 0; i < iters; i++)
+            {
+                tthread1.start();
+                tthread2.start();
+                tthread3.start();
+                ret = call_from_thread(count);
+                tthread1.join();
+                tthread2.join();
+                tthread3.join();
+            }
+            ret += t1.ret + t2.ret + t3.ret;
+            DBGLOG("CThreaded %d , %d, %d", count, msTick() - start, ret);
+            break;
+        }
+        case 3:
+        {
+            unsigned ret = 0;
+            for (unsigned i = 0; i < iters; i++)
+            {
+                class casyncfor: public CAsyncFor
+                {
+                public:
+                    casyncfor(unsigned _count) :count(_count), ret(0) {}
+                    void Do(unsigned i)
+                    {
+                        ret += call_from_thread(count);
+                    }
+                    unsigned count;
+                    unsigned ret;
+                } afor(count);
+                afor.For(4, 4);
+                ret = afor.ret;
+            }
+            DBGLOG("AsyncFor %d , %d, %d", count, msTick() - start, ret);
+        }
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( ThreadedPersistStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ThreadedPersistStressTest, "ThreadedPersistStressTest" );
 #endif // _USE_CPPUNIT

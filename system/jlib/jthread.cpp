@@ -635,7 +635,6 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
         return;
     }
     Mutex errmutex;
-    Semaphore ready;
     IException *e=NULL;
     Owned<IShuffledIterator> shuffler;
     if (shuffled) {
@@ -661,63 +660,122 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
         }
     }
     else {
-        class cdothread: public Thread
-        {
-        public:
-            Mutex *errmutex;
-            Semaphore &ready;
-            int timeout;
-            IException *&erre;
-            unsigned idx;
-            CAsyncFor *self;
-            cdothread(CAsyncFor *_self,unsigned _idx,Semaphore &_ready,Mutex *_errmutex,IException *&_e)
-                : Thread("CAsyncFor"),ready(_ready),erre(_e)
-            {
-                errmutex =_errmutex;
-                idx = _idx;
-                self = _self;
-            }
-            int run()
-            {
-                try {
-                    self->Do(idx);
-                }
-                catch (IException * _e)
-                {
-                    synchronized block(*errmutex);
-                    if (erre)
-                        _e->Release();  // only return first
-                    else
-                        erre = _e;
-                }
-#ifndef NO_CATCHALL
-                catch (...)
-                {
-                    synchronized block(*errmutex);
-                    if (!erre)
-                        erre = MakeStringException(0, "Unknown exception in Thread %s", getName());
-                }
-#endif
-                ready.signal();
-                return 0;
-            }
-        };
-        if (maxatonce==0)
+        if (maxatonce==0 || maxatonce > num)
             maxatonce = num;
-        for (i=0;(i<num)&&(i<maxatonce);i++)
-            ready.signal();
-        IArrayOf<Thread> started;
-        started.ensure(num);
-        for (i=0;i<num;i++) {
-            ready.wait();
-            if (abortFollowingException && e) break;
-            Owned<Thread> thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,&errmutex,e);
-            thread->start();
-            started.append(*thread.getClear());
-        }
-        ForEachItemIn(idx, started)
+        if (maxatonce < num)
         {
-            started.item(idx).join();
+            class cdothread: public Thread
+            {
+            public:
+                Mutex *errmutex;
+                Semaphore &ready;
+                IException *&erre;
+                unsigned idx;
+                CAsyncFor *self;
+                cdothread(CAsyncFor *_self,unsigned _idx,Semaphore &_ready,Mutex *_errmutex,IException *&_e)
+                    : Thread("CAsyncFor"),ready(_ready),erre(_e)
+                {
+                    errmutex =_errmutex;
+                    idx = _idx;
+                    self = _self;
+                }
+                int run()
+                {
+                    try {
+                        self->Do(idx);
+                    }
+                    catch (IException * _e)
+                    {
+                        synchronized block(*errmutex);
+                        if (erre)
+                            _e->Release();  // only return first
+                        else
+                            erre = _e;
+                    }
+    #ifndef NO_CATCHALL
+                    catch (...)
+                    {
+                        synchronized block(*errmutex);
+                        if (!erre)
+                            erre = MakeStringException(0, "Unknown exception in Thread %s", getName());
+                    }
+    #endif
+                    ready.signal();
+                    return 0;
+                }
+            };
+            Semaphore ready;
+            for (i=0;(i<num)&&(i<maxatonce);i++)
+                ready.signal();
+            IArrayOf<Thread> started;
+            started.ensure(num);
+            for (i=0;i<num;i++) {
+                ready.wait();
+                if (abortFollowingException && e) break;
+                Owned<Thread> thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,&errmutex,e);
+                thread->start();
+                started.append(*thread.getClear());
+            }
+            ForEachItemIn(idx, started)
+            {
+                started.item(idx).join();
+            }
+        }
+        else
+        {
+            // Common case of execute all at once can be optimized a little
+            // Note that shuffle and abortFollowingException are meaningless when executing all at once
+            class cdothread: public Thread
+            {
+            public:
+                Mutex *errmutex;
+                IException *&erre;
+                unsigned idx;
+                CAsyncFor *self;
+                cdothread(CAsyncFor *_self,unsigned _idx,Mutex *_errmutex,IException *&_e)
+                    : Thread("CAsyncFor"),erre(_e)
+                {
+                    errmutex =_errmutex;
+                    idx = _idx;
+                    self = _self;
+                }
+                int run()
+                {
+                    try {
+                        self->Do(idx);
+                    }
+                    catch (IException * _e)
+                    {
+                        synchronized block(*errmutex);
+                        if (erre)
+                            _e->Release();  // only return first
+                        else
+                            erre = _e;
+                    }
+    #ifndef NO_CATCHALL
+                    catch (...)
+                    {
+                        synchronized block(*errmutex);
+                        if (!erre)
+                            erre = MakeStringException(0, "Unknown exception in Thread %s", getName());
+                    }
+    #endif
+                    return 0;
+                }
+            };
+            IArrayOf<Thread> started;
+            started.ensure(num);
+            for (i=0;i<num-1;i++)
+            {
+                Owned<Thread> thread = new cdothread(this,i,&errmutex,e);
+                thread->start();
+                started.append(*thread.getClear());
+            }
+            Do(num-1);
+            ForEachItemIn(idx, started)
+            {
+                started.item(idx).join();
+            }
         }
     }
     if (e)
