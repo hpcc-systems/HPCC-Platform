@@ -489,7 +489,7 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         else
         {
 #if defined(__linux__) && defined(__GNUC__) && defined(__arm__)
-            fprintf(f, " .section .note.GNU-stack,\"\"\n");
+            fprintf(f, " .section .note.GNU-stack,\"\",%%progbits\n");   // Prevent the stack from being marked as executable
 #else
             fprintf(f, " .section .note.GNU-stack,\"\",@progbits\n");   // Prevent the stack from being marked as executable
 #endif
