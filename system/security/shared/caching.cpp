@@ -353,7 +353,7 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
 
         time_t now;
         time(&now);
-        if(user->getTimestamp() < (now - m_cacheTimeout)  && 0==sec_user.credentials().getSessionToken())//don't delete session based users
+        if(0==sec_user.credentials().getSessionToken()  &&  (user->getTimestamp() < (now - m_cacheTimeoutInSeconds)))//don't delete session based users
         {
             deleteEntry = true;
         }
@@ -563,7 +563,7 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
         CriticalBlock block(msCacheSyncCS);
         time_t now;
         time(&now);
-        if (0 == m_lastManagedFileScopesRefresh || ((now - m_lastManagedFileScopesRefresh) > m_cacheTimeout))
+        if (0 == m_lastManagedFileScopesRefresh || ((now - m_lastManagedFileScopesRefresh) > m_cacheTimeoutInSeconds))
         {
             removeAllManagedFileScopes();
             IArrayOf<ISecResource> scopes;

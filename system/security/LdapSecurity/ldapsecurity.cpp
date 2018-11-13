@@ -592,14 +592,14 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
 
     m_ldap_client.setown(ldap_client);
     m_pp.setown(pp);
-    int cachetimeout = cfg->getPropInt("@cacheTimeout", 5);
+    int cacheTimeoutMinutes = cfg->getPropInt("@cacheTimeout", 60);//config value is in minutes
 
     if (cfg->getPropBool("@sharedCache", true))
         m_permissionsCache.setown(CPermissionsCache::getInstance(cfg->queryProp("@name")));
     else
         m_permissionsCache.setown(new CPermissionsCache());
 
-    m_permissionsCache->setCacheTimeout( 60 * cachetimeout);
+    m_permissionsCache->setCacheTimeout( 60 * cacheTimeoutMinutes);
     m_permissionsCache->setTransactionalEnabled(true);
     m_permissionsCache->setSecManager(this);
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
