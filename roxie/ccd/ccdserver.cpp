@@ -2788,7 +2788,7 @@ public:
 
 //=====================================================================================================
 
-class CRoxieServerInternalSinkActivity : public CRoxieServerActivity
+class CRoxieServerInternalSinkActivity : public CRoxieServerActivity, implements IThreaded
 {
 protected:
     unsigned numOutputs;
@@ -2797,9 +2797,12 @@ protected:
     CriticalSection ecrit;
     Owned<IException> exception;
 
+    CThreadedPersistent threaded;
+    unsigned parentExtractSize = 0;
+    const byte * parentExtract = nullptr;
 public:
     CRoxieServerInternalSinkActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerActivity(_ctx, _factory, _probeManager), numOutputs(_numOutputs)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), numOutputs(_numOutputs), threaded("InternalSinkThread", this)
     {
         executed = false;
         stopped = new bool[numOutputs];
@@ -2845,40 +2848,69 @@ public:
 
     virtual void onExecute() = 0;
 
-    virtual void execute(unsigned parentExtractSize, const byte * parentExtract, bool useThread)
+    virtual void execute(unsigned _parentExtractSize, const byte * _parentExtract, bool useThread) override
     {
-        // MORE - why not use persistent thread here?
-        CriticalBlock b(ecrit);
-        if (exception)
-            throw exception.getLink();
-        if (!executed)
+        ecrit.enter(); // To ensure dependencies only executed once
+        try
         {
-            try
+            if (exception)
+                throw(exception.getLink());
+            if (!executed)
             {
-                start(parentExtractSize, parentExtract, false);
-                {
-                    ActivityTimer t(totalCycles, timeActivities); // unfortunately this is not really best place for seeing in debugger.
-                    onExecute();
-                }
-                stop();
-                executed = true;
-            }
-            catch (IException *E)
-            {
-                exception.set(E); // (or maybe makeWrappedException?)
-                abort();
-                throw;
-            }
-            catch (...)
-            {
-                exception.set(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", sanitizeSourceFile(__FILE__), __LINE__));
-                abort();
-                throw;
+                parentExtractSize = _parentExtractSize;
+                parentExtract = _parentExtract;
+                if (useThread)
+                    threaded.start();
+                else
+                    threadmain();
             }
         }
+        catch (...)
+        {
+            ecrit.leave();
+            throw;
+        }
     }
-    virtual void join(bool useThread) {}
-
+    virtual void join(bool useThread) override
+    {
+        useThread = false;
+        try
+        {
+            if (useThread)
+                threaded.join();
+        }
+        catch(...)
+        {
+            ecrit.leave();
+            throw;
+        }
+        ecrit.leave();
+    }
+    virtual void threadmain() override
+    {
+        try
+        {
+            start(parentExtractSize, parentExtract, false);
+            {
+                ActivityTimer t(totalCycles, timeActivities); // unfortunately this is not really best place for seeing in debugger.
+                onExecute();
+            }
+            stop();
+            executed = true;
+        }
+        catch (IException *E)
+        {
+            exception.set(E); // (or maybe makeWrappedException?)
+            abort();
+            throw;
+        }
+        catch (...)
+        {
+            exception.set(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", sanitizeSourceFile(__FILE__), __LINE__));
+            abort();
+            throw;
+        }
+    }
 };
 
 
@@ -20800,6 +20832,7 @@ public:
                 throw(exception.getLink());
             if (!executed)
             {
+                executed = true;
                 parentExtractSize = _parentExtractSize;
                 parentExtract = _parentExtract;
                 if (useThread)
@@ -20830,25 +20863,18 @@ public:
     }
     virtual void threadmain() override
     {
-        CriticalBlock b(ecrit); // To ensure dependencies only executed once
-        if (exception)
-            throw(exception.getLink());
-        if (!executed)
+        try
         {
-            try
-            {
-                executed = true;
-                start(parentExtractSize, parentExtract, false);
-                doExecuteAction(parentExtractSize, parentExtract);
-                stop();
-            }
-            catch (IException * E)
-            {
-                ctx->notifyAbort(E);
-                abort();
-                exception.set(E);
-                throw;
-            }
+            start(parentExtractSize, parentExtract, false);
+            doExecuteAction(parentExtractSize, parentExtract);
+            stop();
+        }
+        catch (IException * E)
+        {
+            ctx->notifyAbort(E);
+            abort();
+            exception.set(E);
+            throw;
         }
     }
 
@@ -27509,7 +27535,8 @@ public:
                 {
                     try
                     {
-                        sinks.item(i).execute(parentExtractSize, parentExtract);
+                        sinks.item(i).execute(parentExtractSize, parentExtract, false);
+                        sinks.item(i).join(false);
                     }
                     catch (IException *E)
                     {
