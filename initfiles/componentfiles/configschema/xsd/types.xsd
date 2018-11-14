@@ -211,7 +211,7 @@
     <xs:attributeGroup name="loggingagent_reqd">
         <!--This attribute used to find logging agents of a particular type-->
         <xs:attribute name="type" type="xs:string" use="required" hpcc:hidden="true" hpcc:forcedConfigValue="DefaultLoggingAgent"/>
-        <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:uniqueKey=""
+        <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:uniqueKey="logginagent_name"
                       hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="logagent"
                       hpcc:tooltip="Name for this logging agent"/>
         <xs:attribute name="description" type="xs:string" hpcc:displayName="Description" hpcc:presetValue="Logging Agent Description"
