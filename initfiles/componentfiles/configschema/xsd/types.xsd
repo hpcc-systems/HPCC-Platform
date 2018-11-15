@@ -195,7 +195,6 @@
                       hpcc:autoGenerateType="configProperty" hpcc:autoGenerateValue="componentName"/>
     </xs:attributeGroup>
 
-
     <xs:attributeGroup name="secmgrplugin_reqd">
         <xs:attribute name="type" type="SecurityManager" use="required" hpcc:hidden="true" hpcc:readOnly="true"/>
         <xs:attribute name="libName" type="xs:string" use="required" hpcc:displayName="Library Name"
@@ -239,5 +238,10 @@
         <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"/>
         <xs:attribute name="mapToDB" type="xs:string" hpcc:displayName="Map To DB" use="required"/>
         <xs:attribute name="mapToLogGroup" type="xs:string" hpcc:displayName="Map To Log Group" use="required"/>
+    </xs:attributeGroup>
+
+    <xs:attributeGroup name="BaseAttributes">
+        <xs:attribute name="include" type="xs:string" hpcc:displayName="Include"/>
+        <xs:attribute name="name" type="xs:string" hpcc:displayname="Name"/>
     </xs:attributeGroup>
 </xs:schema>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="EclAgentProcess" hpcc:class="component" hpcc:itemType="eclAgent"
+                    hpcc:displayName="ECL Agent Process" maxOccurs="unbounded" hpcc:docid="EA.t1">
+            <xs:complexType>
+                <xs:attributeGroup name="options" hpcc:groupByName="Options" hpcc:docid="EA.t2">
+                    <xs:attribute name="allowedPipePrograms" type="xs:string" hpcc:displayName="Allowed Pipe Programs"
+                                  hpcc:presetValue="*"
+                                  hpcc:tooltip="Comma separated list of allowed PIPE programs (* for allow all)"/>
+                    <xs:attribute name="daliServers" type="xs:string" hpcc:displayName="Dali Servers" use="required"
+                                  hpcc:sourceKey="daliprocess_name"
+                                  hpcc:tooltip="Specifies the dali server to which this eclagent is attached"/>
+                    <xs:attribute name="defaultMemoryLimitMB" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Default Memory Limit (MB)" hpcc:presetValue="300"
+                                  hpcc:tooltip="Default memory limit in MB for eclagent"/>
+                    <xs:attribute name="heapUseHugePages" type="xs:boolean" hpcc:displayName="Heap Use Huge Pages"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Use memory from huge pages if they have been configured"/>
+                    <xs:attribute name="heapUseTransparentHugePages" hpcc:displayName="Heam Use Transparent Huge Pages"
+                                  type="xs:boolean" hpcc:presetValue="true"
+                                  hpcc:tooltip="Use memory from transparent huge pages"/>
+                    <xs:attribute name="heapRetainMemory" hpcc:displayName="Heap Retain Memory" type="xs:boolean"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Retain and do not return unused memory to the operating system"/>
+                    <xs:attribute name="pluginDirectory" hpcc:displayName="Plugin Directory" type="absolutePath"
+                                  hpcc:presetValue="${PLUGINS_PATH}"
+                                  hpcc:tooltip="Directory where plugins are located"/>
+                    <!-- Should traceLevel be an enumerated list, or a range say 0-10 -->
+                    <xs:attribute name="traceLevel" hpcc:displayName="Trace Level" type="xs:nonNegativeInteger"
+                                  hpcc:presetValue="0" hpcc:tooltip="Trace level"/>
+                    <xs:attribute name="thorConnectTimeout" hpcc:displayName="Thor Connect Timeout"
+                                  type="xs:nonNegativeInteger" hpcc:presetValue="600"
+                                  hpcc:tooltip="Default connection timeout when sending query to Thor"/>
+                    <xs:attribute name="wuQueueName" hpcc:displayName="Workunit Queue Name" type="xs:string"
+                                  hpcc:tooltip="eclAgent Workunit Execution Queue Name"/>
+                </xs:attributeGroup>
+                <xs:sequence>
+                    <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded" hpcc:class="elementSet"
+                                hpcc:displayName="Instances">
+                        <xs:complexType>
+                            <xs:attributeGroup ref="computerNodeReference"/>
+                            <xs:attribute name="directory" type="xs:string" hpcc:presetValue="c$\eclagent" hpcc:hidden="true"/>
+                        </xs:complexType>
+                    </xs:element>
+
+                    <xs:element name="Notes" type="usernotes" hpcc:displayName="Notes" maxOccurs="unbounded"/>
+
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name"
+                              hpcc:uniqueKey="eclagentprocess_name" hpcc:tooltip="Name for this process"/>
+                <xs:attribute name="description" type="xs:string" hpcc:displayName="Description"
+                              hpcc:presetValue="EclAgent process" hpcc:tooltip="Description for this process"/>
+                <xs:attributeGroup ref="options"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>

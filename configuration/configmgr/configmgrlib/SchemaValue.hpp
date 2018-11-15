@@ -92,6 +92,8 @@ class DECL_EXPORT SchemaValue
         const std::string &getRequiredIf() const { return m_requiredIf; }
         void setGroupByName(const std::string &group) { m_groupByName = group; }
         const std::string &getGroupByName() const { return m_groupByName; }
+        void setNoOutput(bool noOutput) { bitMask.m_noOutput = noOutput; }
+        bool isNoOutput() const { return bitMask.m_noOutput; }
 
 
     protected:
@@ -123,6 +125,7 @@ class DECL_EXPORT SchemaValue
             unsigned m_deprecated: 1;
             unsigned m_isUnique  : 1;
             unsigned m_isDefined : 1;
+            unsigned m_noOutput  : 1;
         } bitMask;
 
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!

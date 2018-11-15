@@ -15,16 +15,25 @@
 ################################################################################
 
 FOREACH( xsdFile
-    esp.xsd
-    esp_service_smc.xsd
-    hardware.xsd
-    types.xsd
-    dafilesrv.xsd
-    dali.xsd
-    environment.xsd
-    secmgr_singleuser.xsd
-    buildset.xml
-    roxie.xsd
+
+        esp.xsd
+        esp_service_smc.xsd
+        hardware.xsd
+        types.xsd
+        dafilesrv.xsd
+        dali.xsd
+        environment.xsd
+        secmgr_singleuser.xsd
+        buildset.xml
+        roxie.xsd
+        logging_agent_cassandra.xsd
+        logging_agent_esp.xsd
+        logging_manager.xsd
+        thor.xsd
+        eclagent.xsd
+        eclccserver.xsd
+        eclscheduler.xsd
+        topology.xsd
     )
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${xsdFile} ${CMAKE_CURRENT_BINARY_DIR}/${xsdFile})
     Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/${xsdFile} DESTINATION componentfiles/configschema/xsd COMPONENT Runtime)
