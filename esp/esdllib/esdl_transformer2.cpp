@@ -1855,6 +1855,8 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
                 xppToXmlString(*xpp, stag, logdata);
             else if (strieq(dataset, "royaltyset"))
                 xppToXmlString(*xpp, stag, logdata);
+            else if (strieq(dataset, "desdlsoaprequestecho"))
+                xppToXmlString(*xpp, stag, logdata);
             else
             {
                 WARNLOG("ESDL processing HPCC Result: Dataset ignored: %s", dataset);

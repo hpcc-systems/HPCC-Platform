@@ -889,6 +889,96 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
                    "No target URL configured for %s!", mthdef.queryMethodName());
     }
 
+    auto echoInsertionPoint = strstr(out, "</Result></Results>");
+
+    if (echoInsertionPoint)
+    {
+        try
+        {
+            auto queryname = (isroxie ? tgtcfg->queryProp("@queryname") : nullptr);
+            auto requestname = mthdef.queryRequestType();
+            const char* qname = nullptr;
+            const char* content = nullptr;
+            StringBuffer encodedContent;
+            StringBuffer echoDataset;
+
+            XmlPullParser xpp(soapmsg.str(), soapmsg.length());
+            StartTag stag;
+            EndTag etag;
+            int type = XmlPullParser::END_DOCUMENT;
+
+            echoDataset.ensureCapacity(soapmsg.length());
+            xpp.setSupportNamespaces(false); // parser throws exceptions when it encounters undefined namespace prefixes, such as CRT's 'xsdl'
+            while ((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+            {
+                switch (type)
+                {
+                case XmlPullParser::START_TAG:
+                    xpp.readStartTag(stag);
+                    qname = stag.getQName();
+                    if (streq(qname, "soap:Envelope"))
+                        echoDataset << "<Dataset name=\"DesdlSoapRequestEcho\">";
+                    else if (streq(qname, "soap:Body"))
+                        echoDataset << "<Row>";
+                    else if (queryname && streq(qname, queryname))
+                        echoDataset << "<roxierequest name=\"" << queryname << "\">";
+                    else if (streq(qname, requestname))
+                        echoDataset << "<esprequest name=\"" << requestname << "\">";
+                    else
+                    {
+                        echoDataset << '<';
+                        if (strncmp(qname, "xsdl:", 5) == 0)
+                            echoDataset << "xsdl_" << qname + 5; // eliminate problematic namespace prefix
+                        else
+                            echoDataset << qname;
+                        for (int idx = 0; idx < stag.getLength(); idx++)
+                        {
+                            encodeXML(stag.getValue(idx), encodedContent.clear());
+                            echoDataset << ' ' << stag.getRawName(idx) << "=\"" << encodedContent << '"';
+                        }
+                        echoDataset << '>';
+                    }
+                    break;
+
+                case XmlPullParser::END_TAG:
+                    xpp.readEndTag(etag);
+                    qname = etag.getQName();
+                    if (streq(qname, "soap:Envelope"))
+                        echoDataset << "</Dataset>";
+                    else if (streq(qname, "soap:Body"))
+                        echoDataset << "</Row>";
+                    else if (queryname && streq(qname, queryname))
+                        echoDataset << "</roxierequest>";
+                    else if (streq(qname, requestname))
+                        echoDataset << "</esprequest>";
+                    else if (strncmp(qname, "xsdl:", 5) == 0)
+                        echoDataset << "</xsdl_" << qname + 5 << '>'; // eliminate problematic namespace prefix
+                    else
+                        echoDataset << "</" << qname << '>';
+                    break;
+
+                case XmlPullParser::CONTENT:
+                    content = xpp.readContent();
+                    if (!isEmptyString(content))
+                    {
+                        encodeXML(content, encodedContent.clear());
+                        echoDataset << encodedContent;
+                    }
+                    break;
+                }
+            }
+            out.insert(echoInsertionPoint - out.str(), echoDataset);
+        }
+        catch (XmlPullParserException& xppe)
+        {
+            ERRLOG("Unable to echo transformed request to response: %s", xppe.what());
+        }
+        catch (...)
+        {
+            ERRLOG("Unable to echo transformed request to response");
+        }
+    }
+
     processResponse(context,srvdef,mthdef,ns,out);
 }
 
