@@ -65,8 +65,8 @@ ESP (Enterprise Services Platform) provides an easy to use interface to access E
 
 The following links describe the structure of the system and detail some of the key components:
 
-* [An overview of workunits and the different stages in executing a query](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdocs/WORKUNITS.rst)
-* [An introduction to the code generator - eclcc](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdocs/DOCUMENTATION.rst)
+* [An overview of workunits and the different stages in executing a query](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/WORKUNITS.rst)
+* [An introduction to the code generator - eclcc](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/DOCUMENTATION.rst)
 * [The memory manager used by roxie and thor](https://github.com/hpcc-systems/HPCC-Platform/blob/master/roxie/roxiemem/DOCUMENTATION.rst)
 * [The structure of the initialization scripts](https://github.com/hpcc-systems/HPCC-Platform/blob/master/initfiles/DOCUMENTATION.rst)
 * [Outline of ecl-bundle](https://github.com/hpcc-systems/HPCC-Platform/blob/master/ecl/ecl-bundle/DOCUMENTATION.rst)
