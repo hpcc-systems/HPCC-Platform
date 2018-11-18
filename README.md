@@ -67,7 +67,7 @@ The following links describe the structure of the system and detail some of the 
 
 * [An overview of workunits and the different stages in executing a query](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/WorkUnits.rst)
 * [An introduction to the code generator - eclcc](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/CodeGenerator.rst)
-* [The memory manager used by roxie and thor](https://github.com/hpcc-systems/HPCC-Platform/blob/master/roxie/roxiemem/DOCUMENTATION.rst)
+* [The memory manager used by roxie and thor](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/MemoryManager.rst)
 * [The structure of the initialization scripts](https://github.com/hpcc-systems/HPCC-Platform/blob/master/initfiles/DOCUMENTATION.rst)
 * [Outline of ecl-bundle](https://github.com/hpcc-systems/HPCC-Platform/blob/master/ecl/ecl-bundle/DOCUMENTATION.rst)
 * [The structure and some details of the cmake files](https://github.com/hpcc-systems/HPCC-Platform/blob/master/cmake_modules/DOCUMENTATION.rst)
