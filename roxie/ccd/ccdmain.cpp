@@ -836,7 +836,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         memsize_t totalMemoryLimit = (memsize_t) topology->getPropInt64("@totalMemoryLimit", 0);
         bool allowHugePages = topology->getPropBool("@heapUseHugePages", false);
         bool allowTransparentHugePages = topology->getPropBool("@heapUseTransparentHugePages", true);
-        bool retainMemory = topology->getPropBool("@heapRetainMemory", false);
+        bool retainMemory = topology->getPropBool("@heapRetainMemory", true);
         if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000;  // 1 Gb;
         roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, 0, NULL, NULL);

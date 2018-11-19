@@ -3009,6 +3009,7 @@ public:
 
     unsigned releaseEmptyPages(bool forceFreeAll)
     {
+        //return 0;
         //If releaseEmptyPages() is called between the last release on a page (setting count to 1), and this flag
         //getting set, it won't release the page *this time*.  But that is the same as the release happening
         //slightly later.
