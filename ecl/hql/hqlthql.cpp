@@ -734,6 +734,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             s.append(']');
 #endif
         }
+        if (containsImplicitNormalize(expr))
+            s.append('.');
         if (containsAssertKeyed(expr))
             s.append('K');
         if (containsAliasLocally(expr))
