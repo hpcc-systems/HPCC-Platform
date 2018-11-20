@@ -674,4 +674,105 @@ class Base58Test : public CppUnit::TestFixture
 CPPUNIT_TEST_SUITE_REGISTRATION( Base58Test );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( Base58Test, "Base58Test" );
 
+#include <thread>
+
+static __thread int counter;
+static unsigned spin(unsigned j)
+{
+//    counter++;
+    return j + 1;
+}
+
+static void call_from_thread()
+{
+    for (int j = 0; j < 10000; j++)
+        spin(j);
+}
+
+class ThreadedPersistStressTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( ThreadedPersistStressTest  );
+        CPPUNIT_TEST(testThreads);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testThreads()
+    {
+        unsigned start = msTick();
+        class Thread : public IThreaded
+        {
+        public:
+            virtual void threadmain() override
+            {
+                for (int j = 0; j < 10000; j++)
+                    spin(j);
+            }
+        } t1, t2, t3;
+        CThreadedPersistent thread1("1", &t1), thread2("2", &t1), thread3("3", &t1);
+        for (unsigned i = 0; i < 10000; i++)
+        {
+            thread1.start();
+            thread2.start();
+            thread3.start();
+            call_from_thread();
+            thread1.join();
+            thread2.join();
+            thread3.join();
+        }
+        DBGLOG("ThreadedPersistant took %d ms", msTick() - start);
+        start = msTick();
+        for (unsigned i = 0; i < 10000; i++)
+        {
+            t1.threadmain();
+            t2.threadmain();
+            t3.threadmain();
+            call_from_thread();
+        }
+        DBGLOG("Sequential took %d ms", msTick() - start);
+        start = msTick();
+        for (unsigned i = 0; i < 10000; i++)
+        {
+            std::thread st1(call_from_thread);
+            std::thread st2(call_from_thread);
+            std::thread st3(call_from_thread);
+            call_from_thread();
+            st1.join();
+            st2.join();
+            st3.join();
+        }
+        DBGLOG("std::thread took %d ms", msTick() - start);
+        start = msTick();
+        CThreaded tthread1("1", &t1), tthread2("2", &t1), tthread3("3", &t1);
+        for (unsigned i = 0; i < 10000; i++)
+        {
+            tthread1.start();
+            tthread2.start();
+            tthread3.start();
+            call_from_thread();
+            tthread1.join();
+            tthread2.join();
+            tthread3.join();
+        }
+        DBGLOG("CThreaded took %d ms", msTick() - start);
+        start = msTick();
+        for (unsigned i = 0; i < 10000; i++)
+        {
+            class casyncfor: public CAsyncFor
+                    {
+                    public:
+                        void Do(unsigned i)
+                        {
+                            call_from_thread();
+                        }
+                    } afor;
+            afor.For(4, 4);
+        }
+        DBGLOG("AsyncFor took %d ms", msTick() - start);
+        DBGLOG("Counter value is %d", counter);
+
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( ThreadedPersistStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ThreadedPersistStressTest, "ThreadedPersistStressTest" );
+
 #endif // _USE_CPPUNIT

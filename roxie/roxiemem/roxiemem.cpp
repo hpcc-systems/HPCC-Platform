@@ -59,8 +59,8 @@
 namespace roxiemem {
 
 #define NOTIFY_UNUSED_PAGES_ON_FREE     // avoid linux swapping 'freed' pages to disk
-//#define ALWAYS_USE_SCAN_HEAP          // option to test out using the scanning heaplets
-//#define ALWAYS_DELAY_RELEASE          // option to test out using delayed releasing with the scanning heaplets
+#define ALWAYS_USE_SCAN_HEAP          // option to test out using the scanning heaplets
+#define ALWAYS_DELAY_RELEASE          // option to test out using delayed releasing with the scanning heaplets
 //#define OLD_ROW_COMPACT
 
 //The following constants should probably be tuned depending on the architecture - see Tuning Test at the end of the file.
@@ -5807,6 +5807,7 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
     for (;;)
     {
         {
+            heapletLock.assertUnlocked();
             CriticalBlock block(heapletLock);
 
             if (likely(activeHeaplet))

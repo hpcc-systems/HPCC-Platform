@@ -274,6 +274,17 @@ void synchronized::throwLockException(unsigned timeout)
     throw MakeStringException(0,"Can not lock - %d",timeout);
 }
 
+void CriticalSection::assertUnlocked()
+{
+#ifdef _ASSERT_LOCK_SUPPORT
+    auto oowner = owner;
+    if (oowner)
+    {
+        printf("Owner %p\n", oowner);
+//        assertex (!"Yo");
+    }
+#endif
+}
 
 
 //===========================================================================

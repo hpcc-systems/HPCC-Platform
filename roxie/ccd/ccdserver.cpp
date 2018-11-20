@@ -2850,7 +2850,7 @@ public:
 
     virtual void execute(unsigned _parentExtractSize, const byte * _parentExtract, bool useThread) override
     {
-//        useThread = false;
+        //useThread = false;
         ecrit.enter(); // To ensure dependencies only executed once
         try
         {
@@ -2874,7 +2874,7 @@ public:
     }
     virtual void join(bool useThread) override
     {
-//        useThread = false;
+        //useThread = false;
         try
         {
             if (useThread)

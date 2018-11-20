@@ -326,6 +326,7 @@ public:
         assertex(owner == GetCurrentThreadId());
 #endif
     }
+    void assertUnlocked();
 };
 #endif
 
