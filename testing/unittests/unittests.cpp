@@ -709,17 +709,15 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
     }
     void testThreadsX(unsigned mode)
     {
-        /*unsigned iters = 10000;
+        unsigned iters = 10000;
         testThreadsXX(mode, 10, iters);
         testThreadsXX(mode, 1000, iters);
         testThreadsXX(mode, 2000, iters);
-        testThreadsXX(mode, 5000, iters);
-        testThreadsXX(mode, 10000, iters);
-        testThreadsXX(mode, 20000, iters);
-        testThreadsXX(mode, 100000, iters);
-        testThreadsXX(mode, 1000000, 100);
-        testThreadsXX(mode, 10000000, 10); */
-        testThreadsXX(mode, 400000000, 1);
+        testThreadsXX(mode, 4000, iters);
+        testThreadsXX(mode, 8000, iters);
+        testThreadsXX(mode, 16000, iters);
+        testThreadsXX(mode, 32000, iters);
+        testThreadsXX(mode, 64000, iters);
     }
     void testThreadsXX(unsigned mode, unsigned count, unsigned iters)
     {
@@ -735,7 +733,7 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
             unsigned count;
             unsigned ret = 0;
         } t1(count), t2(count), t3(count);
-        CThreadedPersistent thread1("1", &t1), thread2("2", &t1), thread3("3", &t1);
+        CThreadedPersistent thread1("1", &t1), thread2("2", &t2), thread3("3", &t3);
         switch (mode)
         {
         case 0:
@@ -772,7 +770,7 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
         case 2:
         {
             unsigned ret = 0;
-            CThreaded tthread1("1", &t1), tthread2("2", &t1), tthread3("3", &t1);
+            CThreaded tthread1("1", &t1), tthread2("2", &t2), tthread3("3", &t3);
             for (unsigned i = 0; i < iters; i++)
             {
                 tthread1.start();
@@ -808,21 +806,8 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
         }
         }
     }
-    void testThreads2()
-    {
-        class casyncfor: public CAsyncFor
-        {
-        public:
-            void Do(unsigned i)
-            {
-                loop_forever(i);
-            }
-        } afor;
-        afor.For(4, 4);
-    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( ThreadedPersistStressTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ThreadedPersistStressTest, "ThreadedPersistStressTest" );
-
 #endif // _USE_CPPUNIT
