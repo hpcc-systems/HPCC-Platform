@@ -1,0 +1,37 @@
+{
+  "private": true,
+  "name": "@hpcc-systems/hpcc-platform",
+  "version": "7.0.0",
+  "description": "HPCC Systems (High Performance Computing Cluster) is an open source, massive parallel-processing computing platform for big data processing and analytics. ",
+  "scripts": {
+    "gen-changelog": "standard-version",
+    "gen-changelog-rc": "standard-version --prerelease rc",
+    "git-push": "git push --follow-tags origin master",
+    "publish": "npm run gen-changelog && npm run git-push"
+  },
+  "standard-version": {
+    "scripts": {
+      "postchangelog": "replace \"https://github.com/hpcc-systems/HPCC-Platform/issues/\" \"https://track.hpccsystems.com/browse/HPCC-\" CHANGELOG.md"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hpcc-systems/HPCC-Platform.git"
+  },
+  "keywords": [
+    "HPCC",
+    "big",
+    "data",
+    "c++"
+  ],
+  "author": "hpcc-systems",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://track.hpccsystems.com/projects/HPCC/issues"
+  },
+  "homepage": "https://hpccsystems.com",
+  "devDependencies": {
+    "replace": "1.0.0",
+    "standard-version": "4.4.0"
+  }
+}
