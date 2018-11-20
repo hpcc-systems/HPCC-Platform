@@ -787,22 +787,24 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
         }
         case 3:
         {
+            unsigned ret = 0;
             for (unsigned i = 0; i < iters; i++)
             {
                 class casyncfor: public CAsyncFor
-                        {
-                        public:
-                            casyncfor(unsigned _count) :count(_count) {}
-                            void Do(unsigned i)
-                            {
-                                ret = call_from_thread(count);
-                            }
-                            unsigned count;
-                            unsigned ret = 0;
-                        } afor(count);
+                {
+                public:
+                    casyncfor(unsigned _count) :count(_count), ret(0) {}
+                    void Do(unsigned i)
+                    {
+                        ret += call_from_thread(count);
+                    }
+                    unsigned count;
+                    unsigned ret;
+                } afor(count);
                 afor.For(4, 4);
+                ret = afor.ret;
             }
-            DBGLOG("AsyncFor %d , %d", count, msTick() - start);
+            DBGLOG("AsyncFor %d , %d, %d", count, msTick() - start, ret);
         }
         }
     }

@@ -702,22 +702,44 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 return 0;
             }
         };
-        if (maxatonce==0)
+        if (maxatonce==0 || maxatonce > num)
             maxatonce = num;
-        for (i=0;(i<num)&&(i<maxatonce);i++)
-            ready.signal();
-        IArrayOf<Thread> started;
-        started.ensure(num);
-        for (i=0;i<num;i++) {
-            ready.wait();
-            if (abortFollowingException && e) break;
-            Owned<Thread> thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,&errmutex,e);
-            thread->start();
-            started.append(*thread.getClear());
-        }
-        ForEachItemIn(idx, started)
+        if (maxatonce < num || abortFollowingException || shuffled)
         {
-            started.item(idx).join();
+            for (i=0;(i<num)&&(i<maxatonce);i++)
+                ready.signal();
+            IArrayOf<Thread> started;
+            started.ensure(num);
+            for (i=0;i<num;i++) {
+                ready.wait();
+                if (abortFollowingException && e) break;
+                Owned<Thread> thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,&errmutex,e);
+                thread->start();
+                started.append(*thread.getClear());
+            }
+            ForEachItemIn(idx, started)
+            {
+                started.item(idx).join();
+            }
+        }
+        else
+        {
+            // Common case of execute all at once can be optimized a little
+            ready.reinit(num-1);
+            IArrayOf<Thread> started;
+            started.ensure(num);
+            for (i=0;i<num-1;i++)
+            {
+                Owned<Thread> thread = new cdothread(this,i,ready,&errmutex,e);
+                thread->start();
+                started.append(*thread.getClear());
+            }
+            Do(num-1);
+            ready.wait();
+            ForEachItemIn(idx, started)
+            {
+                started.item(idx).join();
+            }
         }
     }
     if (e)
