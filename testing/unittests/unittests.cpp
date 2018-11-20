@@ -676,16 +676,14 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( Base58Test, "Base58Test" );
 
 #include <thread>
 
-static __thread int counter;
 static unsigned spin(unsigned j)
 {
-//    counter++;
     return j + 1;
 }
 
-static void call_from_thread()
+static void call_from_thread(unsigned count)
 {
-    for (int j = 0; j < 10000; j++)
+    for (int j = 0; j < count; j++)
         spin(j);
 }
 
@@ -697,78 +695,98 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
 
     void testThreads()
     {
+        testThreadsX(0);
+        testThreadsX(1);
+        testThreadsX(2);
+        testThreadsX(3);
+    }
+    void testThreadsX(unsigned mode)
+    {
+        testThreadsXX(mode, 10);
+        testThreadsXX(mode, 1000);
+        testThreadsXX(mode, 2000);
+        testThreadsXX(mode, 5000);
+        testThreadsXX(mode, 10000);
+        testThreadsXX(mode, 20000);
+    }
+    void testThreadsXX(unsigned mode, unsigned count)
+    {
         unsigned start = msTick();
         class Thread : public IThreaded
         {
         public:
+            Thread(unsigned _count) : count(_count) {}
             virtual void threadmain() override
             {
-                for (int j = 0; j < 10000; j++)
-                    spin(j);
+                call_from_thread(count);
             }
-        } t1, t2, t3;
+            unsigned count;
+        } t1(count), t2(count), t3(count);
         CThreadedPersistent thread1("1", &t1), thread2("2", &t1), thread3("3", &t1);
-        for (unsigned i = 0; i < 10000; i++)
+        switch (mode)
         {
-            thread1.start();
-            thread2.start();
-            thread3.start();
-            call_from_thread();
-            thread1.join();
-            thread2.join();
-            thread3.join();
+        case 0:
+        {
+            for (unsigned i = 0; i < 10000; i++)
+            {
+                thread1.start();
+                thread2.start();
+                thread3.start();
+                call_from_thread(count);
+                thread1.join();
+                thread2.join();
+                thread3.join();
+            }
+            DBGLOG("ThreadedPersistant %d took %d ms", count, msTick() - start);
+            break;
         }
-        DBGLOG("ThreadedPersistant took %d ms", msTick() - start);
-        start = msTick();
-        for (unsigned i = 0; i < 10000; i++)
+        case 1:
         {
-            t1.threadmain();
-            t2.threadmain();
-            t3.threadmain();
-            call_from_thread();
+            for (unsigned i = 0; i < 10000; i++)
+            {
+                t1.threadmain();
+                t2.threadmain();
+                t3.threadmain();
+                call_from_thread(count);
+            }
+            DBGLOG("Sequential %d took %d ms", count, msTick() - start);
+            break;
         }
-        DBGLOG("Sequential took %d ms", msTick() - start);
-        start = msTick();
-        for (unsigned i = 0; i < 10000; i++)
+        case 2:
         {
-            std::thread st1(call_from_thread);
-            std::thread st2(call_from_thread);
-            std::thread st3(call_from_thread);
-            call_from_thread();
-            st1.join();
-            st2.join();
-            st3.join();
+            CThreaded tthread1("1", &t1), tthread2("2", &t1), tthread3("3", &t1);
+            for (unsigned i = 0; i < 10000; i++)
+            {
+                tthread1.start();
+                tthread2.start();
+                tthread3.start();
+                call_from_thread(count);
+                tthread1.join();
+                tthread2.join();
+                tthread3.join();
+            }
+            DBGLOG("CThreaded %d took %d ms", count, msTick() - start);
+            break;
         }
-        DBGLOG("std::thread took %d ms", msTick() - start);
-        start = msTick();
-        CThreaded tthread1("1", &t1), tthread2("2", &t1), tthread3("3", &t1);
-        for (unsigned i = 0; i < 10000; i++)
+        case 3:
         {
-            tthread1.start();
-            tthread2.start();
-            tthread3.start();
-            call_from_thread();
-            tthread1.join();
-            tthread2.join();
-            tthread3.join();
-        }
-        DBGLOG("CThreaded took %d ms", msTick() - start);
-        start = msTick();
-        for (unsigned i = 0; i < 10000; i++)
-        {
-            class casyncfor: public CAsyncFor
-                    {
-                    public:
-                        void Do(unsigned i)
+            for (unsigned i = 0; i < 10000; i++)
+            {
+                class casyncfor: public CAsyncFor
                         {
-                            call_from_thread();
-                        }
-                    } afor;
-            afor.For(4, 4);
+                        public:
+                            casyncfor(unsigned _count) :count(_count) {}
+                            void Do(unsigned i)
+                            {
+                                call_from_thread(count);
+                            }
+                            unsigned count;
+                        } afor(count);
+                afor.For(4, 4);
+            }
+            DBGLOG("AsyncFor %d took %d ms", count, msTick() - start);
         }
-        DBGLOG("AsyncFor took %d ms", msTick() - start);
-        DBGLOG("Counter value is %d", counter);
-
+        }
     }
 };
 
