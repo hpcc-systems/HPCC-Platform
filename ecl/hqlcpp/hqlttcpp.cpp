@@ -8392,7 +8392,7 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
                     if ((rootOp == no_select) || (rootOp == no_field))
                         break;
 
-                    if (isIndependentOfScope(datasetExpr) && !isContextDependent(expr))
+                    if (isIndependentOfScope(expr) && !isContextDependent(expr))
                     {
                         return hoist(expr, transformed);
                     }
