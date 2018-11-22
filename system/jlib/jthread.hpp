@@ -169,7 +169,7 @@ extern jlib_decl void asyncStart(std::function<void()> func);
 #endif
 
 // Similar to above, but the underlying thread always remains running. This can make repeated start + join's significantly quicker
-class jlib_decl CThreadedPersistent : public CInterface
+class jlib_decl CThreadedPersistent
 {
     class CAThread : public Thread
     {

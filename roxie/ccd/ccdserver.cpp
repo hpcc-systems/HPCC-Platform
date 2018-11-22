@@ -27239,10 +27239,47 @@ protected:
         CActivityGraph * container;
     } graphCodeContext;
 
+    class SinkThread : public CInterface, implements IThreaded
+    {
+    public:
+        SinkThread(IActivityGraph &_parent, IRoxieServerActivity &_sink)
+        : thread("SinkThread", this), parent(_parent), sink(_sink)
+        {}
+        virtual void threadmain() override
+        {
+            try
+            {
+                sink.execute(parentExtractSize, parentExtract);
+            }
+            catch (IException *E)
+            {
+                parent.noteException(E);
+                throw;
+            }
+        }
+        void start(unsigned _parentExtractSize, const byte * _parentExtract)
+        {
+            parentExtract = _parentExtract;
+            parentExtractSize = _parentExtractSize;
+            thread.start();
+        }
+        inline void join()
+        {
+            thread.join();
+        }
+    private:
+        CThreadedPersistent thread;
+        IActivityGraph &parent;
+        IRoxieServerActivity &sink;
+        const byte * parentExtract = nullptr;
+        unsigned parentExtractSize = 0;
+    };
+
     // NOTE - destructor order is significant - need to destroy graphCodeContext and graphSlaveContext last
 
     IArrayOf<IRoxieServerActivity> activities;
     IArrayOf<IRoxieProbe> probes;
+    CIArrayOf<SinkThread> threads;
     IRoxieServerActivityCopyArray sinks;
     StringAttr graphName;
     Owned<CGraphResults> results;
@@ -27440,6 +27477,20 @@ public:
 #ifdef PARALLEL_EXECUTE
         else if (!probeManager && !graphDefinition.isSequential())
         {
+#ifdef PARALLEL_PERSISTANT_THREADS
+            if (!threads.ordinality())
+            {
+                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                {
+                    threads.append(*new SinkThread(*this, sinks.item(i)));
+                }
+            }
+            for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                threads.item(i).start(parentExtractSize, parentExtract);
+            sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
+            for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                threads.item(i).join();
+ #else
             class casyncfor: public CAsyncFor
             {
             public:
@@ -27465,7 +27516,8 @@ public:
                 IRoxieServerActivityCopyArray &sinks;
             } afor(sinks, *this, parentExtractSize, parentExtract);
             afor.For(sinks.ordinality(), sinks.ordinality());
-        }
+#endif
+            }
 #endif
         else
         {
