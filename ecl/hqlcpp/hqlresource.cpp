@@ -350,9 +350,21 @@ protected:
     bool alwaysSingle;
 };
 
+class EclChildSplitPointInfo : public NewTransformInfo
+{
+public:
+    EclChildSplitPointInfo(IHqlExpression * _expr) : NewTransformInfo(_expr) { }
+
+public:
+    unsigned visitedMask = 0;
+    bool neverHoist = false;
+};
+
 
 class EclChildSplitPointLocator : public EclHoistLocator
 {
+    typedef unsigned MaskType;
+
 public:
     EclChildSplitPointLocator(IHqlExpression * _original, HqlExprCopyArray & _selectors, ChildDependentArray & _matches, bool _groupedChildIterators)
     : EclHoistLocator(_matches), selectors(_selectors), groupedChildIterators(_groupedChildIterators)
@@ -370,22 +382,51 @@ public:
             okToSelect = true;
             break;
         }
+        optimizeFlags |= TCOanalyseAttributes;
     }
 
-    void findSplitPoints(IHqlExpression * expr, unsigned from, unsigned to, bool _alwaysSingle, bool _executedOnce)
+    void findSplitPoints(IHqlExpression * expr, unsigned from, unsigned to, bool _alwaysSingle, bool _executedOnce, unsigned pass)
     {
         alwaysSingle = _alwaysSingle;
         for (unsigned i=from; i < to; i++)
         {
             IHqlExpression * cur = expr->queryChild(i);
             executedOnce = _executedOnce || cur->isAttribute();     // assume attributes are only executed once.
-            findSplitPoints(cur);
+            findSplitPoints(cur, pass);
         }
         alwaysSingle = false;
     }
 
 protected:
-    void findSplitPoints(IHqlExpression * expr)
+    bool isPossibleToHoist(IHqlExpression * expr)
+    {
+        if (selectors.empty())
+            return expr->isIndependentOfScope();
+
+        //Check datasets are available
+        HqlExprCopyArray scopeUsed;
+        expr->gatherTablesUsed(NULL, &scopeUsed);
+        ForEachItemIn(i, scopeUsed)
+        {
+            IHqlExpression & cur = scopeUsed.item(i);
+            unsigned match = selectors.find(cur);
+            if (match == NotFound)
+                return false;
+
+            if (isAmbiguous(match))
+                return false;
+        }
+
+        return true;
+    }
+    inline bool isAmbiguous(unsigned whichSelector) const
+    {
+        if (tooManySelectors())
+            return (ambiguousMask != 0);
+        return ((MaskType(1) << whichSelector) & ambiguousMask) != 0;
+    }
+
+    void findSplitPoints(IHqlExpression * expr, unsigned pass)
     {
         //containsNonActiveDataset() would be nice - but that isn't percolated outside assigns etc.
         if (containsAnyDataset(expr) || containsMustHoist(expr) || !expr->isIndependentOfScope())
@@ -395,7 +436,7 @@ protected:
                 gatherAmbiguousSelectors(original);
                 gathered = true;
             }
-            analyse(expr, 0);
+            analyse(expr, pass);
         }
     }
 
@@ -419,9 +460,101 @@ protected:
         return alwaysHoist;
     }
 
+    //Caluclate which of the active parent selectors the are in scope for the current expression
+    inline void calculateHidden(MaskType & childMask, unsigned & minHidden, IHqlExpression * expr)
+    {
+        childMask = 0;
+        minHidden = 0;
+        ForEachItemIn(i, selectors)
+        {
+            //Does the expression introduce this selector, and if so, which arguments does it affect
+            unsigned numNonHidden = activityHidesSelectorGetNumNonHidden(expr, &selectors.item(i));
+            if (numNonHidden)
+            {
+                //Add a bit to the mask to indicate this selector is ambiguous
+                childMask |= (MaskType)(1) << i;
+                if ((minHidden == 0) || (numNonHidden < minHidden))
+                    minHidden = numNonHidden;
+            }
+        }
+
+        //If there are too many selectors to maintain a bitset, then set all the bits.
+        if (minHidden && tooManySelectors())
+            childMask = (unsigned)-1;
+    }
+
+    //Check if the expression could be evaluated outside of the current activity
+    void analyseHoistable(IHqlExpression * expr)
+    {
+        IHqlExpression * body = expr->queryBody();
+        EclChildSplitPointInfo * extra = queryExtra(body);
+
+        //This is an optimization - should work equally well using the false branch - test it!
+        if (selectors.empty())
+        {
+            if (alreadyVisited(extra))
+                return;
+
+            //Not a child query, so can only hoist if the expression is independent of the scope
+            if (!expr->isIndependentOfScope())
+                extra->neverHoist = true;
+            return EclHoistLocator::analyseExpr(expr);
+        }
+        else
+        {
+            if (alreadyVisited(extra))
+            {
+                //If we have already visited this expression we need to check again if there are selectors that ar
+                //ambiguous that were not the last time we visited it.
+                //Check if there are no bits in the current ambiguous mask not set in the previous mask
+                if ((ambiguousMask & ~extra->visitedMask) == 0)
+                    return;
+                extra->visitedMask |= ambiguousMask;
+            }
+
+            //Check if the expression is dependent on ambiguous selectors, or expressions that are not available in the parent
+            if (!isPossibleToHoist(expr))
+                extra->neverHoist = true;
+
+            switch (getChildDatasetType(body))
+            {
+            case childdataset_none:
+            case childdataset_many_noscope:
+            case childdataset_many:
+            case childdataset_map:
+            case childdataset_dataset_noscope:
+            case childdataset_if:
+            case childdataset_case:
+            case childdataset_dataset:
+            case childdataset_evaluate:
+                return EclHoistLocator::analyseExpr(expr);
+            }
+
+            unsigned minHidden = 0;
+            MaskType childMask = 0;
+            calculateHidden(childMask, minHidden, expr);
+
+            for (unsigned iDs=0; iDs < minHidden; iDs++)
+                analyseExpr(expr->queryChild(iDs));
+
+            unsigned max = expr->numChildren();
+            MaskType savedMask = ambiguousMask;
+            ambiguousMask |= childMask;
+            for (unsigned iArg=minHidden; iArg < max; iArg++)
+                analyseExpr(expr->queryChild(iArg));
+            ambiguousMask = savedMask;
+        }
+    }
 
     virtual void analyseExpr(IHqlExpression * expr)
     {
+        if (pass == 0)
+        {
+            analyseHoistable(expr);
+            return;
+        }
+
+        IHqlExpression * body = expr->queryBody();
         if (alreadyVisited(expr))
             return;
 
@@ -633,71 +766,25 @@ protected:
 
     void gatherAmbiguousSelectors(IHqlExpression * expr)
     {
-        //Horrible code to try and cope with ambiguous left selectors.
-        //o Tree is ambiguous so same child expression can occur in different contexts - so can't depend on the context it is found in to work out if can hoist
-        //o If any selector that is hidden within child expressions matches one in scope then can't hoist it.
-        //If the current expression creates a selector, then can't hoist anything that depends on it [only add to hidden if in selectors to reduce searching]
-        //o Want to hoist as much as possible.
+        //If this is a child query, then some of the selectors that are brought into scope by this activity, or a child activity may
+        //clash with selectors that are brought into scope for a parent activity.
+        //If true, hoisting an expression so it is evaluated to a parent context will still generate code, but the values will be different.
+        //
+        //Therefore build up a list of selectors that are potentially problematic.
+        //Version 1:
+        //  Never hoist an expression that is dependent on them, but that is likely to prevent any expressions being
+        //  hoisted.
+        //Version 2:
+        //  Keep track of which of the selectors are definitely ambiguous.  Only prevent the expression being hoisted
+        //  if it depends on a selector, which would change meaning.  This may require us to walk the tree multiple times
+        //  since the first visit to an expression may be in a situation where it can be hoisted, but the second visit
+        //  when it can't.  Use a bitset to keep track of which selectors were ambiguous and only repeat if new selectors
+        //  are covered.
         if (selectors.empty())
             return;
 
-        unsigned first = getFirstActivityArgument(expr);
-        unsigned last = first + getNumActivityArguments(expr);
-        unsigned max = expr->numChildren();
-        unsigned i;
-        HqlExprCopyArray hiddenSelectors;
-        for (i = 0; i < first; i++)
-            expr->queryChild(i)->gatherTablesUsed(&hiddenSelectors, NULL);
-        for (i = last; i < max; i++)
-            expr->queryChild(i)->gatherTablesUsed(&hiddenSelectors, NULL);
-
-        ForEachItemIn(iSel, selectors)
-        {
-            IHqlExpression & cur = selectors.item(iSel);
-            if (hiddenSelectors.contains(cur))
-                ambiguousSelectors.append(cur);
-        }
-
-        switch (getChildDatasetType(expr))
-        {
-        case childdataset_datasetleft:
-        case childdataset_left:
-            {
-                IHqlExpression * ds = expr->queryChild(0);
-                IHqlExpression * selSeq = querySelSeq(expr);
-                OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-                if (selectors.contains(*left))
-                    ambiguousSelectors.append(*left);
-                break;
-            }
-        case childdataset_same_left_right:
-        case childdataset_top_left_right:
-        case childdataset_nway_left_right:
-            {
-                IHqlExpression * ds = expr->queryChild(0);
-                IHqlExpression * selSeq = querySelSeq(expr);
-                OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-                OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
-                if (selectors.contains(*left))
-                    ambiguousSelectors.append(*left);
-                if (selectors.contains(*right))
-                    ambiguousSelectors.append(*right);
-                break;
-            }
-        case childdataset_leftright:
-            {
-                IHqlExpression * leftDs = expr->queryChild(0);
-                IHqlExpression * rightDs = expr->queryChild(1);
-                IHqlExpression * selSeq = querySelSeq(expr);
-                OwnedHqlExpr left = createSelector(no_left, leftDs, selSeq);
-                OwnedHqlExpr right = createSelector(no_right, rightDs, selSeq);
-                if (selectors.contains(*left))
-                    ambiguousSelectors.append(*left);
-                if (selectors.contains(*right))
-                    ambiguousSelectors.append(*right);
-                break;
-            }
-        }
+        unsigned minHidden;
+        calculateHidden(ambiguousMask, minHidden, expr);
     }
 
     bool isEvaluateable(IHqlExpression * ds, bool ignoreInline = false)
@@ -714,18 +801,9 @@ protected:
         if (isGrouped(ds) && selectors.ordinality() && !groupedChildIterators)
             return false;
 
-        //Check datasets are available
-        HqlExprCopyArray scopeUsed;
-        ds->gatherTablesUsed(NULL, &scopeUsed);
-        ForEachItemIn(i, scopeUsed)
-        {
-            IHqlExpression & cur = scopeUsed.item(i);
-            if (!selectors.contains(cur))
-                return false;
-
-            if (ambiguousSelectors.contains(cur))
-                return false;
-        }
+        EclChildSplitPointInfo * extra = queryExtra(ds->queryBody());
+        if (extra->neverHoist)
+            return false;
 
         if (!isEfficientToHoistDataset(ds, ignoreInline))
             return false;
@@ -761,10 +839,19 @@ protected:
         return true;
     }
 
+    ANewTransformInfo * createTransformInfo(IHqlExpression * expr)
+    {
+        return CREATE_NEWTRANSFORMINFO(EclChildSplitPointInfo, expr);
+    }
+
+    inline EclChildSplitPointInfo * queryExtra(IHqlExpression * expr) { return static_cast<EclChildSplitPointInfo *>(queryTransformExtra(expr)); }
+
+    inline bool tooManySelectors() const { return (selectors.ordinality() > sizeof(MaskType)*8); }
+
 protected:
     IHqlExpression * original;
     HqlExprCopyArray & selectors;
-    HqlExprCopyArray ambiguousSelectors;
+    MaskType ambiguousMask = 0;
     unsigned conditionalDepth;
     bool okToSelect;
     bool gathered;
@@ -1038,37 +1125,40 @@ void ActivityInvariantHoister::gatherChildSplitPoints(IHqlExpression * expr, Act
     EclChildSplitPointLocator locator(expr, activeSelectors, info->childDependents, options.groupedChildIterators);
     unsigned max = expr->numChildren();
 
-    //If child queries are supported then don't hoist the expressions if they might only be evaluated once
-    //because they may be conditional
-    bool alwaysOnce = false;
-    switch (expr->getOperator())
+    for (unsigned pass=0; pass < 2; pass++)
     {
-    case no_setresult:
-    case no_selectnth:
-        //set results, only done once=>don't hoist conditionals
-        locator.findSplitPoints(expr, last, max, true, true);
-        return;
-    case no_createrow:
-    case no_datasetfromrow:
-    case no_projectrow:
-        alwaysOnce = true;
-        break;
-    case no_loop:
-        if ((options.targetClusterType != RoxieCluster) && !options.isChildQuery)
+        //If child queries are supported then don't hoist the expressions if they might only be evaluated once
+        //because they may be conditional
+        bool alwaysOnce = false;
+        switch (expr->getOperator())
         {
-            //This is ugly!  The body is executed in parallel, so don't force that as a work unit result
-            //It means some child query expressions within loops don't get forced into work unit writes
-            //but that just means that the generated code will be not as good as it could be.
-            const unsigned bodyArg = 4;
-            locator.findSplitPoints(expr, 1, bodyArg, true, false);
-            locator.findSplitPoints(expr, bodyArg, bodyArg+1, false, false);
-            locator.findSplitPoints(expr, bodyArg+1, max, true, false);
-            return;
+        case no_setresult:
+        case no_selectnth:
+            //set results, only done once=>don't hoist conditionals
+            locator.findSplitPoints(expr, last, max, true, true, pass);
+            continue;
+        case no_createrow:
+        case no_datasetfromrow:
+        case no_projectrow:
+            alwaysOnce = true;
+            break;
+        case no_loop:
+            if ((options.targetClusterType != RoxieCluster) && !options.isChildQuery)
+            {
+                //This is ugly!  The body is executed in parallel, so don't force that as a work unit result
+                //It means some child query expressions within loops don't get forced into work unit writes
+                //but that just means that the generated code will be not as good as it could be.
+                const unsigned bodyArg = 4;
+                locator.findSplitPoints(expr, 1, bodyArg, true, false, pass);
+                locator.findSplitPoints(expr, bodyArg, bodyArg+1, false, false, pass);
+                locator.findSplitPoints(expr, bodyArg+1, max, true, false, pass);
+                continue;
+            }
+            break;
         }
-        break;
+        locator.findSplitPoints(expr, 0, first, true, true, pass);          // IF() conditions only evaluated once... => don't force
+        locator.findSplitPoints(expr, last, max, true, alwaysOnce, pass);
     }
-    locator.findSplitPoints(expr, 0, first, true, true);          // IF() conditions only evaluated once... => don't force
-    locator.findSplitPoints(expr, last, max, true, alwaysOnce);
 }
 
 
