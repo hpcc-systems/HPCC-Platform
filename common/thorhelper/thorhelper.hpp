@@ -20,6 +20,7 @@
 
 #include "jiface.hpp"
 #include "jptree.hpp"
+#include "jthread.hpp"
 
 #ifdef THORHELPER_EXPORTS
  #define THORHELPER_API DECL_EXPORT
@@ -39,5 +40,31 @@ interface ICsvToRawTransformer : extends IInterface
 };
 
 enum ThorReplyCodes { DAMP_THOR_ACK, DAMP_THOR_REPLY_GOOD, DAMP_THOR_REPLY_ERROR, DAMP_THOR_REPLY_ABORT, DAMP_THOR_REPLY_PAUSED };
+
+
+// Similar to CThreadedPersistent, but using tbb
+#ifdef _USE_TBB
+namespace tbb
+{
+class task;
+}
+
+class THORHELPER_API CPersistentTask
+{
+private:
+    Owned<IException> exception;
+    IThreaded *owner;
+    tbb::task * end = nullptr;
+
+    void threadmain();
+
+public:
+    CPersistentTask(const char *name, IThreaded *_owner);
+    void start();
+    bool join(unsigned timeout=INFINITE);
+};
+#else
+typedef CThreadedPersistent CPersistentTask;
+#endif
 
 #endif // THORHELPER_HPP
