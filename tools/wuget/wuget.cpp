@@ -21,7 +21,11 @@
 
 void usage(const char *progname)
 {
-    fprintf(stderr, "%s - extract workunit information from query dll.\nUsage: %s filename\n", progname, progname);
+    printf("%s - extract workunit information from query dll.\nUsage: %s [-m] [-w] filename\n", progname, progname);
+    printf("Options:\n");
+    printf("  -m     Display manifest information\n");
+    printf("  -w     Display embedded workunit\n");
+    printf("/nIf no options specified, -w is assumed\n");
 }
 
 int main(int argc, char **argv)
