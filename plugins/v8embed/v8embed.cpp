@@ -892,6 +892,10 @@ public:
         v8::Handle<v8::Script> lscript = v8::Script::Compile(source);
         script = v8::Persistent<v8::Script>::New(lscript);
     }
+    virtual void loadCompiledScript(size32_t chars, const void *_script) override
+    {
+        throwUnexpected();
+    }
     virtual void importFunction(size32_t lenChars, const char *utf)
     {
         UNIMPLEMENTED; // Not sure if meaningful for js

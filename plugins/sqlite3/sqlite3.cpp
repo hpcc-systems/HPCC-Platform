@@ -566,6 +566,10 @@ public:
                 checkSqliteError(rc);
         }
     }
+    virtual void loadCompiledScript(size32_t chars, const void *script) override
+    {
+        throwUnexpected();
+    }
 protected:
     sqlite3_value *getScalarResult()
     {

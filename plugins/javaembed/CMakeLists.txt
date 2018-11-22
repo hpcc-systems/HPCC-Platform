@@ -60,7 +60,7 @@ if(JAVAEMBED)
             TARGETS javaembed
             DESTINATION plugins)
         install(
-            FILES ${CMAKE_CURRENT_SOURCE_DIR}/HpccUtils.class
+            FILES ${CMAKE_CURRENT_SOURCE_DIR}/HpccUtils.class ${CMAKE_CURRENT_SOURCE_DIR}/HpccClassLoader.class
             DESTINATION classes/com/HPCCSystems
             COMPONENT Runtime)
 

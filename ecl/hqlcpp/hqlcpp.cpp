@@ -12099,8 +12099,15 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
         else
             scriptArgs.append(*LINK(bodyCode->queryChild(0)));
     }
+    IIdAtom *id;
+    if (isImport)
+        id = importId;
+    else if (bodyCode->hasAttribute(precompileAtom))
+        id = loadCompiledScriptId;
+    else
+        id = compileEmbeddedScriptId;
     if (!bodyCode->hasAttribute(prebindAtom))
-        buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
+        buildFunctionCall(funcctx, id, scriptArgs);
     ForEachChild(i, formals)
     {
         IHqlExpression * param = formals->queryChild(i);
@@ -12178,7 +12185,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
         buildFunctionCall(funcctx, bindFunc, args);
     }
     if (bodyCode->hasAttribute(prebindAtom))
-        buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
+        buildFunctionCall(funcctx, id, scriptArgs);
     funcctx.addQuotedLiteral("__ctx->callFunction();");
     IIdAtom * returnFunc;
     HqlExprArray retargs;
