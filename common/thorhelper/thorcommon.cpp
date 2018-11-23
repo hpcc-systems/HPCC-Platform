@@ -2154,20 +2154,27 @@ void CPersistentTask::start()
     class RunTask : public tbb::task
     {
     public:
-        RunTask(IThreaded * _owner, tbb::task * _next) : owner(_owner), next(_next)
+        RunTask(CPersistentTask * _owner, tbb::task * _next) : owner(_owner), next(_next)
         {
         }
         virtual tbb::task * execute()
         {
-            owner->threadmain();
+            try
+            {
+                owner->owner->threadmain();
+            }
+            catch (IException *e)
+            {
+                owner->exception.setown(e);
+            }
             return next;
         }
     protected:
-        IThreaded * owner;
+        CPersistentTask * owner;
         tbb::task * next;
     };
     end = new (tbb::task::allocate_root()) tbb::empty_task();
-    tbb::task * task = new (end->allocate_child()) RunTask(owner, nullptr);
+    tbb::task * task = new (end->allocate_child()) RunTask(this, nullptr);
     end->set_ref_count(1+1);
     tbb::task::spawn(*task);
 }
@@ -2177,6 +2184,8 @@ bool CPersistentTask::join(unsigned timeout)
     end->wait_for_all();
     end->destroy(*end);
     end = nullptr;
+    if (exception.get())
+        throw exception.getClear();
     return true;
 }
 #endif
