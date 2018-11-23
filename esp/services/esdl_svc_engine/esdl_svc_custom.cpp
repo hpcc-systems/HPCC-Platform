@@ -270,6 +270,7 @@ void CEsdlCustomTransformChoose::toDBGLog ()
 CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree &currentTransform)
 {
     m_name.set(currentTransform.queryProp("@name"));
+    m_target.set(currentTransform.queryProp("@target"));
     DBGLOG("Compiling custom ESDL Transform: '%s'", m_name.str());
 
     Owned<IPropertyTreeIterator> conditionalIterator = currentTransform.getElements("xsdl:choose");
@@ -285,7 +286,7 @@ CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree &currentTransform)
 #endif
 }
 
-void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer & request, IPropertyTree * bindingCfg)
+void CEsdlCustomTransform::processTransform(IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg)
 {
     if (request.length()!=0)
     {
@@ -302,6 +303,10 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
         VStringBuffer ver("%g", context->getClientVersion());
         if(!xpathContext->addVariable("clientversion", ver.str()))
             ERRLOG("Could not set custom transform variable: clientversion:'%s'", ver.str());
+        //in case transform wants to make use of these values:
+        xpathContext->addVariable("query", tgtcfg->queryProp("@queryname"));
+        xpathContext->addVariable("method", mthdef.queryMethodName());
+        xpathContext->addVariable("service", srvdef.queryName());
 
         auto user = context->queryUser();
         if (user)
@@ -357,12 +362,24 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
             }
         }
 
-        Owned<IPropertyTree> thereq = createPTreeFromXMLString(request.str());
+        Owned<IPropertyTree> theroot = createPTreeFromXMLString(request.str());
+        StringBuffer xpath = m_target.str();
+        if (!xpath.length())
+        {
+            //This default gives us backward compatibility with only being able to write to the actual request
+            const char *tgtQueryName = tgtcfg->queryProp("@queryname");
+            xpath.setf("soap:Body/%s/%s", tgtQueryName ? tgtQueryName : mthdef.queryMethodName(), mthdef.queryRequestType());
+        }
+        //we can use real xpath processing in the future, for now simple substitution is fine
+        xpath.replaceString("{$query}", tgtcfg->queryProp("@queryname"));
+        xpath.replaceString("{$method}", mthdef.queryMethodName());
+        xpath.replaceString("{$service}", srvdef.queryName());
+        IPropertyTree *thereq = theroot->queryPropTree(xpath.str());  //get pointer to the write-able area
         ForEachItemIn(currConditionalIndex, m_customTransformClauses)
         {
             m_customTransformClauses.item(currConditionalIndex).process(context, thereq, xpathContext);
         }
-        toXML(thereq, request.clear());
+        toXML(theroot, request.clear());
 
         ESPLOG(LogMax,"MODIFIED REQUEST: %s", request.str());
     }

@@ -30,6 +30,8 @@
 #include "jlog.hpp"
 #include "esp.hpp"
 
+#include "esdl_def.hpp"
+
 #include <map>
 #include <mutex>
 #include <thread>
@@ -127,7 +129,7 @@ private:
 
 interface IEsdlCustomTransform : extends IInterface
 {
-       virtual void processTransform(IEspContext * context,  StringBuffer & request, IPropertyTree * bindingCfg)=0;
+       virtual void processTransform(IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg)=0;
 };
 
 class CEsdlCustomTransform : implements IEsdlCustomTransform, public CInterface
@@ -135,6 +137,7 @@ class CEsdlCustomTransform : implements IEsdlCustomTransform, public CInterface
 private:
     CIArrayOf<CEsdlCustomTransformChoose> m_customTransformClauses;
     StringAttr m_name;
+    StringAttr m_target;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -161,7 +164,7 @@ public:
 #endif
     }
 
-    void processTransform(IEspContext * context,  StringBuffer & request, IPropertyTree * bindingCfg);
+    void processTransform(IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg) override;
 };
 
 #endif /* ESDL_SVC_CUSTOM_HPP_ */
