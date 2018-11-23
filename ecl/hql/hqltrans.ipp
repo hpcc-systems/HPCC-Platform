@@ -1035,7 +1035,6 @@ public:
 
 public:
     IHqlExpression * context;
-    unsigned __int64 usageCount = 0;
     HqlExprAttr     dataset;
     HqlExprAttr     transformedDataset;
     HqlExprAttr     left;
@@ -1069,10 +1068,10 @@ protected:
     bool isDatasetActive(IHqlExpression * expr);                // is it in an active dataset?
     bool isDatasetARow(IHqlExpression * expr);                  // can it be used as a row?
     bool isDatasetRelatedToScope(IHqlExpression * dataset);
+    bool isWithinRootScope() const;
     bool isNewDataset()                                             { return innerScope && innerScope->isEmpty(); }
     bool insideActivity();
     unsigned tableNesting();
-    unsigned __int64 getNestedUsageCount();
 
     IHqlExpression * getScopeState();
 
