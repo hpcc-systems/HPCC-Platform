@@ -4122,7 +4122,7 @@ bool HqlCppTranslator::canEvaluateInContext(BuildCtx & ctx, IHqlExpression * exp
 bool mustEvaluateInContext(BuildCtx & ctx, IHqlExpression * expr)
 {
     HqlExprCopyArray required;
-    expr->gatherTablesUsed(NULL, &required);
+    expr->gatherTablesUsed(required);
     if (required.ordinality() == 0)
         return false;
 

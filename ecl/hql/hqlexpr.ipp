@@ -85,8 +85,8 @@ public:
     inline bool isIndependentOfScope() const { return (numActiveTables == 0); }
     bool usesSelector(IHqlExpression * selector) const;
     void gatherTablesUsed(CUsedTablesBuilder & used) const;
-    void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) const;
-    void set(HqlExprCopyArray & _activeTables, HqlExprCopyArray & _newTables);
+    void gatherTablesUsed(HqlExprCopyArray & inScope) const;
+    void set(HqlExprCopyArray & _activeTables);
     void setActiveTable(IHqlExpression * expr);
 
 private:
@@ -95,7 +95,6 @@ private:
         IHqlExpression * single;
         IHqlExpression * * multi;
     } tables;
-    unsigned numTables;
     unsigned numActiveTables;
 };
 
@@ -131,8 +130,6 @@ protected:
 class HQL_API CUsedTablesBuilder
 {
 public:
-    void addNewTable(IHqlExpression * expr);
-    void addHiddenSelector(IHqlExpression * expr);
     void addActiveTable(IHqlExpression * expr);
     void cleanupProduction();
     inline void removeActive(IHqlExpression * expr) { inScopeTables.remove(expr); }
@@ -145,7 +142,6 @@ public:
 
 protected:
     UsedExpressionHashTable inScopeTables;     // may need to rename, since use has changed.
-    UsedExpressionHashTable newScopeTables;
 };
 
 #ifdef HQLEXPR_MULTI_THREADED
@@ -352,7 +348,7 @@ public:
     virtual bool isIndependentOfScopeIgnoringInputs() override;
     virtual bool usesSelector(IHqlExpression * selector) override;
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) override;
-    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) override;
+    virtual void gatherTablesUsed(HqlExprCopyArray & inScope) override;
 
 protected:
     void cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to);
@@ -366,6 +362,7 @@ protected:
 
 protected:
     CUsedTables usedTables;
+    //unsigned spare = 0; // in 64bit this space is currently wasted
 };
 
 class HQL_API CHqlExpressionWithType : public CHqlExpressionWithTables
@@ -425,7 +422,7 @@ public:
     virtual bool isIndependentOfScopeIgnoringInputs() override;
     virtual bool usesSelector(IHqlExpression * selector) override;
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) override;
-    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) override;
+    virtual void gatherTablesUsed(HqlExprCopyArray & inScope) override;
 
     virtual void calcNormalized() = 0;
 
@@ -614,7 +611,7 @@ public:
     virtual bool isIndependentOfScopeIgnoringInputs() override;
     virtual bool usesSelector(IHqlExpression * selector) override;
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) override;
-    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) override;
+    virtual void gatherTablesUsed(HqlExprCopyArray & inScope) override;
     virtual IValue *queryValue() const override;
     virtual IInterface *queryUnknownExtra() override;
     virtual unsigned __int64 querySequenceExtra() override;
@@ -1424,7 +1421,7 @@ public:
     virtual bool isIndependentOfScopeIgnoringInputs() override { return true; }
     virtual bool usesSelector(IHqlExpression * selector) override { return false; }
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) override {}
-    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) override {}
+    virtual void gatherTablesUsed(HqlExprCopyArray & inScope) override {}
 };
 
 class CHqlParameter : public CHqlExpressionWithType
@@ -1620,7 +1617,7 @@ public:
     virtual bool isIndependentOfScopeIgnoringInputs() override { return true; }
     virtual bool usesSelector(IHqlExpression * selector) override { return false; }
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) override {}
-    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) override {}
+    virtual void gatherTablesUsed(HqlExprCopyArray & inScope) override {}
 };
 
 class CHqlAttribute : public CHqlExpressionWithTables

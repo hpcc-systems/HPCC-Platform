@@ -405,7 +405,7 @@ protected:
 
         //Check datasets are available
         HqlExprCopyArray scopeUsed;
-        expr->gatherTablesUsed(NULL, &scopeUsed);
+        expr->gatherTablesUsed(scopeUsed);
         ForEachItemIn(i, scopeUsed)
         {
             IHqlExpression & cur = scopeUsed.item(i);
@@ -484,7 +484,7 @@ protected:
     }
 
     //Check if the expression could be evaluated outside of the current activity
-    void analyseHoistable(IHqlExpression * expr)
+    void analyseScopeDependence(IHqlExpression * expr)
     {
         IHqlExpression * body = expr->queryBody();
         EclChildSplitPointInfo * extra = queryExtra(body);
@@ -550,7 +550,7 @@ protected:
     {
         if (pass == 0)
         {
-            analyseHoistable(expr);
+            analyseScopeDependence(expr);
             return;
         }
 

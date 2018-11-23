@@ -1993,7 +1993,7 @@ void NewHqlTransformer::setMapping(IHqlExpression * oldValue, IHqlExpression * n
 bool NewHqlTransformer::needToUpdateSelectors(IHqlExpression * expr)
 {
     HqlExprCopyArray scopesUsed;
-    expr->gatherTablesUsed(nullptr, &scopesUsed);
+    expr->gatherTablesUsed(scopesUsed);
     ForEachItemIn(i, scopesUsed)
     {
         IHqlExpression * cur = &scopesUsed.item(i);
