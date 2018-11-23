@@ -14,17 +14,18 @@
 #    limitations under the License.
 ################################################################################
 
-
-FOREACH( iFILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_smc.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/hardware.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/types.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/dafilesrv.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/dali.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/environment.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/secmgr_singleuser.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/buildset.xml
-)
-    Install ( FILES ${iFILES} DESTINATION componentfiles/configschema/xsd COMPONENT Runtime)
-ENDFOREACH ( iFILES )
+FOREACH( xsdFile
+    esp.xsd
+    esp_service_smc.xsd
+    hardware.xsd
+    types.xsd
+    dafilesrv.xsd
+    dali.xsd
+    environment.xsd
+    secmgr_singleuser.xsd
+    buildset.xml
+    roxie.xsd
+    )
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${xsdFile} ${CMAKE_CURRENT_BINARY_DIR}/${xsdFile})
+    Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/${xsdFile} DESTINATION componentfiles/configschema/xsd COMPONENT Runtime)
+ENDFOREACH ( xsdFile )

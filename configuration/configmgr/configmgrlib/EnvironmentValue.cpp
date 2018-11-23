@@ -165,6 +165,13 @@ void EnvironmentValue::initialize()
         {
             setValue(m_pSchemaValue->getAutoGenerateValue(), nullptr);
         }
+
+        //
+        // Sibling value? Used to copy the value of a sibling attribute to this attribute
+        else if (type == "siblingValue")
+        {
+            setValue(getEnvironmentNode()->getAttribute(m_pSchemaValue->getAutoGenerateValue())->getValue(), nullptr);
+        }
     }
 }
 

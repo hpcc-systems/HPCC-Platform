@@ -207,4 +207,37 @@
                       hpcc:uniqueKey="secmgrplugin_name"
                       hpcc:tooltip="Name for this SingleUser Security Manager instance"/>
     </xs:attributeGroup>
+
+    <xs:attributeGroup name="loggingagent_reqd">
+        <!--This attribute used to find logging agents of a particular type-->
+        <xs:attribute name="type" type="xs:string" use="required" hpcc:hidden="true" hpcc:forcedConfigValue="DefaultLoggingAgent"/>
+        <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:uniqueKey=""
+                      hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="logagent"
+                      hpcc:tooltip="Name for this logging agent"/>
+        <xs:attribute name="description" type="xs:string" hpcc:displayName="Description" hpcc:presetValue="Logging Agent Description"
+                      hpcc:tooltip="Description for this logging agent"/>
+        <xs:attribute name="MaxTriesGTS" type="xs:nonNegativeInteger" hpcc:presetValue="3"
+                      hpcc:tooltip="Maximum retries of sending GetTransactionSeed requests when failed to get a response"/>
+        <xs:attribute name="MaxTriesRS" type="xs:nonNegativeInteger" hpcc:displayName="Maximum Send Retries" hpcc:presetValue="3"
+                      hpcc:tooltip="Maximum retries of sending LogUpdate requests when failed to get a response"/>
+        <xs:attribute name="MaxLogQueueLength" type="xs:nonNegativeInteger" hpcc:displayName="Maximum Queue Length" hpcc:presetValue="500000"
+                      hpcc:tooltip="maximum queue length for log update requests"/>
+        <xs:attribute name="QueueSizeSignal" type="xs:nonNegativeInteger" hpcc:displayName="Queue Size Signal" hpcc:presetValue="10000"
+                      hpcc:tooltip="Add warning to esp log when the queue length of log update requests reaches this value"/>
+        <xs:attribute name="FailSafe" type="xs:boolean" hpcc:displayName="Enable Failsafe" hpcc:presetValue="true" hpcc:tooltip="Enable FailSafe functionality"/>
+        <xs:attribute name="FailSafeLogsDir" type="xs:string" hpcc:displayName="Failsafe Log Directory" hpcc:requiredIf=".[@FailSafe]"
+                      hpcc:tooltip="Log directory where Failsafe files are stored"/>
+        <xs:attribute name="logSourcePath" type="xs:string" hpcc:displayName="Log Source Path" use="required"
+                      hpcc:tooltip="The xpath inside a log request for LogSource"/>
+        <xs:attribute name="defaultTransaction" type="xs:string" hpcc:displayName="Default Transaction"
+                      hpcc:tooltip="if no applicaqtion name is given, which applicaqtion name should be used to get a transaction seed?"/>
+        <xs:attribute name="loggingTransaction" type="xs:string" hpcc:displayName="Logging Transaction"
+                      hpcc:tooltip="The applicaqtion name used to get a transaction seed for this logging agent"/>
+    </xs:attributeGroup>
+
+    <xs:attributeGroup name="loggingagent_logsourcemap">
+        <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"/>
+        <xs:attribute name="mapToDB" type="xs:string" hpcc:displayName="Map To DB" use="required"/>
+        <xs:attribute name="mapToLogGroup" type="xs:string" hpcc:displayName="Map To Log Group" use="required"/>
+    </xs:attributeGroup>
 </xs:schema>
