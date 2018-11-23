@@ -10,9 +10,12 @@ var Store = declare([ESPRequest.Store], {
     service: "WsPackageProcess",
     action: "ListPackages",
     responseQualifier: "ListPackagesResponse.PackageMapList.PackageListMapData",
-    responseTotalQualifier: "ListPackagesResponse.PackageMapList.PackageListMapData",
-    idProperty: "__hpcc_id"
+    idProperty: "Id",
+    startProperty: "PageStartFrom",
+    countProperty: "PageSize",
+    SortbyProperty: 'SortBy'
 });
+
 export function CreatePackageMapQueryObjectStore(options) {
     var store = new Store(options);
     return Observable(store);

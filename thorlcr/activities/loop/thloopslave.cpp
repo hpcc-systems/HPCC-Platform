@@ -376,6 +376,10 @@ public:
                 if (loopAgain) // cannot be 0
                     boundGraph->prepareLoopAgainResult(*this, ownedResults, loopAgain);
 
+                loopPending->flush();
+                Owned<IThorResult> inputResult = ownedResults->getResult(1);
+                inputResult->setResultStream(loopPending.getClear(), loopPendingCount);
+
                 // ensure results prepared before graph begins
                 if (syncIterations)
                 {
@@ -394,8 +398,7 @@ public:
                     return NULL;
                 }
 
-                loopPending->flush();
-                boundGraph->execute(*this, condLoopCounter, ownedResults, loopPending.getClear(), loopPendingCount, extractBuilder.size(), extractBuilder.getbytes());
+                boundGraph->queryGraph()->executeChild(extractBuilder.size(), extractBuilder.getbytes(), ownedResults, NULL);
 
                 Owned<IThorResult> result0 = ownedResults->getResult(0);
                 curInput.setown(result0->getRowStream());
@@ -506,10 +509,15 @@ public:
                 resultWriter->putRow(row.getClear());
             }
 
+            IThorBoundLoopGraph *boundGraph = queryContainer().queryLoopGraph();
             for (; loopCounter<=maxIterations; loopCounter++)
             {
+                unsigned condLoopCounter = (helper->getFlags() & IHThorGraphLoopArg::GLFcounter) ? loopCounter : 0;
+                Owned<IThorGraphResults> results = queryGraph().createThorGraphResults(1);
+                if (condLoopCounter)
+                    boundGraph->prepareCounterResult(*this, results, condLoopCounter, 0);
                 sendLoopingCount(loopCounter, 0);
-                queryContainer().queryLoopGraph()->execute(*this, (flags & IHThorGraphLoopArg::GLFcounter)?loopCounter:0, loopResults, extractBuilder.size(), extractBuilder.getbytes());
+                boundGraph->queryGraph()->executeChild(parentExtractSz, parentExtract, results, loopResults);
             }
             int iNumResults = loopResults->count();
             Owned<IThorResult> finalResult = loopResults->getResult(iNumResults-1); //Get the last result, which isnt necessarily 'maxIterations'

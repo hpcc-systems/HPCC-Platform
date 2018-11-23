@@ -39,6 +39,7 @@ set (    SRCS
          hqlcpputil.cpp 
          hqlcse.cpp 
          hqlcset.cpp 
+         hqlctrans.cpp
          hqlecl.cpp 
          hqlgraph.cpp 
          hqlhoist.cpp
@@ -70,6 +71,7 @@ set (    SRCS
          hqlcppc.hpp
          hqlcppds.hpp
          hqlcpputil.hpp
+         hqlctrans.hpp
          hqlecl.hpp
          hqlfunc.hpp
          hqlinline.hpp

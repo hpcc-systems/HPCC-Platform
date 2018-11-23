@@ -46,57 +46,84 @@ if(USE_TBB OR USE_TBBMALLOC)
     set(TBB_BUILD_NAME "${TBB_BUILD_NAME}_release")
 
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER}
-               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so
-               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so.${SONAME_VER}
-               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so
-               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so.${SONAME_VER}
-               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so
-        COMMAND ${CMAKE_MAKE_PROGRAM} tbb_build_dir=${CMAKE_CURRENT_BINARY_DIR} clean
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER}
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy${CMAKE_SHARED_LIBRARY_SUFFIX}
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER}
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc${CMAKE_SHARED_LIBRARY_SUFFIX}
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER}
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb${CMAKE_SHARED_LIBRARY_SUFFIX}
+        #COMMAND ${CMAKE_MAKE_PROGRAM} tbb_build_dir=${CMAKE_CURRENT_BINARY_DIR} clean
         COMMAND ${CMAKE_MAKE_PROGRAM} tbb_build_dir=${CMAKE_CURRENT_BINARY_DIR} cfg=release
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tbb
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tbb
         )
 
     add_custom_target(tbb
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER}
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so.${SONAME_VER}
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so.${SONAME_VER}
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy${CMAKE_SHARED_LIBRARY_SUFFIX}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc${CMAKE_SHARED_LIBRARY_SUFFIX}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb${CMAKE_SHARED_LIBRARY_SUFFIX}
         )
 
     add_library(libtbb SHARED IMPORTED GLOBAL)
     add_library(libtbbmalloc SHARED IMPORTED GLOBAL)
     add_library(libtbbmalloc_proxy SHARED IMPORTED GLOBAL)
-    set_property(
-        TARGET libtbb
-        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so.${SONAME_VER})
-    set_property(
-        TARGET libtbbmalloc
-        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so.${SONAME_VER})
-    set_property(
-        TARGET libtbbmalloc_proxy
-        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER})
+    if (APPLE)
+        set_property(
+            TARGET libtbb
+            PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb${CMAKE_SHARED_LIBRARY_SUFFIX})
+        set_property(
+            TARGET libtbbmalloc
+            PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc${CMAKE_SHARED_LIBRARY_SUFFIX})
+        set_property(
+            TARGET libtbbmalloc_proxy
+            PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy${CMAKE_SHARED_LIBRARY_SUFFIX})
+    else()
+        set_property(
+            TARGET libtbb
+            PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER})
+        set_property(
+            TARGET libtbbmalloc
+            PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER})
+        set_property(
+            TARGET libtbbmalloc_proxy
+            PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER})
+    endif()
 
     install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/${TBB_BUILD_NAME}\")")
     if(NOT PLUGIN)
         if(USE_TBB)
-            install(FILES
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so.${SONAME_VER}
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so
-                DESTINATION lib)
+            if (APPLE)
+                install(FILES
+                    ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb${CMAKE_SHARED_LIBRARY_SUFFIX}
+                    DESTINATION lib)
+            else()
+                install(FILES
+                    ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER}
+                    ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb${CMAKE_SHARED_LIBRARY_SUFFIX}
+                    DESTINATION lib)
+            endif()
         endif()
         if(USE_TBBMALLOC)
-            install(FILES
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so.${SONAME_VER}
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so
-                DESTINATION lib)
-            install(FILES
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER}
-                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so
-                DESTINATION lib)
+            if (APPLE)
+                install(FILES
+                    ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc${CMAKE_SHARED_LIBRARY_SUFFIX}
+                    DESTINATION lib)
+                install(FILES
+                    ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy${CMAKE_SHARED_LIBRARY_SUFFIX}
+                    DESTINATION lib)
+            else()
+                install(FILES
+                    ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER}
+                    ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc${CMAKE_SHARED_LIBRARY_SUFFIX}
+                    DESTINATION lib)
+                install(FILES
+                    ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy${CMAKE_SHARED_LIBRARY_SUFFIX}.${SONAME_VER}
+                    ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy${CMAKE_SHARED_LIBRARY_SUFFIX}
+                    DESTINATION lib)
+            endif()
         endif()
     endif()
 endif()

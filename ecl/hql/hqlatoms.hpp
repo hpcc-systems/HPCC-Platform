@@ -440,6 +440,7 @@ extern HQL_API IAtom * terminatorAtom;
 extern HQL_API IAtom * escapeAtom;
 extern HQL_API IAtom * thorAtom;
 extern HQL_API IAtom * thresholdAtom;
+extern HQL_API IAtom * throwAtom;
 extern HQL_API IAtom * timeAtom;
 extern HQL_API IAtom * timeoutAtom;
 extern HQL_API IAtom * timeLimitAtom;

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="CassandraLoggingAgent" hpcc:displayName="Cassandra Logging Agent"
+                    hpcc:itemType="loggingagent_cassandra" hpcc:category="Logging Agent"
+                    maxOccurs="unbounded" hpcc:class="component">
+            <xs:complexType>
+                <xs:attributeGroup name="cassandra" hpcc:groupByName="Cassandra">
+                    <xs:attribute name="Cassandra" type="xs:string" hpcc:displayName="Cassandra" use="required"
+                                  hpcc:tooltip="Specifies the Cassandra process"/>
+                    <!--Is this an IP, or can it be a hostname as well?-->
+                    <xs:attribute name="serverIP" type="xs:string" hpcc:displayName="Server IP Address" use="required"
+                                  hpcc:tooltip="Specifies the network address of the data store server"/>
+                    <xs:attribute name="ksName" type="xs:string" hpcc:displayName="Keyspace Name" use="required"
+                                  hpcc:tooltip="Specifies the name of the keyspace in the data store server"/>
+                    <xs:attribute name="userName" type="xs:string" hpcc:displayName="Username" use="required"
+                                  hpcc:tooltip="Specifies the user name for accessing the data store server"/>
+                    <xs:attribute name="userPassword" type="xs:string" hpcc:displayName="Password"
+                                  hpcc:modifiers="password" hpcc:requiredIf=".[@userName]"
+                                  hpcc:tooltip="Specifies the user's password for accessing the data store server"/>
+                </xs:attributeGroup>
+                <xs:sequence>
+                    <xs:element name="LogSourceMap" hpcc:displayName="Log Source Map" hpcc:itemType="logagentcassandra_logsourcemap"
+                                maxOccurs="unbounded" hpcc:class="elementSet">
+                        <xs:complexType>
+                            <xs:attributeGroup ref="loggingagent_logsourcemap"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="LogGroup" hpcc:displayName="Log Group" hpcc:itemType="logagentcassandra_loggroup"
+                                maxOccurs="unbounded" hpcc:class="elementSet">
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:element name="FieldMap" hpcc:displayName="FieldMap" hpcc:itemType="logagentcassandra_fieldmap"
+                                            maxOccurs="unbounded" hpcc:class="elementSet">
+                                    <xs:complexType>
+                                        <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"
+                                                      hpcc:tooltip="Name of Field Map"/>
+                                        <xs:attribute name="mapTo" type="xs:string" hpcc:displayName="Map To" use="required"
+                                                      hpcc:tooltip=""/>
+                                        <xs:attribute name="type" hpcc:displayname="Type" use="required"
+                                                      hpcc:presetValue="string" hpcc:tooltip="">
+                                            <xs:simpleType>
+                                                <xs:restriction base="xs:string">
+                                                    <xs:enumeration value="string"/>
+                                                    <xs:enumeration value="numeric"/>
+                                                </xs:restriction>
+                                            </xs:simpleType>
+                                        </xs:attribute>
+                                        <xs:attribute name="default" type="xs:string" hpcc:displayName="Default"
+                                                      hpcc:tooltip=""/>
+                                    </xs:complexType>
+                                </xs:element>
+                            </xs:sequence>
+                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"
+                                          hpcc:tooltip="Log group name"/>
+                        </xs:complexType>
+                    </xs:element>
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attributeGroup ref="loggingagent_reqd" hpcc:presetValue="description=Cassandra Logging Agent,
+                    hpcc:unqiqueKey=logagent_cassandra,hpcc:autoGenerateValue=cassandra_logagent"/>
+                <xs:attributeGroup ref="cassandra"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>

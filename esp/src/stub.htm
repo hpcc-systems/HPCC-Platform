@@ -38,9 +38,9 @@
                         switch (responseType) {
                             case 'Mixed':
                             case 'PerSessionOnly':
-                            case 'PerRequestOnly':
                                 document.cookie = ("ESPSessionState=true");
                                 break;
+                            case 'PerRequestOnly':
                             case 'UserNameOnly':
                             case 'None':
                                 document.cookie = ("ESPSessionState=false");

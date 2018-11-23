@@ -853,6 +853,7 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(AttribsFromCache) },
     { NUMSTAT(SmartJoinDegradedToLocal) },
     { NUMSTAT(SmartJoinSlavesDegradedToStd) },
+    { NUMSTAT(AttribsSimplifiedTooComplex) },
 };
 
 

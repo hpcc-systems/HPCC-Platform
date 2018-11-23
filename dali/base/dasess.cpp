@@ -947,9 +947,11 @@ public:
             {
                 CDateTime now;
                 StringBuffer b64sig;
-                createDaliSignature(obj, udesc, now, b64sig);
-                mb.append(b64sig.str());
-                now.serialize(mb);
+                if (createDaliSignature(obj, udesc, now, b64sig))
+                {
+                    mb.append(b64sig.str());
+                    now.serialize(mb);
+                }
             }
             else
             {

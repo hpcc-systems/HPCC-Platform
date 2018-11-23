@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="ESPLoggingAgent" hpcc:displayName="ESP Logging Agent"
+                    hpcc:itemType="loggingagent_esp" hpcc:category="Logging Agent"
+                    maxOccurs="unbounded" hpcc:class="component">
+            <xs:complexType>
+
+                <xs:attributeGroup name="espserver" hpcc:groupByName="ESPServer">
+                    <xs:attribute name="ESPServer" type="xs:string" hpcc:displayName="ESP Server Process Name"
+                                  use="required" hpcc:sourceKey="espprocess_name"
+                                  hpcc:tooltip="Specifies the ESPServer process"/>
+                    <xs:attribute name="User" type="xs:string" hpcc:displayName="Username"
+                                  hpcc:tooltip="Specifies the user name for accessing the ESPServer"/>
+                    <xs:attribute name="Password" type="xs:string" hpcc:displayName="Password" hpcc:requiredIf=".[@User]"
+                                  hpcc:modifiers="password" hpcc:tooltip="Specifies the user's password for accessing the ESPServer"/>
+                </xs:attributeGroup>
+
+                <xs:sequence>
+                    <xs:element name="LogGroup" hpcc:displayName="Log Group" hpcc:itemType="logagentesp_loggroup"
+                                hpcc:class="elementSet" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:attribute name="MaxTransIDLength" type="xs:nonNegativeInteger" hpcc:displayName="Max Trans ID Length"
+                                          hpcc:tooltip=""/>
+                            <xs:attribute name="MaxTransIDSequenceNumber" type="xs:nonNegativeInteger"
+                                          hpcc:displayName="Max Trans ID Squence Number" hpcc:tooltip=""/>
+                            <xs:attribute name="MaxTransSeedTimeoutMinutes" type="xs:nonNegativeInteger"
+                                          hpcc:displayName="Max Trans Speed Timeout(m)" hpcc:tooltip=""/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="LogSourceMap" hpcc:displayName="Log Source Map" hpcc:itemType="logagentesp_logsourcemap"
+                                maxOccurs="unbounded" hpcc:class="elementSet">
+                        <xs:complexType>
+                            <xs:element name="LogSourceMap" hpcc:displayName="Log Source Map" hpcc:itemType="logagentcassandra_logsourcemap"
+                                        maxOccurs="unbounded" hpcc:class="elementSet">
+                                <xs:complexType>
+                                    <xs:attributeGroup ref="loggingagent_logsourcemap"/>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Filter" hpcc:displayName="Filters" hpcc:itemType="logagentesp_filter"
+                                hpcc:class="elementSet" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:attribute name="filter" type="relativePath" hpcc:displayName="Filter" use="required"
+                                          hpcc:tooltip=""/>
+                            <xs:attribute name="type" hpcc:displayName="Type" hpcc:tooltip="">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:string">
+                                        <xs:enumeration value="ESPContext"/>
+                                        <xs:enumeration value="UserContext"/>
+                                        <xs:enumeration value="UserRequest"/>
+                                        <xs:enumeration value="UserResponse"/>
+                                        <xs:enumeration value="BackEndResponse"/>
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:attribute>
+                        </xs:complexType>
+                    </xs:element>
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attributeGroup ref="loggingagent_reqd" hpcc:presetValue="description=ESP Logging Agent,
+                    hpcc:unqiqueKey=logagent_esp,hpcc:autoGenerateValue=esp_logagent"/>
+                <xs:attributeGroup ref="espserver"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>

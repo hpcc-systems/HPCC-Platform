@@ -2507,6 +2507,7 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
     case no_nocombine:
     case no_likely:
     case no_unlikely:
+    case no_pure:
         buildExprAssign(ctx, target, expr->queryChild(0));
         break;
     case no_realformat:
@@ -3789,6 +3790,7 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_nocombine:
     case no_likely:
     case no_unlikely:
+    case no_pure:
         buildStmt(ctx, expr->queryChild(0));
         return;
     case no_null:

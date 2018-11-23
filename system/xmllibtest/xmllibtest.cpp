@@ -317,7 +317,7 @@ void doTransform()
             {
                 if (gStreamingBySocket)
                 {
-                    SocketEndpoint ep(gPort,gHost);
+                    SocketEndpoint ep(gHost, gPort);
                     ISocket* s = ISocket::connect(ep);
                     transform->transform(s);
                 } 

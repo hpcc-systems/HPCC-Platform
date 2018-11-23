@@ -270,6 +270,7 @@ void CEsdlCustomTransformChoose::toDBGLog ()
 CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree &currentTransform)
 {
     m_name.set(currentTransform.queryProp("@name"));
+    m_target.set(currentTransform.queryProp("@target"));
     DBGLOG("Compiling custom ESDL Transform: '%s'", m_name.str());
 
     Owned<IPropertyTreeIterator> conditionalIterator = currentTransform.getElements("xsdl:choose");
@@ -285,7 +286,7 @@ CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree &currentTransform)
 #endif
 }
 
-void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer & request, IPropertyTree * bindingCfg)
+void CEsdlCustomTransform::processTransform(IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg)
 {
     if (request.length()!=0)
     {
@@ -302,10 +303,31 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
         VStringBuffer ver("%g", context->getClientVersion());
         if(!xpathContext->addVariable("clientversion", ver.str()))
             ERRLOG("Could not set custom transform variable: clientversion:'%s'", ver.str());
+        //in case transform wants to make use of these values:
+        xpathContext->addVariable("query", tgtcfg->queryProp("@queryname"));
+        xpathContext->addVariable("method", mthdef.queryMethodName());
+        xpathContext->addVariable("service", srvdef.queryName());
 
         auto user = context->queryUser();
         if (user)
         {
+            static const std::map<SecUserStatus, const char*> statusLabels =
+            {
+#define STATUS_LABEL_NODE(s) { s, #s }
+                STATUS_LABEL_NODE(SecUserStatus_Inhouse),
+                STATUS_LABEL_NODE(SecUserStatus_Active),
+                STATUS_LABEL_NODE(SecUserStatus_Exempt),
+                STATUS_LABEL_NODE(SecUserStatus_FreeTrial),
+                STATUS_LABEL_NODE(SecUserStatus_csdemo),
+                STATUS_LABEL_NODE(SecUserStatus_Rollover),
+                STATUS_LABEL_NODE(SecUserStatus_Suspended),
+                STATUS_LABEL_NODE(SecUserStatus_Terminated),
+                STATUS_LABEL_NODE(SecUserStatus_TrialExpired),
+                STATUS_LABEL_NODE(SecUserStatus_Status_Hold),
+                STATUS_LABEL_NODE(SecUserStatus_Unknown),
+#undef STATUS_LABEL_NODE
+            };
+
             Owned<IPropertyIterator> userPropIt = user->getPropertyIterator();
             ForEach(*userPropIt)
             {
@@ -313,6 +335,22 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
                 if (name && *name)
                     xpathContext->addVariable(name, user->getProperty(name));
             }
+
+            auto it = statusLabels.find(user->getStatus());
+
+            xpathContext->addVariable("espUserName", user->getName());
+            xpathContext->addVariable("espUserRealm", user->getRealm() ? user->getRealm() : "");
+            xpathContext->addVariable("espUserPeer", user->getPeer() ? user->getPeer() : "");
+            xpathContext->addVariable("espUserStatus", VStringBuffer("%d", int(user->getStatus())));
+            if (it != statusLabels.end())
+                xpathContext->addVariable("espUserStatusString", it->second);
+            else
+                throw MakeStringException(-1, "encountered unexpected secure user status (%d) while processing transform", int(user->getStatus()));
+        }
+        else
+        {
+            // enable transforms to distinguish secure versus insecure requests
+            xpathContext->addVariable("espUserName", "");
         }
 
         Owned<IPropertyTreeIterator> configParams = bindingCfg->getElements("Transform/Param");
@@ -324,12 +362,24 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
             }
         }
 
-        Owned<IPropertyTree> thereq = createPTreeFromXMLString(request.str());
+        Owned<IPropertyTree> theroot = createPTreeFromXMLString(request.str());
+        StringBuffer xpath = m_target.str();
+        if (!xpath.length())
+        {
+            //This default gives us backward compatibility with only being able to write to the actual request
+            const char *tgtQueryName = tgtcfg->queryProp("@queryname");
+            xpath.setf("soap:Body/%s/%s", tgtQueryName ? tgtQueryName : mthdef.queryMethodName(), mthdef.queryRequestType());
+        }
+        //we can use real xpath processing in the future, for now simple substitution is fine
+        xpath.replaceString("{$query}", tgtcfg->queryProp("@queryname"));
+        xpath.replaceString("{$method}", mthdef.queryMethodName());
+        xpath.replaceString("{$service}", srvdef.queryName());
+        IPropertyTree *thereq = theroot->queryPropTree(xpath.str());  //get pointer to the write-able area
         ForEachItemIn(currConditionalIndex, m_customTransformClauses)
         {
             m_customTransformClauses.item(currConditionalIndex).process(context, thereq, xpathContext);
         }
-        toXML(thereq, request.clear());
+        toXML(theroot, request.clear());
 
         ESPLOG(LogMax,"MODIFIED REQUEST: %s", request.str());
     }

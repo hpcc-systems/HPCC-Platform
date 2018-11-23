@@ -1510,6 +1510,7 @@ IHqlExpression * TableInvariantTransformer::createTransformed(IHqlExpression * e
     }
 
     OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
+    updateOrphanedSelectors(transformed, expr);
     if (queryBodyExtra(expr)->createAlias)
     {
         if (!isTrivialAlias(expr))

@@ -50,7 +50,7 @@ CHttpClientContext::CHttpClientContext(IPropertyTree* config) : m_config(config)
 
 void CHttpClientContext::initPersistentHandler()
 {
-    m_persistentHandler.setown(createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, DEFAULT_MAX_PERSISTENT_REQUESTS, static_cast<PersistentLogLevel>(getEspLogLevel())));
+    m_persistentHandler.setown(createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, DEFAULT_MAX_PERSISTENT_REQUESTS, static_cast<PersistentLogLevel>(getEspLogLevel()), true));
 }
 
 CHttpClientContext::~CHttpClientContext()
@@ -249,6 +249,10 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
             ep.port=80;
     }
     m_ep = ep;
+
+    if(m_persistentHandler->inDoNotReuseList(&ep))
+        m_disableKeepAlive = true;
+
     Linked<ISocket> pSock = (m_disableKeepAlive || forceNewConnection)?nullptr:m_persistentHandler->getAvailable(&ep);
     if(pSock)
     {

@@ -58,6 +58,7 @@
 #include "hqlhoist.hpp"
 #include "hqlcppds.hpp"
 #include "hqliproj.hpp"
+#include "hqlctrans.hpp"
 
 //The following are include to ensure they call compile...
 #include "eclhelper.hpp"
@@ -862,9 +863,9 @@ protected:
 
     virtual void onMissingAssignment(IHqlExpression * expr)
     {
-            StringBuffer s;
-            expr->toString(s);
-            throwError2(HQLERR_MissingTransformAssignXX, s.str(), expr);
+        StringBuffer s;
+        expr->toString(s);
+        throwError1(HQLERR_MissingTransformAssignX, s.str());
     }
 
     void pushCondition(IHqlExpression * cond)
@@ -11407,7 +11408,7 @@ void HqlCppTranslator::buildXmlSerialize(BuildCtx & subctx, IHqlExpression * exp
                     {
                         StringBuffer s;
                         expr->toString(s);
-                        throwError2(HQLERR_MissingTransformAssignXX, s.str(), expr);
+                        throwError1(HQLERR_MissingTransformAssignX, s.str());
                     }
 
                     selected.set(match->queryChild(0));
@@ -19514,6 +19515,7 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_colon:
     case no_globalscope:
     case no_extractresult:
+    case no_pure:
         return needsRealThor(expr->queryChild(0), flags);
 
     case no_call:

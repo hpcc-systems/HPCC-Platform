@@ -123,7 +123,7 @@
               This can be done using the install-cluster.sh script which is
               provided with HPCC. Use the following command:</para>
 
-              <programlisting>/opt/HPCCSystems/sbin/install-cluster.sh &lt;hpccsystems-plugin-spark&gt;</programlisting>
+              <programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh &lt;hpccsystems-plugin-spark&gt;</programlisting>
 
               <para>More details including other options that may be used with
               this command are included in the appendix of Installing and
@@ -476,11 +476,10 @@
       <para>There are several additional artifacts of some interest. The
       <emphasis>org.hpccsystems.spark.ColumnPruner</emphasis> class is
       provided to enable retrieving only the columns of interest from the HPCC
-      Cluster. The <emphasis>targetClusterList</emphasis> parameter on the
-      HpccFile constructor allows you to provide a string of comma delimited
-      field paths for this same purpose. The
+      Cluster. The <emphasis>targetCluster</emphasis> artifact allows you to
+      specify the HPCC cluster on which the target file exists. The
       <emphasis>org.hpccsystems.spark.thor.FileFilter</emphasis> class is
-      provided to enable retrieving only records of interest from the HPCC
+      provided to facilitate filtering records of interest from the HPCC
       Cluster.</para>
 
       <para>The git repository includes two examples under the
@@ -554,8 +553,8 @@
       <programlisting>public HpccFileWriter(String connectionString, String user, String pass) throws Exception { </programlisting>
 
       <para>The first parameter <emphasis>connectionString</emphasis> contains
-      the same information as <emphasis>HpccFile</emphasis> only using a
-      single connection string. It should be in the following format:
+      the same information as <emphasis>HpccFile</emphasis>. It should be in
+      the following format:
       {http|https}://{ECLWATCHHOST}:{ECLWATCHPORT}</para>
 
       <para>The constructor will attempt to connect to HPCC. This connection
@@ -674,8 +673,11 @@
         value is the <emphasis>SparkContext</emphasis> object provided by the
         shell.</para>
 
-        <programlisting> val hpcc = new HpccFile("myfile", "http", "myeclwatchhost", "8010", "myuser", "mypass", "")
- val myRDD = hpcc.getRDD(sc)</programlisting>
+        <programlisting> val espcon = new Connection("http", "myeclwatchhost", "8010");
+ espcon.setUserName("myuser");
+ espcon.setPassword("mypass");
+ val file = new HpccFile("myfile",espcon);
+</programlisting>
 
         <para>Now we have an RDD of the data. Nothing has actually happened at
         this point because Spark performs lazy evaluation and there is nothing
@@ -745,8 +747,11 @@
         and is used instead of the <emphasis>SparkContext</emphasis>
         object.</para>
 
-        <programlisting> val hpcc = new HpccFile("myfile", "http", "myeclwatchhost", "8010", "myuser", "mypass", "")
- val mt_df = hpcc.getDataframe(spark)</programlisting>
+        <programlisting> val espcon = new Connection("http", "myeclwatchhost", "8010");
+ espcon.setUserName("myuser");
+ espcon.setPassword("mypass");
+ val file = new HpccFile("myfile",espcon);
+</programlisting>
 
         <para>The Spark <emphasis>ml</emphasis> Machine Learning classes use
         different data container classes. In the case of Logistic Regression,

@@ -43,6 +43,7 @@
 #include "hqlir.hpp"
 #include "hqliproj.hpp"
 #include "hqlgram.hpp"
+#include "hqlctrans.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
@@ -757,6 +758,8 @@ IHqlExpression * HqlThorBoundaryTransformer::createTransformed(IHqlExpression * 
     case no_sizeof:
     case no_offsetof:
         return getTransformedChildren(expr);
+    case no_mapto:
+        return NewHqlTransformer::createTransformed(expr);
     }
 
     //Unusually, wrap the expression in a thor node before processing annotations.
@@ -8390,7 +8393,7 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
                     if ((rootOp == no_select) || (rootOp == no_field))
                         break;
 
-                    if (isIndependentOfScope(datasetExpr) && !isContextDependent(expr))
+                    if (isIndependentOfScope(expr) && !isContextDependent(expr))
                     {
                         return hoist(expr, transformed);
                     }
@@ -9920,7 +9923,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
 
 HqlScopeTaggerInfo::HqlScopeTaggerInfo(IHqlExpression * _expr) : MergingTransformInfo(_expr)
 {
-    if (!onlyTransformOnce() && isIndependentOfScope(_expr))
+    if (!onlyTransformOnce() && (!containsImplicitNormalize(_expr) || _expr->isIndependentOfScope()))
     {
         //If the node doesn't have any active selectors then it isn't going to be context dependent
         setOnlyTransformOnce(true);
@@ -9942,11 +9945,24 @@ ANewTransformInfo * HqlScopeTagger::createTransformInfo(IHqlExpression * expr)
  *
  *   SELF.x := ds1
  *      This either means the entire ds1, or the current row in ds1 = depending on whether dataset is active or not
- *      (e.g, due to a TABLE() statement.)  This code reports a warning in this case - active(ds1) should be used for
+ *      (e.g, due to a TABLE() statement.)  This code reports an error in this case - active(ds1) should be used for
  *      the second case.
  *
- * In order to achieve this the entire expression tree needs to be transformed differently within each potentital dataset
+ * The following contexts are situations where the datasets are potentially ambiguous:
+ *    o left hand side of a no_select (case detailed above)
+ *    o parameters
+ *    o right hand sizes of assignments
+ *    o sizeof()
+ *
+ * For the first the ambiguity is resolved.  For all the others, it is treated as a new dataset, and a warning/error
+ * is reported if the dataset is in scope.  (?How would you suppress this?)
+ * reference to an active dataset should be done with ROW(dataset)
+ *
+ * In order to achieve this the entire expression tree needs to be transformed differently within each potential dataset
  * scope combination.
+ * This means that an expression that does not contain a normalized select (a.ds.x) must be transformed the same way each
+ * time.
+ *
 
 Details of the no_select representation:
 
@@ -9967,6 +9983,49 @@ Note:
     This means that if (myDataset.level1) is expanded to some expression then a newAtom will be need to be created on the new select
 
   */
+
+
+//Recursively search for an expression which refers to the first selector that is unresolved.
+static IHqlExpression * findOriginalReference(IHqlExpression * * location, IHqlExpression * expr, IHqlExpression * transformed, IHqlExpression * search)
+{
+    for(;;)
+    {
+        if (transformed == search)
+            return expr;
+
+        //If this is a no_select expression that is not resolving from a row then we have a match
+        node_operator transformOp = transformed->getOperator();
+        if ((transformOp == no_select) && !isNewSelector(transformed))
+            return expr;
+
+        //If tree has been transformed to a different structure then do not continue
+        if (transformOp != expr->getOperator())
+            return nullptr;
+
+        //Keep track of the best location that we have seen so far
+        IHqlExpression * symbol = queryLocation(expr);
+        if (symbol && location && (symbol->getStartLine() != 0))
+            *location = symbol;
+
+        //Find the first child expression that is also dependent on that selector
+        bool matched = false;
+        ForEachChild(i, transformed)
+        {
+            IHqlExpression * cur = transformed->queryChild(i);
+            if (cur->usesSelector(search))
+            {
+                transformed = cur;
+                expr = expr->queryChild(i);
+                matched = true;
+                break;
+            }
+        }
+
+        if (!matched || !expr)
+            return nullptr;
+    }
+}
+
 
 static HqlTransformerInfo hqlScopeTaggerInfo("HqlScopeTagger");
 HqlScopeTagger::HqlScopeTagger(IErrorReceiver & _errors, ErrorSeverityMapper & _errorMapper)
@@ -10330,16 +10389,13 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             }
             break;
         case annotate_symbol:
+        case annotate_location:
             {
                 ErrorSeverityMapper::SymbolScope saved(errorMapper, expr);
                 OwnedHqlExpr transformedBody = transform(body);
                 if (body == transformedBody)
                     return LINK(expr);
                 return expr->cloneAnnotation(transformedBody);
-            }
-        case annotate_location:
-            {
-                break;
             }
         }
         OwnedHqlExpr transformedBody = transform(body);
@@ -10462,15 +10518,38 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             }
             return expr->clone(children);
         }
+    case no_colon:
+    {
+        OwnedHqlExpr transformed = Parent::createTransformed(expr);
+        IHqlExpression * child = transformed->queryChild(0);
+        if (!child->isIndependentOfScope())
+            reportRootSelectorError(expr->queryChild(0), child);
+        return transformed.getClear();
+    }
+    case no_apply:
+    case no_output:
+    case no_outputscalar:
+    case no_setresult:
+    case no_buildindex:
+        {
+            OwnedHqlExpr transformed = Parent::createTransformed(expr);
+            if (isWithinRootScope() && !transformed->isIndependentOfScope())
+                reportRootSelectorError(expr, transformed);
+            return transformed.getClear();
+        }
     }
 
     return Parent::createTransformed(expr);
 }
 
-
 void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg)
 {
     IHqlExpression * location = errorMapper.queryActiveSymbol();
+    reportError(category, msg, location);
+}
+
+void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg, IHqlExpression * location)
+{
     //Make this an error when we are confident...
     int startLine= location ? location->getStartLine() : 0;
     int startColumn = location ? location->getStartColumn() : 0;
@@ -10478,6 +10557,38 @@ void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg)
     ErrorSeverity severity = queryDefaultSeverity(category);
     Owned<IError> err = createError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, str(sourcePath), startLine, startColumn, 0);
     errors.report(err);        // will throw immediately if it is an error.
+}
+
+void HqlScopeTagger::reportRootSelectorError(IHqlExpression * expr, IHqlExpression * transformed)
+{
+    HqlExprCopyArray inScope;
+    transformed->gatherTablesUsed(nullptr, &inScope);
+    assertex(inScope.ordinality());
+
+    //Recursively search for an expression which refers to the first selector that is unresolved.
+    IHqlExpression * selector = &inScope.item(0);
+    IHqlExpression * location = nullptr;
+    IHqlExpression * original = findOriginalReference(&location, expr, transformed, selector);
+    if (original)
+    {
+        StringBuffer exprText;
+        getECL(original->queryBody(), exprText);
+        elideString(exprText, 100); // very unlikely to be long, but limit just in case
+
+        VStringBuffer msg("expression '%s' is used within expression, but is not in scope", exprText.str());
+        if (!location)
+            location = errorMapper.queryActiveSymbol();
+        reportError(CategoryError, msg, location);
+    }
+    else
+    {
+        StringBuffer exprText;
+        getECL(expr, exprText);
+        elideString(exprText, 30);
+
+        VStringBuffer msg("Global expression '%s' uses fields from a dataset that is not in scope", exprText.str());
+        reportError(CategoryError, msg);
+    }
 }
 
 
@@ -13636,6 +13747,9 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         }
     }
 
+    //Mark the outer most conditions of the form IF(cond, x, fail) as non throwing.
+    //so they can be extracted as common sub expressions
+    optimizeConditionalErrors(exprs);
 #if 0
     if (seenIndex)
     {

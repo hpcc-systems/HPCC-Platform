@@ -45,6 +45,7 @@
  #endif
 #endif
 
+#undef roundup  // Sometimes defined as a macro in sys/param.h
 
 //#define _CLEAR_ALLOCATED_ROW
 //#define _CLEAR_FREED_ROW

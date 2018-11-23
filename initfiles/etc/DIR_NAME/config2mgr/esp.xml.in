@@ -22,7 +22,7 @@
       <Environment/>
       <EspProtocol name="http" type="http_protocol" plugin="esphttp" maxRequestEntityLength="8000000"/>
       <EspService name="configmgr" type="ws_configmgr" plugin="libws_configmgr.so"/>
-      <EspBinding name="configmgr_binding" service="configmgr" protocol="http" type="ws_configmgrSoapBinding" plugin="libws_configmgr.so" netAddress="0.0.0.0" port="8020" defaultBinding="true"></EspBinding>
+      <EspBinding name="configmgr_binding" service="configmgr" protocol="http" type="ws_configMgrSoapBinding" plugin="libws_configmgr.so" netAddress="0.0.0.0" port="8020" defaultBinding="true"></EspBinding>
     </EspProcess>
   </Software>
 </Environment>
