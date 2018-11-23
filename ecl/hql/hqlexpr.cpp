@@ -4234,7 +4234,21 @@ void CHqlRealExpression::updateFlagsAfterOperands()
     switch (op)
     {
     case no_pure:
-        infoFlags &= ~(HEFnoduplicate|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
+        //If pure() has extra parameters they allow flags to be selectively removed
+        if (numChildren() > 1)
+        {
+            ForEachChildFrom(i, this, 1)
+            {
+                IHqlExpression * cur = queryChild(i);
+                IAtom * name = cur->queryName();
+                if (name == throwAtom)
+                    infoFlags &= ~(HEFthrowscalar);
+                else
+                    throwUnexpectedX("Unrecognised PURE() attribute");
+            }
+        }
+        else
+            infoFlags &= ~(HEFnoduplicate|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
         break;
     case no_record:
         {
@@ -4540,6 +4554,9 @@ void CHqlRealExpression::updateFlagsAfterOperands()
             }
             break;
         }
+    case no_pat_validate:
+        infoFlags &= ~(HEFnoduplicate|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
+        break;
     }
 
 #ifdef VERIFY_EXPR_INTEGRITY

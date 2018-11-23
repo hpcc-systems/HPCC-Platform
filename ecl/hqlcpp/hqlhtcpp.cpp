@@ -58,6 +58,7 @@
 #include "hqlhoist.hpp"
 #include "hqlcppds.hpp"
 #include "hqliproj.hpp"
+#include "hqlctrans.hpp"
 
 //The following are include to ensure they call compile...
 #include "eclhelper.hpp"
@@ -19514,6 +19515,7 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_colon:
     case no_globalscope:
     case no_extractresult:
+    case no_pure:
         return needsRealThor(expr->queryChild(0), flags);
 
     case no_call:

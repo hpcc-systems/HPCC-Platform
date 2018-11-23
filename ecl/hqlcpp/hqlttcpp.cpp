@@ -43,6 +43,7 @@
 #include "hqlir.hpp"
 #include "hqliproj.hpp"
 #include "hqlgram.hpp"
+#include "hqlctrans.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
@@ -13636,6 +13637,9 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         }
     }
 
+    //Mark the outer most conditions of the form IF(cond, x, fail) as non throwing.
+    //so they can be extracted as common sub expressions
+    optimizeConditionalErrors(exprs);
 #if 0
     if (seenIndex)
     {

@@ -56,7 +56,7 @@ rollup_ds := ROLLUP(hdsds,checksort(LEFT, RIGHT),TRUE,LOCAL);
 
 
 SEQUENTIAL(
-  IF (COUNT(rollup_ds) = IF(Std.System.Thorlib.platform()='roxie',1,CLUSTERSIZE),
+  IF (COUNT(NOFOLD(rollup_ds)) = IF(Std.System.Thorlib.platform()='roxie',1,CLUSTERSIZE),
      output('Sort order verified'), 
      FAIL('ERROR: rollup count did not match expected!')
   ),

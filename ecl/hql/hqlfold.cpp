@@ -2456,6 +2456,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         }
     case no_assertconstant:
     case no_globalscope:
+    case no_pure:
         {
             IHqlExpression * child = expr->queryChild(0);
             if (child->queryValue())

@@ -2132,6 +2132,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         case no_nohoist:
         case no_nocombine:
         case no_selectfields:
+        case no_pure:
             if (expandProcessed)
                 defaultToECL(expr, s, inType);
             else
