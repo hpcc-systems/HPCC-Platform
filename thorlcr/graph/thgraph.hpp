@@ -28,6 +28,7 @@
 
 #define LONGTIMEOUT (25*60*1000)
 #define MEDIUMTIMEOUT 30000
+#define DEFAULT_MAX_ACTINITWAITTIME_MINS (2*60) // 2hrs
 
 #include "jlib.hpp"
 #include "jarray.hpp"
