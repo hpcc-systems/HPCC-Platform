@@ -535,6 +535,7 @@ define([
                     context.refreshGrid();
                 });
                 this.filter.on("apply", function (evt) {
+                    context.landingZonesGrid.clearSelection();
                     context.refreshHRef();
                     context.refreshGrid();
                 });
