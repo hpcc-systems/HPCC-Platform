@@ -660,14 +660,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             reqcontent.set(reqWriter->str());
             context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
 
-            if (crt)
-            {
-                context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
-                crt->processTransform(&context, reqcontent, m_oEspBindingCfg.get());
-                context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
-            }
-
-            handleFinalRequest(context, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy);
+            handleFinalRequest(context, crt, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy);
             context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq");
 
             if (isPublishedQuery(implType))
@@ -831,6 +824,7 @@ void EsdlServiceImpl::getSoapError( StringBuffer& out,
 }
 
 void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
+                                         IEsdlCustomTransform *crt,
                                          Owned<IPropertyTree> &tgtcfg,
                                          Owned<IPropertyTree> &tgtctx,
                                          IEsdlDefService &srvdef,
@@ -845,7 +839,6 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
     soapmsg.append(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">");
-
 
     if(isroxie)
     {
@@ -879,7 +872,16 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
 
     const char *tgtUrl = tgtcfg->queryProp("@url");
     if (tgtUrl && *tgtUrl)
+    {
+        if (crt)
+        {
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
+            crt->processTransform(&context, tgtcfg.get(), tgtctx.get(), srvdef, mthdef, soapmsg, m_oEspBindingCfg.get());
+            context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
+        }
+
         sendTargetSOAP(context, tgtcfg.get(), soapmsg.str(), out, isproxy, NULL);
+    }
     else
     {
         ESPLOG(LogMax,"No target URL configured for %s",mthdef.queryMethodName());
@@ -888,7 +890,6 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
     }
 
     processResponse(context,srvdef,mthdef,ns,out);
-
 }
 
 void EsdlServiceImpl::handleEchoTest(const char *mthName,
@@ -2280,6 +2281,45 @@ int EsdlBindingImpl::getQualifiedNames(IEspContext& ctx, MethodInfoArray & metho
     return methods.ordinality();
 }
 
+int EsdlBindingImpl::getMethodProperty(IEspContext &context, const char *serv, const char *method, StringBuffer &page, const char *propname, const char *dfault)
+{
+    if (!serv || !*serv || !method || !*method)
+        return 0;
+
+    if (!m_esdl)
+    {
+        ESPLOG(LogMax,"EsdlBindingImpl::getMethodProperty - ESDL definition for service not loaded");
+        return 0;
+    }
+
+    IEsdlDefService *srv = m_esdl->queryService(serv);
+    if (!srv)
+    {
+        ESPLOG(LogMax,"EsdlBindingImpl::getMethodProperty - service (%s) not found", serv);
+        return 0;
+    }
+
+    IEsdlDefMethod *mth = srv->queryMethodByName(method);
+    if (!mth)
+    {
+        ESPLOG(LogMax,"EsdlBindingImpl::getMethodProperty - service (%s) method (%s) not found", serv, method);
+        return 0;
+    }
+
+    const char *value = mth->queryProp(propname);
+    page.append(value ? value : dfault);
+    return 0;
+}
+
+int EsdlBindingImpl::getMethodDescription(IEspContext &context, const char *serv, const char *method, StringBuffer &page)
+{
+    return getMethodProperty(context, serv, method, page, ESDL_METHOD_DESCRIPTION, "No description available");
+}
+int EsdlBindingImpl::getMethodHelp(IEspContext &context, const char *serv, const char *method, StringBuffer &page)
+{
+    return getMethodProperty(context, serv, method, page, ESDL_METHOD_HELP, "No Help available");
+}
+
 bool EsdlBindingImpl::qualifyServiceName(IEspContext &context,
                                         const char *servname,
                                         const char *methname,
@@ -2305,11 +2345,7 @@ bool EsdlBindingImpl::qualifyServiceName(IEspContext &context,
         methQName->clear();
         IEsdlDefMethod *mth = srv->queryMethodByName(methname);
         if (mth)
-        {
             methQName->append(mth->queryName());
-            addMethodDescription(methQName->str(), mth->queryProp(ESDL_METHOD_DESCRIPTION));
-            addMethodHelp(methQName->str(), mth->queryProp(ESDL_METHOD_HELP));
-        }
     }
     else if (methQName != NULL)
         methQName->clear();

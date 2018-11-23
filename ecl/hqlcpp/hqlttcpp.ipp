@@ -1100,7 +1100,9 @@ protected:
     IHqlExpression * transformWithin(IHqlExpression * dataset, IHqlExpression * scope);
 
     void reportError(WarnErrorCategory category, const char * msg);
+    void reportError(WarnErrorCategory category, const char * msg, IHqlExpression * location);
     void reportSelectorError(IHqlExpression * selector, IHqlExpression * expr);
+    void reportRootSelectorError(IHqlExpression * expr, IHqlExpression * transformed);
 
 protected:
     IErrorReceiver & errors;

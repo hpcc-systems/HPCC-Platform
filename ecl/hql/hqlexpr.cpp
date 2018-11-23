@@ -1071,7 +1071,7 @@ bool HqlParseContext::checkEndMeta()
     return wasGathering;
 }
 
-bool HqlParseContext::createCache(const char *simplifiedEcl, bool isMacro)
+bool HqlParseContext::createCache(const char * simplifiedEcl, bool isMacro)
 {
     StringBuffer fullName;
     StringBuffer baseFilename;

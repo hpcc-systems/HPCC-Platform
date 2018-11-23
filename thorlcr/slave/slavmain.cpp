@@ -2293,13 +2293,8 @@ void slaveMain(bool &jobListenerStopped)
         StringBuffer ipStr;
         ip.getIpText(ipStr);
         PROGLOG("Redirecting local mount to %s", ipStr.str());
-        const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
-        StringBuffer repdir;
-        if (getConfigurationDirectory(globals->queryPropTree("Directories"),"mirror","thor",globals->queryProp("@name"),repdir))
-            overrideReplicateDirectory = repdir.str();
-        else
-            overrideReplicateDirectory = "/d$";
-        setLocalMountRedirect(ip, overrideReplicateDirectory, "/mnt/mirror");
+        const char *replicateDirectory = queryBaseDirectory(grp_unknown, 1); // default directories configured at start up (see thslavemain.cpp)
+        setLocalMountRedirect(ip, replicateDirectory, "/mnt/mirror");
     }
 
 #endif

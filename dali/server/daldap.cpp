@@ -26,6 +26,7 @@
 #include "mpbase.hpp"
 #include "dautils.hpp"
 #include "digisign.hpp"
+#include "workunit.hpp"
 
 using namespace cryptohelper;
 
@@ -196,7 +197,7 @@ public:
                 ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s digital signature support not available",key?key:"NULL",obj?obj:"NULL",username.str());
         }
 
-        if (!isEmptyString(user->credentials().getPassword()))
+        if (!isEmptyString(user->credentials().getPassword()) && !isWorkunitDAToken(user->credentials().getPassword()))
         {
             if (!ldapsecurity->authenticateUser(*user, NULL))
             {

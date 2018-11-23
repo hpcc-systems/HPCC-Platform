@@ -39,7 +39,8 @@ include_directories (
          ./../../system/security/shared 
          ./../../system/security/LdapSecurity 
          ./../../system/security/cryptohelper
-         ./../../system/jlib 
+         ./../../system/jlib
+         ./../../common/workunit
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )

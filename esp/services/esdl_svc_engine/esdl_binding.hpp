@@ -173,7 +173,7 @@ public:
     virtual bool handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawresp, const char * finalresp, const char * logdata);
     void handleEchoTest(const char *mthName, IPropertyTree *req, StringBuffer &soapResp, ESPSerializationFormat format);
     void handlePingRequest(const char *mthName,StringBuffer &out,ESPSerializationFormat format);
-    virtual void handleFinalRequest(IEspContext &context, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy);
+    virtual void handleFinalRequest(IEspContext &context, IEsdlCustomTransform *crt, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy);
     void getSoapBody(StringBuffer& out,StringBuffer& soapresp);
     void getSoapError(StringBuffer& out,StringBuffer& soapresp,const char *,const char *);
 
@@ -262,6 +262,11 @@ public:
     int getJsonTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response);
     void getRequestContent(IEspContext &context, StringBuffer & req, CHttpRequest* request, const char * servicename, const char * methodname, const char *ns, unsigned flags);
     void setXslProcessor(IInterface *xslp){}
+
+    int getMethodProperty(IEspContext &context, const char *serv, const char *method, StringBuffer &page, const char *propname, const char *dfault);
+
+    virtual int getMethodDescription(IEspContext &context, const char *serv, const char *method, StringBuffer &page) override;
+    virtual int getMethodHelp(IEspContext &context, const char *serv, const char *method, StringBuffer &page) override;
 
     int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods);
 

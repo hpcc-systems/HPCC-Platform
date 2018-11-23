@@ -94,7 +94,7 @@
                                             <option value="8">UTF-32LE</option>
                                             <option value="9">UTF-32BE</option>
                                         </select>
-                                        <input id="${id}SprayDelimitedMaxRecordLength" title="${i18n.MaxRecordLength}:" style="width: 95%;" name="sourceMaxRecordSize" value="8192" required="true" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input id="${id}SprayDelimitedMaxRecordLength" title="${i18n.MaxRecordLength}:" style="width: 95%;" name="sourceMaxRecordSize" required="false" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
                                         <input id="${id}SprayDelimitedSeparators" title="${i18n.Separators}:" style="width: 95%;" name="sourceCsvSeparate" value="\," data-dojo-props="trim: true, placeHolder:'\,'" colspan="2" data-dojo-type="dijit.form.ValidationTextBox" />
                                         <input title="${i18n.OmitSeparator}:" name="NoSourceCsvSeparator" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}SprayDelimitedEscape" title="${i18n.Escape}:" style="width: 95%;" name="sourceCsvEscape" data-dojo-props="trim: true" colspan="2" data-dojo-type="dijit.form.TextBox" />
@@ -144,7 +144,7 @@
                                             <option value="8">UTF-32LE</option>
                                             <option value="9">UTF-32BE</option>
                                         </select>
-                                        <input id="${id}SprayXmlMaxRecordLength" title="${i18n.MaxRecordLength}:" value="8192" style="width: 95%;" name="sourceMaxRecordSize" required="true" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input id="${id}SprayXmlMaxRecordLength" title="${i18n.MaxRecordLength}:" style="width: 95%;" name="sourceMaxRecordSize" required="false" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}XMLSprayReplicate" title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
@@ -187,7 +187,7 @@
                                             <option value="8">UTF-32LE</option>
                                             <option value="9">UTF-32BE</option>
                                         </select>
-                                        <input id="${id}SprayJsonMaxRecordLength" title="${i18n.MaxRecordLength}:" value="8192" style="width: 95%;" name="sourceMaxRecordSize" required="true" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input id="${id}SprayJsonMaxRecordLength" title="${i18n.MaxRecordLength}:" value="" style="width: 95%;" name="sourceMaxRecordSize" required="false" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}JSONSprayReplicate" title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />

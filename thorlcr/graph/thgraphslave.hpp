@@ -474,6 +474,7 @@ class graphslave_decl CJobSlave : public CJobBase
     Owned<IPropertyTree> workUnitInfo;
     size32_t oldNodeCacheMem;
     unsigned channelMemoryMB;
+    unsigned actInitWaitTimeMins = DEFAULT_MAX_ACTINITWAITTIME_MINS;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -484,6 +485,7 @@ public:
     virtual void startJob() override;
     virtual void endJob() override;
     const char *queryFindString() const { return key.get(); } // for string HT
+    unsigned queryActInitWaitTimeMins() const { return actInitWaitTimeMins; }
 
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);
     ISlaveWatchdog *queryProgressHandler() { return watchdog; }
