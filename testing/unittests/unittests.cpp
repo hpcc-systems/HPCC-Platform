@@ -22,6 +22,7 @@
 #include "jfile.hpp"
 #include "deftype.hpp"
 #include "rmtfile.hpp"
+#include "thorhelper.hpp"
 #include "libbase58.h"
 
 /*
@@ -700,6 +701,7 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
         testThreadsX(1);
         testThreadsX(2);
         testThreadsX(3);
+        testThreadsX(4);
     }
     void testThreadsX(unsigned mode)
     {
@@ -799,6 +801,25 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 ret = afor.ret;
             }
             DBGLOG("AsyncFor %d , %d, %d", count, msTick() - start, ret);
+            break;
+        }
+        case 4:
+        {
+            CPersistentTask task1("1", &t1), task2("2", &t2), task3("3", &t3);
+            unsigned ret = 0;
+            for (unsigned i = 0; i < iters; i++)
+            {
+                task1.start();
+                task2.start();
+                task3.start();
+                ret = call_from_thread(count);
+                task1.join();
+                task2.join();
+                task3.join();
+            }
+            ret += t1.ret + t2.ret + t3.ret;
+            DBGLOG("PersistantTask %d , %d, %d", count, msTick() - start, ret);
+            break;
         }
         }
     }

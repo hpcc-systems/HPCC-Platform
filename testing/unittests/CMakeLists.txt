@@ -42,6 +42,7 @@ include_directories (
          ./../../system/mp
          ./../../system/libbase58
          ./../../common/remote
+         ./../../common/thorhelper
          ./../../dali/base
          ./../../system/security/shared
          ./../../common/deftype
@@ -62,6 +63,7 @@ target_link_libraries ( unittests
          dalibase
          deftype
          libbase58
+         thorhelper
          configmgr
          ${CPPUNIT_LIBRARIES}
     )
