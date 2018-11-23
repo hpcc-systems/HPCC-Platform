@@ -393,6 +393,8 @@ public:
             }
             if (cmdline.length()==0) {
                 // ssh
+                // NB: -o LogLevel=ERROR might be better choice because it would echo ssh error text
+                // whereas QUIET does not, but leaving it as QUIET for now for compatibility.
                 cmdline.appendf("%s -n -o LogLevel=QUIET -o StrictHostKeyChecking=%s ",usepssh?"pssh":"ssh",strict?"yes":"no -o UserKnownHostsFile=/dev/null");
                 if (!usepssh)
                     cmdline.append("-o BatchMode=yes ");
@@ -453,6 +455,8 @@ public:
         }
         CriticalBlock block(sect);
         done.append(i);
+        if ((retcode == 255) && outbuf.isEmpty())
+            outbuf.setf("SSH failed to connect %s: %s", slaves.item(i), cmd.str());
         replytext.append(outbuf.str());
         reply.append((unsigned)retcode);
     }
