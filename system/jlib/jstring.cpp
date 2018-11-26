@@ -1727,8 +1727,8 @@ const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned
             ret.append(flags & ENCODE_SPACES?"&#9;":"\t");
             break;
         case '\0':
-            if (len == (unsigned) -1)
-                return x;
+            if (len == (unsigned)-1)
+                return ret.str();
             ret.append("&#xe000;");   // hack!!! Characters below 0x20 are not legal in strict xml, even encoded.
             break;
         default:
@@ -1761,10 +1761,10 @@ const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned
             len--;
         ++x;
     }
-    return x;
+    return ret.str();
 }
 
-const char *encodeXML(const char *x, IIOStream &out, unsigned flags, unsigned len, bool utf8)
+void encodeXML(const char *x, IIOStream &out, unsigned flags, unsigned len, bool utf8)
 {
     while (len)
     {
@@ -1799,7 +1799,7 @@ const char *encodeXML(const char *x, IIOStream &out, unsigned flags, unsigned le
             break;
         case '\0':
             if (len == (unsigned) -1)
-                return x;
+                return;
             writeStringToStream(out, "&#xe000;");   // hack!!! Characters below 0x20 are not legal in strict xml, even encoded.
             break;
         default:
@@ -1849,7 +1849,6 @@ const char *encodeXML(const char *x, IIOStream &out, unsigned flags, unsigned le
             len--;
         ++x;
     }
-    return x;
 }
 
 static void writeUtf8(unsigned c, StringBuffer &out)
@@ -1899,7 +1898,7 @@ static void writeUtf8(unsigned c, StringBuffer &out)
 const char *decodeJSON(const char *j, StringBuffer &ret, unsigned len, const char **errMark)
 {
     if (!j)
-        return j;
+        return ret.str();
     if ((unsigned)-1 == len)
         len = (unsigned)strlen(j);
     try
@@ -1971,7 +1970,7 @@ const char *decodeJSON(const char *j, StringBuffer &ret, unsigned len, const cha
         if (errMark) *errMark = j;
         throw;
     }
-    return j;
+    return ret.str();
 }
 
 void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsigned len)
@@ -1983,7 +1982,7 @@ void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsigned len)
 const char *decodeXML(const char *x, StringBuffer &ret, const char **errMark, IEntityHelper *entityHelper, bool strict)
 {
     if (!x)
-        return x;
+        return ret.str();
     try
     {
         while (*x)
@@ -2109,7 +2108,7 @@ const char *decodeXML(const char *x, StringBuffer &ret, const char **errMark, IE
         if (errMark) *errMark = x;
         throw;
     }
-    return x;
+    return ret.str();
 }
 
 StringBuffer & appendXMLOpenTag(StringBuffer &xml, const char *tag, const char *prefix, bool complete, bool close, const char *uri)
