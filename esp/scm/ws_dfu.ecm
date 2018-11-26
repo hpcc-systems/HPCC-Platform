@@ -203,6 +203,7 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.38")] string PackageID;
     [min_ver("1.39")] ESPstruct DFUFilePartition Partition;
     [min_ver("1.39")] ESParray<ESPstruct DFUFileBloom> Blooms;
+    [min_ver("1.40")] int ExpireDays;
 };
 
 ESPStruct DFUSpaceItem
@@ -918,7 +919,7 @@ ESPresponse [exceptions_inline, nil_remove] DFUFilePublishResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.39"),
+    version("1.40"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
