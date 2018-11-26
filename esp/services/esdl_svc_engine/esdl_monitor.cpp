@@ -235,14 +235,6 @@ public:
                 continue;
             }
             cur.getProp("@espbinding", data->name);
-            if (data->name.length() != 0 && existsStaticBinding(data->name.str()))
-            {
-                DBGLOG("ESDL binding %s has esp binding configured, no need to create it dynamically, skip.", data->id.str());
-                continue;
-            }
-            else
-                DBGLOG("ESDL binding %s doesn't have esp binding configured, creating the binding dynamically...", data->id.str());
-
             data->port = cur.getPropInt("@port");
             if (data->port == 0)
             {
@@ -299,19 +291,11 @@ public:
             if (theBinding)
             {
                 DBGLOG("Requesting clearing of binding %s", data->id.str());
-                if (data->name.length() > 0 && existsStaticBinding(data->name.str()))
-                {
-                    DBGLOG("Static esp binding exists for this esdl binding.");
-                    theBinding->reloadBindingFromCentralStore(data->id.str()); //clear the binding by reloading
-                }
-                else
-                {
-                    theBinding->clearBindingState();
-                    if (data->port <= 0)
-                        data->port = theBinding->getPort();
-                    DBGLOG("Removing binding from port %d", data->port);
-                    queryEspServer()->removeBinding(data->port, *theBinding);
-                }
+                theBinding->clearBindingState();
+                if (data->port <= 0)
+                    data->port = theBinding->getPort();
+                DBGLOG("Removing binding from port %d", data->port);
+                queryEspServer()->removeBinding(data->port, *theBinding);
                 removeBindingFromMap(data->id.str());
             }
             else
@@ -346,41 +330,14 @@ public:
                 return;
             }
 
-            bool existsStatic = false;
-            if (data->name.length() > 0)
-                existsStatic = existsStaticBinding(data->name.str());
-            else
+            if (data->name.length() == 0)
                 data->name.set(data->id);
-            if (!existsStatic)
+            if (data->port == 0)
             {
-                DBGLOG("ESDL binding %s doesn't have esp binding configured, creating the binding dynamically...", data->id.str());
-                if (data->port == 0)
-                {
-                    DBGLOG("Port is not provided for binding, can't create binding.");
-                    return;
-                }
-                addBinding(data);
+                DBGLOG("Port is not provided for binding, can't create binding.");
+                return;
             }
-            else
-            {
-                DBGLOG("ESDL binding %s has esp binding configured, reloading the esp binding...", data->id.str());
-                //Reload static binding
-                IEspServer* server = queryEspServer();
-                IEspRpcBinding* espBinding = server->queryBinding(data->name.str());
-                if (espBinding != nullptr)
-                {
-                    EsdlBindingImpl* esdlBinding = dynamic_cast<EsdlBindingImpl*>(espBinding);
-                    if (esdlBinding != nullptr)
-                    {
-                        esdlBinding->reloadBindingFromCentralStore(data->id.str());
-                        registerBinding(data->id.str(), esdlBinding);
-                    }
-                    else
-                        DBGLOG("The esp binding failed to be cast to esdl binding.");
-                }
-                else
-                    DBGLOG("Esp binding not found.");
-            }
+            addBinding(data);
         }
         else
         {
@@ -432,21 +389,6 @@ private:
         DBGLOG("Successfully instantiated new DESDL binding %s and service", data->id.str());
     }
 
-    bool existsStaticBinding(const char* espBinding)
-    {
-        if (!espBinding || !*espBinding)
-            return false;
-        DBGLOG("Checking if there is esp binding %s configured...", espBinding);
-        IPropertyTree* procpt = queryEspServer()->queryProcConfig();
-        if (procpt)
-        {
-            VStringBuffer xpath("EspBinding[@name='%s']", espBinding);
-            if (procpt->queryPropTree(xpath.str()) != nullptr)
-                return true;
-        }
-        return false;
-    }
-
     bool espProcessMatch(const char* espProcess)
     {
         if (!espProcess)
@@ -486,14 +428,12 @@ private:
             //If esp's original config has one configured for this binding, use it
             VStringBuffer xpath("EspBinding[@name='%s']", bindingName);
             IPropertyTree* bindingtree = procpt->queryPropTree(xpath.str());
-            if (bindingtree)
+            if (!bindingtree)
             {
-                bindingtree->getProp("@protocol", protocol);
-                return LINK(procpt);
+                //Otherwise check if there's binding configured on the same port
+                xpath.setf("EspBinding[@type='EsdlBinding'][@port=%s][1]", port);
+                bindingtree = procpt->queryPropTree(xpath.str());
             }
-            //Otherwise check if there's binding configured on the same port
-            xpath.setf("EspBinding[@type='EsdlBinding'][@port=%s][1]", port);
-            bindingtree = procpt->queryPropTree(xpath.str());
             if (!bindingtree)
             {
                 //Otherwise check if there's binding configured with port 0
