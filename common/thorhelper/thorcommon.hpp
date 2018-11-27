@@ -329,7 +329,7 @@ struct ActivityTimer
 };
 struct SimpleActivityTimer
 {
-    inline SimpleActivityTimer(unsigned __int64 &_accumulator, const bool _enabled) { }
+    inline SimpleActivityTimer(cycle_t &_accumulator, const bool _enabled) { }
 };
 #endif
 
