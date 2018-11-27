@@ -210,6 +210,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKselfdenormalizegroup] = "selfdenormalizegroup";
     kindArray[TAKspillread] = "spillread" ;
     kindArray[TAKspillwrite] = "spillwrite" ;
+    kindArray[TAKnwaydistribute] = "nwaydistribute";
 
 //Non standard
     kindArray[TAKsubgraph] = "subgraph";

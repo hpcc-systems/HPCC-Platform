@@ -479,6 +479,11 @@ double CThorHashDistributeArg::getSkew() { return 0; }           // 0=default
 double CThorHashDistributeArg::getTargetSkew() { return 0; }           // 0=default
 ICompare * CThorHashDistributeArg::queryMergeCompare() { return NULL; }
 
+//CThorNWayDistributeArg
+
+unsigned CThorNWayDistributeArg::getFlags() { return 0; }
+bool     CThorNWayDistributeArg::include(const byte * left, unsigned targetNode) { return true; }    // default to include all
+
 //CThorHashDedupArg
 
 unsigned CThorHashDedupArg::getFlags() { return HDFkeepleft; }
