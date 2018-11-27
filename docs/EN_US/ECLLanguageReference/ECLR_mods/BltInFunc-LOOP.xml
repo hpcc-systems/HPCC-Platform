@@ -4,51 +4,19 @@
 <sect1 id="LOOP">
   <title>LOOP</title>
 
-  <para><emphasis role="bold">LOOP<indexterm>
+  <para role="syntax"><emphasis role="bold">LOOP<indexterm>
       <primary>LOOP</primary>
     </indexterm><indexterm>
       <primary>LOOP function</primary>
-    </indexterm>(</emphasis><emphasis> dataset,</emphasis><emphasis
-  role="bold"> </emphasis><emphasis>loopcount, loopbody </emphasis><emphasis
-  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
-  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
-  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
-  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ][,
-  FEW] )</emphasis></para>
-
-  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
-  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopcount,
-  loopfilter, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ] [,
-  FEW])</emphasis></para>
-
-  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
-  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopfilter,
+    </indexterm>(</emphasis><emphasis> dataset</emphasis><emphasis
+  role="bold"> </emphasis> <emphasis role="bold"> [ </emphasis> <emphasis>
+  ,loopcount</emphasis> <emphasis role="bold"> ][</emphasis> <emphasis>
+  ,loopfilter</emphasis> <emphasis role="bold"> ][ </emphasis> <emphasis>
+  ,loopcondition</emphasis> <emphasis role="bold"> ] </emphasis> <emphasis>,
   loopbody </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
   <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
-  </emphasis><emphasis role="bold">) ] [, FEW])</emphasis></para>
-
-  <para><emphasis role="bold">LOOP(</emphasis><emphasis> dataset, rowfilter,
-  loopcondition, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ][, FEW]
-  )</emphasis></para>
-
-  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
-  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopfilter,
-  loopcondition, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ][, FEW]
-  )</emphasis></para>
+  [,ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">)
+  ][, FEW] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -68,19 +36,8 @@
               <primary>loopcount</primary>
             </indexterm></emphasis></entry>
 
-          <entry>An integer expression specifying the number of times to
-          iterate .</entry>
-        </row>
-
-        <row>
-          <entry><emphasis>loopbody<indexterm>
-              <primary>loopbody</primary>
-            </indexterm></emphasis></entry>
-
-          <entry>The operation to iteratively perform. This may be a PROJECT,
-          JOIN, or other such operation. ROWS(LEFT) is always used as the
-          operation's first parameter, indicating the specified dataset is the
-          input parameter.</entry>
+          <entry>Optional. An integer expression specifying the number of
+          times to iterate.</entry>
         </row>
 
         <row>
@@ -88,11 +45,12 @@
               <primary>loopfilter</primary>
             </indexterm></emphasis></entry>
 
-          <entry>A logical expression that specifies the set of records whose
-          processing is not yet complete. The set of records not meeting the
-          condition are no longer iteratively processed and are placed into
-          the final result set. This evaluation occurs before each iteration
-          of the <emphasis>loopbody</emphasis>.</entry>
+          <entry>Optional. A Boolean expression that must be a record filter
+          for the <emphasis>dataset</emphasis> identifying records whose
+          processing is not yet complete. Records filtered out are complete,
+          therefore immediately placed into the final result set. This
+          evaluation occurs prior to each iteration of the
+          <emphasis>loopbody</emphasis>.</entry>
         </row>
 
         <row>
@@ -100,18 +58,22 @@
               <primary>loopcondition</primary>
             </indexterm></emphasis></entry>
 
-          <entry>A logical expression specifying continuing
-          <emphasis>loopbody</emphasis> iteration while TRUE.</entry>
+          <entry>Optional. A Boolean expression that continues
+          <emphasis>loopbody</emphasis> iteration while TRUE. This can be any
+          logical expression.</entry>
         </row>
 
         <row>
-          <entry><emphasis>rowfilter</emphasis></entry>
+          <entry><emphasis>loopbody<indexterm>
+              <primary>loopbody</primary>
+            </indexterm></emphasis></entry>
 
-          <entry>A logical expression that specifies a single record whose
-          processing is complete. The record meeting the condition is no
-          longer iteratively processed and is placed into the final result
-          set. This evaluation occurs during the iteration of the
-          <emphasis>loopbody</emphasis>.</entry>
+          <entry>The operation to iteratively perform. This might be a
+          PROJECT, JOIN, a function, or any other such operation. ROWS(LEFT)
+          is always used as a parameter to the <emphasis>loopbody</emphasis>
+          operation, passing the current form of the
+          <emphasis>dataset</emphasis> as the input parameter for each
+          iteration.</entry>
         </row>
 
         <row>
@@ -151,19 +113,6 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
-
-          <entry>Optional. Try to evaluate this activity in parallel.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis>numthreads</emphasis></entry>
-
-          <entry>Optional. Try to evaluate this activity using
-          <emphasis>numthreads</emphasis> threads.</entry>
-        </row>
-
-        <row>
           <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
           <entry>Optional. Override the algorithm used for this
@@ -196,72 +145,145 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">LOOP </emphasis>function iteratively
+  <para>The <emphasis role="bold">LOOP</emphasis> function iteratively
   performs the <emphasis>loopbody</emphasis> operation. The COUNTER<indexterm>
       <primary>COUNTER</primary>
-    </indexterm> is implicit and available for use to return the current
+    </indexterm> keyword is implicitly available for use to return the current
   iteration.</para>
 
-  <sect2 id="The_PARALLEL_Option">
-    <title>The PARALLEL Option</title>
+  <para>The <emphasis>loopcount</emphasis>, <emphasis>loopfilter</emphasis>,
+  and <emphasis>loopcondition</emphasis> parameters are all optional, but at
+  least one of the three must be present.</para>
 
-    <para>The PARALLEL option allows multiple loop iterations to be executed
-    in parallel.</para>
+  <para>For each successive iteration, the input <emphasis>dataset</emphasis>
+  (expressed as ROWS(LEFT) as the parameter to the
+  <emphasis>loopbody</emphasis>) is the result set of the previous iteration
+  after application of any <emphasis>loopfilter</emphasis>. The final result
+  of the LOOP returns all records that completed processing, no matter which
+  iteration that completion occurred (not just the result set from the final
+  iteration).</para>
 
-    <para>There is a restriction: ROWS(LEFT) cannot be directly used in a
-    sub-query of the <emphasis>loopbody</emphasis>.</para>
+  <para>Example:</para>
 
-    <para>Example:</para>
-
-    <programlisting>namesRec := RECORD  
-STRING20 lname;
-STRING10 fname;
+  <para><programlisting>namesRec := RECORD  
+  STRING20 lname;
+  STRING10 fname;
   UNSIGNED2 age := 25;
   UNSIGNED2 ctr := 0;
 END;
-namesTable2 := DATASET([{'Flintstone','Fred',35},
-    {'Flintstone','Wilma',33},
-    {'Jetson','Georgie',10},
-    {'Mr. T','Z-man'}], namesRec);
-loopBody(DATASET(namesRec) ds, unsigned4 c) :=
- PROJECT(ds,
-    TRANSFORM(namesRec,
-    SELF.age := LEFT.age*c;
-    SELF.ctr := COUNTER ;
-    SELF := LEFT));
-//Form 1:
-OUTPUT(LOOP(namesTable2,
-  COUNTER &lt;= 10,
-            PROJECT(ROWS(LEFT),
-     TRANSFORM(namesRec,
-     SELF.age := LEFT.age*2;
-     SELF.ctr := LEFT.ctr + COUNTER ;
-     SELF := LEFT))));
-OUTPUT(LOOP(namesTable2, 4, ROWS(LEFT) &amp; ROWS(LEFT)));
-//Form 2:
-OUTPUT(LOOP(namesTable2,
-  10,
-  LEFT.age * COUNTER &lt;= 200,
-            PROJECT(ROWS(LEFT),
-     TRANSFORM(namesRec,
-     SELF.age := LEFT.age*2;
-     SELF := LEFT))));
-//Form 3:
-OUTPUT(LOOP(namesTable2,
-  LEFT.age &lt; 100,
-  loopBody(ROWS(LEFT), COUNTER)));
-//Form 4:
-OUTPUT(LOOP(namesTable2,
-  SUM(ROWS(LEFT), age) &lt; 1000 * COUNTER,
-            PROJECT(ROWS(LEFT),
-     TRANSFORM(namesRec,
-     SELF.age := LEFT.age*2;
-     SELF := LEFT))));
-//Form 5:
-OUTPUT(LOOP(namesTable2,
-  LEFT.age &lt; 100,
-  EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) &lt; 1000,
-  loopBody(ROWS(LEFT), COUNTER)));
-</programlisting>
-  </sect2>
+namesTable := DATASET([{'Flintstone','Fred',35},
+                       {'Flintstone','Wilma',43}, 
+                       {'Jetson','Georgie',10},
+                       {'Mr. T','Z-man'}], namesRec);
+BodyFunc(DATASET(namesRec) ds, UNSIGNED4 c) :=
+  PROJECT(ds,
+          TRANSFORM(namesRec,
+                    SELF.age := LEFT.age*c;
+                    SELF.ctr := COUNTER*c ;
+                    SELF := LEFT));
+
+/* Form 1 -- LOOP(ds, loopcount, loopbody) 
+   Processes loopcount times, basically a "for loop" construct.
+
+   This example also demonstrates the two possible scopes of the COUNTER 
+   keyword within a LOOP: 
+   * The COUNTER in the LOOP function (passed to BodyFunc) is the number 
+     of iterations the LOOP has done.
+   * The COUNTER in the TRANSFORM for the PROJECT in the BodyFunc counts 
+     the number of records processed by the current iteration of PROJECT. 
+*/
+Form1 := LOOP(namesTable, 
+              2,                    //iterate 2 times
+              ROWS(LEFT) &amp; BodyFunc(ROWS(LEFT),COUNTER)); //16 rows
+OUTPUT(Form1,NAMED('Form1_example')); 
+
+/* Form 2 -- LOOP(ds, loopfilter, loopbody) 
+   Continues processing while the loopfilter expression is TRUE for any 
+   records in ROWS(LEFT). This is basically a "while loop" construct. The 
+   loopfilter expression is evaluated on the entire set of ROWS(LEFT) 
+   records prior to each iteration. 
+ */
+Form2 := LOOP(namesTable,
+              LEFT.age &lt; 100, //process only recs where TRUE
+              PROJECT(ROWS(LEFT),
+                      TRANSFORM(namesRec,
+                                SELF.age := LEFT.age*2;
+                                SELF     := LEFT)));
+OUTPUT(Form2,NAMED('Form2_example'));
+
+/* Form 3 -- LOOP(ds, loopcondition, loopbody) 
+   Continues processing while the loopcondition expression is TRUE.
+   This is basically a "while loop" construct. The loopcondition expression 
+   is evaluated on the entire set of ROWS(LEFT) records prior to each 
+   iteration. 
+ */
+Form3 := LOOP(namesTable,
+              SUM(ROWS(LEFT), age) &lt; 1000 * COUNTER,
+              PROJECT(ROWS(LEFT),
+                      TRANSFORM(namesRec,
+                                SELF.age := LEFT.age*2;
+                                SELF     := LEFT)));
+OUTPUT(Form3,NAMED('Form3_example'));
+
+/* Form 4 --  LOOP(ds, loopcount, loopfilter, loopbody)
+   Processes loopcount times, with the loopfilter expression
+   defining when each record continues to process through the loopbody 
+   expression. This is basically a "for loop" construct with a filter 
+   specifying which records are processed each iteration.
+ */
+Form4 := LOOP(namesTable,
+              10,
+              LEFT.age &lt; 100,            //process only recs where TRUE
+              BodyFunc(ROWS(LEFT), COUNTER));
+OUTPUT(Form4,NAMED('Form4_example')); 
+
+/* Form 5 -- LOOP(ds, loopcount, loopcondition, loopbody) 
+   Processes loopcount times, with the loopcondition expression
+   defining the set of records that continue to process through the loopbody 
+   expression. This is basically a "for loop" construct with a filter 
+   specifying the record set processed for each iteration.
+
+   This example also demonstrates the two possible scopes of the COUNTER 
+   keyword within a LOOP: 
+   * The COUNTER in the LOOP function's loopfilter expression is the number 
+     of recursive iterations the LOOP has done.
+   * The COUNTER in the TRANSFORM for the PROJECT counts the number of records 
+     processed by the current iteration of PROJECT. 
+*/
+Form5 := LOOP(namesTable,
+              10,                        //iterate 10 times
+              LEFT.age * COUNTER &lt;= 200, //process only recs where TRUE
+              PROJECT(ROWS(LEFT),
+                      TRANSFORM(namesRec,
+                                SELF.age := LEFT.age*2,
+                                SELF.ctr := COUNTER,
+                                SELF := LEFT)));
+OUTPUT(Form5,NAMED('Form5_example')); 
+
+
+/* Form 6 -- LOOP(ds, loopfilter, loopcondition, loopbody)
+   Continues processing while the loopcondition expression is TRUE.
+   Records where the loopfilter expression is TRUE continue processing. 
+   This is basically a "while loop" construct with individual record 
+   processing continuation logic. 
+ */
+Form6 := LOOP(namesTable,
+              LEFT.age &lt; 100,
+              EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) &lt; 1000,
+              BodyFunc(ROWS(LEFT), COUNTER));
+OUTPUT(Form6,NAMED('Form6_example')); 
+
+/* Form 7 -- LOOP(ds, loopcount, loopfilter, loopcondition, loopbody)
+   Continues processing while the loopcondition expression is TRUE.
+   Records where the loopfilter expression is TRUE continue processing. 
+   This is basically a "while loop" construct with individual record 
+   processing continuation logic. 
+ */
+Form7 := LOOP(namesTable,
+              10,
+              LEFT.age &lt; 100,
+              EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) &lt; 1000,
+              BodyFunc(ROWS(LEFT), COUNTER));
+OUTPUT(Form7,NAMED('Form7_example'));</programlisting>See Also: <link
+  linkend="GRAPH">GRAPH</link></para>
 </sect1>
