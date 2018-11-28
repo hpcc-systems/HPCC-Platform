@@ -132,7 +132,28 @@ class HQL_API CUsedTablesBuilder
 public:
     void addActiveTable(IHqlExpression * expr);
     void cleanupProduction();
-    inline void removeActive(IHqlExpression * expr) { inScopeTables.remove(expr); }
+    inline void removeActive(IHqlExpression * expr)
+    {
+        HqlExprCopyArray toRemove;
+        for (IHqlExpression & cur : inScopeTables)
+        {
+            IHqlExpression * selector = &cur;
+            for(;;)
+            {
+                if (selector == expr)
+                {
+                    toRemove.append(cur);
+                    break;
+                }
+                if (selector->getOperator() != no_select)
+                    break;
+                selector = selector->queryChild(0);
+            }
+        }
+        ForEachItemIn(i, toRemove)
+            removeActiveSelector(&toRemove.item(i));
+    }
+    void removeActiveSelector(IHqlExpression * expr) { inScopeTables.remove(expr); }
     void removeParent(IHqlExpression * expr);
     void removeActiveRecords();
     void removeRows(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right);
@@ -181,14 +202,25 @@ protected:
 
 protected:
     //For a no_select, is this the root no_select (rather than a.b.c), and is it also an active selector.
+    //That requires the left hand side to be a dataset, and not marked as new.
     //Used for determining how a no_select should be interpreted e.g., in table gathering. 
     inline bool isSelectRootAndActive() const
     {
+        dbgassertex(op == no_select);
         if (hasAttribute(newAtom))
             return false;
+        //If lhs is a row then this is not the root selection from a dataset
         IHqlExpression * ds = queryChild(0);
-        if ((ds->getOperator() == no_select) && ds->isDatarow())
+        if (ds->isDatarow())
+        {
+            switch (ds->getOperator())
+            {
+            //This is a complete hack - but prevents scrub2 from generating invalid code.  HPCC-21084 created for a correct fix.
+            case no_typetransfer:
+                return true;
+            }
             return false;
+        }
         return true;
     }
 
