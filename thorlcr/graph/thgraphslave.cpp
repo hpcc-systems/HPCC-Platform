@@ -1671,6 +1671,13 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
         setRemoteOutputCompressionDefault(remoteCompressedOutput);
 
     actInitWaitTimeMins = getOptInt(THOROPT_ACTINIT_WAITTIME_MINS, DEFAULT_MAX_ACTINITWAITTIME_MINS);
+
+    /* Need to make sure that the activity initialization timeout is at least as long
+     * as the max LFN block time. i.e. so that the query doesn't spuriously abort with an
+     * activity initialization timeout before it hits the configured max LFN block time.
+     */
+    if (queryMaxLfnBlockTimeMins() >= actInitWaitTimeMins)
+        actInitWaitTimeMins = queryMaxLfnBlockTimeMins()+1;
 }
 
 void CJobSlave::addChannel(IMPServer *mpServer)

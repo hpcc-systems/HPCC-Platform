@@ -29,6 +29,7 @@
 #define LONGTIMEOUT (25*60*1000)
 #define MEDIUMTIMEOUT 30000
 #define DEFAULT_MAX_ACTINITWAITTIME_MINS (2*60) // 2hrs
+#define DEFAULT_MAXLFN_BLOCKTIME_MINS 25 // 25 mins
 
 #include "jlib.hpp"
 #include "jarray.hpp"
@@ -826,6 +827,7 @@ protected:
     Owned<IThorAllocator> sharedAllocator;
     bool jobEnded = false;
     bool failOnLeaks = false;
+    unsigned maxLfnBlockTimeMins = DEFAULT_MAXLFN_BLOCKTIME_MINS;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -847,6 +849,7 @@ public:
     CJobBase(ILoadedDllEntry *querySo, const char *graphName);
     virtual void beforeDispose() override;
 
+    unsigned queryMaxLfnBlockTimeMins() const { return maxLfnBlockTimeMins; }
     virtual void addChannel(IMPServer *mpServer) = 0;
     CJobChannel &queryJobChannel(unsigned c) const;
     CActivityBase &queryChannelActivity(unsigned c, graph_id gid, activity_id id) const;

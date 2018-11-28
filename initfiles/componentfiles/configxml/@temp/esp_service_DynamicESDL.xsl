@@ -84,7 +84,8 @@
                             </xsl:when>
                             <xsl:when test="($wsLogServiceESPAgentNode)">
                                 <xsl:call-template name="WsLogServiceESPAgent">
-                                    <xsl:with-param name="managerNode" select="$managerNode"/>
+                                    <xsl:with-param name="agentName" select="$agentName"/>
+                                    <xsl:with-param name="agentNode" select="$wsLogServiceESPAgentNode"/>
                                 </xsl:call-template>
                             </xsl:when>
                             <xsl:otherwise>
