@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="EspService" hpcc:displayName="WsECL" hpcc:itemType="ws_ecl" maxOccurs="unbounded"
+                    hpcc:docId="MyWS2-T03" hpcc:class="component">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="ProcessCluster" hpcc:displayName="VIPS" minOccurs="0" maxOccurs="unbounded"
+                                hpcc:itemType="wsecl_processcluster" hpcc:class="elementSet" hpcc:docId="MyWS2-T01">
+                        <xs:complexType>
+                            <xs:attribute name="name" type="xs:string" use="required" hpcc:presetValue="" hpcc:hidden="true"/>
+                            <xs:attribute name="roxie" type="xs:string" use="required" hpcc:sourceKey="roxiecluster_name"
+                                          hpcc:tooltip="Name of Roxie cluster"/>
+                            <xs:attribute name="vip" type="xs:string" hpcc:displayName="VIP" use="required" hpcc:tooltip=""/>
+                            <xs:attribute name="dnsInterval" type="xs:integer" hpcc:displayName="DNS Cache timeout interval"
+                                          hpcc:presetValue="-1"
+                                          hpcc:tooltip="DNS lookup cache timeout in seconds. Set to 0 to resolve DNS for every transaction.  Set to -1 (default) to keep DNS lookup cached indefinitely"/>
+                            <xs:attribute name="sendTargetToRoxie" type="xs:boolean" hpcc:displayName="Send Target To Roxie"
+                                          hpcc:presetValue="true"
+                                          hpcc:tooltip="Send roxie the target from which to run query (disable for backward compatibility issues)"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Target" hpcc:displayName="Restrict To Target(s)" hpcc:itemType="wsecl_target"
+                                maxOccurs="unbounded" hpcc:class="elementSet" hpcc:docId="MyWS2-T02">
+                        <xs:complexType>
+                            <!--todo: add source key when topology is added-->
+                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"
+                                          hpcc:tooltip=">WsEcl will only display specified targets, if none specified WsEcl will display all targets"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Properties" type="espservice_properties" minOccurs="0" maxOccurs="1"
+                                hpcc:hidden="true"/>
+
+                    <xs:annotation>
+
+                        <xs:appinfo hpcc:infoType="event">
+                            <eventType>create</eventType>
+                            <eventAction>insertXML</eventAction>
+                            <eventData>
+                                <itemType>wsecl</itemType>
+                                <xml>
+                                    <Properties bindingType="ws_eclSoapBinding" defaultPort="8002" defaultResourcesBasedn="ou=WsEcl,ou=EspServices,ou=ecl"
+                                                defaultSecurePort="18002" type="ws_ecl" plugin="ws_ecl"/>
+                                </xml>
+                            </eventData>
+                        </xs:appinfo>
+
+                        <xs:appinfo>
+                        <xs:appinfo hpcc:infoType="event">
+                            <eventType>create</eventType>
+                            <eventAction>insertXML</eventAction>
+                            <eventData>
+                            <itemType>espbinding</itemType>
+                            <match>
+                                <!-- match the event node's (the created espbinding) "service" attribute value
+                                     against all /Environment/Software/EspService nodes with a matching "name"
+                                     attribute value (other rules may limit the number of matches) -->
+                                <eventNodeAttribute>service</eventNodeAttribute>
+                                <targetPath>/Environment/Software/EspService</targetPath>
+                                <targetAttribute>name</targetAttribute>
+                            </match>
+                            <xml>
+                                <Authenticate access="Read" description="Root access to WS ECL service"
+                                              path="/" required="Read" resource="WsEclAccess"/>
+                                <AuthenticateFeature description="Access to WS ECL service"
+                                                     path="WsEclAccess" resource="WsEclAccess" service="ws_ecl"/>
+                            </xml>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" hpcc:diaplayName="Name" use="required"
+                              hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="ws_ecl"
+                              hpcc:tooltip="Name for this ESP service"/>
+
+                <xs:attribute name="description" type="xs:string" hpcc:displayName="Description"
+                              hpcc:presetValue="WS ECL Service"
+                              hpcc:tooltip="Allows creation of web services using ECL language"/>
+                <xs:attribute name="roxieTimeout" type="xs:unsignedInt" hpcc:displayName="Roxie Timeout(s)"
+                              hpcc:presetValue="300"
+                              hpcc:tooltip="Timeout (in seconds) for WsEcl connections to roxie (0 == wait forever)"/>
+                <xs:attribute name="workunitTimeout" type="xs:unsignedInt" hpcc:displayName="Workunit Timeout(s)"
+                              hpcc:presetValue="600"
+                              hpcc:tooltip="Timeout (in seconds), for WsEcl to wait for workunit to complete (0 == wait forever)"/>
+                <xs:attribute name="xsltMaxDepth" type="xs:unsignedInt" hpcc:displayName="XSLT Max Template Depth"
+                              hpcc:presetValue="100000"
+                              hpcc:tooltip="Maximum libxslt stylesheet template depth (affects size and complexity of dataset that can be rendered)"/>
+                <xs:attribute name="xsltMaxVars" type="xs:unsignedInt" hpcc:displayName="XSLT Max Template Variables"
+                              hpcc:presetValue="1000000"
+                              hpcc:tooltip="Maximum libxslt stylesheet template variables (affects size and complexity of dataset that can be rendered)"/>
+                <xs:attribute name="httpCallerIdHeader" type="xs:string" hpcc:displayName="HTTP HPCC Caller ID Header"
+                              hpcc:presetValue="HPCC-Caller-Id"
+                              hpcc:tooltip="HTTP Header field to use for sending and receiving CallerId"/>
+                <xs:attribute name="httpGlobalIdHeader" type="xs:string" hpcc:displayName="HTTP HPCC Global ID Header"
+                              hpcc:presetValue="HPCC-Global-Id"
+                              hpcc:tooltip="HTTP Header field to use for sending and receiving GlobalId"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>
+
+
+
+<Authenticate access="Read"
+              description="Root access to WS ECL service"
+              path="/"
+              required="Read"
+              resource="WsEclAccess"/>
+<AuthenticateFeature description="Access to WS ECL service"
+                     path="WsEclAccess"
+                     resource="WsEclAccess"
+                     service="ws_ecl"/>
+</Properties>
