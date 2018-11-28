@@ -395,7 +395,7 @@ extern jlib_decl const char *decodeJSON(const char *x, StringBuffer &ret, unsign
 extern jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);
 extern jlib_decl const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
 extern jlib_decl const char *decodeXML(const char *x, StringBuffer &ret, const char **errMark=NULL, IEntityHelper *entityHelper=NULL, bool strict = true);
-extern jlib_decl const char *encodeXML(const char *x, IIOStream &out, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
+extern jlib_decl void encodeXML(const char *x, IIOStream &out, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
 extern jlib_decl void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsigned len=(unsigned)-1);
 
 extern jlib_decl int utf8CharLen(unsigned char ch);

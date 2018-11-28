@@ -303,9 +303,9 @@ bool CESPServerLoggingAgent::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdate
     return true;
 }
 
-void CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
+IEspUpdateLogRequestWrap* CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
 {
-    logContentFilter.filterLogContent(req);
+    return logContentFilter.filterLogContent(req);
 }
 
 bool CESPServerLoggingAgent::sendHTTPRequest(StringBuffer& req, StringBuffer &resp, StringBuffer &status)

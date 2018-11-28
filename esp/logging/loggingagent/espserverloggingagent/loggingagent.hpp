@@ -57,7 +57,7 @@ public:
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
     virtual void getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID);
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
-    virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
+    virtual IEspUpdateLogRequestWrap* filterLogContent(IEspUpdateLogRequestWrap* req);
 };
 
 #endif //__ESPSERVERLOGGINGAGENT__HPP__
