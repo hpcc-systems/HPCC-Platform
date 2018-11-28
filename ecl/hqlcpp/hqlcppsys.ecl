@@ -894,6 +894,7 @@ const char * cppSystemText[]  = {
     "   set of any getSetResult(integer4 typeCode, unsigned4 elemSize) : method,entrypoint='getSetResult';",
 
     "   compileEmbeddedScript(const utf8 script) : method,entrypoint='compileEmbeddedScript';",
+    "   loadCompiledScript(const data script) : method,entrypoint='loadCompiledScript';",
     "   utf8 substituteEmbeddedScript(const utf8 script, const utf8 fields, const utf8 substitute) : eclrtl,include,pure,entrypoint='rtlSubstituteEmbeddedScript';",
     "   import(const utf8 script) : method,entrypoint='importFunction';",
     "   varstring registerTimer(unsigned4 id, const varstring name) : ctxmethod;",

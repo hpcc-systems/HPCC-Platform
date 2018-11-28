@@ -6557,7 +6557,10 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
         IHqlExpression *query = bodyCode->queryChild(0);
         if (!query->queryValue())
         {
-            newFormals.append(*createParameter(__queryId, newFormals.length(), LINK(unknownUtf8Type), attrs));
+            if (bodyCode->hasAttribute(precompileAtom))
+                newFormals.append(*createParameter(__queryId, newFormals.length(), LINK(unknownDataType), attrs));
+            else
+                newFormals.append(*createParameter(__queryId, newFormals.length(), LINK(unknownUtf8Type), attrs));
             newDefaults.append(*LINK(query));
         }
 

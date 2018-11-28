@@ -19,6 +19,7 @@
 #include <jni.h>
 #include "jexcept.hpp"
 #include "jthread.hpp"
+#include "junicode.hpp"
 #include "hqlplugins.hpp"
 #include "deftype.hpp"
 #include "eclhelper.hpp"
@@ -42,6 +43,10 @@ static const char * compatibleVersions[] = {
     NULL };
 
 static const char *version = "Java Embed Helper 1.0.0";
+
+#ifdef _DEBUG
+//#define TRACE_CLASSFILE
+#endif
 
 extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
@@ -130,6 +135,7 @@ public:
 
         // Options we know we always want set
         optionStrings.append("-Xrs");
+        //optionStrings.append("-XX:+TraceClassLoading");
 #ifdef RLIMIT_STACK
         // JVM has a habit of reducing the stack limit on main thread to 1M - probably dates back to when it was actually an increase...
         StringBuffer stackOption("-Xss");
@@ -162,7 +168,7 @@ public:
         vm_args.nOptions = optionStrings.length();
         vm_args.options = options;
         vm_args.ignoreUnrecognized = true;
-        vm_args.version = JNI_VERSION_1_6;
+        vm_args.version = JNI_VERSION_1_8;
 
         /* load and initialize a Java VM, return a JNI interface pointer in env */
         JNIEnv *env;       /* receives pointer to native method interface */
@@ -172,6 +178,7 @@ public:
 
         if (createResult != 0)
             throw MakeStringException(0, "javaembed: Unable to initialize JVM (%d)",createResult);
+        // DBGLOG("JNI environment version %x loaded", env->GetVersion()); // Comes out a bit too early
     }
     ~JavaGlobalState()
     {
@@ -252,11 +259,11 @@ protected:
     {
         Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(row));
     }
-    JavaObjectAccessor(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow)
+    JavaObjectAccessor(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jclass _Class)
     : JNIenv(_JNIenv), outerRow(_outerRow), idx(0), limit(0), inSet(false), inDataSet(false)
     {
         row = NULL;
-        Class = NULL;
+        Class = (jclass) JNIenv->NewGlobalRef(_Class);
     }
     ~JavaObjectAccessor()
     {
@@ -678,12 +685,9 @@ class JavaObjectBuilder : public JavaObjectAccessor, implements IFieldProcessor
 {
 public:
     IMPLEMENT_IINTERFACE;
-    JavaObjectBuilder(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, const char *className)
-    : JavaObjectAccessor(_JNIenv, _outerRow)
+    JavaObjectBuilder(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jclass _Class)
+    : JavaObjectAccessor(_JNIenv, _outerRow, _Class)
     {
-        JNIenv->ExceptionClear();
-        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->FindClass(className));  // MORE - should use the custom classloader, once that fix is merged
-        checkException();
         setConstructor();
     }
     virtual void processString(unsigned numchars, const char *text, const RtlFieldInfo * field)
@@ -1035,7 +1039,7 @@ protected:
             jstring name = (jstring) JNIenv->CallObjectMethod(Class, getNameMethod);
             checkException();
             const char *nameText = JNIenv->GetStringUTFChars(name, NULL);
-            VStringBuffer message("javaembed: no suitable constructor for field %s", nameText);
+            VStringBuffer message("javaembed: no suitable constructor for class %s", nameText);
             JNIenv->ReleaseStringUTFChars(name, nameText);
             rtlFail(0, message.str());
         }
@@ -1050,7 +1054,7 @@ protected:
 class ECLDatasetIterator : public CInterfaceOf<IInterface>
 {
 public:
-    ECLDatasetIterator(JNIEnv *JNIenv, const RtlTypeInfo *_typeInfo, const char *className, IRowStream * _val)
+    ECLDatasetIterator(JNIEnv *JNIenv, const RtlTypeInfo *_typeInfo, jclass className, IRowStream * _val)
     : typeInfo(_typeInfo), val(_val),
       dummyField("<row>", NULL, typeInfo),
       javaBuilder(JNIenv, &dummyField, className)
@@ -1507,7 +1511,7 @@ public:
         javaClass = NULL;
         javaMethodID = NULL;
         prevClassPath.set("dummy");  // Forces the call below to actually do something...
-        setThreadClassLoader("");
+        setThreadClassLoader("", 0, nullptr);
     }
     ~JavaThreadContext()
     {
@@ -1565,7 +1569,7 @@ public:
         return systemClassLoaderObj;
     }
 
-    void setThreadClassLoader(jobject classLoader)
+    void setThreadClassLoader(jobject classLoader, size32_t bytecodeLen, const byte *bytecode)
     {
         JNIenv->ExceptionClear();
         jclass javaLangThreadClass = JNIenv->FindClass("java/lang/Thread");
@@ -1597,11 +1601,11 @@ public:
         return contextClassLoaderObj;
     }
 
-    void setThreadClassLoader(const char *classPath)
+    void setThreadClassLoader(const char *classPath, size32_t bytecodeLen, const byte *bytecode)
     {
-        if (classPath && *classPath)
+        if (bytecodeLen || (classPath && *classPath))
         {
-            if (prevClassPath && strcmp(classPath, prevClassPath) == 0)
+            if (!bytecodeLen && prevClassPath && classPath && strcmp(classPath, prevClassPath) == 0)  // MORE - caching of inline classes is important too...
                 return;
             jclass URLcls = JNIenv->FindClass("java/net/URL");
             checkException();
@@ -1626,29 +1630,40 @@ public:
                 JNIenv->DeleteLocalRef(jstr);
             }
             checkException();
-            jclass customLoaderClass = JNIenv->FindClass("java/net/URLClassLoader");
+            jclass customLoaderClass = JNIenv->FindClass("com/HPCCSystems/HpccClassLoader");
             checkException();
-            jmethodID newInstance = JNIenv->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;)Ljava/net/URLClassLoader;");
+            jmethodID newInstance = JNIenv->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;IJLjava/lang/String;)Lcom/HPCCSystems/HpccClassLoader;");
             checkException();
-            jobject contextClassLoaderObj = JNIenv->NewGlobalRef(JNIenv->CallStaticObjectMethod(customLoaderClass, newInstance, URLArray, getSystemClassLoader()));
+            jobject contextClassLoaderObj = JNIenv->NewGlobalRef(JNIenv->CallStaticObjectMethod(customLoaderClass, newInstance, URLArray, getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, JNIenv->NewStringUTF(helperLibraryName)));
             checkException();
             assertex(contextClassLoaderObj);
-            setThreadClassLoader(contextClassLoaderObj);
+            setThreadClassLoader(contextClassLoaderObj, bytecodeLen, bytecode);
             prevClassPath.set(classPath);
         }
         else
         {
             if (prevClassPath)
-                setThreadClassLoader(getSystemClassLoader());
+                setThreadClassLoader(getSystemClassLoader(), 0, nullptr);
             prevClassPath.clear();
         }
     }
 
-    inline void importFunction(size32_t lenChars, const char *utf, const char *options, jobject instance)
+    jclass loadClass(const char *className)
+    {
+        JNIenv->ExceptionClear();
+        jobject classLoader = getThreadClassLoader();
+        jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+        jstring classNameString = JNIenv->NewStringUTF(className);
+        jclass Class = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, classNameString);
+        checkException();
+        return Class;
+    }
+
+    inline void importFunction(size32_t lenChars, const char *utf, const char *classpath, size32_t bytecodeLen, const byte *bytecode, jobject instance)
     {
         size32_t bytes = rtlUtf8Size(lenChars, utf);
         StringBuffer text(bytes, utf);
-        setThreadClassLoader(options);
+        setThreadClassLoader(classpath, bytecodeLen, bytecode);
 
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
@@ -2508,6 +2523,318 @@ public:
 // Each call to a Java function will use a new JavaEmbedScriptContext object
 #define MAX_JNI_ARGS 10
 
+class JavaClassReader
+{
+public:
+    JavaClassReader(const char *filename)
+    {
+        // Pull apart a class file to see its name and signature.
+        /* From https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1
+        ClassFile {
+            u4             magic;
+            u2             minor_version;
+            u2             major_version;
+            u2             constant_pool_count;
+            cp_info        constant_pool[constant_pool_count-1];
+            u2             access_flags;
+            u2             this_class;
+            u2             super_class;
+            u2             interfaces_count;
+            u2             interfaces[interfaces_count];
+            u2             fields_count;
+            field_info     fields[fields_count];
+            u2             methods_count;
+            method_info    methods[methods_count];
+            u2             attributes_count;
+            attribute_info attributes[attributes_count];
+        }
+       */
+#ifdef TRACE_CLASSFILE
+        DBGLOG("Reading class file created in %s", filename);
+#endif
+        Owned<IFile> file = createIFile(filename);
+        OwnedIFileIO io = file->open(IFOread);
+        assertex(io);
+        read(io, 0, (size32_t)-1, b);
+        b.setEndian(__BIG_ENDIAN);
+        uint32_t magic;
+        b.read(magic);
+        if (magic != 0xcafebabe)
+            throwUnexpected();
+        uint16_t major, minor, cpc;
+        b.read(major);
+        b.read(minor);
+        b.read(cpc);
+        constOffsets = new unsigned[cpc];
+        constOffsets[0] = 0;
+        for (int i = 0; i < cpc-1; i++)  // There are only cpc-1 entries, for reasons best known to the java designers
+        {
+            constOffsets[i+1] = b.getPos();
+            byte tag;
+            b.read(tag);
+            switch (tag)
+            {
+            case CONSTANT_Class:
+                uint16_t idx;
+                b.read(idx);
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: Class %u", i+1, idx);
+#endif
+                break;
+            case CONSTANT_Fieldref:
+            case CONSTANT_Methodref:
+            case CONSTANT_InterfaceMethodref:
+                uint16_t classIdx;
+                uint16_t nametypeIdx;
+                b.read(classIdx);
+                b.read(nametypeIdx);
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: ref(%u) class %u nametype %u", i+1, tag, classIdx, nametypeIdx);
+#endif
+                break;
+            case CONSTANT_String:
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: Tag %u", i+1, tag);
+#endif
+                b.skip(2);
+                break;
+            case CONSTANT_Integer:
+            case CONSTANT_Float:
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: Tag %u", i+1, tag);
+#endif
+                b.skip(4);
+                break;
+            case CONSTANT_Long:
+            case CONSTANT_Double:
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: Tag %u", i+1, tag);
+#endif
+                b.skip(8);
+                break;
+            case CONSTANT_NameAndType:
+                uint16_t nameIdx;
+                uint16_t descIdx;
+                b.read(nameIdx);
+                b.read(descIdx);
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: NameAndType(%u) name %u desc %u", i+1, tag, nameIdx, descIdx);
+#endif
+                break;
+            case CONSTANT_Utf8:
+                // length-prefixed
+                uint16_t length;
+                b.read(length);
+                const byte *val;
+                val = b.readDirect(length);
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: %.*s", i+1, length, val);
+#endif
+                break;
+            case CONSTANT_MethodHandle:
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: Tag %u", i+1, tag);
+#endif
+                b.skip(3);
+                break;
+            case CONSTANT_MethodType:
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: Tag %u", i+1, tag);
+#endif
+                b.skip(2);
+                break;
+            case CONSTANT_InvokeDynamic:
+#ifdef TRACE_CLASSFILE
+                DBGLOG("%u: Tag %u", i+1, tag);
+#endif
+                b.skip(4);
+                break;
+            default:
+                DBGLOG("Unexpected tag %u reading bytecode file", tag);
+                throwUnexpected();
+            }
+        }
+        uint16_t access_flags; b.read(access_flags);
+        uint16_t this_class; b.read(this_class);
+        uint16_t super_class; b.read(super_class);
+        uint16_t interfaces_count; b.read(interfaces_count);
+        b.skip(interfaces_count*sizeof(uint16_t));
+        uint16_t fields_count; b.read(fields_count);
+#ifdef TRACE_CLASSFILE
+        DBGLOG("Access flags %x this_class=%u super_class=%u interfaces_count=%u fields_count=%u", access_flags, this_class, super_class, interfaces_count, fields_count);
+#endif
+        for (unsigned i = 0; i < fields_count; i++)
+        {
+            b.skip(6);
+            uint16_t attr_count;
+            b.read(attr_count);
+            for (unsigned j = 0; j < attr_count; j++)
+            {
+                b.skip(2);
+                uint32_t attr_length;
+                b.read(attr_length);
+                b.skip(attr_length);
+            }
+        }
+        uint16_t methods_count; b.read(methods_count);
+#ifdef TRACE_CLASSFILE
+        DBGLOG("methods_count %u", methods_count);
+#endif
+        for (unsigned i = 0; i < methods_count; i++)
+        {
+            uint16_t flags; b.read(flags);
+            uint16_t name; b.read(name);
+            uint16_t desc; b.read(desc);
+#ifdef TRACE_CLASSFILE
+            DBGLOG("Method %u name %u desc %u flags %x", i, name, desc, flags);
+#endif
+            if ((flags & (ACC_PUBLIC|ACC_STATIC)) == (ACC_PUBLIC|ACC_STATIC))
+            {
+                StringAttr thisName;
+                readUtf(thisName, name);
+                if (!streq(thisName, "<init>"))
+                {
+                    StringAttr thisSig;
+                    readUtf(thisSig, desc);
+                    methodNames.append(thisName);
+                    methodSigs.append(thisSig);
+                }
+            }
+            uint16_t attr_count;
+            b.read(attr_count);
+            for (unsigned j = 0; j < attr_count; j++)
+            {
+                b.skip(2);
+                uint32_t attr_length;
+                b.read(attr_length);
+                b.skip(attr_length);
+            }
+        }
+        /* Don't bother reading attributes as they are not really interesting to us
+        uint16_t attributes_count; b.read(attributes_count);
+#ifdef TRACE_CLASSFILE
+        DBGLOG("attributes_count %u", attributes_count);
+#endif
+        for (unsigned i = 0; i < attributes_count; i++)
+        {
+            b.skip(2);
+            uint32_t attr_length;
+            b.read(attr_length);
+            b.skip(attr_length);
+        }
+#ifdef TRACE_CLASSFILE
+        DBGLOG("%u of %u bytes remaining", b.remaining(), b.length());
+#endif
+        */
+        // Now we can find this class name
+        readTag(this_class, CONSTANT_Class);
+        readUtf(className, readIdx());
+    }
+    ~JavaClassReader()
+    {
+        delete [] constOffsets;
+    }
+    StringBuffer & getSignature(StringBuffer &ret, unsigned idx)
+    {
+        if (!methodNames.isItem(idx))
+            throw makeStringException(0, "No public static method found");
+        return ret.appendf("%s.%s:%s", className.get(), methodNames.item(idx), methodSigs.item(idx));
+    }
+    MemoryBuffer &getEmbedData(MemoryBuffer &result, bool mainClass)
+    {
+        if (mainClass && methodNames.length() != 1)
+        {
+            StringBuffer err;
+            ForEachItemIn(idx, methodNames)
+            {
+                if (idx)
+                    err.append(", ");
+                if (idx == 5)
+                {
+                    err.append("...");
+                    break;
+                }
+                else
+                    err.append(methodNames[idx]);
+            }
+            if (err)
+                throw makeStringExceptionV(0, "Embedded java should export exactly one public static method (%s seen)", err.str());
+            else
+                throw makeStringException(0, "Embedded java did not export any public static methods");
+        }
+        result.setEndian(__BIG_ENDIAN);
+        StringBuffer signature;
+        if (mainClass)
+            getSignature(signature, 0);
+        else
+            signature.set(className);
+        result.append((size32_t) signature.length());
+        result.append(signature.length(), signature.str());
+        result.append((size32_t) b.length());
+        result.append(b);
+        return result;
+    }
+private:
+    uint16_t readIdx()
+    {
+        uint16_t idx;
+        b.read(idx);
+        return idx;
+    }
+    void readTag(unsigned idx, byte expected)
+    {
+        b.reset(constOffsets[idx]);
+        byte tag;
+        b.read(tag);
+        assertex(tag == expected);
+    }
+    void readUtf(StringAttr &dest, unsigned idx)
+    {
+        auto savepos = b.getPos();
+        readTag(idx, CONSTANT_Utf8);
+        uint16_t length;
+        b.read(length);
+        dest.set((const char *) b.readDirect(length), length);
+        b.reset(savepos);
+    }
+    enum const_type
+    {
+        CONSTANT_Class = 7,
+        CONSTANT_Fieldref = 9,
+        CONSTANT_Methodref = 10,
+        CONSTANT_InterfaceMethodref = 11,
+        CONSTANT_String = 8,
+        CONSTANT_Integer = 3,
+        CONSTANT_Float = 4,
+        CONSTANT_Long = 5,
+        CONSTANT_Double = 6,
+        CONSTANT_NameAndType = 12,
+        CONSTANT_Utf8 = 1,
+        CONSTANT_MethodHandle = 15,
+        CONSTANT_MethodType = 16,
+        CONSTANT_InvokeDynamic = 18
+    };
+    enum access_flag : uint16_t
+    {
+        ACC_PUBLIC    = 0x0001, //  Declared public; may be accessed from outside its package.
+        ACC_PRIVATE   = 0x0002, //  Declared private; accessible only within the defining class.
+        ACC_PROTECTED = 0x0004, //  Declared protected; may be accessed within subclasses.
+        ACC_STATIC    = 0x0008, //  Declared static.
+        ACC_FINAL     = 0x0010, //  Declared final; must not be overridden (§5.4.5).
+        ACC_SYNCHRONIZED = 0x0020, //  Declared synchronized; invocation is wrapped by a monitor use.
+        ACC_BRIDGE    = 0x0040, //  A bridge method, generated by the compiler.
+        ACC_VARARGS   = 0x0080, //  Declared with variable number of arguments.
+        ACC_NATIVE    = 0x0100, //  Declared native; implemented in a language other than Java.
+        ACC_ABSTRACT  = 0x0400, //  Declared abstract; no implementation is provided.
+        ACC_STRICT    = 0x0800, //  Declared strictfp; floating-point mode is FP-strict.
+        ACC_SYNTHETIC = 0x1000, //  Declared synthetic; not present in the source code.
+    };
+    MemoryBuffer b;
+    unsigned *constOffsets = nullptr;
+    StringAttr className;
+    StringArray methodNames;
+    StringArray methodSigs;
+};
 class JavaEmbedImportContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
@@ -2939,7 +3266,7 @@ public:
         const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
         assertex(typeInfo);
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-        JavaObjectBuilder javaBuilder(sharedCtx->JNIenv, &dummyField, className);
+        JavaObjectBuilder javaBuilder(sharedCtx->JNIenv, &dummyField, sharedCtx->loadClass(className));
         typeInfo->process(val, val, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
         jvalue v;
         v.l = javaBuilder.getObject();
@@ -3009,7 +3336,8 @@ public:
             const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
             assertex(typeInfo);
             RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-            JavaObjectBuilder javaBuilder(sharedCtx->JNIenv, &dummyField, className);
+            jclass Class = sharedCtx->loadClass(className);
+            JavaObjectBuilder javaBuilder(sharedCtx->JNIenv, &dummyField, Class);
             for (;;)
             {
                 roxiemem::OwnedConstRoxieRow thisRow = val->ungroupedNextRow();
@@ -3019,7 +3347,7 @@ public:
                 typeInfo->process(brow, brow, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
                 allRows.append(javaBuilder.getObject());
             }
-            jobjectArray array = sharedCtx->JNIenv->NewObjectArray(allRows.length(), sharedCtx->JNIenv->FindClass(className), NULL);
+            jobjectArray array = sharedCtx->JNIenv->NewObjectArray(allRows.length(), Class, NULL);
             ForEachItemIn(idx, allRows)
             {
                 sharedCtx->JNIenv->SetObjectArrayElement(array, idx, allRows.item(idx));
@@ -3037,7 +3365,7 @@ public:
             sharedCtx->checkException();
             jvalue param;
             const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
-            ECLDatasetIterator *iterator = new ECLDatasetIterator(sharedCtx->JNIenv, typeInfo, className, val);
+            ECLDatasetIterator *iterator = new ECLDatasetIterator(sharedCtx->JNIenv, typeInfo, sharedCtx->loadClass(className), val);
             param.j = (jlong) iterator;
             iterators.append(*iterator);
             jobject proxy = sharedCtx->JNIenv->NewObject(proxyClass, constructor, param, sharedCtx->JNIenv->NewStringUTF(helperLibraryName));
@@ -3052,7 +3380,7 @@ public:
     }
     virtual void importFunction(size32_t lenChars, const char *utf)
     {
-        sharedCtx->importFunction(lenChars, utf, classpath, instance);
+        sharedCtx->importFunction(lenChars, utf, classpath, 0, nullptr, instance);
         argsig = sharedCtx->querySignature();
         assertex(*argsig == '(');
         argsig++;
@@ -3067,10 +3395,23 @@ public:
             sharedCtx->callFunction(result, args);
     }
 
-    virtual void compileEmbeddedScript(size32_t lenChars, const char *script)
+    virtual void compileEmbeddedScript(size32_t lenChars, const char *_script)
     {
-        throwUnexpected();  // The java language helper supports only imported functions, not embedding java code in ECL.
+        throwUnexpected();
     }
+    virtual void loadCompiledScript(size32_t bytecodeLen, const void *bytecode) override
+    {
+        MemoryBuffer b;
+        b.setBuffer(bytecodeLen, (void *) bytecode, false);
+        b.setEndian(__BIG_ENDIAN);
+        uint32_t siglen; b.read(siglen);
+        const char *sig = (const char *) b.readDirect(siglen);
+        sharedCtx->importFunction(siglen, sig, classpath, bytecodeLen, (const byte *) bytecode, instance);
+        argsig = sharedCtx->querySignature();
+        assertex(*argsig == '(');
+        argsig++;
+    }
+
 protected:
     JavaThreadContext *sharedCtx;
     jvalue result;
@@ -3238,7 +3579,6 @@ public:
     }
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
-        assertex(flags & EFimport);
         return new JavaEmbedImportContext(queryContext(), NULL, options);
     }
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
@@ -3254,6 +3594,227 @@ extern DECL_EXPORT IEmbedContext* getEmbedContext()
     return new JavaEmbedContext;
 }
 
+static bool isValidIdentifier(const char *source)
+{
+    return isalnum(*source) || *source=='_' || *source=='$' || ::readUtf8Size(source)>1;   // This is not strictly accurate but probably good enough
+}
+
+static bool isFullClassFile(StringBuffer &className, bool &seenPublic, size32_t len, const char *source)
+{
+    // A heuristic to determine whether the supplied embedded source is a full class file or just a single method
+    // Basically, if we see keyword "class" before we see { then we assume it's a full file
+    // Also track whether the public keyword has been supplied
+    bool inLineComment = false;
+    bool inBlockComment = false;
+    seenPublic = false;
+    while (len)
+    {
+        if (inLineComment)
+        {
+            if (*source=='\n')
+                inLineComment = false;
+        }
+        else if (inBlockComment)
+        {
+            if (*source=='*' && len > 1 && source[1]=='/')
+            {
+                inBlockComment = false;
+                len--;
+                source++;
+            }
+        }
+        else switch(*source)
+        {
+        case '/':
+            if (len > 1)
+            {
+                if (source[1]=='*')
+                {
+                    inBlockComment = true;
+                    len--;
+                    source++;
+                }
+                else if (source[1]=='/')
+                    inLineComment = true;
+            }
+            break;
+        case '{':
+            return false;
+        default:
+            if (isValidIdentifier(source))
+            {
+                const char *start = source;
+                while (len && isValidIdentifier(source))
+                {
+                    source+=::readUtf8Size(source);
+                    len--;
+                }
+                if (source-start == 5 && memcmp(start, "class", source-start)==0)
+                {
+                    while (len && isspace(*source)) // MORE - a comment between the keyword and the classname will fail - tough.
+                    {
+                        source += ::readUtf8Size(source);
+                        len--;
+                    }
+                    start = source;
+                    while (len && isValidIdentifier(source))
+                    {
+                        source += ::readUtf8Size(source);
+                        len--;
+                    }
+                    className.append(source-start, start);
+                    return true;
+
+                }
+                else if (source-start == 6 && memcmp(start, "public", source-start)==0)
+                    seenPublic = true;
+            }
+            break;
+        }
+        source += ::readUtf8Size(source);
+        len--;
+    }
+    // If we get here then it doesn't have a { at all - we COULD say it needs the prototype too but for now, who knows...
+    return false;
+}
+
+static StringBuffer & cleanupJavaError(StringBuffer &ret, const char *err, unsigned lineNumberOffset)
+{
+    // Remove filename (as it's generated) and fix up line number. Skip errors that do not have line number in
+    const char *colon = strchr(err, ':');
+    if (colon && isdigit(colon[1]))
+    {
+        char *end;
+        unsigned lineno = strtoul(colon+1, &end, 10) - lineNumberOffset;
+        ret.appendf("(%u,1)%s", lineno, end);
+    }
+    return ret;
+}
+
+static void cleanupJavaErrors(StringBuffer &errors, unsigned lineNumberOffset)
+{
+    StringArray errlines;
+    errlines.appendList(errors, "\n");
+    errors.clear();
+    ForEachItemIn(idx, errlines)
+    {
+        StringBuffer cleaned;
+        cleanupJavaError(cleaned, errlines.item(idx), lineNumberOffset);
+        if (cleaned.length())
+            errors.append(cleaned).append('\n');
+    }
+}
+
+static thread_local unsigned prevHash = 0;
+static thread_local MemoryBuffer prevCompile;
+
+extern DECL_EXPORT void precompile(size32_t & __lenResult,void * & __result,size32_t charsBody,const char * body)
+{
+    unsigned sizeBody = rtlUtf8Size(charsBody, body);  // size in bytes
+    unsigned hash = rtlHash32Data(sizeBody,body,0xcafebabe);
+    if (hash==prevHash)  // Reusing result from the syntax check that normally immediately precedes a precompile
+    {
+        __lenResult = prevCompile.length();
+        __result = prevCompile.detachOwn();
+        prevHash = 0;
+        return;
+    }
+    StringBuffer tmpDirName;
+    getTempFilePath(tmpDirName, "javaembed", nullptr);
+    tmpDirName.append(PATHSEPCHAR).append("tmp.XXXXXX");
+    if (!mkdtemp((char *) tmpDirName.str()))
+        throw makeStringExceptionV(0, "Failed to create temporary directory %s (error %d)", tmpDirName.str(), errno);
+    Owned<IFile> tempDir = createIFile(tmpDirName);
+    StringBuffer classname;
+    bool seenPublic = false;
+    bool isFullClass = isFullClassFile(classname, seenPublic, charsBody, body);  // note - we pass in length in characters, not bytes
+    if (!isFullClass)
+        classname.set("embed");
+
+    VStringBuffer javafile("%s" PATHSEPSTR "%s.java", tmpDirName.str(), classname.str());
+    FILE *source = fopen(javafile.str(), "wt");
+    fprintf(source, "package com.HPCCSystems.embed.x%x;\n", hash);
+    unsigned lineNumberOffset = 1;  // for the /n above
+    if (isFullClass)
+        fprintf(source, "%.*s", sizeBody, body);
+    else
+    {
+        if (seenPublic)
+            fprintf(source, "public class embed\n{\n  %.*s\n}", sizeBody, body);
+        else
+            fprintf(source, "public class embed\n{\n  public static %.*s\n}", sizeBody, body);
+        lineNumberOffset += 2;  // for the /n's above
+    }
+    fclose(source);
+
+    MemoryBuffer result;
+    Owned<IPipeProcess> pipe = createPipeProcess();
+    VStringBuffer javac("javac %s", javafile.str());
+    if (!pipe->run("javac", javac, tmpDirName, false, false, true, 0, false))
+    {
+        throw makeStringException(0, "Failed to run javac");
+    }
+    else
+    {
+        StringBuffer errors;
+        Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
+        readSimpleStream(errors, *pipeReader);
+        pipe->closeError();
+        unsigned retcode = pipe->wait();
+        if (retcode)
+        {
+            if (errors.length())
+            {
+                DBGLOG("javaembed: %s", errors.str());
+                cleanupJavaErrors(errors, lineNumberOffset);
+                throw makeStringExceptionV(0, "%s", errors.str());
+            }
+            else
+                throw makeStringException(0, "Failed to precompile java code");
+        }
+        VStringBuffer mainfile("%s" PATHSEPSTR "%s.class", tmpDirName.str(), classname.str());
+        JavaClassReader reader(mainfile);
+        reader.getEmbedData(result, true);
+        removeFileTraceIfFail(mainfile);
+        // Now read nested classes
+        Owned<IDirectoryIterator> classFiles = tempDir->directoryFiles("*$*.class",false,false);
+        ForEach(*classFiles)
+        {
+            const char *thisFile = classFiles->query().queryFilename();
+            JavaClassReader reader(thisFile);
+            reader.getEmbedData(result, false);
+            removeFileTraceIfFail(thisFile);
+        }
+    }
+    removeFileTraceIfFail(javafile);
+    tempDir->remove();
+    __lenResult = result.length();
+    __result = result.detachOwn();
+}
+
+extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult,char * & __result,size32_t charsBody,const char * body)
+{
+    StringBuffer result;
+    try
+    {
+        size32_t ds;
+        rtlDataAttr d;
+        precompile(ds, d.refdata(), charsBody, body);
+        // Reuse result in the precompile that normally immediately follows
+        unsigned sizeBody = rtlUtf8Size(charsBody, body);  // size in bytes
+        prevHash = rtlHash32Data(sizeBody,body,0xcafebabe);
+        prevCompile.setBuffer(ds, d.detachdata(), true);
+    }
+    catch (IException *E)
+    {
+        StringBuffer msg;
+        result.append(E->errorMessage(msg));
+        E->Release();
+    }
+    __lenResult = result.length();
+    __result = result.detach();
+}
+
 } // namespace
 
 // Callbacks from java
@@ -3261,6 +3822,7 @@ extern DECL_EXPORT IEmbedContext* getEmbedContext()
 extern "C" {
 JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1hasNext (JNIEnv *, jclass, jlong);
 JNIEXPORT jobject JNICALL Java_com_HPCCSystems_HpccUtils__1next (JNIEnv *, jclass, jlong);
+JNIEXPORT jclass JNICALL Java_com_HPCCSystems_HpccClassLoader_defineClassForEmbed(JNIEnv *env, jobject loader, jint bytecodeLen, jlong bytecode, jstring name);
 }
 
 JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1hasNext (JNIEnv *JNIenv, jclass, jlong proxy)
@@ -3299,6 +3861,34 @@ JNIEXPORT jobject JNICALL Java_com_HPCCSystems_HpccUtils__1next (JNIEnv *JNIenv,
             JNIenv->ThrowNew(eClass, msg.str());
         return NULL;
     }
+}
+
+JNIEXPORT jclass JNICALL Java_com_HPCCSystems_HpccClassLoader_defineClassForEmbed(JNIEnv *env, jobject loader, jint datalen, jlong data, jstring name)
+{
+    const char *nameChars = env->GetStringUTFChars(name, nullptr);
+    size32_t namelen = strlen(nameChars);
+    MemoryBuffer b;
+    b.setBuffer(datalen, (void *) data, false);
+    b.setEndian(__BIG_ENDIAN);
+    jclass ret = nullptr;
+    while (b.remaining())
+    {
+        uint32_t siglen; b.read(siglen);
+        const char *sig = (const char *) b.readDirect(siglen);
+        uint32_t bytecodeLen; b.read(bytecodeLen);
+        const jbyte * bytecode = (const jbyte *) b.readDirect(bytecodeLen);
+        if (siglen >= namelen && memcmp(sig, nameChars, namelen)==0 && (namelen == siglen || sig[namelen] == '.'))
+        {
+#ifdef TRACE_CLASSFILE
+            DBGLOG("javaembed: loading class %s", nameChars);
+#endif
+            ret = env->DefineClass(nameChars, loader, bytecode, bytecodeLen);
+            break;
+        }
+    }
+    env->ReleaseStringUTFChars(name, nameChars);
+    return ret;
+
 }
 
 // Used for dynamically loading in ESDL

@@ -452,6 +452,10 @@ namespace couchbaseembed
            }
            virtual void compileEmbeddedScript(size32_t chars, const char *script);
            virtual void callFunction();
+           virtual void loadCompiledScript(size32_t chars, const void *_script) override
+           {
+               UNSUPPORTED("loadCompiledScript");
+           }
        protected:
            void execute();
            unsigned countBindings(const char *query);

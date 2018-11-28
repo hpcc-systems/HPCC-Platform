@@ -1345,6 +1345,10 @@ public:
         text.stripChar('\r');
         func.set(text.str());
     }
+    virtual void loadCompiledScript(size32_t chars, const void *_script) override
+    {
+        throwUnexpected();
+    }
 
     virtual void callFunction()
     {

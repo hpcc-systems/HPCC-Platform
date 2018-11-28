@@ -1666,14 +1666,19 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
 
     IValue *query = body->queryChild(0)->queryValue();
     assertex(query);
-    StringBuffer queryText;
-    query->getUTF8Value(queryText);
     if (!body->hasAttribute(prebindAtom))
     {
-        if (isImport)
-            __ctx->importFunction(queryText.lengthUtf8(), queryText.str());
+        if (body->hasAttribute(precompileAtom))
+            __ctx->loadCompiledScript(query->getSize(), query->queryValue());
         else
-            __ctx->compileEmbeddedScript(queryText.lengthUtf8(), queryText.str());
+        {
+            StringBuffer queryText;
+            query->getUTF8Value(queryText);
+            if (isImport)
+                __ctx->importFunction(queryText.lengthUtf8(), queryText.str());
+            else
+                __ctx->compileEmbeddedScript(queryText.lengthUtf8(), queryText.str());
+        }
     }
     // process all the parameters passed in
     unsigned numParam = expr->numChildren();
@@ -1784,10 +1789,17 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
     }
     if (body->hasAttribute(prebindAtom))
     {
-        if (isImport)
-            __ctx->importFunction(queryText.lengthUtf8(), queryText.str());
+        if (body->hasAttribute(precompileAtom))
+            __ctx->loadCompiledScript(query->getSize(), query->queryValue());
         else
-            __ctx->compileEmbeddedScript(queryText.lengthUtf8(), queryText.str());
+        {
+            StringBuffer queryText;
+            query->getUTF8Value(queryText);
+            if (isImport)
+                __ctx->importFunction(queryText.lengthUtf8(), queryText.str());
+            else
+                __ctx->compileEmbeddedScript(queryText.lengthUtf8(), queryText.str());
+        }
     }
     __ctx->callFunction();
 

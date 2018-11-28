@@ -1632,6 +1632,10 @@ public:
         if (stmtInfo->queryResultBindings().numColumns() == 0)
             lazyExecute();
     }
+    virtual void loadCompiledScript(size32_t chars, const void *_script) override
+    {
+        throwUnexpected();
+    }
 protected:
     void lazyExecute()
     {

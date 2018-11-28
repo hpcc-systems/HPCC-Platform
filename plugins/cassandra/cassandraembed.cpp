@@ -1806,6 +1806,10 @@ public:
             throw makeStringException(E->errorCode(), msg);
         }
     }
+    virtual void loadCompiledScript(size32_t chars, const void *_script) override
+    {
+        throwUnexpected();
+    }
 protected:
     void lazyExecute()
     {

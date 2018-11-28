@@ -74,6 +74,8 @@ WarnErrorCategory getCategory(const char * category)
         return CategorySecurity;
     if (strieq(category, "dfs"))
         return CategoryDFS;
+    if (strieq(category, "embed"))
+        return CategoryEmbed;
     return CategoryUnknown;
 }
 
