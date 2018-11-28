@@ -1,5 +1,6 @@
 ﻿import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
+import * as arrayUtil from "dojo/_base/array";
 import * as Memory from "dojo/store/Memory";
 
 import * as WsSMC from "./WsSMC";
@@ -40,6 +41,7 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
 
     resume: function () {
         var context = this;
+        if (!this.QueueName) debugger;
         return WsSMC.ResumeQueue({
             request: {
                 ClusterType: this.ServerType,
@@ -268,15 +270,20 @@ var ServerJobQueue = declare([Queue], {
                 NetworkAddress: this.NetworkAddress
             }
         }).then(function (response) {
-            if (lang.exists("GetStatusServerInfoResponse.StatusServerInfo.ServerInfo", response)) {
-                context.updateData(response.GetStatusServerInfoResponse.StatusServerInfo.ServerInfo);
+            if (lang.exists("GetStatusServerInfoResponse.StatusServerInfo.ServerInfo.Queues.ServerJobQueue", response)) {
+                arrayUtil.forEach(response.GetStatusServerInfoResponse.StatusServerInfo.ServerInfo.Queues.ServerJobQueue, function (queueItem) {
+                    if (queueItem.QueueName === context.QueueName) {
+                        context.update(response.GetStatusServerInfoResponse.StatusServerInfo.ServerInfo);
+                        context.update(queueItem);
+                    }
+                });
             }
             return response;
         });
     },
 
     getDisplayName: function () {
-        return this.ServerName;
+        return this.ServerName + (this.QueueName ? " - " + this.QueueName : "");
     },
 
     isNormal: function () {
