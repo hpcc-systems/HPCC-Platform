@@ -147,6 +147,7 @@ define({root:
     DeleteSelectedDefinitions: "Delete selected definitions?",
     DeleteSelectedFiles: "Delete Selected Files?",
     DeleteSelectedGroups: "Delete selected group(s)?",
+    DeleteSelectedPackages:"Delete selected packages?",
     DeleteSelectedPermissions: "Delete selected permission(s)?",
     DeleteSelectedQueries: "Delete Selected Queries?",
     DeleteSelectedUsers: "Delete selected user(s)?",
