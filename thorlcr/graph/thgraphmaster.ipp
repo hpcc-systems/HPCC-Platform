@@ -35,6 +35,99 @@
 interface ILoadedDllEntry;
 interface IConstWUGraphProgress;
 
+class graphmaster_decl CThorStats : public CInterface
+{
+protected:
+    CJobBase &ctx;
+    unsigned __int64 max, min, tot, avg;
+    unsigned maxSkew, minSkew, minNode, maxNode;
+    UInt64Array counts;
+    StatisticKind kind;
+
+public:
+    CThorStats(CJobBase &ctx, StatisticKind _kind);
+    void reset();
+    virtual void processInfo();
+
+    unsigned __int64 queryTotal() { return tot; }
+    unsigned __int64 queryAverage() { return avg; }
+    unsigned __int64 queryMin() { return min; }
+    unsigned __int64 queryMax() { return max; }
+    unsigned queryMinSkew() { return minSkew; }
+    unsigned queryMaxSkew() { return maxSkew; }
+    unsigned queryMaxNode() { return maxNode; }
+    unsigned queryMinNode() { return minNode; }
+
+    void extract(unsigned node, const CRuntimeStatisticCollection & stats);
+    void set(unsigned node, unsigned __int64 count);
+    void getTotalStat(IStatisticGatherer & stats);
+    void getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual);
+
+protected:
+    void processTotal();
+    void calculateSkew();
+    void tallyValue(unsigned __int64 value, unsigned node);
+};
+
+class graphmaster_decl CThorStatsCollection : public CInterface
+{
+public:
+    CThorStatsCollection(CJobBase &ctx, const StatisticsMapping & _mapping) : mapping(_mapping)
+    {
+        unsigned num = mapping.numStatistics();
+        stats = new Owned<CThorStats>[num];
+        for (unsigned i=0; i < num; i++)
+            stats[i].setown(new CThorStats(ctx, mapping.getKind(i)));
+    }
+    ~CThorStatsCollection()
+    {
+        delete [] stats;
+    }
+
+    void deserializeMerge(unsigned node, MemoryBuffer & mb)
+    {
+        CRuntimeStatisticCollection nodeStats(mapping);
+        nodeStats.deserialize(mb);
+        extract(node, nodeStats);
+    }
+
+    void extract(unsigned node, const CRuntimeStatisticCollection & source)
+    {
+        for (unsigned i=0; i < mapping.numStatistics(); i++)
+            stats[i]->extract(node, source);
+    }
+
+    void getStats(IStatisticGatherer & result)
+    {
+        for (unsigned i=0; i < mapping.numStatistics(); i++)
+        {
+            stats[i]->getStats(result, false);
+        }
+    }
+
+private:
+    Owned<CThorStats> * stats;
+    const StatisticsMapping & mapping;
+};
+
+class graphmaster_decl CTimingInfo : public CThorStats
+{
+public:
+    CTimingInfo(CJobBase &ctx);
+    void getStats(IStatisticGatherer & stats) { CThorStats::getStats(stats, false); }
+};
+
+class graphmaster_decl ProgressInfo : public CThorStats
+{
+    unsigned startcount, stopcount;
+public:
+    ProgressInfo(CJobBase &ctx);
+
+    virtual void processInfo();
+    void getStats(IStatisticGatherer & stats);
+};
+typedef CIArrayOf<ProgressInfo> ProgressInfoArray;
+
 class CJobMaster;
 class CMasterGraphElement;
 class graphmaster_decl CMasterGraph : public CGraphBase
@@ -44,6 +137,7 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     Owned<IFatalHandler> fatalHandler;
     CriticalSection exceptCrit;
     bool sentGlobalInit = false;
+    Owned<CThorStats> statNumExecutions;
 
     CReplyCancelHandler activityInitMsgHandler, bcastMsgHandler, executeReplyMsgHandler;
 
@@ -67,6 +161,7 @@ public:
     bool serializeActivityInitData(unsigned slave, MemoryBuffer &mb, IThorActivityIterator &iter);
     void readActivityInitData(MemoryBuffer &mb, unsigned slave);
     bool deserializeStats(unsigned node, MemoryBuffer &mb);
+    void getStats(IStatisticGatherer &stats);
     virtual void setComplete(bool tf=true);
     virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async) override;
     virtual void execute(size32_t _parentExtractSz, const byte *parentExtract, bool checkDependencies, bool async) override;
@@ -184,101 +279,6 @@ public:
 };
 
 
-
-class graphmaster_decl CThorStats : public CInterface
-{
-protected:
-    CJobBase &ctx;
-    unsigned __int64 max, min, tot, avg;
-    unsigned maxSkew, minSkew, minNode, maxNode;
-    UInt64Array counts;
-    StatisticKind kind;
-
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CThorStats(CJobBase &ctx, StatisticKind _kind);
-    void reset();
-    virtual void processInfo();
-
-    unsigned __int64 queryTotal() { return tot; }
-    unsigned __int64 queryAverage() { return avg; }
-    unsigned __int64 queryMin() { return min; }
-    unsigned __int64 queryMax() { return max; }
-    unsigned queryMinSkew() { return minSkew; }
-    unsigned queryMaxSkew() { return maxSkew; }
-    unsigned queryMaxNode() { return maxNode; }
-    unsigned queryMinNode() { return minNode; }
-
-    void extract(unsigned node, const CRuntimeStatisticCollection & stats);
-    void set(unsigned node, unsigned __int64 count);
-    void getTotalStat(IStatisticGatherer & stats);
-    void getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual);
-
-protected:
-    void processTotal();
-    void calculateSkew();
-    void tallyValue(unsigned __int64 value, unsigned node);
-};
-
-class graphmaster_decl CThorStatsCollection : public CInterface
-{
-public:
-    CThorStatsCollection(CJobBase &ctx, const StatisticsMapping & _mapping) : mapping(_mapping)
-    {
-        unsigned num = mapping.numStatistics();
-        stats = new Owned<CThorStats>[num];
-        for (unsigned i=0; i < num; i++)
-            stats[i].setown(new CThorStats(ctx, mapping.getKind(i)));
-    }
-    ~CThorStatsCollection()
-    {
-        delete [] stats;
-    }
-
-    void deserializeMerge(unsigned node, MemoryBuffer & mb)
-    {
-        CRuntimeStatisticCollection nodeStats(mapping);
-        nodeStats.deserialize(mb);
-        extract(node, nodeStats);
-    }
-
-    void extract(unsigned node, const CRuntimeStatisticCollection & source)
-    {
-        for (unsigned i=0; i < mapping.numStatistics(); i++)
-            stats[i]->extract(node, source);
-    }
-
-    void getStats(IStatisticGatherer & result)
-    {
-        for (unsigned i=0; i < mapping.numStatistics(); i++)
-        {
-            stats[i]->getStats(result, false);
-        }
-    }
-
-private:
-    Owned<CThorStats> * stats;
-    const StatisticsMapping & mapping;
-};
-
-class graphmaster_decl CTimingInfo : public CThorStats
-{
-public:
-    CTimingInfo(CJobBase &ctx);
-    void getStats(IStatisticGatherer & stats) { CThorStats::getStats(stats, false); }
-};
-
-class graphmaster_decl ProgressInfo : public CThorStats
-{
-    unsigned startcount, stopcount;
-public:
-    ProgressInfo(CJobBase &ctx);
-
-    virtual void processInfo();
-    void getStats(IStatisticGatherer & stats);
-};
-typedef CIArrayOf<ProgressInfo> ProgressInfoArray;
 
 class graphmaster_decl CMasterActivity : public CActivityBase, implements IThreaded
 {

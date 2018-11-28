@@ -1218,6 +1218,7 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 {
     unsigned beginPos = mb.length();
     mb.append(queryGraphId());
+    mb.append(numExecuted);
     unsigned cPos = mb.length();
     unsigned count = 0;
     mb.append(count);

@@ -1379,6 +1379,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
             reset();
         else
             started = true;
+        ++numExecuted;
         Owned<IThorActivityIterator> iter = getConnectedIterator();
         ForEach(*iter)
         {
