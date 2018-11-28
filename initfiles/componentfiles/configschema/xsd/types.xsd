@@ -182,10 +182,18 @@
                 </xs:complexType>
             </xs:element>
         </xs:sequence>
-        <xs:attribute name="defaultPort" type="xs:string"/>
-        <xs:attribute name="defaultResourcesBasedn" type="xs:string"/>
-        <xs:attribute name="defaultSecurePort" type="xs:string"/>
-        <xs:attribute name="type" type="xs:string"/>
+        <xs:attribute name="bindingType" type="xs:string" hpcc:displayName="Binding Type"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="defaultPort" type="xs:string" hpcc:displayName="Default Port"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="defaultResourcesBasedn" type="xs:string" hpcc:displayName="Default Resources Base DN"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="defaultSecurePort" type="xs:string" hpcc:displayName="Default Secure Port"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="type" type="xs:string" hpcc:displayName="Type"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="plugin" type="xs:string" hpcc:displayName="Plugin"
+                      hpcc:tooltip=""/>
     </xs:complexType>
 
     <xs:attributeGroup name="buildInfo" hpcc:groupByName="Attributes">
