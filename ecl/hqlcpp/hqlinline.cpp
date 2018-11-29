@@ -325,6 +325,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     }
     case no_inlinetable:
         {
+            if (expr->hasAttribute(distributedAtom))
+                return 0;
             IHqlExpression * transforms = expr->queryChild(0);
             if (transformListContainsSkip(transforms))
                 return 0;

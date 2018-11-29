@@ -945,9 +945,73 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         if (matchesBoolean(prebind, true))
             args.append(*createAttribute(prebindAtom));
         OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
+        bool failedSyntaxCheck = false;
         if (syntaxCheckFunc && !isImport)
         {
-            // MORE - create an expression that calls it, and const fold it, I guess....
+            HqlExprArray syntaxCheckArgs;
+            embedText->unwindList(syntaxCheckArgs, no_comma);
+            OwnedHqlExpr syntax = createBoundFunction(this, syntaxCheckFunc, syntaxCheckArgs, lookupCtx.functionCache, true);
+            OwnedHqlExpr folded = foldHqlExpression(syntax);
+            if (folded->queryValue())
+            {
+                StringBuffer errors;
+                folded->queryValue()->getStringValue(errors);
+                if (errors.length())
+                {
+                    StringArray errlines;
+                    errlines.appendList(errors, "\n");
+                    ForEachItemIn(idx, errlines)
+                    {
+                        const char *err = errlines.item(idx);
+                        if (strlen(err))
+                        {
+                            ECLlocation pos(errpos.pos);
+                            unsigned line, col;
+                            char dummy;
+                            if (sscanf(err, "(%u,%u):%c", &line, &col, &dummy)==3)
+                            {
+                                err = strchr(err, ':') + 1;
+                                while (isspace(*err))
+                                    err++;
+                                pos.lineno = embedText->getStartLine()+line-1;
+                                pos.column = col;
+                                pos.position = 0;
+                            }
+                            if (strnicmp(err, "warning:", 8)==0)
+                            {
+                                err = strchr(err, ':') + 1;
+                                while (isspace(*err))
+                                    err++;
+                                reportWarning(CategoryEmbed, WRN_EMBEDWARNING, pos, "%s", err);
+                            }
+                            else
+                            {
+                                if (strnicmp(err, "error:", 6)==0)
+                                {
+                                    err = strchr(err, ':') + 1;
+                                    while (isspace(*err))
+                                        err++;
+                                }
+                                reportError(ERR_EMBEDERROR, pos, "%s", err);
+                                failedSyntaxCheck = true;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                DBGLOG("INTERNAL: syntaxCheck was not foldable");  // Ignore as no fatal? Warning? Terminate? Warning that defaults to error?
+            }
+        }
+        OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
+        if (precompile && !failedSyntaxCheck && !lookupCtx.syntaxChecking())
+        {
+            HqlExprArray precompileArgs;
+            embedText->unwindList(precompileArgs, no_comma);
+            // Replace queryText with compiled version of it
+            args.replace(*createBoundFunction(this, precompile, precompileArgs, lookupCtx.functionCache, true), 0);
+            args.append(*createAttribute(precompileAtom));
         }
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
         IHqlExpression *projectedAttr = queryAttribute(projectedAtom, args);
@@ -5724,7 +5788,7 @@ ITypeInfo *HqlGram::checkNumericGetType(attribute &a1)
 }
 
 
-IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute & recordAttr)
+IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute & recordAttr, IHqlExpression * attrs)
 {
     OwnedHqlExpr list = listAttr.getExpr();
     OwnedHqlExpr record = recordAttr.getExpr();
@@ -5737,7 +5801,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
     if ((list->getOperator() == no_list) && (list->numChildren() == 0))
     {
         OwnedHqlExpr list = createValue(no_null);
-        OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
+        OwnedHqlExpr table = createDataset(no_temptable, LINK(list), createComma(record.getClear(), LINK(attrs)));
         return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
     }
 
@@ -5777,7 +5841,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
     else if (childType && !field->queryType()->assignableFrom(childType))
         reportError(ERR_RECORD_NOT_MATCH_SET, recordAttr, "The field in the record does not match the type of the set elements");
     
-    OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
+    OwnedHqlExpr table = createDataset(no_temptable, LINK(list), createComma(record.getClear(), LINK(attrs)));
     return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
 }
 
@@ -11134,6 +11198,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ONLY: msg.append("ONLY"); break;
     case ONWARNING: msg.append("ONWARNING"); break;
     case OPT: msg.append("OPT"); break;
+    case __OPTION__: msg.append("__OPTION__"); break;
     case OR : msg.append("OR"); break;
     case ORDER: msg.append("ORDER"); break;
     case ORDERED: msg.append("ORDERED"); break;

@@ -1675,6 +1675,10 @@ public:
     {
         script.setown(sharedCtx->compileEmbeddedScript(lenChars, utf, argstring));
     }
+    virtual void loadCompiledScript(size32_t chars, const void *_script) override
+    {
+        throwUnexpected();
+    }
     virtual void setActivityOptions(const IThorActivityContext *ctx) override
     {
         Python3xEmbedContextBase::setActivityOptions(ctx);
@@ -1736,6 +1740,10 @@ public:
         script.setown(sharedCtx->importFunction(lenChars, utf));
     }
     virtual void compileEmbeddedScript(size32_t len, const char *text)
+    {
+        throwUnexpected();
+    }
+    virtual void loadCompiledScript(size32_t chars, const void *_script) override
     {
         throwUnexpected();
     }

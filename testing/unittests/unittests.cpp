@@ -183,9 +183,13 @@ int main(int argc, char* argv[])
 
     if (useDefaultLocations)
     {
+        StringBuffer binDir;
+        makeAbsolutePath(argv[0], binDir, true);
+
         // Default library location depends on the executable location...
         StringBuffer dir;
-        splitFilename(argv[0], &dir, &dir, NULL, NULL);
+        splitFilename(binDir.str(), &dir, &dir, NULL, NULL);
+
         dir.replaceString(PATHSEPSTR "bin" PATHSEPSTR, PATHSEPSTR "lib" PATHSEPSTR);
         if (verbose)
             DBGLOG("Adding default library location %s", dir.str());

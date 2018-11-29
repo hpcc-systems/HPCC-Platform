@@ -17,7 +17,11 @@
 
 EXPORT Language := SERVICE : plugin('javaembed')
   integer getEmbedContext():cpp,pure,namespace='javaembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()',fold;
+  DATA precompile(UTF8 body):cpp,pure,namespace='javaembed',entrypoint='precompile',fold;
+  STRING syntaxCheck(UTF8 body):cpp,pure,namespace='javaembed',entrypoint='syntaxCheck',fold;
 END;
 EXPORT getEmbedContext := Language.getEmbedContext;
+EXPORT precompile := Language.precompile;
+EXPORT syntaxCheck := Language.syntaxCheck;
 EXPORT boolean supportsImport := true;
-EXPORT boolean supportsScript := false;
+EXPORT boolean supportsScript := true;

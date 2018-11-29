@@ -70,6 +70,7 @@
 #define WRN_UNRESOLVED_SYMBOL       1053
 #define WRN_REQUIRES_SIGNED         1054
 #define WRN_DISALLOWED              1055
+#define WRN_EMBEDWARNING            1056
 
 //Do not define any warnings > 1099 - use the range below instead
 
@@ -436,6 +437,7 @@
 #define ERR_ASSOCIATED_SIDEEFFECT   2402
 #define ERR_INVALID_PROBABILITY     2403
 #define ERR_DEFAULT_VIRTUAL_CLASH   2404
+#define ERR_EMBEDERROR              2405
 
 #define ERR_CPP_COMPILE_ERROR       2999
 
