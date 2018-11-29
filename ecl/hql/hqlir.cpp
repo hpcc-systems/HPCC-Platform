@@ -290,7 +290,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,likely);
     EXPAND_CASE(no,unlikely);
     EXPAND_CASE(no,inline);
-    EXPAND_CASE(no,unused33);
+    EXPAND_CASE(no,nwaydistribute);
     EXPAND_CASE(no,unused34);
     EXPAND_CASE(no,unused35);
     EXPAND_CASE(no,unused36);

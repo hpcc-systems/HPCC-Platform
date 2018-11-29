@@ -1665,6 +1665,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         break;
     case no_distribute:
     case no_keyeddistribute:
+    case no_nwaydistribute:
         resources.setLightweight();
         setHashResources(expr, resources, options);
         break;

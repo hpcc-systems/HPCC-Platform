@@ -8244,8 +8244,24 @@ simpleDataSet
                         }
     | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' expression optDistributeAttrs ')' endTopFilter
                         {
-                            parser->normalizeExpression($6, type_numeric, false);
-                            $$.setExpr(createDataset(no_distribute, $3.getExpr(), createComma($6.getExpr(), $7.getExpr())));
+                            IHqlExpression *criterion = $6.queryExpr();
+                            node_operator op = no_distribute;
+                            if (criterion->isBoolean())
+                            {
+                                op = no_nwaydistribute;
+                            }
+                            else if (criterion->getOperator() == no_all)
+                            {
+                                //Special case DISTRIBUTE(ds, ALL) as DISTRIBUTE(ds, true) - i.e. distribute to all nodes.
+                                $6.clear();
+                                $6.setExpr(createConstant(true));
+                                op = no_nwaydistribute;
+                            }
+                            else
+                            {
+                                parser->normalizeExpression($6, type_numeric, false);
+                            }
+                            $$.setExpr(createDataset(op, $3.getExpr(), createComma($6.getExpr(), $7.getExpr())));
                             $$.setPosition($1);
                         }
     | DISTRIBUTE '(' startTopFilter startDistributeAttrs optDistributeAttrs ')' endTopFilter
