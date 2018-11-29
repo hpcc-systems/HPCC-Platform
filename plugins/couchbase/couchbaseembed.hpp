@@ -456,6 +456,8 @@ namespace couchbaseembed
            {
                UNSUPPORTED("loadCompiledScript");
            }
+           virtual void enter() override {}
+           virtual void exit() override {}
        protected:
            void execute();
            unsigned countBindings(const char *query);

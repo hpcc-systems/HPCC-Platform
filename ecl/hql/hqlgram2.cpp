@@ -944,6 +944,9 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         OwnedHqlExpr prebind = pluginScope->lookupSymbol(prebindId, LSFpublic, lookupCtx);
         if (matchesBoolean(prebind, true))
             args.append(*createAttribute(prebindAtom));
+        OwnedHqlExpr threadlocal = pluginScope->lookupSymbol(threadlocalId, LSFpublic, lookupCtx);
+        if (matchesBoolean(threadlocal, true))
+            args.append(*createAttribute(threadlocalAtom));
         OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
         bool failedSyntaxCheck = false;
         if (syntaxCheckFunc && !isImport)
@@ -1005,7 +1008,7 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
             }
         }
         OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
-        if (precompile && !failedSyntaxCheck && !lookupCtx.syntaxChecking())
+        if (precompile && !isImport && !failedSyntaxCheck && !lookupCtx.syntaxChecking())
         {
             HqlExprArray precompileArgs;
             embedText->unwindList(precompileArgs, no_comma);

@@ -896,6 +896,8 @@ public:
     {
         throwUnexpected();
     }
+    virtual void enter() override {}
+    virtual void exit() override {}
     virtual void importFunction(size32_t lenChars, const char *utf)
     {
         UNIMPLEMENTED; // Not sure if meaningful for js

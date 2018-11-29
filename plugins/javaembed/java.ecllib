@@ -25,3 +25,4 @@ EXPORT precompile := Language.precompile;
 EXPORT syntaxCheck := Language.syntaxCheck;
 EXPORT boolean supportsImport := true;
 EXPORT boolean supportsScript := true;
+EXPORT boolean threadlocal := true;

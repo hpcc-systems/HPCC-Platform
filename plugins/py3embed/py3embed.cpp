@@ -1679,6 +1679,8 @@ public:
     {
         throwUnexpected();
     }
+    virtual void enter() override {}
+    virtual void exit() override {}
     virtual void setActivityOptions(const IThorActivityContext *ctx) override
     {
         Python3xEmbedContextBase::setActivityOptions(ctx);
@@ -1747,6 +1749,8 @@ public:
     {
         throwUnexpected();
     }
+    virtual void enter() override {}
+    virtual void exit() override {}
     virtual void callFunction()
     {
         result.setown(PyObject_CallObject(script, args));
