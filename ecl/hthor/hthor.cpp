@@ -8266,24 +8266,83 @@ bool CHThorDiskReadBaseActivity::openNext()
                 actualFilter.appendFilters(fieldFilters);
 
             bool canSerializeTypeInfo = actualDiskMeta->queryTypeInfo()->canSerialize() && projectedDiskMeta->queryTypeInfo()->canSerialize();
-            for (unsigned copy=0; copy < numCopies; copy++)
+            if (canSerializeTypeInfo && (rt_binary == readType))
             {
-                RemoteFilename rfilename;
-                if (curPart)
-                    curPart->getFilename(rfilename,copy);
-                else
-                    ldFile->getPartFilename(rfilename,partNum,copy);
-                rfilename.getPath(file.clear());
-                filelist.append('\n').append(file);
-                try
+                for (unsigned copy=0; copy < numCopies; copy++)
                 {
-                    inputfile.setown(createIFile(rfilename));
-
-                    // NB: only binary handles can be remotely processed by dafilesrv at the moment
-
-                    StringBuffer path;
-                    if ((rt_binary != readType) || !canSerializeTypeInfo || !isRemoteReadCandidate(agent, rfilename, path))
+                    RemoteFilename rfilename;
+                    if (curPart)
+                        curPart->getFilename(rfilename,copy);
+                    else
+                        ldFile->getPartFilename(rfilename,partNum,copy);
+                    rfilename.getPath(file.clear());
+                    filelist.append('\n').append(file);
+                    try
                     {
+                        // NB: only binary handles can be remotely processed by dafilesrv at the moment
+
+                        StringBuffer path;
+                        if (isRemoteReadCandidate(agent, rfilename, path))
+                        {
+                            // Open a stream from remote file, having passed actual, expected, projected, and filters to it
+                            SocketEndpoint ep(rfilename.queryEndpoint());
+                            setDafsEndpointPort(ep);
+
+                            Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
+                            if (remoteFileIO)
+                            {
+                                StringBuffer tmp;
+                                remoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFileName.str());
+                                remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
+                                remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
+
+                                try
+                                {
+                                    remoteFileIO->ensureAvailable(); // force open now, because want to failover to other copies or legacy if fails
+                                }
+                                catch (IException *e)
+                                {
+                                    EXCLOG(e, nullptr);
+                                    e->Release();
+                                    continue; // try next copy and ultimately failover to local when no more copies
+                                }
+
+                                inputfile.setown(createIFile(rfilename));
+
+                                actualDiskMeta.set(projectedDiskMeta);
+                                expectedDiskMeta = projectedDiskMeta;
+                                actualFilter.clear();
+                                inputfileio.setown(remoteFileIO.getClear());
+                            }
+                        }
+                        if (inputfileio)
+                            break;
+                    }
+                    catch (IException *E)
+                    {
+                        if (saveOpenExc.get())
+                            E->Release();
+                        else
+                            saveOpenExc.setown(E);
+                    }
+                    closepart();
+                }
+            }
+            if (!inputfile)
+            {
+                for (unsigned copy=0; copy < numCopies; copy++)
+                {
+                    RemoteFilename rfilename;
+                    if (curPart)
+                        curPart->getFilename(rfilename,copy);
+                    else
+                        ldFile->getPartFilename(rfilename,partNum,copy);
+                    rfilename.getPath(file.clear());
+                    filelist.append('\n').append(file);
+                    try
+                    {
+                        inputfile.setown(createIFile(rfilename));
+
                         if (compressed)
                         {
                             Owned<IExpander> eexp;
@@ -8299,37 +8358,17 @@ bool CHThorDiskReadBaseActivity::openNext()
                         }
                         else
                             inputfileio.setown(inputfile->open(IFOread));
+                        if (inputfileio)
+                            break;
                     }
-                    else
+                    catch (IException *E)
                     {
-                        // Open a stream from remote file, having passed actual, expected, projected, and filters to it
-                        SocketEndpoint ep(rfilename.queryEndpoint());
-                        setDafsEndpointPort(ep);
-
-                        Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
-                        if (remoteFileIO)
-                        {
-                            StringBuffer tmp;
-                            remoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFileName.str());
-                            remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
-                            remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
-                            actualDiskMeta.set(projectedDiskMeta);
-                            expectedDiskMeta = projectedDiskMeta;
-                            actualFilter.clear();
-                            inputfileio.setown(remoteFileIO.getClear());
-                        }
+                        if (saveOpenExc.get())
+                            E->Release();
+                        else
+                            saveOpenExc.setown(E);
                     }
-                    if (inputfileio)
-                        break;
                 }
-                catch (IException *E)
-                {
-                    if (saveOpenExc.get())
-                        E->Release();
-                    else
-                        saveOpenExc.setown(E);
-                }
-                closepart();
             }
 
             //Check if the file requires translation, but translation is disabled
