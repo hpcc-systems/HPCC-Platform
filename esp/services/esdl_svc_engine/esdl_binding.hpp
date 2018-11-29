@@ -289,7 +289,7 @@ public:
 
     int onGetSampleXml(bool isRequest, IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     static void splitURLList(const char* urlList, StringBuffer& protocol,StringBuffer& UserName,StringBuffer& Password, StringBuffer& ipportlistbody, StringBuffer& path, StringBuffer& options);
-    static void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie );
+    static void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName = nullptr );
     static bool makeURL( StringBuffer& url, IPropertyTree& cfg );
 
     bool usesESDLDefinition(const char * name, int version);

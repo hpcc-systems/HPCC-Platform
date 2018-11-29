@@ -843,7 +843,7 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
     if(isroxie)
     {
         const char *tgtQueryName = tgtcfg->queryProp("@queryname");
-        if (tgtQueryName && *tgtQueryName)
+        if (!isEmptyString(tgtQueryName))
         {
             soapmsg.append("<soap:Body><").append(tgtQueryName).append(">");
             soapmsg.appendf("<_TransactionId>%s</_TransactionId>", context.queryTransactionID());
@@ -853,6 +853,28 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
 
             soapmsg.append(req.str());
             soapmsg.append("</").append(tgtQueryName).append("></soap:Body>");
+
+            auto cfgGateways = tgtcfg->queryBranch("Gateways");
+            if (cfgGateways)
+            {
+                auto baseXpath = cfgGateways->queryProp("@legacyTransformTarget");
+                if (!isEmptyString(baseXpath))
+                {
+                    Owned<IPTree> gws = createPTree("gateways", 0);
+                    Owned<IPTree> soapTree = createPTreeFromXMLString(soapmsg.append("</soap:Envelope>"), ipt_ordered);
+                    StringBuffer xpath(baseXpath);
+
+                    EsdlBindingImpl::transformGatewaysConfig(tgtcfg, gws, "row");
+                    xpath.replaceString("{$query}", tgtQueryName);
+                    xpath.replaceString("{$method}", mthdef.queryMethodName());
+                    xpath.replaceString("{$service}", srvdef.queryName());
+                    xpath.replaceString("{$request}", mthdef.queryRequestType());
+                    mergePTree(ensurePTree(soapTree, xpath), gws);
+                    toXML(soapTree, soapmsg.clear());
+                    soapmsg.setLength(strstr(soapmsg, "</soap:Envelope>") - soapmsg.str());
+                    soapmsg.trim();
+                }
+            }
         }
         else
             throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP",
@@ -871,7 +893,7 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
     soapmsg.append("</soap:Envelope>");
 
     const char *tgtUrl = tgtcfg->queryProp("@url");
-    if (tgtUrl && *tgtUrl)
+    if (!isEmptyString(tgtUrl))
     {
         if (crt)
         {
@@ -3119,7 +3141,7 @@ int EsdlBindingImpl::onGetSampleXml(bool isRequest, IEspContext &ctx, CHttpReque
     return 0;
 }
 
-void EsdlBindingImpl::transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie )
+void EsdlBindingImpl::transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName )
 {
     // Do we need to handle 'local FQDN'? It doesn't appear to be in the
     // Gateway element. Not sure where it's set but the RemoteNSClient
@@ -3131,6 +3153,8 @@ void EsdlBindingImpl::transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyT
         cfgIter->first();
         if( cfgIter->isValid() )
         {
+            const char* treeName = (!isEmptyString(altElementName) ? altElementName : "Gateway");
+
             while( cfgIter->isValid() )
             {
                 IPropertyTree& cfgGateway = cfgIter->query();
@@ -3141,11 +3165,11 @@ void EsdlBindingImpl::transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyT
                     cfgGateway.getProp("@name", service);
                     service.toLowerCase();
 
-                    Owned<IPropertyTree> gw = createPTree("Gateway", false);
+                    Owned<IPropertyTree> gw = createPTree(treeName, false);
                     gw->addProp("ServiceName", service.str());
                     gw->addProp("URL", url.str());
 
-                    forRoxie->addPropTree("Gateway", gw.getLink());
+                    forRoxie->addPropTree(treeName, gw.getLink());
                 }
                 else
                 {
