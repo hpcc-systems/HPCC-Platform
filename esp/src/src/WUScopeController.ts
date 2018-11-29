@@ -306,8 +306,11 @@ export class WUScopeController {
     }
 
     createVertex(vertex: ScopeVertex): VertexType {
-        let v = this.verticesMap[vertex._.Id];
         const attrs = vertex._.rawAttrs();
+        attrs["ID"] = vertex._.Id;
+        attrs["Parent ID"] = vertex.parent && vertex.parent._.Id;
+        attrs["Scope"] = vertex._.ScopeName;
+        let v = this.verticesMap[vertex._.Id];
         if (!v) {
             if (vertex._.ScopeType === "dummy") {
                 const parent = this.subgraphsMap[vertex.parent._.Id];
@@ -376,9 +379,12 @@ export class WUScopeController {
     }
 
     createEdge(edge: ScopeEdge): Edge | undefined {
+        const attrs = edge._.rawAttrs();
+        attrs["ID"] = edge._.Id;
+        attrs["Parent ID"] = edge.parent && edge.parent._.Id;
+        attrs["Scope"] = edge._.ScopeName;
         let e = this.edgesMap[edge._.Id];
         if (!e) {
-            const attrs = edge._.rawAttrs();
             const sourceV = this.verticesMap[edge.source._.Id];
             const targetV = this.verticesMap[edge.target._.Id];
             if (sourceV && targetV) {
@@ -411,6 +417,10 @@ export class WUScopeController {
                 this.rEdgesMap[e.id()] = edge;
             }
         }
+        if (e instanceof Edge) {
+            const label = this.format(this.edgeLabelTpl(), attrs);
+            e.text(label);
+        }
         return e;
     }
 
@@ -438,9 +448,6 @@ export class WUScopeController {
         const e = this.createEdge(edge);
         if (e) {
             const attrs = edge._.rawAttrs();
-            const formattedAttrs = edge._.formattedAttrs();
-            const label = this.format(this.edgeLabelTpl(), formattedAttrs);
-            e.text(label)
             const numSlaves = parseInt(attrs["NumSlaves"]);
             const numStarts = parseInt(attrs["NumStarts"]);
             const numStops = parseInt(attrs["NumStops"]);
