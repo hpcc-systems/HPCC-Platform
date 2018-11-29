@@ -11997,22 +11997,6 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
     funcctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
     funcctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
 
-    HqlExprArray noargs;
-    OwnedHqlExpr getPlugin = bindFunctionCall(language, noargs);
-    OwnedHqlExpr pluginPtr = createQuoted("Owned<IEmbedContext> __plugin", getPlugin->getType());
-    buildAssignToTemp(funcctx, pluginPtr, getPlugin);
-    StringBuffer createParam;
-    createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(ctx,");
-
-    if (functionBodyIsActivity(bodyCode))
-        createParam.append("activity,");
-    else
-        createParam.append("nullptr,");
-
-    createParam.append(isImport ? "EFimport" : "EFembed");
-    if (returnType->getTypeCode()==type_void)
-        createParam.append("|EFnoreturn");
-
     IHqlExpression *optionsParam = nullptr;
     IHqlExpression *queryParam = nullptr;
     unsigned numRealParams = 0;
@@ -12022,18 +12006,54 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
         if (formal->queryId()==__optionsId)
             optionsParam = formal;
         else if (formal->queryId()==__queryId)
-            queryParam = formal;
+            queryParam = formal;  // Query text is being passed in to the function
         else
             numRealParams++;
     }
+    OwnedHqlExpr query;  // The text of the query (or the name of the import)
+    if (queryParam)
+        query.setown(createActualFromFormal(queryParam));
+    else
+        query.set(bodyCode->queryChild(0));
+    IValue *queryVal = query->queryValue();
+
+    OwnedHqlExpr embedOptions;
+    if (optionsParam)
+        embedOptions.setown(createActualFromFormal(optionsParam));
+    else
+        embedOptions.setown(getEmbedOptionString(bodyCode));
+    IValue *optionVal = embedOptions->queryValue();
+
+    bool threadlocal = bodyCode->hasAttribute(_threadlocal_Atom) && queryVal != nullptr && optionVal != nullptr;
+    HqlExprArray noargs;
+    OwnedHqlExpr getPlugin = bindFunctionCall(language, noargs);
+    OwnedHqlExpr pluginPtr = createQuoted(threadlocal ? "static thread_local Owned<IEmbedContext> __plugin" : "Owned<IEmbedContext> __plugin", getPlugin->getType());
+    buildAssignToTemp(funcctx, pluginPtr, getPlugin);
+
+    StringBuffer createParam;
+    if (threadlocal)
+        createParam.append("static thread_local IEmbedFunctionContext *__ctx = __plugin->createFunctionContextEx(ctx,");
+    else
+        createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(ctx,");
+
+    if (functionBodyIsActivity(bodyCode))
+        createParam.append("activity,");
+    else
+        createParam.append("nullptr,");
+
+    createParam.append(isImport ? "EFimport" : "EFembed");
+    if (returnType->getTypeCode()==type_void)
+        createParam.append("|EFnoreturn");
+    if (threadlocal)
+        createParam.append("|EFthreadlocal");
+
     if (!numRealParams)
         createParam.append("|EFnoparams");
 
-    if (optionsParam)
+    if (embedOptions)
     {
-        OwnedHqlExpr folded = createActualFromFormal(optionsParam);
         CHqlBoundExpr bound;
-        buildExpr(funcctx, folded, bound);
+        buildExpr(funcctx, embedOptions, bound);
         createParam.append(",");
         generateExprCpp(createParam, bound.expr);
     }
@@ -12041,6 +12061,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
         createParam.append(",NULL");
     createParam.append(");");
     funcctx.addQuoted(createParam);
+    funcctx.addQuoted("EmbedContextBlock __b(__ctx);");
     OwnedHqlExpr ctxVar = createVariable("__ctx", makeBoolType());
 
     HqlExprArray scriptArgs;
@@ -12064,23 +12085,19 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
         LinkedHqlExpr substSearch = queryAttributeChild(bodyCode, projectedAtom, 0);
         assertex (substSearch);
         IValue *substValue = substSearch->queryValue();
-        if (queryParam || !substValue)
+        if (!queryVal || !substValue)
         {
+            // Have to do the substitution at runtime if query or substId are not constant
             HqlExprArray args;
-            if (queryParam)
-                args.append(*createActualFromFormal(queryParam));
-            else
-                args.append(*LINK(bodyCode->queryChild(0)));
+            args.append(*query.getLink());
             args.append(*createConstant(createUtf8Value(fieldlist.length()-1, fieldlist.str()+1, makeUtf8Type(UNKNOWN_LENGTH, NULL))));
             args.append(*LINK(substSearch));
             scriptArgs.append(*bindFunctionCall(substituteEmbeddedScriptId, args,makeUtf8Type(UNKNOWN_LENGTH, NULL)));
         }
         else
         {
-            IValue *query = bodyCode->queryChild(0)->queryValue();
-            assertex(query);
             StringBuffer origBody;
-            query->getUTF8Value(origBody);
+            queryVal->getUTF8Value(origBody);
             StringBuffer search;
             substValue->getUTF8Value(search);
             rtlDataAttr result;
@@ -12091,22 +12108,16 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
     }
     else
     {
-        if (queryParam)
-        {
-            OwnedHqlExpr query = createActualFromFormal(queryParam);
-            scriptArgs.append(*query.getClear());
-        }
-        else
-            scriptArgs.append(*LINK(bodyCode->queryChild(0)));
+        scriptArgs.append(*query.getLink());
     }
     IIdAtom *id;
     if (isImport)
         id = importId;
-    else if (bodyCode->hasAttribute(precompileAtom))
+    else if (bodyCode->hasAttribute(_precompile_Atom))
         id = loadCompiledScriptId;
     else
         id = compileEmbeddedScriptId;
-    if (!bodyCode->hasAttribute(prebindAtom))
+    if (!bodyCode->hasAttribute(_prebind_Atom))
         buildFunctionCall(funcctx, id, scriptArgs);
     ForEachChild(i, formals)
     {
@@ -12184,7 +12195,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
         args.append(*createActualFromFormal(param));
         buildFunctionCall(funcctx, bindFunc, args);
     }
-    if (bodyCode->hasAttribute(prebindAtom))
+    if (bodyCode->hasAttribute(_prebind_Atom))
         buildFunctionCall(funcctx, id, scriptArgs);
     funcctx.addQuotedLiteral("__ctx->callFunction();");
     IIdAtom * returnFunc;

@@ -1691,6 +1691,8 @@ public:
     {
         throwUnexpected();
     }
+    virtual void enter() override {}
+    virtual void exit() override {}
     virtual void setActivityOptions(const IThorActivityContext *ctx) override
     {
         Python27EmbedContextBase::setActivityOptions(ctx);
@@ -1764,6 +1766,8 @@ public:
     {
         throwUnexpected();
     }
+    virtual void enter() override {}
+    virtual void exit() override {}
     virtual void callFunction()
     {
         result.setown(PyObject_CallObject(script, args));
@@ -1813,14 +1817,14 @@ extern DECL_EXPORT IEmbedContext* getEmbedContext()
     return new Python27EmbedContext;
 }
 
-extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult,char * & __result,size32_t charsBody,const char * body, const char * parms)
+extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult, char * & __result, const char *funcname, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions)
 {
     StringBuffer result;
     try
     {
         checkThreadContext();
         Owned<Python27EmbedScriptContext> ctx = new Python27EmbedScriptContext(threadContext);
-        ctx->setargs(parms);
+        ctx->setargs(argNames);
         ctx->compileEmbeddedScript(charsBody, body);
     }
     catch (IException *E)

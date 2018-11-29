@@ -17,9 +17,6 @@
 
 EXPORT Language := SERVICE : plugin('v8embed')
   integer getEmbedContext():cpp,pure,namespace='javascriptLanguageHelper',fold,entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
-  boolean syntaxCheck(const varstring src):cpp,pure,namespace='javascriptLanguageHelper',entrypoint='syntaxCheck';
 END;
-EXPORT getEmbedContext := Language.getEmbedContext;
-EXPORT syntaxCheck := Language.syntaxCheck;
 EXPORT boolean supportsImport := false;
 EXPORT boolean supportsScript := true;

@@ -8290,9 +8290,9 @@ protected:
             if (streq(repeatsSeen.item(idx), typeStr))
             {
                 if (idx)
-                    return thisRepeat.appendf("S%d_", idx-1).str();
+                    return thisRepeat.clear().appendf("S%d_", idx-1).str();
                 else
-                    return thisRepeat.append("S_").str();
+                    return thisRepeat.clear().append("S_").str();
             }
         }
         // For compounds we need to add subtypes into the table too

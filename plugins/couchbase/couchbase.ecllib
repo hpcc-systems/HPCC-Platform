@@ -17,10 +17,8 @@
 
 EXPORT Language := SERVICE : plugin('couchbaseembed')
   boolean getEmbedContext():cpp,pure,namespace='couchbaseembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
-  boolean syntaxCheck(const varstring src):cpp,pure,namespace='couchbaseembed',entrypoint='syntaxCheck';
 END;
 
 EXPORT getEmbedContext := Language.getEmbedContext;
-EXPORT syntaxCheck := Language.syntaxCheck;
 EXPORT boolean supportsImport := false;
 EXPORT boolean supportsScript := true;
