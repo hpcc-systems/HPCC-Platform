@@ -9159,7 +9159,7 @@ simpleDataSet
                             $$.setExpr(createDataset(no_inlinetable, createValue(no_transformlist, makeNullType(), values), createComma(LINK(record), $7.getExpr())));
                             $$.setPosition($1);
                         }
-    | DATASET '(' thorFilenameOrList ',' beginCounterScope recordDef endCounterScope ')'
+    | DATASET '(' thorFilenameOrList ',' beginCounterScope dsRecordDef endCounterScope optDatasetFlags dsEnd
                         {
                             //NB: $3 is required to be a list, but uses thorfilename production to work around a s/r error
                             OwnedHqlExpr counter = $7.queryExpr();
@@ -9167,7 +9167,8 @@ simpleDataSet
                                 parser->reportError(ERR_ILL_HERE,$6,"Not expecting COUNTER for DATASET");
                             parser->normalizeExpression($3, type_set, false);
 
-                            $$.setExpr(parser->createDatasetFromList($3, $6), $1);
+                            OwnedHqlExpr attrs = $8.getExpr();
+                            $$.setExpr(parser->createDatasetFromList($3, $6, attrs), $1);
                         }
     | DATASET '(' WORKUNIT '(' expression ',' expression ')' ',' recordDef ')'
                         {
