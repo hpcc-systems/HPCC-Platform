@@ -119,9 +119,13 @@ void EnvironmentValue::initialize()
     if (!type.empty())
     {
         //
-        // type "prefix" means to use the auto generate value as a name prefix and to append numbers until a new unique name is
-        // found. ("prefix_" is a variation that adds an underbar (_) when appending numbers)
-        if (type == "prefix" || type=="prefix_")
+        // The "prefix" type uses the auto generate value to generate a unique value by appending a number until it is
+        // unique. There are three variations:
+        //   prefix & prefix_ - Use the value first by itself, then append an incrementing number, starting with 1,
+        //      until unique. prefix_ uses an _ between value and the number (value_3)
+        //   prefix# - always appends a number thus creating an incrementing unique value starting at 1
+        //      (value1, value2, value3, ...)
+        if (type == "prefix" || type=="prefix_" || "prefix#")
         {
             std::string connector = (type == "prefix_") ? "_" : "";
             std::string newName;
@@ -129,8 +133,8 @@ void EnvironmentValue::initialize()
             std::vector<std::string> curValues;
             m_pMyEnvNode.lock()->getAttributeValueForAllSiblings(m_name, curValues);
             size_t count = curValues.size();
-            newName = prefix;
-            size_t n = 0;
+            size_t n = (type == "prefix#") ? 1 : 0;
+            newName = ((type == "prefix#") ? (prefix + connector + std::to_string(n)) : prefix);
             while (n <= count + 1)
             {
                 bool found = false;

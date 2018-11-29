@@ -32,6 +32,7 @@ SchemaValue::SchemaValue(const std::string &name, bool isDefined) :
     bitMask.m_deprecated = 0;
     bitMask.m_isUnique = 0;
     bitMask.m_isDefined = isDefined;
+    bitMask.m_noOutput = 0;
 }
 
 

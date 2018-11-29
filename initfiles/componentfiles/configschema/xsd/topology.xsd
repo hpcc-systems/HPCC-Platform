@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="Topology" hpcc:displayName="Topology" hpcc:itemType="topology" minOccurs="0" maxOccurs="unbounded" hpcc:class="component">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="Cluster">
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:element name="EclAgentProcess" hpcc:displayName="ECL Agent Process" hpcc:itemType="topology_eclagentprocess" hpcc:class="elementSet"
+                                            maxOccurs="unbounded" hpcc:tooltip="Reference to ECL Agent Process">
+                                    <xs:complexType>
+                                        <xs:attribute name="process" type="xs:string" hpcc:displayName="Process" hpcc:sourceKey="eclagentprocess_name"
+                                                      hpcc:tooltip="Name of ECL Agent process added to this cluster"/>
+                                    </xs:complexType>
+                                </xs:element>
+                                <xs:element name="EclSchedulerProcess" hpcc:displayName="ECL Scheduler Process" hpcc:itemType="topology_eclschedulerprocess" hpcc:class="elementSet"
+                                            maxOccurs="unbounded" hpcc:tooltip="Reference to ECL Scheduler Process">
+                                    <xs:complexType>
+                                        <xs:attribute name="process" type="xs:string" hpcc:displayName="Process" hpcc:sourceKey="eclscheduler_name"
+                                                      hpcc:tooltip="Name of ECL Scheduler process added to this cluster"/>
+                                    </xs:complexType>
+                                </xs:element>
+                                <xs:element name="ThorCluster" hpcc:displayName="Thor Process" hpcc:itemType="topology_thorprocess" hpcc:class="elementSet"
+                                            maxOccurs="unbounded" hpcc:tooltip="Reference to Thor Process">
+                                    <xs:complexType>
+                                        <xs:attribute name="process" type="xs:string" hpcc:displayName="Process" hpcc:sourceKey="thornode_name"
+                                                      hpcc:tooltip="Name of Thor process added to this cluster"/>
+                                    </xs:complexType>
+                                </xs:element>
+                                <!-- todo EclServerProcess added via an insert in LN plugins-->
+                            </xs:sequence>
+                            <!-- Only name and prefix (screen names) are displayed currently, Which are used, required, etc. -->
+                            <xs:attribute name="alias" type="xs:string" hpcc:displayName="Alias" hpcc:tooltip="Need one"/>
+                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" hpcc:tooltip="Need one"/>
+                            <xs:attribute name="prefix" type="xs:string" hpcc:displayName="Prefix" hpcc:tooltip="Need one"/>
+
+                        </xs:complexType>
+                        alias="" name="thor400_44_sla" prefix="thor400_44_sla"
+                    </xs:element>
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"
+                              hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="topology"
+                              hpcc:uniqueKey="topology_name" hpcc:tooltip="Name for this Topology"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>

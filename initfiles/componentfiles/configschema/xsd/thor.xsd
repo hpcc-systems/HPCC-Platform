@@ -20,14 +20,210 @@
         xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
     <hpcc:insert hpcc:schemaPath="/Environment/Software">
-        <xs:element name="ThorCluster" hpcc:displayName="Thor Cluster" hpcc:itemType="" minOccurs="0" maxOccurs="unbounded" hpcc:class="component">
+        <xs:element name="ThorCluster" hpcc:displayName="Thor Cluster" hpcc:itemType="thor" minOccurs="0" maxOccurs="unbounded"
+                    hpcc:docId="Th.t1" hpcc:class="component">
             <xs:complexType>
                 <xs:sequence>
+                    <xs:element name="ThorSpareProcess" hpcc:displayName="Thor Spare Process" minOccurs="0"
+                                maxOccurs="unbounded" hpcc:class="elementSet">
+                        <xs:complexType>
+                            <xs:attribute name="computer" hpcc:displayName="Computer" type="nodeName" use="required"
+                                          hpcc:sourceKey="computer_name"
+                                          hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue"
+                                          hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
+                            <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="optional"
+                                          hpcc:readOnly="true" hpcc:noOutput="true"
+                                          hpcc:sourceKey="computer_netaddress"
+                                          hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
+                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Process"
+                                          hpcc:autoGenenerateType="prefix" hpcc:autoGenerateValue="spare"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="ThorSlaveProcess" hpcc:displayName="Thor Slave Process" minOccurs="0"
+                                maxOccurs="unbounded" hpcc:class="elementSet">
+                        <xs:complexType>
+                            <xs:attribute name="computer" hpcc:displayName="Computer" type="nodeName" use="required"
+                                          hpcc:sourceKey="computer_name"
+                                          hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue"
+                                          hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
+                            <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="optional"
+                                          hpcc:readOnly="true" hpcc:noOutput="true"
+                                          hpcc:sourceKey="computer_netaddress"
+                                          hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
+                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Process"
+                                          hpcc:autoGenenerateType="prefix" hpcc:autoGenerateValue="s"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="ThorMasterProcess" hpcc:displayName="Thor Master Process" minOccurs="0"
+                                maxOccurs="unbounded" hpcc:class="elementSet">
+                        <xs:complexType>
+                            <xs:attribute name="computer" hpcc:displayName="Computer" type="nodeName" use="required"
+                                          hpcc:sourceKey="computer_name"
+                                          hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue"
+                                          hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
+                            <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="optional"
+                                          hpcc:readOnly="true" hpcc:noOutput="true"
+                                          hpcc:sourceKey="computer_netaddress"
+                                          hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
+                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Process"
+                                          hpcc:autoGenenerateType="prefix" hpcc:autoGenerateValue="m"/>
+                        </xs:complexType>
+                    </xs:element>
+
+                    <xs:element name="SSH" hpcc:displayName="SSH Options" minOccurs="1" hpcc:class="valueSet" hpcc:docId="Th.t3">
+                        <xs:complexType>
+                            <xs:attribute name="SSHidentityfile" type="xs:string" hpcc:displayName="SSH Identity File"
+                                          hpcc:presetValue="$HOME/.ssh/id_rsa"
+                                          hpcc:tooltip="location of identity file (private key) on Thor master"/>
+                            <xs:attribute name="SSHusername" type="xs:string" hpcc:displayName="Heap Use Huge Pages"
+                                          hpcc:presetValue="hpcc" hpcc:tooltip="Username to use when running Thor slaves"/>
+                            <xs:attribute name="SSHpassword" type="xs:string" hpcc:displayName="SSH Password" hpcc:modifiers="password"
+                                          hpcc:requiredIf=".[@SSHusername]"
+                                          hpcc:tooltip="Fixed password - only required if no identity file present NB **insecure**"/>
+                            <xs:attribute name="SSHtimeout" type="xs:nonNegativeInteger" hpcc:displayName="SSH Timeout(s)"
+                                          hpcc:tooltip="Timeout in seconds for SSH connects"/>
+                            <xs:attribute name="SSHretries" type="xs:nonNegativeInteger" hpcc:displayName="SSH Retries" hpcc:presetValue="3"
+                                          hpcc:tooltip="Number of times to retry failed connect"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Debug" hpcc:displayName="Debug" minOccurs="1" hpcc:class="valueSet" hpcc:docId="Th.t2">
+                        <xs:complexType>
+                            <xs:attribute name="dllsToSlaves" type="xs:boolean" hpcc:displayName="DLLs To Slaves" hpcc:presetValue="true"
+                                          hpcc:tooltip="Controls whether query DLLs are broadcast to slaves at start of query, or loaded from master's shared directory"/>
+                            <xs:attribute name="crcReadEnabled" type="xs:boolean" hpcc:displayName="CRC Read Enabled" hpcc:presetValu="true"
+                                          hpcc:tooltip="Verify that a read file's CRC matches the published meta data CRC"/>
+                            <xs:attribute name="crcWriteEnabled" type="xs:boolean" hpcc:displayName="CRC Write Enabled" hpcc:presetValue="true"
+                                          hpcc:tooltip="Calculate and publish a CRC per published disk output file"/>
+                            <xs:attribute name="slaveDaliClient" type="xs:boolean" hpcc:displayName="Slave Dali Client" hpcc:presetValue="false"
+                                          hpcc:tooltip="Set to true if thor slaves require dali connectivity"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="SwapNode" hpcc:displayName="Swap Node" minOccurs="1" hpcc:docId="Th.t4" hpcc:class="valueSet">
+                        <xs:complexType>
+                            <xs:attribute name="AutoSwapNode" type="xs:boolean" hpcc:displayName="Auto Swap Node" hpcc:presetValue="false"
+                                          hpcc:tooltip="Failing nodes will be automatically swapped for spare nodes"/>
+                            <xs:attribute name="SwapNodeCheckPrimaryDrive" type="xs:boolean" hpcc:displayName="Swap Node Check Primary Drive"
+                                          hpcc:presetValue="true" hpcc:tooltip="Primary drive is checked for read/write"/>
+                            <xs:attribute name="SwapNodeCheckMirrorDrive" type="xs:boolean" hpcc:displayName="Swap Node Check Mirror Drive"
+                                          hpcc:presetValue="true" hpcc:tooltip="Mirror drive is checked for read/write"/>
+                            <xs:attribute name="SwapNodeMaxConcurrent" type="xs:nonNegativeInteger"
+                                          hpcc:displayName="Swap Node Max Concurrent" hpcc:presetValue="1"
+                                          hpcc:tooltip="Maximum number of concurrent automatic swaps (within the swap interval)"/>
+                            <xs:attribute name="SwapNodeInterval" type="xs:nonNegativeInteger" hpcc:displayName="Swap Node Interval(Hrs)" hpcc:presetValue="24"
+                                          hpcc:tooltip="Interval (in hours) for maximum concurrent swaps"/>
+                            <xs:attribute name="SwapNodeRestartJob" type="xs:boolean" hpcc:displayName="Swap Node Restart Job" hpcc:presetValue="false"
+                                          hpcc:tooltip="Restart job that failed prior to swap"/>
+                            <xs:attribute name="CheckAfterEveryJob" type="xs:boolean" hpcc:displayName="Check After Every Job" hpcc:presetValue="false"
+                                          hpcc:tooltip="Check nodes after every job (if false, only check after failed jobs)"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <!--This doesn't appear in config mgr or is empty in the environment DEPRECATED? -->
+                    <xs:element name="Storage" hpcc:displayName="Backup" hpcc:docId="Th.t5">
+                        <xs:complexType>
+                        </xs:complexType>
+                    </xs:element>
+
+
                 </xs:sequence>
+                <!--todo in the environment, there is a "computer" attribute, but it's not listed in the existing XSD, needed/used? What its value-->
                 <xs:attributeGroup ref="buildInfo"/>
                 <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="mythor"
                               hpcc:uniqueKey="thornode_name" hpcc:tooltip="Name for this thor node process"/>
                 <xs:attribute name="description" type="xs:string" hpcc:displayName="Description" hpcc:presetValue="Thor process" hpcc:tooltip="Description for this process"/>
+                <!--@XSD_PLUGIN_DEFINITION@ LN adds an attribute here, use new format to add it -->
+
+                <xs:attribute name="daliServers" type="xs:string" hpcc:displayName="Dali Server" use="required"
+                              hpcc:sourceKey="daliprocess_name" hpcc:tooltip="Specifies the dali server to which this thor is attached"/>
+                <xs:attribute name="externalProgDir" type="absolutePath" hpcc:displayName="External Prog Dir"
+                              hpcc:tooltip="If specified, external programs executed via PIPE will be started in the named directory"/>
+                <xs:attribute name="masterMemorySize" type="xs:nonNegativeInteger" hpcc:displayName="Master Memory Size(MB)"
+                              hpcc:tooltip="Memory (in MB) to use for rows on thor master. It will default to globalMemorySize if unset"/>
+                <xs:attribute name="fileCacheLimit" type="xs:nonNegativeInteger" hpcc:displayName="File Cache Limit(MB)"
+                              hpcc:presetValue="1800" hpcc:tooltip="File Cache limit (in MB). It will default to 1800 if unset"/>
+                <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" hpcc:displayName="Global Memory Size(MB)"
+                              hpcc:tooltip="Memory (in MB) to use for rows per Thor slave process. If unset, default = [75% of physical memory] / slavesPerNode"/>
+                <xs:attribute name="memorySpillAt" type="percent" hpcc:displayName="Memory Spill At(%)"
+                              hpcc:tooltip="Threshold that the memory manager should start requesting memory to be freed (percentage)"/>
+                <xs:attribute name="heapUseHugePages" type="xs:boolean" hpcc:displayName="Heap Use Huge Pages" hpcc:presetValue="false"
+                              hpcc:tooltip="Allow Thor master and slave to use memory from huge pages if they have been configured"/>
+                <xs:attribute name="heapMasterUseHugePages" type="xs:boolean" hpcc:displayName="Heap Master Use Huge Pages"
+                              hpcc:tooltip="Allow heapUseHugePages to be overridden for the master.  Useful to disable if running on a single machine"/>
+                <xs:attribute name="heapUseTransparentHugePages" type="xs:boolean"
+                              hpcc:displayName="Heap Use Transparent Huge Pages" hpcc:presetValue="true"
+                              hpcc:tooltip="Allow Thor master and slave to use memory from transparent huge pages"/>
+                <xs:attribute name="heapRetainMemory" type="xs:boolean" hpcc:displayName="Heap Retain Memory"
+                              hpcc:presetValue="false" hpcc:tooltip="Retain and do not return unused memory to the operating system"/>
+                <xs:attribute name="pluginsPath" type="relativePath" hpcc:displayName="Plugins Path" hpcc:presetValue="${PLUGINS_PATH}/"
+                              hpcc:tooltip=""/>
+                <!--Not sure about nodeGroup. It wants to default to the value of the name attribute above, but it might not be set yet-->
+                <xs:attribute name="nodeGroup" type="xs:string" hpcc:displayName="Node Group" hpcc:autoGenerateType="siblingValue"
+                              hpcc:autoGenerateValue="name" hpcc:tooltip="Name of a node group running Thor slaves. (if omitted uses same name as Thor)"/>
+                <xs:attribute name="defaultOutputNodeGroup" type="xs:string" hpcc:displayName="Default Output Node Group"
+                              hpcc:tooltip="Default group to output to. Leave blank if output defaults to local cluster"/>
+                <xs:attribute name="masterport" type="xs:nonNegativeInteger" hpcc:displayName="Master Port" hpcc:presetValue="20000"
+                              hpcc:tooltip="Base port to use for master"/>
+                <!--should we have some mechanism to ensure no overlap with ports ?-->
+                <xs:attribute name="slaveport" type="xs:nonNegativeInteger" hpcc:displayName="slavePort" hpcc:presetValue="20100"
+                              hpcc:tooltip="Base port to use for slaves"/>
+                <xs:attribute name="localThor" type="xs:boolean" hpcc:displayname="Local Thor" hpcc:presetValue="false"
+                              hpcc:tooltip="Assume all slaves are local to this machine rather than started via agent"/>
+                <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" hpcc:displayname="Slaves Per Node" hpcc:presetValue="1"
+                              hpcc:tooltip="Defines how many slave processes there are on each node"/>
+                <xs:attribute name="channelsPerSlave" type="xs:nonNegativeInteger" hpcc:displayname="Channels Per slive" hpcc:presetValue="1"
+                              hpcc:tooltip="Defines how many slave channels per slave process"/>
+                <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" hpcc:displayName="Local Thor Port Inc" hpcc:presetValue="20"
+                              hpcc:tooltip="Port increment between slaves on same node"/>
+                <xs:attribute name="multiThorMemoryThreshold" type="xs:nonNegativeInteger" hpcc:displayName="Multi Thor Memory Threshold(MB)"
+                              hpcc:tooltip="Memory usage (in MB) beneath which multiple Thors will run in parallel. Leave blank if no limit"/>
+                <xs:attribute name="multiThorPriorityLock" type="xs:boolean" hpcc:displayName="Mult Thor Priority Lock" hpcc:presetValue="false"
+                              hpcc:tooltip="If set true, prevents lower priority jobs starting on a multithor"/>
+                <xs:attribute name="multiThorExclusionLockName" type="xs:string" hpcc:displayName="Multi Thor Exclusion Lock Name"
+                              hpcc:tooltip="Prevents other thors (on any queue) sharing the same multiThorExclusionLockName name from running jobs at the same time"/>
+                <!--todo seems this needs to be true for multinode, what does that mean? (see old xsd and search for autogendefaultformultinode) -->
+                <xs:attribute name="replicateOutputs" type="xs:boolean" hpcc:displayName="Replicate Outputs" hpcc:presetValue="true"
+                              hpcc:tooltip="Replicate output files"/>
+                <xs:attribute name="replicateAsync" type="xs:boolean" hpcc:displayName="Replicate Async" hpcc:presetValue="true"
+                              hpcc:tooltip="Perform output replication in the background, allowing thor to process next task"/>
+                <xs:attribute name="autoCopyBackup" type="xs:boolean" hpcc:displayName="Auto Copy Backup" hpcc:presetValue="false"
+                              hpcc:tooltip="If files at primary location are missing, copy into place from backup location"/>
+                <xs:attribute name="checkPointRecovery" type="xs:boolean" hpcc:dislayName="Check Point Recovery" hpcc:presetValue="false"
+                              hpcc:tooltip="Enable support for continuing failed workunits from point of failure"/>
+                <xs:attribute name="watchdogEnabled" type="xs:boolean" hpcc:displayName="Watchdog Enabled" hpcc:presetValue="true"
+                              hpcc:tooltip="Enable/disable watchdog process (periodically checking slaves are still alive)"/>
+                <xs:attribute name="watchdogProgressEnabled" type="xs:boolean" hpcc:displayName="Watchdog Progress Enabled" hpcc:presetValue="true"
+                              hpcc:tooltip="Enable/Disable graph progress reporting in watchdog process"/>
+                <xs:attribute name="watchdogProgressInterval" type="xs:nonNegativeInteger" hpcc:displayName="Watchdog Progress Interval(s)"
+                              hpcc:presetValue="30" hpcc:tooltip="Graph progress reporting interval (seconds)"/>
+                <xs:attribute name="slaveDownTimeout" type="xs:nonNegativeInteger" hpcc:displayName="Slave Down Timeout(s)"
+                              hpcc:presetValue="300" hpcc:tooltip="A slave will be marked down after the specified elapsed time period (seconds)"/>
+                <xs:attribute name="verifyDaliConnectionInterval" type="xs:nonNegativeInteger"
+                              hpcc:displayName="Verify Dali Connection Interval(s)" hpcc:presetValue="300"
+                              hpcc:tooltip="Interval between verification of thor to dali connection (seconds)"/>
+                <xs:attribute name="idleRestartPeriod" type="xs:nonNegativeInteger" hpcc:displayName="Idle Restart Period(m)"
+                              hpcc:presetValue="480" hpcc:tooltip="Period of idle time after which to initiate an auto restart (minutes)"/>
+                <xs:attribute name="smallSortThreshold" type="xs:nonNegativeInteger" hpcc:displayName="Small Sort Threshold(MB)" hpcc:presetValue="1024"
+                              hpcc:tooltip="Sort size threshold for thor global sorting on multiple nodes (MB)"/>
+                <xs:attribute name="maxActivityCores" type="xs:nonNegativeInteger" hpcc:displayName="Max Activity Cores" hpcc:presetValue="0"
+                              hpcc:tooltip="Maximum number of cores to use per activity (only currently used by sorting activities). Default equals all available"/>
+                <xs:attribute name="monitorDaliFileServer" type="xs:boolean" hpcc:displayName="Monitor Dali Fileserver" hpcc:presetValue="true"
+                              hpcc:tooltip="Warn if dafilesrv process is not running on computers"/>
+                <!--todo Should we add a comma list type-->
+                <xs:attribute name="allowedPipePrograms" type="xs:string" hpcc:displayName="Allowed Pipe Programs" hpcc:presetValue="*"
+                              hpcc:tooltip="Comma separated list of allowed PIPE program (* for allow all)"/>
+                <xs:attribute name="compressInternalSpills" type="xs:boolean" hpcc:displayName="Compress Internal Spills" hpcc:presetValue="true"
+                              hpcc:tooltip="Compress internal writes to disk when spilling"/>
+                <!--todo Should we add a comma list type-->
+                <xs:attribute name="affinity" type="xs:string" hpcc:displayName="Affinity"
+                              hpcc:tooltip="A comma separated list of cpu ids (and ranges) to bind all thor slaves to"/>
+                <xs:attribute name="autoAffinity" type="xs:boolean" hpcc:displayName="Auto Affinity" hpcc:presetValue="true"
+                              hpcc:tooltip="Automatically bind slave processes to a single cpu socket, if multiple slaves are running on a multi socket machine"/>
+                <xs:attribute name="numaBindLocal" type="xs:boolean" hpcc:displayName="Numa Bind Local" hpcc:presetValue="false"
+                              hpcc:tooltip="Restrict allocations to memory attached to the cpu sockets the slave process is bound to"/>
+                <xs:attribute name="httpCallerIdHeader" type="xs:string" hpcc:displayName="HTTP CallerId Header" hpcc:presetValue="HPCC-Caller-Id"
+                              hpcc:tooltip="HTTP Header field to use for sending and receiving CallerId"/>
+                <xs:attribute name="httpGlobalIdHeader" type="xs:string" hpcc:displayName="HTTP GlobalId Header" hpcc:presetValue="HPCC-Global-Id"
+                              hpcc:tooltip="HTTP Header field to use for sending and receiving GlobalId"/>
+
             </xs:complexType>
         </xs:element>
     </hpcc:insert>
