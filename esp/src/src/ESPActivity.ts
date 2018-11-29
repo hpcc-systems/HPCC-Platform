@@ -116,25 +116,39 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         var context = this;
         if (responseTargetClusters) {
             arrayUtil.forEach(responseTargetClusters, function (item, idx) {
-                var queue = null;
-                if (item.ClusterName) {
-                    queue = ESPQueue.GetTargetCluster(item.ClusterName);
-                } else {
-                    queue = ESPQueue.GetServerJobQueue(item.ServerName);
-                }
-                queue.updateData(item);
-                queue.set("DisplayName", queue.getDisplayName());
-                queue.clearChildren();
-                targetClusters.push(queue);
-                targetClusterMap[queue.__hpcc_id] = queue;
-                if (!context._watched[queue.__hpcc_id]) {
-                    context._watched[queue.__hpcc_id] = queue.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
-                        if (oldValue !== newValue) {
-                            if (context.observableStore.get(queue.__hpcc_id)) {
-                                context.observableStore.notify(queue, queue.__hpcc_id);
-                            }
-                        }
+                if (lang.exists("Queues.ServerJobQueue", item)) {
+                    arrayUtil.forEach(item.Queues.ServerJobQueue, function (queueItem) {
+                        context.refreshTargetCluster(item, queueItem, targetClusters, targetClusterMap);
                     });
+                } else {
+                    context.refreshTargetCluster(item, undefined, targetClusters, targetClusterMap);
+                }
+            });
+        }
+    },
+
+    refreshTargetCluster: function (item, queueItem, targetClusters, targetClusterMap) {
+        var queue = null;
+        if (item.ClusterName) {
+            queue = ESPQueue.GetTargetCluster(item.ClusterName);
+        } else {
+            queue = ESPQueue.GetServerJobQueue(queueItem ? queueItem.QueueName : item.ServerName);
+        }
+        queue.updateData(item);
+        if (queueItem) {
+            if (queueItem.QueueName === undefined) debugger;
+            queue.updateData(queueItem);
+        }
+        queue.set("DisplayName", queue.getDisplayName());
+        queue.clearChildren();
+        targetClusters.push(queue);
+        targetClusterMap[queue.__hpcc_id] = queue;
+        if (!this._watched[queue.__hpcc_id]) {
+            this._watched[queue.__hpcc_id] = queue.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
+                if (oldValue !== newValue) {
+                    if (this.observableStore.get(queue.__hpcc_id)) {
+                        this.observableStore.notify(queue, queue.__hpcc_id);
+                    }
                 }
             });
         }
@@ -145,7 +159,9 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
             arrayUtil.forEach(responseActiveWorkunits, function (item, idx) {
                 item["__hpcc_id"] = item.Wuid;
                 var queue = null;
-                if (item.ClusterName) {
+                if (item.QueueName) {
+                    queue = ESPQueue.GetServerJobQueue(item.QueueName);
+                } else if (item.ClusterName) {
                     queue = ESPQueue.GetTargetCluster(item.ClusterName);
                 } else {
                     queue = ESPQueue.GetServerJobQueue(item.ServerName);
