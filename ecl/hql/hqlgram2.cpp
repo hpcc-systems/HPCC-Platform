@@ -11198,6 +11198,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ONLY: msg.append("ONLY"); break;
     case ONWARNING: msg.append("ONWARNING"); break;
     case OPT: msg.append("OPT"); break;
+    case __OPTION__: msg.append("__OPTION__"); break;
     case OR : msg.append("OR"); break;
     case ORDER: msg.append("ORDER"); break;
     case ORDERED: msg.append("ORDERED"); break;

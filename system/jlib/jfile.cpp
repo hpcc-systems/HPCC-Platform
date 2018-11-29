@@ -6240,6 +6240,13 @@ public:
 #else
         close(hfile);
 #endif
+#if defined(__linux__)
+        if (ptr)
+        {
+            munmap(realptr(),realsize());
+            ptr = NULL;
+        }
+#endif
     }
 
     byte *base()                        { return ptr; }
