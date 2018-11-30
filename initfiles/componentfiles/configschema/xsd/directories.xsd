@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <!-- is a directories section required in an environment? -->
+        <xs:element name="Directories" hpcc:displayName="Directories" hpcc:itemType="directories" hpcc:class="component">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="Category" hpcc:displayName="Common" maxOccurs="unbounded" type="directorycategory"
+                                hpcc:class="elementSet">  <!-- may want a different class so that directories are dislayed differently by UI -->
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:element name="Override" hpcc:displayName="Override" minOccurs="0" maxOccurs="unbounded"
+                                            hpcc:itemType="directoryoverride" hpcc:class="elementSet">
+                                    <xs:complexType>
+                                        <!-- type for component and instance was commonDirsCompType, what is that? -->
+                                        <!-- does not make sense that all attributes would be optional -->
+                                        <xs:attribute name="component" type="xs:string" hpcc:dislayName="Type"
+                                                      hpcc:tooltip=""/>
+                                        <xs:attribute name="instance" type="xs:string" hpcc:displayName="Component"
+                                                      hpcc:tooltip=""/>
+                                        <xs:attribute name="dir" type="xs:string" hpcc:displayName="Directory"
+                                                      hpcc:tooptip=""/>
+                                    </xs:complexType>
+                                </xs:element>
+                            </xs:sequence>
+                            <xs:attribute name="dir" type="xs:string" hpcc:displayName="Directory" use="required"
+                                          hpcc:tooltip=""/>
+                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"
+                                          hpcc:tooltip=""/>
+                        </xs:complexType>
+                    </xs:element>
+                </xs:sequence>
+                <xs:attribute name="name" type="xs:string" hpcc:hidden="true" hpcc:forcedConfigValue="HPCCSystems"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>
