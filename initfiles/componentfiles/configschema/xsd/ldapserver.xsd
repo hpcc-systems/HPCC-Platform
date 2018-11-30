@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="LDAPServerProcess" hpcc:class="component" hpcc:category="LDAP Process" hpcc:itemType="ldapserver"
+                    hpcc:displayName="Active Directory LDAP process" hpcc:docid="ldapSrv" maxOccurs="unbounded">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="Instance" hpcc:itemType="hwinstance" minOccurs="1" maxOccurs="unbounded" hpcc:class="elementSet"/>
+                    <xs:element name="Notes" type="usernotes" hpcc:displayName="Notes"/>
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="LDAP"
+                              hpcc:uniqueKey="ldapserverprocess_name" hpcc:tooltip="Name for this process"/>
+                <xs:attribute name="description" type="xs:string" hpcc:displayName="Description" hpcc:presetValue="LDAP server process"
+                              hpcc:tooptip="Description for this process"/>
+                <xs:attribute name="ldapPort" type="xs:nonNegativeInteger" hpcc:displayName="LDAP Port" use="required" hpcc:presetValue="389"
+                              hpcc:tooltip="The port of the ldap (Active Directory) server"/>
+                <xs:attribute name="ldapSecurePort" type="xs:nonNegativeInteger" hpcc:displayName="LDAP Secure Port" use="required" hpcc:presetValue="636"
+                              hpcc:tooltip="The port of the ldap (Active Directory) server"/>
+                <xs:attribute name="ldapTimeoutSecs" type="xs:nonNegativeInteger" hpcc:displayName="Timeout (secs)" use="required" hpcc:presetValue="60"
+                              hpcc:tooltip="The maximum number of seconds to wait for most LDAP calls"/>
+                <xs:attribute name="cacheTimeout" type="xs:nonNegativeInteger" hpcc:displayName="Cache Timeout (minutes)" hpcc:presetValue="5"
+                              hpcc:tooltip="Time in minutes after which the cached security information should expire"/>
+                <xs:attribute name="sharedCache" type="xs:boolean" hpcc:displayName="Shared Cache" hpcc:presetValue="true"
+                              hpcc:tooltip="Use a single, shared LDAP cache"/>
+                <xs:attribute name="systemUser" type="xs:string" hpcc:displayName="System User"
+                              hpcc:tooltip="An LDAP administrator account id to be used by HPCC to create and manage HPCC-specific LDAP branches"/>
+                <xs:attribute name="systemPassword" type="xs:string" hpcc:displayName="System User Password" hpcc:modifers="mask,verify"
+                              hpcc:tooltip="The password for the systemUser"/>
+                <xs:attribute name="systemCommonName" type="xs:string" hpcc:displayName="System Common Name" hpcc:requiredIf=".@systemUser"
+                              hpcc:tooltip="Required if systemUser is specified. The LDAP Common Name (cn) for the systemUser account as specified on the LDAP server"/>
+                <xs:attribute name="systemBasedn" type="xs:string" hpcc:displayName="System Base DN" use="required" hpcc:presetValue="cn=Users"
+                              hpcc:tooltip="The ldap 'base distinguished name' of the systemUser"/>
+                <xs:attribute name="groupsBasedn" type="xs:string" hpcc:displayName="Groups Base DN" use="required" hpcc:presetValue="ou=groups,ou=ecl"
+                              hpcc:tooltip="The ldap 'base distinguished name' that ecl server should use when looking up groups in the ldap (Active Directory) server"/>
+                <xs:attribute name="viewsBasedn" type="xs:string" hpcc:displayName="Views Base DN" use="required" hpcc:presetValue="ou=views,ou=ecl"
+                              hpcc:tooltip="The ldap 'base distinguished name' that ecl server should use when looking up views in the ldap (Active Directory) server"/>
+                <xs:attribute name="usersBasedn" type="xs:string" hpcc:displayName="Users Base DN" use="required" hpcc:presetValue="ou=users,ou=ecl"
+                              hpcc:tooltip="The ldap 'base distinguished name' that ecl server should use when looking up users in the ldap (Active Directory) server"/>
+                <xs:attribute name="modulesBasedn" type="xs:string" hpcc:displayName="Modules Base DN" use="required" hpcc:presetValue="ou=modules,ou=ecl"
+                              hpcc:tooltip="The ldap 'base distinguished name' that ecl server should use when looking up modules in the ldap (Active Directory) server"/>
+                <xs:attribute name="workunitsBasedn" type="xs:string" hpcc:displayName="Workunits Base DN" use="required" hpcc:presetValue="ou=workunits,ou=ecl"
+                              hpcc:tooltip="The ldap 'base distinguished name' that ecl server should use when looking up workunit scopes in the ldap (Active Directory) server"/>
+                <xs:attribute name="filesBasedn" type="xs:string" hpcc:displayName="Files Base DN" use="required" hpcc:presetValue="ou=files,ou=ecl"
+                              hpcc:tooltip="The ldap 'base distinguished name' that ecl server should use when looking up file scopes in the ldap (Active Directory) server"/>
+                <xs:attribute name="sudoersBasedn" type="xs:string" hpcc:displayName="Sudoers Base DN" hpcc:presetValue="ou=SUDOers"
+                              hpcc:tooltip="The place to hold the sudoers entries"/>
+                <xs:attribute name="serverType" use="required" hpcc:displayName="Server Type" hpcc:presetValue="ActiveDirectory"
+                              hpcc:tooltip="LDAP Server Implementation Type">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="ActiveDirectory" hpcc:displayName="" hpcc:description=""/>
+                            <xs:enumeration value="OpenLDAP" hpcc:description=""/>
+                            <xs:enumeration value="389DirectoryServer" hpcc:description=""/>
+                            <xs:enumeration value="Fedora389" hpcc:description=""/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>
