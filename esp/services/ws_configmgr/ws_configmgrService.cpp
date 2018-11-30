@@ -868,6 +868,11 @@ void Cws_configMgrEx::getAttributes(const std::shared_ptr<EnvironmentNode> &pEnv
     std::vector<std::shared_ptr<SchemaValue>> schemaValues;
     pEnvNode->getSchemaItem()->getAttributes(schemaValues);
 
+    //
+    // Because the config manager creates a schema value for ALL attributes of a node (even those that are not explicitly defined
+    // in the schema), all attributes of the environment node are processed. Additionally, if the environment node is missing
+    // attributes that are defined in the schema, they are found and returned as missing (if indicated by the includeMissing
+    // parameter)
     for (auto it=schemaValues.begin(); it!=schemaValues.end(); ++it)
     {
         const std::shared_ptr<SchemaValue> pSchemaValue = *it;
@@ -879,6 +884,7 @@ void Cws_configMgrEx::getAttributes(const std::shared_ptr<EnvironmentNode> &pEnv
             pAttribute->setName(pSchemaValue->getName().c_str());
             pAttribute->setDisplayName(pSchemaValue->getDisplayName().c_str());
             pAttribute->setTooltip(pSchemaValue->getTooltip().c_str());
+            pAttribute->setOrdinal(pSchemaValue->getOrdinal());
 
             const std::shared_ptr<SchemaType> &pType = pSchemaValue->getType();
             std::shared_ptr<SchemaTypeLimits> &pLimits = pType->getLimits();

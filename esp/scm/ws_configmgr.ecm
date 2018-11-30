@@ -202,6 +202,7 @@ ESPstruct AttributeType
 {
     string     DisplayName;
     string     Name;
+    unsigned   Ordinal;
     string     Group("");
     string     Tooltip("");
     ESPstruct  TypeInfo Type;

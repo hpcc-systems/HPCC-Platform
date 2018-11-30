@@ -50,8 +50,7 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         void addSchemaType(const std::shared_ptr<SchemaItem> &pItem, const std::string &typeName);
         std::shared_ptr<SchemaItem> getSchemaType(const std::string &name, bool throwIfNotPresent=true) const;
         void insertSchemaType(const std::shared_ptr<SchemaItem> pTypeItem);
-        void addChild(const std::shared_ptr<SchemaItem> &pItem) { m_children.insert({ pItem->getProperty("name"), pItem }); }
-        void addChild(const std::shared_ptr<SchemaItem> &pItem, const std::string &name) { m_children.insert({ name, pItem }); }
+        void addChild(const std::shared_ptr<SchemaItem> &pItem) { m_children.emplace_back(pItem); }
         void getChildren(std::vector<std::shared_ptr<SchemaItem>> &children, const std::string &name = std::string(""), const std::string &itemType = std::string("")) const;
         void setItemSchemaValue(const std::shared_ptr<SchemaValue> &pValue) { m_pItemValue = pValue; }
         std::shared_ptr<SchemaValue> getItemSchemaValue() const { return m_pItemValue; }
@@ -98,7 +97,8 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         bool m_hidden;
         unsigned m_minInstances;
         unsigned m_maxInstances;
-        std::multimap<std::string, std::shared_ptr<SchemaItem>> m_children;
+        std::vector<std::shared_ptr<SchemaItem>> m_children;
+//        std::multimap<std::string, std::shared_ptr<SchemaItem>> m_children;
         std::shared_ptr<SchemaValue> m_pItemValue;   // value for this item (think of it as the VALUE for an element <xx attr= att1>VALUE</xx>)
         std::map<std::string, std::shared_ptr<SchemaValue>> m_attributes;   // attributes for this item (think in xml terms <m_name attr1="val" attr2="val" .../> where attrN is in this vector
         std::set<std::string> m_keys;   // generic set of key values for use by any component to prevent duplicate operations
@@ -126,7 +126,6 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
 
         // Following are NOT copied in copy constructor
         std::weak_ptr<SchemaItem> m_pParent;
-
 };
 
 #endif // _CONFIG2_CONFIGITEM_HPP_
