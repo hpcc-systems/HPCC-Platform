@@ -1,4 +1,4 @@
-################################################################################
+﻿################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +48,7 @@ if (NOT LIBXML2_FOUND)
   ENDIF()
 
   if (USE_NATIVE_LIBRARIES)
-    # if we didn't find in extals, look in system include path
+    # if we didn't find in externals, look in system include path
     FIND_PATH (LIBXML2_INCLUDE_DIR NAMES libxml/xpath.h PATH_SUFFIXES libxml2)
     FIND_LIBRARY (LIBXML2_LIBRARIES NAMES xml2 libxml2)
   endif()
