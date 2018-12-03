@@ -741,23 +741,26 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     {
         typedef CLookupHandler PARENT;
     protected:
-        Owned<const ITranslator> translator;
+        std::vector<Owned<const ITranslator>> translators;
 
-        void setupTranslation(unsigned partNo, IKeyManager &keyManager)
+        void setupTranslation(unsigned partNo, unsigned selected, IKeyManager &keyManager)
         {
-            IPartDescriptor &part = activity.allIndexParts.item(partNo);
-            IPropertyTree &props = part.queryOwner().queryProperties();
-            unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
-            Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-            unsigned expectedFormatCrc = helper->getIndexFormatCrc();
-            unsigned projectedFormatCrc = helper->getProjectedIndexFormatCrc();
-            IOutputMetaData *projectedFormat = helper->queryProjectedIndexRecordSize();
+            if (!translators[selected])
+            {
+                IPartDescriptor &part = activity.allIndexParts.item(partNo);
+                IPropertyTree &props = part.queryOwner().queryProperties();
+                unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
+                Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
+                unsigned expectedFormatCrc = helper->getIndexFormatCrc();
+                unsigned projectedFormatCrc = helper->getProjectedIndexFormatCrc();
+                IOutputMetaData *projectedFormat = helper->queryProjectedIndexRecordSize();
 
-            RecordTranslationMode translationMode = getTranslationMode(activity);
-            OwnedRoxieString fname = helper->getIndexFileName();
-            translator.setown(getTranslators(fname, expectedFormatCrc, helper->queryIndexRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode));
-            if (translator)
-                keyManager.setLayoutTranslator(&translator->queryTranslator());
+                RecordTranslationMode translationMode = getTranslationMode(activity);
+                OwnedRoxieString fname = helper->getIndexFileName();
+                translators[selected].setown(getTranslators(fname, expectedFormatCrc, helper->queryIndexRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode));
+            }
+            if (translators[selected])
+                keyManager.setLayoutTranslator(&translators[selected]->queryTranslator());
         }
     public:
         CKeyLookupLocalBase(CKeyedJoinSlave &_activity) : CLookupHandler(_activity, _activity.keyLookupRowWithJGRowIf)
@@ -847,6 +850,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         {
             PARENT::addPartNum(partNum);
             keyManagers.push_back(nullptr);
+            translators.push_back(nullptr);
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned selected) override
         {
@@ -858,7 +862,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             {
                 keyManager = activity.createPartKeyManager(partNo, copy);
                 // NB: potentially translation per part could be different if dealing with superkeys
-                setupTranslation(partNo, *keyManager);
+                setupTranslation(partNo, selected, *keyManager);
             }
             processRows(processing, partNo, keyManager);
         }
@@ -872,6 +876,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         CKeyLookupMergeHandler(CKeyedJoinSlave &_activity) : CKeyLookupLocalBase(_activity)
         {
             limiter = &activity.lookupThreadLimiter;
+            translators.push_back(nullptr);
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned __unused) override
         {
@@ -886,7 +891,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     partKeySet->addIndex(keyIndex.getClear());
                 }
                 keyManager.setown(createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, helper->hasNewSegmentMonitors()));
-                setupTranslation(0, *keyManager);
+                setupTranslation(0, 0, *keyManager);
             }
             processRows(processing, 0, keyManager);
         }
