@@ -1,4 +1,4 @@
-/*##############################################################################
+﻿/*##############################################################################
 
     HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
@@ -4508,8 +4508,9 @@ void checkExpiryTime(IPropertyTree &metaInfo)
     {
         expiryTimeDt.setString(expiryTime);
     }
-    catch (IException * /*e*/)
+    catch (IException * e)
     {
+        e->Release();
         throw createDafsException(DAFSERR_cmdstream_invalidexpiry, "createRemoteActivity: invalid expiry specification");
     }
     CDateTime nowDt;
