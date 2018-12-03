@@ -3885,7 +3885,7 @@ IHqlExpression * evaluateLikelihood(IHqlExpression * expr)
                 double p2 = queryLikelihood(expr->queryChild(1));
                 if (isKnownLikelihood(p2))
                 {
-                    likelihoodExpr.set(createConstant(createRealValue(p1*p2,8)));
+                    likelihoodExpr.setown(createConstant(createRealValue(p1*p2,8)));
                     break;
                 }
             }
@@ -3900,7 +3900,7 @@ IHqlExpression * evaluateLikelihood(IHqlExpression * expr)
                 double p2 = queryLikelihood(expr->queryChild(1));
                 if (isKnownLikelihood(p2))
                 {
-                    likelihoodExpr.set(createConstant(createRealValue(p1+p2-p1*p2,8)));
+                    likelihoodExpr.setown(createConstant(createRealValue(p1+p2-p1*p2,8)));
                     break;
                 }
             }
@@ -3912,7 +3912,7 @@ IHqlExpression * evaluateLikelihood(IHqlExpression * expr)
             double p1 = queryLikelihood(expr->queryChild(0));
             if (isKnownLikelihood(p1))
             {
-                likelihoodExpr.set(createConstant(createRealValue(1.0-p1,8)));
+                likelihoodExpr.setown(createConstant(createRealValue(1.0-p1,8)));
                 break;
             }
             likelihoodExpr.set(queryConstantLikelihoodUnknown());

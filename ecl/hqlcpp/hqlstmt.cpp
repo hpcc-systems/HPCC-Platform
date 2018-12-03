@@ -1435,7 +1435,7 @@ int queryMemsetChar(IHqlExpression * expr)
     if (expr->getOperator() != no_constant)
         return -1;
     unsigned size = expr->queryType()->getSize();
-    if (size == 0)
+    if (size == 0 || size == UNKNOWN_LENGTH)
         return -1;
     const byte * data = (const byte *)expr->queryValue()->queryValue();
     byte match = data[0];
