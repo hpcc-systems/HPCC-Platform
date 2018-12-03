@@ -200,7 +200,7 @@ extern HQL_API void checkIndependentOfScope(IHqlExpression * expr)
         return;
 
     HqlExprCopyArray scopeUsed;
-    expr->gatherTablesUsed(NULL, &scopeUsed);
+    expr->gatherTablesUsed(scopeUsed);
 
     HqlExprArray exprs;
     exprs.append(*LINK(expr));

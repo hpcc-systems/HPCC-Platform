@@ -34,8 +34,6 @@
 //There may also problems with queryRecord() which needs to really be replaced with recordof(x), especially if "templates" are delayed expanded.
 //To work properly it may require many of the transformations in hqlgram2.cpp to be moved to after the expansion.  (E.g., BUILD)
 
-#define GATHER_HIDDEN_SELECTORS
-
 #define XPATH_CONTENTS_TEXT     "<>"
 #define INTERNAL_LOCAL_MODULE_NAME "_local_directory_"
 
@@ -1184,7 +1182,7 @@ interface IHqlExpression : public IInterface
     virtual bool isIndependentOfScope() = 0;
     virtual bool usesSelector(IHqlExpression * selector) = 0;
     virtual bool isIndependentOfScopeIgnoringInputs() = 0;
-    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) = 0;
+    virtual void gatherTablesUsed(HqlExprCopyArray & inScope) = 0;
     virtual IValue *queryValue() const = 0;
     virtual IInterface *queryUnknownExtra() = 0;
     virtual unsigned __int64 querySequenceExtra() = 0;              // sequence, but also overloaded with parameter number
@@ -1705,7 +1703,7 @@ extern HQL_API bool filterIsUnkeyed(IHqlExpression * expr);
 extern HQL_API bool canEvaluateGlobally(IHqlExpression * expr);
 extern HQL_API bool isTrivialDataset(IHqlExpression * expr);
 extern HQL_API bool isInlineTrivialDataset(IHqlExpression * expr);
-extern HQL_API void gatherChildTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope, IHqlExpression * expr, unsigned firstChild);
+extern HQL_API void gatherChildTablesUsed(HqlExprCopyArray & inScope, IHqlExpression * expr, unsigned firstChild);
 extern HQL_API IHqlScope * closeScope(IHqlScope * scope);
 extern HQL_API IIdAtom * queryPatternName(IHqlExpression * expr);
 extern HQL_API IHqlExpression * closeAndLink(IHqlExpression * expr);

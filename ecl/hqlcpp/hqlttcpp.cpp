@@ -9625,7 +9625,7 @@ void LeftRightSelectorNormalizer::analyseExpr(IHqlExpression * expr)
             {
                 IHqlExpression * dataset = expr->queryChild(0);
                 OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
-                gatherChildTablesUsed(NULL, &inScope, expr, 1);
+                gatherChildTablesUsed(inScope, expr, 1);
                 checkAmbiguity(inScope, left);
                 break;
             }
@@ -9633,7 +9633,7 @@ void LeftRightSelectorNormalizer::analyseExpr(IHqlExpression * expr)
             {
                 OwnedHqlExpr left = createSelector(no_left, expr->queryChild(0), selSeq);
                 OwnedHqlExpr right = createSelector(no_right, expr->queryChild(1), selSeq);
-                gatherChildTablesUsed(NULL, &inScope, expr, 2);
+                gatherChildTablesUsed(inScope, expr, 2);
                 checkAmbiguity(inScope, left);
                 checkAmbiguity(inScope, right);
                 break;
@@ -9645,7 +9645,7 @@ void LeftRightSelectorNormalizer::analyseExpr(IHqlExpression * expr)
                 IHqlExpression * dataset = expr->queryChild(0);
                 OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
                 OwnedHqlExpr right = createSelector(no_right, dataset, selSeq);
-                gatherChildTablesUsed(NULL, &inScope, expr, 1);
+                gatherChildTablesUsed(inScope, expr, 1);
                 checkAmbiguity(inScope, left);
                 checkAmbiguity(inScope, right);
                 break;
@@ -10565,7 +10565,7 @@ void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg, I
 void HqlScopeTagger::reportRootSelectorError(IHqlExpression * expr, IHqlExpression * transformed)
 {
     HqlExprCopyArray inScope;
-    transformed->gatherTablesUsed(nullptr, &inScope);
+    transformed->gatherTablesUsed(inScope);
     assertex(inScope.ordinality());
 
     //Recursively search for an expression which refers to the first selector that is unresolved.

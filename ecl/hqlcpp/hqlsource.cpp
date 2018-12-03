@@ -832,7 +832,7 @@ bool SourceBuilder::isSourceInvariant(IHqlExpression * dataset, IHqlExpression *
         return true;
 
     HqlExprCopyArray inScope;
-    expr->gatherTablesUsed(NULL, &inScope);
+    expr->gatherTablesUsed(inScope);
     if (!canEvaluateInScope(parentCursors, inScope))
         return false;
 

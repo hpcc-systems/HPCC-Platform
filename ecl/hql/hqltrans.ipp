@@ -433,6 +433,7 @@ class HQL_API NewHqlTransformer : public ANewHqlTransformer
 public:
     enum { TFunconditional = 1, TFconditional = 2, TFsequential = 4 };
     enum { TCOtransformNonActive        = 0x0001,
+           TCOanalyseAttributes         = 0x0002,
          };
 
     NewHqlTransformer(HqlTransformerInfo & _info);
@@ -496,6 +497,8 @@ protected:
     IHqlExpression *    queryActiveLocation(IHqlExpression * expr) const;
     void setMapping(IHqlExpression * oldValue, IHqlExpression * newValue);
     void setSelectorMapping(IHqlExpression * oldValue, IHqlExpression * newValue);
+
+    inline bool analyseAttributes() const { return (optimizeFlags & TCOanalyseAttributes) != 0; }
 
 protected:
     void setMappingOnly(IHqlExpression * oldValue, IHqlExpression * newValue);

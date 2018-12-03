@@ -445,7 +445,7 @@ IHqlExpression * CTreeOptimizer::moveFilterOverSelect(IHqlExpression * expr)
     {
         IHqlExpression & cur = args.item(i);
         inScope.kill();
-        cur.gatherTablesUsed(NULL, &inScope);
+        cur.gatherTablesUsed(inScope);
         if (inScope.find(*newScope) == NotFound)
             hoisted.append(OLINK(cur));
         else
@@ -1455,7 +1455,7 @@ IHqlExpression * splitJoinFilter(IHqlExpression * expr, HqlExprArray * leftOnly,
     }
 
     HqlExprCopyArray scopeUsed;
-    expr->gatherTablesUsed(NULL, &scopeUsed);
+    expr->gatherTablesUsed(scopeUsed);
     if (scopeUsed.ordinality() == 1)
     {
         node_operator scopeOp = scopeUsed.item(0).getOperator();
