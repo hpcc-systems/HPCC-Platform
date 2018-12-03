@@ -24,6 +24,8 @@
 
 if (USE_CPPUNIT)
 
+ADD_SUBDIRECTORY(configmgr)
+
 project( unitests )
 
 set (    SRCS
@@ -32,7 +34,8 @@ set (    SRCS
          dalitests.cpp
          jlibtests.cpp
          cryptotests.cpp
-         cfgmgr2unittests.cpp
+         configmgr/ConfigMgrUnitTests.cpp
+         configmgr/ConfigMgrTemplateTests.cpp
     )
 
 include_directories (
@@ -48,6 +51,7 @@ include_directories (
          ./../../common/deftype
          ./../../system/security/cryptohelper
          ./../../configuration/configmgr/configmgrlib
+         ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )

@@ -22,8 +22,9 @@ limitations under the License.
 #include <vector>
 #include <string>
 
-std::vector<std::string> splitString(const std::string  &input, const std::string  &delim);
-bool extractEnclosedString(const std::string source, std::string &result, char startDelim, char endDelim, bool optional = true);
-bool getEnclosedString(const std::string source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError = false);
+std::vector<std::string> splitString(const std::string &input, const std::string  &delim);
+bool extractEnclosedString(const std::string &source, std::string &result, char startDelim, char endDelim, bool optional = true);
+bool getEnclosedString(const std::string &source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError = false);
+std::string trim(const std::string& str, const std::string& whitespace = " \t");
 
 #endif

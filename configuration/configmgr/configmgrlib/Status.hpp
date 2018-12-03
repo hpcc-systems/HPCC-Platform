@@ -50,7 +50,9 @@ class DECL_EXPORT Status
     public:
 
         Status() : m_highestMsgLevel(statusMsg::info) { }
+        Status(const Status &status, const std::string &nodeId);
         ~Status() {}
+        void addMsg(const statusMsg &msg);
         void addMsg(enum statusMsg::msgLevel status, const std::string &msg) { addMsg(status, "", "", msg); }
         void addMsg(enum statusMsg::msgLevel status, const std::string &nodeId, const std::string &name, const std::string &msg);
         void addUniqueMsg(enum statusMsg::msgLevel status, const std::string &nodeId, const std::string &name, const std::string &msg);

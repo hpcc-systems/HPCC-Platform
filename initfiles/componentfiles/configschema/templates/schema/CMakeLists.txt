@@ -14,5 +14,8 @@
 #    limitations under the License.
 ################################################################################
 
-ADD_SUBDIRECTORY(xsd)
-ADD_SUBDIRECTORY(templates)
+FOREACH( iFILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/ModTemplateSchema.json
+        )
+    Install ( FILES ${iFILES} DESTINATION componentfiles/configschema/templates/schema COMPONENT Runtime)
+ENDFOREACH ( iFILES )
