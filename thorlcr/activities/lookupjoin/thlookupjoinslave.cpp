@@ -2675,8 +2675,8 @@ public:
             broadcast3MpTag = queryJobChannel().deserializeMPTag(data);
             lhsDistributeTag = queryJobChannel().deserializeMPTag(data);
             rhsDistributeTag = queryJobChannel().deserializeMPTag(data);
-            rhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), rhsDistributeTag, false, NULL, "RHS"));
-            lhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), lhsDistributeTag, false, NULL, "LHS"));
+            rhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), rhsDistributeTag, false, false, NULL, "RHS"));
+            lhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), lhsDistributeTag, false, false, NULL, "LHS"));
         }
         if (isSmart())
         {

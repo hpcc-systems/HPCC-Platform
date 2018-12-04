@@ -20,6 +20,7 @@
 
 #include "thactivitymaster.ipp"
 
+CActivityBase *createNWayDistributeActivityMaster(CMasterGraphElement *info);
 CActivityBase *createHashDistributeActivityMaster(CMasterGraphElement *info);
 CActivityBase *createDistributeMergeActivityMaster(CMasterGraphElement *info);
 CActivityBase *createHashDedupMergeActivityMaster(CMasterGraphElement *info);
