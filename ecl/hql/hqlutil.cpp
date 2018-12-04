@@ -8146,7 +8146,8 @@ public:
         StringBuffer namespaceValue;
         getAttribute(body, namespaceAtom, namespaceValue);
         if (namespaceValue.length())
-            mangled.append("N").append(namespaceValue.length()).append(namespaceValue);
+            mangled.append("N").append(namespaceValue.length()).append(lookupRepeat(namespaceValue));
+
         mangled.append(entrypoint.length()).append(entrypoint);
         if (namespaceValue.length())
             mangled.append("E");
@@ -8287,7 +8288,18 @@ protected:
         ForEachItemIn(idx, repeatsSeen)
         {
             if (streq(repeatsSeen.item(idx), typeStr))
-                return thisRepeat.appendf("S%d_", idx).str();
+            {
+                if (idx)
+                    return thisRepeat.appendf("S%d_", idx-1).str();
+                else
+                    return thisRepeat.append("S_").str();
+            }
+        }
+        // For compounds we need to add subtypes into the table too
+        if (strlen(typeStr) > 2)
+        {
+            if (*typeStr=='R' || *typeStr=='P')
+                lookupRepeat(typeStr+1);
         }
         repeatsSeen.append(typeStr);
         return typeStr;
@@ -8300,57 +8312,57 @@ protected:
         {
         case type_varstring:
             if (retType->getSize() == UNKNOWN_LENGTH)
-                returnType.append("Pc");    // char *
+                returnType.append(lookupRepeat("Pc"));    // char *
             else
-                params.append("Pc");        // char *
+                params.append(lookupRepeat("Pc"));        // char *
             break;
         case type_varunicode:
             if (retType->getSize() == UNKNOWN_LENGTH)
-                returnType.append("Pt");    // ushort *
+                returnType.append(lookupRepeat("Pt"));    // ushort *
             else
-                params.append("Pt");        // ushort *
+                params.append(lookupRepeat("Pt"));        // ushort *
             break;
         case type_qstring:
         case type_string:
         case type_utf8:
             if (retType->getSize() == UNKNOWN_LENGTH)
             {
-                params.append("Rj");    // size32_t &
-                params.append("RPc");   // char * &
+                params.append(lookupRepeat("Rj"));    // size32_t &
+                params.append(lookupRepeat("RPc"));   // char * &
             }
             else
-                params.append("Pc");    // char *
+                params.append(lookupRepeat("Pc"));    // char *
             break;
         case type_data:
             if (retType->getSize() == UNKNOWN_LENGTH)
             {
-                params.append("Rj");    // size32_t &
-                params.append("RPv");   // void * &
+                params.append(lookupRepeat("Rj"));    // size32_t &
+                params.append(lookupRepeat("RPv"));   // void * &
             }
             else
-                params.append("Pv");    // void *
+                params.append(lookupRepeat("Pv"));    // void *
             break;
         case type_unicode:
             if (retType->getSize() == UNKNOWN_LENGTH)
             {
-                params.append("Rj");    // size32_t &
-                params.append("RPt");   // UChar * &
+                params.append(lookupRepeat("Rj"));    // size32_t &
+                params.append(lookupRepeat("RPt"));   // UChar * &
             }
             else
-                params.append("Pt");    // UChar *
+                params.append(lookupRepeat("Pt"));    // UChar *
             break;
         case type_table:
         case type_groupedtable:
-            params.append("Rj");    // size32_t &
-            params.append("RPv");   // void * &
+            params.append(lookupRepeat("Rj"));    // size32_t &
+            params.append(lookupRepeat("RPv"));   // void * &
             break;
         case type_set:
-            params.append("Rb");    // bool &
-            params.append("Rj");    // size32_t &
-            params.append("RPv");   // void * &
+            params.append(lookupRepeat("Rb"));    // bool &
+            params.append(lookupRepeat("Rj"));    // size32_t &
+            params.append(lookupRepeat("RPv"));   // void * &
             break;
         case type_row:
-            params.append("Ph");        // byte *
+            params.append(lookupRepeat("Ph"));        // byte *
             break;
         }
         return true;
