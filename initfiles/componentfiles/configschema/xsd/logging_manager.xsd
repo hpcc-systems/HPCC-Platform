@@ -36,6 +36,7 @@
                 <xs:attributeGroup ref="buildInfo"/>
                 <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"
                               hpcc:autoGenerateType="prifix_" hpcc:autoGenerateValue="loggingmanager"
+                              hpcc:uniqueKey="loggingmanager_name"
                               hpcc:tooltip="Name for this Logging Manager"/>
                 <xs:attribute name="description" type="xs:string" hpcc:displayName="Description"
                               hpcc:presetValue="Logging Manager" hpcc:tooltip="Description for this Logging Manager"/>
