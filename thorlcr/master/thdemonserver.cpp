@@ -39,43 +39,19 @@ private:
     CIArrayOf<CGraphBase> activeGraphs;
     UnsignedArray graphStarts;
     
-    void doReportGraph(IStatisticGatherer & stats, CGraphBase *graph, bool finished)
+    void doReportGraph(IStatisticGatherer & stats, CGraphBase *graph)
     {
-        Owned<IThorActivityIterator> iter;
-        if (graph->queryOwner() && !graph->isGlobal())
-            iter.setown(graph->getIterator()); // Local child graphs still send progress, but aren't connected in master
-        else
-            iter.setown(graph->getConnectedIterator());
-        ForEach (*iter)
-        {
-            CMasterGraphElement &container = (CMasterGraphElement &)iter->query();
-            CMasterActivity *activity = (CMasterActivity *)container.queryActivity();
-            if (activity) // may not be created (if within child query)
-            {
-                activity_id id = container.queryId();
-
-                unsigned outputs = container.getOutputs();
-                unsigned oid = 0;
-                for (; oid < outputs; oid++)
-                {
-                    StatsEdgeScope edgeScope(stats, id, oid);
-                    activity->getEdgeStats(stats, oid); // for subgraph, may recursively call reportGraph
-                }
-
-                StatsActivityScope scope(stats, id);
-                activity->getActivityStats(stats);
-            }
-        }
+        ((CMasterGraph *)graph)->getStats(stats);
     }
-    void reportGraphContents(IStatisticGatherer & stats, CGraphBase *graph, bool finished)
+    void reportGraphContents(IStatisticGatherer & stats, CGraphBase *graph)
     {
         if (graph->hasProgress()) // if there have ever been any progress, ensure they are republished
-            doReportGraph(stats, graph, finished);
+            doReportGraph(stats, graph);
         Owned<IThorGraphIterator> graphIter = graph->getChildGraphIterator();
         ForEach (*graphIter)
-            reportGraph(stats, &graphIter->query(), finished);
+            reportGraph(stats, &graphIter->query());
     }
-    void reportGraph(IStatisticGatherer & stats, CGraphBase *graph, bool finished)
+    void reportGraph(IStatisticGatherer & stats, CGraphBase *graph)
     {
         try
         {
@@ -83,12 +59,12 @@ private:
             {
                 StatsActivityScope activity(stats, graph->queryParentActivityId());
                 StatsChildGraphScope subgraph(stats, graph->queryGraphId());
-                reportGraphContents(stats, graph, finished);
+                reportGraphContents(stats, graph);
             }
             else
             {
                 StatsSubgraphScope subgraph(stats, graph->queryGraphId());
-                reportGraphContents(stats, graph, finished);
+                reportGraphContents(stats, graph);
             }
         }
         catch (IException *e)
@@ -147,7 +123,7 @@ private:
                 {
                     CGraphBase &graph = activeGraphs.item(g);
                     Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId());
-                    reportGraph(stats->queryStatsBuilder(), &graph, finished);
+                    reportGraph(stats->queryStatsBuilder(), &graph);
                 }
                 Owned<IWorkUnit> wu = &currentWU.lock();
                 ForEachItemIn (g2, activeGraphs)
@@ -175,7 +151,7 @@ private:
             unsigned wfid = graph->queryJob().getWfid();
             {
                 Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId());
-                reportGraph(stats->queryStatsBuilder(), graph, finished);
+                reportGraph(stats->queryStatsBuilder(), graph);
             }
 
             Owned<IWorkUnit> wu = &currentWU.lock();

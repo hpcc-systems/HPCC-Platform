@@ -2136,6 +2136,7 @@ CMasterGraph::CMasterGraph(CJobChannel &jobChannel) : CGraphBase(jobChannel)
     waitBarrierTag = queryJob().allocateMPTag();
     startBarrier = jobChannel.createBarrier(startBarrierTag);
     waitBarrier = jobChannel.createBarrier(waitBarrierTag);
+    statNumExecutions.setown(new CThorStats(queryJob(), StNumExecutions));
 }
 
 
@@ -2689,11 +2690,15 @@ void CMasterGraph::setComplete(bool tf)
 bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
 {
     CriticalBlock b(createdCrit);
-    unsigned count, _count;
+
+    unsigned numExecutions;
+    mb.read(numExecutions);
+    statNumExecutions->set(node, numExecutions);
+
+    unsigned count;
     mb.read(count);
     if (count)
         setProgressUpdated();
-    _count = count;
     while (count--)
     {
         activity_id activityId;
@@ -2751,6 +2756,39 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
             return false;
     }
     return true;
+}
+
+void CMasterGraph::getStats(IStatisticGatherer &stats)
+{
+    // graph specific stats
+
+    statNumExecutions->getStats(stats, false);
+
+    Owned<IThorActivityIterator> iter;
+    if (queryOwner() && !isGlobal())
+        iter.setown(getIterator()); // Local child graphs still send progress, but aren't connected in master
+    else
+        iter.setown(getConnectedIterator());
+    ForEach (*iter)
+    {
+        CMasterGraphElement &container = (CMasterGraphElement &)iter->query();
+        CMasterActivity *activity = (CMasterActivity *)container.queryActivity();
+        if (activity) // may not be created (if within child query)
+        {
+            activity_id id = container.queryId();
+
+            unsigned outputs = container.getOutputs();
+            unsigned oid = 0;
+            for (; oid < outputs; oid++)
+            {
+                StatsEdgeScope edgeScope(stats, id, oid);
+                activity->getEdgeStats(stats, oid); // for subgraph, may recursively call reportGraph
+            }
+
+            StatsActivityScope scope(stats, id);
+            activity->getActivityStats(stats);
+        }
+    }
 }
 
 IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority)
