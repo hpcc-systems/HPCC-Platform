@@ -88,7 +88,7 @@ static StringBuffer & appendCapital(StringBuffer & s, StringBuffer & _name)
     const char * name = _name.str();
     if (name && name[0])
     {
-        s.append((char)toupper_char(*name));
+        s.append((char)toupper(*name));
         s.append(name+1);
     }
     return s;
@@ -207,7 +207,7 @@ bool CppWriterTemplate::loadTemplate(const char * filename, const char *dir)
                 }
                 
                 unsigned indent = 0;
-                while (indent < index - startLine && isspace_char((byte)text[index-indent-1]))
+                while (indent < index - startLine && isspace((byte)text[index-indent-1]))
                     indent++;
                 CppTemplateSection * next = new CppTemplateSection;
                 next->type = type;
@@ -777,7 +777,7 @@ void HqlCppWriter::generateInitializer(IHqlExpression * expr)
                     out.append("'\\").append(next).append('\'');
                     break;
                 default:
-                    if (isprint_char(next))
+                    if (isprint(next))
                         out.append('\'').append(next).append('\'');
                     else
                         out.append((int)next);  // this should work whether char is signed or not... so long as target architecture matches host!

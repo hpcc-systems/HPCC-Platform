@@ -767,13 +767,13 @@ void checkContentLength(StringBuffer& buf)
     }
 
     clen += 15;
-    while(*clen && !isdigit_char(*clen))
+    while(*clen && !isdigit(*clen))
     {
         clen++;
     }
 
     int len = 0;
-    while(*clen && isdigit_char(*clen))
+    while(*clen && isdigit(*clen))
     {
         char c = *clen;
         len = len*10 + (c - '0');

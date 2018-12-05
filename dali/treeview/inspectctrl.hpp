@@ -176,7 +176,7 @@ private:
     CHeaderCtrl headerCtrl;
     CStatic staticCtrl;
 
-    static LONG FAR PASCAL wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    static LRESULT FAR PASCAL wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 protected:
     virtual LRESULT WindowProc(UINT Msg, WPARAM wParam, LPARAM lParam);

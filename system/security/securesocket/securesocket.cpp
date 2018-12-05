@@ -1044,7 +1044,7 @@ public:
                     break;
 
                 char*  onepeer = onepeerbuf.detach();
-                if (isdigit_char(*onepeer))
+                if (isdigit(*onepeer))
                 {
                     char *dash = strrchr(onepeer, '-');
                     if (dash)

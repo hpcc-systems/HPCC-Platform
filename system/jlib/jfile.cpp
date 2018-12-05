@@ -161,7 +161,7 @@ StringBuffer &getStandardPosixPath(StringBuffer &result, const char *path)
 
     if (*s && ((s[1]==':') || isShareChar(s[1])))
     {
-        char c = tolower_char(s[0]);
+        char c = tolower(s[0]);
         if (!startWithPathSepChar)
             result.insert(0, '/');
         result.setCharAt(1, c);
@@ -3169,7 +3169,7 @@ StringBuffer &createUNCFilename(const char * filename, StringBuffer &UNC, bool u
             UNC.append(GetCachedHostName());
         else
             queryHostIP().getIpText(UNC);
-        UNC.append("\\").append((char)tolower_char(buf[0])).append(getShareChar()).append(buf+2);
+        UNC.append("\\").append((char)tolower(buf[0])).append(getShareChar()).append(buf+2);
     }
     else 
     {
@@ -4485,7 +4485,7 @@ StringBuffer & RemoteFilename::getRemotePath(StringBuffer & out) const
     else // try and guess from just tail (may likely fail other than for windows) 
         fn=getLocalPath(loc).str();
     if ((fn[1]==':') && (fn[2]=='/' || fn[2]=='\\')) {  // windows \\d$
-        out.append((char)tolower_char(c)).append(*fn).append(getShareChar());
+        out.append((char)tolower(c)).append(*fn).append(getShareChar());
         fn+=2;
     }
     out.append(fn);
@@ -4619,7 +4619,7 @@ void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
 
             if ((filename[1]==':')&&(filename[2]=='\\')) { // this should be always true if true full windows path
                 localhead.set(filename,2);
-                sharestr.append('\\').append((char)tolower_char(filename[0])).append(getShareChar());
+                sharestr.append('\\').append((char)tolower(filename[0])).append(getShareChar());
                 filename += 2;
             }
             else if (filename[0]=='\\') {
@@ -4997,7 +4997,7 @@ void RemoteMultiFilename::expand(const char *mpath, StringArray &array)
     StringBuffer path;
     StringBuffer fullpath;
     for (;;) {
-        while (isspace_char(*mpath))
+        while (isspace(*mpath))
             mpath++;
         if (!*mpath)
             break;
@@ -5041,7 +5041,7 @@ void RemoteMultiFilename::tostr(StringArray &array,StringBuffer &out)
             out.append(',');
         bool needquote=false;
         for (const char *e=s;*e;e++)
-            if (isspace_char(*e)||(*e==',')) {
+            if (isspace(*e)||(*e==',')) {
                 needquote = true;
                 break;
             }

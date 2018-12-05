@@ -266,7 +266,7 @@ bool looksLikeWuid(const char * arg)
     if (arg[0]!='W' && arg[0]!='w')
         return false;
 
-    if (isdigit_char(arg[1]) || (arg[1] == '*'))
+    if (isdigit(arg[1]) || (arg[1] == '*'))
         return true;
     return false;
 }

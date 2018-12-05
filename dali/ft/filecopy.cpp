@@ -2037,7 +2037,7 @@ void replaceEscapeSequence(StringBuffer & out, const char * in, bool errorIfInva
                     }
                 case 'x':
                     c = 0;
-                    while (isxdigit_char(*in))
+                    while (isxdigit(*in))
                     {
                         next = *in++;
                         c = c << 4;

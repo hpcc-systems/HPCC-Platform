@@ -127,7 +127,7 @@ int main(int argc, const char *argv[])
             prop.append(*arg++);
         if (*arg) {
             arg++;
-            while (isspace_char(*arg))
+            while (isspace(*arg))
                 arg++;
             val.append(arg);
             prop.clip();

@@ -14182,7 +14182,7 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
         while (ecl.length())
         {
             unsigned char c = ecl.charAt(ecl.length()-1);
-            if (isspace_char(c) || c==';')
+            if (isspace(c) || c==';')
                 ecl.setLength(ecl.length()-1);
             else
                 break;
@@ -14445,7 +14445,7 @@ void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten)
                 while (ecl.length())
                 {
                     unsigned char c = ecl.charAt(ecl.length()-1);
-                    if (isspace_char(c) || c==';')
+                    if (isspace(c) || c==';')
                         ecl.setLength(ecl.length()-1);
                     else
                         break;

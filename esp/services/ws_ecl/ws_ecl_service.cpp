@@ -776,7 +776,7 @@ static inline StringBuffer &appendNamespaceSpecificString(StringBuffer &dest, co
 {
     if (src)
         while(*src){
-            dest.append((const char)(isspace_char(*src) ? '_' : tolower_char(*src)));
+            dest.append((const char)(isspace(*src) ? '_' : tolower(*src)));
             src++;
         }
     return dest;
@@ -1511,7 +1511,7 @@ inline void appendParameterNode(StringBuffer &xpath, StringBuffer &node)
 {
     if (node.length())
     {
-        if (isdigit_char(node.charAt(0)))
+        if (isdigit(node.charAt(0)))
             xpath.setLength(xpath.length()-1);
         xpath.append(node);
         node.clear();

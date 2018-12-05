@@ -75,7 +75,7 @@ public:
                 port = atoi(p);
             }
 
-            if (isdigit_char(*ip))
+            if (isdigit(*ip))
             {
                 char *dash = strrchr(ip, '-');
                 if (dash)

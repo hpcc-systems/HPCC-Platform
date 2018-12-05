@@ -54,7 +54,7 @@ const COLORREF color_eip_back       = RGB(210, 210, 240);
 
 
 
-#define STRCAT(dest, destSz, src) {size32_t l = strlen(src); if(destSz > l) { strcat(dest, src); destSz -= l; } }
+#define STRCAT(dest, destSz, src) {size32_t l = (size32_t)strlen(src); if(destSz > l) { strcat(dest, src); destSz -= l; } }
 
 enum CTState { CTS_None, CTS_Visible = 0x01, CTS_Expanded = 0x02 };
 class CTreeListItem 
@@ -826,7 +826,7 @@ void CInspectorTreeCtrl::NewTree(LPCSTR rootxpath)
         is.item.mask = TVIF_TEXT | TVIF_PARAM;
         is.item.pszText = LPSTR_TEXTCALLBACK;           
         is.hParent = TVI_ROOT;
-        is.item.lParam = reinterpret_cast <DWORD> (createTreeListRoot(pTree.queryName(), pTree));
+        is.item.lParam = reinterpret_cast <LPARAM> (createTreeListRoot(pTree.queryName(), pTree));
         HTREEITEM r = InsertItem(&is);
         AddLevel(pTree, r);
         Expand(r, TVE_EXPAND);
@@ -857,7 +857,7 @@ void CInspectorTreeCtrl::dynExpand(HTREEITEM in)
         ForEach(*attrIterator)
         {
             is.hParent = in;
-            is.item.lParam = reinterpret_cast <DWORD> (createTreeListAttribute(attrIterator->queryName(), pTree));
+            is.item.lParam = reinterpret_cast <LPARAM> (createTreeListAttribute(attrIterator->queryName(), pTree));
             HTREEITEM r = InsertItem(&is);
             ASSERT(r != NULL);
         }
@@ -868,7 +868,7 @@ void CInspectorTreeCtrl::dynExpand(HTREEITEM in)
             IPropertyTree & thisTree = iterator->query();
 
             is.hParent = in;
-            is.item.lParam = reinterpret_cast <DWORD> (createTreeListProperty(thisTree.queryName(), thisTree));
+            is.item.lParam = reinterpret_cast <LPARAM> (createTreeListProperty(thisTree.queryName(), thisTree));
             HTREEITEM thisTreeItem = InsertItem(&is);
             ASSERT(thisTreeItem != NULL);
         }
@@ -907,7 +907,7 @@ void CInspectorTreeCtrl::AddLevel(IPropertyTree & pTree, HTREEITEM hParent)
         if (pTree.hasChildren())
         {
             is.hParent = hParent;
-            is.item.lParam = reinterpret_cast <DWORD> (createTreeListAttribute("@[loading...]", pTree));
+            is.item.lParam = reinterpret_cast <LPARAM> (createTreeListAttribute("@[loading...]", pTree));
             HTREEITEM thisTreeItem = InsertItem(&is);
             ASSERT(thisTreeItem != NULL);
         }
@@ -1002,7 +1002,7 @@ void CInspectorTreeCtrl::OnAddAttribute()
             is.item.mask = TVIF_TEXT | TVIF_PARAM;
             is.item.pszText = LPSTR_TEXTCALLBACK;           
             is.hParent = hParent;
-            is.item.lParam = reinterpret_cast <DWORD> (createTreeListAttribute(attrName, *pTree));
+            is.item.lParam = reinterpret_cast <LPARAM> (createTreeListAttribute(attrName, *pTree));
             InsertItem(&is);
 
             connection->unlockWrite();
@@ -1031,7 +1031,7 @@ void CInspectorTreeCtrl::OnAddProperty()
             is.item.mask = TVIF_TEXT | TVIF_PARAM;
             is.item.pszText = LPSTR_TEXTCALLBACK;           
             is.hParent = hParent;
-            is.item.lParam = reinterpret_cast <DWORD> (createTreeListProperty(t->queryName(), * t));
+            is.item.lParam = reinterpret_cast <LPARAM> (createTreeListProperty(t->queryName(), * t));
             InsertItem(&is);
 
             connection->unlockWrite();
@@ -1070,7 +1070,7 @@ CPropertyInspector::~CPropertyInspector()
     connection = NULL;
 }
 
-LONG FAR PASCAL CPropertyInspector::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT FAR PASCAL CPropertyInspector::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }

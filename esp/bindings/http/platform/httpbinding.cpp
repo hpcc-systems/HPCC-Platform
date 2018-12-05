@@ -465,7 +465,7 @@ bool EspHttpBinding::isCORSRequest(const char* originHeader)
     if (*ptr && *ptr == ':')
     {
         ptr++;
-        while(*ptr && isdigit_char(*ptr))
+        while(*ptr && isdigit(*ptr))
         {
             port = 10*port + (*ptr-'0');
             ptr++;

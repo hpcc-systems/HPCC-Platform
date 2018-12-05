@@ -999,7 +999,7 @@ static void parseAccessList(const char * rawServiceAccessList, MapStringTo<SecAc
 
             for (;currIndex <= entrylen && accessEntry[currIndex] != ':'; currIndex++ )
             {
-                if (!isspace_char(accessEntry[currIndex]))
+                if (!isspace(accessEntry[currIndex]))
                     currAccessName.append(accessEntry[currIndex]);
             }
 
@@ -1012,7 +1012,7 @@ static void parseAccessList(const char * rawServiceAccessList, MapStringTo<SecAc
 
             for (;currIndex <= entrylen; currIndex++ )
             {
-                if (!isspace_char(accessEntry[currIndex]))
+                if (!isspace(accessEntry[currIndex]))
                     currAccessLevel.append(accessEntry[currIndex]);
             }
 

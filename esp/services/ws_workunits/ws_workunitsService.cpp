@@ -1411,7 +1411,7 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
                 const char *finger = timeout;
                 while (*finger)
                 {
-                    if (!isdigit_char(*finger++))
+                    if (!isdigit(*finger++))
                         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Incorrect timeout value");
                 }
                 timeMilliSec = atol(timeout);

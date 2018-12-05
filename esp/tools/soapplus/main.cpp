@@ -392,7 +392,7 @@ bool isNumber(const char* str)
     char c;
     while((c=str[i++]) != '\0')
     {
-        if(!isdigit_char(c))
+        if(!isdigit(c))
             return false;
     }
 

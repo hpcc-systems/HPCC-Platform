@@ -194,7 +194,7 @@ private:
         unsigned groupcount = 0;
         while(*finger != ']')
         {
-            if(isdigit_char(*finger))
+            if(isdigit(*finger))
                 if(digitcount == 3)
                     fail("more than three digits in octet in address literal");
                 else
@@ -238,7 +238,7 @@ private:
         bool ret = false;
         while(*finger)
         {
-            if(isalnum_char(*finger))
+            if(isalnum(*finger))
                 ++charcount;
             else if(*finger == '_' || *finger == '-')
                 if(charcount == 0)

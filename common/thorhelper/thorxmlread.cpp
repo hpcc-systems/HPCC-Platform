@@ -588,7 +588,7 @@ IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree 
             const char *body = root.queryProp(NULL);
             if (body)
             {
-                while(isspace_char(*body))
+                while(isspace(*body))
                     body++;
                 if (strncmp(body, "<Row", 4)==0)
                 {
@@ -880,7 +880,7 @@ public:
             for (;;)
             {
                 if ('\0' == *q) break;
-                else if (!isdigit_char(*q)) { numeric = false; break; }
+                else if (!isdigit(*q)) { numeric = false; break; }
                 else q++;
             }
             if (numeric) throw MakeStringException(0, "Unsupported index qualifier: %s", qualifier);

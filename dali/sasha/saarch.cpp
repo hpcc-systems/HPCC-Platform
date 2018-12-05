@@ -39,7 +39,7 @@ static const bool keepOldVersions=true;
 static const char *splitWUID(const char *wuid,StringBuffer &head)
 {
     while (*wuid&&(*wuid!='-')) {
-        head.append((char)toupper_char(*wuid));
+        head.append((char)toupper(*wuid));
         wuid++;
     }
     return wuid;
@@ -60,7 +60,7 @@ static void mkDateCompare(bool dfu,const char *dt,StringBuffer &out,char fill)
 {
     out.clear();
     if (dt&&*dt) {
-        while (*dt&&!isdigit_char(*dt))
+        while (*dt&&!isdigit(*dt))
             dt++;
         if (dfu)
             out.append('D');
@@ -137,9 +137,9 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             {
                 const char *lo = from.str();
                 const char *hi = to.str();
-                while (*lo && (toupper_char(*lo) == toupper_char(*hi)))
+                while (*lo && (toupper(*lo) == toupper(*hi)))
                 {
-                    masktmp.append((char)toupper_char(*lo));
+                    masktmp.append((char)toupper(*lo));
                     lo++;
                     hi++;
                 }

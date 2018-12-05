@@ -114,7 +114,7 @@ bool getResponse()
     int ch;
     do
     {
-        ch = toupper_char(ch = _getch());
+        ch = toupper(ch = _getch());
     } while (ch != 'Y' && ch != 'N');
     printf("%c\n",ch);
     return ch=='Y' ? true : false;
@@ -128,10 +128,10 @@ bool confirm(const char * msg)
 
 static const char *getNum(const char *s,unsigned &num)
 {
-    while (*s&&!isdigit_char(*s))
+    while (*s&&!isdigit(*s))
         s++;
     num = 0;
-    while (isdigit_char(*s)) {
+    while (isdigit(*s)) {
         num = num*10+*s-'0';
         s++;
     }
@@ -225,8 +225,8 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
                 (stricmp(arg,"stop")==0))
                 arg = xcmd.clear().append("action=").append(arg);
             else if ((strchr(arg,'*')!=NULL)||(strchr(arg,'?')!=NULL)|| 
-                     ((toupper_char(arg[0])=='W')&&(arg[1]=='2'))||
-                     ((toupper_char(arg[0])=='D')&&(arg[1]=='2')))
+                     ((toupper(arg[0])=='W')&&(arg[1]=='2'))||
+                     ((toupper(arg[0])=='D')&&(arg[1]=='2')))
                 arg = xcmd.clear().append("wuid=").append(arg);
             else if (stricmp(arg,"dfu")==0)
                 arg = xcmd.clear().append("dfu=1");
@@ -236,7 +236,7 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
                 arg = xcmd.clear().append("archived=1");
             else {
                 SocketEndpoint ep;
-                if (isdigit_char(arg[0])) 
+                if (isdigit(arg[0])) 
                     ep.set(arg,DEFAULT_SASHA_PORT);             
                 if (ep.isNull()) {
                     ERRLOG("parameter '%s' not recognized",arg);

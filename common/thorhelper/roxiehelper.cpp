@@ -111,12 +111,12 @@ void CRHRollingCache::PrintCache()
             DBGLOG("RC==============================");
         int ii = 0;
         if (e && e->row)
-            ii = isalpha_char(*((char*)e->row)) ? 0 : 4;
+            ii = isalpha(*((char*)e->row)) ? 0 : 4;
         chas sz[100];
         sprintf(sz,"%c%d: %s",(i==max/2)?'>':' ',i,e?(const char *)e->row+ii:"-----");
         for (int xx=0; sz[xx] != NULL; xx++)
         {
-            if (!isprint_char(sz[xx]))
+            if (!isprint(sz[xx]))
             {
                 sz[xx] = NULL;
                 break;
@@ -2736,7 +2736,7 @@ void loadHttpHeaders(IProperties *p, const char *finger)
         if (*finger && *finger != '\r')
         {
             finger++;
-            while (isspace_char(*finger) && *finger != '\r')
+            while (isspace(*finger) && *finger != '\r')
                 finger++;
             while (*finger && *finger != '\r')
                 val.append(*finger++);
@@ -2769,7 +2769,7 @@ void HttpHelper::parseRequestHeaders(const char *headers)
 void HttpHelper::parseURL()
 {
     const char *start = url.str();
-    while (isspace_char(*start))
+    while (isspace(*start))
         start++;
     if (*start=='/')
         start++;

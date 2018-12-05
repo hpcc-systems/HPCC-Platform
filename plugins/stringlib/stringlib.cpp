@@ -141,7 +141,7 @@ static unsigned hex2digit(char c)
     }
 }
 
-inline char char_toupper(char c) { return (char)toupper_char(c); }
+inline char char_toupper(char c) { return (char)toupper(c); }
 
 inline void clip(unsigned &len, const char * s)
 {
@@ -697,7 +697,7 @@ STRINGLIB_API void STRINGLIB_CALL slString2Data(size32_t & __ret_len,void * & __
     char *target = out;
     for (;;)
     {
-        while (_len_src > 1 && isspace_char(*src))
+        while (_len_src > 1 && isspace(*src))
         {
             src++;
             _len_src--;
@@ -719,7 +719,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringToLowerCase(unsigned & tgtLen, char * 
     char * res = (char *)CTXMALLOC(parentCtx, srcLen);
     
     for (unsigned int i=0;i<srcLen;i++)
-        res[i] = tolower_char(src[i]);
+        res[i] = tolower(src[i]);
     
     tgt = res;
     tgtLen = srcLen;
@@ -733,7 +733,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringToUpperCase(unsigned & tgtLen, char * 
     char * res = (char *)CTXMALLOC(parentCtx, srcLen);
     
     for (unsigned int i=0;i<srcLen;i++)
-        res[i] = toupper_char(src[i]);
+        res[i] = toupper(src[i]);
     
     tgt = res;
     tgtLen = srcLen;
@@ -750,7 +750,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringToProperCase(unsigned & tgtLen, char *
     for (unsigned int i=0;i<srcLen;i++)
     {
         char c = src[i];
-        *tgt++ = seenSpace ? toupper_char(c) : c;
+        *tgt++ = seenSpace ? toupper(c) : c;
         seenSpace = (c==' ');
     }
     
@@ -768,8 +768,8 @@ STRINGLIB_API void STRINGLIB_CALL slStringToCapitalCase(unsigned & tgtLen, char 
     for (unsigned int i=0;i<srcLen;i++)
     {
         byte c = src[i];
-        result[i] = upperPending ? toupper_char(c) : c;
-        upperPending = !isalnum_char(c);
+        result[i] = upperPending ? toupper(c) : c;
+        upperPending = !isalnum(c);
     }
 
     tgt = result;
@@ -786,8 +786,8 @@ STRINGLIB_API void STRINGLIB_CALL slStringToTitleCase(unsigned & tgtLen, char * 
     for (unsigned int i=0;i<srcLen;i++)
     {
         byte c = src[i];
-        result[i] = upperPending ? toupper_char(c) : tolower_char(c);
-        upperPending = !isalnum_char(c);
+        result[i] = upperPending ? toupper(c) : tolower(c);
+        upperPending = !isalnum(c);
     }
 
     tgt = result;
@@ -805,8 +805,8 @@ STRINGLIB_API int STRINGLIB_CALL slStringCompareIgnoreCase (unsigned src1Len, co
         byte rc = src2[i];
         if (lc != rc)
         {
-            lc = tolower_char(lc);
-            rc = tolower_char(rc);
+            lc = tolower(lc);
+            rc = tolower(rc);
             if (lc != rc)
                 return lc > rc ? 1 : -1;
         }
@@ -926,7 +926,7 @@ STRINGLIB_API bool STRINGLIB_CALL slStringContains(unsigned srcLen, const char *
     {
         byte c = *src++;
         if (noCase)
-            c = toupper_char(c);
+            c = toupper(c);
         srcCount[c]++;
     }
 
@@ -937,7 +937,7 @@ STRINGLIB_API bool STRINGLIB_CALL slStringContains(unsigned srcLen, const char *
         byte c = *pat++;
 
         if (noCase)
-            c = toupper_char(c);
+            c = toupper(c);
         if (srcCount[c] == 0)
             return false;
         else
@@ -1360,7 +1360,7 @@ inline bool matchString(unsigned & value, size32_t & strOffset, size32_t lenStr,
         while (offset < lenStr)
         {
             byte next = *cur++;
-            if (!next || toupper_char(next) != toupper_char(str[offset]))
+            if (!next || toupper(next) != toupper(str[offset]))
                 break;
             offset++;
         }
@@ -1429,7 +1429,7 @@ static const char * simple_strptime(size32_t lenStr, const char * str, const cha
             	break;
             // Non-recursive cases
             case 't':
-                while ((offset < lenStr) && isspace_char(src[offset]))
+                while ((offset < lenStr) && isspace(src[offset]))
                     offset++;
                 break;
             case 'Y':
@@ -1490,9 +1490,9 @@ static const char * simple_strptime(size32_t lenStr, const char * str, const cha
         }
         else
         {
-            if (isspace_char(next))
+            if (isspace(next))
             {
-                while ((offset < lenStr) && isspace_char(src[offset]))
+                while ((offset < lenStr) && isspace(src[offset]))
                     offset++;
             }
             else
@@ -1646,7 +1646,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringToLowerCase80(char *tgt, unsigned srcL
 {
     unsigned int i;
     for (i=0;i<srcLen && i < 80;i++)
-        *tgt++ = tolower_char(src[i]);
+        *tgt++ = tolower(src[i]);
     while (i < 80)
     {
         *tgt++=' ';
@@ -1660,7 +1660,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringToUpperCase80(char *tgt, unsigned srcL
 {
     unsigned int i;
     for (i=0;i<srcLen && i < 80;i++)
-        *tgt++ = toupper_char(src[i]);
+        *tgt++ = toupper(src[i]);
     while (i < 80)
     {
         *tgt++=' ';

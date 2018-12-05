@@ -4645,7 +4645,7 @@ static unsigned findSubFileOrd(const char *name)
     if (*name=='#') {
         const char *n = name+1;
         if (*n) {
-            do { n++; } while (*n&&isdigit_char(*n));
+            do { n++; } while (*n&&isdigit(*n));
             if (!*n)
                 return atoi(name+1)-1;
         }
@@ -5328,7 +5328,7 @@ public:
         parent = _parent;
         root.set(_root);
         const char *val = root->queryProp("@interleaved");
-        if (val&&isdigit_char(*val))
+        if (val&&isdigit(*val))
             interleaved = atoi(val);
         else
             interleaved = strToBool(val)?1:0;
@@ -6998,7 +6998,7 @@ public:
         logicalgroupname = gname.str();
         bool isiprange = (*logicalgroupname!=0);
         for (const char *s1=logicalgroupname;*s1;s1++)
-            if (isalpha_char(*s1)) {
+            if (isalpha(*s1)) {
                 isiprange = false;
                 break;
             }
@@ -7154,7 +7154,7 @@ public:
             while (*s)
             {
                 unsigned start = 0;
-                while (isdigit_char(*s))
+                while (isdigit(*s))
                 {
                     start = start*10+*s-'0';
                     s++;
@@ -7166,7 +7166,7 @@ public:
                 {
                     s++;
                     end = 0;
-                    while (isdigit_char(*s))
+                    while (isdigit(*s))
                     {
                         end = end*10+*s-'0';
                         s++;
@@ -8428,7 +8428,7 @@ public:
         if (!s)
             return;
         while (*s) {
-            if (isdigit_char(*s)) {
+            if (isdigit(*s)) {
                 pn = pn*10+(*s-'0');
                 if (pn>max)
                     max = pn;
@@ -8447,7 +8447,7 @@ public:
         s=filter;
         unsigned start=0;
         for (;;) {
-            if ((*s==0)||(*s==',')||isspace_char(*s)) {
+            if ((*s==0)||(*s==',')||isspace(*s)) {
                 if (start) {
                     for (i=start-1;i<pn;i++)
                         partincluded[i] = true;
@@ -8459,7 +8459,7 @@ public:
                     break;
                 pn = 0;
             }
-            else if (isdigit_char(*s)) {
+            else if (isdigit(*s)) {
                 pn = pn*10+(*s-'0');
                 if (pn>max)
                     max = pn;
@@ -8747,7 +8747,7 @@ class CIterateFileFilterContainer : public CInterface
             return false;
         while (*s)
         {
-            if ((*s != '-') && !isdigit_char(*s))
+            if ((*s != '-') && !isdigit(*s))
                 return false;
             s++;
         }
@@ -8755,7 +8755,7 @@ class CIterateFileFilterContainer : public CInterface
     }
     void addOption(const char* optionStr)
     {
-        if (!optionStr || !*optionStr || !isdigit_char(*optionStr))
+        if (!optionStr || !*optionStr || !isdigit(*optionStr))
             return;
 
         DFUQSerializeFileAttrOption option = (DFUQSerializeFileAttrOption) atoi(optionStr);
@@ -8814,7 +8814,7 @@ class CIterateFileFilterContainer : public CInterface
     {
         if (!attr || !*attr || !value || !*value)
             return;
-        if (!isdigit_char(*attr))
+        if (!isdigit(*attr))
         {
             PROGLOG("Unsupported Special Filter: %s", attr);
             return;
@@ -8826,13 +8826,13 @@ class CIterateFileFilterContainer : public CInterface
             wildNameFilter.set(value);
             break;
         case DFUQSFFileType:
-            if (isdigit_char(*value))
+            if (isdigit(*value))
                 fileTypeFilter = (DFUQFileTypeFilter) atoi(value);
             else
                 PROGLOG("Unsupported Special Filter: %s, value %s", attr, value);
             break;
         case DFUQSFMaxFiles:
-            if (isdigit_char(*value))
+            if (isdigit(*value))
                 maxFilesFilter = atoi(value);
             else
                 PROGLOG("Unsupported Special Filter: %s, value %s", attr, value);
@@ -8875,7 +8875,7 @@ public:
             const char* filterTypeStr = filterStringArray.item(i);
             if (!filterTypeStr || !*filterTypeStr)
                 continue;
-            if (!isdigit_char(*filterTypeStr))
+            if (!isdigit(*filterTypeStr))
                 continue;
             unsigned filterSize = 4;
             DFUQFilterType filterType = (DFUQFilterType) atoi(filterTypeStr);
@@ -10808,7 +10808,7 @@ bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsigned short port,C
         throw MakeStringException(-1,"removePhysicalFiles: Filename %s must be complete path",_filemask);
 
     size32_t l = strlen(_filemask);
-    while (l&&isdigit_char(_filemask[l-1]))
+    while (l&&isdigit(_filemask[l-1]))
         l--;
     unsigned width=0;
     if (l&&(_filemask[l-1]=='_'))

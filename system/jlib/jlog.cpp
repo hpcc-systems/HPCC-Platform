@@ -2103,7 +2103,7 @@ ILogMsgHandler * getLogMsgHandlerFromPTree(IPropertyTree * tree)
     char const * fstr = tree->queryProp("@fields");
     if(fstr)
     {
-        if(isdigit_char(fstr[0]))
+        if(isdigit(fstr[0]))
             fields = atoi(fstr);
         else
             fields = LogMsgFieldsFromAbbrevs(fstr);

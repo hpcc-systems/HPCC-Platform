@@ -370,10 +370,10 @@ class CDFUengine: public CInterface, implements IDFUengine
     {
         if (!groupname)
             return false;
-        if (isdigit_char(*groupname)) {  // allow IPs
+        if (isdigit(*groupname)) {  // allow IPs
             const char *s = groupname+1;
             while (*s) {
-                if (!isdigit_char(*s)&&(*s!='.')&&(*s!='-')&&(*s!=',')&&(*s!=':'))
+                if (!isdigit(*s)&&(*s!='.')&&(*s!='-')&&(*s!=',')&&(*s!=':'))
                     break;
                 s++;
             }

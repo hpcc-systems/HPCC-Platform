@@ -1178,7 +1178,7 @@ UNICODE(_{letter}+)?{digit}* {
                       if(CUR_TOKEN_TEXT[digitstart] == '_')
                       {
                           digitstart++;
-                          while(islower_char((unsigned char)CUR_TOKEN_TEXT[digitstart]) || isupper_char((unsigned char)CUR_TOKEN_TEXT[digitstart]) || (CUR_TOKEN_TEXT[digitstart] == '_'))
+                          while(islower((unsigned char)CUR_TOKEN_TEXT[digitstart]) || isupper((unsigned char)CUR_TOKEN_TEXT[digitstart]) || (CUR_TOKEN_TEXT[digitstart] == '_'))
                             digitstart++;
                           getNormalizedLocaleName(digitstart-8, CUR_TOKEN_TEXT+8, locale);
                       }
@@ -1246,7 +1246,7 @@ VARUNICODE(_{letter}+)?{digit}* {
                       if(CUR_TOKEN_TEXT[digitstart] == '_')
                       {
                           digitstart++;
-                          while(islower_char((unsigned char)CUR_TOKEN_TEXT[digitstart]) || isupper_char((unsigned char)CUR_TOKEN_TEXT[digitstart]) || (CUR_TOKEN_TEXT[digitstart] == '_'))
+                          while(islower((unsigned char)CUR_TOKEN_TEXT[digitstart]) || isupper((unsigned char)CUR_TOKEN_TEXT[digitstart]) || (CUR_TOKEN_TEXT[digitstart] == '_'))
                               digitstart++;
                           getNormalizedLocaleName(digitstart-11, CUR_TOKEN_TEXT+11, locale);
                       }

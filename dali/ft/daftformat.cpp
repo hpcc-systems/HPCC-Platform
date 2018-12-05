@@ -779,7 +779,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
     {
         // Check discovered field name validity
         char act = fieldName.charAt(0);
-        if ( !(isalpha_char(act) || act == '_') )
+        if ( !(isalpha(act) || act == '_') )
         {
             fieldName.setCharAt(0, '_');
         }
@@ -787,7 +787,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
         for ( unsigned i = 1; i < fieldName.length(); i++)
         {
             act = fieldName.charAt(i);
-            if ( !(isalnum_char(act) || act == '_' || act == '$') )
+            if ( !(isalnum(act) || act == '_' || act == '$') )
             {
                 fieldName.setCharAt(i, '_');
             }
@@ -1132,7 +1132,7 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
     {
         // Check discovered field name validity
         char act = fieldName.charAt(0);
-        if ( !(isalpha_char(act) || act == '_') )
+        if ( !(isalpha(act) || act == '_') )
         {
             fieldName.setCharAt(0, '_');
         }
@@ -1140,7 +1140,7 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
         for ( unsigned i = 1; i < fieldName.length(); i++)
         {
             act = fieldName.charAt(i);
-            if ( !(isalnum_char(act) || act == '_' || act == '$') )
+            if ( !(isalnum(act) || act == '_' || act == '$') )
             {
                 fieldName.setCharAt(i, '_');
             }

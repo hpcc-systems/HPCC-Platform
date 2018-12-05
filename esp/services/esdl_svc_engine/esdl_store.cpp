@@ -464,7 +464,7 @@ public:
             int ind = 0;
             for ( ; espPort[ind]; ind++)
             {
-                if (!isdigit_char(espPort[ind]))
+                if (!isdigit(espPort[ind]))
                     throw MakeStringException(-1, "Esp port can only be a positive integer.");
             }
             if(ind > 5)

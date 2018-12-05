@@ -1650,12 +1650,12 @@ private:
                         checkTimeLimitExceeded(&remainingMS);
                         dataProvider.setown(new CSocketDataProvider(buffer, payloadofs, read, socket, MIN(master->timeoutMS,remainingMS)));
                         dataProvider->getBytes(&ch, 1);
-                        while (isalpha_char(ch) || isdigit_char(ch))
+                        while (isalpha(ch) || isdigit(ch))
                         {   //get chunk-size
-                            if (isdigit_char(ch))
+                            if (isdigit(ch))
                                 chunkSize = (chunkSize*16) + (ch - '0');
                             else
-                                chunkSize = (chunkSize*16) + 10 + (toupper_char(ch) - 'A');
+                                chunkSize = (chunkSize*16) + 10 + (toupper(ch) - 'A');
                             dataProvider->getBytes(&ch, 1);
                         }
                         while (chunkSize && ch != '\n')//consume chunk-extension and CRLF
@@ -1677,12 +1677,12 @@ private:
 
                             chunkSize = 0;
                             dataProvider->getBytes(&ch, 1);
-                            while (isalpha_char(ch) || isdigit_char(ch))
+                            while (isalpha(ch) || isdigit(ch))
                             {   //get next chunk size
-                                if (isdigit_char(ch))
+                                if (isdigit(ch))
                                     chunkSize = (chunkSize*16) + (ch - '0');
                                 else
-                                    chunkSize = (chunkSize*16) + 10 + (toupper_char(ch) - 'A');
+                                    chunkSize = (chunkSize*16) + 10 + (toupper(ch) - 'A');
                                 dataProvider->getBytes(&ch, 1);
                             }
                             while(chunkSize && ch != '\n')//consume chunk-extension and CRLF

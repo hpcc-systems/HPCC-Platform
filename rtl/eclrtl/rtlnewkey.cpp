@@ -1954,7 +1954,7 @@ IFieldFilter * deserializeFieldFilter(const RtlRecord & record, const char * src
     StringBuffer fieldText;
     readFieldFromFieldFilter(fieldText, src);
     unsigned fieldNum;
-    if (isdigit_char(fieldText.str()[0]))
+    if (isdigit(fieldText.str()[0]))
         fieldNum = atoi(fieldText.str());
     else
         fieldNum = record.getFieldNum(fieldText);

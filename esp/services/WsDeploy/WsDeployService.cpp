@@ -5594,7 +5594,7 @@ const char* CWsDeployFileInfo::GetDisplayProcessName(const char* processName, ch
       if (isupper(ch))
       {
         if (bLower || //last char was uppercase or the following character is lowercase?
-          ((processName+1 < end) && islower_char(*(processName+1))))
+          ((processName+1 < end) && islower(*(processName+1))))
         {
           *buf++ = ' ';
         }

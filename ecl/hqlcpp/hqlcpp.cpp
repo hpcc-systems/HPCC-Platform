@@ -11773,7 +11773,7 @@ static StringBuffer & appendCapital(StringBuffer & s, const char * name)
 {
     if (name && name[0])
     {
-        s.append((char)toupper_char(*name));
+        s.append((char)toupper(*name));
         s.append(name+1);
     }
     return s;

@@ -843,7 +843,7 @@ static bool canConsume(const ParseInformation & options, unsigned nextChar, unsi
     rtlThrowNoUnicode();
 #endif
 
-    return (nextChar == tolower_char(matcherChar)) || (nextChar == toupper_char(matcherChar));
+    return (nextChar == tolower(matcherChar)) || (nextChar == toupper(matcherChar));
 }
 
 bool HqlRegexExpr::canConsume(unsigned nextChar)
@@ -895,9 +895,9 @@ bool HqlRegexExpr::canConsume(unsigned nextChar)
                                 }
                                 else
                                 {
-                                    if (nextChar >= (unsigned)tolower_char(low) && nextChar <= (unsigned)tolower_char(high))
+                                    if (nextChar >= (unsigned)tolower(low) && nextChar <= (unsigned)tolower(high))
                                         return !invert;
-                                    if (nextChar >= (unsigned)toupper_char(low) && nextChar <= (unsigned)toupper_char(high))
+                                    if (nextChar >= (unsigned)toupper(low) && nextChar <= (unsigned)toupper(high))
                                         return !invert;
                                 }
                             }
@@ -956,8 +956,8 @@ void HqlRegexExpr::gatherConsumeSymbols(SymbolArray & symbols)
                 else
 
                 {
-                    symbols.addUnique(tolower_char(charValue));
-                    symbols.addUnique(toupper_char(charValue));
+                    symbols.addUnique(tolower(charValue));
+                    symbols.addUnique(toupper(charValue));
                 }
             }
             else

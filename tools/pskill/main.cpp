@@ -285,7 +285,7 @@ int main(int argc, char** argv)
             if(argv[i][0]=='-' || argv[i][0]=='/')
             {
                 const char* arg=argv[i]+1;
-                switch(tolower_char(*arg))
+                switch(tolower(*arg))
                 {
                 case 's':
                     procs.superuser();

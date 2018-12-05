@@ -279,13 +279,13 @@ typedef Owned<IPTree> OwnedPTree;
 static const char *validStartChrs = ":_";
 inline static bool isValidXPathStartChr(char c)
 {
-    return ('\0' != c && (isalpha_char(c) || strchr(validStartChrs, c)));
+    return ('\0' != c && (isalpha(c) || strchr(validStartChrs, c)));
 }
 
 static const char *validChrs = ":_.-";
 inline static bool isValidXPathChr(char c)
 {
-    return ('\0' != c && (isalnum_char(c) || strchr(validChrs, c)));
+    return ('\0' != c && (isalnum(c) || strchr(validChrs, c)));
 }
 
 #endif

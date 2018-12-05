@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
                         ni++;
                         arg = argv[ni];
                     }
-                    switch (toupper_char(argv[i][1]))
+                    switch (toupper(argv[i][1]))
                     {
                     case 'E':
                         mode = PMtextoutput;
@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
                     PROGLOG("Are you sure? [Y/N]");
                     do
                     {
-                        ch = toupper_char(ch = getchar());
+                        ch = toupper(ch = getchar());
                     } while (ch != 'Y' && ch != 'N');
                     PROGLOG("%c",ch);
                     if (ch == 'Y')

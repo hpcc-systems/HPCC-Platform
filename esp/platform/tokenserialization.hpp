@@ -256,7 +256,7 @@ private:
                 if (*ptr != '0')
                     tmp = true;
             }
-            while (isdigit_char(*++ptr));
+            while (isdigit(*++ptr));
             break;
 
         default:
@@ -442,7 +442,7 @@ private:
     }
     void skipWhitespace(const char*& buffer) const
     {
-        while (isspace_char(*buffer)) buffer++;
+        while (isspace(*buffer)) buffer++;
     }
 };
 

@@ -292,14 +292,14 @@ public:
                 // MORE - should really support decimal, real, and perhaps esoteric forms of integer (0x.... etc) here....
                 const char *v = searchString;
                 bool isNegative = false;
-                while (isspace_char(*v))
+                while (isspace(*v))
                     v++;
                 if (*v=='-')
                 {
                     isNegative = true;
                     v++;
                 }
-                if (isdigit_char(*v))
+                if (isdigit(*v))
                 {
                     intValue = 0;
                     char c;
@@ -314,7 +314,7 @@ public:
                     switch (c)
                     {
                     case ' ':
-                        while (isspace_char(c = *v))
+                        while (isspace(c = *v))
                             v++;
                         if (c)
                             break;

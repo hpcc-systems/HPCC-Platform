@@ -57,7 +57,7 @@ bool processArgvFilenamesFromFile(IFileArray & filenames, const char * filename)
         if (fgets(buffer, sizeof(buffer), in))
         {
             size_t len = strlen(buffer);
-            while (len && !isprint_char(buffer[len-1]))
+            while (len && !isprint(buffer[len-1]))
                 len--;
             buffer[len] = 0;
             if (len)

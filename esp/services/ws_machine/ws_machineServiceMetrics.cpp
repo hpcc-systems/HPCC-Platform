@@ -142,7 +142,7 @@ struct CFieldInfo
             xml.append("Total");
             pch += 3;
          }
-         else xml.append( (char)toupper_char( *pch++) );
+         else xml.append( (char)toupper( *pch++) );
 
             while (*pch)
             {

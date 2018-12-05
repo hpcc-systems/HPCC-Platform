@@ -44,6 +44,11 @@ if (WIN32)
         )
 
     add_definitions("-D_AFXDLL")
+
+    IF(WIN32)
+        add_definitions("-DNO_WARN_MBCS_MFC_DEPRECATION")
+    ENDIF(WIN32)
+
     set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /wd4996" )
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996" )
 

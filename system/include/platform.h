@@ -1,4 +1,4 @@
-/*##############################################################################
+﻿/*##############################################################################
 
     HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
@@ -113,7 +113,9 @@ typedef memsize_t rowsize_t;
 #if defined(_WIN32)
 
 #define _CRT_SECURE_NO_WARNINGS
+#ifndef NO_WARN_MBCS_MFC_DEPRECATION
 #define NO_WARN_MBCS_MFC_DEPRECATION
+#endif
 
 #if (_MSC_VER>=1300)
 #pragma warning(disable:4996)
@@ -480,20 +482,6 @@ typedef unsigned __int64 timestamp_type;
 #define pclose  _pclose
 #endif
 #endif
-
-// get rid off warning: pass signed char to unsigned parameter
-inline bool isspace_char(char c) { return isspace((unsigned char)c) != 0; }
-inline bool isdigit_char(char c) { return isdigit((unsigned char)c) != 0; }
-inline bool isalpha_char(char c) { return isalpha((unsigned char)c) != 0; }
-inline bool isprint_char(char c) { return isprint((unsigned char)c) != 0; }
-inline bool isblank_char(char c) { return isblank((unsigned char)c) != 0; }
-inline bool isupper_char(char c) { return isupper((unsigned char)c) != 0; }
-inline bool islower_char(char c) { return islower((unsigned char)c) != 0; }
-inline bool isalnum_char(char c) { return isalnum((unsigned char)c) != 0; }
-inline bool iscntrl_char(char c) { return iscntrl((unsigned char)c) != 0; }
-inline bool isxdigit_char(char c) { return isxdigit((unsigned char)c) != 0; }
-inline int toupper_char(char c) { return toupper((unsigned char)c); }
-inline int tolower_char(char c) { return tolower((unsigned char)c); }
 
 //Use the following DECL_XXX to annotate items that are exported from dlls, or objects that are thrown:
 //DECL_EXPORT for items that are exported from the dll containing the current file being compiled

@@ -53,7 +53,7 @@ static bool extractAttributeReference(StringBuffer & attributeName, const char *
             dot = cur;
             next = '.';
         }
-        else if (isalnum_char((byte)next) || (next=='_'))
+        else if (isalnum((byte)next) || (next=='_'))
         {
         }
         else
@@ -88,7 +88,7 @@ static void parseAttribute(IPropertyTree *destTree, const char *text, const char
 
             text += 4;
             const char *marker = text;
-            while (isalpha_char(*text))
+            while (isalpha(*text))
                 text++;
             if (text[0]=='-' && text[1]=='-')
             {
@@ -96,7 +96,7 @@ static void parseAttribute(IPropertyTree *destTree, const char *text, const char
                 text += 2;
             }
 
-            while (isspace_char(*text)) text++;
+            while (isspace(*text)) text++;
             const char * form = text;
             for (;;)
             {

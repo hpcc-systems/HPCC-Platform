@@ -11384,7 +11384,7 @@ static bool isUniqueAttributeName(IAtom * name)
     unsigned len = strlen(nameText);
     if (len > 3)
     {
-        if ((nameText[len-2] == '_') && (nameText[len-1] == '_') && isdigit_char((unsigned char)nameText[len-3]))
+        if ((nameText[len-2] == '_') && (nameText[len-1] == '_') && isdigit((unsigned char)nameText[len-3]))
             return true;
     }
     return false;
@@ -11413,10 +11413,10 @@ static IIdAtom * simplifySymbolName(IIdAtom * name, bool commonUniqueNameAttribu
     size_t len = nameLen;
     if (len > 3)
     {
-        if ((nameText[len-2] == '_') && (nameText[len-1] == '_') && isdigit_char((unsigned char)nameText[len-3]))
+        if ((nameText[len-2] == '_') && (nameText[len-1] == '_') && isdigit((unsigned char)nameText[len-3]))
         {
             len -= 3;
-            while (len && isdigit_char((unsigned char)nameText[len-1]))
+            while (len && isdigit((unsigned char)nameText[len-1]))
                 len--;
             //Shouldn't be possible...
             if (len == 0)

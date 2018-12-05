@@ -1019,7 +1019,7 @@ void CWsSMCEx::readBannerAndChatRequest(IEspContext& context, IEspActivityReques
         unsigned len = strlen(chatURL);
         for (unsigned i = 0; i < len; i++)
         {
-            if (isprint_char(*pStr))
+            if (isprint(*pStr))
                 chatURLStr.append(*pStr);
             pStr++;
         }
@@ -1030,7 +1030,7 @@ void CWsSMCEx::readBannerAndChatRequest(IEspContext& context, IEspActivityReques
         unsigned len = strlen(banner);
         for (unsigned i = 0; i < len; i++)
         {
-            bannerStr.append(isprint_char(*pStr) ? *pStr : '.');
+            bannerStr.append(isprint(*pStr) ? *pStr : '.');
             pStr++;
         }
     }

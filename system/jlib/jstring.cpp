@@ -386,7 +386,7 @@ StringBuffer & StringBuffer::appendLower(size_t len, const char * value)
         ensureCapacity(len);
         const byte * from = reinterpret_cast<const byte *>(value);
         for (size_t i = 0; i < len; i++)
-            buffer[curLen + i] = tolower_char(from[i]);
+            buffer[curLen + i] = tolower(from[i]);
         curLen += len;
     }
     return *this;
@@ -753,7 +753,7 @@ StringBuffer & StringBuffer::padTo(size_t count)
 
 StringBuffer & StringBuffer::clip()
 {
-    while (curLen && isspace_char(buffer[curLen-1]))
+    while (curLen && isspace(buffer[curLen-1]))
         curLen--;
     return *this;
 }
@@ -771,7 +771,7 @@ StringBuffer & StringBuffer::trimLeft()
         return *this;
 
     buffer[curLen] = 0; 
-    for(p = buffer;isspace_char(*p);p++)
+    for(p = buffer;isspace(*p);p++)
         ; 
     if (p!=buffer)
     {
@@ -882,8 +882,8 @@ StringBuffer & StringBuffer::toLowerCase()
     size_t l = curLen;
     for (size_t i = 0; i < l; i++)
     {
-        if (isupper_char(buffer[i]))
-            buffer[i] = tolower_char(buffer[i]);
+        if (isupper(buffer[i]))
+            buffer[i] = tolower(buffer[i]);
     }
     return *this;
 }
@@ -893,8 +893,8 @@ StringBuffer & StringBuffer::toUpperCase()
     size32_t l = curLen;
     for (size32_t i = 0; i < l; i++)
     {
-        if (islower_char(buffer[i]))
-            buffer[i] = toupper_char(buffer[i]);
+        if (islower(buffer[i]))
+            buffer[i] = toupper(buffer[i]);
     }
     return *this;
 }
@@ -1243,7 +1243,7 @@ String * String::toLowerCase() const
     {
         ret->text = (char *)malloc(l+1);
         for (unsigned i = 0; i < l; i++)
-            ret->text[i] = tolower_char(text[i]);
+            ret->text[i] = tolower(text[i]);
         ret->text[l]=0;
     }
     return ret;
@@ -1263,7 +1263,7 @@ String * String::toUpperCase() const
     {
         ret->text = (char *)malloc(l+1);
         for (unsigned i = 0; i < l; i++)
-            ret->text[i] = toupper_char(text[i]);
+            ret->text[i] = toupper(text[i]);
         ret->text[l]=0;
     }
     return ret;
@@ -1272,7 +1272,7 @@ String * String::toUpperCase() const
 String * String::trim() const
 {
     size32_t l = length();
-    while (l && isspace_char(text[l-1]))
+    while (l && isspace(text[l-1]))
         l--;
     return new String(text, 0, l);
 }
@@ -1407,8 +1407,8 @@ void StringAttr::toLowerCase()
         char next;
         while ((next = *cur) != 0)
         {
-            if (isupper_char(next))
-                *cur = tolower_char(next);
+            if (isupper(next))
+                *cur = tolower(next);
             cur++;
         }
     }
@@ -1422,8 +1422,8 @@ void StringAttr::toUpperCase()
         char next;
         while ((next = *cur) != 0)
         {
-            if (islower_char(next))
-              *cur = toupper_char(next);
+            if (islower(next))
+              *cur = toupper(next);
             cur++;
         }
     }
@@ -1463,7 +1463,7 @@ void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
     unsigned char c = (unsigned char) *src;
     if (c == ' ')
       dest->append('+');
-    else if ((c & 0x80) || !isalnum_char(*src))
+    else if ((c & 0x80) || !isalnum(*src))
     {
       dest->append('%');
       dest->appendhex(c, lower);
@@ -1500,7 +1500,7 @@ StringBuffer &appendDecodedURL(StringBuffer &s, const char *url)
             c = ' ';
         else if (c == '%')
         {
-            if (isxdigit_char(url[0]) && isxdigit_char(url[1]))
+            if (isxdigit(url[0]) && isxdigit(url[1]))
             {
                 c = translateHex(url[0], url[1]);
                 url+=2;
@@ -1645,7 +1645,7 @@ void extractItem(StringBuffer & res, const char * src, const char * sep, int whi
             while (!isSeparator[(next = *finger)])
             { 
                 if (caps)
-                    next = toupper_char(next);
+                    next = toupper(next);
                 res.append(next);
                 finger++;
             }
@@ -2261,13 +2261,13 @@ bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, Strin
             {
                 continue;
             }
-            else if (isdigit_char(next) && next < '8')
+            else if (isdigit(next) && next < '8')
             {
                 unsigned count;
                 for(count = 1; count < 3; count++)
                 {
                     next = str[++i];
-                    if(!isdigit_char(next) || next >= '8')
+                    if(!isdigit(next) || next >= '8')
                     {
                         msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
                         ep = i;
@@ -2282,7 +2282,7 @@ bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, Strin
                 for(count = 0; count < max; count++)
                 {
                     next = str[++i];
-                    if(!isdigit_char(next) && (!isalpha_char(next) || tolower_char(next) > 'f'))
+                    if(!isdigit(next) && (!isalpha(next) || tolower(next) > 'f'))
                     {
                         msg.append((max == 4) ? '4' : '8').append("-digit unicode escape sequence contained non-hex digit: ").append(next);
                         ep = i;
@@ -2340,7 +2340,7 @@ void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfIn
                     }
                 case 'x':
                     c = 0;
-                    while (isxdigit_char(*in))
+                    while (isxdigit(*in))
                     {
                         next = *in++;
                         c = c << 4;
@@ -2367,7 +2367,7 @@ bool isPrintable(unsigned len, const char * src)
 {
     while (len--)
     {
-        if (!isprint_char(*((unsigned char *)src)))
+        if (!isprint(*((unsigned char *)src)))
             return false;
         src++;
     }
@@ -2436,12 +2436,12 @@ bool strToBool(size_t len, const char * text)
             return true;
         break;
     }
-    while (len && isspace_char(*text))
+    while (len && isspace(*text))
     {
         len--;
         text++;
     }
-    while (len-- && isdigit_char(*text))
+    while (len-- && isdigit(*text))
     {
         if (*text++ != '0') return true;
     }
@@ -2473,7 +2473,7 @@ bool clipStrToBool(const char * text)
 
 StringBuffer & ncnameEscape(char const * in, StringBuffer & out)
 {
-    if(!isalpha_char(*in))
+    if(!isalpha(*in))
     {
         out.appendf("_%02X", static_cast<unsigned char>(*in));
         in++;
@@ -2481,7 +2481,7 @@ StringBuffer & ncnameEscape(char const * in, StringBuffer & out)
     char const * finger = in;
     while(*finger)
     {
-        if(!isalnum_char(*finger))
+        if(!isalnum(*finger))
         {
             if(finger>in)
                 out.append((size32_t)(finger-in), in);
@@ -2531,7 +2531,7 @@ bool startsWith(const char* src, const char* prefix)
 
 bool startsWithIgnoreCase(const char* src, const char* prefix)
 {
-    while (*prefix && tolower_char(*prefix) == tolower_char(*src)) { src++; prefix++; }
+    while (*prefix && tolower(*prefix) == tolower(*src)) { src++; prefix++; }
     return *prefix==0;
 }
 
@@ -2595,7 +2595,7 @@ int j_memicmp (const void *s1, const void *s2, size32_t len)
     const byte *b1 = (const byte *)s1;
     const byte *b2 = (const byte *)s2;
     int ret = 0;
-    while (len&&((ret = tolower_char(*b1)-tolower_char(*b2)) == 0)) {
+    while (len&&((ret = tolower(*b1)-tolower(*b2)) == 0)) {
         b1++;
         b2++;
         len--;

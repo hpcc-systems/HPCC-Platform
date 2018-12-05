@@ -2673,10 +2673,10 @@ IRemoteConnection *EclAgent::getPersistReadLock(const char * logicalName)
 
     StringBuffer xpath;
     xpath.append("/PersistRunLocks/");
-    if (isdigit_char(*name))
+    if (isdigit(*name))
         xpath.append("_");
     for (const char * cur = name;*cur;cur++)
-        xpath.append(isalnum_char(*cur) ? *cur : '_');
+        xpath.append(isalnum(*cur) ? *cur : '_');
 
     LOG(MCrunlock, unknownJob, "Waiting for persist read lock for %s", name);
     Owned<IRemoteConnection> persistLock;
@@ -2867,7 +2867,7 @@ restart:     // If things change beneath us as we are deleting, repeat the proce
             bool crcSuffix = (*tail++=='p');
             while (crcSuffix && *tail)
             {
-                if (!isdigit_char(*tail))
+                if (!isdigit(*tail))
                     crcSuffix = false;
                 tail++;
             }

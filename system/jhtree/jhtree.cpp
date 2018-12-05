@@ -1746,7 +1746,7 @@ bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seek
         for (i = 0; i < key.keySize(); i++)
         {
             unsigned char c = ((unsigned char *) keyBuffer)[i];
-            recstr.appendf("%c", isprint_char(c) ? c : '.');
+            recstr.appendf("%c", isprint(c) ? c : '.');
         }
         recstr.append ("    ");
         for (i = 0; i < key.keySize(); i++)
@@ -1844,7 +1844,7 @@ void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, size3
     for (i = 0; i < recSize; i++)
     {
         unsigned char c = ((unsigned char *) keyBuffer)[i];
-        recstr.appendf("%c", isprint_char(c) ? c : '.');
+        recstr.appendf("%c", isprint(c) ? c : '.');
     }
     recstr.append ("\n");
     for (i = 0; i < recSize; i++)
@@ -2614,7 +2614,7 @@ public:
                         for (i = 0; i < keySize; i++)
                         {
                             unsigned char c = ((unsigned char *) keyBuffer)[i];
-                            recstr.appendf("%c", isprint_char(c) ? c : '.');
+                            recstr.appendf("%c", isprint(c) ? c : '.');
                         }
                         recstr.append ("    ");
                         for (i = 0; i < keySize; i++)

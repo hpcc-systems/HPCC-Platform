@@ -472,7 +472,7 @@ static unsigned __int64 hextoll(const char *str, bool *error=NULL)
     {
         char c = *ptr;
         unsigned v;
-        if (isdigit_char(c))
+        if (isdigit(c))
             v = c-'0';
         else if (c>='A' && c<='F')
             v = 10+(c-'A');

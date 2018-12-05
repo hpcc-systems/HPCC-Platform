@@ -193,7 +193,7 @@ static unsigned __int64 hextoll(const char *str, bool &error)
     for (;;) {
         char c = *ptr;
         unsigned v;
-        if (isdigit_char(c))
+        if (isdigit(c))
             v = c-'0';
         else if (c>='A' && c<='F')
             v = 10+(c-'A');
@@ -1196,7 +1196,7 @@ static bool getResponse()
     int ch;
     do
     {
-        ch = toupper_char(ch = _getch());
+        ch = toupper(ch = _getch());
     } while (ch != 'Y' && ch != 'N' && ch != '*');
     _putch(ch);
     _putch('\n');
@@ -1996,10 +1996,10 @@ static void holdlock(const char *logicalFile, const char *mode, IUserDescriptor 
 
 static const char *getNum(const char *s,unsigned &num)
 {
-    while (*s&&!isdigit_char(*s))
+    while (*s&&!isdigit(*s))
         s++;
     num = 0;
-    while (isdigit_char(*s)) {
+    while (isdigit(*s)) {
         num = num*10+*s-'0';
         s++;
     }
@@ -3242,7 +3242,7 @@ int main(int argc, char* argv[])
             (memcmp(param,"deletefiles=",12)==0) ||
             (memcmp(param,"timeout=",8)==0))
             props->loadProp(param);
-        else if ((i==1)&&(isdigit_char(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
+        else if ((i==1)&&(isdigit(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
             props->setProp("server",ep.getUrlStr(tmps.clear()).str());
         else {
             if ((strieq(param,"help")) || (strieq(param,"-help")) || (strieq(param,"--help"))) {

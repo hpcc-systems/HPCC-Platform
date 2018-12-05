@@ -103,7 +103,7 @@ namespace JsonHelpers
 
     static inline StringBuffer &jsonNumericNext(StringBuffer &s, const char *&c, bool &allowDecimal, bool &allowExponent, const char *start)
     {
-        if (isdigit_char(*c))
+        if (isdigit(*c))
             s.append(*c++);
         else if ('.'==*c)
         {
@@ -122,7 +122,7 @@ namespace JsonHelpers
             s.append(*c++);
             if ('-'==*c || '+'==*c)
                 s.append(*c++);
-            if (!isdigit_char(*c))
+            if (!isdigit(*c))
                 throw MakeJSONValueException(-1, start, c, "Unexpected token");
         }
         else
@@ -141,7 +141,7 @@ namespace JsonHelpers
             if (*c && '.'!=*c)
                 throw MakeJSONValueException(-1, start, c, "Unexpected token");
         }
-        else if (isdigit_char(*c))
+        else if (isdigit(*c))
             s.append(*c++);
         else
             throw MakeJSONValueException(-1, start, c, "Unexpected token");

@@ -395,7 +395,7 @@ private:
                 ret.append(c);
                 break;
             default:
-                if (isalnum_char(c))
+                if (isalnum(c))
                     ret.append(c); // Note - we COULD make the cache case-insensitive and we would be right to 99.9% if the time. But there is a weird syntax using H to force uppercase filenames...
                 else
                     ret.append('.').append((unsigned) (unsigned char) c);

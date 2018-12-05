@@ -146,7 +146,7 @@ static void LoadMethodMappings()
             continue;
 
         char* p = line;
-        while (isspace_char(*p))
+        while (isspace(*p))
             p++;
 
         char* lastChar = p + strlen(p) - 1;

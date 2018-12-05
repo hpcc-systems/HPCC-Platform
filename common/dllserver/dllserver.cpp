@@ -67,7 +67,7 @@ static void getMangledTag(StringBuffer & path, const char * name)
     for (unsigned i=0; i < len; i++)
     {
         char next = name[i];
-        if (isalnum_char((byte)next))
+        if (isalnum((byte)next))
             path.append(next);
         else
             path.append("_");

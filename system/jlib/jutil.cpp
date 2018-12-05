@@ -206,7 +206,7 @@ __int64 atoi64_l(const char * s,int l)
     __int64 result = 0;
     char sign = '+';
 
-    while (l>0 && isspace_char(*s))
+    while (l>0 && isspace(*s))
     {
         l--;
         s++;
@@ -219,7 +219,7 @@ __int64 atoi64_l(const char * s,int l)
         s++;
     }
 
-    while (l>0 && isdigit_char(*s))
+    while (l>0 && isdigit(*s))
     {
         result = 10 * result + ((*s) - '0');
         l--;
@@ -1029,11 +1029,11 @@ bool isCIdentifier(const char* id)
     if (id==NULL || *id==0)
         return false;
 
-    if (!isalpha_char(*id) && *id!='_')
+    if (!isalpha(*id) && *id!='_')
         return false;
 
     for (++id; *id != 0; id++)
-        if (!isalnum_char(*id) && *id!='_')
+        if (!isalnum(*id) && *id!='_')
             return false;
 
     return true;
@@ -1201,7 +1201,7 @@ StringBuffer &JBASE64_Decode(ISimpleReadStream &in, StringBuffer &out)
             break;
         if (!c1)
             break;
-        else if (!isspace_char(c1))
+        else if (!isspace(c1))
         {
             in.read(3, cs);
             d1 = BASE64_dec[c1];
@@ -1241,7 +1241,7 @@ MemoryBuffer &JBASE64_Decode(ISimpleReadStream &in, MemoryBuffer &out)
             break;
         if (!c1)
             break;
-        else if (!isspace_char(c1))
+        else if (!isspace(c1))
         {
             in.read(3, cs);
             d1 = BASE64_dec[c1];
@@ -1276,7 +1276,7 @@ StringBuffer &JBASE64_Decode(const char *incs, StringBuffer &out)
         c1 = *incs++;
         if (!c1)
             break;
-        else if (!isspace_char(c1))
+        else if (!isspace(c1))
         {
             c2 = *incs++;
             c3 = *incs++;
@@ -1314,7 +1314,7 @@ MemoryBuffer &JBASE64_Decode(const char *incs, MemoryBuffer &out)
         c1 = *incs++;
         if (!c1)
             break;
-        else if (!isspace_char(c1))
+        else if (!isspace(c1))
         {
             c2 = *incs++;
             c3 = *incs++;
@@ -1358,7 +1358,7 @@ bool JBASE64_Decode(size32_t length, const char *incs, StringBuffer &out)
     {
         c1 = *incs++;
 
-        if (isspace_char(c1))
+        if (isspace(c1))
             continue;
 
         if (!BASE64_dec[c1] && ('A' != c1) && (pad != c1))
@@ -1483,7 +1483,7 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
     for (;;)
     {
         if (trimSpaces)
-            while (isspace_char(*s))
+            while (isspace(*s))
                 s++;
         if (!*s&&(dst.ordinality()==dstlen)) // this check is to allow trailing separators (e.g. ",," is 3 (NULL) entries) but not generate an entry for ""
             break;
@@ -1789,7 +1789,7 @@ StringBuffer &expandMask(StringBuffer &buf, const char *mask, unsigned p, unsign
         while (*s) {
             char next = *(s++);
             if (next=='$') {
-                char pc = toupper_char(s[0]);
+                char pc = toupper(s[0]);
                 if (pc&&(s[1]=='$')) {
                     if (pc=='P') {
                         buf.append(p+1);
@@ -1897,13 +1897,13 @@ bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, 
         if (*s=='_') {
             s++;
             unsigned p = 0;
-            while (isdigit_char(*s))
+            while (isdigit(*s))
                 p = p*10+*(s++)-'0';
             if (p&&(memcmp(s,"_of_",4)==0)) {
                 s += 4;
                 pret = p-1;
                 p = 0;
-                while (isdigit_char(*s))
+                while (isdigit(*s))
                     p = p*10+*(s++)-'0';
                 nret = p;
                 if (((*s==0)||(*s=='.'))&&(p>pret)) {

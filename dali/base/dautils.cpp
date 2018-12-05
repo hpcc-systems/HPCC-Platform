@@ -91,7 +91,7 @@ static const char *toLowerTrim(const char *s,StringBuffer &str)
 
 inline void skipSp(const char *&s)
 {
-    while (isspace_char(*s))
+    while (isspace(*s))
         s++;
 }
 
@@ -361,13 +361,13 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
 
 inline void normalizeScope(const char *name, const char *scope, unsigned len, StringBuffer &res, bool strict)
 {
-    while (len && isspace_char(scope[len-1]))
+    while (len && isspace(scope[len-1]))
     {
         if (strict)
             throw MakeStringException(-1, "Scope contains trailing spaces in file name '%s'", name);
         len--;
     }
-    while (len && isspace_char(scope[0]))
+    while (len && isspace(scope[0]))
     {
         if (strict)
             throw MakeStringException(-1, "Scope contains leading spaces in file name '%s'", name);
@@ -386,7 +386,7 @@ void normalizeNodeName(const char *node, unsigned len, SocketEndpoint &ep, bool 
 {
     if (!strict)
     {
-        while (isspace_char(*node))
+        while (isspace(*node))
         {
             node++;
             len--;
@@ -833,9 +833,9 @@ void CDfsLogicalFileName::setExternal(const char *location,const char *path)
             if (isPathSepChar(*path))
                 str.append("::");
             else {
-                if ((*path=='^')||isupper_char(*path))
+                if ((*path=='^')||isupper(*path))
                     str.append('^');
-                str.append((char)tolower_char(*path));
+                str.append((char)tolower(*path));
             }
             path++;
         }
@@ -1044,7 +1044,7 @@ StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) con
                     ++s;
                     if ('\0' == *s)
                         return lfnNodeName; // probably an error really to end in '^'
-                    c = toupper_char(*s);
+                    c = toupper(*s);
                     // fall through
                 default:
                     if ('_' == c)
@@ -1166,7 +1166,7 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
         }
         else {
             if ((c=='^')&&(s!=t1)) {
-                c = toupper_char(*s);
+                c = toupper(*s);
                 s++;
             }
             dir.append(c);
@@ -1179,7 +1179,7 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
     while (*t1) {
         char c = *(t1++);
         if ((c=='^')&&*t1) {
-            c = toupper_char(*t1);
+            c = toupper(*t1);
             t1++;
         }
         tail.append(c);
@@ -1255,7 +1255,7 @@ bool CDfsLogicalFileName::setFromMask(const char *fname,const char *rootdir)
             logicalName.append(*fname);
         }
         else
-            logicalName.append((char)tolower_char(*fname));
+            logicalName.append((char)tolower(*fname));
         fname++;
     }
     return false;
@@ -1273,7 +1273,7 @@ const char * skipScope(const char *lname,const char *scope) // returns NULL if s
     if (!*lname)
         return NULL;
     while (*scope) {
-        if (toupper_char(*scope)!=toupper_char(*lname))
+        if (toupper(*scope)!=toupper(*lname))
             return NULL;
         scope++;
         lname++;
