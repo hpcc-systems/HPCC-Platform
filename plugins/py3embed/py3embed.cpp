@@ -22,6 +22,7 @@
 #include "Python.h"
 #undef ssize_t
 #else
+#define register
 #include "Python.h"
 #endif
 
@@ -41,6 +42,7 @@
 #include "nbcd.hpp"
 #include "roxiemem.hpp"
 #include "enginecontext.hpp"
+#include <regex>
 
 #if PY_MAJOR_VERSION >=3
   #define Py_TPFLAGS_HAVE_ITER 0
@@ -403,6 +405,28 @@ public:
         return getNamedTupleType(names.str());
     }
 
+    StringBuffer & reformatCompilerError(StringBuffer &ret, const char *error, unsigned leadingLines)
+    {
+        // Errors from compiler tend to look like this:
+        // "('invalid syntax', ('<embed>', 3, 12, '     sfsf ss fs dfs f sfs\n'))"
+        const char pattern [] = "\\(\\'(.*)\\', \\(\\'.*\\', ([0-9]*), ([0-9]*), (.*)\\)\\)";
+        // Hopefully there are no embedded quotes in the error message or the filename
+        std::regex regex(pattern);
+        std::cmatch matches;
+        if (std::regex_match(error, matches, regex))
+        {
+            assertex(matches.size()==5);  // matches 0 is the whole string
+            std::string err = matches.str(1);
+            unsigned line = atoi(matches.str(2).c_str());
+            unsigned col = atoi(matches.str(3).c_str());
+            std::string extra = matches.str(4);
+            if (line > leadingLines)
+                line--;
+            return ret.appendf("(%u, %u): %s: %s", line, col, err.c_str(), extra.c_str());
+        }
+        else
+            return ret.append(error);
+    }
     PyObject *compileScript(const char *text, const char *parameters)
     {
         // Note - we do not need (and must not have) a lock protecting this. It is protected by the Python GIL,
@@ -414,6 +438,7 @@ public:
         code.set(PyDict_GetItemString(compiledScripts, text));
         if (!code)
         {
+            unsigned leadingLines = (unsigned) -1;  // Number of lines from input that have not been offset by 1 line in input to compiler
             code.setown(Py_CompileString(text, "", Py_eval_input));   // try compiling as simple expression...
             if (!code)
             {
@@ -424,11 +449,24 @@ public:
                 {
                     PyErr_Clear();
                     StringBuffer wrapped;
-                    wrapPythonText(wrapped, text, parameters);
+                    wrapPythonText(wrapped, text, parameters, leadingLines);
                     code.setown(Py_CompileStringFlags(wrapped, "<embed>", Py_file_input, &flags)); // try compiling as a function body
                 }
             }
-            checkPythonError();
+            PyObject* err = PyErr_Occurred();
+            if (err)
+            {
+                OwnedPyObject pType, pValue, pTraceBack;
+                PyErr_Fetch(pType.ref(), pValue.ref(), pTraceBack.ref());
+                OwnedPyObject valStr = PyObject_Str(pValue);
+                PyErr_Clear();
+                // We reformat the error message a little, to make it more helpful
+                assertex(PyUnicode_Check(valStr));
+                const char *errtext = PyUnicode_AsUTF8AndSize(valStr, NULL);
+                StringBuffer msg;
+                reformatCompilerError(msg, errtext, leadingLines);
+                rtlFail(0, msg.str());
+            }
             if (code)
                 PyDict_SetItemString(compiledScripts, text, code);
         }
@@ -460,7 +498,7 @@ public:
     }
     static void unregister(const char *key);
 protected:
-    static StringBuffer &wrapPythonText(StringBuffer &out, const char *in, const char *params)
+    static StringBuffer &wrapPythonText(StringBuffer &out, const char *in, const char *params, unsigned &leadingLines)
     {
         // Complicated by needing to keep future import lines outside defined function
         // Per python spec, a future statement must appear near the top of the module. The only lines that can appear before a future statement are:
@@ -474,7 +512,7 @@ protected:
         StringArray lines;
         lines.appendList(in, "\n", false);
         RegExpr expr("^ *from +__future__ +import ");
-        unsigned leadingLines = 0;
+        leadingLines = 0;
         ForEachItemIn(idx, lines)
         {
             if (expr.find(lines.item(idx)))
@@ -1635,7 +1673,6 @@ public:
     {
         addArg(name, createECLDatasetIterator(metaVal.queryTypeInfo(), LINK(val)));
     }
-
 protected:
     virtual void addArg(const char *name, PyObject *arg) = 0;
 
@@ -1685,6 +1722,7 @@ public:
         argstring.append("__activity__");
     }
 
+
     virtual void callFunction()
     {
         result.setown(PyEval_EvalCode(script.get(), globals, locals));
@@ -1693,6 +1731,10 @@ public:
             result.set(PyDict_GetItemString(globals, "__result__"));
         if (!result || result == Py_None)
             result.set(PyDict_GetItemString(locals, "__result__"));
+    }
+    void setargs(const char *args)
+    {
+        argstring.set(args);
     }
 protected:
     virtual void addArg(const char *name, PyObject *arg)
@@ -1796,9 +1838,24 @@ extern DECL_EXPORT IEmbedContext* getEmbedContext()
     return new Python3xEmbedContext;
 }
 
-extern DECL_EXPORT bool syntaxCheck(const char *script)
+extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult,char * & __result,size32_t charsBody,const char * body, const char * parms)
 {
-    return true; // MORE
+    StringBuffer result;
+    try
+    {
+        checkThreadContext();
+        Owned<Python3xEmbedScriptContext> ctx = new Python3xEmbedScriptContext(threadContext);
+        ctx->setargs(parms);
+        ctx->compileEmbeddedScript(charsBody, body);
+    }
+    catch (IException *E)
+    {
+        StringBuffer msg;
+        result.append(E->errorMessage(msg));
+        E->Release();
+    }
+    __lenResult = result.length();
+    __result = result.detach();
 }
 
 } // namespace

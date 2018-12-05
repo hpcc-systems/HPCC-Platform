@@ -950,6 +950,24 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         {
             HqlExprArray syntaxCheckArgs;
             embedText->unwindList(syntaxCheckArgs, no_comma);
+            if (matchesBoolean(prebind, true))
+            {
+                // To syntax-check functions with prebind set, we need to pass in the parameter names
+                StringBuffer argnames;
+                HqlExprArray & params = defineScopes.tos().activeParameters;
+                ForEachItemIn(i, params)
+                {
+                    IHqlExpression * param = &params.item(i);
+                    IAtom *name = param->queryName();
+                    if (name)
+                        argnames.append(',').append(name->queryStr());
+                }
+                argnames.append(',').append("__activity__");   // Special parameter indicating activity context - not always passed but won't break anything if we pretend it is (I hope!)
+                if (argnames.length())
+                    syntaxCheckArgs.append(*createConstant(argnames.str()+1));
+                else
+                    syntaxCheckArgs.append(*createConstant(""));  //passing nullptr might be better but not sure how
+            }
             OwnedHqlExpr syntax = createBoundFunction(this, syntaxCheckFunc, syntaxCheckArgs, lookupCtx.functionCache, true);
             OwnedHqlExpr folded = foldHqlExpression(syntax);
             if (folded->queryValue())
