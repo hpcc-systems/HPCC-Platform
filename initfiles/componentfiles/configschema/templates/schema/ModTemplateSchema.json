@@ -1,0 +1,166 @@
+{
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "description" : "Schema for validating environment modification template",
+    "type" : "object",
+    "properties" : {
+        "name" : {
+            "type" : "string"
+        },
+        "description" : {
+            "type" : "string"
+        },
+        "type" : {
+            "type" : "string",
+            "enum" : [
+                "new",
+                "modification"
+            ]
+        },
+        "subtype" : {
+            "type" : "string"
+        },
+        "inputs" : {
+            "type" : "array",
+            "minItems" : 0,
+            "items" : {
+                "type" : "object",
+                "properties" : {
+                    "name" : {
+                        "type" : "string"
+                    },
+                    "type" : {
+                        "type" : "string",
+                        "enum" : [
+                            "string",
+                            "iprange",
+                            "ipaddress",
+                            "hostname"
+                        ]
+                    },
+                    "prompt" : {
+                        "type" : "string"
+                    },
+                    "description" : {
+                        "type" : "string"
+                    },
+                    "tooltip" : {
+                        "type" : "string"
+                    },
+                    "value" : {
+                        "type" : "string"
+                    },
+                    "non_user_input" : {
+                        "type" : "boolean"
+                    },
+                    "prepared_value" : {
+                        "type" : "string"
+                    }
+                },
+                "required" : [
+                    "name",
+                    "type"
+                ]
+            }
+        },
+        "rules" : {
+            "type" : "object"
+        },
+        "operations" : {
+            "type" : "array",
+            "minItems" : 0,
+            "items" : { "$ref" : "#/definitions/operation"}
+        }
+    },
+    "required" : [
+        "name",
+        "type",
+        "operations"
+    ],
+
+    "definitions" : {
+
+        "operation" : {
+            "type" : "object",
+            "properties" : {
+                "action" : {
+                    "type" : "string"
+                },
+                "save_nodeid" : {
+                    "type" : "string"
+                },
+                "path" : {
+                    "type" : "string"
+                },
+                "parent_nodeid" : {
+                    "type" : "string"
+                },
+                "node_type" : {
+                    "type" : "string"
+                },
+                "count" : {
+                    "type" : "string"
+                },
+                "start_index" : {
+                    "type" : "string"
+                },
+                "attributes" : {
+                    "$ref" : "#/definitions/attribute_values"
+                }
+            },
+            "allOf" : [
+                {
+                    "oneOf" : [
+
+                        {
+                            "properties" : {
+                                "action" : { "enum" : [ "create_node"]}
+                            },
+                            "required" : ["node_type"]
+                        },
+                        {
+                            "properties" : {
+                                "action" : { "enum" : ["modify_node", "noop"]}
+                            }
+                        }
+                    ]
+                },
+                {
+                    "oneOf" : [
+                        { "required" : [ "path" ]},
+                        { "required" : [ "parent_nodeid" ]}
+                    ]
+                },
+                {
+                    "required" : ["action"]
+                }
+            ]
+
+        },
+
+        "attribute_value" : {
+            "type" : "object",
+            "properties" : {
+                "name" : {
+                    "type" : "string"
+                },
+                "value" : {
+                    "type" : "string"
+                },
+                "save_value" : {
+                    "type" : "string"
+                },
+                "do_not_set" : {
+                    "type" : "boolean"
+                }
+            },
+            "required" : ["name", "value"]
+        },
+
+        "attribute_values" : {
+            "type" : "array",
+            "items" : {
+                "$ref" : "#/definitions/attribute_value"
+            }
+        }
+    }
+}

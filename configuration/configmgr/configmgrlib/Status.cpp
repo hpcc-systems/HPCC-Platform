@@ -18,6 +18,22 @@
 #include "Status.hpp"
 
 
+Status::Status(const Status &source, const std::string &nodeId) : m_highestMsgLevel(statusMsg::info)
+{
+    for (auto &msgIt: source.m_messages)
+    {
+        if (msgIt.second.nodeId == nodeId)
+            addMsg(msgIt.second);
+    }
+}
+
+
+void Status::addMsg(const statusMsg &msg)
+{
+    addMsg(msg.msgLevel, msg.nodeId, msg.attribute, msg.msg);
+}
+
+
 void Status::addMsg(enum statusMsg::msgLevel level, const std::string &nodeId, const std::string &name, const std::string &msg)
 {
     statusMsg statusMsg(level, nodeId, name, msg);

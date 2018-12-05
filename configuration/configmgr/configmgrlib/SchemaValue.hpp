@@ -74,7 +74,7 @@ class DECL_EXPORT SchemaValue
         void mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue, Status *pStatus = nullptr);
         void addEnvironmentValue(const std::shared_ptr<EnvironmentValue> &pEnvValue) { m_envValues.push_back(pEnvValue); }
         void getAllEnvironmentValues(std::vector<std::shared_ptr<EnvironmentValue>> &envValues) const;
-        void removeEnvironmentValue(const std::shared_ptr<EnvironmentValue> &pEnvValue);
+        void removeEnvironmentValue(const EnvironmentValue *pEnvValue);
         void validate(Status &status, const std::string &id, const EnvironmentValue *pEnvValue = nullptr) const;
         bool getAllowedValues(std::vector<AllowedValue> &allowedValues, const std::shared_ptr<const EnvironmentNode> &pEnvNode) const;
         void setAutoGenerateType(const std::string &type) { m_autoGenerateType = type; }
