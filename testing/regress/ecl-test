@@ -44,34 +44,37 @@ class RegressMain:
     def listClusters(self):
         if self.args.setup:
             print "Setup test cases: "
-            for cluster in self.targetClusters:
+            for engine in self.regress.config.Engines:
+                cluster = self.regress.config.Clusters[engine]
                 print("Cluster: %s" % (cluster))
-                self.args.target = cluster
+                self.args.engine = engine
+                self.args.cluster = cluster
                 suite = self.regress.Setup(self.args)
                 for test in suite.getSuite():
                     if self.args.createEclRunArg:
-                        print("%s " % (getEclRunArgs(test,  cluster))),
+                        print("%s " % (getEclRunArgs(test, engine, cluster))),
                         print("%s/%s" % (test.dir_ec, test.getBaseEcl()))
                     else:
                         print(test.getBaseEclRealName())
             pass
-        elif self.args.run:
+        elif self.args.runtests:
             print "Run test cases: "
-            for cluster in self.targetClusters:
-                self.regress.bootstrap(cluster, self.args)
+            for engine in self.regress.config.Engines:
+                cluster = self.regress.config.Clusters[engine]
+                self.regress.bootstrap(engine, cluster, self.args)
                 print("Cluster: %s" % (cluster))
-                suite = self.regress.suites[cluster]
+                suite = self.regress.suites[engine]
                 for test in suite.getSuite():
                     if self.args.createEclRunArg:
-                        print("%s " % (getEclRunArgs(test,  cluster))),
+                        print("%s " % (getEclRunArgs(test, engine, cluster))),
                         print("%s" % (test.getBaseEcl()))
                     else:
                         print(test.getBaseEclRealName())
             pass
         else:
             Clusters = []
-            for cluster in self.regress.config.Clusters:
-                Clusters.append(str(cluster))
+            for engine in self.regress.config.Engines:
+                Clusters.append(str(self.regress.config.Clusters[engine]))
             print "Available Clusters: "
             for i in Clusters:
                 print i
@@ -105,15 +108,18 @@ class RegressMain:
             eclfiles.sort()
 
         # Go through the cluster list
-        for cluster in self.targetClusters:
+        for engine in self.targetEngines:
+            self.args.engine = engine
+            cluster = self.regress.config.Clusters[engine]
+            self.args.cluster = cluster
             try:
                 if len(eclfiles) :
                     #Execute multiple ECL files like RUN to generates summary results and diff report.
-                    self.regress.bootstrap(cluster, self.args,  eclfiles)
+                    self.regress.bootstrap(engine, cluster, self.args,  eclfiles)
                     if (self.args.pq in (0, 1)) or (self.regress.maxtasks == 1):
-                        self.regress.runSuite(cluster, self.regress.suites[cluster])
+                        self.regress.runSuite(engine, cluster, self.regress.suites[engine])
                     else:
-                        self.regress.runSuiteP(cluster, self.regress.suites[cluster])
+                        self.regress.runSuiteP(engine, cluster, self.regress.suites[engine])
                 else:
                     logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  self.args.target))
                     raise Error("4001")
@@ -123,22 +129,28 @@ class RegressMain:
 
     def setup(self):
         # Go through the cluster list
-        for cluster in self.targetClusters:
-            self.args.target = cluster
+        for engine in self.targetEngines:
+            self.args.engine = engine
+            cluster = self.regress.config.Clusters[engine]
+            self.args.cluster = cluster
             if  self.args.pq in (0, 1):
-                self.regress.runSuite(cluster, self.regress.Setup(self.args))
+                self.regress.runSuite(engine, cluster, self.regress.Setup(self.args))
             else:
-                self.regress.runSuiteP(cluster, self.regress.Setup(self.args))
+                self.regress.runSuiteP(engine, cluster, self.regress.Setup(self.args))
 
     def run(self):
         # Go through the cluster list
-        for cluster in self.targetClusters:
-            self.regress.bootstrap(cluster, self.args)
+        #for cluster in self.targetEngines:
+        for engine in self.targetEngines:
+            self.args.engine = engine
+            cluster = self.regress.config.Clusters[engine]
+            self.args.cluster = cluster
+            self.regress.bootstrap(engine, cluster, self.args)
             self.args.target = cluster
             if  self.args.pq in (0, 1):
-                self.regress.runSuite(cluster, self.regress.suites[cluster])
+                self.regress.runSuite(engine, cluster, self.regress.suites[engine])
             else:
-                self.regress.runSuiteP(cluster, self.regress.suites[cluster])
+                self.regress.runSuiteP(engine, cluster, self.regress.suites[engine])
 
 
     def main(self):
@@ -217,7 +229,7 @@ class RegressMain:
                                  action='store_true')
         parser_list.add_argument('--setup', help="Print testcases executed in setup.",
                                  action='store_true')
-        parser_list.add_argument('--run', help="Print test cases executed in run.",
+        parser_list.add_argument('--runtests', help="Print test cases executed in run.",
                                  action='store_true')
         parser_list.add_argument('--target', '-t', help="Provide target cluster(s) to list test cases. If target = 'all' then list test cases on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
                                 nargs='?', type=str,  default='', metavar="target_cluster_list | all")
@@ -311,34 +323,34 @@ class RegressMain:
         setConfig(self.config)
 
         # Process target parameter
-        self.targetClusters = []
+        self.targetEngines = []
         if 'target' in self.args:
             if '' == self.args.target:
                 # Target not specified, use default from config
                 try:
                     if self.args.func == 'setup':
-                        defaultTargets = self.config.defaultSetupClusters
-                        targetSet='defaultSetupClusters'
+                        defaultTargets = self.config.defaultSetupEngines
+                        targetSet='defaultSetupEngines'
                     else:
-                        defaultTargets = self.config.defaultTargetClusters
-                        targetSet='defaultTargetClusters'
+                        defaultTargets = self.config.defaultTargetEngines
+                        targetSet='defaultTargetEngines'
 
-                    self.targetClusters = checkClusters(defaultTargets, targetSet)
+                    self.targetEngines = checkClusters(defaultTargets, targetSet)
 
                 except AttributeError:
-                    # It seems there is no defaultSetupClusters|defaultTargetClusters array in the config file
+                    # It seems there is no defaultSetupClusters|defaulttargetEngines array in the config file
                     # use the first one of cluster list in config file
-                    self.targetClusters.append(self.config.Clusters[0])
+                    self.targetEngines.append(self.config.Engines[0])
             elif 'all' == self.args.target:
-                for cluster in self.config.Clusters:
-                    self.targetClusters.append(str(cluster))
+                for engine in self.config.Engines:
+                    self.targetEngines.append(str(engine))
             else:
                 if ',' in self.args.target:
                     # target is a list, process it
                     targets = self.args.target.split(',')
-                    self.targetClusters = checkClusters(targets, 'target')
-                elif self.args.target in self.config.Clusters:
-                    self.targetClusters.append(self.args.target)
+                    self.targetEngines = checkClusters(targets, 'target')
+                elif self.args.target in self.config.Engines:
+                    self.targetEngines.append(self.args.target)
                 else:
                     logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
                     raise Error("4000")
@@ -354,13 +366,20 @@ class RegressMain:
                 self.regress = None
                 raise Error(self.args.X[0])
 
-            self.regressionSuiteHpccMainOsDir = regressionSuiteFullPath
-            self.regressionSuiteHpccMainEclDir = convertPath(regressionSuiteFullPath)+"::download"
+            # Generate global stored parameters
+            self.regressionSuiteHpccMainOsDir = self.config.setupExtraParams['OriginalTextFilesOsPath']
+            self.regressionSuiteHpccMainEclDir = convertPath(self.regressionSuiteHpccMainOsDir)+"::download"
 
             self.args.setupExtraX = []
             self.args.setupExtraX.append('OriginalTextFilesOsPath='+self.regressionSuiteHpccMainOsDir)
             self.args.setupExtraX.append('OriginalTextFilesEclPath='+self.regressionSuiteHpccMainEclDir)
-            self.args.setupExtraX.append('OriginalTextFilesIp='+getRealIPAddress())
+            self.args.setupExtraX.append('OriginalTextFilesIp=' + self.config.espIp )
+
+            self.args.setupExtraX.append('dropzoneIp=' + self.config.dropzoneIp )
+            self.args.setupExtraX.append('dropzonePath=' + self.config.dropzonePath )
+            espFileSprayUrl = "http://" + self.config.espIp + ":" + self.config.espSocket + "/" + self.config.espFileSprayService
+            self.args.setupExtraX.append('espFileSprayUrl=' + espFileSprayUrl )
+            self.args.setupExtraX.append('espIp=' + self.config.espIp )
 
             self.regress = Regression(self.args)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
@@ -379,7 +398,7 @@ class RegressMain:
             exit(e.getErrorCode())
         except Exception as e:
             err = Error("6007")
-            logging.critical(" RegressMain error:%s" % (-1,  err))
+            logging.critical(" RegressMain error:%s" % (err))
             logging.critical(e)
             logging.critical(traceback.format_exc())
             exit(e.getErrorCode())
