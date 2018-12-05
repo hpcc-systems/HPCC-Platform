@@ -1723,7 +1723,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.constantFoldNormalize,"constantFoldNormalize", true),
         DebugOption(options.constantFoldPostNormalize,"constantFoldPostNormalize", false),
         DebugOption(options.optimizeGrouping,"optimizeGrouping", true),
-        DebugOption(options.showMetaInGraph,"showMetaInGraph", false),
+        DebugOption(options.showMetaInGraph,"showMetaInGraph", true),
         DebugOption(options.spotComplexClasses,"spotComplexClasses", true),
         DebugOption(options.complexClassesThreshold,"complexClassesThreshold", 5000),
         DebugOption(options.complexClassesActivityFilter,"complexClassesActivityFilter", 0),
