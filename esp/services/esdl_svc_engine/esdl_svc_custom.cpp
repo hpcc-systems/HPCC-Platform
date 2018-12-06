@@ -26,7 +26,9 @@ CEsdlCustomTransformChoose::CEsdlCustomTransformChoose(IPropertyTree * choosewhe
 {
     if (choosewhen)
     {
-        IPropertyTree * whentree = choosewhen->queryPropTree("xsdl:when");
+        if (choosewhen->hasProp("@_crtTarget"))
+            crtTarget.set(choosewhen->queryProp("@_crtTarget"));
+        IPropertyTree * whentree = choosewhen->queryPropTree("xsdl:when"); //should support multiple when statements
         if (whentree)
         {
             StringBuffer testatt;
@@ -110,20 +112,20 @@ void CEsdlCustomTransformChoose::processClauses(IEspContext * context, IProperty
     }
 }
 
-void CEsdlCustomTransformChoose::processChildClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext,  bool otherwise)
+void CEsdlCustomTransformChoose::processChildClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext,  bool otherwise, IPropertyTree *origTree)
 {
     if (!otherwise)
     {
         ForEachItemIn(currNestedConditionalIndex, m_childChooseClauses)
         {
-            m_childChooseClauses.item(currNestedConditionalIndex).process(context, request, xpathContext);
+            m_childChooseClauses.item(currNestedConditionalIndex).process(context, request, xpathContext, origTree, nullptr);
         }
     }
     else
     {
         ForEachItemIn(currNestedConditionalIndex, m_childOtherwiseClauses)
         {
-            m_childOtherwiseClauses.item(currNestedConditionalIndex).process(context, request, xpathContext);
+            m_childOtherwiseClauses.item(currNestedConditionalIndex).process(context, request, xpathContext, origTree, nullptr);
         }
     }
 }
@@ -208,14 +210,36 @@ bool CEsdlCustomTransformChoose::evaluate(IXpathContext * xpathContext)
     return evalresp;
 }
 
-void CEsdlCustomTransformChoose::process(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext)
+void CEsdlCustomTransformChoose::process(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext, IPropertyTree *origTree, const char *defaultTarget)
 {
+    StringBuffer xpath;
+
+    if (crtTarget.length())
+        xpath.set(crtTarget.str());
+    else if (defaultTarget && *defaultTarget)
+        xpath.set(defaultTarget);
+
+    IPropertyTree *reqTarget = request;
+
+    if (xpath.length())
+    {
+        //we can use real xpath processing in the future, for now simple substitution is fine
+        xpath.replaceString("{$query}", xpathContext->getVariable("query"));
+        xpath.replaceString("{$method}", xpathContext->getVariable("method"));
+        xpath.replaceString("{$service}", xpathContext->getVariable("service"));
+        xpath.replaceString("{$request}", xpathContext->getVariable("request"));
+
+        reqTarget = origTree->queryPropTree(xpath.str());  //get pointer to the write-able area
+        if (!reqTarget)
+            throw MakeStringException(-1, "EsdlCustomTransformChoose::process error getting request target %s", xpath.str());
+    }
+
     bool result = false;
     try
     {
         bool result = evaluate(xpathContext);
-        processClauses(context, request, xpathContext, !result);
-        processChildClauses(context, request, xpathContext, !result);
+        processClauses(context, reqTarget, xpathContext, !result);
+        processChildClauses(context, reqTarget, xpathContext, !result, origTree);
     }
     catch (...)
     {
@@ -307,6 +331,7 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, IPropertyTree
         xpathContext->addVariable("query", tgtcfg->queryProp("@queryname"));
         xpathContext->addVariable("method", mthdef.queryMethodName());
         xpathContext->addVariable("service", srvdef.queryName());
+        xpathContext->addVariable("request", mthdef.queryRequestType());
 
         auto user = context->queryUser();
         if (user)
@@ -363,24 +388,16 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, IPropertyTree
         }
 
         Owned<IPropertyTree> theroot = createPTreeFromXMLString(request.str());
-        StringBuffer xpath = m_target.str();
-        if (!xpath.length())
-        {
+        StringBuffer defaultTarget;
             //This default gives us backward compatibility with only being able to write to the actual request
-            const char *tgtQueryName = tgtcfg->queryProp("@queryname");
-            xpath.setf("soap:Body/%s/%s", tgtQueryName ? tgtQueryName : mthdef.queryMethodName(), mthdef.queryRequestType());
-        }
-        //we can use real xpath processing in the future, for now simple substitution is fine
-        xpath.replaceString("{$query}", tgtcfg->queryProp("@queryname"));
-        xpath.replaceString("{$method}", mthdef.queryMethodName());
-        xpath.replaceString("{$service}", srvdef.queryName());
-        IPropertyTree *thereq = theroot->queryPropTree(xpath.str());  //get pointer to the write-able area
+        const char *tgtQueryName = tgtcfg->queryProp("@queryname");
+        defaultTarget.setf("soap:Body/%s/%s", tgtQueryName ? tgtQueryName : mthdef.queryMethodName(), mthdef.queryRequestType());
+
         ForEachItemIn(currConditionalIndex, m_customTransformClauses)
-        {
-            m_customTransformClauses.item(currConditionalIndex).process(context, thereq, xpathContext);
-        }
+            m_customTransformClauses.item(currConditionalIndex).process(context, theroot, xpathContext, theroot, defaultTarget);
+
         toXML(theroot, request.clear());
 
-        ESPLOG(LogMax,"MODIFIED REQUEST: %s", request.str());
+        ESPLOG(1,"MODIFIED REQUEST: %s", request.str());
     }
 }
