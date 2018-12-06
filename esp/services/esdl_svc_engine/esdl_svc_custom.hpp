@@ -99,7 +99,7 @@ private:
     CIArrayOf<CEsdlCustomTransformRule> m_otherwiseClauses;
     CIArrayOf<CEsdlCustomTransformChoose> m_childChooseClauses;
     CIArrayOf<CEsdlCustomTransformChoose> m_childOtherwiseClauses;
-    StringAttr target;
+    StringAttr crtTarget;
 
 public:
     IMPLEMENT_IINTERFACE;

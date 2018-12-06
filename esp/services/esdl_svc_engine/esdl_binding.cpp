@@ -363,20 +363,7 @@ static void ensureMergeOrderedEsdlTransform(Owned<IPropertyTree> &dest, IPropert
     {
         Owned<IPropertyTreeIterator> children = copy->getElements("*");
         ForEach(*children)
-        {
-            const char *existing = children->query().queryProp("@target");
-            if (existing && *existing)
-            {
-                if (*existing=='.') //support in future so error now so we don't have backward compatability issues
-                {
-                    VStringBuffer errorXpath("unsupported choose xpath*>>%s", existing); //will cause request time xpath error
-                    children->query().setProp("@target", errorXpath);
-                    DBGLOG("ESDL Binding: request transform choose xpath error: %s", existing);
-                }
-                continue;
-            }
-            children->query().setProp("@target", target);
-        }
+            children->query().setProp("@_crtTarget", target); //internal use only attribute
     }
     mergePTree(dest, copy);
 }

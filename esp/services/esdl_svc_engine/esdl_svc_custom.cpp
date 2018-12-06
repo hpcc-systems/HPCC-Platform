@@ -26,8 +26,8 @@ CEsdlCustomTransformChoose::CEsdlCustomTransformChoose(IPropertyTree * choosewhe
 {
     if (choosewhen)
     {
-        if (choosewhen->hasProp("@target"))
-            target.set(choosewhen->queryProp("@target"));
+        if (choosewhen->hasProp("@_crtTarget"))
+            crtTarget.set(choosewhen->queryProp("@_crtTarget"));
         IPropertyTree * whentree = choosewhen->queryPropTree("xsdl:when"); //should support multiple when statements
         if (whentree)
         {
@@ -214,8 +214,8 @@ void CEsdlCustomTransformChoose::process(IEspContext * context, IPropertyTree *r
 {
     StringBuffer xpath;
 
-    if (target.length())
-        xpath.set(target.str());
+    if (crtTarget.length())
+        xpath.set(crtTarget.str());
     else if (defaultTarget && *defaultTarget)
         xpath.set(defaultTarget);
 
@@ -227,6 +227,7 @@ void CEsdlCustomTransformChoose::process(IEspContext * context, IPropertyTree *r
         xpath.replaceString("{$query}", xpathContext->getVariable("query"));
         xpath.replaceString("{$method}", xpathContext->getVariable("method"));
         xpath.replaceString("{$service}", xpathContext->getVariable("service"));
+        xpath.replaceString("{$request}", xpathContext->getVariable("request"));
 
         reqTarget = origTree->queryPropTree(xpath.str());  //get pointer to the write-able area
         if (!reqTarget)
@@ -330,6 +331,7 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, IPropertyTree
         xpathContext->addVariable("query", tgtcfg->queryProp("@queryname"));
         xpathContext->addVariable("method", mthdef.queryMethodName());
         xpathContext->addVariable("service", srvdef.queryName());
+        xpathContext->addVariable("request", mthdef.queryRequestType());
 
         auto user = context->queryUser();
         if (user)
