@@ -1994,7 +1994,7 @@ bool NewHqlTransformer::needToUpdateSelectors(IHqlExpression * expr)
     ForEachItemIn(i, scopesUsed)
     {
         IHqlExpression * cur = &scopesUsed.item(i);
-        IHqlExpression * transformed = transformSelector(cur);
+        OwnedHqlExpr transformed = transformSelector(cur);
         if (cur != transformed)
             return true;
     }
