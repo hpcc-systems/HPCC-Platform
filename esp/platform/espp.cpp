@@ -46,6 +46,77 @@
 #include "espcontext.hpp"
 #include "build-config.h"
 
+void CEspServer::sendSnmpMessage(const char* msg) { throwUnexpected(); }
+
+bool CEspServer::addCacheClient(const char *id, const char *cacheInitString)
+{
+    Owned<IEspCache> cacheClient = createESPCache(cacheInitString);
+    if (!cacheClient)
+        return false;
+    cacheClientMap.setValue(id, cacheClient);
+    countCacheClients++;
+    return true;
+}
+
+bool CEspServer::hasCacheClient()
+{
+    return countCacheClients > 0;
+}
+
+const void *CEspServer::queryCacheClient(const char* id)
+{
+    return countCacheClients > 1 ? cacheClientMap.getValue(id) : nullptr;
+}
+
+void CEspServer::clearCacheByGroupID(const char *ids, StringArray& errorMsgs)
+{
+    StringArray idList;
+    idList.appendListUniq(ids, ",");
+    ForEachItemIn(i, idList)
+    {
+        const char *id = idList.item(i);
+        IEspCache* cacheClient = (IEspCache*) queryCacheClient(id);
+        if (cacheClient)
+            cacheClient->flush(0);
+        else
+        {
+            VStringBuffer msg("Failed to get ESPCache client %s.", id);
+            errorMsgs.append(msg);
+        }
+    }
+}
+
+bool CEspServer::reSubscribeESPToDali()
+{
+    return m_config->reSubscribeESPToDali();
+}
+
+bool CEspServer::unsubscribeESPFromDali()
+{
+    return m_config->unsubscribeESPFromDali();
+}
+
+bool CEspServer::detachESPFromDali(bool force)
+{
+    return m_config->detachESPFromDali(force);
+}
+
+bool CEspServer::attachESPToDali()
+{
+    return m_config->attachESPToDali();
+}
+
+bool CEspServer::isAttachedToDali()
+{
+  return !m_config->isDetachedFromDali();
+}
+
+bool CEspServer::isSubscribedToDali()
+{
+    return m_config->isSubscribedToDali();
+}
+
+
 #ifdef _WIN32
 /*******************************************
   _WIN32
