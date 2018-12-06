@@ -43,6 +43,7 @@ private:
     StringAttr      m_acceptLanguage;
     StringAttr      httpMethod;
     StringAttr      servMethod;
+    StringAttr      esdlBindingID;
 
     StringBuffer    m_servName;
     StringBuffer    m_servHost;
@@ -475,6 +476,15 @@ public:
     virtual void setServiceMethod(const char *method)
     {
         servMethod.set(method);
+    }
+
+    virtual void setESDLBindingID(const char *id)
+    {
+        esdlBindingID.set(id);
+    }
+    virtual const char* queryESDLBindingID()
+    {
+        return esdlBindingID.get();
     }
 
     virtual CTxSummary* queryTxSummary()

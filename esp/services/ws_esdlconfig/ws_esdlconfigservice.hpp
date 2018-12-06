@@ -48,6 +48,7 @@ public:
     bool onPublishESDLDefinition(IEspContext &context, IEspPublishESDLDefinitionRequest &req, IEspPublishESDLDefinitionResponse &resp);
     bool onPublishESDLBinding(IEspContext &context, IEspPublishESDLBindingRequest &req, IEspPublishESDLBindingResponse &resp);
     bool onConfigureESDLBindingMethod(IEspContext &context, IEspConfigureESDLBindingMethodRequest &req, IEspConfigureESDLBindingMethodResponse &resp);
+    bool onConfigureESDLBindingLogTransform(IEspContext &context, IEspConfigureESDLBindingLogTransformRequest &req, IEspConfigureESDLBindingLogTransformResponse &resp);
     bool onDeleteESDLBinding(IEspContext &context, IEspDeleteESDLBindingRequest &req, IEspDeleteESDLRegistryEntryResponse &resp);
     bool onDeleteESDLDefinition(IEspContext &context, IEspDeleteESDLDefinitionRequest &req, IEspDeleteESDLRegistryEntryResponse &resp);
     bool onGetESDLDefinition(IEspContext &context, IEspGetESDLDefinitionRequest&req, IEspGetESDLDefinitionResponse &resp);
