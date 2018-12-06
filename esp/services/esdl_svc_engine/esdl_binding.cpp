@@ -350,13 +350,35 @@ void EsdlServiceImpl::addMethodLevelRequestTransform(const char *method, IProper
     }
 }
 
-static void ensureMergeOrderedPTree(Owned<IPropertyTree> &target, IPropertyTree *src)
+static void ensureMergeOrderedEsdlTransform(Owned<IPropertyTree> &dest, IPropertyTree *src)
 {
     if (!src)
         return;
-    if (!target)
-        target.setown(createPTree(ipt_ordered));
-    mergePTree(target, src);
+    if (!dest)
+        dest.setown(createPTree(ipt_ordered));
+    //copy so we can make changes, like adding calculated targets
+    Owned<IPropertyTree> copy = createPTreeFromIPT(src, ipt_ordered);
+    const char *target = copy->queryProp("@target");
+    if (target && *target)
+    {
+        Owned<IPropertyTreeIterator> children = copy->getElements("*");
+        ForEach(*children)
+        {
+            const char *existing = children->query().queryProp("@target");
+            if (existing && *existing)
+            {
+                if (*existing=='.') //support in future so error now so we don't have backward compatability issues
+                {
+                    VStringBuffer errorXpath("unsupported choose xpath*>>%s", existing); //will cause request time xpath error
+                    children->query().setProp("@target", errorXpath);
+                    DBGLOG("ESDL Binding: request transform choose xpath error: %s", existing);
+                }
+                continue;
+            }
+            children->query().setProp("@target", target);
+        }
+    }
+    mergePTree(dest, copy);
 }
 
 void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
@@ -370,10 +392,10 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         Owned<IPropertyTree> serviceCrt;
         try
         {
-            ensureMergeOrderedPTree(serviceCrt, target_cfg->queryPropTree("xsdl:CustomRequestTransform"));
+            ensureMergeOrderedEsdlTransform(serviceCrt, target_cfg->queryPropTree("xsdl:CustomRequestTransform"));
             Owned<IPropertyTreeIterator> transforms =  target_cfg->getElements("Transforms/xsdl:CustomRequestTransform");
             ForEach(*transforms)
-                ensureMergeOrderedPTree(serviceCrt, &transforms->query());
+                ensureMergeOrderedEsdlTransform(serviceCrt, &transforms->query());
         }
         catch (IPTreeException *e)
         {
@@ -416,10 +438,10 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             Owned<IPropertyTree> methodCrt;
             try
             {
-                ensureMergeOrderedPTree(methodCrt, methodCfg.queryPropTree("xsdl:CustomRequestTransform"));
+                ensureMergeOrderedEsdlTransform(methodCrt, methodCfg.queryPropTree("xsdl:CustomRequestTransform"));
                 Owned<IPropertyTreeIterator> transforms =  methodCfg.getElements("Transforms/xsdl:CustomRequestTransform");
                 ForEach(*transforms)
-                    ensureMergeOrderedPTree(methodCrt, &transforms->query());
+                    ensureMergeOrderedEsdlTransform(methodCrt, &transforms->query());
             }
             catch (IException *e)
             {
