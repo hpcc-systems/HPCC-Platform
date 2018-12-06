@@ -35,6 +35,7 @@ extern HQL_API IIdAtom * bindUnicodeParamId;
 extern HQL_API IIdAtom * bindUnsignedParamId;
 extern HQL_API IIdAtom * bindUnsignedSizeParamId;
 extern HQL_API IIdAtom * bindUtf8ParamId;
+extern HQL_API IIdAtom * checkImportId;
 extern HQL_API IIdAtom * compileEmbeddedScriptId;
 extern HQL_API IIdAtom * defaultFieldNameId;
 extern HQL_API IIdAtom * failId;
