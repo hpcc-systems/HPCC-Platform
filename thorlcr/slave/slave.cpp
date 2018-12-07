@@ -518,6 +518,9 @@ public:
             case TAKhashdistribute:
                 ret = createHashDistributeSlave(this);
                 break;
+            case TAKnwaydistribute:
+                ret = createNWayDistributeSlave(this);
+                break;
             case TAKdistributed:
                 ret = createHashDistributedSlave(this);
                 break;

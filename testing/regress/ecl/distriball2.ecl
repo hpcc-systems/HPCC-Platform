@@ -17,7 +17,6 @@
 
 //Some of these tests need to be verified by looking at the generate code
 //MORE: Remove these lines when the code has been implemented in the engines.
-//nothor
 //noroxie
 //nohthor
 

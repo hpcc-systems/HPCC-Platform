@@ -234,6 +234,9 @@ public:
             case TAKcountaggregate:
                 ret = createAggregateActivityMaster(this);
                 break;
+            case TAKnwaydistribute:
+                ret = createNWayDistributeActivityMaster(this);
+                break;
             case TAKhashdistribute:
             case TAKpartition:
                 ret = createHashDistributeActivityMaster(this);
