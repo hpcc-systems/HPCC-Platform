@@ -448,16 +448,34 @@ public:
                         // JCSMORE if refactor==true, is rowsToReceive here right??
                         unsigned rowsToReceive = (refactor ? (tlkDesc->queryOwner().numParts()-1) : container.queryJob().querySlaves()) -1; // -1 'cos got my own in array already
                         ActPrintLog("INDEXWRITE: will wait for info from %d slaves before writing TLK", rowsToReceive);
+
+                        MemoryAttr dummyRow;
+                        if (isLocal)
+                        {
+                            size32_t minSz = helper->queryDiskRecordSize()->getMinRecordSize();
+                            if (hasTrailingFileposition(helper->queryDiskRecordSize()->queryTypeInfo()))
+                                minSz -= sizeof(offset_t);
+                            // dummyRow used if isLocal and a slave had no rows
+                            dummyRow.allocate(minSz);
+                            memset(dummyRow.mem(), 0xff, minSz);
+                        }
                         while (rowsToReceive--)
                         {
                             msg.clear();
-                            receiveMsg(msg, RANK_ALL, mpTag); // NH->JCS RANK_ALL_OTHER not supported for recv
+                            rank_t sender;
+                            receiveMsg(msg, RANK_ALL, mpTag, &sender);
                             if (abortSoon)
                                 return;
                             if (msg.length())
                             {
                                 CNodeInfo *ni = new CNodeInfo();
                                 ni->deserialize(msg);
+                                tlkRows.append(*ni);
+                            }
+                            else if (isLocal)
+                            {
+                                // if a local key TLK (including PARTITION keys), need an entry per part
+                                CNodeInfo *ni = new CNodeInfo(sender, dummyRow.get(), dummyRow.length(), totalCount);
                                 tlkRows.append(*ni);
                             }
                         }
@@ -469,7 +487,7 @@ public:
                         try
                         {
                             open(*tlkDesc, true, helper->queryDiskRecordSize()->isVariableSize(), true);
-                            if (tlkRows.length())
+                            if (!isLocal && tlkRows.length())
                             {
                                 CNodeInfo &lastNode = tlkRows.item(tlkRows.length()-1);
                                 memset(lastNode.value, 0xff, lastNode.size);
