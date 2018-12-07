@@ -8253,7 +8253,7 @@ simpleDataSet
                             else if (criterion->getOperator() == no_all)
                             {
                                 //Special case DISTRIBUTE(ds, ALL) as DISTRIBUTE(ds, true) - i.e. distribute to all nodes.
-                                $6.clear();
+                                $6.release();
                                 $6.setExpr(createConstant(true));
                                 op = no_nwaydistribute;
                             }
