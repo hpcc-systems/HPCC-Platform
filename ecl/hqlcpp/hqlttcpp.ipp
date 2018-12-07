@@ -1303,6 +1303,8 @@ void optimizeActivities(unsigned wfid, HqlExprArray & exprs, bool optimizeCountC
 
 bool reportSemanticErrors(IHqlExpression * expr, IErrorReceiver & errors);
 
+IHqlExpression *getEmbedOptionString(IHqlExpression *embedBody);
+
 //------------------------------------------------------------------------
 
 #endif

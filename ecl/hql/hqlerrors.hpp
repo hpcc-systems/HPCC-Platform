@@ -71,6 +71,7 @@
 #define WRN_REQUIRES_SIGNED         1054
 #define WRN_DISALLOWED              1055
 #define WRN_EMBEDWARNING            1056
+#define WRN_EMBEDFOLD               1057
 
 //Do not define any warnings > 1099 - use the range below instead
 

@@ -17,9 +17,7 @@
 
 EXPORT Language := SERVICE : plugin('sqlite3embed')
   boolean getEmbedContext():cpp,pure,namespace='sqlite3embed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
-  boolean syntaxCheck(const varstring src):cpp,pure,namespace='sqlite3embed',entrypoint='syntaxCheck';
 END;
 EXPORT getEmbedContext := Language.getEmbedContext;
-EXPORT syntaxCheck := Language.syntaxCheck;
 EXPORT boolean supportsImport := false;
 EXPORT boolean supportsScript := true;

@@ -943,94 +943,14 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
             reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", str(moduleId), isImport ? "import" : "script");
         OwnedHqlExpr prebind = pluginScope->lookupSymbol(prebindId, LSFpublic, lookupCtx);
         if (matchesBoolean(prebind, true))
-            args.append(*createAttribute(prebindAtom));
+            args.append(*createAttribute(_prebind_Atom));
+        OwnedHqlExpr threadlocal = pluginScope->lookupSymbol(threadlocalId, LSFpublic, lookupCtx);
+        if (matchesBoolean(threadlocal, true))
+            args.append(*createAttribute(_threadlocal_Atom));
         OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
-        bool failedSyntaxCheck = false;
-        if (syntaxCheckFunc && !isImport)
-        {
-            HqlExprArray syntaxCheckArgs;
-            embedText->unwindList(syntaxCheckArgs, no_comma);
-            if (matchesBoolean(prebind, true))
-            {
-                // To syntax-check functions with prebind set, we need to pass in the parameter names
-                StringBuffer argnames;
-                HqlExprArray & params = defineScopes.tos().activeParameters;
-                ForEachItemIn(i, params)
-                {
-                    IHqlExpression * param = &params.item(i);
-                    IAtom *name = param->queryName();
-                    if (name)
-                        argnames.append(',').append(name->queryStr());
-                }
-                argnames.append(',').append("__activity__");   // Special parameter indicating activity context - not always passed but won't break anything if we pretend it is (I hope!)
-                if (argnames.length())
-                    syntaxCheckArgs.append(*createConstant(argnames.str()+1));
-                else
-                    syntaxCheckArgs.append(*createConstant(""));  //passing nullptr might be better but not sure how
-            }
-            OwnedHqlExpr syntax = createBoundFunction(this, syntaxCheckFunc, syntaxCheckArgs, lookupCtx.functionCache, true);
-            OwnedHqlExpr folded = foldHqlExpression(syntax);
-            if (folded->queryValue())
-            {
-                StringBuffer errors;
-                folded->queryValue()->getStringValue(errors);
-                if (errors.length())
-                {
-                    StringArray errlines;
-                    errlines.appendList(errors, "\n");
-                    ForEachItemIn(idx, errlines)
-                    {
-                        const char *err = errlines.item(idx);
-                        if (strlen(err))
-                        {
-                            ECLlocation pos(errpos.pos);
-                            unsigned line, col;
-                            char dummy;
-                            if (sscanf(err, "(%u,%u):%c", &line, &col, &dummy)==3)
-                            {
-                                err = strchr(err, ':') + 1;
-                                while (isspace(*err))
-                                    err++;
-                                pos.lineno = embedText->getStartLine()+line-1;
-                                pos.column = col;
-                                pos.position = 0;
-                            }
-                            if (strnicmp(err, "warning:", 8)==0)
-                            {
-                                err = strchr(err, ':') + 1;
-                                while (isspace(*err))
-                                    err++;
-                                reportWarning(CategoryEmbed, WRN_EMBEDWARNING, pos, "%s", err);
-                            }
-                            else
-                            {
-                                if (strnicmp(err, "error:", 6)==0)
-                                {
-                                    err = strchr(err, ':') + 1;
-                                    while (isspace(*err))
-                                        err++;
-                                }
-                                reportError(ERR_EMBEDERROR, pos, "%s", err);
-                                failedSyntaxCheck = true;
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                DBGLOG("INTERNAL: syntaxCheck was not foldable");  // Ignore as no fatal? Warning? Terminate? Warning that defaults to error?
-            }
-        }
         OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
-        if (precompile && !failedSyntaxCheck && !lookupCtx.syntaxChecking())
-        {
-            HqlExprArray precompileArgs;
-            embedText->unwindList(precompileArgs, no_comma);
-            // Replace queryText with compiled version of it
-            args.replace(*createBoundFunction(this, precompile, precompileArgs, lookupCtx.functionCache, true), 0);
-            args.append(*createAttribute(precompileAtom));
-        }
+        if (!isImport & (syntaxCheckFunc || precompile))
+            args.append(*createExprAttribute(_original_Atom, LINK(language)));  // Add this so that we can complete the syntax check/precompile later (in checkEmbedBody), as we don't know func name until then
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
         IHqlExpression *projectedAttr = queryAttribute(projectedAtom, args);
         if (projectedAttr)
@@ -9656,7 +9576,6 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
     return LINK(expr);
 }
 
-
 void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered, IHqlExpression * modifiers)
 {
     OwnedHqlExpr expr = _expr;
@@ -9743,7 +9662,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
         reportError(HQLERR_CannotDefineFunctionFunction, idattr.pos, HQLERR_CannotDefineFunctionFunction_Text);
     }
 
-    OwnedHqlExpr normalized = normalizeFunctionExpression(defineid, expr, failure, isParametered, activeScope.activeParameters, activeScope.createDefaults(), modifiers);
+    OwnedHqlExpr normalized = normalizeFunctionExpression(idattr, defineid, expr, failure, isParametered, activeScope.activeParameters, activeScope.createDefaults(), modifiers);
     defineSymbolInScope(targetScope, defineid, normalized, idattr, assignPos, semiColonPos);
 
     ::Release(failure);
@@ -9779,25 +9698,166 @@ IHqlExpression * HqlGram::attachMetaAttributes(IHqlExpression * ownedExpr, HqlEx
     return ownedExpr;
 }
 
-IHqlExpression * HqlGram::normalizeFunctionExpression(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults, IHqlExpression * modifiers)
+IHqlExpression * HqlGram::checkEmbedBody(const attribute & errpos, DefineIdSt * defineid, IHqlExpression *body, HqlExprArray & params)
 {
+    IHqlExpression *language = body->queryAttribute(_original_Atom);  // Did we save away the module that defines this plugin, so that we can check/precompile later?
+    if (language)
+    {
+        HqlExprArray bodyArgs;
+        unwindChildren(bodyArgs, body);
+        removeAttribute(bodyArgs, _original_Atom);
+        LinkedHqlExpr compilerOptions = queryAttributeChild(body, compileAtom, 0);
+        if (!compilerOptions || !compilerOptions->isConstant())
+            compilerOptions.setown(createBlankString());    //NULL would be preferable
+        LinkedHqlExpr persistOptions = queryAttributeChild(body, persistAtom, 0);
+        if (!persistOptions || !persistOptions->isConstant())
+            persistOptions.setown(createBlankString());    //NULL would be preferable
+
+        StringBuffer argnames;
+        if (body->hasAttribute(activityAtom))
+        {
+            argnames.append("__activity__");
+        }
+        ForEachItemIn(i, params)
+        {
+            IHqlExpression * param = &params.item(i);
+            IAtom *name = param->queryName();
+            if (name)
+            {
+                if (argnames.length())
+                    argnames.append(',');
+                argnames.append(name->queryStr());
+            }
+        }
+        OwnedHqlExpr argNamesParam  = createConstant(argnames.str());
+
+        language = language->queryChild(0);
+        IHqlExpression *embedText = body->queryChild(0);
+        IHqlScope *pluginScope = language->queryScope();
+        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
+        bool failedSyntaxCheck = false;
+        if (syntaxCheckFunc)
+        {
+            HqlExprArray syntaxCheckArgs;
+            syntaxCheckArgs.append(*createConstant(defineid->id->queryStr()));
+            embedText->unwindList(syntaxCheckArgs, no_comma);
+            syntaxCheckArgs.append(*argNamesParam.getLink());
+            syntaxCheckArgs.append(*compilerOptions.getLink());
+            syntaxCheckArgs.append(*persistOptions.getLink());
+            OwnedHqlExpr syntax = createBoundFunction(this, syntaxCheckFunc, syntaxCheckArgs, lookupCtx.functionCache, true);
+            OwnedHqlExpr folded = foldHqlExpression(syntax);
+            if (folded->queryValue())
+            {
+                StringBuffer errors;
+                folded->queryValue()->getStringValue(errors);
+                if (errors.length())
+                {
+                    StringArray errlines;
+                    errlines.appendList(errors, "\n");
+                    ForEachItemIn(idx, errlines)
+                    {
+                        const char *err = errlines.item(idx);
+                        if (strlen(err))
+                        {
+                            ECLlocation pos(errpos.pos);
+                            unsigned line, col;
+                            char dummy;
+                            if (sscanf(err, "(%u,%u):%c", &line, &col, &dummy)==3)
+                            {
+                                err = strchr(err, ':') + 1;
+                                while (isspace(*err))
+                                    err++;
+                                pos.lineno = embedText->getStartLine()+line-1;
+                                pos.column = col;
+                                pos.position = 0;
+                            }
+                            if (strnicmp(err, "warning:", 8)==0)
+                            {
+                                err = strchr(err, ':') + 1;
+                                while (isspace(*err))
+                                    err++;
+                                reportWarning(CategoryEmbed, WRN_EMBEDWARNING, pos, "%s", err);
+                            }
+                            else
+                            {
+                                if (strnicmp(err, "error:", 6)==0)
+                                {
+                                    err = strchr(err, ':') + 1;
+                                    while (isspace(*err))
+                                        err++;
+                                }
+                                reportError(ERR_EMBEDERROR, pos, "%s", err);
+                                failedSyntaxCheck = true;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                reportWarning(CategoryError, WRN_EMBEDFOLD, errpos.pos, "Embedded syntax check function could not be called");
+            }
+        }
+        OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
+        if (precompile && !failedSyntaxCheck && !lookupCtx.syntaxChecking())
+        {
+            HqlExprArray precompileArgs;
+            precompileArgs.append(*createConstant(defineid->id->queryStr()));
+            embedText->unwindList(precompileArgs, no_comma);
+            // Replace queryText with compiled version of it
+            precompileArgs.append(*argNamesParam.getLink());
+            precompileArgs.append(*compilerOptions.getLink());
+            precompileArgs.append(*persistOptions.getLink());
+            OwnedHqlExpr compiled = createBoundFunction(this, precompile, precompileArgs, lookupCtx.functionCache, true);
+            OwnedHqlExpr folded = foldHqlExpression(compiled);  // Best to fold here if we can, as the syntax check may cache on the assumption that next call is the compile. There may be a better way
+            if (folded)
+                bodyArgs.replace(*folded.getClear(), 0);
+            else
+                bodyArgs.replace(*compiled.getClear(), 0);
+            bodyArgs.append(*createAttribute(_precompile_Atom));
+        }
+        return body->clone(bodyArgs);
+    }
+    return nullptr;
+}
+
+IHqlExpression * HqlGram::normalizeFunctionExpression(const attribute &idattr, DefineIdSt * defineid, IHqlExpression *_expr, IHqlExpression * failure, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults, IHqlExpression * modifiers)
+{
+    OwnedHqlExpr expr;
+    expr.set(_expr);
+    if (expr->getOperator() == no_outofline)
+    {
+        IHqlExpression * body = expr->queryChild(0);
+        if (body->getOperator()==no_embedbody)
+        {
+            OwnedHqlExpr newbody = checkEmbedBody(idattr, defineid, body, parameters);
+            if (newbody)
+                expr.setown(replaceChild(expr, 0, newbody));
+        }
+    }
+    else if (expr->getOperator() == no_embedbody)
+    {
+        OwnedHqlExpr newbody = checkEmbedBody(idattr, defineid, expr, parameters);
+        if (newbody)
+            expr.setown(newbody.getClear());
+    }
     HqlExprCopyArray activeParameters;
     gatherActiveParameters(activeParameters);
     HqlExprArray meta;
-    expr = attachWorkflowOwn(meta, LINK(expr), failure, &activeParameters);
+    expr.setown(attachWorkflowOwn(meta, expr.getLink(), failure, &activeParameters));
     if (isParametered)
     {
         IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL), parameters);
-        expr = createFunctionDefinition(defineid->id, expr, formals, defaults, modifiers);
+        expr.setown(createFunctionDefinition(defineid->id, expr.getClear(), formals, defaults, modifiers));
     }
     else
         ::Release(modifiers);
-    expr = attachPendingWarnings(expr);
-    expr = attachMetaAttributes(expr, meta);
+    expr.setown(attachPendingWarnings(expr.getClear()));
+    expr.setown(attachMetaAttributes(expr.getClear(), meta));
     IPropertyTree * doc = defineid->queryDoc();
     if (doc)
-        expr = createJavadocAnnotation(expr, LINK(doc));
-    return expr;
+        expr.setown(createJavadocAnnotation(expr.getClear(), LINK(doc)));
+    return expr.getClear();
 }
 
 void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, const attribute & idattr, int assignPos, int semiColonPos)

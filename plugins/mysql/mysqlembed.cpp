@@ -1636,6 +1636,8 @@ public:
     {
         throwUnexpected();
     }
+    virtual void enter() override {}
+    virtual void exit() override {}
 protected:
     void lazyExecute()
     {

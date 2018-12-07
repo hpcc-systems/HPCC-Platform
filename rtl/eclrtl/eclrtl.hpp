@@ -843,6 +843,24 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void paramWriterCommit(IInterface *writer)=0;
     virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)=0;
     virtual void loadCompiledScript(size32_t len, const void *script) = 0;
+    // If reusing a context, need to call these before using/after using
+    virtual void enter() = 0;
+    virtual void exit() = 0;
+};
+
+class EmbedContextBlock
+{
+public:
+    EmbedContextBlock(IEmbedFunctionContext *_ctx) : ctx(_ctx)
+    {
+        ctx->enter();
+    }
+    ~EmbedContextBlock()
+    {
+        ctx->exit();
+    }
+private:
+    IEmbedFunctionContext *ctx;
 };
 
 interface IEmbedServiceContext : extends IInterface
@@ -850,7 +868,7 @@ interface IEmbedServiceContext : extends IInterface
     virtual IEmbedFunctionContext *createFunctionContext(const char *function) = 0;
 };
 
-enum EmbedFlags { EFembed = 1, EFimport = 2, EFnoreturn = 4, EFnoparams = 8 }; // For createFunctionContext flags
+enum EmbedFlags { EFembed = 1, EFimport = 2, EFnoreturn = 4, EFnoparams = 8, EFthreadlocal = 16 }; // For createFunctionContext flags
 
 interface ICodeContext;
 interface IThorActivityContext;
@@ -859,7 +877,6 @@ interface IEmbedContext : extends IInterface
     virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) = 0; // legacy
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext * activityCtx, unsigned flags, const char *options) = 0;
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) = 0;
-    // MORE - add syntax checked here!
 };
 
 typedef IEmbedContext * (* GetEmbedContextFunction)();

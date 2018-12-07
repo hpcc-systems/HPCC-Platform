@@ -18,11 +18,13 @@
 package com.HPCCSystems;
 
 import java.net.*;
+import java.util.Hashtable;
 public class HpccClassLoader extends java.net.URLClassLoader
 {
     private long bytecode;
     private int bytecodeLen;
     private native Class defineClassForEmbed(int bytecodeLen, long bytecode, String name);
+    private Hashtable<String, Class> classes = new Hashtable<>();
     private HpccClassLoader(java.net.URL [] urls, ClassLoader parent, int _bytecodeLen, long _bytecode, String dllname)
     {
         super(urls, parent);
@@ -30,9 +32,15 @@ public class HpccClassLoader extends java.net.URLClassLoader
         bytecodeLen = _bytecodeLen;
         bytecode = _bytecode;
     }
-    public Class<?> findClass(String className) throws ClassNotFoundException
+    public synchronized Class<?> findClass(String className) throws ClassNotFoundException
     {
-        return defineClassForEmbed(bytecodeLen, bytecode, className.replace(".","/"));
+        Class result = (Class) classes.get(className);
+        if (result == null)
+        {
+            result = defineClassForEmbed(bytecodeLen, bytecode, className.replace(".","/"));
+            classes.put(className, result);
+        }
+        return result; 
     }
     public static HpccClassLoader newInstance(java.net.URL [] urls, ClassLoader parent, int _bytecodeLen, long _bytecode, String dllname)
     {

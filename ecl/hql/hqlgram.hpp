@@ -588,6 +588,7 @@ public:
     IHqlExpression * processIndexBuild(const attribute &err, attribute & indexAttr, attribute * recordAttr, attribute * payloadAttr, attribute & filenameAttr, attribute & flagsAttr);
     IHqlExpression * processCompoundFunction(attribute & result, bool outOfLine);
     IHqlExpression * processEmbedBody(const attribute & errpos, IHqlExpression * embedText, IHqlExpression * language, IHqlExpression *attribs);
+    IHqlExpression * checkEmbedBody(const attribute & errpos, DefineIdSt * defineid, IHqlExpression *body, HqlExprArray & params);
     IHqlExpression * getGpgSignature();
     void processEnum(attribute & idAttr, IHqlExpression * value);
     void processError(bool full);
@@ -861,7 +862,7 @@ protected:
     void defineSymbolProduction(attribute & nameattr, attribute & paramattr, attribute & assignattr, attribute * valueattr, attribute * failattr, attribute & semiattr);
     void definePatternSymbolProduction(attribute & nameattr, attribute & paramattr, const attribute & assignAttr, attribute & valueAttr, attribute & workflowAttr, const attribute & semiattr);
     void cloneInheritedAttributes(IHqlScope * scope, const attribute & errpos);
-    IHqlExpression * normalizeFunctionExpression(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults, IHqlExpression * modifiers);
+    IHqlExpression * normalizeFunctionExpression(const attribute & idattr, DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults, IHqlExpression * modifiers);
 
     IHqlExpression * createEvaluateOutputModule(const attribute & errpos, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, node_operator outputOp, IIdAtom *matchId);
     IHqlExpression * createStoredModule(const attribute & errpos, IHqlExpression * scopeExpr);

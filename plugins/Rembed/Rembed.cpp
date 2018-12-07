@@ -1349,6 +1349,8 @@ public:
     {
         throwUnexpected();
     }
+    virtual void enter() override {}
+    virtual void exit() override {}
 
     virtual void callFunction()
     {
