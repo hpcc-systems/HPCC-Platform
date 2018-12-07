@@ -4215,6 +4215,192 @@ unsigned rtlDelayReturn(unsigned value, unsigned sleepTime)
 
 //---------------------------------------------------------------------------
 
+// strptime and related functions
+
+inline bool readValue(unsigned & value, size32_t & _offset, size32_t lenStr, const char * str, unsigned max, bool spaceIsZero = false)
+{
+    unsigned total = 0;
+    unsigned offset = _offset;
+    if (lenStr - offset < max)
+        max = lenStr - offset;
+    unsigned i=0;
+    for (; i < max; i++)
+    {
+        char next = str[offset+i];
+        if (next >= '0' && next <= '9')
+            total = total * 10 + (next - '0');
+        else if (next == ' ' && spaceIsZero)
+            total = total * 10;
+        else
+            break;
+    }
+    if (i == 0)
+        return false;
+    value = total;
+    _offset = offset+i;
+    return true;
+}
+
+const char * const monthNames[12] = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+
+inline bool matchString(unsigned & value, size32_t & strOffset, size32_t lenStr, const byte * str, unsigned num, const char * const * strings, unsigned minMatch)
+{
+    unsigned startOffset = strOffset;
+    for (unsigned i =0; i < num; i++)
+    {
+        const char * cur = strings[i];
+        unsigned offset = startOffset;
+        while (offset < lenStr)
+        {
+            byte next = *cur++;
+            if (!next || toupper(next) != toupper(str[offset]))
+                break;
+            offset++;
+        }
+        if (offset - startOffset >= minMatch)
+        {
+            value = i;
+            strOffset = offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+//This implements a subset of the specifiers allowed for strptime
+//Another difference is it works on a string with a separate length
+ECLRTL_API const char * simple_strptime(size32_t lenStr, const char * str, const char * format, struct tm * tm)
+{
+    const char * curFormat = format;
+    size32_t offset = 0;
+    const byte * src = (const byte *)str;
+    unsigned value;
+
+    byte next;
+    while ((next = *curFormat++) != '\0')
+    {
+        if (next == '%')
+        {
+            switch (*curFormat++)
+            {
+            // Recursive cases
+            case 'F':
+                {
+                    const char* newPtr = simple_strptime(lenStr-offset, str+offset, "%Y-%m-%d", tm);
+
+                    if (!newPtr)
+                        return NULL;
+                    offset = newPtr - str;
+                }
+                break;
+            case 'D':
+                {
+                    const char* newPtr = simple_strptime(lenStr-offset, str+offset, "%m/%d/%y", tm);
+
+                    if (!newPtr)
+                        return NULL;
+                    offset = newPtr - str;
+                }
+                break;
+            case 'R':
+                {
+                    const char* newPtr = simple_strptime(lenStr-offset, str+offset, "%H:%M", tm);
+
+                    if (!newPtr)
+                        return NULL;
+                    offset = newPtr - str;
+                }
+                break;
+            case 'T':
+                {
+                    const char* newPtr = simple_strptime(lenStr-offset, str+offset, "%H:%M:%S", tm);
+
+                    if (!newPtr)
+                        return NULL;
+                    offset = newPtr - str;
+                }
+                break;
+            // Non-recursive cases
+            case 't':
+                while ((offset < lenStr) && isspace(src[offset]))
+                    offset++;
+                break;
+            case 'Y':
+                if (!readValue(value, offset, lenStr, str, 4))
+                    return NULL;
+                tm->tm_year = value-1900;
+                break;
+            case 'y':
+                if (!readValue(value, offset, lenStr, str, 2))
+                    return NULL;
+                tm->tm_year = value > 68 ? value : value + 100;
+                break;
+            case 'm':
+                if (!readValue(value, offset, lenStr, str, 2) || (value < 1) || (value > 12))
+                    return NULL;
+                tm->tm_mon = value-1;
+                break;
+            case 'd':
+                if (!readValue(value, offset, lenStr, str, 2) || (value < 1) || (value > 31))
+                    return NULL;
+                tm->tm_mday = value;
+                break;
+            case 'e':
+                if (!readValue(value, offset, lenStr, str, 2, true) || (value < 1) || (value > 31))
+                    return NULL;
+                tm->tm_mday = value;
+                break;
+            case 'b':
+            case 'B':
+            case 'h':
+                if (!matchString(value, offset, lenStr, src, sizeof(monthNames)/sizeof(*monthNames), monthNames, 3))
+                    return NULL;
+                tm->tm_mon = value;
+                break;
+            case 'H':
+                if (!readValue(value, offset, lenStr, str, 2)|| (value > 24))
+                    return NULL;
+                tm->tm_hour = value;
+                break;
+            case 'k':
+                if (!readValue(value, offset, lenStr, str, 2, true)|| (value > 24))
+                    return NULL;
+                tm->tm_hour = value;
+                break;
+            case 'M':
+                if (!readValue(value, offset, lenStr, str, 2)|| (value > 59))
+                    return NULL;
+                tm->tm_min = value;
+                break;
+            case 'S':
+                if (!readValue(value, offset, lenStr, str, 2)|| (value > 59))
+                    return NULL;
+                tm->tm_sec = value;
+                break;
+            default:
+                return NULL;
+            }
+        }
+        else
+        {
+            if (isspace(next))
+            {
+                while ((offset < lenStr) && isspace(src[offset]))
+                    offset++;
+            }
+            else
+            {
+                if ((offset >= lenStr) || (src[offset++] != next))
+                    return NULL;
+            }
+        }
+    }
+    return str+offset;
+}
+
+
+//---------------------------------------------------------------------------
+
 class DECL_EXCEPTION CRtlFailException : public IUserException, public CInterface
 {
 public:
