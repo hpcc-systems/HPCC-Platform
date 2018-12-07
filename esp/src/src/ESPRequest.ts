@@ -461,9 +461,6 @@ export const Store = declare(null, {
             } else {
                 deferredResults.total.resolve(0);
             }
-            if (deferredResults.isResolved()) {
-                debugger;
-            }
             deferredResults.resolve(items);
             return response;
         });

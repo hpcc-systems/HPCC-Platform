@@ -622,8 +622,12 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
         if (this.Archived) {
             return "iconArchived";
         }
+        if (this.isComplete()) {
+            return "iconCompleted";
+        }
         switch (this.StateID) {
             case 1:
+                return "iconSubmitted";
             case 3:
                 return "iconCompleted";
             case 2:
@@ -654,9 +658,12 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
         if (this.Archived) {
             return "workunit_archived.png";
         }
+        if (this.isComplete()) {
+            return "workunit_completed.png";
+        }
         switch (this.StateID) {
             case 1:
-                return "workunit_completed.png";
+                return "workunit_submitted.png";
             case 2:
                 return "workunit_running.png";
             case 3:

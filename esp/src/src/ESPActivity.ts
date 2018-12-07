@@ -130,24 +130,24 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
     refreshTargetCluster: function (item, queueItem, targetClusters, targetClusterMap) {
         var queue = null;
         if (item.ClusterName) {
-            queue = ESPQueue.GetTargetCluster(item.ClusterName);
+            queue = ESPQueue.GetTargetCluster(item.ClusterName, true);
         } else {
-            queue = ESPQueue.GetServerJobQueue(queueItem ? queueItem.QueueName : item.ServerName);
+            queue = ESPQueue.GetServerJobQueue(queueItem ? queueItem.QueueName : item.ServerName, true);
         }
         queue.updateData(item);
         if (queueItem) {
-            if (queueItem.QueueName === undefined) debugger;
             queue.updateData(queueItem);
         }
         queue.set("DisplayName", queue.getDisplayName());
         queue.clearChildren();
         targetClusters.push(queue);
         targetClusterMap[queue.__hpcc_id] = queue;
+        var context = this;
         if (!this._watched[queue.__hpcc_id]) {
             this._watched[queue.__hpcc_id] = queue.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 if (oldValue !== newValue) {
-                    if (this.observableStore.get(queue.__hpcc_id)) {
-                        this.observableStore.notify(queue, queue.__hpcc_id);
+                    if (context.observableStore.get(queue.__hpcc_id)) {
+                        context.observableStore.notify(queue, queue.__hpcc_id);
                     }
                 }
             });
@@ -161,16 +161,21 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
                 var queue = null;
                 if (item.QueueName) {
                     queue = ESPQueue.GetServerJobQueue(item.QueueName);
-                } else if (item.ClusterName) {
-                    queue = ESPQueue.GetTargetCluster(item.ClusterName);
-                } else {
-                    queue = ESPQueue.GetServerJobQueue(item.ServerName);
+                }
+                if (!queue) {
+                    if (item.ClusterName) {
+                        queue = ESPQueue.GetTargetCluster(item.ClusterName);
+                    } else {
+                        queue = ESPQueue.GetServerJobQueue(item.ServerName);
+                    }
                 }
                 var wu = item.Server === "DFUserver" ? ESPDFUWorkunit.Get(item.Wuid) : ESPWorkunit.Get(item.Wuid);
                 wu.updateData(lang.mixin({
                     __hpcc_id: item.Wuid
                 }, item));
-                queue.addChild(wu);
+                if (!wu.isComplete || !wu.isComplete()) {
+                    queue.addChild(wu);
+                }
             });
         }
     },
