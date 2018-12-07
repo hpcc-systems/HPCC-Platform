@@ -44,6 +44,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="Services" type="xs:string" use="optional" default="GetTransactionSeed,UpdateLog,GetTransactionID">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>the names of logging services to be supported in this logging agent.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="description" type="xs:string" use="optional" default="ESP Logging Agent">
         <xs:annotation>
           <xs:appinfo>
