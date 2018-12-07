@@ -132,13 +132,14 @@ public:
 //
 
 #define DEFAULT_CACHE_TIMEOUT_SECONDS 10
+#define DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES 60 //by default, resource cache times out every hour
 
 class CPermissionsCache : public CInterface
 {
 public:
     CPermissionsCache(const char * _secMgrClass = nullptr)
     {
-        m_cacheTimeout = 300;
+        m_cacheTimeoutInSeconds = DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES * 60 * 1000;//default every hour
         m_transactionalEnabled = false;
         m_secMgr = NULL;
         m_lastManagedFileScopesRefresh = 0;
@@ -173,14 +174,14 @@ public:
 
     void  setCacheTimeout(int timeoutSeconds)
     {
-        m_cacheTimeout = timeoutSeconds;
-        if(m_cacheTimeout == 0 && isTransactionalEnabled())//ensure transactional time is updated
+        m_cacheTimeoutInSeconds = timeoutSeconds;
+        if(m_cacheTimeoutInSeconds == 0 && isTransactionalEnabled())//ensure transactional time is updated
             setTransactionalCacheTimeout(DEFAULT_CACHE_TIMEOUT_SECONDS); //Transactional timeout is set to 10 seconds for long transactions that might take over 10 seconds.
         else
             setTransactionalCacheTimeout(timeoutSeconds);
     }
-    const int getCacheTimeout() { return m_cacheTimeout; }
-    bool  isCacheEnabled() { return m_cacheTimeout > 0; }
+    const int getCacheTimeout() { return m_cacheTimeoutInSeconds; }
+    bool  isCacheEnabled() { return m_cacheTimeoutInSeconds > 0; }
 
     void setTransactionalEnabled(bool enable)
     {
@@ -210,7 +211,7 @@ private:
     MapResPermissionsCache m_resPermissionsMap;  //user specific resource permissions cache
     mutable ReadWriteLock m_resPermCacheRWLock; //guards m_resPermissionsMap
 
-    int m_cacheTimeout; //cleanup cycle period
+    int m_cacheTimeoutInSeconds; //cleanup cycle period
     bool m_transactionalEnabled;
     int m_transactionalCacheTimeout;
 
