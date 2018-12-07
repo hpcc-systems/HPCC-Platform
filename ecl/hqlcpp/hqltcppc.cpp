@@ -2175,7 +2175,7 @@ void CSpecialVStringColumnInfo::setColumn(HqlCppTranslator & translator, BuildCt
         args.append(*LINK(length));
         args.append(*translator.getElementPointer(bound.expr));
         translator.callProcedure(ctx, str2VStrId, args);
-        associateSizeOf(ctx, selector, LINK(targetSize), 0);
+        associateSizeOf(ctx, selector, targetSize, 0);
     }
 }
 

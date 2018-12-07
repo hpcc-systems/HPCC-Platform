@@ -1095,6 +1095,314 @@ public:
     }
 };
 
+class EsdlBindLogTransformCmd : public EsdlBindServiceCmd
+{
+protected:
+    StringAttr optLogTransform;
+    StringAttr optBindingId;
+    bool       optEncoded;
+
+public:
+    int processCMD()
+    {
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientConfigureESDLBindingLogTransformRequest> request = esdlConfigClient->createConfigureESDLBindingLogTransformRequest();
+
+        fprintf(stdout,"\nAttempting to configure LogTransform : '%s' for binding '%s'\n", optLogTransform.get(), optBindingId.get());
+        request->setEsdlBindingId(optBindingId.get());
+        request->setLogTransformName(optLogTransform.get());
+        request->setConfig(optInput);
+        request->setOverwrite(optOverWrite);
+        request->setEncoded(optEncoded);
+
+        if (optVerbose)
+            fprintf(stdout,"\nLogTransform config: %s\n", optInput.get());
+
+        Owned<IClientConfigureESDLBindingLogTransformResponse> resp = esdlConfigClient->ConfigureESDLBindingLogTransform(request);
+
+        if (resp->getExceptions().ordinality()>0)
+        {
+            EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
+            return 1;
+        }
+
+        outputWsStatus(resp->getStatus().getCode(), resp->getStatus().getDescription());
+
+        return 0;
+    }
+
+    void usage()
+    {
+        printf( "\nUsage:\n\n"
+                "esdl bind-log-transform <TargetESDLBindingID> [TargetLogTransformName] --config <file|xml> [command options]\n\n"
+                "   TargetESDLBindingID                              The id of the target ESDL binding (must exist in dali)\n"
+                "   TargetLogTransformName                           The name of the target LogTransform (required when config is xsl transform)\n"
+                "   --config <file|xml>                              Configuration XML for all LogTransforms associated with the target Service\n"
+
+                "\nOptions (use option flag followed by appropriate value):\n"
+                "   --overwrite                                      Overwrite LogTransform if it already exists\n"
+                "   --encoded                                        The LogTransform in config has been encoded.\n");
+
+                EsdlPublishCmdCommon::usage();
+
+        printf( "\n Use this command to publish ESDL Service based bindings.\n"
+                "   To bind a ESDL Service, provide the id of the esdl binding and the LogTransform name you're going to configure.\n"
+                "   Optionally provide configuration information either directly, or via a\n"
+                "   configuration file in the following syntax:\n"
+                "     <LogTransforms>\n"
+                "     \t<LogTransform name=\"myLogTransform\">escaped transform script</LogTransform>\n"
+                "     \t<LogTransform name=\"myLogTransform2\">escaped transform script</LogTransform>\n"
+                "     </LogTransforms>\n"
+                "   or\n"
+                "     one transform script\n"
+                );
+
+        printf("\nExample:\n"
+                ">esdl bind-log-transform myesp.8003.EsdlExample myLogTransform --config /myService/log-transforms.xml\n"
+                "or:\n"
+                ">esdl bind-log-transform myesp.8003.EsdlExample myLogTransform --config /myService/log-transform.xsl\n"
+                );
+    }
+
+    bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        //First 2 parameter order is fixed.
+        for (int cur = 0; cur < 2 && !iter.done(); cur++)
+        {
+           const char *arg = iter.query();
+           if (*arg != '-')
+           {
+               switch (cur)
+               {
+                case 0:
+                    optBindingId.set(arg);
+                    break;
+                case 1:
+                    optLogTransform.set(arg);
+                    break;
+               }
+           }
+           else
+           {
+               fprintf(stderr, "\noption detected before required arguments: %s\n", arg);
+               usage();
+               return false;
+           }
+
+           iter.next();
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            if (parseCommandLineOption(iter))
+                continue;
+
+            if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
+                return false;
+        }
+
+        return true;
+    }
+
+    bool parseCommandLineOption(ArgvIterator &iter)
+    {
+        if (iter.matchFlag(optEncoded, ESDL_OPTION_ENCODED) )
+            return true;
+
+        if (EsdlBindServiceCmd::parseCommandLineOption(iter))
+            return true;
+
+        return false;
+    }
+
+    bool finalizeOptions(IProperties *globals)
+    {
+        if (optInput.length())
+        {
+            const char *in = optInput.get();
+            while (*in && isspace(*in)) in++;
+            if (*in!='<')
+            {
+                StringBuffer content;
+                content.loadFile(in);
+                optInput.set(content.str());
+            }
+        }
+
+        if (optBindingId.isEmpty())
+            throw MakeStringException( 0, "ESDLBindingID must be provided!" );
+
+        if (optLogTransform.isEmpty() && (strncmp(optInput.str(), "<LogTransforms>", 15) != 0))
+            throw MakeStringException( 0, "Name of ESDL based LogTransform must be provided" );
+
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
+    }
+};
+
+class EsdlUnBindLogTransformCmd : public EsdlBindLogTransformCmd
+{
+public:
+    int processCMD()
+    {
+        int success = -1;
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientGetESDLBindingRequest> getrequest = esdlConfigClient->createGetESDLBindingRequest();
+        if (optVerbose)
+            fprintf(stdout,"\nFetching current ESDL binging configuration for (%s)\n", optBindingId.get());
+        getrequest->setEsdlBindingId(optBindingId.get());
+
+        Owned<IClientGetESDLBindingResponse> getresp = esdlConfigClient->GetESDLBinding(getrequest);
+
+        if (getresp->getExceptions().ordinality()>0)
+        {
+            EsdlCmdHelper::outputMultiExceptions(getresp->getExceptions());
+            return success;
+        }
+
+        if (getresp->getStatus().getCode()!=0)
+        {
+            fprintf(stderr, "\n Failed to retrieve ESDL Binding configuration for %s: %s.\n", optBindingId.get(), getresp->getStatus().getDescription());
+            return success;
+        }
+
+        const char * currentconfig = getresp->getConfigXML();
+        if (currentconfig && *currentconfig)
+        {
+            Owned<IPropertyTree> currconfigtree = createPTreeFromXMLString(currentconfig, ipt_caseInsensitive | ipt_ordered);
+            if (currconfigtree)
+            {
+                VStringBuffer xpath("Definition[1]/LogTransforms/LogTransform[@name='%s']", optLogTransform.get());
+
+                if (currconfigtree->hasProp(xpath.str()))
+                {
+                    if (currconfigtree->removeProp(xpath.str()))
+                    {
+                        StringBuffer newconfig;
+                        toXML(currconfigtree, newconfig);
+
+                        Owned<IClientPublishESDLBindingRequest> request = esdlConfigClient->createPublishESDLBindingRequest();
+
+                        if (optVerbose)
+                            fprintf(stdout,"\nAttempting to remove LogTransform '%s' from esdl binding '%s'\n", optLogTransform.get(), optBindingId.get());
+
+                        request->setEsdlDefinitionID(getresp->getESDLBinding().getDefinition().getId());
+                        request->setEsdlServiceName(getresp->getServiceName());
+                        request->setEspProcName(getresp->getEspProcName());
+                        request->setEspPort(getresp->getEspPort());
+                        request->setConfig(newconfig.str());
+                        request->setOverwrite(true);
+
+                        Owned<IClientPublishESDLBindingResponse> resp = esdlConfigClient->PublishESDLBinding(request);
+
+                        if (resp->getExceptions().ordinality() > 0)
+                        {
+                            EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
+                            return success;
+                        }
+
+                        if (resp->getStatus().getCode() == 0)
+                        {
+                            fprintf(stdout, "\nSuccessfully unbound LogTransform %s from ESDL Binding %s.\n", optLogTransform.get(), optBindingId.get());
+                            success = 0;
+                        }
+                        else
+                            fprintf(stderr, "\nCould not unbound LogTransform %s from ESDL Binding %s: %s\n", optLogTransform.get(), optBindingId.get(), resp->getStatus().getDescription());
+                    }
+                    else
+                        fprintf(stderr, "\n Could not remove LogTransform %s from ESDL Binding %s configuration.\n", optLogTransform.get(), optBindingId.get());
+                }
+                else
+                    fprintf(stderr, "\n LogTransform %s doesn't seem to be associated with ESDL Binding %s.\n", optLogTransform.get(), optBindingId.get());
+            }
+            else
+                fprintf(stderr, "\n Could not interpret configuration for ESDL Binding %s :  %s.\n", optBindingId.get(), currentconfig );
+        }
+        else
+            fprintf(stderr, "\n Received empty configuration for ESDL Binding %s.\n", optBindingId.get());
+
+        return success;
+    }
+
+    void usage()
+    {
+        printf( "\nUsage:\n\n"
+                "esdl unbind-log-transform <ESDLBindingID> <LogTransformName> [\n\n"
+                "   ESDLBindingID                              The id of the esdl binding associated with the target LogTransform\n"
+                "   LogTransformName                           The name of the target LogTransform (must exist in the service ESDL definition)\n");
+
+                EsdlPublishCmdCommon::usage();
+
+        printf( "\n   Use this command to unbind a LogTransform configuration currently associated with a given ESDL binding.\n"
+                "   To unbind a LogTransform, provide the target esdl binding id and the name of the LogTransform to unbind\n");
+
+        printf("\nExample:"
+                ">esdl unbind-log-transform myesp.8003.WsMyService myLogTransform\n"
+                );
+    }
+    bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        //First 2 parameter order is fixed.
+        for (int cur = 0; cur < 2 && !iter.done(); cur++)
+        {
+           const char *arg = iter.query();
+           if (*arg != '-')
+           {
+               switch (cur)
+               {
+                case 0:
+                    optBindingId.set(arg);
+                    break;
+                case 1:
+                    optLogTransform.set(arg);
+                    break;
+               }
+           }
+           else
+           {
+               fprintf(stderr, "\noption detected before required arguments: %s\n", arg);
+               usage();
+               return false;
+           }
+
+           iter.next();
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            if (parseCommandLineOption(iter))
+                continue;
+
+            if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
+                return false;
+        }
+
+        return true;
+    }
+
+    bool finalizeOptions(IProperties *globals)
+    {
+        if(optBindingId.isEmpty())
+            throw MakeStringException( 0, "Name of Target ESDL Binding must be provided" );
+
+        if (optLogTransform.isEmpty())
+            throw MakeStringException( 0, "Name of ESDL based LogTransform must be provided" );
+
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
+    }
+};
+
 class EsdlGetCmd : public EsdlPublishCmdCommon
 {
     protected:

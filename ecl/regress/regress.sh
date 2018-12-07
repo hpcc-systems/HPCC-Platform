@@ -93,12 +93,14 @@ if [[ $* != '' ]]; then
                 np="$OPTARG"
                 ;;
             v)
-               	valgrind="valgrind --leak-check=full --suppressions=suppressions.txt "
-               	eclcc="$valgrind $eclcc"
-               	compare_dir=
-               	;;
+                valgrind="valgrind --leak-check=full --suppressions=suppressions.txt "
+                userflags="$userflags --leakcheck"
+                eclcc="$valgrind $eclcc"
+                compare_dir=
+                ;;
             w)
                 valgrind="valgrind --leak-check=full --suppressions=suppressions.txt --vgdb-error=0 "
+                userflags="$userflags --leakcheck"
                 valgrind="$valgrind --track-origins=yes "
                 eclcc="$valgrind $eclcc"
                 compare_dir=

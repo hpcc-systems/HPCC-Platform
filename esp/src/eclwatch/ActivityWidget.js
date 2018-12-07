@@ -28,6 +28,33 @@ define([
     registry, Button, ToggleButton, ToolbarSeparator, ContentPane, Tooltip,
     selector, tree,
     GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil, Utility) {
+
+        var DelayedRefresh = declare("DelayedRefresh", [], {
+            _activityWidget: null,
+            _promises: null,
+
+            constructor: function (activityWidget) {
+                this._activityWidget = activityWidget;
+                this._promises = [];
+            },
+
+            push: function (promise) {
+                this._promises.push(promise);
+            },
+
+            refresh: function () {
+                if (this._promises.length) {
+                    var context = this;
+                    Promise.all(this._promises).then(function () {
+                        context._activityWidget.refreshGrid();
+                        setTimeout(function() {
+                            context._activityWidget._refreshActionState();
+                        }, 100);
+                    });
+                }
+            }
+        });
+
         return declare("ActivityWidget", [GridDetailsWidget], {
 
             i18n: nlsHPCC,
@@ -46,174 +73,147 @@ define([
             },
 
             _onPause: function (event, params) {
+                var context = this;
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfQueue(item)) {
-                        var context = this;
-                        item.pause().then(function (response) {
-                            context._refreshActionState();
-                        });
-                    }
-                    if (item.ServerType === "ECLserver" || "ECLCCserver") {
-                        setTimeout(function () {
-                            context.refreshGrid();
-                        }, 100);
+                        promises.push(item.pause());
                     }
                 }, this);
+                promises.refresh();
             },
 
             _onResume: function (event, params) {
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfQueue(item)) {
-                        var context = this;
-                        item.resume().then(function (response) {
-                            context._refreshActionState();
-                        });
-                    }
-                    if (item.ServerType === "ECLserver" || "ECLCCserver") {
-                        setTimeout(function () {
-                            context.refreshGrid();
-                        }, 100);
+                        promises.push(item.resume());
                     }
                 }, this);
+                promises.refresh();
             },
 
             _onClear: function (event, params) {
-                var context = this;
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfQueue(item)) {
-                        item.clear();
+                        promises.push(item.clear());
                     }
                 }, this);
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             _onWUPause: function (event, params) {
-                var context = this;
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfWorkunit(item)) {
-                        item.pause();
+                        promises.push(item.pause());
                     }
                 }, this);
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             _onWUPauseNow: function (event, params) {
-                var context = this;
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfWorkunit(item)) {
-                        item.pauseNow();
+                        promises.push(item.pauseNow());
                     }
                 }, this);
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             _onWUResume: function (event, params) {
-                var context = this;
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfWorkunit(item)) {
-                        item.resume();
+                        promises.push(item.resume());
                     }
                 }, this);
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             _onWUAbort: function (event, params) {
-                var context = this;
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfWorkunit(item)) {
-                        item.abort();
+                        promises.push(item.abort());
                     }
                 }, this);
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             _onWUPriority: function (event, priority) {
-                var context = this;
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfWorkunit(item)) {
                         var queue = item.get("ESPQueue");
                         if (queue) {
-                            queue.setPriority(item.Wuid, priority);
+                            promises.push(queue.setPriority(item.Wuid, priority));
                         }
                     }
                 }, this);
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             _onWUTop: function (event, params) {
                 var context = this;
+                var promises = new DelayedRefresh(this);
                 var selected = this.grid.getSelected();
                 for (var i = selected.length - 1; i >= 0; --i) {
                     var item = selected[i];
                     if (this.activity.isInstanceOfWorkunit(item)) {
                         var queue = item.get("ESPQueue");
                         if (queue) {
-                            queue.moveTop(item.Wuid);
+                            promises.push(queue.moveTop(item.Wuid));
                         }
                     }
                 }
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             _onWUUp: function (event, params) {
                 var context = this;
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfWorkunit(item)) {
                         var queue = item.get("ESPQueue");
                         if (queue) {
-                            queue.moveUp(item.Wuid);
+                            promises.push(queue.moveUp(item.Wuid));
                         }
                     }
                 }, this);
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             _onWUDown: function (event, params) {
                 var context = this;
+                var promises = new DelayedRefresh(this);
                 var selected = this.grid.getSelected();
                 for (var i = selected.length - 1; i >= 0; --i) {
                     var item = selected[i];
                     if (this.activity.isInstanceOfWorkunit(item)) {
                         var queue = item.get("ESPQueue");
                         if (queue) {
-                            queue.moveDown(item.Wuid);
+                            promises.push(queue.moveDown(item.Wuid));
                         }
                     }
                 }
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             _onWUBottom: function (event, params) {
                 var context = this;
+                var promises = new DelayedRefresh(this);
                 arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                     if (this.activity.isInstanceOfWorkunit(item)) {
                         var queue = item.get("ESPQueue");
                         if (queue) {
-                            queue.moveBottom(item.Wuid);
+                            promises.push(queue.moveBottom(item.Wuid));
                         }
                     }
                 }, this);
-                setTimeout(function () {
-                    context.refreshGrid();
-                }, 100);
+                promises.refresh();
             },
 
             doSearch: function (searchText) {
@@ -391,8 +391,8 @@ define([
                             width: 300,
                             sortable: true,
                             shouldExpand: function (row, level, previouslyExpanded) {
-                                if (context.firstLoad === true) {
-                                    return true;
+                                if (level === 0) {
+                                    return previouslyExpanded === undefined ? true : previouslyExpanded;
                                 }
                                 return previouslyExpanded;
                             },

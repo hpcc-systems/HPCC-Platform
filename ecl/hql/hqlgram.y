@@ -8779,7 +8779,7 @@ simpleDataSet
                             $$.setExpr(createDataset(no_metaactivity, $3.getExpr(), createAttribute(pullAtom)));
                             $$.setPosition($1);
                         }
-    | TRACE '(' startTopLeftRightSeqFilter optTraceFlags ')' endTopLeftRightFilter endSelectorSequence
+    | TRACE '(' startTopFilter optTraceFlags ')' endTopFilter
                         {
                             $$.setExpr(createDataset(no_metaactivity, $3.getExpr(), createComma(createAttribute(traceAtom), $4.getExpr())));
                             $$.setPosition($1);

@@ -2830,7 +2830,7 @@ IHqlExpression * SpillerInfo::createSpilledWrite(IHqlExpression * transformed, b
     }
     else
     {
-        LinkedHqlExpr dataset = LINK(transformed);
+        LinkedHqlExpr dataset = transformed;
         if (dataset->isDictionary())
             dataset.setown(createDataset(no_datasetfromdictionary, dataset.getClear()));
         if (options->createSpillAsDataset && allowCommonDataset)

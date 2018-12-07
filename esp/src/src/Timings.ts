@@ -28,6 +28,7 @@ export class Timings {
     private wu: Workunit;
 
     private timeline = new WUTimeline()
+        .maxZoom(Number.MAX_SAFE_INTEGER)
         .overlapTolerence(1)
         .baseUrl("")
         .request({
@@ -295,7 +296,7 @@ export class Timings {
             this.chart._columnsMetric = {};
             const columns = ["id", ...this._metricSelectValues.map(mv => {
                 const retVal = `${mv}(${this._rawColumns[mv].Measure})`;
-                this.chart._columnsMetric[retVal] = this._rawColumns[mv]; 
+                this.chart._columnsMetric[retVal] = this._rawColumns[mv];
                 return retVal;
             })];
 

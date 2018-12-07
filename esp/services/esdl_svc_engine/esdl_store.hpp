@@ -40,6 +40,8 @@ interface IEsdlStore : public IInterface
     virtual bool addDefinition(const char* definitionName, IPropertyTree* definitionInfo, StringBuffer &newId, unsigned &newSeq, const char* userid, bool deleteprev, StringBuffer & message) = 0;
     virtual int configureMethod(const char* bindingId, const char* methodName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) = 0;
     virtual int configureMethod(const char* espProcName, const char* espBindingName, const char* definitionId, const char* methodName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) = 0;
+    virtual int configureLogTransform(const char* bindingId, const char* logTransformName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) = 0;
+    virtual int configureLogTransform(const char* espProcName, const char* espBindingName, const char* definitionId, const char* logTransformName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) = 0;
     virtual int bindService(const char* bindingName, IPropertyTree* methodsConfig, const char* espProcName, const char* espPort, const char* definitionId,
                        const char* esdlServiceName, StringBuffer& message, bool overwrite, const char* user) = 0;
     virtual bool deleteDefinition(const char* definitionId, StringBuffer& errmsg, StringBuffer* defxml) = 0;

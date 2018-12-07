@@ -116,25 +116,39 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         var context = this;
         if (responseTargetClusters) {
             arrayUtil.forEach(responseTargetClusters, function (item, idx) {
-                var queue = null;
-                if (item.ClusterName) {
-                    queue = ESPQueue.GetTargetCluster(item.ClusterName);
-                } else {
-                    queue = ESPQueue.GetServerJobQueue(item.ServerName);
-                }
-                queue.updateData(item);
-                queue.set("DisplayName", queue.getDisplayName());
-                queue.clearChildren();
-                targetClusters.push(queue);
-                targetClusterMap[queue.__hpcc_id] = queue;
-                if (!context._watched[queue.__hpcc_id]) {
-                    context._watched[queue.__hpcc_id] = queue.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
-                        if (oldValue !== newValue) {
-                            if (context.observableStore.get(queue.__hpcc_id)) {
-                                context.observableStore.notify(queue, queue.__hpcc_id);
-                            }
-                        }
+                if (lang.exists("Queues.ServerJobQueue", item)) {
+                    arrayUtil.forEach(item.Queues.ServerJobQueue, function (queueItem) {
+                        context.refreshTargetCluster(item, queueItem, targetClusters, targetClusterMap);
                     });
+                } else {
+                    context.refreshTargetCluster(item, undefined, targetClusters, targetClusterMap);
+                }
+            });
+        }
+    },
+
+    refreshTargetCluster: function (item, queueItem, targetClusters, targetClusterMap) {
+        var queue = null;
+        if (item.ClusterName) {
+            queue = ESPQueue.GetTargetCluster(item.ClusterName, true);
+        } else {
+            queue = ESPQueue.GetServerJobQueue(queueItem ? queueItem.QueueName : item.ServerName, true);
+        }
+        queue.updateData(item);
+        if (queueItem) {
+            queue.updateData(queueItem);
+        }
+        queue.set("DisplayName", queue.getDisplayName());
+        queue.clearChildren();
+        targetClusters.push(queue);
+        targetClusterMap[queue.__hpcc_id] = queue;
+        var context = this;
+        if (!this._watched[queue.__hpcc_id]) {
+            this._watched[queue.__hpcc_id] = queue.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
+                if (oldValue !== newValue) {
+                    if (context.observableStore.get(queue.__hpcc_id)) {
+                        context.observableStore.notify(queue, queue.__hpcc_id);
+                    }
                 }
             });
         }
@@ -145,16 +159,23 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
             arrayUtil.forEach(responseActiveWorkunits, function (item, idx) {
                 item["__hpcc_id"] = item.Wuid;
                 var queue = null;
-                if (item.ClusterName) {
-                    queue = ESPQueue.GetTargetCluster(item.ClusterName);
-                } else {
-                    queue = ESPQueue.GetServerJobQueue(item.ServerName);
+                if (item.QueueName) {
+                    queue = ESPQueue.GetServerJobQueue(item.QueueName);
+                }
+                if (!queue) {
+                    if (item.ClusterName) {
+                        queue = ESPQueue.GetTargetCluster(item.ClusterName);
+                    } else {
+                        queue = ESPQueue.GetServerJobQueue(item.ServerName);
+                    }
                 }
                 var wu = item.Server === "DFUserver" ? ESPDFUWorkunit.Get(item.Wuid) : ESPWorkunit.Get(item.Wuid);
                 wu.updateData(lang.mixin({
                     __hpcc_id: item.Wuid
                 }, item));
-                queue.addChild(wu);
+                if (!wu.isComplete || !wu.isComplete()) {
+                    queue.addChild(wu);
+                }
             });
         }
     },

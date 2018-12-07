@@ -58,6 +58,7 @@ define([
 
                     this.timeline = new hpccEclWatch.WUTimeline()
                         .target(this.id + "TimelinePane")
+                        .maxZoom(Number.MAX_SAFE_INTEGER)
                         .overlapTolerence(1)
                         .baseUrl("")
                         .wuid(params.Wuid)

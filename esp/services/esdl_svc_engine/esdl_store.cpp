@@ -434,6 +434,99 @@ public:
             return configureMethod(bindingId, methodName, configTree, overwrite, message);
     }
 
+    virtual int configureLogTransform(const char* bindingId, const char* logTransformName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) override
+    {
+        if (isEmptyString(bindingId))
+        {
+            message.set("Unable to configure method, binding id must be provided");
+            return -1;
+        }
+        if (!configTree)
+        {
+            message.setf("Unable to configure method '%s', configuration attributes must be provided", logTransformName);
+            return -1;
+        }
+
+        VStringBuffer rxpath("%sBinding[@id='%s']/Definition/LogTransforms[1]", ESDL_BINDINGS_ROOT_PATH, bindingId);
+        Owned<IRemoteConnection> conn;
+
+        try
+        {
+            conn.setown(querySDS().connect(rxpath, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL));
+        }
+        catch (ISDSException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            if (msg.isEmpty())
+                message.setf("Unable to operate on Dali path: %s", rxpath.str());
+            else
+                message.setf("Unable to operate on Dali path: %s. %s", rxpath.str(), msg.str());
+            e->Release();
+            return -1;
+        }
+
+        //Only lock the branch for the target we're interested in.
+        if (!conn)
+            throw MakeStringException(-1, "Unable to connect to %s", rxpath.str());
+
+        Owned<IPropertyTree> root = conn->getRoot();
+        if (!root.get())
+            throw MakeStringException(-1, "Unable to open %s", rxpath.str());
+
+        VStringBuffer xpath("LogTransform[@name='%s']", logTransformName);
+        Owned<IPropertyTree> oldEnvironment = root->getPropTree(xpath.str());
+        if (oldEnvironment.get())
+        {
+            if (overwrite)
+            {
+                message.set("Existing LogTransform configuration overwritten!");
+                root->removeTree(oldEnvironment);
+            }
+            else
+            {
+                message.set("LogTransform configuration exists will not overwrite!");
+                return -1;
+            }
+        }
+
+        root->addPropTree("LogTransform", configTree);
+        conn->commit();
+
+        VStringBuffer changestr("action=update;type=binding;targetId=%s", bindingId);
+        triggerSubscription(changestr.str());
+
+        message.appendf("\nSuccessfully configured Method '%s' for binding '%s'", logTransformName, bindingId);
+        return 0;
+    }
+
+    virtual int configureLogTransform(const char* espProcName, const char* espBindingName, const char* definitionId, const char* logTransformName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) override
+    {
+        if (isEmptyString(espProcName))
+        {
+            message.set("Unable to configure method, ESP Process Name not available");
+            return -1;
+        }
+        if (isEmptyString(espBindingName))
+        {
+            message.set("Unable to configure method, ESP Binding Name not available");
+            return -1;
+        }
+
+        if (isEmptyString(definitionId))
+        {
+            message.set("Unable to configure method, ESDL definition ID not available");
+            return -1;
+        }
+
+        StringBuffer bindingId;
+        getIdFromProcBindingDef(espProcName, espBindingName, definitionId, bindingId, message);
+        if (bindingId.isEmpty())
+            return -1;
+
+        return configureLogTransform(bindingId, logTransformName, configTree, overwrite, message);
+    }
+
     virtual int bindService(const char* bindingName,
                                              IPropertyTree* methodsConfig,
                                              const char* espProcName,
@@ -649,6 +742,7 @@ public:
         else
             esdldeftree->addPropTree("Methods");
 
+        esdldeftree->addPropTree("LogTransforms");
         bindingtree->addPropTree(ESDL_DEF_ENTRY, LINK(esdldeftree));
         bindings->addPropTree(ESDL_BINDING_ENTRY, LINK(bindingtree));
 
