@@ -101,31 +101,28 @@
     </xs:complexType>
 
     <xs:complexType name="usernotes">
-        <xs:seqeunce>
-            <xs:element name="Notes" hpcc:displayName="Notes" hpcc:class="elementSet" minOccurs="1"
-                        maxOccurs="unbounded"/>
-            <xs:complexType name="note">
-                <xs:sequence>
-                    <xs:element name="Note" type="xs:string" minOccurs="0"/>
-                </xs:sequence>
-                <xs:attribute name="severity" hpcc:displayName="Severity" use="optional" hpcc:presetValue="Minor"
-                              hpcc:tooltip="Significance of this note">
-                    <xs:simpleType>
-                        <xs:restriction base="xs:string">
-                            <xs:enumeration value="Minor"/>
-                            <xs:enumeration value="Normal"/>
-                            <xs:enumeration value="Critical"/>
-                        </xs:restriction>
-                    </xs:simpleType>
-                </xs:attribute>
-                <xs:attribute name="date" hpcc:displayName="Date/Time" type="AutoTimeStampType" use="optional"
-                              hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
-                <xs:attribute name="computer" hpcc:displayName="Computer" type="xs:string" use="optional"
-                              hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
-                <xs:attribute name="user" hpcc:displayName="User" type="AutoUseridType" use="optional"
-                              hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
-            </xs:complexType>
-        </xs:seqeunce>
+        <xs:sequence>
+            <xs:element name="Note" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="severity" hpcc:displayName="Severity" hpcc:presetValue="Minor"
+                                  hpcc:tooltip="Significance of this note">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:enumeration value="Minor"/>
+                                <xs:enumeration value="Normal"/>
+                                <xs:enumeration value="Critical"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="date" hpcc:displayName="Date/Time" type="AutoTimeStampType"
+                                  hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
+                    <xs:attribute name="computer" hpcc:displayName="Computer" type="xs:string"
+                                  hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
+                    <xs:attribute name="user" hpcc:displayName="User" type="AutoUseridType"
+                                  hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="espservice_properties">
@@ -182,10 +179,18 @@
                 </xs:complexType>
             </xs:element>
         </xs:sequence>
-        <xs:attribute name="defaultPort" type="xs:string"/>
-        <xs:attribute name="defaultResourcesBasedn" type="xs:string"/>
-        <xs:attribute name="defaultSecurePort" type="xs:string"/>
-        <xs:attribute name="type" type="xs:string"/>
+        <xs:attribute name="bindingType" type="xs:string" hpcc:displayName="Binding Type"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="defaultPort" type="xs:string" hpcc:displayName="Default Port"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="defaultResourcesBasedn" type="xs:string" hpcc:displayName="Default Resources Base DN"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="defaultSecurePort" type="xs:string" hpcc:displayName="Default Secure Port"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="type" type="xs:string" hpcc:displayName="Type"
+                      hpcc:tooltip=""/>
+        <xs:attribute name="plugin" type="xs:string" hpcc:displayName="Plugin"
+                      hpcc:tooltip=""/>
     </xs:complexType>
 
     <xs:attributeGroup name="buildInfo" hpcc:groupByName="Attributes">
@@ -194,7 +199,6 @@
         <xs:attribute name="buildSet" type="xs:string" use="required" hpcc:hidden="true"
                       hpcc:autoGenerateType="configProperty" hpcc:autoGenerateValue="componentName"/>
     </xs:attributeGroup>
-
 
     <xs:attributeGroup name="secmgrplugin_reqd">
         <xs:attribute name="type" type="SecurityManager" use="required" hpcc:hidden="true" hpcc:readOnly="true"/>
@@ -239,5 +243,10 @@
         <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"/>
         <xs:attribute name="mapToDB" type="xs:string" hpcc:displayName="Map To DB" use="required"/>
         <xs:attribute name="mapToLogGroup" type="xs:string" hpcc:displayName="Map To Log Group" use="required"/>
+    </xs:attributeGroup>
+
+    <xs:attributeGroup name="BaseAttributes">
+        <xs:attribute name="include" type="xs:string" hpcc:displayName="Include"/>
+        <xs:attribute name="name" type="xs:string" hpcc:displayname="Name"/>
     </xs:attributeGroup>
 </xs:schema>

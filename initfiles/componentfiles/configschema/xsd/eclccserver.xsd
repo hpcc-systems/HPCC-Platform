@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="EclCCserver" hpcc:displayName="ECL CC Server" hpcc:itemType="eclccserver" hpcc:docId="cc.t2"
+                    maxOccurs="unbounded" hpcc:class="component">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="Option" hpcc:displayName="Options" maxOccurs="unbounded" hpcc:class="elementSet"
+                                hpcc:itemType="options" hpcc:docId="cc.t1">
+                        <xs:complexType>
+                            <xs:attribute name="name" hpcc:displayName="Name" type="xs:string" use="required"
+                                          hpcc:tooltip=""/>
+                            <xs:attribute name="value" type="xs:string" hpcc:displayName="Value"
+                                          hpcc:tooltip=""/>
+                            <!--Optional, but if supplied, should it come from a named cluster? which type, etc.-->
+                            <xs:attribute name="cluster" type="xs:string" hpcc:displayName="Cluster"
+                                          hpcc:tooltip=""/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded" hpcc:class="elementSet"
+                                hpcc:displayName="Instances">
+                        <xs:complexType>
+                            <xs:attributeGroup ref="computerNodeReference"/>
+                            <xs:attribute name="directory" type="xs:string" hpcc:presetValue="c$\ecl" hpcc:hidden="true"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Notes" type="usernotes" hpcc:displayName="Notes" maxOccurs="unbounded"/>
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required"
+                              hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="eclccserver"
+                              hpcc:uniqueKey="eclscheduler_name" hpcc:tooltip="Name for this process"/>
+                <xs:attribute name="description" type="xs:string" hpcc:displayName="Description"
+                              hpcc:presetValue="EclCCServer process" hpcc:tooltip="EclCCServer process"/>
+                <xs:attribute name="daliServers" type="xs:string" hpcc:displayName="Dali Server" use="required"
+                              hpcc:sourceKey="daliprocess_name" hpcc:tooltip="Specifies the dali server to which this eclscheduler is attached"/>
+                <xs:attribute name="enableEclccDali" type="xs:boolean" hpcc:displayName="Enable ECL CC Dali" hpcc:presetValue="true"
+                              hpcc:tooltip="Enables passing Dali address to eclcc for compile-time file resolution"/>
+                <xs:attribute name="enableSysLog" type="xs:boolean"  hpcc:displayName="Enable Syslog" hpcc:presetValue="true"
+                              hpcc:tooltip="Enables syslog monitoring of the eclccserver process"/>
+                <xs:attribute name="generatePrecompiledHeader" type="xs:boolean"  hpcc:displayName="Generate Precompiled Header" hpcc:presetValue="true"
+                              hpcc:tooltip="Generate precompiled header when eclccserver starts"/>
+                <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" hpcc:displayName="Trace Level" hpcc:presetValue="1"
+                              hpcc:tooltip="Trace Level"/>
+                <xs:attribute name="maxEclccProcesses" type="xs:nonNegativeInteger" hpcc:displayName="Max Ecl CC Processes" hpcc:presetValue="4"
+                              hpcc:tooltip="Maximum number of instances of eclcc that will be launched in parallel"/>
+                <xs:attribute name="monitorInterval" type="xs:nonNegativeInteger"  hpcc:displayName="Monitor Interval(s)" hpcc:presetValue="60"
+                              hpcc:tooltip="Interval (in seconds) for reporting of memory usage stats. Set to 0 to disable"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>

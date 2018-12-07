@@ -1537,6 +1537,7 @@ public:
     ABoundActivity * doBuildActivityLoop(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityMerge(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNonEmpty(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityNWayDistribute(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNWayMerge(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNWayMergeJoin(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNormalize(BuildCtx & ctx, IHqlExpression * expr);

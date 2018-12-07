@@ -70,5 +70,5 @@ void SchemaTypeLimits::addDependentAttributeValue(const std::string &value, cons
 
 void AllowedValue::addDependentValue(const std::string &attribute, const std::string &value)
 {
-    m_dependencies.push_back(DependentValue(attribute, value));
+    m_dependencies.push_back(NameValue(attribute, value));
 }

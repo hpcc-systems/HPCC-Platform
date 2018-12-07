@@ -69,7 +69,7 @@ var SingletonData = declare([Stateful], {
     updateData: function (response) {
         var changed = false;
         for (var key in response) {
-            if (response[key] !== undefined || response[key] !== null) {
+            if (response[key] !== undefined && response[key] !== null) {
                 var jsonStr = json.stringify(response[key]);
                 if (this.__hpcc_changedCache[key] !== jsonStr) {
                     this.__hpcc_changedCache[key] = jsonStr;

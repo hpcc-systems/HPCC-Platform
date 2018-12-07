@@ -74,7 +74,7 @@ class DECL_EXPORT SchemaValue
         void mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue, Status *pStatus = nullptr);
         void addEnvironmentValue(const std::shared_ptr<EnvironmentValue> &pEnvValue) { m_envValues.push_back(pEnvValue); }
         void getAllEnvironmentValues(std::vector<std::shared_ptr<EnvironmentValue>> &envValues) const;
-        void removeEnvironmentValue(const std::shared_ptr<EnvironmentValue> &pEnvValue);
+        void removeEnvironmentValue(const EnvironmentValue *pEnvValue);
         void validate(Status &status, const std::string &id, const EnvironmentValue *pEnvValue = nullptr) const;
         bool getAllowedValues(std::vector<AllowedValue> &allowedValues, const std::shared_ptr<const EnvironmentNode> &pEnvNode) const;
         void setAutoGenerateType(const std::string &type) { m_autoGenerateType = type; }
@@ -92,6 +92,8 @@ class DECL_EXPORT SchemaValue
         const std::string &getRequiredIf() const { return m_requiredIf; }
         void setGroupByName(const std::string &group) { m_groupByName = group; }
         const std::string &getGroupByName() const { return m_groupByName; }
+        void setNoOutput(bool noOutput) { bitMask.m_noOutput = noOutput; }
+        bool isNoOutput() const { return bitMask.m_noOutput; }
 
 
     protected:
@@ -123,6 +125,7 @@ class DECL_EXPORT SchemaValue
             unsigned m_deprecated: 1;
             unsigned m_isUnique  : 1;
             unsigned m_isDefined : 1;
+            unsigned m_noOutput  : 1;
         } bitMask;
 
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!

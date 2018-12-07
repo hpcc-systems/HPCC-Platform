@@ -306,6 +306,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_selectfields:
     case no_addfiles:
     case no_distribute:
+    case no_nwaydistribute:
     case no_normalize:
     case no_distributed:
     case no_preservemeta:
@@ -633,7 +634,7 @@ unsigned getOperatorMetaFlags(node_operator op)
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
+    case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
     case no_unused80:
@@ -1643,6 +1644,7 @@ bool isLocalActivity(IHqlExpression * expr)
     switch (expr->getOperator())
     {
     case no_distribute:
+    case no_nwaydistribute:
     case no_keyeddistribute:
     case no_if:
     case no_chooseds:
@@ -1772,6 +1774,7 @@ bool isGroupedActivity(IHqlExpression * expr)
     case no_group:
     case no_enth:
     case no_distribute:
+    case no_nwaydistribute:
     case no_fetch:
     case no_keyeddistribute:
     case no_merge:
@@ -2606,6 +2609,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
             return getRecordCountInfo(ds);
         }
     case no_allnodes:
+    case no_nwaydistribute:
         {
             retrieveRowInformation(info, ds);
             info.scaleRange(RCclusterSizeEstimate);
@@ -3885,7 +3889,7 @@ IHqlExpression * evaluateLikelihood(IHqlExpression * expr)
                 double p2 = queryLikelihood(expr->queryChild(1));
                 if (isKnownLikelihood(p2))
                 {
-                    likelihoodExpr.set(createConstant(createRealValue(p1*p2,8)));
+                    likelihoodExpr.setown(createConstant(createRealValue(p1*p2,8)));
                     break;
                 }
             }
@@ -3900,7 +3904,7 @@ IHqlExpression * evaluateLikelihood(IHqlExpression * expr)
                 double p2 = queryLikelihood(expr->queryChild(1));
                 if (isKnownLikelihood(p2))
                 {
-                    likelihoodExpr.set(createConstant(createRealValue(p1+p2-p1*p2,8)));
+                    likelihoodExpr.setown(createConstant(createRealValue(p1+p2-p1*p2,8)));
                     break;
                 }
             }
@@ -3912,7 +3916,7 @@ IHqlExpression * evaluateLikelihood(IHqlExpression * expr)
             double p1 = queryLikelihood(expr->queryChild(0));
             if (isKnownLikelihood(p1))
             {
-                likelihoodExpr.set(createConstant(createRealValue(1.0-p1,8)));
+                likelihoodExpr.setown(createConstant(createRealValue(1.0-p1,8)));
                 break;
             }
             likelihoodExpr.set(queryConstantLikelihoodUnknown());

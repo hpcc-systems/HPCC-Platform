@@ -858,6 +858,7 @@ static unsigned getActivityCost(IHqlExpression * expr, ClusterType targetCluster
                 break;
             case no_keyeddistribute:
             case no_distribute:
+            case no_nwaydistribute:
             case no_cosort:
                 return CostNetworkCopy;
             case no_topn:

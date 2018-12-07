@@ -456,7 +456,7 @@ void LogicalGraphCreator::endSubGraph(bool nested)
 static bool exprIsGlobal(IHqlExpression * expr)
 {
     HqlExprCopyArray inScope;
-    expr->gatherTablesUsed(NULL, &inScope);
+    expr->gatherTablesUsed(inScope);
     return inScope.ordinality() == 0;
 }
 

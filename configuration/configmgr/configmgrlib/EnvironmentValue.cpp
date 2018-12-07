@@ -22,8 +22,8 @@
 EnvironmentValue::~EnvironmentValue()
 {
     //
-    // Tell the schema vallue that we are going away
-    m_pSchemaValue->removeEnvironmentValue(shared_from_this());
+    // Tell the schema value that we are going away
+    m_pSchemaValue->removeEnvironmentValue(this);
 }
 
 
@@ -58,9 +58,33 @@ bool EnvironmentValue::setValue(const std::string &value, Status *pStatus, bool 
             }
         }
 
-        if (rc)
-            m_pSchemaValue->mirrorValueToEnvironment(oldValue, value, pStatus);
 
+        //
+        // If the value was set successfull...
+        if (rc)
+        {
+            //
+            // See if the new value has dependent values, set them
+            std::vector<AllowedValue> allowedValues;
+            std::shared_ptr<EnvironmentNode> pMyEnvNode = m_pMyEnvNode.lock();
+            m_pSchemaValue->getAllowedValues(allowedValues, pMyEnvNode);
+            for (auto &allowedValue: allowedValues)
+            {
+                if (value == allowedValue.m_value)
+                {
+                    if (allowedValue.hasDependencies())
+                    {
+                        Status tempStatus;  // assumpition is that dependent values will set properly
+                        pMyEnvNode->setAttributeValues(allowedValue.getDependencies(), tempStatus, false, false);
+                        break;   // done!
+                    }
+                }
+            }
+
+            //
+            // Mirro this value throughout the environment if needed
+            m_pSchemaValue->mirrorValueToEnvironment(oldValue, value, pStatus);
+        }
     }
     return rc;
 }
@@ -119,9 +143,13 @@ void EnvironmentValue::initialize()
     if (!type.empty())
     {
         //
-        // type "prefix" means to use the auto generate value as a name prefix and to append numbers until a new unique name is
-        // found. ("prefix_" is a variation that adds an underbar (_) when appending numbers)
-        if (type == "prefix" || type=="prefix_")
+        // The "prefix" type uses the auto generate value to generate a unique value by appending a number until it is
+        // unique. There are three variations:
+        //   prefix & prefix_ - Use the value first by itself, then append an incrementing number, starting with 1,
+        //      until unique. prefix_ uses an _ between value and the number (value_3)
+        //   prefix# - always appends a number thus creating an incrementing unique value starting at 1
+        //      (value1, value2, value3, ...)
+        if (type == "prefix" || type=="prefix_" || "prefix#")
         {
             std::string connector = (type == "prefix_") ? "_" : "";
             std::string newName;
@@ -129,8 +157,8 @@ void EnvironmentValue::initialize()
             std::vector<std::string> curValues;
             m_pMyEnvNode.lock()->getAttributeValueForAllSiblings(m_name, curValues);
             size_t count = curValues.size();
-            newName = prefix;
-            size_t n = 0;
+            size_t n = (type == "prefix#") ? 1 : 0;
+            newName = ((type == "prefix#") ? (prefix + connector + std::to_string(n)) : prefix);
             while (n <= count + 1)
             {
                 bool found = false;

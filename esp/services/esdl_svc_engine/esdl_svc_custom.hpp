@@ -99,6 +99,7 @@ private:
     CIArrayOf<CEsdlCustomTransformRule> m_otherwiseClauses;
     CIArrayOf<CEsdlCustomTransformChoose> m_childChooseClauses;
     CIArrayOf<CEsdlCustomTransformChoose> m_childOtherwiseClauses;
+    StringAttr crtTarget;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -110,7 +111,7 @@ public:
         DBGLOG("CEsdlCustomTransformClause released!");
 #endif
     }
-    void process(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext);
+    void process(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext, IPropertyTree *origTree, const char *defTarget);
 #if defined(_DEBUG)
     void toDBGLog();
 #endif
@@ -124,7 +125,7 @@ private:
     bool evaluate(IXpathContext * xpathContext);
     void processClauses(IPropertyTree *request, IXpathContext * xpathContext, CIArrayOf<CEsdlCustomTransformRule> & m_fieldTransforms);
     void processClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext, bool otherwise);
-    void processChildClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext,  bool otherwise);
+    void processChildClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext,  bool otherwise, IPropertyTree *origTree);
 };
 
 interface IEsdlCustomTransform : extends IInterface

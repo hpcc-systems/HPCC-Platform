@@ -33,6 +33,7 @@
 #include "nbcd.hpp"
 #include "rtlformat.hpp"
 #include "esdl_def.hpp"
+#include "enginecontext.hpp"
 
 #ifndef _WIN32
  #include <sys/resource.h>
@@ -46,6 +47,13 @@ static const char *version = "Java Embed Helper 1.0.0";
 
 #ifdef _DEBUG
 //#define TRACE_CLASSFILE
+//#define CHECK_JNI
+/* Note - if you enable CHECK_JNI and see output like:
+ *   WARNING in native method: JNI call made without checking exceptions when required to from CallObjectMethodV
+ * where for 'from' may be any of several functions, then the cause is likely to be a missing call to checkException()
+ * after a call to the named function. One way to find the responsible call is with a breakpoint on checked_jni_CallObjectMethodV
+ * The last time that breakpoint is hit before the warning is given should have a stack trace that tells you all you need to know.
+ */
 #endif
 
 extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
@@ -75,6 +83,55 @@ static void UNSUPPORTED(const char *feature)
 
 namespace javaembed {
 
+static void checkException(JNIEnv *JNIenv, bool fail=true)
+{
+    if (JNIenv->ExceptionCheck())
+    {
+        jthrowable exception = JNIenv->ExceptionOccurred();
+        JNIenv->ExceptionClear();
+        jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
+        jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
+        jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
+        const char *text = JNIenv->GetStringUTFChars(cause, 0);
+        VStringBuffer message("javaembed: %s", text);
+        JNIenv->ReleaseStringUTFChars(cause, text);
+        if (fail)
+            rtlFail(0, message);
+        throw MakeStringExceptionDirect(0, message);
+    }
+}
+
+static void printClassForObject(JNIEnv *JNIenv, jobject obj)
+{
+    jclass objClass = JNIenv->GetObjectClass(obj);
+    checkException(JNIenv);
+
+    jmethodID mid = JNIenv->GetMethodID(objClass, "getClass", "()Ljava/lang/Class;");
+    checkException(JNIenv);
+    jobject clsObj = JNIenv->CallObjectMethod(obj, mid);
+    checkException(JNIenv);
+
+    // Now get the class object's class descriptor
+    jclass cls = JNIenv->GetObjectClass(clsObj);
+    checkException(JNIenv);
+
+    // Find the getName() method on the class object
+    mid = JNIenv->GetMethodID(cls, "getName", "()Ljava/lang/String;");
+    checkException(JNIenv);
+
+    // Call the getName() to get a jstring object back
+    jstring strObj = (jstring) JNIenv->CallObjectMethod(clsObj, mid);
+    checkException(JNIenv);
+
+    // Now get the c string from the java jstring object
+    const char* str = JNIenv->GetStringUTFChars(strObj, NULL);
+
+    // Print the class name
+    printf("Object %p has class %s\n", obj, str);
+
+    // Release the memory pinned char array
+    JNIenv->ReleaseStringUTFChars(strObj, str);
+}
 
 // Use a global object to ensure that the Java VM  is initialized once only.
 // We would like to create it lazily for two reasons:
@@ -87,6 +144,7 @@ namespace javaembed {
 // any engines that call InitModuleObjects() or load plugins dynamically do so AFTER setting any signal handlers or calling
 // EnableSEHtoExceptionMapping
 //
+static JNIEnv *queryJNIEnv();
 
 static class JavaGlobalState
 {
@@ -135,7 +193,6 @@ public:
 
         // Options we know we always want set
         optionStrings.append("-Xrs");
-        //optionStrings.append("-XX:+TraceClassLoading");
 #ifdef RLIMIT_STACK
         // JVM has a habit of reducing the stack limit on main thread to 1M - probably dates back to when it was actually an increase...
         StringBuffer stackOption("-Xss");
@@ -153,9 +210,10 @@ public:
 #endif
 
         // These may be useful for debugging
-#ifdef _DEBUG
-        // optionStrings.append("-Xcheck:jni");
-        // optionStrings.append("-verbose:jni");
+#ifdef CHECK_JNI
+        optionStrings.append("-Xcheck:jni");
+        optionStrings.append("-verbose:jni");
+        optionStrings.append("-XX:+TraceClassLoading");
 #endif
 
         JavaVMOption* options = new JavaVMOption[optionStrings.length()];
@@ -182,10 +240,50 @@ public:
     }
     ~JavaGlobalState()
     {
+        /* We could release global persisted classes here but not a lot of point. Code would look something like this:
+        HashIterator it(persistedObjects);
+        ForEach(it)
+        {
+            IMapping &entry = it.query();
+            jobject *pObj = persistedObjects.mapToValue(&entry);
+            if (pClass)
+                queryJNIEnv()->DeleteGlobalRef(*pObj);
+        }
+        */
         // We don't attempt to destroy the Java VM, as it's buggy...
     }
+    jobject getGlobalObject(const char *name, JNIEnv *JNIenv, jclass javaClass, jmethodID constructor, bool &isNew)
+    {
+        CriticalBlock b(hashCrit);
+        isNew = false;
+        jobject *obj = persistedObjects.getValue(name);
+        if (obj)
+            return JNIenv->NewGlobalRef(*obj);
+        isNew = true;
+        jobject newObj = JNIenv->NewObject(javaClass, constructor);
+        checkException(JNIenv);
+        persistedObjects.setValue(name, JNIenv->NewGlobalRef(newObj));
+        return JNIenv->NewGlobalRef(newObj);
+    }
+    void doUnregister(const char *key)
+    {
+        CriticalBlock b(hashCrit);
+        jobject *obj = persistedObjects.getValue(key);
+        if (obj)
+            queryJNIEnv()->DeleteGlobalRef(*obj);
+        persistedObjects.remove(key);
+    }
+    static void unregister(const char *key);
     JavaVM *javaVM;       /* denotes a Java VM */
+private:
+    CriticalSection hashCrit;
+    MapStringTo<jobject> persistedObjects;
 } *globalState;
+
+void JavaGlobalState::unregister(const char *key)
+{
+    globalState->doUnregister(key);
+}
 
 static StringBuffer helperLibraryName;
 
@@ -229,22 +327,39 @@ static void checkType(type_t javatype, size32_t javasize, type_t ecltype, size32
         throw MakeStringException(0, "javaembed: Type mismatch"); // MORE - could provide some details!
 }
 
-static void checkException(JNIEnv *JNIenv, bool fail=true)
+static void forceGC(JNIEnv* JNIenv)
 {
-    if (JNIenv->ExceptionCheck())
-    {
-        jthrowable exception = JNIenv->ExceptionOccurred();
-        JNIenv->ExceptionClear();
-        jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
-        jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
-        jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
-        const char *text = JNIenv->GetStringUTFChars(cause, 0);
-        VStringBuffer message("javaembed: %s", text);
-        JNIenv->ReleaseStringUTFChars(cause, text);
-        if (fail)
-            rtlFail(0, message);
-        throw MakeStringExceptionDirect(0, message);
-    }
+    jclass systemClass = JNIenv->FindClass("java/lang/System");
+    checkException(JNIenv);
+    jmethodID systemGCMethod = JNIenv->GetStaticMethodID(systemClass, "gc", "()V");
+    checkException(JNIenv);
+    JNIenv->CallStaticVoidMethod(systemClass, systemGCMethod);
+    checkException(JNIenv);
+}
+
+enum PersistMode
+{
+    persistNone,
+    persistThread,
+    persistWorkunit,
+    persistQuery,
+    persistGlobal
+};
+
+static PersistMode getPersistMode(const char *val)  // Could argue this should be in eclrtl.hpp
+{
+    if (isEmptyString(val) || strieq(val, "none"))
+        return persistNone;
+    else if (strieq(val, "thread"))
+        return persistThread;
+    else if (strieq(val, "workunit"))
+        return persistWorkunit;
+    else if (strieq(val, "query"))
+        return persistQuery;
+    else if (strieq(val, "global"))
+        return persistGlobal;
+    else
+        throw MakeStringException(MSGAUD_user, 0, "javaembed: Unrecognized persist mode %s", val);
 }
 
 //-------------------------------------------
@@ -916,6 +1031,7 @@ public:
         checkException();
         jfieldID fieldId = getFieldId(field, javaTypeSignature, "Array");
         JNIenv->SetObjectField(row, fieldId, newRow);
+        checkException();
         row = newRow;
         inSet = true;
         return processElements;
@@ -941,6 +1057,7 @@ public:
                 rtlFail(0, message.str());
             }
             // Set up constructor etc for the child rows, so we don't do it per row
+            checkException();
             jmethodID getTypeMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(arrayClass), "getComponentType", "()Ljava/lang/Class;" );
             checkException();
             Class = (jclass) JNIenv->CallObjectMethod(arrayClass, getTypeMethod);
@@ -990,6 +1107,7 @@ public:
     virtual void processEndSet(const RtlFieldInfo * field)
     {
         JNIenv->DeleteLocalRef(row);
+        checkException();
         pop();
         inSet = false;
     }
@@ -1005,6 +1123,7 @@ public:
         {
             constructor = (jmethodID) stack.popGet();
             JNIenv->DeleteLocalRef(row);
+            checkException();
             pop();
         }
     }
@@ -1025,6 +1144,7 @@ protected:
         checkException();
         JNIenv->DeleteLocalRef(reflectedField);
         JNIenv->DeleteLocalRef(fieldClass);
+        checkException();
         return result;
 
     }
@@ -1041,6 +1161,7 @@ protected:
             const char *nameText = JNIenv->GetStringUTFChars(name, NULL);
             VStringBuffer message("javaembed: no suitable constructor for class %s", nameText);
             JNIenv->ReleaseStringUTFChars(name, nameText);
+            checkException();
             rtlFail(0, message.str());
         }
     }
@@ -1146,6 +1267,7 @@ public:
         jmethodID hasNextMethod = JNIenv->GetMethodID(iterClass, "hasNext", "()Z" );
         javaembed::checkException(JNIenv);
         jboolean hasNext = JNIenv->CallBooleanMethod(iterator, hasNextMethod);
+        javaembed::checkException(JNIenv);
         if (!hasNext)
         {
             stop();
@@ -1154,6 +1276,7 @@ public:
         jmethodID nextMethod = JNIenv->GetMethodID(iterClass, "next", "()Ljava/lang/Object;" );
         javaembed::checkException(JNIenv);
         jobject result = JNIenv->CallObjectMethod(iterator, nextMethod);
+        javaembed::checkException(JNIenv);
         RtlDynamicRowBuilder rowBuilder(resultAllocator);
         const RtlTypeInfo *typeInfo = resultAllocator->queryOutputMeta()->queryTypeInfo();
         assertex(typeInfo);
@@ -1281,11 +1404,13 @@ public:
     void writeSimpleType(const char *fieldname, jobject fieldObj)
     {
         jstring fieldStr = (jstring) JNIenv->CallObjectMethod(fieldObj, objToString);
+        checkException();
         if (!fieldStr)
             return;
         const char *text = JNIenv->GetStringUTFChars(fieldStr, NULL);
         if (text)
             writer.outputCString(text, fieldname);
+        JNIenv->ReleaseStringUTFChars(fieldStr, text);
         JNIenv->DeleteLocalRef(fieldStr);
     }
     void writeSimpleType(jclass parentClass, jobject parentObject, const char *fieldname, const char *javaSig)
@@ -1314,16 +1439,19 @@ public:
         const char *fieldname = defObject.queryName();
         VStringBuffer javaSig("L%s/%s;", esdlService.str(), defObject.queryProp("enum_type"));
         jfieldID fieldId = JNIenv->GetFieldID(parentClass, fieldname, javaSig);
+        checkException();
         if (!fieldId)
             return;
         jobject fieldObj = (jobject) JNIenv->GetObjectField(parentObject, fieldId);
+        checkException();
         if (!fieldObj)
             return;
         jstring fieldStr = (jstring) JNIenv->CallObjectMethod(fieldObj, objToString);
+        checkException();
         const char *text = JNIenv->GetStringUTFChars(fieldStr, NULL);
-        if (!text)
-            return;
-        writer.outputCString(text, defObject.queryName());
+        if (text)
+            writer.outputCString(text, defObject.queryName());
+        JNIenv->ReleaseStringUTFChars(fieldStr, text);
     }
     void writeComplexType(jclass parentClass, jobject parentObject, IEsdlDefObject &defObject)
     {
@@ -1496,8 +1624,9 @@ public:
 
 //-------------------------------------------
 
-// There is a singleton JavaThreadContext per thread. This allows us to
-// ensure that we can make repeated calls to a Java function efficiently.
+// There is a singleton JavaThreadContext per thread. This handles the interaction between
+// the C++ thread and the java threading library, ensuring that we register/unregister as needed,
+// and that any thread_local function contexts are destroyed before we detach from the java thread
 
 class JavaThreadContext
 {
@@ -1508,54 +1637,19 @@ public:
     {
         jint res = globalState->javaVM->AttachCurrentThread((void **) &JNIenv, NULL);
         assertex(res >= 0);
-        javaClass = NULL;
-        javaMethodID = NULL;
-        prevClassPath.set("dummy");  // Forces the call below to actually do something...
-        setThreadClassLoader("", 0, nullptr);
+        setThreadClassLoader(getSystemClassLoader());
     }
     ~JavaThreadContext()
     {
-        if (javaClass)
-            JNIenv->DeleteGlobalRef(javaClass);
-
+        // Make sure all thread-local function contexts are destroyed before we detach from
+        // the Java thread
+        contexts.kill();
         // According to the Java VM 1.7 docs, "A native thread attached to
         // the VM must call DetachCurrentThread() to detach itself before
         // exiting."
         globalState->javaVM->DetachCurrentThread();
     }
 
-    void checkException()
-    {
-        if (JNIenv->ExceptionCheck())
-        {
-            jthrowable exception = JNIenv->ExceptionOccurred();
-            JNIenv->ExceptionClear();
-            jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
-            jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
-            jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
-            const char *text = JNIenv->GetStringUTFChars(cause, 0);
-            VStringBuffer message("javaembed: In method %s: %s", prevtext.get(), text);
-            JNIenv->ReleaseStringUTFChars(cause, text);
-            rtlFail(0, message.str());
-        }
-    }
-
-    bool checkException(StringBuffer &message)
-    {
-        if (JNIenv->ExceptionCheck())
-        {
-            jthrowable exception = JNIenv->ExceptionOccurred();
-            JNIenv->ExceptionClear();
-            jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
-            jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
-            jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
-            const char *text = JNIenv->GetStringUTFChars(cause, 0);
-            message.append(text);
-            JNIenv->ReleaseStringUTFChars(cause, text);
-            return true;
-        }
-        return false;
-    }
     jobject getSystemClassLoader()
     {
         JNIenv->ExceptionClear();
@@ -1569,7 +1663,7 @@ public:
         return systemClassLoaderObj;
     }
 
-    void setThreadClassLoader(jobject classLoader, size32_t bytecodeLen, const byte *bytecode)
+    void setThreadClassLoader(jobject classLoader)
     {
         JNIenv->ExceptionClear();
         jclass javaLangThreadClass = JNIenv->FindClass("java/lang/Thread");
@@ -1601,496 +1695,22 @@ public:
         return contextClassLoaderObj;
     }
 
-    void setThreadClassLoader(const char *classPath, size32_t bytecodeLen, const byte *bytecode)
-    {
-        if (bytecodeLen || (classPath && *classPath))
-        {
-            if (!bytecodeLen && prevClassPath && classPath && strcmp(classPath, prevClassPath) == 0)  // MORE - caching of inline classes is important too...
-                return;
-            jclass URLcls = JNIenv->FindClass("java/net/URL");
-            checkException();
-            jmethodID URLclsMid = JNIenv->GetMethodID(URLcls, "<init>","(Ljava/lang/String;)V");
-            checkException();
-            StringArray paths;
-            paths.appendList(classPath, ";");  // NOTE - as we need to be able to include : in the urls, we can't use ENVSEP here
-            jobjectArray URLArray = JNIenv->NewObjectArray(paths.length(), URLcls, NULL);
-            ForEachItemIn(idx, paths)
-            {
-                StringBuffer usepath;
-                const char *path = paths.item(idx);
-                if (!strchr(path, ':'))
-                    usepath.append("file:");
-                usepath.append(path);
-                jstring jstr = JNIenv->NewStringUTF(usepath.str());
-                checkException();
-                jobject URLobj = JNIenv->NewObject(URLcls, URLclsMid, jstr);
-                checkException();
-                JNIenv->SetObjectArrayElement(URLArray, idx, URLobj);
-                JNIenv->DeleteLocalRef(URLobj);
-                JNIenv->DeleteLocalRef(jstr);
-            }
-            checkException();
-            jclass customLoaderClass = JNIenv->FindClass("com/HPCCSystems/HpccClassLoader");
-            checkException();
-            jmethodID newInstance = JNIenv->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;IJLjava/lang/String;)Lcom/HPCCSystems/HpccClassLoader;");
-            checkException();
-            jobject contextClassLoaderObj = JNIenv->NewGlobalRef(JNIenv->CallStaticObjectMethod(customLoaderClass, newInstance, URLArray, getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, JNIenv->NewStringUTF(helperLibraryName)));
-            checkException();
-            assertex(contextClassLoaderObj);
-            setThreadClassLoader(contextClassLoaderObj, bytecodeLen, bytecode);
-            prevClassPath.set(classPath);
-        }
-        else
-        {
-            if (prevClassPath)
-                setThreadClassLoader(getSystemClassLoader(), 0, nullptr);
-            prevClassPath.clear();
-        }
-    }
-
-    jclass loadClass(const char *className)
-    {
-        JNIenv->ExceptionClear();
-        jobject classLoader = getThreadClassLoader();
-        jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-        jstring classNameString = JNIenv->NewStringUTF(className);
-        jclass Class = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, classNameString);
-        checkException();
-        return Class;
-    }
-
-    inline void importFunction(size32_t lenChars, const char *utf, const char *classpath, size32_t bytecodeLen, const byte *bytecode, jobject instance)
-    {
-        size32_t bytes = rtlUtf8Size(lenChars, utf);
-        StringBuffer text(bytes, utf);
-        setThreadClassLoader(classpath, bytecodeLen, bytecode);
-
-        if (!prevtext || strcmp(text, prevtext) != 0)
-        {
-            prevtext.clear();
-            // Name should be in the form class.method:signature
-            const char *funcname = strrchr(text, '.');
-            if (!funcname)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text.str());
-            const char *signature = strchr(funcname, ':');
-            if (!signature)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text.str());
-            StringBuffer classname(funcname-text, text);
-            // While it's probably preferred for people to use . as the separator in nested classes (to match java import statement),
-            // we accept / too (to match what you would see in the jar)
-            classname.replace('/', '.');
-            funcname++;  // skip the '.'
-            StringBuffer methodname(signature-funcname, funcname);
-            signature++; // skip the ':'
-            // We need to patch up the provided signature - any instances of <classname; need to be replaced by Ljava.utils.iterator
-            StringBuffer javaSignature;
-            const char *finger = signature;
-            while (*finger)
-            {
-                if (*finger == '<')
-                {
-                    // If there is a corresponding >, assume it's the 'extended' form and just strip out the bit from < to >
-                    const char *close = strchr(finger, '>');
-                    if (close)
-                        finger = close;
-                    else
-                    {
-                        javaSignature.append("Ljava/util/Iterator;");
-                        finger = strchr(finger, ';');
-                        if (!finger)
-                            throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid java function signature %s", signature);
-                    }
-                }
-                else
-                    javaSignature.append(*finger);
-                finger++;
-            }
-            if (javaClass)
-                JNIenv->DeleteGlobalRef(javaClass);
-
-            jobject classLoader = getThreadClassLoader();
-            jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-            jstring methodString = JNIenv->NewStringUTF(classname);
-            javaClass = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString);
-            StringBuffer message;
-            if (checkException(message) || !javaClass)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve class name %s: %s", classname.str(), message.str());
-            javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
-
-            if (instance)
-                javaMethodID = JNIenv->GetMethodID(javaClass, methodname, javaSignature);
-            else
-                javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodname, javaSignature);
-            if (checkException(message) || !javaMethodID)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve method name %s with signature %s: %s", methodname.str(), signature, message.str());
-            const char *returnSig = strrchr(signature, ')');
-            assertex(returnSig);  // Otherwise how did Java accept it??
-            returnSig++;
-            returnType.set(returnSig);
-            argsig.set(signature);
-            prevtext.set(text);
-        }
-    }
-    inline void callFunction(jvalue &result, const jvalue * args, jobject instance)
-    {
-        JNIenv->ExceptionClear();
-        switch (returnType.get()[0])
-        {
-        case 'C': result.c = JNIenv->CallCharMethodA(instance, javaMethodID, args); break;
-        case 'Z': result.z = JNIenv->CallBooleanMethodA(instance, javaMethodID, args); break;
-        case 'J': result.j = JNIenv->CallLongMethodA(instance, javaMethodID, args); break;
-        case 'F': result.f = JNIenv->CallFloatMethodA(instance, javaMethodID, args); break;
-        case 'D': result.d = JNIenv->CallDoubleMethodA(instance, javaMethodID, args); break;
-        case 'I': result.i = JNIenv->CallIntMethodA(instance, javaMethodID, args); break;
-        case 'S': result.s = JNIenv->CallShortMethodA(instance, javaMethodID, args); break;
-        case 'B': result.s = JNIenv->CallByteMethodA(instance, javaMethodID, args); break;
-
-        case '[':
-        case 'L': result.l = JNIenv->CallObjectMethodA(instance, javaMethodID, args); break;
-
-        default: throwUnexpected();
-        }
-        checkException();
-    }
-    inline void callFunction(jvalue &result, const jvalue * args)
-    {
-        JNIenv->ExceptionClear();
-        switch (returnType.get()[0])
-        {
-        case 'C': result.c = JNIenv->CallStaticCharMethodA(javaClass, javaMethodID, args); break;
-        case 'Z': result.z = JNIenv->CallStaticBooleanMethodA(javaClass, javaMethodID, args); break;
-        case 'J': result.j = JNIenv->CallStaticLongMethodA(javaClass, javaMethodID, args); break;
-        case 'F': result.f = JNIenv->CallStaticFloatMethodA(javaClass, javaMethodID, args); break;
-        case 'D': result.d = JNIenv->CallStaticDoubleMethodA(javaClass, javaMethodID, args); break;
-        case 'I': result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
-        case 'S': result.s = JNIenv->CallStaticShortMethodA(javaClass, javaMethodID, args); break;
-        case 'B': result.s = JNIenv->CallStaticByteMethodA(javaClass, javaMethodID, args); break;
-
-        case '[':
-        case 'L': result.l = JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args); break;
-
-        default: throwUnexpected();
-        }
-        checkException();
-    }
-    inline __int64 getSignedResult(jvalue & result)
-    {
-        switch (returnType.get()[0])
-        {
-        case 'B': return result.b;
-        case 'S': return result.s;
-        case 'I': return result.i;
-        case 'J': return result.j;
-        case 'L':
-            {
-                // Result should be of class 'Number'
-                if (!result.l)
-                    return 0;
-                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "longValue", "()J");
-                if (!getVal)
-                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-                return JNIenv->CallLongMethod(result.l, getVal);
-            }
-        default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-        }
-    }
-    inline double getDoubleResult(jvalue &result)
-    {
-        switch (returnType.get()[0])
-        {
-        case 'D': return result.d;
-        case 'F': return result.f;
-        case 'L':
-            {
-                // Result should be of class 'Number'
-                if (!result.l)
-                    return 0;
-                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "doubleValue", "()D");
-                if (!getVal)
-                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-                return JNIenv->CallDoubleMethod(result.l, getVal);
-            }
-        default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-        }
-    }
-    bool getBooleanResult(jvalue &result)
-    {
-        switch (returnType.get()[0])
-        {
-        case 'Z': return result.z;
-        case 'L':
-            {
-                // Result should be of class 'Boolean'
-                if (!result.l)
-                    return false;
-                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "booleanValue", "()Z");
-                if (!getVal)
-                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-                return JNIenv->CallBooleanMethod(result.l, getVal);
-            }
-        default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-        }
-    }
-    inline void getDataResult(jvalue &result, size32_t &__len, void * &__result)
-    {
-        if (strcmp(returnType, "[B")!=0)
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-        jbyteArray array = (jbyteArray) result.l;
-        __len = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
-        __result = (__len > 0 ? rtlMalloc(__len) : NULL);
-        if (__result)
-            JNIenv->GetByteArrayRegion(array, 0, __len, (jbyte *) __result);
-    }
-    inline void getStringResult(jvalue &result, size32_t &__len, char * &__result)
-    {
-        switch (returnType.get()[0])
-        {
-        case 'C': // Single char returned, prototyped as STRING or STRING1 in ECL
-            rtlUnicodeToStrX(__len, __result, 1, &result.c);
-            break;
-        case 'L':
-        {
-            jstring sresult = (jstring) result.l;
-            if (sresult)
-            {
-                size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
-                const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
-                size32_t chars = rtlUtf8Length(size, text);
-                rtlUtf8ToStrX(__len, __result, chars, text);
-                JNIenv->ReleaseStringUTFChars(sresult, text);
-            }
-            else
-            {
-                __len = 0;
-                __result = NULL;
-            }
-            break;
-        }
-        default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-        }
-    }
-    inline void getUTF8Result(jvalue &result, size32_t &__chars, char * &__result)
-    {
-        switch (returnType.get()[0])
-        {
-        case 'C': // Single jchar returned, prototyped as UTF8 in ECL
-            rtlUnicodeToUtf8X(__chars, __result, 1, &result.c);
-            break;
-        case 'L':
-        {
-            jstring sresult = (jstring) result.l;
-            if (sresult)
-            {
-                size_t size = JNIenv->GetStringUTFLength(sresult); // Returns length in bytes (not chars)
-                const char * text =  JNIenv->GetStringUTFChars(sresult, NULL);
-                rtlUtf8ToUtf8X(__chars, __result, rtlUtf8Length(size, text), text);
-                JNIenv->ReleaseStringUTFChars(sresult, text);
-            }
-            else
-            {
-                __chars = 0;
-                __result = NULL;
-            }
-            break;
-        }
-        default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-        }
-    }
-    inline void getUnicodeResult(jvalue &result, size32_t &__chars, UChar * &__result)
-    {
-        switch (returnType.get()[0])
-        {
-        case 'C': // Single jchar returned, prototyped as UNICODE or UNICODE1 in ECL
-            rtlUnicodeToUnicodeX(__chars, __result, 1, &result.c);
-            break;
-        case 'L':
-        {
-            jstring sresult = (jstring) result.l;
-            if (sresult)
-            {
-                size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
-                const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
-                size32_t chars = rtlUtf8Length(size, text);
-                rtlUtf8ToUnicodeX(__chars, __result, chars, text);
-                JNIenv->ReleaseStringUTFChars(sresult, text);
-            }
-            else
-            {
-                __chars = 0;
-                __result = NULL;
-            }
-            break;
-        }
-        default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
-        }
-    }
-    inline void getSetResult(jvalue &result, bool & __isAllResult, size32_t & __resultBytes, void * & __result, int _elemType, size32_t elemSize)
-    {
-        if (returnType.get()[0] != '[')
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result (array expected)");
-        type_t elemType = (type_t) _elemType;
-        jarray array = (jarray) result.l;
-        int numResults = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
-        rtlRowBuilder out;
-        byte *outData = NULL;
-        size32_t outBytes = 0;
-        if (numResults > 0)
-        {
-            if (elemSize != UNKNOWN_LENGTH)
-            {
-                out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
-                outData = out.getbytes();
-            }
-            switch(returnType.get()[1])
-            {
-            case 'Z':
-                checkType(type_boolean, sizeof(jboolean), elemType, elemSize);
-                JNIenv->GetBooleanArrayRegion((jbooleanArray) array, 0, numResults, (jboolean *) outData);
-                break;
-            case 'B':
-                checkType(type_int, sizeof(jbyte), elemType, elemSize);
-                JNIenv->GetByteArrayRegion((jbyteArray) array, 0, numResults, (jbyte *) outData);
-                break;
-            case 'C':
-                // we COULD map to a set of string1, but is there any point?
-                throw MakeStringException(0, "javaembed: Return type mismatch (char[] not supported)");
-                break;
-            case 'S':
-                checkType(type_int, sizeof(jshort), elemType, elemSize);
-                JNIenv->GetShortArrayRegion((jshortArray) array, 0, numResults, (jshort *) outData);
-                break;
-            case 'I':
-                checkType(type_int, sizeof(jint), elemType, elemSize);
-                JNIenv->GetIntArrayRegion((jintArray) array, 0, numResults, (jint *) outData);
-                break;
-            case 'J':
-                checkType(type_int, sizeof(jlong), elemType, elemSize);
-                JNIenv->GetLongArrayRegion((jlongArray) array, 0, numResults, (jlong *) outData);
-                break;
-            case 'F':
-                checkType(type_real, sizeof(jfloat), elemType, elemSize);
-                JNIenv->GetFloatArrayRegion((jfloatArray) array, 0, numResults, (jfloat *) outData);
-                break;
-            case 'D':
-                checkType(type_real, sizeof(jdouble), elemType, elemSize);
-                JNIenv->GetDoubleArrayRegion((jdoubleArray) array, 0, numResults, (jdouble *) outData);
-                break;
-            case 'L':
-                if (strcmp(returnType, "[Ljava/lang/String;") == 0)
-                {
-                    for (int i = 0; i < numResults; i++)
-                    {
-                        jstring elem = (jstring) JNIenv->GetObjectArrayElement((jobjectArray) array, i);
-                        size_t lenBytes = JNIenv->GetStringUTFLength(elem);  // in bytes
-                        const char *text =  JNIenv->GetStringUTFChars(elem, NULL);
-
-                        switch (elemType)
-                        {
-                        case type_string:
-                            if (elemSize == UNKNOWN_LENGTH)
-                            {
-                                out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
-                                outData = out.getbytes() + outBytes;
-                                * (size32_t *) outData = lenBytes;
-                                rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
-                                outBytes += lenBytes + sizeof(size32_t);
-                            }
-                            else
-                                rtlStrToStr(elemSize, outData, lenBytes, text);
-                            break;
-                        case type_varstring:
-                            if (elemSize == UNKNOWN_LENGTH)
-                            {
-                                out.ensureAvailable(outBytes + lenBytes + 1);
-                                outData = out.getbytes() + outBytes;
-                                rtlStrToVStr(0, outData, lenBytes, text);
-                                outBytes += lenBytes + 1;
-                            }
-                            else
-                                rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
-                            break;
-                        case type_utf8:
-                        case type_unicode:
-                        {
-                            size32_t numchars = rtlUtf8Length(lenBytes, text);
-                            if (elemType == type_utf8)
-                            {
-                                assertex (elemSize == UNKNOWN_LENGTH);
-                                out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
-                                outData = out.getbytes() + outBytes;
-                                * (size32_t *) outData = numchars;
-                                rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
-                                outBytes += lenBytes + sizeof(size32_t);
-                            }
-                            else
-                            {
-                                if (elemSize == UNKNOWN_LENGTH)
-                                {
-                                    // You can't assume that number of chars in utf8 matches number in unicode16 ...
-                                    size32_t numchars16;
-                                    rtlDataAttr unicode16;
-                                    rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
-                                    out.ensureAvailable(outBytes + numchars16*sizeof(UChar) + sizeof(size32_t));
-                                    outData = out.getbytes() + outBytes;
-                                    * (size32_t *) outData = numchars16;
-                                    rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
-                                    outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
-                                }
-                                else
-                                    rtlUtf8ToUnicode(elemSize / sizeof(UChar), (UChar *) outData, numchars, text);
-                            }
-                            break;
-                        }
-                        default:
-                            JNIenv->ReleaseStringUTFChars(elem, text);
-                            throw MakeStringException(0, "javaembed: Return type mismatch (ECL string type expected)");
-                        }
-                        JNIenv->ReleaseStringUTFChars(elem, text);
-                        JNIenv->DeleteLocalRef(elem);
-                        if (elemSize != UNKNOWN_LENGTH)
-                            outData += elemSize;
-                    }
-                }
-                else
-                    throw MakeStringException(0, "javaembed: Return type mismatch (%s[] not supported)", returnType.get()+2);
-                break;
-            }
-        }
-        __isAllResult = false;
-        __resultBytes = elemSize == UNKNOWN_LENGTH ? outBytes : elemSize * numResults;
-        __result = out.detachdata();
-    }
-    inline const char *querySignature()
-    {
-        return argsig.get();
-    }
-    size32_t getRowResult(jobject result, ARowBuilder &builder)
-    {
-        const RtlTypeInfo *typeInfo = builder.queryAllocator()->queryOutputMeta()->queryTypeInfo();
-        assertex(typeInfo);
-        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-        JavaRowBuilder javaRowBuilder(JNIenv, &dummyField, result);
-        return typeInfo->build(builder, 0, &dummyField, javaRowBuilder);
-    }
     void writeObjectResult(jobject result, IEsdlDefinition *esdl, const char *esdlservice, const char *name, IXmlWriter *writer)
     {
         JavaObjectXmlWriter x(JNIenv, result, name, *esdl, esdlservice, *writer);
         x.write();
     }
-
+    void registerContext(IEmbedFunctionContext *ctx)
+    {
+        // Note - this object is thread-local so no need for a critsec
+        contexts.append(*ctx);
+    }
 private:
-    StringAttr returnType;
-    StringAttr argsig;
-    StringAttr prevtext;
-    StringAttr prevClassPath;
-    jclass javaClass;
-    jmethodID javaMethodID;
+    inline void checkException()
+    {
+        javaembed::checkException(JNIenv);
+    }
+    IArrayOf<IEmbedFunctionContext> contexts;
 };
 
 class JavaXmlBuilder : implements IXmlWriterExt, public CInterface
@@ -2688,17 +2308,15 @@ public:
 #ifdef TRACE_CLASSFILE
             DBGLOG("Method %u name %u desc %u flags %x", i, name, desc, flags);
 #endif
-            if ((flags & (ACC_PUBLIC|ACC_STATIC)) == (ACC_PUBLIC|ACC_STATIC))
+            if (flags & ACC_PUBLIC)
             {
                 StringAttr thisName;
                 readUtf(thisName, name);
-                if (!streq(thisName, "<init>"))
-                {
-                    StringAttr thisSig;
-                    readUtf(thisSig, desc);
-                    methodNames.append(thisName);
-                    methodSigs.append(thisSig);
-                }
+                StringAttr thisSig;
+                readUtf(thisSig, desc);
+                methodNames.append(thisName);
+                methodSigs.append(thisSig);
+                methodFlags.append(flags);
             }
             uint16_t attr_count;
             b.read(attr_count);
@@ -2738,34 +2356,20 @@ public:
     {
         if (!methodNames.isItem(idx))
             throw makeStringException(0, "No public static method found");
-        return ret.appendf("%s.%s:%s", className.get(), methodNames.item(idx), methodSigs.item(idx));
+        ret.appendf("%s.%s:", className.get(), methodNames.item(idx));
+        if ((methodFlags[idx] & ACC_STATIC) == 0)
+            ret.append('@');
+        return ret.append(methodSigs.item(idx));
     }
-    MemoryBuffer &getEmbedData(MemoryBuffer &result, bool mainClass)
+    MemoryBuffer &getEmbedData(MemoryBuffer &result, const char *funcName, bool mainClass)
     {
-        if (mainClass && methodNames.length() != 1)
-        {
-            StringBuffer err;
-            ForEachItemIn(idx, methodNames)
-            {
-                if (idx)
-                    err.append(", ");
-                if (idx == 5)
-                {
-                    err.append("...");
-                    break;
-                }
-                else
-                    err.append(methodNames[idx]);
-            }
-            if (err)
-                throw makeStringExceptionV(0, "Embedded java should export exactly one public static method (%s seen)", err.str());
-            else
-                throw makeStringException(0, "Embedded java did not export any public static methods");
-        }
         result.setEndian(__BIG_ENDIAN);
         StringBuffer signature;
         if (mainClass)
-            getSignature(signature, 0);
+        {
+            unsigned methodIdx = getFunctionIdx(funcName);
+            getSignature(signature, methodIdx);
+        }
         else
             signature.set(className);
         result.append((size32_t) signature.length());
@@ -2774,7 +2378,46 @@ public:
         result.append(b);
         return result;
     }
+
+    enum access_flag : uint16_t
+    {
+        ACC_PUBLIC    = 0x0001, //  Declared public; may be accessed from outside its package.
+        ACC_PRIVATE   = 0x0002, //  Declared private; accessible only within the defining class.
+        ACC_PROTECTED = 0x0004, //  Declared protected; may be accessed within subclasses.
+        ACC_STATIC    = 0x0008, //  Declared static.
+        ACC_FINAL     = 0x0010, //  Declared final; must not be overridden (§5.4.5).
+        ACC_SYNCHRONIZED = 0x0020, //  Declared synchronized; invocation is wrapped by a monitor use.
+        ACC_BRIDGE    = 0x0040, //  A bridge method, generated by the compiler.
+        ACC_VARARGS   = 0x0080, //  Declared with variable number of arguments.
+        ACC_NATIVE    = 0x0100, //  Declared native; implemented in a language other than Java.
+        ACC_ABSTRACT  = 0x0400, //  Declared abstract; no implementation is provided.
+        ACC_STRICT    = 0x0800, //  Declared strictfp; floating-point mode is FP-strict.
+        ACC_SYNTHETIC = 0x1000, //  Declared synthetic; not present in the source code.
+    };
+
+    unsigned getFlags(const char *funcName)
+    {
+        unsigned idx = getFunctionIdx(funcName);
+        return methodFlags[idx];
+    }
+
 private:
+    unsigned getFunctionIdx(const char *funcName)
+    {
+        unsigned methodIdx = (unsigned) -1;
+        ForEachItemIn(idx, methodNames)
+        {
+            if (streq(funcName, methodNames[idx]))
+            {
+                if (methodIdx != (unsigned) -1)
+                    throw makeStringExceptionV(0, "Embedded java has multiple public methods called %s", funcName);
+                methodIdx = idx;
+            }
+        }
+        if (methodIdx == (unsigned) -1)
+            throw makeStringExceptionV(0, "Embedded java should export a public method %s", funcName);
+        return methodIdx;
+    }
     uint16_t readIdx()
     {
         uint16_t idx;
@@ -2814,35 +2457,27 @@ private:
         CONSTANT_MethodType = 16,
         CONSTANT_InvokeDynamic = 18
     };
-    enum access_flag : uint16_t
-    {
-        ACC_PUBLIC    = 0x0001, //  Declared public; may be accessed from outside its package.
-        ACC_PRIVATE   = 0x0002, //  Declared private; accessible only within the defining class.
-        ACC_PROTECTED = 0x0004, //  Declared protected; may be accessed within subclasses.
-        ACC_STATIC    = 0x0008, //  Declared static.
-        ACC_FINAL     = 0x0010, //  Declared final; must not be overridden (§5.4.5).
-        ACC_SYNCHRONIZED = 0x0020, //  Declared synchronized; invocation is wrapped by a monitor use.
-        ACC_BRIDGE    = 0x0040, //  A bridge method, generated by the compiler.
-        ACC_VARARGS   = 0x0080, //  Declared with variable number of arguments.
-        ACC_NATIVE    = 0x0100, //  Declared native; implemented in a language other than Java.
-        ACC_ABSTRACT  = 0x0400, //  Declared abstract; no implementation is provided.
-        ACC_STRICT    = 0x0800, //  Declared strictfp; floating-point mode is FP-strict.
-        ACC_SYNTHETIC = 0x1000, //  Declared synthetic; not present in the source code.
-    };
     MemoryBuffer b;
     unsigned *constOffsets = nullptr;
     StringAttr className;
     StringArray methodNames;
     StringArray methodSigs;
+    UnsignedArray methodFlags;
 };
 class JavaEmbedImportContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    JavaEmbedImportContext(JavaThreadContext *_sharedCtx, jobject _instance, const char *options)
-    : sharedCtx(_sharedCtx), instance(_instance)
+    JavaEmbedImportContext(ICodeContext *codeCtx, JavaThreadContext *_sharedCtx, jobject _instance, unsigned flags, const char *options)
+    : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance)
     {
+        if (instance)
+            instance = JNIenv->NewGlobalRef(instance);
+        if (flags & EFthreadlocal)
+            sharedCtx->registerContext(this);
         argcount = 0;
         argsig = NULL;
+        nonStatic = (instance != nullptr);
+        javaClass = nullptr;
         StringArray opts;
         opts.appendList(options, ",");
         ForEachItemIn(idx, opts)
@@ -2855,37 +2490,112 @@ public:
                 val++;
                 if (stricmp(optName, "classpath")==0)
                     classpath.set(val);
+                else if (strieq(optName, "persist"))
+                {
+                    if (persistMode != persistNone)
+                        throw MakeStringException(MSGAUD_user, 0, "javaembed: Persist option specified more than once");
+                    persistMode = getPersistMode(val);
+                    switch (persistMode)
+                    {
+                    case persistWorkunit:
+                    case persistQuery:
+                        engine = codeCtx->queryEngineContext();
+                        if (!engine)
+                            throw MakeStringException(MSGAUD_user, 0, "javaembed: Persist mode '%s' not supported here", val);
+                        break;
+                    }
+                }
                 else
                     throw MakeStringException(0, "javaembed: Unknown option %s", optName.str());
             }
         }
-
-        // Create a new frame for local references and increase the capacity
-        // of those references to 64 (default is 16)
-        sharedCtx->JNIenv->PushLocalFrame(64);
     }
     ~JavaEmbedImportContext()
     {
-        // Pop local reference frame; explicitly frees all local
-        // references made during that frame's lifetime
-        sharedCtx->JNIenv->PopLocalFrame(NULL);
+        if (javaClass)
+            JNIenv->DeleteGlobalRef(javaClass);
+        if (instance)
+            JNIenv->DeleteGlobalRef(instance);
+        if (classLoader)
+            JNIenv->DeleteGlobalRef(instance);
     }
 
     virtual bool getBooleanResult()
     {
-        return sharedCtx->getBooleanResult(result);
+        switch (*returnType)
+        {
+        case 'Z': return result.z;
+        case 'L':
+            {
+                // Result should be of class 'Boolean'
+                if (!result.l)
+                    return false;
+                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "booleanValue", "()Z");
+                if (!getVal)
+                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+                bool ret=JNIenv->CallBooleanMethod(result.l, getVal);
+                checkException();
+                return ret;
+            }
+        default:
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+        }
     }
     virtual void getDataResult(size32_t &__len, void * &__result)
     {
-        sharedCtx->getDataResult(result, __len, __result);
+        if (strcmp(returnType, "[B")!=0)
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+        jbyteArray array = (jbyteArray) result.l;
+        __len = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
+        __result = (__len > 0 ? rtlMalloc(__len) : NULL);
+        if (__result)
+            JNIenv->GetByteArrayRegion(array, 0, __len, (jbyte *) __result);
     }
     virtual double getRealResult()
     {
-        return sharedCtx->getDoubleResult(result);
+        switch (*returnType)
+        {
+        case 'D': return result.d;
+        case 'F': return result.f;
+        case 'L':
+            {
+                // Result should be of class 'Number'
+                if (!result.l)
+                    return 0;
+                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "doubleValue", "()D");
+                if (!getVal)
+                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+                double ret = JNIenv->CallDoubleMethod(result.l, getVal);
+                checkException();
+                return ret;
+            }
+        default:
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+        }
     }
     virtual __int64 getSignedResult()
     {
-        return sharedCtx->getSignedResult(result);
+        switch (*returnType)
+        {
+        case 'B': return result.b;
+        case 'S': return result.s;
+        case 'I': return result.i;
+        case 'J': return result.j;
+        case 'L':
+            {
+                // Result should be of class 'Number'
+                if (!result.l)
+                    return 0;
+                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "longValue", "()J");
+                if (!getVal)
+                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+                __int64 ret = JNIenv->CallLongMethod(result.l, getVal);
+                checkException();
+                return ret;
+            }
+        default:
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+        }
     }
     virtual unsigned __int64 getUnsignedResult()
     {
@@ -2893,19 +2603,225 @@ public:
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
     {
-        sharedCtx->getStringResult(result, __len, __result);
+        switch (*returnType)
+        {
+        case 'C': // Single char returned, prototyped as STRING or STRING1 in ECL
+            rtlUnicodeToStrX(__len, __result, 1, &result.c);
+            break;
+        case 'L':
+        {
+            jstring sresult = (jstring) result.l;
+            if (sresult)
+            {
+                size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
+                const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
+                size32_t chars = rtlUtf8Length(size, text);
+                rtlUtf8ToStrX(__len, __result, chars, text);
+                JNIenv->ReleaseStringUTFChars(sresult, text);
+            }
+            else
+            {
+                __len = 0;
+                __result = NULL;
+            }
+            break;
+        }
+        default:
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+        }
     }
     virtual void getUTF8Result(size32_t &__chars, char * &__result)
     {
-        sharedCtx->getUTF8Result(result, __chars, __result);
+        switch (*returnType)
+        {
+        case 'C': // Single jchar returned, prototyped as UTF8 in ECL
+            rtlUnicodeToUtf8X(__chars, __result, 1, &result.c);
+            break;
+        case 'L':
+        {
+            jstring sresult = (jstring) result.l;
+            if (sresult)
+            {
+                size_t size = JNIenv->GetStringUTFLength(sresult); // Returns length in bytes (not chars)
+                const char * text =  JNIenv->GetStringUTFChars(sresult, NULL);
+                rtlUtf8ToUtf8X(__chars, __result, rtlUtf8Length(size, text), text);
+                JNIenv->ReleaseStringUTFChars(sresult, text);
+            }
+            else
+            {
+                __chars = 0;
+                __result = NULL;
+            }
+            break;
+        }
+        default:
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+        }
     }
     virtual void getUnicodeResult(size32_t &__chars, UChar * &__result)
     {
-        sharedCtx->getUnicodeResult(result, __chars, __result);
+        switch (*returnType)
+        {
+        case 'C': // Single jchar returned, prototyped as UNICODE or UNICODE1 in ECL
+            rtlUnicodeToUnicodeX(__chars, __result, 1, &result.c);
+            break;
+        case 'L':
+        {
+            jstring sresult = (jstring) result.l;
+            if (sresult)
+            {
+                size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
+                const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
+                size32_t chars = rtlUtf8Length(size, text);
+                rtlUtf8ToUnicodeX(__chars, __result, chars, text);
+                JNIenv->ReleaseStringUTFChars(sresult, text);
+            }
+            else
+            {
+                __chars = 0;
+                __result = NULL;
+            }
+            break;
+        }
+        default:
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+        }
     }
-    virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
+    virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int _elemType, size32_t elemSize)
     {
-        sharedCtx->getSetResult(result, __isAllResult, __resultBytes, __result, elemType, elemSize);
+        if (*returnType != '[')
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result (array expected)");
+        type_t elemType = (type_t) _elemType;
+        jarray array = (jarray) result.l;
+        int numResults = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
+        rtlRowBuilder out;
+        byte *outData = NULL;
+        size32_t outBytes = 0;
+        if (numResults > 0)
+        {
+            if (elemSize != UNKNOWN_LENGTH)
+            {
+                out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
+                outData = out.getbytes();
+            }
+            switch(returnType[1])
+            {
+            case 'Z':
+                checkType(type_boolean, sizeof(jboolean), elemType, elemSize);
+                JNIenv->GetBooleanArrayRegion((jbooleanArray) array, 0, numResults, (jboolean *) outData);
+                break;
+            case 'B':
+                checkType(type_int, sizeof(jbyte), elemType, elemSize);
+                JNIenv->GetByteArrayRegion((jbyteArray) array, 0, numResults, (jbyte *) outData);
+                break;
+            case 'C':
+                // we COULD map to a set of string1, but is there any point?
+                throw MakeStringException(0, "javaembed: Return type mismatch (char[] not supported)");
+                break;
+            case 'S':
+                checkType(type_int, sizeof(jshort), elemType, elemSize);
+                JNIenv->GetShortArrayRegion((jshortArray) array, 0, numResults, (jshort *) outData);
+                break;
+            case 'I':
+                checkType(type_int, sizeof(jint), elemType, elemSize);
+                JNIenv->GetIntArrayRegion((jintArray) array, 0, numResults, (jint *) outData);
+                break;
+            case 'J':
+                checkType(type_int, sizeof(jlong), elemType, elemSize);
+                JNIenv->GetLongArrayRegion((jlongArray) array, 0, numResults, (jlong *) outData);
+                break;
+            case 'F':
+                checkType(type_real, sizeof(jfloat), elemType, elemSize);
+                JNIenv->GetFloatArrayRegion((jfloatArray) array, 0, numResults, (jfloat *) outData);
+                break;
+            case 'D':
+                checkType(type_real, sizeof(jdouble), elemType, elemSize);
+                JNIenv->GetDoubleArrayRegion((jdoubleArray) array, 0, numResults, (jdouble *) outData);
+                break;
+            case 'L':
+                if (strcmp(returnType, "[Ljava/lang/String;") == 0)
+                {
+                    for (int i = 0; i < numResults; i++)
+                    {
+                        jstring elem = (jstring) JNIenv->GetObjectArrayElement((jobjectArray) array, i);
+                        size_t lenBytes = JNIenv->GetStringUTFLength(elem);  // in bytes
+                        const char *text =  JNIenv->GetStringUTFChars(elem, NULL);
+
+                        switch (elemType)
+                        {
+                        case type_string:
+                            if (elemSize == UNKNOWN_LENGTH)
+                            {
+                                out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                                outData = out.getbytes() + outBytes;
+                                * (size32_t *) outData = lenBytes;
+                                rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                                outBytes += lenBytes + sizeof(size32_t);
+                            }
+                            else
+                                rtlStrToStr(elemSize, outData, lenBytes, text);
+                            break;
+                        case type_varstring:
+                            if (elemSize == UNKNOWN_LENGTH)
+                            {
+                                out.ensureAvailable(outBytes + lenBytes + 1);
+                                outData = out.getbytes() + outBytes;
+                                rtlStrToVStr(0, outData, lenBytes, text);
+                                outBytes += lenBytes + 1;
+                            }
+                            else
+                                rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
+                            break;
+                        case type_utf8:
+                        case type_unicode:
+                        {
+                            size32_t numchars = rtlUtf8Length(lenBytes, text);
+                            if (elemType == type_utf8)
+                            {
+                                assertex (elemSize == UNKNOWN_LENGTH);
+                                out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                                outData = out.getbytes() + outBytes;
+                                * (size32_t *) outData = numchars;
+                                rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                                outBytes += lenBytes + sizeof(size32_t);
+                            }
+                            else
+                            {
+                                if (elemSize == UNKNOWN_LENGTH)
+                                {
+                                    // You can't assume that number of chars in utf8 matches number in unicode16 ...
+                                    size32_t numchars16;
+                                    rtlDataAttr unicode16;
+                                    rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
+                                    out.ensureAvailable(outBytes + numchars16*sizeof(UChar) + sizeof(size32_t));
+                                    outData = out.getbytes() + outBytes;
+                                    * (size32_t *) outData = numchars16;
+                                    rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
+                                    outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
+                                }
+                                else
+                                    rtlUtf8ToUnicode(elemSize / sizeof(UChar), (UChar *) outData, numchars, text);
+                            }
+                            break;
+                        }
+                        default:
+                            JNIenv->ReleaseStringUTFChars(elem, text);
+                            throw MakeStringException(0, "javaembed: Return type mismatch (ECL string type expected)");
+                        }
+                        JNIenv->ReleaseStringUTFChars(elem, text);
+                        JNIenv->DeleteLocalRef(elem);
+                        if (elemSize != UNKNOWN_LENGTH)
+                            outData += elemSize;
+                    }
+                }
+                else
+                    throw MakeStringException(0, "javaembed: Return type mismatch (%s[] not supported)", returnType+2);
+                break;
+            }
+        }
+        __isAllResult = false;
+        __resultBytes = elemSize == UNKNOWN_LENGTH ? outBytes : elemSize * numResults;
+        __result = out.detachdata();
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
@@ -2914,12 +2830,12 @@ public:
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
     {
         RtlDynamicRowBuilder rowBuilder(_resultAllocator);
-        size32_t len = sharedCtx->getRowResult(result.l, rowBuilder);
+        size32_t len = getRowResult(result.l, rowBuilder);
         return (byte *) rowBuilder.finalizeRowClear(len);
     }
     virtual size32_t getTransformResult(ARowBuilder & builder)
     {
-        return sharedCtx->getRowResult(result.l, builder);
+        return getRowResult(result.l, builder);
     }
     virtual void bindBooleanParam(const char *name, bool val)
     {
@@ -2936,8 +2852,8 @@ public:
             typeError("DATA");
         argsig += 2;
         jvalue v;
-        jbyteArray javaData = sharedCtx->JNIenv->NewByteArray(len);
-        sharedCtx->JNIenv->SetByteArrayRegion(javaData, 0, len, (jbyte *) val);
+        jbyteArray javaData = JNIenv->NewByteArray(len);
+        JNIenv->SetByteArrayRegion(javaData, 0, len, (jbyte *) val);
         v.l = javaData;
         addArg(v);
     }
@@ -3030,7 +2946,7 @@ public:
                 unsigned unicodeChars;
                 UChar *unicode;
                 rtlStrToUnicodeX(unicodeChars, unicode, len, val);
-                v.l = sharedCtx->JNIenv->NewString(unicode, unicodeChars);
+                v.l = JNIenv->NewString(unicode, unicodeChars);
                 rtlFree(unicode);
                 break;
             }
@@ -3061,7 +2977,7 @@ public:
                 unsigned unicodeChars;
                 UChar *unicode;
                 rtlUtf8ToUnicodeX(unicodeChars, unicode, numchars, val);
-                v.l = sharedCtx->JNIenv->NewString(unicode, unicodeChars);
+                v.l = JNIenv->NewString(unicode, unicodeChars);
                 rtlFree(unicode);
                 break;
             }
@@ -3085,7 +3001,7 @@ public:
             if (strncmp(argsig, "Ljava/lang/String;", 18) == 0)
             {
                 argsig += 18;
-                v.l = sharedCtx->JNIenv->NewString(val, numchars);
+                v.l = JNIenv->NewString(val, numchars);
                 break;
             }
             // fall into ...
@@ -3107,12 +3023,12 @@ public:
         {
         case 'Z':
             checkType(type_boolean, sizeof(jboolean), elemType, elemSize);
-            v.l = sharedCtx->JNIenv->NewBooleanArray(numElems);
+            v.l = JNIenv->NewBooleanArray(numElems);
             sharedCtx->JNIenv->SetBooleanArrayRegion((jbooleanArray) v.l, 0, numElems, (jboolean *) setData);
             break;
         case 'B':
             checkType(type_int, sizeof(jbyte), elemType, elemSize);
-            v.l = sharedCtx->JNIenv->NewByteArray(numElems);
+            v.l = JNIenv->NewByteArray(numElems);
             sharedCtx->JNIenv->SetByteArrayRegion((jbyteArray) v.l, 0, numElems, (jbyte *) setData);
             break;
         case 'C':
@@ -3121,28 +3037,28 @@ public:
             break;
         case 'S':
             checkType(type_int, sizeof(jshort), elemType, elemSize);
-            v.l = sharedCtx->JNIenv->NewShortArray(numElems);
+            v.l = JNIenv->NewShortArray(numElems);
             sharedCtx->JNIenv->SetShortArrayRegion((jshortArray) v.l, 0, numElems, (jshort *) setData);
             break;
         case 'I':
             checkType(type_int, sizeof(jint), elemType, elemSize);
-            v.l = sharedCtx->JNIenv->NewIntArray(numElems);
-            sharedCtx->JNIenv->SetIntArrayRegion((jintArray) v.l, 0, numElems, (jint *) setData);
+            v.l = JNIenv->NewIntArray(numElems);
+            JNIenv->SetIntArrayRegion((jintArray) v.l, 0, numElems, (jint *) setData);
             break;
         case 'J':
             checkType(type_int, sizeof(jlong), elemType, elemSize);
-            v.l = sharedCtx->JNIenv->NewLongArray(numElems);
-            sharedCtx->JNIenv->SetLongArrayRegion((jlongArray) v.l, 0, numElems, (jlong *) setData);
+            v.l = JNIenv->NewLongArray(numElems);
+            JNIenv->SetLongArrayRegion((jlongArray) v.l, 0, numElems, (jlong *) setData);
             break;
         case 'F':
             checkType(type_real, sizeof(jfloat), elemType, elemSize);
             v.l = sharedCtx->JNIenv->NewFloatArray(numElems);
-            sharedCtx->JNIenv->SetFloatArrayRegion((jfloatArray) v.l, 0, numElems, (jfloat *) setData);
+            JNIenv->SetFloatArrayRegion((jfloatArray) v.l, 0, numElems, (jfloat *) setData);
             break;
         case 'D':
             checkType(type_real, sizeof(jdouble), elemType, elemSize);
             v.l = sharedCtx->JNIenv->NewDoubleArray(numElems);
-            sharedCtx->JNIenv->SetDoubleArrayRegion((jdoubleArray) v.l, 0, numElems, (jdouble *) setData);
+            JNIenv->SetDoubleArrayRegion((jdoubleArray) v.l, 0, numElems, (jdouble *) setData);
             break;
         case 'L':
             if (strncmp(argsig, "Ljava/lang/String;", 18) == 0)
@@ -3180,7 +3096,7 @@ public:
                     inData = (const byte *) setData;
                 }
                 int idx = 0;
-                v.l = sharedCtx->JNIenv->NewObjectArray(numElems, sharedCtx->JNIenv->FindClass("java/lang/String"), NULL);
+                v.l = JNIenv->NewObjectArray(numElems, JNIenv->FindClass("java/lang/String"), NULL);
                 while (inData < endData)
                 {
                     jstring thisElem;
@@ -3193,7 +3109,7 @@ public:
                         unsigned unicodeChars;
                         rtlDataAttr unicode;
                         rtlStrToUnicodeX(unicodeChars, unicode.refustr(), numChars, (const char *) inData);
-                        thisElem = sharedCtx->JNIenv->NewString(unicode.getustr(), unicodeChars);
+                        thisElem = JNIenv->NewString(unicode.getustr(), unicodeChars);
                         if (elemSize == UNKNOWN_LENGTH)
                             thisSize = numChars + 1;
                         break;
@@ -3208,7 +3124,7 @@ public:
                         unsigned unicodeChars;
                         rtlDataAttr unicode;
                         rtlStrToUnicodeX(unicodeChars, unicode.refustr(), thisSize, (const char *) inData);
-                        thisElem = sharedCtx->JNIenv->NewString(unicode.getustr(), unicodeChars);
+                        thisElem = JNIenv->NewString(unicode.getustr(), unicodeChars);
                         break;
                     }
                     case type_unicode:
@@ -3218,8 +3134,7 @@ public:
                             thisSize = (* (size32_t *) inData) * sizeof(UChar); // NOTE - it's in chars...
                             inData += sizeof(size32_t);
                         }
-                        thisElem = sharedCtx->JNIenv->NewString((const UChar *) inData, thisSize / sizeof(UChar));
-                        //checkJPythonError();
+                        thisElem = JNIenv->NewString((const UChar *) inData, thisSize / sizeof(UChar));
                         break;
                     }
                     case type_utf8:
@@ -3230,17 +3145,17 @@ public:
                         unsigned unicodeChars;
                         rtlDataAttr unicode;
                         rtlUtf8ToUnicodeX(unicodeChars, unicode.refustr(), numChars, (const char *) inData);
-                        thisElem = sharedCtx->JNIenv->NewString(unicode.getustr(), unicodeChars);
+                        thisElem = JNIenv->NewString(unicode.getustr(), unicodeChars);
                         thisSize = rtlUtf8Size(numChars, inData);
                         break;
                     }
                     default:
                         typeError("STRING");
                     }
-                    sharedCtx->checkException();
+                    checkException();
                     inData += thisSize;
-                    sharedCtx->JNIenv->SetObjectArrayElement((jobjectArray) v.l, idx, thisElem);
-                    sharedCtx->JNIenv->DeleteLocalRef(thisElem);
+                    JNIenv->SetObjectArrayElement((jobjectArray) v.l, idx, thisElem);
+                    JNIenv->DeleteLocalRef(thisElem);
                     idx++;
                 }
             }
@@ -3266,7 +3181,7 @@ public:
         const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
         assertex(typeInfo);
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-        JavaObjectBuilder javaBuilder(sharedCtx->JNIenv, &dummyField, sharedCtx->loadClass(className));
+        JavaObjectBuilder javaBuilder(JNIenv, &dummyField, loadClass(className));
         typeInfo->process(val, val, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
         jvalue v;
         v.l = javaBuilder.getObject();
@@ -3282,7 +3197,7 @@ public:
             typeError("OBJECT");
         StringAttr className(argsig+1, tail - (argsig+1));
         argsig = tail+1;
-        Owned<JavaXmlBuilder> writer = new JavaXmlBuilder(sharedCtx->JNIenv, dynamic_cast<IEsdlDefinition*>(esdl), esdlservice, esdltype);
+        Owned<JavaXmlBuilder> writer = new JavaXmlBuilder(JNIenv, dynamic_cast<IEsdlDefinition*>(esdl), esdlservice, esdltype);
         writer->initWriter();
         return (IXmlWriter*)writer.getClear();
     }
@@ -3290,7 +3205,7 @@ public:
     {
         JavaXmlBuilder *javaWriter = dynamic_cast<JavaXmlBuilder*>(writer);
         if (!javaWriter)
-            throw MakeStringException(0, "javaembed: Invalid object writer for %s", sharedCtx->querySignature());
+            throw MakeStringException(0, "javaembed: Invalid object writer for %s", signature);
         jvalue v;
         v.l = javaWriter->getObject();
         addArg(v);
@@ -3336,8 +3251,8 @@ public:
             const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
             assertex(typeInfo);
             RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-            jclass Class = sharedCtx->loadClass(className);
-            JavaObjectBuilder javaBuilder(sharedCtx->JNIenv, &dummyField, Class);
+            jclass Class = loadClass(className);
+            JavaObjectBuilder javaBuilder(JNIenv, &dummyField, Class);
             for (;;)
             {
                 roxiemem::OwnedConstRoxieRow thisRow = val->ungroupedNextRow();
@@ -3347,10 +3262,10 @@ public:
                 typeInfo->process(brow, brow, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
                 allRows.append(javaBuilder.getObject());
             }
-            jobjectArray array = sharedCtx->JNIenv->NewObjectArray(allRows.length(), Class, NULL);
+            jobjectArray array = JNIenv->NewObjectArray(allRows.length(), Class, NULL);
             ForEachItemIn(idx, allRows)
             {
-                sharedCtx->JNIenv->SetObjectArrayElement(array, idx, allRows.item(idx));
+                JNIenv->SetObjectArrayElement(array, idx, allRows.item(idx));
             }
             v.l = array;
         }
@@ -3358,18 +3273,18 @@ public:
         {
             // Pass in an iterator
             // Create a java object of type com.HPCCSystems.HpccUtils - this acts as a proxy for the iterator
-            sharedCtx->JNIenv->ExceptionClear();
-            jclass proxyClass = sharedCtx->JNIenv->FindClass("com/HPCCSystems/HpccUtils");
-            sharedCtx->checkException();
-            jmethodID constructor = sharedCtx->JNIenv->GetMethodID(proxyClass, "<init>", "(JLjava/lang/String;)V");
-            sharedCtx->checkException();
+            JNIenv->ExceptionClear();
+            jclass proxyClass = JNIenv->FindClass("com/HPCCSystems/HpccUtils");
+            checkException();
+            jmethodID constructor = JNIenv->GetMethodID(proxyClass, "<init>", "(JLjava/lang/String;)V");
+            checkException();
             jvalue param;
             const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
-            ECLDatasetIterator *iterator = new ECLDatasetIterator(sharedCtx->JNIenv, typeInfo, sharedCtx->loadClass(className), val);
+            ECLDatasetIterator *iterator = new ECLDatasetIterator(JNIenv, typeInfo, loadClass(className), val);
             param.j = (jlong) iterator;
             iterators.append(*iterator);
-            jobject proxy = sharedCtx->JNIenv->NewObject(proxyClass, constructor, param, sharedCtx->JNIenv->NewStringUTF(helperLibraryName));
-            sharedCtx->checkException();
+            jobject proxy = JNIenv->NewObject(proxyClass, constructor, param, JNIenv->NewStringUTF(helperLibraryName));
+            checkException();
             v.l = proxy;
         }
         addArg(v);
@@ -3378,21 +3293,55 @@ public:
     {
         return sharedCtx->writeObjectResult(result.l, dynamic_cast<IEsdlDefinition*>(esdl), esdlservice, esdltype, dynamic_cast<IXmlWriter*>(writer));
     }
-    virtual void importFunction(size32_t lenChars, const char *utf)
+    virtual void importFunction(size32_t lenChars, const char *utf) override
     {
-        sharedCtx->importFunction(lenChars, utf, classpath, 0, nullptr, instance);
-        argsig = sharedCtx->querySignature();
-        assertex(*argsig == '(');
-        argsig++;
+        if (!javaClass)
+            loadFunction(lenChars, utf, classpath, 0, nullptr);
+        reinit();
     }
     virtual void callFunction()
     {
         if (*argsig != ')')
-            throw MakeStringException(0, "javaembed: Too few ECL parameters passed for Java signature %s", sharedCtx->querySignature());
-        if (instance)
-            sharedCtx->callFunction(result, args, instance);
+            throw MakeStringException(0, "javaembed: Too few ECL parameters passed for Java signature %s", signature);
+        JNIenv->ExceptionClear();
+        if (nonStatic)
+        {
+            if (!instance)
+                throw MakeStringException(0, "javaembed: non static member function %s called, but no instance available", methodName.get());  // Should never happen
+
+            switch (*returnType)
+            {
+            case 'C': result.c = JNIenv->CallCharMethodA(instance, javaMethodID, args); break;
+            case 'Z': result.z = JNIenv->CallBooleanMethodA(instance, javaMethodID, args); break;
+            case 'J': result.j = JNIenv->CallLongMethodA(instance, javaMethodID, args); break;
+            case 'F': result.f = JNIenv->CallFloatMethodA(instance, javaMethodID, args); break;
+            case 'D': result.d = JNIenv->CallDoubleMethodA(instance, javaMethodID, args); break;
+            case 'I': result.i = JNIenv->CallIntMethodA(instance, javaMethodID, args); break;
+            case 'S': result.s = JNIenv->CallShortMethodA(instance, javaMethodID, args); break;
+            case 'B': result.s = JNIenv->CallByteMethodA(instance, javaMethodID, args); break;
+            case '[':
+            case 'L': result.l = JNIenv->CallObjectMethodA(instance, javaMethodID, args); break;
+            default: throwUnexpected();
+            }
+        }
         else
-            sharedCtx->callFunction(result, args);
+        {
+            switch (*returnType)
+            {
+            case 'C': result.c = JNIenv->CallStaticCharMethodA(javaClass, javaMethodID, args); break;
+            case 'Z': result.z = JNIenv->CallStaticBooleanMethodA(javaClass, javaMethodID, args); break;
+            case 'J': result.j = JNIenv->CallStaticLongMethodA(javaClass, javaMethodID, args); break;
+            case 'F': result.f = JNIenv->CallStaticFloatMethodA(javaClass, javaMethodID, args); break;
+            case 'D': result.d = JNIenv->CallStaticDoubleMethodA(javaClass, javaMethodID, args); break;
+            case 'I': result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
+            case 'S': result.s = JNIenv->CallStaticShortMethodA(javaClass, javaMethodID, args); break;
+            case 'B': result.s = JNIenv->CallStaticByteMethodA(javaClass, javaMethodID, args); break;
+            case '[':
+            case 'L': result.l = JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args); break;
+            default: throwUnexpected();
+            }
+        }
+        checkException();
     }
 
     virtual void compileEmbeddedScript(size32_t lenChars, const char *_script)
@@ -3401,25 +3350,40 @@ public:
     }
     virtual void loadCompiledScript(size32_t bytecodeLen, const void *bytecode) override
     {
-        MemoryBuffer b;
-        b.setBuffer(bytecodeLen, (void *) bytecode, false);
-        b.setEndian(__BIG_ENDIAN);
-        uint32_t siglen; b.read(siglen);
-        const char *sig = (const char *) b.readDirect(siglen);
-        sharedCtx->importFunction(siglen, sig, classpath, bytecodeLen, (const byte *) bytecode, instance);
-        argsig = sharedCtx->querySignature();
-        assertex(*argsig == '(');
-        argsig++;
+        if (!javaClass)
+        {
+            MemoryBuffer b;
+            b.setBuffer(bytecodeLen, (void *) bytecode, false);
+            b.setEndian(__BIG_ENDIAN);
+            uint32_t siglen; b.read(siglen);
+            const char *sig = (const char *) b.readDirect(siglen);
+            loadFunction(siglen, sig, classpath, bytecodeLen, (const byte *) bytecode);
+        }
+        reinit();
+    }
+    virtual void enter() override
+    {
+        // If we rejig codegen to only call loadCompiledScript etc at construction time, then this will need to do the reinit()
+        // until we do, it's too early
+
+        // Create a new frame for local references and increase the capacity
+        // of those references to 64 (default is 16)
+        JNIenv->PushLocalFrame(64);
+    }
+    virtual void exit() override
+    {
+        if (persistMode == persistNone && instance != nullptr)
+        {
+            JNIenv->DeleteGlobalRef(instance);
+            instance = nullptr;
+        }
+        JNIenv->PopLocalFrame(nullptr);
+#ifdef CHECK_JNI
+        forceGC(JNIenv);
+#endif
     }
 
 protected:
-    JavaThreadContext *sharedCtx;
-    jvalue result;
-    StringAttr classpath;
-    IArrayOf<ECLDatasetIterator> iterators;   // to make sure they get freed
-    jobject instance; //instance of service object to call methods on
-private:
-
     __declspec(noreturn) void typeError(const char *ECLtype) __attribute__((noreturn))
     {
         const char *javaType;
@@ -3444,9 +3408,9 @@ private:
                 break;
             }
         case ')':
-            throw MakeStringException(0, "javaembed: Too many ECL parameters passed for Java signature %s", sharedCtx->querySignature());
+            throw MakeStringException(0, "javaembed: Too many ECL parameters passed for Java signature %s", signature);
         default:
-            throw MakeStringException(0, "javaembed: Unrecognized character %c in java signature %s", *argsig, sharedCtx->querySignature());
+            throw MakeStringException(0, "javaembed: Unrecognized character %c in java signature %s", *argsig, signature);
         }
         if (!javaLen)
             javaLen = strlen(argsig);
@@ -3458,9 +3422,260 @@ private:
         args[argcount] = arg;
         argcount++;
     }
+
+    size32_t getRowResult(jobject result, ARowBuilder &builder)
+    {
+        const RtlTypeInfo *typeInfo = builder.queryAllocator()->queryOutputMeta()->queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+        JavaRowBuilder javaRowBuilder(JNIenv, &dummyField, result);
+        return typeInfo->build(builder, 0, &dummyField, javaRowBuilder);
+    }
+
+    jclass loadClass(const char *className)
+    {
+        JNIenv->ExceptionClear();
+        jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+        checkException();
+        jstring classNameString = JNIenv->NewStringUTF(className);
+        checkException();
+        jclass Class = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, classNameString);
+        checkException();
+        return Class;
+    }
+
+    const char *queryReportName()
+    {
+        const char *report = strrchr(importName.get(), '/');
+        if (report)
+            report++;
+        else
+            report = importName.get();
+        return report;
+    }
+
+    void checkException()
+    {
+        if (JNIenv->ExceptionCheck())
+        {
+            jthrowable exception = JNIenv->ExceptionOccurred();
+            JNIenv->ExceptionClear();
+            jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
+            jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
+            jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
+            JNIenv->ExceptionClear();  // The above function sometimes sets exception flag, no idea why. Causes unwanted tracing in checking mode.
+            const char *text = JNIenv->GetStringUTFChars(cause, 0);
+            VStringBuffer message("javaembed: In method %s: %s", queryReportName(), text);
+            JNIenv->ReleaseStringUTFChars(cause, text);
+            JNIenv->ExceptionClear();
+            rtlFail(0, message.str());
+        }
+    }
+
+    void checkException(const char *text)
+    {
+        if (JNIenv->ExceptionCheck())
+        {
+            JNIenv->ExceptionClear();
+            VStringBuffer message("javaembed: In method %s: %s", queryReportName(), text);
+            rtlFail(0, message.str());
+        }
+    }
+
+    bool checkException(StringBuffer &message)
+    {
+        if (JNIenv->ExceptionCheck())
+        {
+            jthrowable exception = JNIenv->ExceptionOccurred();
+            JNIenv->ExceptionClear();
+            jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
+            jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
+            jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
+            const char *text = JNIenv->GetStringUTFChars(cause, 0);
+            message.append(text);
+            JNIenv->ReleaseStringUTFChars(cause, text);
+            return true;
+        }
+        return false;
+    }
+
+    jobject createThreadClassLoader(const char *classPath, size32_t bytecodeLen, const byte *bytecode)
+    {
+        if (bytecodeLen || (classPath && *classPath))
+        {
+            jclass URLcls = JNIenv->FindClass("java/net/URL");
+            checkException();
+            jmethodID URLclsMid = JNIenv->GetMethodID(URLcls, "<init>","(Ljava/lang/String;)V");
+            checkException();
+            StringArray paths;
+            paths.appendList(classPath, ";");  // NOTE - as we need to be able to include : in the urls, we can't use ENVSEP here
+            jobjectArray URLArray = JNIenv->NewObjectArray(paths.length(), URLcls, NULL);
+            ForEachItemIn(idx, paths)
+            {
+                StringBuffer usepath;
+                const char *path = paths.item(idx);
+                if (!strchr(path, ':'))
+                    usepath.append("file:");
+                usepath.append(path);
+                jstring jstr = JNIenv->NewStringUTF(usepath.str());
+                checkException();
+                jobject URLobj = JNIenv->NewObject(URLcls, URLclsMid, jstr);
+                checkException();
+                JNIenv->SetObjectArrayElement(URLArray, idx, URLobj);
+                JNIenv->DeleteLocalRef(URLobj);
+                JNIenv->DeleteLocalRef(jstr);
+            }
+            checkException();
+            jclass customLoaderClass = JNIenv->FindClass("com/HPCCSystems/HpccClassLoader");
+            checkException("Unable to find class HpccClassLoader - is classpath set properly?");
+            jmethodID newInstance = JNIenv->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;IJLjava/lang/String;)Lcom/HPCCSystems/HpccClassLoader;");
+            checkException();
+            jobject helperName = JNIenv->NewStringUTF(helperLibraryName);
+            checkException();
+            jobject contextClassLoaderObj = JNIenv->CallStaticObjectMethod(customLoaderClass, newInstance, URLArray, sharedCtx->getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, helperName);
+            checkException();
+            assertex(contextClassLoaderObj);
+            return contextClassLoaderObj;
+        }
+        else
+        {
+            return sharedCtx->getSystemClassLoader();
+        }
+    }
+
+    void loadFunction(size32_t lenChars, const char *utf, const char *classpath, size32_t bytecodeLen, const byte *bytecode)
+    {
+        size32_t bytes = rtlUtf8Size(lenChars, utf);
+        importName.set(utf, bytes);
+        classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode));
+        sharedCtx->setThreadClassLoader(classLoader);
+
+        // Name should be in the form class.method:signature
+        const char *funcname = strrchr(importName, '.');
+        if (!funcname)
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", importName.str());
+        signature = strchr(funcname, ':');
+        if (!signature)
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", importName.str());
+        StringBuffer classname(funcname-importName, importName);
+        // While it's probably preferred for people to use . as the separator in nested classes (to match java import statement),
+        // we accept / too (to match what you would see in the jar)
+        classname.replace('/', '.');
+        funcname++;  // skip the '.'
+        methodName.set(funcname, signature-funcname);
+        signature++; // skip the ':'
+        if (*signature == '@') // indicates a non-static method
+        {
+            nonStatic = true;
+            signature++;
+        }
+        // We need to patch up the provided signature - any instances of <classname; need to be replaced by Ljava.utils.iterator
+        StringBuffer javaSignature;
+        const char *finger = signature;
+        while (*finger)
+        {
+            if (*finger == '<')
+            {
+                // If there is a corresponding >, assume it's the 'extended' form and just strip out the bit from < to >
+                const char *close = strchr(finger, '>');
+                if (close)
+                    finger = close;
+                else
+                {
+                    javaSignature.append("Ljava/util/Iterator;");
+                    finger = strchr(finger, ';');
+                    if (!finger)
+                        throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid java function signature %s", signature);
+                }
+            }
+            else
+                javaSignature.append(*finger);
+            finger++;
+        }
+
+        jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+        jstring methodString = JNIenv->NewStringUTF(classname);
+        javaClass = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString);
+        StringBuffer message;
+        if (checkException(message) || !javaClass)
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve class name %s: %s", classname.str(), message.str());
+        javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
+
+        if (nonStatic)
+            javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
+        else
+            javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
+        if (checkException(message) || !javaMethodID)
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve method name %s with signature %s: %s", methodName.str(), signature, message.str());
+
+        returnType = strrchr(signature, ')');
+        assertex(returnType);  // Otherwise how did Java accept it??
+        returnType++;
+    }
+
+    JavaThreadContext *sharedCtx = nullptr;
+    JNIEnv *JNIenv = nullptr;
+    jvalue result = {0};
+    StringAttr classpath;
+    IArrayOf<ECLDatasetIterator> iterators;   // to make sure they get freed
+    bool nonStatic = false;
+    jobject instance = nullptr; // class instance of object to call methods on
+
+    PersistMode persistMode = persistNone;  // Defines the lifetime of the java object for which this is called.
+
+    // The following members are set up the first time a method is called only
+    IEngineContext *engine = nullptr;
+    jclass javaClass = nullptr;
+    jobject classLoader = nullptr;
+    jmethodID javaMethodID = nullptr;
+    StringAttr methodName;
+    StringAttr importName;
+    const char *returnType = nullptr;  // A pointer within importName
+    const char *signature = nullptr;   // A pointer within importName
+
+    // These point to the current arg/signature byte as we are binding
+    int argcount = 0;
     jvalue args[MAX_JNI_ARGS];
-    int argcount;
-    const char *argsig;
+    const char *argsig = nullptr;  // A pointer within signature
+
+    void reinit()
+    {
+        argcount = 0;
+        argsig = signature;
+        assertex(*argsig == '(');
+        argsig++;
+        if (nonStatic && !instance)
+        {
+            jmethodID constructor = JNIenv->GetMethodID(javaClass, "<init>", "()V");
+            checkException("Parameterless constructor required");
+            // If the persist scope is global, query, or workunit, we may want to use a pre-existing object
+            StringBuffer scopeKey;
+            switch (persistMode)
+            {
+            case persistGlobal:
+                scopeKey.set("global");
+                break;
+            case persistWorkunit:
+                engine->getQueryId(scopeKey, true);
+                break;
+            case persistQuery:
+                engine->getQueryId(scopeKey, false);
+                break;
+            }
+            if (scopeKey.length())
+            {
+                bool isNew;
+                instance = globalState->getGlobalObject(scopeKey, JNIenv, javaClass, constructor, isNew);
+                if (isNew && engine)
+                     engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
+            }
+            else
+            {
+                instance = JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
+                checkException();
+            }
+        }
+    }
 };
 
 static __thread JavaThreadContext* threadContext;  // We reuse per thread, for speed
@@ -3511,16 +3726,12 @@ public:
             {
                 StringBuffer optName(val-opt, opt);
                 val++;
-                if (stricmp(optName, "classpath")==0)
+                if (strieq(optName, "classpath"))
                     classpath.set(val);
                 else
                     throw MakeStringException(0, "javaembed: Unknown option %s", optName.str());
             }
         }
-
-        // Create a new frame for local references and increase the capacity
-        // of those references to 64 (default is 16)
-        sharedCtx->JNIenv->PushLocalFrame(64);
     }
     ~JavaEmbedServiceContext()
     {
@@ -3528,9 +3739,6 @@ public:
             sharedCtx->JNIenv->DeleteGlobalRef(object);
         if (Class)
             sharedCtx->JNIenv->DeleteGlobalRef(Class);
-        // Pop local reference frame; explicitly frees all local
-        // references made during that frame's lifetime
-        sharedCtx->JNIenv->PopLocalFrame(NULL);
     }
     void init()
     {
@@ -3552,7 +3760,7 @@ public:
     {
         if (!object)
             return NULL;
-        Owned<JavaEmbedImportContext> fctx = new JavaEmbedImportContext(queryContext(), object, options);
+        Owned<JavaEmbedImportContext> fctx = new JavaEmbedImportContext(nullptr, queryContext(), object, 0, options);
         fctx->importFunction(rtlUtf8Length(strlen(function), function), function);
         return fctx.getClear();
     }
@@ -3579,7 +3787,7 @@ public:
     }
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
-        return new JavaEmbedImportContext(queryContext(), NULL, options);
+        return new JavaEmbedImportContext(ctx, queryContext(), nullptr, flags, options);
     }
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
@@ -3669,6 +3877,8 @@ static bool isFullClassFile(StringBuffer &className, bool &seenPublic, size32_t 
                 else if (source-start == 6 && memcmp(start, "public", source-start)==0)
                     seenPublic = true;
             }
+            if (!len)
+                return false;
             break;
         }
         source += ::readUtf8Size(source);
@@ -3691,24 +3901,23 @@ static StringBuffer & cleanupJavaError(StringBuffer &ret, const char *err, unsig
     return ret;
 }
 
-static void cleanupJavaErrors(StringBuffer &errors, unsigned lineNumberOffset)
+static void cleanupJavaErrors(StringBuffer &ret, const char *errors, unsigned lineNumberOffset)
 {
     StringArray errlines;
     errlines.appendList(errors, "\n");
-    errors.clear();
     ForEachItemIn(idx, errlines)
     {
         StringBuffer cleaned;
         cleanupJavaError(cleaned, errlines.item(idx), lineNumberOffset);
         if (cleaned.length())
-            errors.append(cleaned).append('\n');
+            ret.append(cleaned).append('\n');
     }
 }
 
 static thread_local unsigned prevHash = 0;
 static thread_local MemoryBuffer prevCompile;
 
-extern DECL_EXPORT void precompile(size32_t & __lenResult,void * & __result,size32_t charsBody,const char * body)
+void doPrecompile(size32_t & __lenResult, void * & __result, const char *funcName, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions, StringBuffer &errors, bool checking)
 {
     unsigned sizeBody = rtlUtf8Size(charsBody, body);  // size in bytes
     unsigned hash = rtlHash32Data(sizeBody,body,0xcafebabe);
@@ -3719,6 +3928,7 @@ extern DECL_EXPORT void precompile(size32_t & __lenResult,void * & __result,size
         prevHash = 0;
         return;
     }
+    PersistMode persistMode = getPersistMode(persistOptions);
     StringBuffer tmpDirName;
     getTempFilePath(tmpDirName, "javaembed", nullptr);
     tmpDirName.append(PATHSEPCHAR).append("tmp.XXXXXX");
@@ -3749,32 +3959,31 @@ extern DECL_EXPORT void precompile(size32_t & __lenResult,void * & __result,size
 
     MemoryBuffer result;
     Owned<IPipeProcess> pipe = createPipeProcess();
-    VStringBuffer javac("javac %s", javafile.str());
+    VStringBuffer javac("javac %s %s", isEmptyString(compilerOptions) ? "-g:none" : compilerOptions, javafile.str());
     if (!pipe->run("javac", javac, tmpDirName, false, false, true, 0, false))
     {
         throw makeStringException(0, "Failed to run javac");
     }
     else
     {
-        StringBuffer errors;
+        StringBuffer javaErrors;
         Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
-        readSimpleStream(errors, *pipeReader);
+        readSimpleStream(javaErrors, *pipeReader);
         pipe->closeError();
         unsigned retcode = pipe->wait();
+        cleanupJavaErrors(errors, javaErrors, lineNumberOffset);
         if (retcode)
         {
-            if (errors.length())
-            {
-                DBGLOG("javaembed: %s", errors.str());
-                cleanupJavaErrors(errors, lineNumberOffset);
+            if (javaErrors.length())
                 throw makeStringExceptionV(0, "%s", errors.str());
-            }
             else
                 throw makeStringException(0, "Failed to precompile java code");
         }
         VStringBuffer mainfile("%s" PATHSEPSTR "%s.class", tmpDirName.str(), classname.str());
         JavaClassReader reader(mainfile);
-        reader.getEmbedData(result, true);
+        if (persistMode > persistThread && (reader.getFlags(funcName) & JavaClassReader::ACC_SYNCHRONIZED)==0)
+            errors.appendf("Warning: persist mode set but function is not synchronized\n");
+        reader.getEmbedData(result, funcName, true);
         removeFileTraceIfFail(mainfile);
         // Now read nested classes
         Owned<IDirectoryIterator> classFiles = tempDir->directoryFiles("*$*.class",false,false);
@@ -3782,9 +3991,10 @@ extern DECL_EXPORT void precompile(size32_t & __lenResult,void * & __result,size
         {
             const char *thisFile = classFiles->query().queryFilename();
             JavaClassReader reader(thisFile);
-            reader.getEmbedData(result, false);
+            reader.getEmbedData(result, nullptr, false);
             removeFileTraceIfFail(thisFile);
         }
+        // We could give a warning if persist is set to anything over "thread" and the function we are calling is not synchronized.
     }
     removeFileTraceIfFail(javafile);
     tempDir->remove();
@@ -3792,14 +4002,21 @@ extern DECL_EXPORT void precompile(size32_t & __lenResult,void * & __result,size
     __result = result.detachOwn();
 }
 
-extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult,char * & __result,size32_t charsBody,const char * body)
+extern DECL_EXPORT void precompile(size32_t & __lenResult, void * & __result, const char *funcName, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions)
+{
+    StringBuffer errors;
+    doPrecompile(__lenResult, __result, funcName, charsBody, body, argNames, compilerOptions, persistOptions, errors, false);
+}
+
+extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult, char * & __result, const char *funcname, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions)
 {
     StringBuffer result;
     try
     {
         size32_t ds;
         rtlDataAttr d;
-        precompile(ds, d.refdata(), charsBody, body);
+        StringBuffer errors;
+        doPrecompile(ds, d.refdata(), funcname, charsBody, body, argNames, compilerOptions, persistOptions, result, true);
         // Reuse result in the precompile that normally immediately follows
         unsigned sizeBody = rtlUtf8Size(charsBody, body);  // size in bytes
         prevHash = rtlHash32Data(sizeBody,body,0xcafebabe);
@@ -3880,12 +4097,15 @@ JNIEXPORT jclass JNICALL Java_com_HPCCSystems_HpccClassLoader_defineClassForEmbe
         if (siglen >= namelen && memcmp(sig, nameChars, namelen)==0 && (namelen == siglen || sig[namelen] == '.'))
         {
 #ifdef TRACE_CLASSFILE
-            DBGLOG("javaembed: loading class %s", nameChars);
+            DBGLOG("javaembed: loading class %s (%.*s)", nameChars, siglen, sig);
 #endif
             ret = env->DefineClass(nameChars, loader, bytecode, bytecodeLen);
+            // NOTE - if there is an exception it will get thrown next time we get into java code
             break;
         }
     }
+    if (!ret)
+        DBGLOG("javaembed: Failed to load class %s", nameChars);
     env->ReleaseStringUTFChars(name, nameChars);
     return ret;
 

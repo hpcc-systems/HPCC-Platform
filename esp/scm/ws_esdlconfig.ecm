@@ -209,6 +209,29 @@ ESPresponse [nil_remove, exceptions_inline] ConfigureESDLBindingMethodResponse
     [min_ver("1.2")] ESPStruct ESDLBindingContents ESDLBinding;
 };
 
+ESPrequest [nil_remove] ConfigureESDLBindingLogTransformRequest
+{
+    string EsdlBindingId;
+    string LogTransformName;
+    boolean Overwrite;
+    boolean Encoded(false); //The LogTransform in the Config is not encoded.
+    string Config; // dynamic xml, can have <Binding EspProcess=xxx EspBinding=WsAccurint><Definition name=xx id=xx.yy><LogTransforms><LogTransform>...
+                   //              or  <Definition name=xx id=xx.yy><LogTransforms><LogTransform>...
+                   //              or  <LogTransforms><LogTransform>....
+                   //<LogTransforms><LogTransform name="name">...</LogTransform><LogTransforms>
+    boolean EchoBinding;
+};
+
+ESPresponse [nil_remove, exceptions_inline] ConfigureESDLBindingLogTransformResponse
+{
+    string EspProcName;         //Name of ESP Process
+    string EspBindingName;
+    string EsdlDefinitionID;    //The ESDL definition name.ver
+    string EsdlServiceName;     //which ESDL definition are we configuring
+    ESPstruct BaseESDLStatus status;
+    ESPStruct ESDLBindingContents ESDLBinding;
+};
+
 ESPrequest GetESDLBindingRequest
 {
     string EsdlBindingId;
@@ -282,13 +305,14 @@ ESPresponse [exceptions_inline] ListESDLBindingsResponse
     [min_ver("1.4")] ESParray<ESPstruct EspProcessStruct, EspProcess> EspProcesses;
 };
 
-#define VERSION_FOR_ESDLCMD "1.4"
-ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.4"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+#define VERSION_FOR_ESDLCMD "1.5"
+ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.5"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod [auth_feature("ESDLConfigAccess:WRITE")] PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);
     ESPmethod [auth_feature("ESDLConfigAccess:WRITE")] PublishESDLBinding(PublishESDLBindingRequest, PublishESDLBindingResponse);
     ESPmethod [auth_feature("ESDLConfigAccess:WRITE")] ConfigureESDLBindingMethod(ConfigureESDLBindingMethodRequest, ConfigureESDLBindingMethodResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:WRITE"), min_ver("1.5")] ConfigureESDLBindingLogTransform(ConfigureESDLBindingLogTransformRequest, ConfigureESDLBindingLogTransformResponse);
     ESPmethod [auth_feature("ESDLConfigAccess:READ")]  GetESDLBinding(GetESDLBindingRequest, GetESDLBindingResponse);
     ESPmethod [auth_feature("ESDLConfigAccess:FULL")]  DeleteESDLBinding(DeleteESDLBindingRequest, DeleteESDLRegistryEntryResponse);
     ESPmethod [auth_feature("ESDLConfigAccess:FULL")]  DeleteESDLDefinition(DeleteESDLDefinitionRequest, DeleteESDLRegistryEntryResponse);

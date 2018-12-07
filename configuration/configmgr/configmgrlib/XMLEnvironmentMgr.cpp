@@ -75,7 +75,7 @@ void XMLEnvironmentMgr::serialize(pt::ptree &envTree, std::shared_ptr<Environmen
         std::string attrValue;
         attrValue = (*attrIt)->getValue();
 
-        if (!attrValue.empty())
+        if (!attrValue.empty() && !(*attrIt)->getSchemaValue()->isNoOutput())
         {
             envTree.put("<xmlattr>." + (*attrIt)->getName(), attrValue);
         }

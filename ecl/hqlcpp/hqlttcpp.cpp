@@ -2204,10 +2204,8 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
     return NULL;
 }
 
-static IHqlExpression *getEmbedOptionString(IHqlExpression *funcdef)
+IHqlExpression *getEmbedOptionString(IHqlExpression *bodyCode)
 {
-    IHqlExpression * outofline = funcdef->queryChild(0);
-    IHqlExpression * bodyCode = outofline->queryChild(0);
     HqlExprArray attrArgs;
     ForEachChild(idx, bodyCode)
     {
@@ -2345,10 +2343,11 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
                     args.append(*createAttribute(allocatorAtom));
             }
             inheritAttribute(args, expr, activityAtom);
-
             OwnedHqlExpr body = createWrapper(no_outofline, expr->queryType(), args);
             HqlExprArray newFormals;
-            if (expr->hasAttribute(languageAtom))
+            OwnedHqlExpr options = getEmbedOptionString(expr);
+            bool constOptions = options->isConstant();
+            if (expr->hasAttribute(languageAtom) && !constOptions)
             {
                 HqlExprArray attrs;
                 attrs.append(*createAttribute(_hidden_Atom));
@@ -2357,8 +2356,8 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
             IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL), newFormals);
             OwnedHqlExpr funcdef = createFunctionDefinition(createIdAtom(funcname), body.getClear(), formals, NULL, NULL);
             HqlExprArray actuals;
-            if (expr->hasAttribute(languageAtom))
-                actuals.append(*getEmbedOptionString(funcdef));
+            if (expr->hasAttribute(languageAtom) && !constOptions)
+                actuals.append(*options.getClear());
             return createBoundFunction(NULL, funcdef, actuals, nullptr, true);
         }
     }
@@ -6541,23 +6540,31 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
         assertex(outofline->getOperator() == no_outofline);
         IHqlExpression * bodyCode = outofline->queryChild(0);
 
+        OwnedHqlExpr options = getEmbedOptionString(bodyCode);
+        bool constOptions = options->isConstant();
+
+        HqlExprArray attrs;
+        attrs.append(*createAttribute(_hidden_Atom));  // Applied to any new params we add
+
         HqlExprArray newFormals;
         unwindChildren(newFormals, formals);
-        HqlExprArray attrs;
-        attrs.append(*createAttribute(_hidden_Atom));
-        newFormals.append(*createParameter(__optionsId, newFormals.length(), LINK(unknownVarStringType), attrs));
+        if (!constOptions)
+        {
+            newFormals.append(*createParameter(__optionsId, newFormals.length(), LINK(unknownVarStringType), attrs));
+        }
 
         HqlExprArray newDefaults;
         if (defaults)
             unwindChildren(newDefaults, defaults, 0);
         while (newDefaults.length() < formals->numChildren())
             newDefaults.append(*createOmittedValue());
-        newDefaults.append(*getEmbedOptionString(newFuncDef));
+        if (!constOptions)
+            newDefaults.append(*options.getClear());
 
         IHqlExpression *query = bodyCode->queryChild(0);
         if (!query->queryValue())
         {
-            if (bodyCode->hasAttribute(precompileAtom))
+            if (bodyCode->hasAttribute(_precompile_Atom))
                 newFormals.append(*createParameter(__queryId, newFormals.length(), LINK(unknownDataType), attrs));
             else
                 newFormals.append(*createParameter(__queryId, newFormals.length(), LINK(unknownUtf8Type), attrs));
@@ -9625,7 +9632,7 @@ void LeftRightSelectorNormalizer::analyseExpr(IHqlExpression * expr)
             {
                 IHqlExpression * dataset = expr->queryChild(0);
                 OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
-                gatherChildTablesUsed(NULL, &inScope, expr, 1);
+                gatherChildTablesUsed(inScope, expr, 1);
                 checkAmbiguity(inScope, left);
                 break;
             }
@@ -9633,7 +9640,7 @@ void LeftRightSelectorNormalizer::analyseExpr(IHqlExpression * expr)
             {
                 OwnedHqlExpr left = createSelector(no_left, expr->queryChild(0), selSeq);
                 OwnedHqlExpr right = createSelector(no_right, expr->queryChild(1), selSeq);
-                gatherChildTablesUsed(NULL, &inScope, expr, 2);
+                gatherChildTablesUsed(inScope, expr, 2);
                 checkAmbiguity(inScope, left);
                 checkAmbiguity(inScope, right);
                 break;
@@ -9645,7 +9652,7 @@ void LeftRightSelectorNormalizer::analyseExpr(IHqlExpression * expr)
                 IHqlExpression * dataset = expr->queryChild(0);
                 OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
                 OwnedHqlExpr right = createSelector(no_right, dataset, selSeq);
-                gatherChildTablesUsed(NULL, &inScope, expr, 1);
+                gatherChildTablesUsed(inScope, expr, 1);
                 checkAmbiguity(inScope, left);
                 checkAmbiguity(inScope, right);
                 break;
@@ -10565,7 +10572,7 @@ void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg, I
 void HqlScopeTagger::reportRootSelectorError(IHqlExpression * expr, IHqlExpression * transformed)
 {
     HqlExprCopyArray inScope;
-    transformed->gatherTablesUsed(nullptr, &inScope);
+    transformed->gatherTablesUsed(inScope);
     assertex(inScope.ordinality());
 
     //Recursively search for an expression which refers to the first selector that is unresolved.

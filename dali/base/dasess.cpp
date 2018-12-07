@@ -937,7 +937,15 @@ public:
             PrintStackReport();
         }
 #endif
-        udesc->serialize(mb);
+
+        {
+            Owned<IUserDescriptor> tmpUDesc = createUserDescriptor();
+            StringBuffer user;
+            udesc->getUserName(user);
+            tmpUDesc->set(user.str(), nullptr);
+            tmpUDesc->serialize(mb);//serialize without password, since it is not checked
+        }
+
         mb.append(auditflags);
 
         //Serialize signature. If not provided, compute it

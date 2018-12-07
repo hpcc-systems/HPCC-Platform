@@ -429,7 +429,7 @@ static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr)
     case no_macro:
         return nullptr;
     }
-    ITypeInfo * type = getFullyUnqualifiedType(expr->queryType());
+    Owned<ITypeInfo> type = getFullyUnqualifiedType(expr->queryType());
     if (!type)
         return nullptr;
 

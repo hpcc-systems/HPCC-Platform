@@ -25,7 +25,7 @@
 
 class EnvironmentNode;
 
-class DECL_EXPORT EnvironmentValue : public std::enable_shared_from_this<EnvironmentValue>
+class DECL_EXPORT EnvironmentValue
 {
     public:
 

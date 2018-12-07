@@ -596,6 +596,7 @@ protected:
     bool connected, started, aborted, graphDone, sequential;
     bool initialized = false;
     std::atomic_bool progressUpdated;
+    unsigned numExecuted = 0; // count of number of times graph has been executed (<=1 unless child or loop graph)
     CJobBase &job;
     CJobChannel &jobChannel;
     mptag_t executeReplyTag;

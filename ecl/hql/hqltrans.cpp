@@ -1309,11 +1309,14 @@ void NewHqlTransformer::analyseExpr(IHqlExpression * expr)
     case no_record:
         break;
     case no_attr:
-    case no_attr_expr:
     case no_attr_link:
     case no_constant:
     case no_translated:
     case no_getresult:
+        break;
+    case no_attr_expr:
+        if (analyseAttributes())
+            analyseChildren(expr);
         break;
     case no_newkeyindex:
         //by default only look at the filename
@@ -1990,11 +1993,11 @@ void NewHqlTransformer::setMapping(IHqlExpression * oldValue, IHqlExpression * n
 bool NewHqlTransformer::needToUpdateSelectors(IHqlExpression * expr)
 {
     HqlExprCopyArray scopesUsed;
-    expr->gatherTablesUsed(nullptr, &scopesUsed);
+    expr->gatherTablesUsed(scopesUsed);
     ForEachItemIn(i, scopesUsed)
     {
         IHqlExpression * cur = &scopesUsed.item(i);
-        IHqlExpression * transformed = transformSelector(cur);
+        OwnedHqlExpr transformed = transformSelector(cur);
         if (cur != transformed)
             return true;
     }

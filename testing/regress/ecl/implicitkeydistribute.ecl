@@ -43,6 +43,6 @@ myIndex := files.DG_VarIndex(dg_lastname != '');
 
 j := JOIN(inlineDs, myIndex, LEFT.last = RIGHT.dg_lastname AND LEFT.first = RIGHT.dg_firstName);
 
-gr := TABLE(j, { last, cnt := COUNT(GROUP) }, last); 
+gr := SORT(TABLE(j, { last, cnt := COUNT(GROUP) }, last), last); 
 
 gr;

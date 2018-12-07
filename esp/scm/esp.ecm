@@ -191,6 +191,9 @@ interface IEspContext : extends IInterface
     virtual void setHTTPMethod(const char *method) = 0;
     virtual void setServiceMethod(const char *method) = 0;
 
+    virtual void setESDLBindingID(const char * id) = 0;
+    virtual const char * queryESDLBindingID() = 0;
+
     virtual void setTransactionID(const char * trxid) = 0;
     virtual const char * queryTransactionID() = 0;
 

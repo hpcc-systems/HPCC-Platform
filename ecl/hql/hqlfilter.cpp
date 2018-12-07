@@ -664,7 +664,7 @@ bool FilterExtractor::isIndexInvariant(IHqlExpression * expr, bool includeRoot)
         return false;
 
     HqlExprCopyArray scopeUsed;
-    expr->gatherTablesUsed(NULL, &scopeUsed);
+    expr->gatherTablesUsed(scopeUsed);
 
     IHqlExpression * search = tableExpr->queryNormalizedSelector();
     ForEachItemIn(i, scopeUsed)
@@ -1396,7 +1396,7 @@ bool FilterExtractor::extractIfFilter(KeyConditionInfo & matches, IHqlExpression
 bool FilterExtractor::containsTableSelects(IHqlExpression * expr)
 {
     HqlExprCopyArray inScope;
-    expr->gatherTablesUsed(NULL, &inScope);
+    expr->gatherTablesUsed(inScope);
 
     //Check that cursors for all inScope tables are already bound in the start context
     return inScope.find(*tableExpr->queryNormalizedSelector()) != NotFound;

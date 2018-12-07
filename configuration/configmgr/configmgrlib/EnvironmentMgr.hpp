@@ -63,6 +63,8 @@ class DECL_EXPORT EnvironmentMgr
         std::string getRootNodeId() const;
         static std::string getUniqueKey();
         void fetchNodes(const std::string path, std::vector<std::shared_ptr<EnvironmentNode>> &nodes, const std::shared_ptr<EnvironmentNode> &pStartNode = nullptr) const;
+        bool isSchemaLoaded() const { return static_cast<bool>(m_pSchema); }
+        bool isEnvironmentLoaded() const { return static_cast<bool>(m_pRootNode); }
 
 
     protected:

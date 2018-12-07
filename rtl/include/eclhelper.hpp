@@ -1041,6 +1041,7 @@ enum ThorActivityKind
     TAKjsonfetch,
     TAKspillread,
     TAKspillwrite,
+    TAKnwaydistribute,
 
     TAKlast
 };
@@ -1893,6 +1894,19 @@ struct IHThorHashDistributeArg : public IHThorArg
     virtual double     getSkew()=0;             // iff queryHash returns NULL
     virtual double     getTargetSkew()=0;
     virtual ICompare * queryMergeCompare()=0;       // iff TAKhasdistributemerge
+};
+
+enum
+{
+    SDFisall   = 0x0001,
+};
+
+
+struct IHThorNWayDistributeArg : public IHThorArg
+{
+    virtual unsigned   getFlags()=0;
+    virtual bool       include(const byte * left, unsigned targetNode) = 0;
+    inline bool        isAll() { return (getFlags() & SDFisall) != 0; }
 };
 
 struct IHThorHashDedupArg : public IHThorArg

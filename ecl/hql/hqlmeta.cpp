@@ -2466,6 +2466,8 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
             }
             break;
         }
+    case no_nwaydistribute:
+        break;
     case no_unordered:
         {
             extractMeta(meta, dataset);
@@ -3410,6 +3412,7 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
     }
     case no_distribute:
     case no_distributed:
+    case no_nwaydistribute:
     case no_unordered:
     case no_assertdistributed:
         newRecordType.set(recordType);

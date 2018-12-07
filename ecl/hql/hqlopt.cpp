@@ -445,7 +445,7 @@ IHqlExpression * CTreeOptimizer::moveFilterOverSelect(IHqlExpression * expr)
     {
         IHqlExpression & cur = args.item(i);
         inScope.kill();
-        cur.gatherTablesUsed(NULL, &inScope);
+        cur.gatherTablesUsed(inScope);
         if (inScope.find(*newScope) == NotFound)
             hoisted.append(OLINK(cur));
         else
@@ -1455,7 +1455,7 @@ IHqlExpression * splitJoinFilter(IHqlExpression * expr, HqlExprArray * leftOnly,
     }
 
     HqlExprCopyArray scopeUsed;
-    expr->gatherTablesUsed(NULL, &scopeUsed);
+    expr->gatherTablesUsed(scopeUsed);
     if (scopeUsed.ordinality() == 1)
     {
         node_operator scopeOp = scopeUsed.item(0).getOperator();
@@ -3082,6 +3082,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_distributed:
             case no_unordered:
             case no_distribute:
+            case no_nwaydistribute:
             case no_group:
             case no_grouped:
             case no_keyeddistribute:
@@ -3409,6 +3410,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     break;
                 return moveProjectionOverSimple(transformed, true, false);
             case no_distribute:
+            case no_nwaydistribute:
                 //Cannot move a count project over anything that changes the order of the records.
                 if (transformedCountProject)
                     break;
@@ -3607,6 +3609,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_preload:
                 return swapNodeWithChild(transformed);
             case no_distribute:
+            case no_nwaydistribute:
             case no_sort:
             case no_subsort:
                 if ((options & HOOminimizeNetworkAndMemory) && increasesRowSize(transformed))
@@ -3794,6 +3797,20 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     (distn == queryDistribution(child->queryChild(1))))
                     return swapIntoAddFiles(transformed);
                 break;
+            }
+            break;
+        }
+    case no_nwaydistribute:
+        {
+            //DISTRIBUTE(DISTRIBUTE(ds, hash(x), f()) - the original distribution will be lost, so can be removed.
+            switch(child->getOperator())
+            {
+            case no_distributed:
+            case no_distribute:
+            case no_keyeddistribute:
+            case no_sort:
+            case no_subsort:
+                return removeChildNode(transformed);
             }
             break;
         }

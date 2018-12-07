@@ -6146,6 +6146,7 @@ double HqlCppTranslator::getComplexity(IHqlExpression * expr, ClusterType cluste
             complexity = 5;
         break;
     case no_distribute:
+    case no_nwaydistribute:
         if (isThorCluster(cluster))
             complexity = 5;
         break;
@@ -6514,6 +6515,9 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_distribute:
             case no_assertdistributed:
                 result = doBuildActivityDistribute(ctx, expr);
+                break;
+            case no_nwaydistribute:
+                result = doBuildActivityNWayDistribute(ctx, expr);
                 break;
             case no_keyeddistribute:
                 result = doBuildActivityKeyedDistribute(ctx, expr);
@@ -14614,6 +14618,60 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribute(BuildCtx & ctx, IHq
 
         return instance->getBoundActivity();
     }
+}
+
+ABoundActivity * HqlCppTranslator::doBuildActivityNWayDistribute(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * cond = expr->queryChild(1);
+    bool isAll = matchesBoolean(cond, true);
+
+    if (!targetThor() || insideChildQuery(ctx))
+    {
+        if (isAll)
+        {
+            if (isGrouped(dataset))
+            {
+                Owned<ABoundActivity> boundInput = buildCachedActivity(ctx, dataset);
+                return doBuildActivityUngroup(ctx, expr, boundInput);
+            }
+            return buildCachedActivity(ctx, dataset);
+        }
+
+        // NWAY - DISTRIBUTE within hthor or roxie is equivalent to a filter with
+        // TARGETCHANNEL substituted with 1, followed by an ungroup.
+        // MORE: Implement when DISTRIBUTE(ds, bool) is being implemented
+        UNIMPLEMENTED_X("DISTRIBUTE(NWAY)");
+    }
+
+    if (isUngroup(dataset))
+        dataset = dataset->queryChild(0);
+
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+
+    //Generate the instance definition for a DISTRIBUTE, ALL/SET...
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKnwaydistribute, expr, "NWayDistribute");
+    if (isAll)
+        instance->graphLabel.set("Distribute All");
+    buildActivityFramework(instance);
+    buildInstancePrefix(instance);
+    if (!isAll)
+    {
+        UNIMPLEMENTED_X("DISTRIBUTE(NWAY)");
+        // Come back to this when DISTRIBUTE(ds, bool) is being implemented
+        doBuildBoolFunction(instance->startctx, "include", cond);
+    }
+
+    StringBuffer flags;
+    if (isAll)
+        flags.append("|SDFisall");
+    if (flags.length())
+        doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
+
+    buildInstanceSuffix(instance);
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
+
+    return instance->getBoundActivity();
 }
 
 //---------------------------------------------------------------------------

@@ -115,6 +115,9 @@ void XMLEnvironmentLoader::parse(const pt::ptree &envTree, const std::shared_ptr
                 std::shared_ptr<EnvironmentValue> pEnvValue = std::make_shared<EnvironmentValue>(pEnvNode, pSchemaValue, attrIt->first, curValue);   // this is where we would use a variant
                 pSchemaValue->addEnvironmentValue(pEnvValue);
                 pEnvNode->addAttribute(attrIt->first, pEnvValue);
+                // todo This is where noOutput attributes would be filled in with a value if needed, for example a component
+                // todo element may have an informational only attribute (like IP address in thor sub elements) that is useful
+                // todo the user, but not saved. Here is where we would fill those in.
             }
         }
         else
@@ -129,7 +132,7 @@ void XMLEnvironmentLoader::parse(const pt::ptree &envTree, const std::shared_ptr
             }
             else if (children.size() > 1)
             {
-                throw (ParseException("Ambiguous element found during parsing, unable to find schem item, element name = " + elemName + ", itemType = " + typeName));
+                throw (ParseException("Ambiguous element found during parsing, unable to find schema item, element name = " + elemName + ", itemType = " + typeName));
             }
             else
             {

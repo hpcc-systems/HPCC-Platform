@@ -1366,7 +1366,10 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     HINSTANCE hDll;
     void *funcptr = loadExternalEntryPoint(expr, foldOptions, templateContext, library.str(), entry.str(), hDll);
     if (!funcptr)
+    {
+        DBGLOG("Failed to load function %s", entry.str());
         return NULL;
+    }
     return doFoldExternalCall(expr, foldOptions, templateContext, library.str(), entry.str(), funcptr);
 }
 
@@ -1663,12 +1666,12 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
     Owned<IEmbedContext> __plugin = (IEmbedContext *) plugin->getIntValue();  // We declared as int since ecl has no pointer type - not sure what the clean fix is here...
     DummyContext dummyContext;
     Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(&dummyContext,nullptr,flags,optionsStr.str());
-
+    EmbedContextBlock b(__ctx);
     IValue *query = body->queryChild(0)->queryValue();
     assertex(query);
-    if (!body->hasAttribute(prebindAtom))
+    if (!body->hasAttribute(_prebind_Atom))
     {
-        if (body->hasAttribute(precompileAtom))
+        if (body->hasAttribute(_precompile_Atom))
             __ctx->loadCompiledScript(query->getSize(), query->queryValue());
         else
         {
@@ -1787,9 +1790,9 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
             return NULL;
         }
     }
-    if (body->hasAttribute(prebindAtom))
+    if (body->hasAttribute(_prebind_Atom))
     {
-        if (body->hasAttribute(precompileAtom))
+        if (body->hasAttribute(_precompile_Atom))
             __ctx->loadCompiledScript(query->getSize(), query->queryValue());
         else
         {
@@ -4366,6 +4369,14 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 return removeParentNode(expr);
             break;
         }
+    case no_nwaydistribute:
+    {
+        if (isNull(child))
+            return replaceWithNull(expr);
+        if (isFail(child))
+            return removeParentNode(expr);
+        break;
+    }
     case no_sort:
     case no_subsort:
     case no_sorted:
@@ -6692,6 +6703,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_assertgrouped:
     case no_distribute:
     case no_distributed:
+    case no_nwaydistribute:
     case no_unordered:
     case no_preservemeta:
     case no_assertdistributed:

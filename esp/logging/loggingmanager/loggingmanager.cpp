@@ -162,8 +162,12 @@ bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPr
 
             short port;
             StringBuffer sourceIP;
+            const char* esdlBindingID = espContext->queryESDLBindingID();
             espContext->getServAddress(sourceIP, port);
             espContextTree->addProp("SourceIP", sourceIP.str());
+            if (!isEmptyString(esdlBindingID))
+                espContextTree->addProp("ESDLBindingID", esdlBindingID);
+            //More information in espContext may be added to the espContextTree later.
 
             const char* userId = espContext->queryUserId();
             if (userId && *userId)

@@ -32,6 +32,7 @@ SchemaValue::SchemaValue(const std::string &name, bool isDefined) :
     bitMask.m_deprecated = 0;
     bitMask.m_isUnique = 0;
     bitMask.m_isDefined = isDefined;
+    bitMask.m_noOutput = 0;
 }
 
 
@@ -397,11 +398,11 @@ bool SchemaValue::isHidden(const EnvironmentValue *pEnvValue) const
 }
 
 
-void SchemaValue::removeEnvironmentValue(const std::shared_ptr<EnvironmentValue> &pEnvValue)
+void SchemaValue::removeEnvironmentValue(const EnvironmentValue *pEnvValue)
 {
     for (auto it = m_envValues.begin(); it != m_envValues.end(); ++it)
     {
-        if ((*it).lock() == pEnvValue)
+        if ((*it).lock().get() == nullptr)
         {
             m_envValues.erase(it);
             break;

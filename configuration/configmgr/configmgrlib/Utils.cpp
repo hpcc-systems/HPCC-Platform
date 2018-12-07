@@ -19,7 +19,7 @@ limitations under the License.
 #include <string>
 #include "Exceptions.hpp"
 
-bool getEnclosedString(const std::string source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError);
+bool getEnclosedString(const std::string &source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError);
 
 std::vector<std::string> splitString(const std::string &input, const std::string &delim)
 {
@@ -38,7 +38,7 @@ std::vector<std::string> splitString(const std::string &input, const std::string
 }
 
 
-bool extractEnclosedString(const std::string source, std::string &result, char startDelim, char endDelim, bool optional)
+bool extractEnclosedString(const std::string &source, std::string &result, char startDelim, char endDelim, bool optional)
 {
     bool rc = false;
     std::size_t startPos = source.find_first_of(startDelim);
@@ -62,7 +62,7 @@ bool extractEnclosedString(const std::string source, std::string &result, char s
 // throwIfError allows the caller to ignore an error finding the enclosed string and simply return the input string as the result string.
 // If true, the caller expects there to be an ending delimiter and wants an exception since this is an error condition as determined by the caller.
 // The return value will always reflect whether the result string was enclosed in the delimiter or not.
-bool getEnclosedString(const std::string source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError)
+bool getEnclosedString(const std::string &source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError)
 {
     bool rc = false;
     std::size_t endPos = source.find_first_of(endDelim, startPos+1);
@@ -82,4 +82,16 @@ bool getEnclosedString(const std::string source, std::string &result, std::size_
         result = source;
     }
     return rc;
+}
+
+
+std::string trim(const std::string& str, const std::string& whitespace = " \t")
+{
+    const auto strBegin = str.find_first_not_of(whitespace);
+    if (strBegin == std::string::npos)
+        return ""; // no content
+
+    const auto strEnd = str.find_last_not_of(whitespace);
+    const auto strRange = strEnd - strBegin + 1;
+    return str.substr(strBegin, strRange);
 }

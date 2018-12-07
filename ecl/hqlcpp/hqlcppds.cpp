@@ -4856,7 +4856,7 @@ BoundRow * HqlCppTranslator::buildOptimizeSelectFirstRow(BuildCtx & ctx, IHqlExp
             OwnedHqlExpr selectRow = createRow(no_selectnth, LINK(expr), getSizetConstant(1));
             BoundRow * match = static_cast<BoundRow *>(ctx.queryAssociation(selectRow, AssocRow, NULL));
             if (match)
-                return LINK(match);
+                return match;
 
             Owned<BoundRow> tempRow = declareTempRow(ctx, ctx, selectRow);
             Owned<BoundRow> rowBuilder = createRowBuilder(ctx, tempRow);

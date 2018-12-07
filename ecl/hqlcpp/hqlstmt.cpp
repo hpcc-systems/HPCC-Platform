@@ -867,7 +867,7 @@ void BuildCtx::walkAssociations(AssocKind searchMask, IAssociationVisitor & visi
 HqlExprAssociation * BuildCtx::queryMatchExpr(IHqlExpression * search)
 {
     HqlExprCopyArray selectors;
-    search->gatherTablesUsed(NULL, &selectors);
+    search->gatherTablesUsed(selectors);
     return queryAssociation(search, AssocExpr, selectors.ordinality() ? &selectors : NULL);
 }
 
@@ -1045,7 +1045,7 @@ IHqlStmt * BuildCtx::selectBestContext(IHqlExpression * expr)
 
     //MORE: Access to global context, context and other things...
     HqlExprCopyArray inScope;
-    expr->gatherTablesUsed(NULL, &inScope);
+    expr->gatherTablesUsed(inScope);
 
     return recursiveGetBestContext(curStmts, inScope);
 }
@@ -1435,7 +1435,7 @@ int queryMemsetChar(IHqlExpression * expr)
     if (expr->getOperator() != no_constant)
         return -1;
     unsigned size = expr->queryType()->getSize();
-    if (size == 0)
+    if (size == 0 || size == UNKNOWN_LENGTH)
         return -1;
     const byte * data = (const byte *)expr->queryValue()->queryValue();
     byte match = data[0];

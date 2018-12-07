@@ -432,12 +432,12 @@ void expandScopeSymbolsMeta(IPropertyTree * meta, IHqlScope * scope)
     {
         IHqlExpression * curSym = &symbols.item(i);
         HqlDummyLookupContext lookupCtx(NULL);
-        IHqlExpression * lookupSym = scope->lookupSymbol(curSym->queryId(), LSFsharedOK|LSFignoreBase, lookupCtx);
+        OwnedHqlExpr lookupSym = scope->lookupSymbol(curSym->queryId(), LSFsharedOK|LSFignoreBase, lookupCtx);
         InheritType ihType = local;
         ForEachItemIn(iScope, bases)
         {
             IHqlScope * base = &bases.item(iScope);
-            IHqlExpression * baseSym = base->lookupSymbol(lookupSym->queryId(), LSFsharedOK|LSFfromderived, lookupCtx);
+            OwnedHqlExpr baseSym = base->lookupSymbol(lookupSym->queryId(), LSFsharedOK|LSFfromderived, lookupCtx);
             if (baseSym)
             {
                 ihType = override;

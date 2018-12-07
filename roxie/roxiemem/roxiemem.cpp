@@ -4048,8 +4048,7 @@ public:
             if (curCallback.matches(cost, activityId))
             {
                 curCallback.removeCallback(slaveId, callback);
-                if (curCallback.isEmpty())
-                    rowBufferCallbacks.remove(i);
+                //Do not remove entry (i) from rowBufferCallbacks if curCallback.isEmpty() to avoid inefficiency adding and removing a callback for example in a child query
                 break;
             }
         }

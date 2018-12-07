@@ -78,7 +78,7 @@ foreach(dylib ${DYLIBS})
         install(CODE "
            file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${EXEC_DIR}/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/plugins/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/*.dylib\")
            foreach(file \${files})
-               execute_process(COMMAND bash \"-c\"  \"otool -L \\\"\${file}\\\" | egrep \\\"/${dylib_name_only}(.[0-9]{1,})*.dylib\\\" | sed \\\"s/^[[:space:]]//g\\\" | cut -d' ' -f1\"
+               execute_process(COMMAND bash \"-c\"  \"otool -L \\\"\${file}\\\" | egrep \\\"(\\\\s|/)${dylib_name_only}(.[0-9]{1,})*.dylib\\\" | sed \\\"s/^[[:space:]]//g\\\" | cut -d' ' -f1\"
                   OUTPUT_VARIABLE otoolOut
                   ERROR_VARIABLE  otoolErr
                   OUTPUT_STRIP_TRAILING_WHITESPACE

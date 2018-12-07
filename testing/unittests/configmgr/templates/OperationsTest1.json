@@ -1,0 +1,34 @@
+{
+    "name" : "test",
+    "type" : "modification",
+    "description" : "add a subchild to an existing node in an environment",
+    "inputs" : [
+        {
+            "name" : "attr1",
+            "type" : "string",
+            "value" : "attr1Value"
+        },
+        {
+            "name" : "attr2",
+            "type" : "string",
+            "value" : "444"
+        }
+    ],
+    "operations" : [
+        {
+            "action" : "create_node",
+            "path" : "/Root/Child1",
+            "node_type" : "subchild1",
+            "attributes" : [
+                {
+                    "name" : "attr1",
+                    "value" : "{{attr1}}"
+                },
+                {
+                    "name" : "attr2",
+                    "value" : "{{attr2}}"
+                }
+            ]
+        }
+    ]
+}

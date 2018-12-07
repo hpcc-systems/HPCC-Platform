@@ -20,26 +20,26 @@
 
 import java;
 string jcat(string a, string b) := EMBED(java)
-  public static String cat(String a, String b)
+  public static String jcat(String a, String b)
   {
     return a + b;
   }
 ENDEMBED;
 
 integer jadd(integer a, integer b) := EMBED(java)
-  public static int add(int a, int b)
+  public static int jadd(int a, int b)
   {
     return a + b;
   }
 ENDEMBED;
-integer jaddl(integer a, integer b) := EMBED(java)
-  public static long addL(int a, int b)
+integer jaddL(integer a, integer b) := EMBED(java)
+  public static long jaddL(int a, int b)
   {
     return a + b;
   }
 ENDEMBED;
-integer jaddi(integer a, integer b) := EMBED(java)
-  public static Integer addI(int a, int b)
+integer jaddI(integer a, integer b) := EMBED(java)
+  public static Integer jaddI(int a, int b)
   {
     return a + b;
   }
@@ -193,7 +193,7 @@ public class myClass {
       n = new NestedClass("nest2");
     }
   };
-  public static MyRecord transform(MyRecord in, int lim)
+  public static MyRecord testTransform(MyRecord in, int lim)
   {
     return new MyRecord(in.bfield, lim, in.dfield);
   }
