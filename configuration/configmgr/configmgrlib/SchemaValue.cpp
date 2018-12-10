@@ -33,6 +33,7 @@ SchemaValue::SchemaValue(const std::string &name, bool isDefined) :
     bitMask.m_isUnique = 0;
     bitMask.m_isDefined = isDefined;
     bitMask.m_noOutput = 0;
+    m_ordinal = 0;
 }
 
 
@@ -60,6 +61,8 @@ SchemaValue::SchemaValue(const SchemaValue &value)
     // special processing? Maybe after inserting?
     std::vector<std::shared_ptr<SchemaValue>> m_mirrorToSchemaValues;
     std::vector<std::weak_ptr<SchemaValue>> m_pUniqueValueSetRefs;    // this value serves as the key from which values are valid
+
+    m_ordinal = 0;  // assigned when inserted
 }
 
 

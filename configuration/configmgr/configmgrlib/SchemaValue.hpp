@@ -92,6 +92,8 @@ class DECL_EXPORT SchemaValue
         const std::string &getRequiredIf() const { return m_requiredIf; }
         void setGroupByName(const std::string &group) { m_groupByName = group; }
         const std::string &getGroupByName() const { return m_groupByName; }
+        void setOrdinal(unsigned val) { m_ordinal = val; }
+        unsigned getOrdinal() const { return m_ordinal; }
         void setNoOutput(bool noOutput) { bitMask.m_noOutput = noOutput; }
         bool isNoOutput() const { return bitMask.m_noOutput; }
 
@@ -104,6 +106,7 @@ class DECL_EXPORT SchemaValue
     protected:
 
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!
+        unsigned m_ordinal;
         std::shared_ptr<SchemaType> m_pType;
         std::string m_name;
         std::string m_displayName;
