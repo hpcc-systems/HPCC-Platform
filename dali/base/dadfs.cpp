@@ -10366,11 +10366,7 @@ IDFAttributesIterator *CDistributedFileDirectory::getDFAttributesIterator(const 
     mb.append((int)MDFS_ITERATE_FILES).append(wildname).append(recursive).append("").append(includesuper); // "" is legacy
     if (user)
     {
-		Owned<IUserDescriptor> tmpUDesc = createUserDescriptor();
-		StringBuffer userName;
-		user->getUserName(userName);
-		tmpUDesc->set(userName.str(), nullptr);
-		tmpUDesc->serialize(mb);//serialize without password, since it is not checked
+        user->serializeWithoutPassword(mb);
     }
 #ifdef NULL_DALIUSER_STACKTRACE
     else
@@ -10503,11 +10499,7 @@ void CDistributedFileDirectory::setFileAccessed(CDfsLogicalFileName &dlfn,IUserD
     dt.serialize(mb);
     if (user)
     {
-        Owned<IUserDescriptor> tmpUDesc = createUserDescriptor();
-        StringBuffer userName;
-        user->getUserName(userName);
-        tmpUDesc->set(userName.str(), nullptr);
-        tmpUDesc->serialize(mb);//serialize without password, since it is not checked
+        user->serializeWithoutPassword(mb);
     }
 #ifdef NULL_DALIUSER_STACKTRACE
     else
@@ -10548,11 +10540,7 @@ void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn,IUserDe
     mb.append((int)MDFS_SET_FILE_PROTECT).append(lname).append(owner).append(set);
     if (user)
     {
-		Owned<IUserDescriptor> tmpUDesc = createUserDescriptor();
-		StringBuffer userName;
-		user->getUserName(userName);
-		tmpUDesc->set(userName.str(), nullptr);
-		tmpUDesc->serialize(mb);//serialize without password, since it is not checked
+        user->serializeWithoutPassword(mb);
     }
 #ifdef NULL_DALIUSER_STACKTRACE
     else
@@ -10589,11 +10577,7 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
     mb.append(MDFS_GET_FILE_TREE_V2);
     if (user)
     {
-        Owned<IUserDescriptor> tmpUDesc = createUserDescriptor();
-        StringBuffer userName;
-        user->getUserName(userName);
-        tmpUDesc->set(userName.str(), nullptr);
-        tmpUDesc->serialize(mb);//serialize without password, since it is not checked
+        user->serializeWithoutPassword(mb);
     }
 #ifdef NULL_DALIUSER_STACKTRACE
     else
@@ -12469,11 +12453,7 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
     mb.append(filters).append(recursive);
     if (user)
     {
-        Owned<IUserDescriptor> tmpUDesc = createUserDescriptor();
-        StringBuffer userName;
-        user->getUserName(userName);
-        tmpUDesc->set(userName.str(), nullptr);
-        tmpUDesc->serialize(mb);//serialize without password, since it is not checked
+        user->serializeWithoutPassword(mb);
     }
 
     if (foreigndali)

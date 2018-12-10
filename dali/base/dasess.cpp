@@ -938,14 +938,7 @@ public:
         }
 #endif
 
-        {
-            Owned<IUserDescriptor> tmpUDesc = createUserDescriptor();
-            StringBuffer user;
-            udesc->getUserName(user);
-            tmpUDesc->set(user.str(), nullptr);
-            tmpUDesc->serialize(mb);//serialize without password, since it is not checked
-        }
-
+        udesc->serializeWithoutPassword(mb);//serialize user descriptor without password
         mb.append(auditflags);
 
         //Serialize signature. If not provided, compute it
@@ -2111,6 +2104,11 @@ public:
         username.clear();
         passwordenc.clear();
         signature.clear();
+    }
+    void serializeWithoutPassword(MemoryBuffer &mb)
+    {
+        StringBuffer emptyPwd;
+        mb.append(username).append(emptyPwd);
     }
     void serialize(MemoryBuffer &mb)
     {
