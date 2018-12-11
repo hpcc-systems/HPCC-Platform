@@ -35,5 +35,11 @@
 	path = plugins/sqs/aws-sdk-cpp
 	url = https://github.com/hpcc-systems/aws-sdk-cpp
 [submodule "configuration/configmgr/RapidJSON"]
-        path = configuration/configmgr/RapidJSON
-        url = https://github.com/hpcc-systems/rapidjson
+    path = configuration/configmgr/RapidJSON
+    url = https://github.com/hpcc-systems/rapidjson
+[submodule "esp/services/ws_sql/libantlr3c"]
+	path = esp/services/ws_sql/antlr3c
+	url = https://github.com/Michael-Gardner/libantlr3c-3.4.git
+[submodule "esp/services/ws_sql/antlr-jars"]
+	path = esp/services/ws_sql/antlr-jars
+	url = https://github.com/Michael-Gardner/antlr-jars.git
