@@ -4848,6 +4848,47 @@ IDefRecordElement * createMetaRecord(IHqlExpression * record, IMaxSizeCallback *
 }
 
 
+static bool doContainsSelf(IHqlExpression * expr, IHqlExpression * search)
+{
+    for (;;)
+    {
+        if (expr->queryTransformExtra())
+            return false;
+        if (expr == search)
+            return true;
+        expr->setTransformExtraUnlinked(expr);
+        IHqlExpression * body = expr->queryBody(true);
+        if (body == expr)
+            break;
+        expr = body;
+    }
+    switch (expr->getOperator())
+    {
+    case no_assign:
+        return doContainsSelf(expr->queryChild(1), search);
+    case no_attr:
+    case no_attr_expr:
+    case no_left:
+    case no_right:
+    case no_field:
+    case no_record:
+        return false;
+    }
+    ForEachChild(i, expr)
+    {
+        if (doContainsSelf(expr->queryChild(i), search))
+            return true;
+    }
+    return false;
+}
+
+bool containsSelfWithinExpr(IHqlExpression * expr, IHqlExpression * self)
+{
+    TransformMutexBlock lock;
+    return doContainsSelf(expr, self);
+}
+
+
 static bool doContainsExpression(IHqlExpression * expr, IHqlExpression * search)
 {
     for (;;)
