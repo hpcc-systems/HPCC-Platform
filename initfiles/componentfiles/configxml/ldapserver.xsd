@@ -170,7 +170,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="cacheTimeout" type="xs:nonNegativeInteger" use="optional" default="5">
+            <xs:attribute name="cacheTimeout" type="xs:nonNegativeInteger" use="optional" default="60">
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>Time in minutes after which the cached security information should expire.</tooltip>

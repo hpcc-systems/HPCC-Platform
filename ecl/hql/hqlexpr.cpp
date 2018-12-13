@@ -5417,6 +5417,7 @@ void CUsedTables::gatherTablesUsed(HqlExprCopyArray & inScope) const
 void CUsedTables::set(HqlExprCopyArray & activeTables)
 {
     numActiveTables = activeTables.ordinality();
+
     if (numActiveTables == 1)
     {
         tables.single = &activeTables.item(0);
@@ -5474,7 +5475,7 @@ void CUsedTablesBuilder::removeParent(IHqlExpression * expr)
         if (!root->hasAttribute(newAtom))
             break;
         expr = root->queryChild(0);
-        removeActive(expr->queryNormalizedSelector());
+        removeActiveSelector(expr->queryNormalizedSelector());
     }
 }
 

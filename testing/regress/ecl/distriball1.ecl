@@ -17,7 +17,6 @@
 
 //Some of these tests need to be verified by looking at the generate code
 //MORE: Remove these lines when the code has been implemented in the engines.
-//nothor
 //noroxie
 //nohthor
 
@@ -31,7 +30,7 @@ o1 := output(count(d1) - numRows * CLUSTERSIZE);
 
 //Check combinations of distributes are not combined
 d2 := distribute(d1, ALL);
-o2 := output(count(d1) - numRows * CLUSTERSIZE * CLUSTERSIZE);
+o2 := output(count(d2) - numRows * CLUSTERSIZE * CLUSTERSIZE);
 
 //Check that distribute does not remove distribute,set
 d3a := distribute(d1, hash(id));

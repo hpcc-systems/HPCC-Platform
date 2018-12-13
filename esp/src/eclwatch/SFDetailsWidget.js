@@ -75,12 +75,6 @@ define([
                 this.logicalFile.refresh();
             },
 
-            _onSubFileRefresh: function (event) {
-                this.subfilesGrid.set("query", {
-                    Name: "*"
-                });
-            },
-
             _onSave: function (event) {
                 var context = this;
                 this.logicalFile.save(dom.byId(context.id + "Description").value);
@@ -93,7 +87,6 @@ define([
             _onRemove: function (event) {
                 if (confirm(this.i18n.RemoveSubfiles2)) {
                     this.logicalFile.removeSubfiles(this.subfilesGrid.getSelected());
-                    this._onSubFileRefresh();
                 }
             },
             _onOpen: function (event) {

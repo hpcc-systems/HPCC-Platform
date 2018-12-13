@@ -21,6 +21,8 @@
 #include "ldapsecurity.hpp"
 #include "authmap.ipp"
 #include "digisign.hpp"
+#include "caching.hpp"
+
 using namespace cryptohelper;
 
 #include "workunit.hpp"
@@ -592,14 +594,14 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
 
     m_ldap_client.setown(ldap_client);
     m_pp.setown(pp);
-    int cachetimeout = cfg->getPropInt("@cacheTimeout", 5);
+    int cacheTimeoutMinutes = cfg->getPropInt("@cacheTimeout", DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES);//config value is in minutes
 
     if (cfg->getPropBool("@sharedCache", true))
         m_permissionsCache.setown(CPermissionsCache::getInstance(cfg->queryProp("@name")));
     else
         m_permissionsCache.setown(new CPermissionsCache());
 
-    m_permissionsCache->setCacheTimeout( 60 * cachetimeout);
+    m_permissionsCache->setCacheTimeout( 60 * cacheTimeoutMinutes);
     m_permissionsCache->setTransactionalEnabled(true);
     m_permissionsCache->setSecManager(this);
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days

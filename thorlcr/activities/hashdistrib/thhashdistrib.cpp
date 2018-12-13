@@ -37,9 +37,6 @@ class HashDistributeMasterBase : public CMasterActivity
     DistributeMode mode;
     mptag_t mptag;
     mptag_t mptag2; // for tag 2
-    bool redistribute;
-    double skew;
-    double targetskew;
 public:
     HashDistributeMasterBase(DistributeMode _mode, CMasterGraphElement *info) 
         : CMasterActivity(info), mode(_mode) 
@@ -252,6 +249,11 @@ CActivityBase *createHashDistributeActivityMaster(CMasterGraphElement *container
         return new ReDistributeActivityMaster(container);
     else
         return new HashDistributeActivityMaster(DM_distrib, container);
+}
+
+CActivityBase *createNWayDistributeActivityMaster(CMasterGraphElement *container)
+{
+    return new HashDistributeActivityMaster(DM_distrib, container);
 }
 
 CActivityBase *createDistributeMergeActivityMaster(CMasterGraphElement *container)

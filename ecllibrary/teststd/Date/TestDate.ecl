@@ -114,6 +114,35 @@ EXPORT TestDate := MODULE
     ASSERT(Date.MonthWeekNumFromDate(20180302, 6) = 2, CONST);  // Start of week = Friday
     ASSERT(Date.MonthWeekNumFromDate(20180302, 7) = 1, CONST);  // Start of week = Saturday
     ASSERT(Date.MonthWeekNumFromDate(20180303, 7) = 2, CONST);  // Start of week = Saturday
+    
+    ASSERT( Date.ISODayOfWeekFromDate(20140130) = 4, CONST);   // 4=Thursday
+    ASSERT( Date.ISODayOfWeekFromDate(19650217) = 3, CONST);   // 3=Wednesday
+    ASSERT( Date.ISODayOfWeekFromDate(20530213) = 4, CONST);   // 4=Thursday
+
+    ASSERT( Date.ISOWeekDate(20050101, TRUE) = '2004-W53-6', CONST);
+    ASSERT( Date.ISOWeekDate(20050102, TRUE) = '2004-W53-7', CONST);
+    ASSERT( Date.ISOWeekDate(20051231, TRUE) = '2005-W52-6', CONST);
+
+    ASSERT( Date.ISOWeekDate(20060101, TRUE) = '2005-W52-7', CONST);
+    ASSERT( Date.ISOWeekDate(20060102, TRUE) = '2006-W01-1', CONST);
+    ASSERT( Date.ISOWeekDate(20061231, TRUE) = '2006-W52-7', CONST);
+
+    ASSERT( Date.ISOWeekDate(20070101, TRUE) = '2007-W01-1', CONST);
+    ASSERT( Date.ISOWeekDate(20071230, TRUE) = '2007-W52-7', CONST);
+    ASSERT( Date.ISOWeekDate(20071231, TRUE) = '2008-W01-1', CONST);
+
+    ASSERT( Date.ISOWeekDate(20080101, TRUE) = '2008-W01-2', CONST);
+    ASSERT( Date.ISOWeekDate(20081228, TRUE) = '2008-W52-7', CONST);
+    ASSERT( Date.ISOWeekDate(20081229, TRUE) = '2009-W01-1', CONST);
+    ASSERT( Date.ISOWeekDate(20081230, TRUE) = '2009-W01-2', CONST);
+    ASSERT( Date.ISOWeekDate(20081231, TRUE) = '2009-W01-3', CONST);
+
+    ASSERT( Date.ISOWeekDate(20090101, TRUE) = '2009-W01-4', CONST);
+    ASSERT( Date.ISOWeekDate(20091231, TRUE) = '2009-W53-4', CONST);
+
+    ASSERT( Date.ISOWeekDate(20100101, TRUE) = '2009-W53-5', CONST);
+    ASSERT( Date.ISOWeekDate(20100102, TRUE) = '2009-W53-6', CONST);
+    ASSERT( Date.ISOWeekDate(20100103, TRUE) = '2009-W53-7', CONST);
 
     ASSERT(EXISTS(Date.TimeZone.TZ_Data), CONST);
 

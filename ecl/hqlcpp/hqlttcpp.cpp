@@ -9933,6 +9933,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
 
 HqlScopeTaggerInfo::HqlScopeTaggerInfo(IHqlExpression * _expr) : MergingTransformInfo(_expr)
 {
+    //IsIndependentOFScope is potentially quite expensive to evaluate, but significantly reduces the cost of this transformation
     if (!onlyTransformOnce() && (!containsImplicitNormalize(_expr) || _expr->isIndependentOfScope()))
     {
         //If the node doesn't have any active selectors then it isn't going to be context dependent
