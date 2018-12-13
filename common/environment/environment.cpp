@@ -181,27 +181,51 @@ private:
 
                 keyPairMap[name] = { absPublicKeyPath.str(), absPrivateKeyPath.str() };
             }
-            Owned<IPropertyTreeIterator> clusterIter = p->getElements("EnvSettings/Keys/Cluster");
-            ForEach(*clusterIter)
+
+/* From 7.0.0 until 7.0.6, the <Keys> section of the environment required
+ * the mappings to be defined as "Cluster" instead of "ClusterGroup" - See: HPCC-21192
+ */
+#define BKWRDCOMPAT_CLUSTER_VS_CLUSTERGROUP
+
+            const char *groupKeysPath = "EnvSettings/Keys/ClusterGroup";
+
+#ifdef BKWRDCOMPAT_CLUSTER_VS_CLUSTERGROUP
+            for (unsigned i=0; i<2; i++) // once for std. "ClusterGroup", 2nd time for legacy "Cluster"
             {
-                IPropertyTree &cluster = clusterIter->query();
-                const char *clusterName = cluster.queryProp("@name");
-                if (isEmptyString(clusterName))
+#endif
+                Owned<IPropertyTreeIterator> clusterIter = p->getElements(groupKeysPath);
+
+#ifdef BKWRDCOMPAT_CLUSTER_VS_CLUSTERGROUP
+                if (clusterIter->first() && keyClusterMap.size()) // NB: always 0 1st time around.
                 {
-                    WARNLOG("skipping EnvSettings/Keys/Cluster entry with no name");
-                    continue;
+                    WARNLOG("Invalid configuration: mixed 'Keys/ClusterGroup' definitions and legacy 'Keys/Cluster' definitions found, legacy 'Keys/Cluster' definition will be ignored.");
+                    break;
                 }
-                if (cluster.hasProp("@keyPairName"))
+#endif
+                ForEach(*clusterIter)
                 {
-                    const char *keyPairName = cluster.queryProp("@keyPairName");
-                    if (isEmptyString(keyPairName))
+                    IPropertyTree &cluster = clusterIter->query();
+                    const char *clusterName = cluster.queryProp("@name");
+                    if (isEmptyString(clusterName))
                     {
-                        WARNLOG("skipping invalid EnvSettings/Key/Cluster entry, name=%s", clusterName);
+                        WARNLOG("skipping %s entry with no name", groupKeysPath);
                         continue;
                     }
-                    keyClusterMap[clusterName] = keyPairName;
+                    if (cluster.hasProp("@keyPairName"))
+                    {
+                        const char *keyPairName = cluster.queryProp("@keyPairName");
+                        if (isEmptyString(keyPairName))
+                        {
+                            WARNLOG("skipping invalid %s entry, name=%s", groupKeysPath, clusterName);
+                            continue;
+                        }
+                        keyClusterMap[clusterName] = keyPairName;
+                    }
                 }
+#ifdef BKWRDCOMPAT_CLUSTER_VS_CLUSTERGROUP
+                groupKeysPath = "EnvSettings/Keys/Cluster";
             }
+#endif
             clusterKeyNameCache = true;
         }
     }
