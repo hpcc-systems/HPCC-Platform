@@ -240,6 +240,7 @@ define([
                 this.storage.on("storageUpdate", function(msg) {
                     context._onUpdateFromStorage(msg)
                 });
+                this.storage.setItem("Status", "Unlocked");
             },
 
             _onUpdateFromStorage: function (msg){
