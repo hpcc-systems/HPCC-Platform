@@ -66,10 +66,9 @@ SchemaItem::SchemaItem(const SchemaItem &item)
 
     //
     // Make a copy of the children now
-    for (auto childIt = item.m_children.begin(); childIt != item.m_children.end(); ++childIt)
+    for (auto &pChild: m_children)
     {
-        std::shared_ptr<SchemaItem> pChild = std::make_shared<SchemaItem>((*(childIt->second)));
-        addChild(pChild);
+        addChild(std::make_shared<SchemaItem>(*pChild));
     }
 
     //
@@ -235,13 +234,14 @@ void SchemaItem::setParentForChildren(std::shared_ptr<SchemaItem> pParent)
     setParent(pParent);
     for (auto &childIt: m_children)
     {
-        childIt.second->setParentForChildren(shared_from_this());
+        childIt->setParentForChildren(shared_from_this());
     }
 }
 
 
 void SchemaItem::addAttribute(const std::shared_ptr<SchemaValue> &pCfgValue)
 {
+    pCfgValue->setOrdinal(m_attributes.size());
     auto retVal = m_attributes.insert({ pCfgValue->getName(), pCfgValue });
     if (!retVal.second)
     {
@@ -352,13 +352,13 @@ void SchemaItem::processUniqueAttributeValueSetReferences(const std::map<std::st
 
 void SchemaItem::getChildren(std::vector<std::shared_ptr<SchemaItem>> &children, const std::string &name, const std::string &itemType) const
 {
-    for (auto it = m_children.begin(); it != m_children.end(); ++it)
+    for (auto &pChild: m_children)
     {
-        if (name.empty() || it->first == name)
+        if (name.empty() || pChild->getProperty("name") == name)
         {
-            if (itemType.empty() || it->second->getProperty("itemType") == itemType)
+            if (itemType.empty() || pChild->getProperty("itemType") == itemType)
             {
-                children.emplace_back(it->second);
+                children.emplace_back(pChild);
             }
         }
     }
@@ -535,9 +535,9 @@ void SchemaItem::processDefinedUniqueAttributeValueSets(std::map<std::string, st
 
     //
     // Post process all of our children now
-    for (auto it = m_children.begin(); it != m_children.end(); ++it)
+    for (auto &pChild: m_children)
     {
-        it->second->processDefinedUniqueAttributeValueSets(uniqueAttributeValueSets);
+        pChild->processDefinedUniqueAttributeValueSets(uniqueAttributeValueSets);
     }
 }
 
@@ -547,14 +547,14 @@ void SchemaItem::postProcessConfig(const std::map<std::string, std::vector<std::
     //
     // Make sure that the item type value for all children that are insertable (minRequired = 0 or maxAllowed > minRequired)
     std::set<std::string> itemTypes;
-    for (auto it = m_children.begin(); it != m_children.end(); ++it)
+    for (auto &pChild: m_children)
     {
-        if (it->second->isInsertable())
+        if (pChild->isInsertable())
         {
-            auto rc = itemTypes.insert(it->second->getItemType());
+            auto rc = itemTypes.insert(pChild->getItemType());
             if (!rc.second)
             {
-                throw(ParseException("Element: " + getProperty("name") + ", duplicate itemType(" + it->second->getItemType() + ") found"));
+                throw(ParseException("Element: " + getProperty("name") + ", duplicate itemType(" + pChild->getItemType() + ") found"));
             }
         }
     }
@@ -592,9 +592,9 @@ void SchemaItem::postProcessConfig(const std::map<std::string, std::vector<std::
 
     //
     // Post process all of our children now
-    for (auto it = m_children.begin(); it!= m_children.end(); ++it)
+    for (auto &pChild: m_children)
     {
-        it->second->postProcessConfig(uniqueAttributeValueSets);
+        pChild->postProcessConfig(uniqueAttributeValueSets);
     }
 }
 
