@@ -1455,8 +1455,8 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
     firstRow += n;
     offset_t bytesWritten = writer->getPosition();
     writer.clear();
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, rows written = %" RIPF "u, bytes = %" I64F "u", _tracingPrefix, rowsWritten, (__int64)bytesWritten);
-    return n;
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, rows written = %" RIPF "u, bytes = %" I64F "u, firstRow = %u", _tracingPrefix, rowsWritten, (__int64)bytesWritten, firstRow);
+    return rowsWritten;
 }
 
 
@@ -1502,10 +1502,10 @@ bool CThorSpillableRowArray::shrink()
     return maxRows != prevMaxRows;
 }
 
-bool CThorSpillableRowArray::flush()
+bool CThorSpillableRowArray::flush(bool force)
 {
     CThorArrayLockBlock block(*this);
-    return _flush(false);
+    return _flush(force);
 }
 
 bool CThorSpillableRowArray::appendRows(CThorExpandingRowArray &inRows, bool takeOwnership)
