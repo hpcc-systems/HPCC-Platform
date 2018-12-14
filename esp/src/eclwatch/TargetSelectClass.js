@@ -377,7 +377,11 @@ define([
                             var files = response.FileListResponse.files.PhysicalFileStruct;
                             for (var i = 0; i < files.length; ++i) {
                                 if (files[i].isDir) {
-                                    requests.push(context._loadDropZoneFolders(pathSepChar, Netaddr, Path + pathSepChar + files[i].name, OS, ++depth));
+                                    if (Path + pathSepChar === "//"){
+                                        requests.push(context._loadDropZoneFolders(pathSepChar, Netaddr, Path + files[i].name, OS, ++depth));
+                                    } else {
+                                        requests.push(context._loadDropZoneFolders(pathSepChar, Netaddr, Path + pathSepChar + files[i].name, OS, ++depth));
+                                    }
                                 }
                             }
                         }
