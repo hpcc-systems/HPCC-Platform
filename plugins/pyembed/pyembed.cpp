@@ -28,6 +28,7 @@
 #include "platform.h"
 #include "frameobject.h"
 #include "jexcept.hpp"
+#include "jutil.hpp"
 #include "jthread.hpp"
 #include "jregexp.hpp"
 #include "hqlplugins.hpp"
@@ -300,6 +301,15 @@ public:
             Py_Finalize();
             if (pythonLibrary)
                 FreeSharedObject(pythonLibrary);
+        }
+        else
+        {
+            // Need to avoid releasing the associated py objects when these members destructors are called.
+            namedtuple.getClear();
+            namedtupleTypes.getClear();
+            compiledScripts.getClear();
+            preservedScopes.getClear();
+
         }
     }
     bool isInitialized()
