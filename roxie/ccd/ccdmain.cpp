@@ -427,7 +427,16 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     setTerminateOnSEH();
     init_signals();
     // We need to do the above BEFORE we call InitModuleObjects
-    InitModuleObjects();
+    try
+    {
+        InitModuleObjects();
+    }
+    catch (IException *E)
+    {
+        EXCLOG(E);
+        E->Release();
+        return EXIT_FAILURE;
+    }
     init_signals();
 
     // stand alone usage only, not server

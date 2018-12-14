@@ -83,55 +83,658 @@ static void UNSUPPORTED(const char *feature)
 
 namespace javaembed {
 
-static void checkException(JNIEnv *JNIenv, bool fail=true)
+static jmethodID throwable_toString;
+
+/**
+ * CheckedJNIEnv is a wrapper around JNIEnv that ensures that we check for exceptions after every call (and turn them into C++ exceptions).
+ *
+ * It should probably be refactored to have the JNIEnv pointer as a member rather than a base class. As it stands, it's possible to cast
+ * safely between CheckedJNIEnv * and JNIEnv*
+ *
+ */
+class CheckedJNIEnv : private JNIEnv
 {
-    if (JNIenv->ExceptionCheck())
+    template<typename T> T checkException(T a) { checkException(); return a; }
+public:
+    StringBuffer &getString(StringBuffer &ret, jstring s)
     {
-        jthrowable exception = JNIenv->ExceptionOccurred();
-        JNIenv->ExceptionClear();
-        jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
-        jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
-        jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
-        const char *text = JNIenv->GetStringUTFChars(cause, 0);
-        VStringBuffer message("javaembed: %s", text);
-        JNIenv->ReleaseStringUTFChars(cause, text);
-        if (fail)
+        if (s)
+        {
+            const char* str = GetStringUTFChars(s, NULL);
+            ret.append(str);
+            ReleaseStringUTFChars(s, str);
+        }
+        return ret;
+    }
+    StringAttr &getString(StringAttr &ret, jstring s)
+    {
+        if (s)
+        {
+            const char* str = GetStringUTFChars(s, NULL);
+            ret.set(str);
+            ReleaseStringUTFChars(s, str);
+        }
+        return ret;
+    }
+    void checkException()
+    {
+        if (JNIEnv::ExceptionCheck())
+        {
+            jthrowable exception = JNIEnv::ExceptionOccurred();
+            JNIEnv::ExceptionClear();
+            jstring cause = (jstring) JNIEnv::CallObjectMethod(exception, throwable_toString);
+            JNIEnv::ExceptionClear();
+            const char *text = JNIEnv::GetStringUTFChars(cause, 0);
+            VStringBuffer message("javaembed: %s", text);
+            JNIEnv::ReleaseStringUTFChars(cause, text);
+            JNIEnv::ExceptionClear();
             rtlFail(0, message);
-        throw MakeStringExceptionDirect(0, message);
+        }
+    }
+
+    jclass FindClass(const char *name)
+    {
+        return checkException(JNIEnv::FindClass(name));
+    }
+    jclass FindGlobalClass(const char *name)
+    {
+        return (jclass) NewGlobalRef(FindClass(name));
+    }
+    void GetBooleanArrayRegion(jbooleanArray array,
+                               jsize start, jsize len, jboolean *buf) {
+        functions->GetBooleanArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void GetByteArrayRegion(jbyteArray array,
+                            jsize start, jsize len, jbyte *buf) {
+        functions->GetByteArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void GetCharArrayRegion(jcharArray array,
+                            jsize start, jsize len, jchar *buf) {
+        functions->GetCharArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void GetShortArrayRegion(jshortArray array,
+                             jsize start, jsize len, jshort *buf) {
+        functions->GetShortArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void GetIntArrayRegion(jintArray array,
+                           jsize start, jsize len, jint *buf) {
+        functions->GetIntArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void GetLongArrayRegion(jlongArray array,
+                            jsize start, jsize len, jlong *buf) {
+        functions->GetLongArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void GetFloatArrayRegion(jfloatArray array,
+                             jsize start, jsize len, jfloat *buf) {
+        functions->GetFloatArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void GetDoubleArrayRegion(jdoubleArray array,
+                              jsize start, jsize len, jdouble *buf) {
+        functions->GetDoubleArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    jsize GetArrayLength(jarray array) {
+        return checkException(functions->GetArrayLength(this,array));
+    }
+    jsize GetStringUTFLength(jstring str) {
+        return checkException(functions->GetStringUTFLength(this,str));
+    }
+    const char* GetStringUTFChars(jstring str, jboolean *isCopy) {
+        return checkException(functions->GetStringUTFChars(this,str,isCopy));
+    }
+    void ReleaseStringUTFChars(jstring str, const char* chars) {
+        functions->ReleaseStringUTFChars(this,str,chars);
+        checkException();
+    }
+    jboolean GetBooleanField(jobject obj, jfieldID fieldID)
+    {
+        return checkException(JNIEnv::GetBooleanField(obj,fieldID));
+    }
+    jobject GetObjectField(jobject obj, jfieldID fieldID)
+    {
+        return checkException(JNIEnv::GetObjectField(obj,fieldID));
+    }
+    jbyte GetByteField(jobject obj, jfieldID fieldID) {
+        return checkException(JNIEnv::GetByteField(obj,fieldID));
+    }
+    jchar GetCharField(jobject obj, jfieldID fieldID) {
+        return checkException(JNIEnv::GetCharField(obj,fieldID));
+    }
+    jshort GetShortField(jobject obj, jfieldID fieldID) {
+        return checkException(JNIEnv::GetShortField(obj,fieldID));
+    }
+    jint GetIntField(jobject obj, jfieldID fieldID) {
+        return checkException(JNIEnv::GetIntField(obj,fieldID));
+    }
+    jlong GetLongField(jobject obj, jfieldID fieldID) {
+        return checkException(JNIEnv::GetLongField(obj,fieldID));
+    }
+    jfloat GetFloatField(jobject obj, jfieldID fieldID)
+    {
+        return checkException(JNIEnv::GetFloatField(obj,fieldID));
+    }
+    jdouble GetDoubleField(jobject obj, jfieldID fieldID)
+    {
+        return checkException(JNIEnv::GetDoubleField(obj,fieldID));
+    }
+
+    void SetObjectField(jobject obj, jfieldID fieldID, jobject val) {
+        functions->SetObjectField(this,obj,fieldID,val);
+        checkException();
+    }
+    void SetBooleanField(jobject obj, jfieldID fieldID,
+                         jboolean val) {
+        functions->SetBooleanField(this,obj,fieldID,val);
+        checkException();
+    }
+    void SetByteField(jobject obj, jfieldID fieldID,
+                      jbyte val) {
+        functions->SetByteField(this,obj,fieldID,val);
+        checkException();
+    }
+    void SetCharField(jobject obj, jfieldID fieldID,
+                      jchar val) {
+        functions->SetCharField(this,obj,fieldID,val);
+        checkException();
+    }
+    void SetShortField(jobject obj, jfieldID fieldID,
+                       jshort val) {
+        functions->SetShortField(this,obj,fieldID,val);
+        checkException();
+    }
+    void SetIntField(jobject obj, jfieldID fieldID,
+                     jint val) {
+        functions->SetIntField(this,obj,fieldID,val);
+        checkException();
+    }
+    void SetLongField(jobject obj, jfieldID fieldID,
+                      jlong val) {
+        functions->SetLongField(this,obj,fieldID,val);
+        checkException();
+    }
+    void SetFloatField(jobject obj, jfieldID fieldID,
+                       jfloat val) {
+        functions->SetFloatField(this,obj,fieldID,val);
+        checkException();
+    }
+    void SetDoubleField(jobject obj, jfieldID fieldID,
+                        jdouble val) {
+        functions->SetDoubleField(this,obj,fieldID,val);
+        checkException();
+    }
+
+    jstring NewString(const jchar *unicode, jsize len) {
+        return checkException(functions->NewString(this,unicode,len));
+    }
+
+    jbooleanArray NewBooleanArray(jsize len) {
+        return checkException(functions->NewBooleanArray(this,len));
+    }
+    jbyteArray NewByteArray(jsize len) {
+        return checkException(functions->NewByteArray(this,len));
+    }
+    jcharArray NewCharArray(jsize len) {
+        return checkException(functions->NewCharArray(this,len));
+    }
+    jshortArray NewShortArray(jsize len) {
+        return checkException(functions->NewShortArray(this,len));
+    }
+    jintArray NewIntArray(jsize len) {
+        return checkException(functions->NewIntArray(this,len));
+    }
+    jlongArray NewLongArray(jsize len) {
+        return checkException(functions->NewLongArray(this,len));
+    }
+    jfloatArray NewFloatArray(jsize len) {
+        return checkException(functions->NewFloatArray(this,len));
+    }
+    jdoubleArray NewDoubleArray(jsize len) {
+        return checkException(functions->NewDoubleArray(this,len));
+    }
+
+    void SetBooleanArrayRegion(jbooleanArray array, jsize start, jsize len,
+                               const jboolean *buf) {
+        functions->SetBooleanArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void SetByteArrayRegion(jbyteArray array, jsize start, jsize len,
+                            const jbyte *buf) {
+        functions->SetByteArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void SetCharArrayRegion(jcharArray array, jsize start, jsize len,
+                            const jchar *buf) {
+        functions->SetCharArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void SetShortArrayRegion(jshortArray array, jsize start, jsize len,
+                             const jshort *buf) {
+        functions->SetShortArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void SetIntArrayRegion(jintArray array, jsize start, jsize len,
+                           const jint *buf) {
+        functions->SetIntArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void SetLongArrayRegion(jlongArray array, jsize start, jsize len,
+                            const jlong *buf) {
+        functions->SetLongArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void SetFloatArrayRegion(jfloatArray array, jsize start, jsize len,
+                             const jfloat *buf) {
+        functions->SetFloatArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+    void SetDoubleArrayRegion(jdoubleArray array, jsize start, jsize len,
+                              const jdouble *buf) {
+        functions->SetDoubleArrayRegion(this,array,start,len,buf);
+        checkException();
+    }
+
+    jobjectArray NewObjectArray(jsize len, jclass clazz,
+                                jobject init) {
+        return checkException(functions->NewObjectArray(this,len,clazz,init));
+    }
+    jobject GetObjectArrayElement(jobjectArray array, jsize index) {
+        return checkException(functions->GetObjectArrayElement(this,array,index));
+    }
+    void SetObjectArrayElement(jobjectArray array, jsize index,
+                               jobject val) {
+        functions->SetObjectArrayElement(this,array,index,val);
+        checkException();
+    }
+
+    jobject ToReflectedField(jclass cls, jfieldID fieldID, jboolean isStatic) {
+        return checkException(functions->ToReflectedField(this,cls,fieldID,isStatic));
+    }
+
+    jclass GetObjectClass(jobject obj)
+    {
+        return checkException(JNIEnv::GetObjectClass(obj));
+    }
+    jfieldID GetFieldID(jclass clazz, const char *name, const char *sig)
+    {
+        return checkException(JNIEnv::GetFieldID(clazz,name,sig));
+    }
+    jfieldID GetFieldIDUnchecked(jclass clazz, const char *name, const char *sig)
+    {
+        jfieldID ret = JNIEnv::GetFieldID(clazz,name,sig);
+        ExceptionClear();
+        return ret;
+    }
+    jmethodID GetMethodID(jclass clazz, const char *name, const char *sig)
+    {
+        return checkException(JNIEnv::GetMethodID(clazz, name, sig));
+    }
+    jmethodID GetStaticMethodID(jclass clazz, const char *name, const char *sig)
+    {
+        return checkException(JNIEnv::GetStaticMethodID(clazz, name, sig));
+    }
+    void CallStaticVoidMethod(jclass cls, jmethodID methodID, ...) {
+        va_list args;
+        va_start(args,methodID);
+        functions->CallStaticVoidMethodV(this,cls,methodID,args);
+        va_end(args);
+        checkException();
+    }
+    jobject CallStaticObjectMethod(jclass clazz, jmethodID methodID, ...)
+    {
+        va_list args;
+        jobject result;
+        va_start(args,methodID);
+        result = JNIEnv::CallStaticObjectMethodV(clazz,methodID,args);
+        va_end(args);
+        checkException();
+        return result;
+    }
+    jdouble CallDoubleMethod(jobject obj, jmethodID methodID, ...) {
+        va_list args;
+        jdouble result;
+        va_start(args,methodID);
+        result = functions->CallDoubleMethodV(this,obj,methodID,args);
+        va_end(args);
+        checkException();
+        return result;
+    }
+    jlong CallLongMethod(jobject obj, jmethodID methodID, ...) {
+        va_list args;
+        jlong result;
+        va_start(args,methodID);
+        result = functions->CallLongMethodV(this,obj,methodID,args);
+        va_end(args);
+        checkException();
+        return result;
+    }
+    jboolean CallBooleanMethod(jobject obj, jmethodID methodID, ...)
+    {
+        va_list args;
+        jboolean result;
+        va_start(args,methodID);
+        result = JNIEnv::CallBooleanMethodV(obj,methodID,args);
+        va_end(args);
+        checkException();
+        return result;
+    }
+    jobject CallObjectMethod(jobject obj, jmethodID methodID, ...)
+    {
+        va_list args;
+        jobject result;
+        va_start(args,methodID);
+        result = JNIEnv::CallObjectMethodV(obj,methodID,args);
+        va_end(args);
+        checkException();
+        return result;
+    }
+
+    jchar CallCharMethodA(jobject obj, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallCharMethodA(this,obj,methodID,args));
+    }
+    jboolean CallBooleanMethodA(jobject obj, jmethodID methodID,
+                                const jvalue * args) {
+        return checkException(functions->CallBooleanMethodA(this,obj,methodID, args));
+    }
+    jshort CallShortMethodA(jobject obj, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallShortMethodA(this,obj,methodID,args));
+    }
+    jlong CallLongMethodA(jobject obj, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallLongMethodA(this,obj,methodID,args));
+    }
+    jfloat CallFloatMethodA(jobject obj, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallFloatMethodA(this,obj,methodID,args));
+    }
+    jdouble CallDoubleMethodA(jobject obj, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallDoubleMethodA(this,obj,methodID,args));
+    }
+    jint CallIntMethodA(jobject obj, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallIntMethodA(this,obj,methodID,args));
+    }
+    jbyte CallByteMethodA(jobject obj, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallByteMethodA(this,obj,methodID,args));
+    }
+    jobject CallObjectMethodA(jobject obj, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallObjectMethodA(this,obj,methodID,args));
+    }
+    void CallVoidMethodA(jobject obj, jmethodID methodID,
+                          const jvalue * args) {
+        functions->CallVoidMethodA(this,obj,methodID,args);
+        return checkException();
+    }
+
+    jchar CallStaticCharMethodA(jclass clazz, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallStaticCharMethodA(this,clazz,methodID,args));
+    }
+    jboolean CallStaticBooleanMethodA(jclass clazz, jmethodID methodID,
+                                const jvalue * args) {
+        return checkException(functions->CallStaticBooleanMethodA(this,clazz,methodID, args));
+    }
+    jshort CallStaticShortMethodA(jclass clazz, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallStaticShortMethodA(this,clazz,methodID,args));
+    }
+    jlong CallStaticLongMethodA(jclass clazz, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallStaticLongMethodA(this,clazz,methodID,args));
+    }
+    jfloat CallStaticFloatMethodA(jclass clazz, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallStaticFloatMethodA(this,clazz,methodID,args));
+    }
+    jdouble CallStaticDoubleMethodA(jclass clazz, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallStaticDoubleMethodA(this,clazz,methodID,args));
+    }
+    jint CallStaticIntMethodA(jclass clazz, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallStaticIntMethodA(this,clazz,methodID,args));
+    }
+    jbyte CallStaticByteMethodA(jclass clazz, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallStaticByteMethodA(this,clazz,methodID,args));
+    }
+    jobject CallStaticObjectMethodA(jclass clazz, jmethodID methodID,
+                          const jvalue * args) {
+        return checkException(functions->CallStaticObjectMethodA(this,clazz,methodID,args));
+    }
+    void CallStaticVoidMethodA(jclass clazz, jmethodID methodID,
+                          const jvalue * args) {
+        functions->CallStaticVoidMethodA(this,clazz,methodID,args);
+        return checkException();
+    }
+
+    jobject NewObject(jclass clazz, jmethodID methodID, ...)
+    {
+        va_list args;
+        jobject result;
+        va_start(args, methodID);
+        result = JNIEnv::NewObjectV(clazz,methodID,args);
+        va_end(args);
+        checkException();
+        return result;
+    }
+    jstring NewStringUTF(const char *utf)
+    {
+        return checkException(JNIEnv::NewStringUTF(utf));
+    }
+    jfieldID FromReflectedField(jobject field)
+    {
+        return checkException(JNIEnv::FromReflectedField(field));
+    }
+    using JNIEnv::PushLocalFrame;
+    using JNIEnv::PopLocalFrame;
+    using JNIEnv::DeleteGlobalRef;
+    using JNIEnv::DeleteLocalRef;
+    using JNIEnv::NewGlobalRef;
+    using JNIEnv::ExceptionClear;
+    using JNIEnv::ExceptionCheck;
+};
+
+static bool printNameForClass(CheckedJNIEnv *JNIenv, jobject clsObj)
+{
+    if (!clsObj)
+    {
+        printf("Object %p is null\n", clsObj);
+        return false;
+    }
+    jclass cls = JNIenv->GetObjectClass(clsObj);
+    jmethodID mid = JNIenv->GetMethodID(cls, "getName", "()Ljava/lang/String;");
+    jstring strObj = (jstring) JNIenv->CallObjectMethod(clsObj, mid);
+    const char* str = JNIenv->GetStringUTFChars(strObj, NULL);
+    printf("class %s\n", str);
+    bool ret = streq(str, "java.lang.Class");
+    JNIenv->ReleaseStringUTFChars(strObj, str);
+    return ret;
+}
+
+static void printClassForObject(CheckedJNIEnv *JNIenv, jobject obj)
+{
+    if (!obj)
+    {
+        printf("Object %p is null\n", obj);
+        return;
+    }
+    jclass objClass = JNIenv->GetObjectClass(obj);
+    jmethodID mid = JNIenv->GetMethodID(objClass, "getClass", "()Ljava/lang/Class;");
+    jobject clsObj = JNIenv->CallObjectMethod(obj, mid);
+    if (printNameForClass(JNIenv, clsObj))
+    {
+        printf("  ");
+        printNameForClass(JNIenv, obj);
     }
 }
 
-static void printClassForObject(JNIEnv *JNIenv, jobject obj)
+static jobject getClassLoader(CheckedJNIEnv *JNIenv, jclass obj)
 {
     jclass objClass = JNIenv->GetObjectClass(obj);
-    checkException(JNIenv);
-
-    jmethodID mid = JNIenv->GetMethodID(objClass, "getClass", "()Ljava/lang/Class;");
-    checkException(JNIenv);
-    jobject clsObj = JNIenv->CallObjectMethod(obj, mid);
-    checkException(JNIenv);
-
-    // Now get the class object's class descriptor
-    jclass cls = JNIenv->GetObjectClass(clsObj);
-    checkException(JNIenv);
-
-    // Find the getName() method on the class object
-    mid = JNIenv->GetMethodID(cls, "getName", "()Ljava/lang/String;");
-    checkException(JNIenv);
-
-    // Call the getName() to get a jstring object back
-    jstring strObj = (jstring) JNIenv->CallObjectMethod(clsObj, mid);
-    checkException(JNIenv);
-
-    // Now get the c string from the java jstring object
-    const char* str = JNIenv->GetStringUTFChars(strObj, NULL);
-
-    // Print the class name
-    printf("Object %p has class %s\n", obj, str);
-
-    // Release the memory pinned char array
-    JNIenv->ReleaseStringUTFChars(strObj, str);
+    jmethodID mid = JNIenv->GetMethodID(objClass, "getClassLoader", "()Ljava/lang/ClassLoader;");
+    jobject classloader = JNIenv->CallObjectMethod(obj, mid);
+    return classloader;
 }
+
+static CheckedJNIEnv *queryJNIEnv();
+
+// Some global objects setup at load time for efficiency and code readability
+
+static jclass customLoaderClass;
+static jmethodID clc_newInstance;
+static jmethodID clc_getSignature;
+static jclass hpccIteratorClass;
+static jmethodID hi_constructor;
+
+static jclass systemClass;
+static jmethodID system_gc;
+static jclass javaLangClassLoaderClass;
+static jmethodID cl_getSystemClassLoader;
+static jclass javaLangThreadClass;
+static jmethodID thread_currentThread;
+static jmethodID thread_getContextClassLoader;
+static jmethodID thread_setContextClassLoader;
+static jclass langObjectClass;
+static jmethodID object_toString;
+static jclass arrayListClass;
+static jmethodID arrayList_toArray;
+static jmethodID arrayList_constructor;
+static jmethodID arrayList_add;
+static jclass langStringClass;
+static jclass netURLClass;
+static jmethodID netURL_constructor;
+static jclass throwableClass;
+//static jmethodID throwable_toString;  declared above
+static jclass langIllegalArgumentExceptionClass;
+
+static void setupGlobals(CheckedJNIEnv *J)
+{
+    try
+    {
+        // Load this first as we can't report errors on the others sensibly if this one not loaded!
+        throwableClass = J->FindGlobalClass("java/lang/Throwable");
+        throwable_toString = J->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
+
+        systemClass = J->FindGlobalClass("java/lang/System");
+        system_gc = J->GetStaticMethodID(systemClass, "gc", "()V");
+
+        javaLangClassLoaderClass = J->FindGlobalClass("java/lang/ClassLoader");
+        cl_getSystemClassLoader = J->GetStaticMethodID(javaLangClassLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+
+        javaLangThreadClass = J->FindGlobalClass("java/lang/Thread");
+        thread_currentThread = J->GetStaticMethodID(javaLangThreadClass, "currentThread", "()Ljava/lang/Thread;");
+        thread_getContextClassLoader = J->GetMethodID(javaLangThreadClass, "getContextClassLoader", "()Ljava/lang/ClassLoader;");
+        thread_setContextClassLoader = J->GetMethodID(javaLangThreadClass, "setContextClassLoader", "(Ljava/lang/ClassLoader;)V");
+
+        langObjectClass = J->FindGlobalClass("java/lang/Object");
+        object_toString = J->GetMethodID(langObjectClass, "toString", "()Ljava/lang/String;");
+
+        arrayListClass = J->FindGlobalClass("java/util/ArrayList");
+        arrayList_constructor = J->GetMethodID(arrayListClass, "<init>", "()V");
+        arrayList_add = J->GetMethodID(arrayListClass, "add", "(Ljava/lang/Object;)Z");
+        arrayList_toArray = J->GetMethodID(arrayListClass, "toArray", "()[Ljava/lang/Object;" );
+
+        langStringClass = J->FindGlobalClass("java/lang/String");
+
+        netURLClass = J->FindGlobalClass("java/net/URL");
+        netURL_constructor = J->GetMethodID(netURLClass, "<init>","(Ljava/lang/String;)V");
+
+        langIllegalArgumentExceptionClass = J->FindGlobalClass("java/lang/IllegalArgumentException");
+    }
+    catch (IException *E)
+    {
+        Owned<IException> e = E;
+        throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Unable to load Java system classes - is classpath set properly?");
+    }
+
+    try
+    {
+        customLoaderClass = J->FindGlobalClass("com/HPCCSystems/HpccClassLoader");
+        clc_newInstance = J->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;IJLjava/lang/String;)Lcom/HPCCSystems/HpccClassLoader;");
+        clc_getSignature = J->GetStaticMethodID(customLoaderClass, "getSignature","(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/String;");
+        hpccIteratorClass = J->FindGlobalClass("com/HPCCSystems/HpccUtils");
+        hi_constructor = J->GetMethodID(hpccIteratorClass, "<init>", "(JLjava/lang/String;)V");
+    }
+    catch (IException *E)
+    {
+        Owned<IException> e = E;
+        throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Unable to find HPCC classes - is classpath set properly?");
+    }
+}
+
+static StringAttr & getSignature(StringAttr &ret, CheckedJNIEnv *J, jclass clazz, const char *funcName)
+{
+    jstring result = (jstring) J->CallStaticObjectMethod(customLoaderClass, clc_getSignature, clazz, J->NewStringUTF(funcName));
+    return J->getString(ret, result);
+}
+
+/**
+ * The following classes are used to ensure that the code in loadFunction that creates an instance
+ * that is shared between multiple callers is only called on one thread, while other threads will wait
+ * and use the instance created by the first thread.
+ *
+ */
+class PersistedObject : public MappingBase
+{
+public:
+    PersistedObject(const char *_name) : name(_name) {}
+    CriticalSection crit;
+    jobject instance = nullptr;
+    StringAttr name;
+    virtual const void * getKey() const { return name; }
+};
+
+class PersistedObjectCriticalBlock
+{
+    PersistedObject *obj = nullptr;
+public:
+    inline PersistedObjectCriticalBlock()
+    {
+    }
+    inline ~PersistedObjectCriticalBlock()
+    {
+        if (obj)
+            obj->crit.leave();
+    }
+    inline void enter(PersistedObject *_obj)
+    {
+        // Note that the object should be locked before we are called
+        assertex(!obj);
+        obj = _obj;
+    }
+    inline void leave(jobject instance = nullptr)
+    {
+        if (obj)
+        {
+            if (instance)
+                obj->instance = instance;
+            obj->crit.leave();
+            obj = nullptr;
+        }
+    }
+    inline bool locked()
+    {
+        return obj != nullptr;
+    }
+    jobject getInstance()
+    {
+        assertex(obj);
+        return obj->instance;
+    }
+};
+
 
 // Use a global object to ensure that the Java VM  is initialized once only.
 // We would like to create it lazily for two reasons:
@@ -144,12 +747,11 @@ static void printClassForObject(JNIEnv *JNIenv, jobject obj)
 // any engines that call InitModuleObjects() or load plugins dynamically do so AFTER setting any signal handlers or calling
 // EnableSEHtoExceptionMapping
 //
-static JNIEnv *queryJNIEnv();
 
 static class JavaGlobalState
 {
 public:
-    JavaGlobalState()
+    JavaGlobalState() : persistedObjects(false)
     {
         JavaVMInitArgs vm_args; /* JDK/JRE 6 VM initialization arguments */
 
@@ -236,6 +838,7 @@ public:
 
         if (createResult != 0)
             throw MakeStringException(0, "javaembed: Unable to initialize JVM (%d)",createResult);
+        setupGlobals((CheckedJNIEnv *) env);
         // DBGLOG("JNI environment version %x loaded", env->GetVersion()); // Comes out a bit too early
     }
     ~JavaGlobalState()
@@ -250,38 +853,45 @@ public:
                 queryJNIEnv()->DeleteGlobalRef(*pObj);
         }
         */
+        // This function is never called anyway...
         // We don't attempt to destroy the Java VM, as it's buggy...
     }
-    jobject getGlobalObject(const char *name, JNIEnv *JNIenv, jclass javaClass, jmethodID constructor, bool &isNew)
+
+    PersistedObject *getGlobalObject(CheckedJNIEnv *JNIenv, const char *name)
     {
-        CriticalBlock b(hashCrit);
-        isNew = false;
-        jobject *obj = persistedObjects.getValue(name);
-        if (obj)
-            return JNIenv->NewGlobalRef(*obj);
-        isNew = true;
-        jobject newObj = JNIenv->NewObject(javaClass, constructor);
-        checkException(JNIenv);
-        persistedObjects.setValue(name, JNIenv->NewGlobalRef(newObj));
-        return JNIenv->NewGlobalRef(newObj);
+        PersistedObject *p;
+        {
+            CriticalBlock b(hashCrit);
+            p = persistedObjects.find(name);
+            if (!p)
+            {
+                p = new PersistedObject(name);
+                persistedObjects.replaceOwn(*p);
+            }
+        }
+        p->crit.enter();  // outside the hashCrit block, otherwise I think there is a possibility of deadlock
+        return p;
     }
+
     void doUnregister(const char *key)
     {
         CriticalBlock b(hashCrit);
-        jobject *obj = persistedObjects.getValue(key);
-        if (obj)
-            queryJNIEnv()->DeleteGlobalRef(*obj);
+        PersistedObject *p = persistedObjects.find(key);
+        if (p && p->instance)
+            queryJNIEnv()->DeleteGlobalRef(p->instance);
         persistedObjects.remove(key);
     }
     static void unregister(const char *key);
     JavaVM *javaVM;       /* denotes a Java VM */
 private:
     CriticalSection hashCrit;
-    MapStringTo<jobject> persistedObjects;
+    StringMapOf<PersistedObject> persistedObjects;
+
 } *globalState;
 
 void JavaGlobalState::unregister(const char *key)
 {
+    // Remove a class that was persisted via : PERSIST options - it has come to the end of its life
     globalState->doUnregister(key);
 }
 
@@ -327,14 +937,9 @@ static void checkType(type_t javatype, size32_t javasize, type_t ecltype, size32
         throw MakeStringException(0, "javaembed: Type mismatch"); // MORE - could provide some details!
 }
 
-static void forceGC(JNIEnv* JNIenv)
+static void forceGC(CheckedJNIEnv* JNIenv)
 {
-    jclass systemClass = JNIenv->FindClass("java/lang/System");
-    checkException(JNIenv);
-    jmethodID systemGCMethod = JNIenv->GetStaticMethodID(systemClass, "gc", "()V");
-    checkException(JNIenv);
-    JNIenv->CallStaticVoidMethod(systemClass, systemGCMethod);
-    checkException(JNIenv);
+    JNIenv->CallStaticVoidMethod(systemClass, system_gc);
 }
 
 enum PersistMode
@@ -346,8 +951,16 @@ enum PersistMode
     persistGlobal
 };
 
-static PersistMode getPersistMode(const char *val)  // Could argue this should be in eclrtl.hpp
+static PersistMode getPersistMode(const char *val, StringAttr &globalScope)
 {
+    StringAttr trimmed;
+    const char *colon = strchr(val, ':');
+    if (colon)
+    {
+        globalScope.set(colon+1);
+        trimmed.set(val, colon-val);
+        val = trimmed;
+    }
     if (isEmptyString(val) || strieq(val, "none"))
         return persistNone;
     else if (strieq(val, "thread"))
@@ -369,12 +982,12 @@ static PersistMode getPersistMode(const char *val)  // Could argue this should b
 class JavaObjectAccessor : public CInterface
 {
 protected:
-    JavaObjectAccessor(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jobject _row)
+    JavaObjectAccessor(CheckedJNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jobject _row)
     : JNIenv(_JNIenv), row(_row), outerRow(_outerRow), idx(0), limit(0), inSet(false), inDataSet(false)
     {
         Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(row));
     }
-    JavaObjectAccessor(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jclass _Class)
+    JavaObjectAccessor(CheckedJNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jclass _Class)
     : JNIenv(_JNIenv), outerRow(_outerRow), idx(0), limit(0), inSet(false), inDataSet(false)
     {
         row = NULL;
@@ -398,50 +1011,47 @@ protected:
         row = (jobject) stack.popGet();
         Class = (jclass) stack.popGet();
     }
+    jfieldID checkCharField(const RtlFieldInfo * field)
+    {
+        return JNIenv->GetFieldIDUnchecked(Class, field->name, inSet ? "[C" : "C");
+    }
     jfieldID getFieldId(const RtlFieldInfo * field, const char *sig, const char *expected)
     {
         // MORE - if we are going to stream a dataset we really should be caching these somehow
-        JNIenv->ExceptionClear();
-        jfieldID fieldId = 0;
-        if (sig)
+        try
         {
-            if (inSet)
+            jfieldID fieldId = 0;
+            if (sig)
             {
-                VStringBuffer arraySig("[%s", sig);
-                fieldId = JNIenv->GetFieldID(Class, field->name, arraySig.str());
+                if (inSet)
+                {
+                    VStringBuffer arraySig("[%s", sig);
+                    fieldId = JNIenv->GetFieldID(Class, field->name, arraySig.str());
+                }
+                else
+                    fieldId = JNIenv->GetFieldID(Class, field->name, sig);
             }
             else
-                fieldId = JNIenv->GetFieldID(Class, field->name, sig);
+            {
+                // Do it the hard way via reflection API
+                // Equivalent java:
+                // Field field = object.getClass().getDeclaredField(fieldName);
+                jclass classClass =JNIenv->GetObjectClass(Class);
+                jmethodID getDeclaredField = JNIenv->GetMethodID(classClass, "getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;" );
+                jstring fieldName = JNIenv->NewStringUTF(field->name);
+                jobject reflectedField = JNIenv->CallObjectMethod(Class, getDeclaredField, fieldName);
+                fieldId = JNIenv->FromReflectedField(reflectedField);
+            }
+            return fieldId;
         }
-        else
+        catch (IException *E)
         {
-            // Do it the hard way via reflection API
-            // Equivalent java:
-            // Field field = object.getClass().getDeclaredField(fieldName);
-            jclass classClass =JNIenv->GetObjectClass(Class);
-            checkException();
-            jmethodID getDeclaredField = JNIenv->GetMethodID(classClass, "getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;" );
-            checkException();
-            jstring fieldName = JNIenv->NewStringUTF(field->name);
-            checkException();
-            jobject reflectedField = JNIenv->CallObjectMethod(Class, getDeclaredField, fieldName);
-            checkException();
-            fieldId = JNIenv->FromReflectedField(reflectedField);
-        }
-        if (!fieldId && expected)
+            ::Release(E);
             throw MakeStringException(0, "javaembed: Unable to retrieve field %s of type %s", field->name, expected);
-        if (expected)
-            checkException();
-        else
-            JNIenv->ExceptionClear();
-        return fieldId;
-    }
-    void checkException()
-    {
-        javaembed::checkException(JNIenv);
+        }
     }
 
-    JNIEnv *JNIenv;
+    CheckedJNIEnv *JNIenv;
     jobject row;
     const RtlFieldInfo *outerRow;
     jclass Class;
@@ -460,7 +1070,7 @@ class JavaRowBuilder : public JavaObjectAccessor, implements IFieldSource
 public:
     IMPLEMENT_IINTERFACE;
 
-    JavaRowBuilder(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jobject _row)
+    JavaRowBuilder(CheckedJNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jobject _row)
     : JavaObjectAccessor(_JNIenv, _outerRow, _row)
     {
     }
@@ -476,7 +1086,6 @@ public:
             jfieldID fieldId = getFieldId(field, "Z", "boolean");
             b = JNIenv->GetBooleanField(row, fieldId);
         }
-        checkException();
         return b;
     }
     virtual void getDataResult(const RtlFieldInfo *field, size32_t &__len, void * &__result)
@@ -491,12 +1100,10 @@ public:
             jfieldID fieldId = getFieldId(field, "[B", "DATA");
             array = (jbyteArray) JNIenv->GetObjectField(row, fieldId);
         }
-        checkException();
         __len = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
         __result = (__len > 0 ? rtlMalloc(__len) : NULL);
         if (__result)
             JNIenv->GetByteArrayRegion(array, 0, __len, (jbyte *) __result);
-        checkException();
     }
     virtual double getRealResult(const RtlFieldInfo *field)
     {
@@ -534,7 +1141,6 @@ public:
                 throwUnexpected();
             }
         }
-        checkException();
         return d;
     }
     virtual __int64 getSignedResult(const RtlFieldInfo *field)
@@ -593,7 +1199,6 @@ public:
                 UNSUPPORTED("non-standard integer sizes");
             }
         }
-        checkException();
         return ret;
     }
     virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field)
@@ -613,7 +1218,7 @@ public:
             if (field->isFixedSize() && field->size(NULL, NULL)==1)
             {
                 // See if there's a char field
-                jfieldID charFieldId = getFieldId(field, "C", NULL);
+                jfieldID charFieldId = checkCharField(field);
                 if (charFieldId)
                 {
                     jchar resultChar = JNIenv->GetCharField(row, charFieldId);
@@ -650,7 +1255,7 @@ public:
             if (field->isFixedSize() && field->size(NULL, NULL)==1)
             {
                 // See if there's a char field
-                jfieldID charFieldId = getFieldId(field, "C", NULL);
+                jfieldID charFieldId = checkCharField(field);
                 if (charFieldId)
                 {
                     jchar resultChar = JNIenv->GetCharField(row, charFieldId);
@@ -687,7 +1292,7 @@ public:
             if (field->isFixedSize() && field->size(NULL, NULL)==1)
             {
                 // See if there's a char field
-                jfieldID charFieldId = getFieldId(field, "C", NULL);
+                jfieldID charFieldId = checkCharField(field);
                 if (charFieldId)
                 {
                     jchar resultChar = JNIenv->GetCharField(row, charFieldId);
@@ -726,7 +1331,6 @@ public:
         inSet = true;
         idx = -1;  // First call to next() increments it to 0
         limit = row != NULL ? JNIenv->GetArrayLength((jarray) row) : 0;
-        checkException();
     }
     virtual bool processNextSet(const RtlFieldInfo * field)
     {
@@ -742,7 +1346,6 @@ public:
         inDataSet = true;
         idx = -1;  // First call to next() increments it to 0
         limit = row != NULL ? JNIenv->GetArrayLength((jarray) row) : 0;
-        checkException();
     }
     virtual void processBeginRow(const RtlFieldInfo * field)
     {
@@ -800,7 +1403,7 @@ class JavaObjectBuilder : public JavaObjectAccessor, implements IFieldProcessor
 {
 public:
     IMPLEMENT_IINTERFACE;
-    JavaObjectBuilder(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jclass _Class)
+    JavaObjectBuilder(CheckedJNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jclass _Class)
     : JavaObjectAccessor(_JNIenv, _outerRow, _Class)
     {
         setConstructor();
@@ -810,14 +1413,13 @@ public:
         if (field->isFixedSize() && field->size(NULL, NULL)==1 && !inSet)  // SET OF STRING1 is not mapped to array of char...
         {
             // See if there's a char field
-            jfieldID charFieldId = getFieldId(field, "C", NULL);
+            jfieldID charFieldId = checkCharField(field);
             if (charFieldId)
             {
                 assertex(numchars==1);
                 jchar c;
                 rtlStrToUnicode(1, &c, 1, text);
                 JNIenv->SetCharField(row, charFieldId, c);
-                checkException();
                 return;
             }
         }
@@ -826,31 +1428,26 @@ public:
         rtlDataAttr unicode16;
         rtlStrToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
         jstring value = JNIenv->NewString(unicode16.getustr(), numchars16);
-        checkException();
         if (inSet)
             JNIenv->SetObjectArrayElement((jobjectArray) row, idx, value);
         else
             JNIenv->SetObjectField(row, fieldId, value);
         JNIenv->DeleteLocalRef(value);
-        checkException();
     }
     virtual void processBool(bool value, const RtlFieldInfo * field)
     {
         jfieldID fieldId = getFieldId(field, "Z", "boolean");
         JNIenv->SetBooleanField(row, fieldId, value);
-        checkException();
     }
     virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field)
     {
         jfieldID fieldId = getFieldId(field, "[B", "data");
         jbyteArray javaData = JNIenv->NewByteArray(len);
         JNIenv->SetByteArrayRegion(javaData, 0, len, (jbyte *) value);
-        checkException();
         if (inSet)
             JNIenv->SetObjectArrayElement((jobjectArray) row, idx, javaData);
         else
             JNIenv->SetObjectField(row, fieldId, javaData);
-        checkException();
     }
     virtual void processInt(__int64 value, const RtlFieldInfo * field)
     {
@@ -877,7 +1474,6 @@ public:
             UNSUPPORTED("non-standard integer sizes");
             break;
         }
-        checkException();
     }
     virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field)
     {
@@ -899,7 +1495,6 @@ public:
         default:
             throwUnexpected();
         }
-        checkException();
     }
     virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
     {
@@ -914,13 +1509,11 @@ public:
     {
         jfieldID fieldId = getFieldId(field, "Ljava/lang/String;", "String");
         jstring value = JNIenv->NewString(text, numchars);
-        checkException();
         if (inSet)
             JNIenv->SetObjectArrayElement((jobjectArray) row, idx, value);
         else
             JNIenv->SetObjectField(row, fieldId, value);
         JNIenv->DeleteLocalRef(value);
-        checkException();
     }
     virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field)
     {
@@ -936,13 +1529,11 @@ public:
         rtlDataAttr unicode16;
         rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
         jstring value = JNIenv->NewString(unicode16.getustr(), numchars16);
-        checkException();
         if (inSet)
             JNIenv->SetObjectArrayElement((jobjectArray) row, idx, value);
         else
             JNIenv->SetObjectField(row, fieldId, value);
         JNIenv->DeleteLocalRef(value);
-        checkException();
     }
 
     virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElems, bool isAll, const byte *data)
@@ -1016,7 +1607,7 @@ public:
         case type_varstring:
         case type_unicode:
         case type_utf8:
-            newRow = JNIenv->NewObjectArray(numElems, JNIenv->FindClass("java/lang/String"), NULL);
+            newRow = JNIenv->NewObjectArray(numElems, langStringClass, NULL);
             javaTypeSignature = "[Ljava/lang/String;";
             processElements = true;
             break;
@@ -1028,10 +1619,8 @@ public:
         default:
             throwUnexpected();
         }
-        checkException();
         jfieldID fieldId = getFieldId(field, javaTypeSignature, "Array");
         JNIenv->SetObjectField(row, fieldId, newRow);
-        checkException();
         row = newRow;
         inSet = true;
         return processElements;
@@ -1049,7 +1638,6 @@ public:
         {
             jclass arrayClass = getClassForChild(childId);
             jmethodID isArrayMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(arrayClass), "isArray", "()Z" );
-            checkException();
             if (!JNIenv->CallBooleanMethod(arrayClass, isArrayMethod))
             {
                 JNIenv->ExceptionClear();
@@ -1057,20 +1645,14 @@ public:
                 rtlFail(0, message.str());
             }
             // Set up constructor etc for the child rows, so we don't do it per row
-            checkException();
             jmethodID getTypeMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(arrayClass), "getComponentType", "()Ljava/lang/Class;" );
-            checkException();
             Class = (jclass) JNIenv->CallObjectMethod(arrayClass, getTypeMethod);
-            checkException();
             setConstructor();
             // Now we need to create the array
             newRow = JNIenv->NewObjectArray(numRows, Class, NULL);
-            checkException();
         }
         JNIenv->SetObjectField(row, childId, newRow);
-        checkException();
         row = newRow;
-
         return true;
     }
     virtual bool processBeginRow(const RtlFieldInfo * field)
@@ -1086,7 +1668,6 @@ public:
             if (inDataSet)
             {
                 newRow = JNIenv->NewObject(Class, constructor);
-                checkException();
                 JNIenv->SetObjectArrayElement((jobjectArray) row, idx++, newRow);
             }
             else
@@ -1096,18 +1677,15 @@ public:
                 Class = getClassForChild(childId);
                 setConstructor();
                 newRow = JNIenv->NewObject(Class, constructor);
-                checkException();
                 JNIenv->SetObjectField(row, childId, newRow);
             }
             row = newRow;
         }
-        checkException();
         return true;
     }
     virtual void processEndSet(const RtlFieldInfo * field)
     {
         JNIenv->DeleteLocalRef(row);
-        checkException();
         pop();
         inSet = false;
     }
@@ -1123,7 +1701,6 @@ public:
         {
             constructor = (jmethodID) stack.popGet();
             JNIenv->DeleteLocalRef(row);
-            checkException();
             pop();
         }
     }
@@ -1135,16 +1712,11 @@ protected:
     jclass getClassForChild(jfieldID childId)
     {
         jobject reflectedField = JNIenv->ToReflectedField(Class, childId, false);
-        checkException();
         jclass fieldClass =JNIenv->GetObjectClass(reflectedField);
-        checkException();
         jmethodID getTypeMethod = JNIenv->GetMethodID(fieldClass, "getType", "()Ljava/lang/Class;" );
-        checkException();
         jclass result = (jclass) JNIenv->CallObjectMethod(reflectedField, getTypeMethod);
-        checkException();
         JNIenv->DeleteLocalRef(reflectedField);
         JNIenv->DeleteLocalRef(fieldClass);
-        checkException();
         return result;
 
     }
@@ -1155,13 +1727,10 @@ protected:
         {
             JNIenv->ExceptionClear();
             jmethodID getNameMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(Class), "getName", "()Ljava/lang/String;" );
-            checkException();
             jstring name = (jstring) JNIenv->CallObjectMethod(Class, getNameMethod);
-            checkException();
             const char *nameText = JNIenv->GetStringUTFChars(name, NULL);
             VStringBuffer message("javaembed: no suitable constructor for class %s", nameText);
             JNIenv->ReleaseStringUTFChars(name, nameText);
-            checkException();
             rtlFail(0, message.str());
         }
     }
@@ -1175,7 +1744,7 @@ protected:
 class ECLDatasetIterator : public CInterfaceOf<IInterface>
 {
 public:
-    ECLDatasetIterator(JNIEnv *JNIenv, const RtlTypeInfo *_typeInfo, jclass className, IRowStream * _val)
+    ECLDatasetIterator(CheckedJNIEnv *JNIenv, const RtlTypeInfo *_typeInfo, jclass className, IRowStream * _val)
     : typeInfo(_typeInfo), val(_val),
       dummyField("<row>", NULL, typeInfo),
       javaBuilder(JNIenv, &dummyField, className)
@@ -1218,12 +1787,10 @@ protected:
 // A Java function that returns a dataset will return a JavaRowStream object that can be
 // interrogated to return each row of the result in turn
 
-static JNIEnv *queryJNIEnv();
-
 class JavaLocalFrame
 {
 public:
-    JavaLocalFrame(JNIEnv *_JNIenv, unsigned size = 16) : JNIenv(_JNIenv)
+    JavaLocalFrame(CheckedJNIEnv *_JNIenv, unsigned size = 16) : JNIenv(_JNIenv)
     {
         JNIenv->PushLocalFrame(size);
     }
@@ -1232,7 +1799,7 @@ public:
         JNIenv->PopLocalFrame(NULL);
     }
 private:
-    JNIEnv *JNIenv;
+    CheckedJNIEnv *JNIenv;
 };
 
 class JavaRowStream : public CInterfaceOf<IRowStream>
@@ -1241,8 +1808,7 @@ public:
     JavaRowStream(jobject _iterator, IEngineRowAllocator *_resultAllocator)
     : resultAllocator(_resultAllocator)
     {
-        JNIEnv *JNIenv = queryJNIEnv();
-        iterator = JNIenv->NewGlobalRef(_iterator);
+        iterator = queryJNIEnv()->NewGlobalRef(_iterator);
         // Note that we can't cache the JNIEnv, iterClass, or methodIds here - calls may be made on different threads (though not at the same time).
     }
     ~JavaRowStream()
@@ -1253,7 +1819,7 @@ public:
     {
         if (!iterator)
             return NULL;
-        JNIEnv *JNIenv = queryJNIEnv();
+        CheckedJNIEnv *JNIenv = queryJNIEnv();
         JavaLocalFrame lf(JNIenv);
         // Java code would be
         // if (!iterator.hasNext)
@@ -1263,20 +1829,15 @@ public:
         // }
         // result = iterator.next();
         jclass iterClass =JNIenv->GetObjectClass(iterator);
-        javaembed::checkException(JNIenv);
         jmethodID hasNextMethod = JNIenv->GetMethodID(iterClass, "hasNext", "()Z" );
-        javaembed::checkException(JNIenv);
         jboolean hasNext = JNIenv->CallBooleanMethod(iterator, hasNextMethod);
-        javaembed::checkException(JNIenv);
         if (!hasNext)
         {
             stop();
             return NULL;
         }
         jmethodID nextMethod = JNIenv->GetMethodID(iterClass, "next", "()Ljava/lang/Object;" );
-        javaembed::checkException(JNIenv);
         jobject result = JNIenv->CallObjectMethod(iterator, nextMethod);
-        javaembed::checkException(JNIenv);
         RtlDynamicRowBuilder rowBuilder(resultAllocator);
         const RtlTypeInfo *typeInfo = resultAllocator->queryOutputMeta()->queryTypeInfo();
         assertex(typeInfo);
@@ -1288,7 +1849,7 @@ public:
     virtual void stop()
     {
         resultAllocator.clear();
-        JNIEnv *JNIenv = queryJNIEnv();
+        CheckedJNIEnv *JNIenv = queryJNIEnv();
         if (JNIenv)
         {
             if (iterator)
@@ -1381,12 +1942,10 @@ const char *esdl2JavaFullClassName(IEsdlDefinition &esdl, const char *esdlType)
 class JavaObjectXmlWriter : public CInterface
 {
 public:
-    JavaObjectXmlWriter(JNIEnv *_JNIenv, jobject _obj, const char *_reqType, IEsdlDefinition &_esdl, const char *_esdlService, IXmlWriter &_writer)
+    JavaObjectXmlWriter(CheckedJNIEnv *_JNIenv, jobject _obj, const char *_reqType, IEsdlDefinition &_esdl, const char *_esdlService, IXmlWriter &_writer)
     : JNIenv(_JNIenv), obj(_obj), writer(_writer), esdl(_esdl), esdlService(_esdlService), reqType(_reqType)
     {
         Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(obj));
-        langObjectClass = FindClass("java/lang/Object");
-        objToString = JNIenv->GetMethodID(langObjectClass, "toString", "()Ljava/lang/String;");
     }
     ~JavaObjectXmlWriter()
     {
@@ -1403,8 +1962,7 @@ public:
     }
     void writeSimpleType(const char *fieldname, jobject fieldObj)
     {
-        jstring fieldStr = (jstring) JNIenv->CallObjectMethod(fieldObj, objToString);
-        checkException();
+        jstring fieldStr = (jstring) JNIenv->CallObjectMethod(fieldObj, object_toString);
         if (!fieldStr)
             return;
         const char *text = JNIenv->GetStringUTFChars(fieldStr, NULL);
@@ -1439,15 +1997,12 @@ public:
         const char *fieldname = defObject.queryName();
         VStringBuffer javaSig("L%s/%s;", esdlService.str(), defObject.queryProp("enum_type"));
         jfieldID fieldId = JNIenv->GetFieldID(parentClass, fieldname, javaSig);
-        checkException();
         if (!fieldId)
             return;
         jobject fieldObj = (jobject) JNIenv->GetObjectField(parentObject, fieldId);
-        checkException();
         if (!fieldObj)
             return;
-        jstring fieldStr = (jstring) JNIenv->CallObjectMethod(fieldObj, objToString);
-        checkException();
+        jstring fieldStr = (jstring) JNIenv->CallObjectMethod(fieldObj, object_toString);
         const char *text = JNIenv->GetStringUTFChars(fieldStr, NULL);
         if (text)
             writer.outputCString(text, defObject.queryName());
@@ -1478,8 +2033,6 @@ public:
         for (jint i=0; i < count; i++)
         {
             jobject elementObj = JNIenv->GetObjectArrayElement(arrayObj, i);
-            if(JNIenv->ExceptionOccurred())
-                break;
             writeSimpleType(item_tag, elementObj);
             JNIenv->DeleteLocalRef(elementObj);
         }
@@ -1501,7 +2054,6 @@ public:
             for (jint i=0; i < count; i++)
             {
                 jobject elementObj = JNIenv->GetObjectArrayElement(arrayObj, i);
-                javaembed::checkException(JNIenv, false);
                 writer.outputBeginNested(item_tag, true);
                 writeChildren(elementClass, elementObj, defStruct);
                 writer.outputEndNested(item_tag);
@@ -1520,21 +2072,13 @@ public:
         if (!item_tag)
             return;
         const char *fieldname = defObject.queryName();
-        jclass arrayListClass = FindClass("java/util/ArrayList");
-        if (!arrayListClass)
-            return;
-        jmethodID toArrayMethod = JNIenv->GetMethodID(arrayListClass, "toArray", "()[Ljava/lang/Object;" );
-        if (!toArrayMethod)
-            return;
-
         jfieldID fieldId = JNIenv->GetFieldID(parentClass, fieldname, "Ljava/util/ArrayList;");
         if (!fieldId)
             return;
         jobject arrayListObj = (jobject) JNIenv->GetObjectField(parentObject, fieldId);
         if (!arrayListObj)
             return;
-        javaembed::checkException(JNIenv, false);
-        jobjectArray arrayObj = (jobjectArray) JNIenv->CallObjectMethod(arrayListObj, toArrayMethod);
+        jobjectArray arrayObj = (jobjectArray) JNIenv->CallObjectMethod(arrayListObj, arrayList_toArray);
         if (arrayObj)
         {
             jint count = JNIenv->GetArrayLength(arrayObj);
@@ -1591,11 +2135,6 @@ public:
         writer.outputEndNested("Response");
     }
 
-    void checkException()
-    {
-        javaembed::checkException(JNIenv, false);
-    }
-
     jclass FindClass(const char *name)
     {
         jclass *pClass = javaClasses.getValue(name);
@@ -1610,12 +2149,10 @@ public:
         return Class;
     }
 
-    JNIEnv *JNIenv;
+    CheckedJNIEnv *JNIenv;
     MapStringTo<jclass> javaClasses;
     jclass Class;
     jobject obj;
-    jclass langObjectClass;
-    jmethodID objToString;
     IXmlWriter &writer;
     IEsdlDefinition &esdl;
     StringAttr reqType;
@@ -1631,7 +2168,7 @@ public:
 class JavaThreadContext
 {
 public:
-    JNIEnv *JNIenv;       /* receives pointer to native method interface */
+    CheckedJNIEnv *JNIenv;       /* receives pointer to native method interface */
 public:
     JavaThreadContext()
     {
@@ -1652,45 +2189,22 @@ public:
 
     jobject getSystemClassLoader()
     {
-        JNIenv->ExceptionClear();
-        jclass javaLangClassLoaderClass = JNIenv->FindClass("java/lang/ClassLoader");
-        checkException();
-        jmethodID getSystemClassLoaderMethod = JNIenv->GetStaticMethodID(javaLangClassLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
-        checkException();
-        jobject systemClassLoaderObj = JNIenv->CallStaticObjectMethod(javaLangClassLoaderClass, getSystemClassLoaderMethod);
-        checkException();
+        jobject systemClassLoaderObj = JNIenv->CallStaticObjectMethod(javaLangClassLoaderClass, cl_getSystemClassLoader);
         assertex(systemClassLoaderObj);
         return systemClassLoaderObj;
     }
 
     void setThreadClassLoader(jobject classLoader)
     {
-        JNIenv->ExceptionClear();
-        jclass javaLangThreadClass = JNIenv->FindClass("java/lang/Thread");
-        checkException();
-        jmethodID currentThreadMethod = JNIenv->GetStaticMethodID(javaLangThreadClass, "currentThread", "()Ljava/lang/Thread;");
-        checkException();
-        jobject threadObj = JNIenv->CallStaticObjectMethod(javaLangThreadClass, currentThreadMethod);
-        checkException();
-        jmethodID setContextClassLoaderMethod = JNIenv->GetMethodID(javaLangThreadClass, "setContextClassLoader", "(Ljava/lang/ClassLoader;)V");
-        checkException();
-        JNIenv->CallObjectMethod(threadObj, setContextClassLoaderMethod, classLoader);
-        checkException();
+        jobject threadObj = JNIenv->CallStaticObjectMethod(javaLangThreadClass, thread_currentThread);
+        JNIenv->CallObjectMethod(threadObj, thread_setContextClassLoader, classLoader);
     }
 
     jobject getThreadClassLoader()
     {
         JNIenv->ExceptionClear();
-        jclass javaLangThreadClass = JNIenv->FindClass("java/lang/Thread");
-        checkException();
-        jmethodID currentThreadMethod = JNIenv->GetStaticMethodID(javaLangThreadClass, "currentThread", "()Ljava/lang/Thread;");
-        checkException();
-        jobject threadObj = JNIenv->CallStaticObjectMethod(javaLangThreadClass, currentThreadMethod);
-        checkException();
-        jmethodID getContextClassLoaderMethod = JNIenv->GetMethodID(javaLangThreadClass, "getContextClassLoader", "()Ljava/lang/ClassLoader;");
-        checkException();
-        jobject contextClassLoaderObj = JNIenv->CallObjectMethod(threadObj, getContextClassLoaderMethod);
-        checkException();
+        jobject threadObj = JNIenv->CallStaticObjectMethod(javaLangThreadClass, thread_currentThread);
+        jobject contextClassLoaderObj = JNIenv->CallObjectMethod(threadObj, thread_getContextClassLoader);
         assertex(contextClassLoaderObj);
         return contextClassLoaderObj;
     }
@@ -1706,10 +2220,6 @@ public:
         contexts.append(*ctx);
     }
 private:
-    inline void checkException()
-    {
-        javaembed::checkException(JNIenv);
-    }
     IArrayOf<IEmbedFunctionContext> contexts;
 };
 
@@ -1717,7 +2227,7 @@ class JavaXmlBuilder : implements IXmlWriterExt, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    JavaXmlBuilder(JNIEnv *_JNIenv, IEsdlDefinition *esdl_, const char *esdlservice, const char *esdltype_)
+    JavaXmlBuilder(CheckedJNIEnv *_JNIenv, IEsdlDefinition *esdl_, const char *esdlservice, const char *esdltype_)
     : JNIenv(_JNIenv), esdl(esdl_), javaPackage(esdlservice), esdlType(esdltype_)
     {
     }
@@ -1734,11 +2244,6 @@ public:
                 JNIenv->DeleteGlobalRef(*pClass);
         }
     }
-    void checkException()
-    {
-        javaembed::checkException(JNIenv, false);
-    }
-
     void initWriter()
     {
     }
@@ -1811,10 +2316,8 @@ public:
         jstring strvalue = JNIenv->NewStringUTF(s);
         jobject value = JNIenv->CallStaticObjectMethod(enumClass, fromString, strvalue);
         JNIenv->DeleteLocalRef(strvalue);
-        checkException();
         JNIenv->SetObjectField(getCurJavaObject(), fieldId, value);
         JNIenv->DeleteLocalRef(value);
-        checkException();
     }
     virtual void outputString(unsigned size, const char *text, const char *fieldname)
     {
@@ -1851,7 +2354,6 @@ public:
         jstring strvalue = JNIenv->NewStringUTF(s);
         jobject value = JNIenv->NewObject(typeClass, typeStringConstructor, strvalue);
         JNIenv->DeleteLocalRef(strvalue);
-        checkException();
         if (!value)
             return;
         if (isArray)
@@ -1863,7 +2365,6 @@ public:
                 JNIenv->SetObjectField(getCurJavaObject(), fieldId, value);
         }
         JNIenv->DeleteLocalRef(value);
-        checkException();
     }
     void outputString(const char *text, const char *fieldname)
     {
@@ -2029,7 +2530,7 @@ public:
     }
 
 public:
-    JNIEnv *JNIenv;
+    CheckedJNIEnv *JNIenv;
     Linked<IEsdlDefinition> esdl;
     StringAttr javaPackage;
     StringAttr esdlType;
@@ -2071,7 +2572,7 @@ public:
         javaClasses.setValue(name, Class); //even save if result has no class
         return Class;
     }
-    void popDefStackEntry(JNIEnv *JNIenv)
+    void popDefStackEntry(CheckedJNIEnv *JNIenv)
     {
         if (!defStack.length())
             return;
@@ -2079,30 +2580,24 @@ public:
         if (entry->obj)
             JNIenv->DeleteGlobalRef(entry->obj);
     }
-    void pushDefStackEntry(JNIEnv *JNIenv, const char *package, const char *fieldname, IEsdlDefObject *defType, IEsdlDefObject *defObject)
+    void pushDefStackEntry(CheckedJNIEnv *JNIenv, const char *package, const char *fieldname, IEsdlDefObject *defType, IEsdlDefObject *defObject)
     {
         DefStackEntry *parent = defStack.length() ? &defStack.tos() : NULL;
         Owned<DefStackEntry> entry = new DefStackEntry(fieldname, defType, defObject);
         JNIenv->ExceptionClear();
         if (defObject && defObject->getEsdlType()==EsdlTypeArray)
         {
-            const char *javaClassName = "java/util/ArrayList";
-            entry->Class = FindClass(javaClassName);
-            if (entry->Class)
+            entry->Class = arrayListClass;
+            entry->constructor = arrayList_constructor;
+            entry->append = arrayList_add;
+            entry->obj = MakeObjectGlobal(JNIenv->NewObject(entry->Class, entry->constructor));
+            if (entry->obj)
             {
-                entry->constructor = JNIenv->GetMethodID(entry->Class, "<init>", "()V");
-                entry->append = JNIenv->GetMethodID(entry->Class, "add", "(Ljava/lang/Object;)Z");
-                entry->obj = MakeObjectGlobal(JNIenv->NewObject(entry->Class, entry->constructor));
-                javaembed::checkException(JNIenv, false);
-                if (entry->obj)
+                if (parent && parent->Class)
                 {
-                    if (parent && parent->Class)
-                    {
-                        VStringBuffer javaSig("L%s;", javaClassName);
-                        entry->fieldId = JNIenv->GetFieldID(parent->Class, fieldname, javaSig);
-                        if (parent->obj && entry->fieldId)
-                            JNIenv->SetObjectField(parent->obj, entry->fieldId, entry->obj);
-                    }
+                    entry->fieldId = JNIenv->GetFieldID(parent->Class, fieldname, "Ljava/util/ArrayList;");
+                    if (parent->obj && entry->fieldId)
+                        JNIenv->SetObjectField(parent->obj, entry->fieldId, entry->obj);
                 }
             }
         }
@@ -2114,7 +2609,6 @@ public:
             {
                 entry->constructor = JNIenv->GetMethodID(entry->Class, "<init>", "()V");
                 entry->obj = MakeObjectGlobal(JNIenv->NewObject(entry->Class, entry->constructor));
-                javaembed::checkException(JNIenv, false);
                 if (entry->obj)
                 {
                     if (parent)
@@ -2128,7 +2622,6 @@ public:
                             if (parent->obj && entry->fieldId)
                                 JNIenv->SetObjectField(parent->obj, entry->fieldId, entry->obj);
                         }
-                        javaembed::checkException(JNIenv, false);
                     }
                 }
             }
@@ -2352,7 +2845,7 @@ public:
     {
         delete [] constOffsets;
     }
-    StringBuffer & getSignature(StringBuffer &ret, unsigned idx)
+    StringBuffer & getSignature(StringBuffer &ret, unsigned idx) const
     {
         if (!methodNames.isItem(idx))
             throw makeStringException(0, "No public static method found");
@@ -2361,7 +2854,11 @@ public:
             ret.append('@');
         return ret.append(methodSigs.item(idx));
     }
-    MemoryBuffer &getEmbedData(MemoryBuffer &result, const char *funcName, bool mainClass)
+    const char *queryClassName() const
+    {
+        return className.get();
+    }
+    MemoryBuffer &getEmbedData(MemoryBuffer &result, const char *funcName, bool mainClass) const
     {
         result.setEndian(__BIG_ENDIAN);
         StringBuffer signature;
@@ -2395,14 +2892,14 @@ public:
         ACC_SYNTHETIC = 0x1000, //  Declared synthetic; not present in the source code.
     };
 
-    unsigned getFlags(const char *funcName)
+    unsigned getFlags(const char *funcName) const
     {
         unsigned idx = getFunctionIdx(funcName);
         return methodFlags[idx];
     }
 
 private:
-    unsigned getFunctionIdx(const char *funcName)
+    unsigned getFunctionIdx(const char *funcName) const
     {
         unsigned methodIdx = (unsigned) -1;
         ForEachItemIn(idx, methodNames)
@@ -2464,6 +2961,10 @@ private:
     StringArray methodSigs;
     UnsignedArray methodFlags;
 };
+
+// Objects of class JavaEmbedImportContext are created locally for each call of a function, or thread-local to persist from one call to the next.
+// Methods in here do not need to be thread-safe
+
 class JavaEmbedImportContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
@@ -2494,7 +2995,7 @@ public:
                 {
                     if (persistMode != persistNone)
                         throw MakeStringException(MSGAUD_user, 0, "javaembed: Persist option specified more than once");
-                    persistMode = getPersistMode(val);
+                    persistMode = getPersistMode(val, globalScopeKey);
                     switch (persistMode)
                     {
                     case persistWorkunit:
@@ -2534,7 +3035,6 @@ public:
                 if (!getVal)
                     throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
                 bool ret=JNIenv->CallBooleanMethod(result.l, getVal);
-                checkException();
                 return ret;
             }
         default:
@@ -2566,7 +3066,6 @@ public:
                 if (!getVal)
                     throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
                 double ret = JNIenv->CallDoubleMethod(result.l, getVal);
-                checkException();
                 return ret;
             }
         default:
@@ -2590,7 +3089,6 @@ public:
                 if (!getVal)
                     throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
                 __int64 ret = JNIenv->CallLongMethod(result.l, getVal);
-                checkException();
                 return ret;
             }
         default:
@@ -2599,6 +3097,8 @@ public:
     }
     virtual unsigned __int64 getUnsignedResult()
     {
+        if (*returnType=='L')
+            return (unsigned __int64) JNIenv->NewGlobalRef(result.l);
         throw MakeStringException(MSGAUD_user, 0, "javaembed: Unsigned results not supported"); // Java doesn't support unsigned
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
@@ -3024,12 +3524,12 @@ public:
         case 'Z':
             checkType(type_boolean, sizeof(jboolean), elemType, elemSize);
             v.l = JNIenv->NewBooleanArray(numElems);
-            sharedCtx->JNIenv->SetBooleanArrayRegion((jbooleanArray) v.l, 0, numElems, (jboolean *) setData);
+            JNIenv->SetBooleanArrayRegion((jbooleanArray) v.l, 0, numElems, (jboolean *) setData);
             break;
         case 'B':
             checkType(type_int, sizeof(jbyte), elemType, elemSize);
             v.l = JNIenv->NewByteArray(numElems);
-            sharedCtx->JNIenv->SetByteArrayRegion((jbyteArray) v.l, 0, numElems, (jbyte *) setData);
+            JNIenv->SetByteArrayRegion((jbyteArray) v.l, 0, numElems, (jbyte *) setData);
             break;
         case 'C':
             // we COULD map to a set of string1, but is there any point?
@@ -3038,7 +3538,7 @@ public:
         case 'S':
             checkType(type_int, sizeof(jshort), elemType, elemSize);
             v.l = JNIenv->NewShortArray(numElems);
-            sharedCtx->JNIenv->SetShortArrayRegion((jshortArray) v.l, 0, numElems, (jshort *) setData);
+            JNIenv->SetShortArrayRegion((jshortArray) v.l, 0, numElems, (jshort *) setData);
             break;
         case 'I':
             checkType(type_int, sizeof(jint), elemType, elemSize);
@@ -3052,12 +3552,12 @@ public:
             break;
         case 'F':
             checkType(type_real, sizeof(jfloat), elemType, elemSize);
-            v.l = sharedCtx->JNIenv->NewFloatArray(numElems);
+            v.l = JNIenv->NewFloatArray(numElems);
             JNIenv->SetFloatArrayRegion((jfloatArray) v.l, 0, numElems, (jfloat *) setData);
             break;
         case 'D':
             checkType(type_real, sizeof(jdouble), elemType, elemSize);
-            v.l = sharedCtx->JNIenv->NewDoubleArray(numElems);
+            v.l = JNIenv->NewDoubleArray(numElems);
             JNIenv->SetDoubleArrayRegion((jdoubleArray) v.l, 0, numElems, (jdouble *) setData);
             break;
         case 'L':
@@ -3096,7 +3596,7 @@ public:
                     inData = (const byte *) setData;
                 }
                 int idx = 0;
-                v.l = JNIenv->NewObjectArray(numElems, JNIenv->FindClass("java/lang/String"), NULL);
+                v.l = JNIenv->NewObjectArray(numElems, langStringClass, NULL);
                 while (inData < endData)
                 {
                     jstring thisElem;
@@ -3152,7 +3652,6 @@ public:
                     default:
                         typeError("STRING");
                     }
-                    checkException();
                     inData += thisSize;
                     JNIenv->SetObjectArrayElement((jobjectArray) v.l, idx, thisElem);
                     JNIenv->DeleteLocalRef(thisElem);
@@ -3181,7 +3680,7 @@ public:
         const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
         assertex(typeInfo);
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-        JavaObjectBuilder javaBuilder(JNIenv, &dummyField, loadClass(className));
+        JavaObjectBuilder javaBuilder((CheckedJNIEnv *)JNIenv, &dummyField, loadClass(className));
         typeInfo->process(val, val, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
         jvalue v;
         v.l = javaBuilder.getObject();
@@ -3205,7 +3704,7 @@ public:
     {
         JavaXmlBuilder *javaWriter = dynamic_cast<JavaXmlBuilder*>(writer);
         if (!javaWriter)
-            throw MakeStringException(0, "javaembed: Invalid object writer for %s", signature);
+            throw MakeStringException(0, "javaembed: Invalid object writer for %s", signature.get());
         jvalue v;
         v.l = javaWriter->getObject();
         addArg(v);
@@ -3252,7 +3751,7 @@ public:
             assertex(typeInfo);
             RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
             jclass Class = loadClass(className);
-            JavaObjectBuilder javaBuilder(JNIenv, &dummyField, Class);
+            JavaObjectBuilder javaBuilder((CheckedJNIEnv *) JNIenv, &dummyField, Class);
             for (;;)
             {
                 roxiemem::OwnedConstRoxieRow thisRow = val->ungroupedNextRow();
@@ -3274,17 +3773,12 @@ public:
             // Pass in an iterator
             // Create a java object of type com.HPCCSystems.HpccUtils - this acts as a proxy for the iterator
             JNIenv->ExceptionClear();
-            jclass proxyClass = JNIenv->FindClass("com/HPCCSystems/HpccUtils");
-            checkException();
-            jmethodID constructor = JNIenv->GetMethodID(proxyClass, "<init>", "(JLjava/lang/String;)V");
-            checkException();
             jvalue param;
             const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
-            ECLDatasetIterator *iterator = new ECLDatasetIterator(JNIenv, typeInfo, loadClass(className), val);
+            ECLDatasetIterator *iterator = new ECLDatasetIterator((CheckedJNIEnv *) JNIenv, typeInfo, loadClass(className), val);
             param.j = (jlong) iterator;
             iterators.append(*iterator);
-            jobject proxy = JNIenv->NewObject(proxyClass, constructor, param, JNIenv->NewStringUTF(helperLibraryName));
-            checkException();
+            jobject proxy = JNIenv->NewObject(hpccIteratorClass, hi_constructor, param, JNIenv->NewStringUTF(helperLibraryName));
             v.l = proxy;
         }
         addArg(v);
@@ -3302,7 +3796,7 @@ public:
     virtual void callFunction()
     {
         if (*argsig != ')')
-            throw MakeStringException(0, "javaembed: Too few ECL parameters passed for Java signature %s", signature);
+            throw MakeStringException(0, "javaembed: Too few ECL parameters passed for Java signature %s", signature.get());
         JNIenv->ExceptionClear();
         if (nonStatic)
         {
@@ -3321,6 +3815,7 @@ public:
             case 'B': result.s = JNIenv->CallByteMethodA(instance, javaMethodID, args); break;
             case '[':
             case 'L': result.l = JNIenv->CallObjectMethodA(instance, javaMethodID, args); break;
+            case 'V': JNIenv->CallVoidMethodA(instance, javaMethodID, args); result.l = nullptr; break;
             default: throwUnexpected();
             }
         }
@@ -3338,10 +3833,10 @@ public:
             case 'B': result.s = JNIenv->CallStaticByteMethodA(javaClass, javaMethodID, args); break;
             case '[':
             case 'L': result.l = JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args); break;
+            case 'V': JNIenv->CallStaticVoidMethodA(javaClass, javaMethodID, args); result.l = nullptr; break;
             default: throwUnexpected();
             }
         }
-        checkException();
     }
 
     virtual void compileEmbeddedScript(size32_t lenChars, const char *_script)
@@ -3408,9 +3903,9 @@ protected:
                 break;
             }
         case ')':
-            throw MakeStringException(0, "javaembed: Too many ECL parameters passed for Java signature %s", signature);
+            throw MakeStringException(0, "javaembed: Too many ECL parameters passed for Java signature %s", signature.get());
         default:
-            throw MakeStringException(0, "javaembed: Unrecognized character %c in java signature %s", *argsig, signature);
+            throw MakeStringException(0, "javaembed: Unrecognized character %c in java signature %s", *argsig, signature.get());
         }
         if (!javaLen)
             javaLen = strlen(argsig);
@@ -3428,7 +3923,7 @@ protected:
         const RtlTypeInfo *typeInfo = builder.queryAllocator()->queryOutputMeta()->queryTypeInfo();
         assertex(typeInfo);
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-        JavaRowBuilder javaRowBuilder(JNIenv, &dummyField, result);
+        JavaRowBuilder javaRowBuilder((CheckedJNIEnv *) JNIenv, &dummyField, result);
         return typeInfo->build(builder, 0, &dummyField, javaRowBuilder);
     }
 
@@ -3436,11 +3931,8 @@ protected:
     {
         JNIenv->ExceptionClear();
         jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-        checkException();
         jstring classNameString = JNIenv->NewStringUTF(className);
-        checkException();
         jclass Class = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, classNameString);
-        checkException();
         return Class;
     }
 
@@ -3454,62 +3946,13 @@ protected:
         return report;
     }
 
-    void checkException()
-    {
-        if (JNIenv->ExceptionCheck())
-        {
-            jthrowable exception = JNIenv->ExceptionOccurred();
-            JNIenv->ExceptionClear();
-            jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
-            jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
-            jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
-            JNIenv->ExceptionClear();  // The above function sometimes sets exception flag, no idea why. Causes unwanted tracing in checking mode.
-            const char *text = JNIenv->GetStringUTFChars(cause, 0);
-            VStringBuffer message("javaembed: In method %s: %s", queryReportName(), text);
-            JNIenv->ReleaseStringUTFChars(cause, text);
-            JNIenv->ExceptionClear();
-            rtlFail(0, message.str());
-        }
-    }
-
-    void checkException(const char *text)
-    {
-        if (JNIenv->ExceptionCheck())
-        {
-            JNIenv->ExceptionClear();
-            VStringBuffer message("javaembed: In method %s: %s", queryReportName(), text);
-            rtlFail(0, message.str());
-        }
-    }
-
-    bool checkException(StringBuffer &message)
-    {
-        if (JNIenv->ExceptionCheck())
-        {
-            jthrowable exception = JNIenv->ExceptionOccurred();
-            JNIenv->ExceptionClear();
-            jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
-            jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
-            jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
-            const char *text = JNIenv->GetStringUTFChars(cause, 0);
-            message.append(text);
-            JNIenv->ReleaseStringUTFChars(cause, text);
-            return true;
-        }
-        return false;
-    }
-
     jobject createThreadClassLoader(const char *classPath, size32_t bytecodeLen, const byte *bytecode)
     {
         if (bytecodeLen || (classPath && *classPath))
         {
-            jclass URLcls = JNIenv->FindClass("java/net/URL");
-            checkException();
-            jmethodID URLclsMid = JNIenv->GetMethodID(URLcls, "<init>","(Ljava/lang/String;)V");
-            checkException();
             StringArray paths;
             paths.appendList(classPath, ";");  // NOTE - as we need to be able to include : in the urls, we can't use ENVSEP here
-            jobjectArray URLArray = JNIenv->NewObjectArray(paths.length(), URLcls, NULL);
+            jobjectArray URLArray = JNIenv->NewObjectArray(paths.length(), netURLClass, NULL);
             ForEachItemIn(idx, paths)
             {
                 StringBuffer usepath;
@@ -3518,22 +3961,13 @@ protected:
                     usepath.append("file:");
                 usepath.append(path);
                 jstring jstr = JNIenv->NewStringUTF(usepath.str());
-                checkException();
-                jobject URLobj = JNIenv->NewObject(URLcls, URLclsMid, jstr);
-                checkException();
+                jobject URLobj = JNIenv->NewObject(netURLClass, netURL_constructor, jstr);
                 JNIenv->SetObjectArrayElement(URLArray, idx, URLobj);
                 JNIenv->DeleteLocalRef(URLobj);
                 JNIenv->DeleteLocalRef(jstr);
             }
-            checkException();
-            jclass customLoaderClass = JNIenv->FindClass("com/HPCCSystems/HpccClassLoader");
-            checkException("Unable to find class HpccClassLoader - is classpath set properly?");
-            jmethodID newInstance = JNIenv->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;IJLjava/lang/String;)Lcom/HPCCSystems/HpccClassLoader;");
-            checkException();
             jobject helperName = JNIenv->NewStringUTF(helperLibraryName);
-            checkException();
-            jobject contextClassLoaderObj = JNIenv->CallStaticObjectMethod(customLoaderClass, newInstance, URLArray, sharedCtx->getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, helperName);
-            checkException();
+            jobject contextClassLoaderObj = JNIenv->CallStaticObjectMethod(customLoaderClass, clc_newInstance, URLArray, sharedCtx->getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, helperName);
             assertex(contextClassLoaderObj);
             return contextClassLoaderObj;
         }
@@ -3547,30 +3981,101 @@ protected:
     {
         size32_t bytes = rtlUtf8Size(lenChars, utf);
         importName.set(utf, bytes);
-        classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode));
-        sharedCtx->setThreadClassLoader(classLoader);
-
+        StringBuffer classname;
         // Name should be in the form class.method:signature
         const char *funcname = strrchr(importName, '.');
-        if (!funcname)
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", importName.str());
-        signature = strchr(funcname, ':');
-        if (!signature)
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", importName.str());
-        StringBuffer classname(funcname-importName, importName);
-        // While it's probably preferred for people to use . as the separator in nested classes (to match java import statement),
-        // we accept / too (to match what you would see in the jar)
-        classname.replace('/', '.');
-        funcname++;  // skip the '.'
-        methodName.set(funcname, signature-funcname);
-        signature++; // skip the ':'
-        if (*signature == '@') // indicates a non-static method
+        if (funcname)
         {
-            nonStatic = true;
-            signature++;
+            classname.append(funcname-importName, importName);
+            classname.replace('/', '.');
+            funcname++;  // skip the '.'
         }
-        // We need to patch up the provided signature - any instances of <classname; need to be replaced by Ljava.utils.iterator
+        else
+        {
+            nonStatic = true;  // we assume we are going to call a method of a cached object - and we will get the class from that
+            funcname = importName;
+        }
+        const char *sig = strchr(funcname, ':');
+        if (sig)
+        {
+            methodName.set(funcname, sig-funcname);
+            sig++; // skip the ':'
+            if (*sig == '@') // indicates a non-static method
+            {
+                nonStatic = true;
+                sig++;
+            }
+            signature.set(sig);
+        }
+        else
+            methodName.set(funcname);
+
+        {
+            PersistedObjectCriticalBlock persistBlock;
+            if (nonStatic && !instance && persistMode > persistThread) // MORE - there may be a persist mode between Thread and Wuid, meaning shared between multiple on this thread
+            {
+                // If the persist scope is global, query, or workunit, we may want to use a pre-existing object. If we do we share its classloader, class, etc.
+                StringBuffer scopeKey;
+                getScopeKey(scopeKey);
+                persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
+                instance = persistBlock.getInstance();
+                if (instance)
+                {
+                    persistBlock.leave();
+                    // Copy class from instance
+                    javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(instance));
+                    classLoader = JNIenv->NewGlobalRef(getClassLoader(JNIenv, javaClass));
+                    sharedCtx->setThreadClassLoader(classLoader);
+                }
+            }
+            if (!javaClass)
+            {
+                if (!classname)
+                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", importName.str());
+                classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode));
+                sharedCtx->setThreadClassLoader(classLoader);
+
+                jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+                try
+                {
+                    javaClass = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, JNIenv->NewStringUTF(classname));
+                }
+                catch (IException *E)
+                {
+                    Owned<IException> e = E;
+                    throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Failed to resolve class name %s", classname.str());
+                }
+                javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
+            }
+            if (nonStatic && !instance)
+            {
+                constructor = JNIenv->GetMethodID(javaClass, "<init>", "()V");
+                if (!constructor)
+                    throw MakeStringException(0, "javaembed: in method %s: parameterless constructor required", queryReportName());
+                instance = JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
+                if (persistBlock.locked())
+                    persistBlock.leave(JNIenv->NewGlobalRef(instance));
+            }
+        }
+
+        if (!signature)
+            getSignature(signature, JNIenv, javaClass, funcname);
         StringBuffer javaSignature;
+        patchSignature(javaSignature, signature);
+
+        if (nonStatic)
+            javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
+        else
+            javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
+
+        returnType = strrchr(signature, ')');
+        assertex(returnType);  // Otherwise how did Java accept it??
+        returnType++;
+    }
+
+    static StringBuffer &patchSignature(StringBuffer &ret, const char *signature)
+    {
+        // We need to patch up the provided signature - any instances of <classname; need to be replaced by Ljava.utils.iterator
         const char *finger = signature;
         while (*finger)
         {
@@ -3582,45 +4087,58 @@ protected:
                     finger = close;
                 else
                 {
-                    javaSignature.append("Ljava/util/Iterator;");
+                    ret.append("Ljava/util/Iterator;");
                     finger = strchr(finger, ';');
                     if (!finger)
                         throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid java function signature %s", signature);
                 }
             }
             else
-                javaSignature.append(*finger);
+                ret.append(*finger);
             finger++;
         }
+        return ret;
+    }
 
-        jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-        jstring methodString = JNIenv->NewStringUTF(classname);
-        javaClass = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString);
-        StringBuffer message;
-        if (checkException(message) || !javaClass)
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve class name %s: %s", classname.str(), message.str());
-        javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
-
-        if (nonStatic)
-            javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
+    StringBuffer &getScopeKey(StringBuffer &ret)
+    {
+        if (globalScopeKey)
+            ret.append(globalScopeKey);
         else
-            javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
-        if (checkException(message) || !javaMethodID)
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve method name %s with signature %s: %s", methodName.str(), signature, message.str());
-
-        returnType = strrchr(signature, ')');
-        assertex(returnType);  // Otherwise how did Java accept it??
-        returnType++;
+        {
+            // MORE - we could key off the class name, but we don't always supply that.
+            // Plus it's mangled as often as not
+            const char *dotpos = strrchr(importName, '.');
+            if (dotpos)
+                ret.append(dotpos-importName+1, importName);
+            else
+                throw MakeStringException(0, "javaembed: cannot determine key for persist in function %s", importName.get());
+        }
+        ret.append('.');
+        switch (persistMode)
+        {
+        case persistGlobal:
+            ret.append("global");
+            break;
+        case persistWorkunit:
+            engine->getQueryId(ret, true);
+            break;
+        case persistQuery:
+            engine->getQueryId(ret, false);
+            break;
+        }
+        return ret;
     }
 
     JavaThreadContext *sharedCtx = nullptr;
-    JNIEnv *JNIenv = nullptr;
+    CheckedJNIEnv *JNIenv = nullptr;
     jvalue result = {0};
     StringAttr classpath;
     IArrayOf<ECLDatasetIterator> iterators;   // to make sure they get freed
     bool nonStatic = false;
     jobject instance = nullptr; // class instance of object to call methods on
 
+    StringAttr globalScopeKey;
     PersistMode persistMode = persistNone;  // Defines the lifetime of the java object for which this is called.
 
     // The following members are set up the first time a method is called only
@@ -3628,10 +4146,11 @@ protected:
     jclass javaClass = nullptr;
     jobject classLoader = nullptr;
     jmethodID javaMethodID = nullptr;
+    jmethodID constructor = nullptr;
     StringAttr methodName;
     StringAttr importName;
-    const char *returnType = nullptr;  // A pointer within importName
-    const char *signature = nullptr;   // A pointer within importName
+    StringAttr signature;
+    const char *returnType = nullptr;  // A pointer within signature
 
     // These point to the current arg/signature byte as we are binding
     int argcount = 0;
@@ -3644,37 +4163,6 @@ protected:
         argsig = signature;
         assertex(*argsig == '(');
         argsig++;
-        if (nonStatic && !instance)
-        {
-            jmethodID constructor = JNIenv->GetMethodID(javaClass, "<init>", "()V");
-            checkException("Parameterless constructor required");
-            // If the persist scope is global, query, or workunit, we may want to use a pre-existing object
-            StringBuffer scopeKey;
-            switch (persistMode)
-            {
-            case persistGlobal:
-                scopeKey.set("global");
-                break;
-            case persistWorkunit:
-                engine->getQueryId(scopeKey, true);
-                break;
-            case persistQuery:
-                engine->getQueryId(scopeKey, false);
-                break;
-            }
-            if (scopeKey.length())
-            {
-                bool isNew;
-                instance = globalState->getGlobalObject(scopeKey, JNIenv, javaClass, constructor, isNew);
-                if (isNew && engine)
-                     engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
-            }
-            else
-            {
-                instance = JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
-                checkException();
-            }
-        }
     }
 };
 
@@ -3705,7 +4193,7 @@ static JavaThreadContext *queryContext()
     return threadContext;
 }
 
-static JNIEnv *queryJNIEnv()
+static CheckedJNIEnv *queryJNIEnv()
 {
     return queryContext()->JNIenv;
 }
@@ -3743,18 +4231,12 @@ public:
     void init()
     {
         jobject classLoader = sharedCtx->getThreadClassLoader();
-        checkException();
         jmethodID loadClassMethod = sharedCtx->JNIenv->GetMethodID(sharedCtx->JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-        checkException();
         jstring methodString = sharedCtx->JNIenv->NewStringUTF(className);
-        checkException();
 
         Class = (jclass) sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString));
-        checkException();
         jmethodID constructor = sharedCtx->JNIenv->GetMethodID(Class, "<init>", "()V");
-        checkException();
         object = sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->NewObject(Class, constructor));
-        checkException();
     }
     virtual IEmbedFunctionContext *createFunctionContext(const char *function)
     {
@@ -3763,10 +4245,6 @@ public:
         Owned<JavaEmbedImportContext> fctx = new JavaEmbedImportContext(nullptr, queryContext(), object, 0, options);
         fctx->importFunction(rtlUtf8Length(strlen(function), function), function);
         return fctx.getClear();
-    }
-    void checkException()
-    {
-        javaembed::checkException(sharedCtx->JNIenv, false);
     }
 
 protected:
@@ -3928,7 +4406,8 @@ void doPrecompile(size32_t & __lenResult, void * & __result, const char *funcNam
         prevHash = 0;
         return;
     }
-    PersistMode persistMode = getPersistMode(persistOptions);
+    StringAttr globalScope;
+    PersistMode persistMode = getPersistMode(persistOptions, globalScope);
     StringBuffer tmpDirName;
     getTempFilePath(tmpDirName, "javaembed", nullptr);
     tmpDirName.append(PATHSEPCHAR).append("tmp.XXXXXX");
@@ -3981,6 +4460,7 @@ void doPrecompile(size32_t & __lenResult, void * & __result, const char *funcNam
         }
         VStringBuffer mainfile("%s" PATHSEPSTR "%s.class", tmpDirName.str(), classname.str());
         JavaClassReader reader(mainfile);
+        DBGLOG("Analysing generated class %s", reader.queryClassName());
         if (persistMode > persistThread && (reader.getFlags(funcName) & JavaClassReader::ACC_SYNCHRONIZED)==0)
             errors.appendf("Warning: persist mode set but function is not synchronized\n");
         reader.getEmbedData(result, funcName, true);
@@ -4032,6 +4512,31 @@ extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult, char * & __result, c
     __result = result.detach();
 }
 
+extern DECL_EXPORT void checkImport(size32_t & __lenResult, char * & __result, const char *funcname, size32_t charsImport, const char * import, const char *argNames, const char *compilerOptions, const char *persistOptions)
+{
+    StringBuffer result;
+    try
+    {
+        StringAttr globalScope;
+        PersistMode persistMode = getPersistMode(persistOptions, globalScope);
+        if (persistMode > persistThread && !globalScope)
+        {
+            StringBuffer b(rtlUtf8Size(charsImport, import), import);
+            const char *dotpos = strrchr(b, '.');
+            if (!dotpos)
+                throw MakeStringException(0, "javaembed: cannot determine key for persist in function %s", b.str());
+        }
+    }
+    catch (IException *E)
+    {
+        StringBuffer msg;
+        result.appendf("%s\n", E->errorMessage(msg).str());
+        E->Release();
+    }
+    __lenResult = result.length();
+    __result = result.detach();
+}
+
 } // namespace
 
 // Callbacks from java
@@ -4054,9 +4559,7 @@ JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1hasNext (JNIEnv *JNI
         StringBuffer msg;
         E->errorMessage(msg);
         E->Release();
-        jclass eClass = JNIenv->FindClass("java/lang/IllegalArgumentException");
-        if (eClass)
-            JNIenv->ThrowNew(eClass, msg.str());
+        JNIenv->ThrowNew(javaembed::langIllegalArgumentExceptionClass, msg.str());
         return false;
     }
 }
@@ -4073,9 +4576,7 @@ JNIEXPORT jobject JNICALL Java_com_HPCCSystems_HpccUtils__1next (JNIEnv *JNIenv,
         StringBuffer msg;
         E->errorMessage(msg);
         E->Release();
-        jclass eClass = JNIenv->FindClass("java/lang/IllegalArgumentException");
-        if (eClass)
-            JNIenv->ThrowNew(eClass, msg.str());
+        JNIenv->ThrowNew(javaembed::langIllegalArgumentExceptionClass, msg.str());
         return NULL;
     }
 }

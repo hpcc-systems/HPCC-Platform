@@ -946,9 +946,9 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         OwnedHqlExpr threadlocal = pluginScope->lookupSymbol(threadlocalId, LSFpublic, lookupCtx);
         if (matchesBoolean(threadlocal, true))
             args.append(*createAttribute(_threadlocal_Atom));
-        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
-        OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
-        if (!isImport & (syntaxCheckFunc || precompile))
+        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(isImport ? checkImportId : syntaxCheckId, LSFpublic, lookupCtx);
+        OwnedHqlExpr precompile = isImport ? nullptr : pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
+        if (syntaxCheckFunc || precompile)
             args.append(*createExprAttribute(_original_Atom, LINK(language)));  // Add this so that we can complete the syntax check/precompile later (in checkEmbedBody), as we don't know func name until then
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
         IHqlExpression *projectedAttr = queryAttribute(projectedAtom, args);
@@ -1017,7 +1017,7 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
 
     result.setown(createLocationAnnotation(result.getClear(), errpos.pos));
 
-    if (queryParametered())
+    if (queryParametered())  // MORE - this code should be in checkEmbedBody?
     {
         HqlExprArray args;
         args.append(*LINK(result));
@@ -9743,7 +9743,8 @@ IHqlExpression * HqlGram::checkEmbedBody(const attribute & errpos, DefineIdSt * 
         language = language->queryChild(0);
         IHqlExpression *embedText = body->queryChild(0);
         IHqlScope *pluginScope = language->queryScope();
-        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
+        bool isImport = body->hasAttribute(importAtom);
+        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(isImport ? checkImportId : syntaxCheckId, LSFpublic, lookupCtx);
         bool failedSyntaxCheck = false;
         if (syntaxCheckFunc)
         {
@@ -9804,28 +9805,31 @@ IHqlExpression * HqlGram::checkEmbedBody(const attribute & errpos, DefineIdSt * 
             }
             else
             {
-                reportWarning(CategoryError, WRN_EMBEDFOLD, errpos.pos, "Embedded syntax check function could not be called");
+                DBGLOG("Embedded syntax check function could not be called");  // Don't make it a warning - it happens on client machines all the time...
             }
         }
-        OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
-        if (precompile && !failedSyntaxCheck && !lookupCtx.syntaxChecking())
+        if (!isImport)
         {
-            HqlExprArray precompileArgs;
-            precompileArgs.append(*createConstant(defineid->id->queryStr()));
-            embedText->unwindList(precompileArgs, no_comma);
-            // Replace queryText with compiled version of it
-            precompileArgs.append(*argNamesParam.getLink());
-            precompileArgs.append(*compilerOptions.getLink());
-            precompileArgs.append(*persistOptions.getLink());
-            OwnedHqlExpr compiled = createBoundFunction(this, precompile, precompileArgs, lookupCtx.functionCache, true);
-            OwnedHqlExpr folded = foldHqlExpression(compiled);  // Best to fold here if we can, as the syntax check may cache on the assumption that next call is the compile. There may be a better way
-            if (folded)
-                bodyArgs.replace(*folded.getClear(), 0);
-            else
-                bodyArgs.replace(*compiled.getClear(), 0);
-            bodyArgs.append(*createAttribute(_precompile_Atom));
+            OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
+            if (precompile && !failedSyntaxCheck && !lookupCtx.syntaxChecking())
+            {
+                HqlExprArray precompileArgs;
+                precompileArgs.append(*createConstant(defineid->id->queryStr()));
+                embedText->unwindList(precompileArgs, no_comma);
+                // Replace queryText with compiled version of it
+                precompileArgs.append(*argNamesParam.getLink());
+                precompileArgs.append(*compilerOptions.getLink());
+                precompileArgs.append(*persistOptions.getLink());
+                OwnedHqlExpr compiled = createBoundFunction(this, precompile, precompileArgs, lookupCtx.functionCache, true);
+                OwnedHqlExpr folded = foldHqlExpression(compiled);  // Best to fold here if we can, as the syntax check may cache on the assumption that next call is the compile. There may be a better way
+                if (folded)
+                    bodyArgs.replace(*folded.getClear(), 0);
+                else
+                    bodyArgs.replace(*compiled.getClear(), 0);
+                bodyArgs.append(*createAttribute(_precompile_Atom));
+            }
+            return body->clone(bodyArgs);
         }
-        return body->clone(bodyArgs);
     }
     return nullptr;
 }
