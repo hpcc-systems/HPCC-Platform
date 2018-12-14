@@ -48,14 +48,13 @@ void CDiskReadMasterBase::init()
     Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
     if (file)
     {
-        if (isFileKey(file))
-            throw MakeActivityException(this, 0, "Attempting to read index as a flat file: %s", helperFileName.get());
         if (file->isExternal() && (helper->getFlags() & TDXcompress))
             file->queryAttributes().setPropBool("@blockCompressed", true);
         if (file->numParts() > 1)
             fileDesc.setown(getConfiguredFileDescriptor(*file));
         else
             fileDesc.setown(file->getFileDescriptor());
+        validateFile(file);
         reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
         if (container.queryLocal() || helper->canMatchAny()) // if local, assume may match
         {
@@ -82,7 +81,6 @@ void CDiskReadMasterBase::init()
                 }
             }
         }
-        validateFile(file);
         void *ekey;
         size32_t ekeylen;
         helper->getEncryptKey(ekeylen,ekey);

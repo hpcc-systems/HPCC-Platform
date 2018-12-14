@@ -30,6 +30,7 @@
 #include "jmutex.hpp"
 
 #include "commonext.hpp"
+#include "dadfs.hpp"
 #include "dasds.hpp"
 #include "dafdesc.hpp"
 
@@ -1514,3 +1515,22 @@ void checkAndDumpAbortInfo(const char *cmd)
         e->Release();
     }
 }
+
+void checkFileType(CActivityBase *activity, IDistributedFile *file, const char *expectedType, bool throwException)
+{
+    if (activity->getOptBool(THOROPT_VALIDATE_FILE_TYPE, true))
+    {
+        const char *kind = queryFileKind(file);
+        if (isEmptyString(kind)) // file has no published kind, can't validate
+            return;
+        if (!strieq(kind, expectedType))
+        {
+            Owned<IThorException> e = MakeActivityException(activity, TE_FileFormatMismatch, "File format mismatch reading file: '%s'. Expected type '%s', but file is type '%s'", file->queryLogicalName(), expectedType, kind);
+            if (throwException)
+                throw e.getClear();
+            e->setAction(tea_warning);
+            activity->fireException(e); // will propagate to workunit warning
+        }
+    }
+}
+

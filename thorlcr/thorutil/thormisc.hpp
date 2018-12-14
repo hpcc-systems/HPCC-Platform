@@ -97,6 +97,7 @@
 #define THOROPT_FORCE_REMOTE_READ     "forceRemoteRead"         // force remote (via dafilesrv) read (NB: takes precedence over environment.conf setting) (default = false)
 #define THOROPT_ACTINIT_WAITTIME_MINS "actInitWaitTimeMins"     // max time to wait for slave activity initialization message from master
 #define THOROPT_MAXLFN_BLOCKTIME_MINS "maxLfnBlockTimeMins"     // max time permitted to be blocked on a DFS logical file operation.
+#define THOROPT_VALIDATE_FILE_TYPE    "validateFileType"        // validate file type compatibility, e.g. if on fire error if XML reading CSV    (default = true)
 
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
@@ -529,6 +530,8 @@ extern graph_decl const ITranslator *getLayoutTranslation(const char *fname, IPa
 extern graph_decl bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath);
 
 extern graph_decl void checkAndDumpAbortInfo(const char *cmd);
+
+extern graph_decl void checkFileType(CActivityBase *activity, IDistributedFile *file, const char *expectedType, bool throwException);
 
 #endif
 
