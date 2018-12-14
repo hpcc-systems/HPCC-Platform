@@ -163,61 +163,89 @@ public:
 
                 unsigned crc=0;
                 part.getCrc(crc);
+
+                /* If part can potentially be remotely streamed, 1st check if any part is local,
+                 * then try to remote stream, and otherwise failover to legacy remote access
+                 */
                 if (canSerializeTypeInfo && !usesBlobs && !localMerge)
                 {
+                    std::vector<unsigned> remoteCandidates;
                     for (unsigned copy=0; copy<part.numCopies(); copy++)
+                    {
+                        RemoteFilename rfn;
+                        part.getFilename(copy, rfn);
+                        StringBuffer localPath;
+                        if (!isRemoteReadCandidate(*this, rfn, localPath))
+                        {
+                            Owned<IFile> iFile = createIFile(localPath.str());
+                            try
+                            {
+                                if (iFile->exists())
+                                {
+                                    remoteCandidates.clear();
+                                    break;
+                                }
+                            }
+                            catch (IException *e)
+                            {
+                                ActPrintLog(e, "getNextInput()");
+                                e->Release();
+                            }
+                        }
+                        else
+                            remoteCandidates.push_back(copy);
+                    }
+                    for (unsigned &copy : remoteCandidates) // only if no local part found above
                     {
                         RemoteFilename rfn;
                         part.getFilename(copy, rfn);
                         StringBuffer path;
                         rfn.getPath(path);
 
-                        StringBuffer lPath;
-                        if (isRemoteReadCandidate(*this, rfn, lPath))
+                        // Open a stream from remote file, having passed actual, expected, projected, and filters to it
+                        SocketEndpoint ep(rfn.queryEndpoint());
+                        setDafsEndpointPort(ep);
+
+                        IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
+                        struct CIndexReadContext : implements IIndexReadContext
                         {
-                            // Open a stream from remote file, having passed actual, expected, projected, and filters to it
-                            SocketEndpoint ep(rfn.queryEndpoint());
-                            setDafsEndpointPort(ep);
-
-                            IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
-                            struct CIndexReadContext : implements IIndexReadContext
+                            IConstArrayOf<IFieldFilter> &fieldFilters;
+                            CIndexReadContext(IConstArrayOf<IFieldFilter> &_fieldFilters) : fieldFilters(_fieldFilters)
                             {
-                                IConstArrayOf<IFieldFilter> &fieldFilters;
-                                CIndexReadContext(IConstArrayOf<IFieldFilter> &_fieldFilters) : fieldFilters(_fieldFilters)
-                                {
-                                }
-                                virtual void append(IKeySegmentMonitor *segment) override { throwUnexpected(); }
-                                virtual void append(FFoption option, const IFieldFilter * filter) override
-                                {
-                                    fieldFilters.append(*filter);
-                                }
-                            } context(fieldFilters);
-                            helper->createSegmentMonitors(&context);
-
-                            RowFilter actualFilter;
-                            Owned<const IKeyTranslator> keyedTranslator = createKeyTranslator(actualFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true));
-                            if (keyedTranslator && keyedTranslator->needsTranslate())
-                                keyedTranslator->translate(actualFilter, fieldFilters);
-                            else
-                                actualFilter.appendFilters(fieldFilters);
-
-                            Owned<IIndexLookup> indexLookup = createRemoteFilteredKey(ep, lPath, crc, actualFormat, projectedFormat, actualFilter, remoteLimit);
-                            if (indexLookup)
-                            {
-                                try
-                                {
-                                    indexLookup->ensureAvailable();
-                                }
-                                catch (IException *e)
-                                {
-                                    EXCLOG(e, nullptr);
-                                    e->Release();
-                                    continue; // try next copy and ultimately failover to local when no more copies
-                                }
-                                ActPrintLog("[part=%d]: reading remote dafilesrv index '%s' (logical file = %s)", partNum, path.str(), logicalFilename.get());
-                                partNum = p;
-                                return indexLookup.getClear();
                             }
+                            virtual void append(IKeySegmentMonitor *segment) override { throwUnexpected(); }
+                            virtual void append(FFoption option, const IFieldFilter * filter) override
+                            {
+                                fieldFilters.append(*filter);
+                            }
+                        } context(fieldFilters);
+                        helper->createSegmentMonitors(&context);
+
+                        RowFilter actualFilter;
+                        Owned<const IKeyTranslator> keyedTranslator = createKeyTranslator(actualFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true));
+                        if (keyedTranslator && keyedTranslator->needsTranslate())
+                            keyedTranslator->translate(actualFilter, fieldFilters);
+                        else
+                            actualFilter.appendFilters(fieldFilters);
+
+                        StringBuffer lPath;
+                        rfn.getLocalPath(lPath);
+                        Owned<IIndexLookup> indexLookup = createRemoteFilteredKey(ep, lPath, crc, actualFormat, projectedFormat, actualFilter, remoteLimit);
+                        if (indexLookup)
+                        {
+                            try
+                            {
+                                indexLookup->ensureAvailable();
+                            }
+                            catch (IException *e)
+                            {
+                                EXCLOG(e, nullptr);
+                                e->Release();
+                                continue; // try next copy and ultimately failover to local when no more copies
+                            }
+                            ActPrintLog("[part=%d]: reading remote dafilesrv index '%s' (logical file = %s)", partNum, path.str(), logicalFilename.get());
+                            partNum = p;
+                            return indexLookup.getClear();
                         }
                     }
                 }
