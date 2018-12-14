@@ -383,6 +383,7 @@ extern HQL_API void checkDependencyConsistency(const HqlExprArray & exprs);
 extern HQL_API void checkSelectConsistency(IHqlExpression * expr);
 extern HQL_API bool isUngroup(IHqlExpression * expr);
 extern HQL_API bool containsExpression(IHqlExpression * expr, IHqlExpression * search);
+extern HQL_API bool containsSelfWithinExpr(IHqlExpression * expr, IHqlExpression * self); // Search for use of self in an expression (not lhs of an assignment)
 extern HQL_API bool containsOperator(IHqlExpression * expr, node_operator search);
 extern HQL_API bool containsIfBlock(IHqlExpression * record);
 extern HQL_API bool canCreateRtlTypeInfo(IHqlExpression * record); // Can we generate completely valid rtltypeinfo?

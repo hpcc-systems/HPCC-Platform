@@ -396,6 +396,7 @@ extern int eclyyparse(HqlGram * parser);
 class HqlGram : implements IErrorReceiver, public CInterface
 {
     friend class HqlLex;
+    friend class SelfReferenceReplacer;
     friend int eclyyparse(HqlGram * parser);
 
 public:
@@ -783,7 +784,6 @@ protected:
     void doAddAssignSelf(IHqlExpression* assignall, IHqlExpression *tgt, IHqlExpression *src,const attribute& errpos);
     void doAddAssignCompound(IHqlExpression * assignall, IHqlExpression * target, IHqlExpression * src, IHqlExpression * record, const attribute& errpos);
     void doAddAssignCompoundOwn(IHqlExpression * assignall, IHqlExpression * target, IHqlExpression * src, IHqlExpression * record, const attribute& errpos);
-    IHqlExpression * doFindAssignment(IHqlExpression *in, IHqlExpression *field);
     IHqlExpression * replaceSelfReferences(IHqlExpression * transform, IHqlExpression * rhs, IHqlExpression * self, const attribute& errpos);
 
     void appendToActiveScope(IHqlExpression * arg);
@@ -1052,6 +1052,8 @@ protected:
     void modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & payload, SharedHqlExpr & extra, const attribute & errpos);
 
     bool haveAssignedToChildren(IHqlExpression * select);
+    bool haveAssignedToAllChildren(IHqlExpression * select);
+    bool haveAssignedToAllChildren(IHqlExpression * select, IHqlExpression * record);
     void checkPattern(attribute & pattern, bool isCompound);
     void checkSubPattern(attribute & pattern);
     void checkPattern(attribute & pattern, HqlExprArray & values);
