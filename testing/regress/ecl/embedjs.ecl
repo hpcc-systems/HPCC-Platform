@@ -22,8 +22,6 @@
 
 IMPORT javascript;
 
-javascript.Language.syntaxcheck('1+2');
-
 integer add1(integer val) := EMBED(javascript) val+1; ENDEMBED;
 string add2(string val) := EMBED(javascript) val+'1'; ENDEMBED;
 string add3(varstring val) := EMBED(javascript) val+'1'; ENDEMBED;

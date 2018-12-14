@@ -22,8 +22,6 @@
 
 IMPORT Python;
 
-Python.Language.syntaxcheck('1+2');
-
 integer add1(integer val) := EMBED(Python)
 val+1
 ENDEMBED;

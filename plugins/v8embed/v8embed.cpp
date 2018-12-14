@@ -985,9 +985,12 @@ extern DECL_EXPORT IEmbedContext* getEmbedContext()
     return LINK(&theEmbedContext);
 }
 
-extern DECL_EXPORT bool syntaxCheck(const char *script)
+extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult, char * & __result, const char *funcname, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions)
 {
-    return true; // MORE
+    StringBuffer result;
+    // MORE
+    __lenResult = result.length();
+    __result = result.detach();
 }
 
 } // namespace
