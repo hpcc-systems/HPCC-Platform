@@ -3194,21 +3194,32 @@ void PrintMemoryReport(bool full)
 #endif
 
 
-bool areTransparentHugePagesEnabled()
+bool areTransparentHugePagesEnabled(HugePageMode mode)
+{
+    return (mode != HugePageMode::Never) && (mode != HugePageMode::Unknown);
+}
+
+HugePageMode queryTransparentHugePagesMode()
 {
 #ifdef __linux__
     StringBuffer contents;
     try
     {
         contents.loadFile("/sys/kernel/mm/transparent_hugepage/enabled");
-        return !strstr(contents.str(), "[never]");
+        if (strstr(contents.str(), "[never]"))
+            return HugePageMode::Never;
+        if (strstr(contents.str(), "[madvise]"))
+            return HugePageMode::Madvise;
+        if (strstr(contents.str(), "[always]"))
+            return HugePageMode::Always;
     }
     catch (IException * e)
     {
         e->Release();
     }
+    return HugePageMode::Unknown;
 #endif
-    return false;
+    return HugePageMode::Never;
 }
 
 memsize_t getHugePageSize()
