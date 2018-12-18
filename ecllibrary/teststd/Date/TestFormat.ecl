@@ -26,6 +26,12 @@ EXPORT TestFormat := MODULE
 
     ASSERT(Date.FromStringToTime('12:34:56', '%H:%M:%S') = 123456, CONST);
 
+    ASSERT(Date.FromStringToSeconds('1999-02-01T12:34:56', '%Y-%m-%d', FALSE) = 917827200, CONST);
+    ASSERT(Date.FromStringToSeconds('1999-02-01T12:34:56', '%Y-%m-%dT%H', FALSE) = 917870400, CONST);
+    ASSERT(Date.FromStringToSeconds('1999-02-01T12:34:56', '%Y-%m-%dT%H:%M', FALSE) = 917872440, CONST);
+    ASSERT(Date.FromStringToSeconds('1999-02-01T12:34:56', '%Y-%m-%dT%H:%M:%S', FALSE) = 917872496, CONST);
+    ASSERT(Date.FromStringToSeconds('', '%Y-%m-%dT%H:%M:%S', FALSE) = 0, CONST); // Invalid input datetime
+
 
     ASSERT(Date.TimestampToString(1533642860000000, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.000000', CONST);
     ASSERT(Date.TimestampToString(1533642860000000, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.000', CONST);

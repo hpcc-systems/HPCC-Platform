@@ -15,7 +15,7 @@
 ################################################################################
 
 
-# Component: timelib 
+# Component: timelib
 
 #####################################################
 # Description:
@@ -26,14 +26,14 @@
 set ( toolsdir "${HPCC_SOURCE_DIR}/tools" )
 
 
-project( timelib ) 
+project( timelib )
 
-set (    SRCS 
-         timelib.cpp 
+set (    SRCS
+         timelib.cpp
     )
 
-include_directories ( 
-         ./../../system/include 
+include_directories (
+         ./../../system/include
          ./../../system/jlib
          ./../../rtl/include
          ./../../rtl/eclrtl

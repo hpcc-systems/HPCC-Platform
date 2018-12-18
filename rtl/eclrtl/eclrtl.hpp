@@ -792,6 +792,8 @@ ECLRTL_API unsigned rtlDelayReturn(unsigned value, unsigned sleepTime);
 
 ECLRTL_API bool rtlGPF();
 
+ECLRTL_API const char * simple_strptime(size32_t lenStr, const char * str, const char * format, struct tm * tm);
+
 
 interface IRowStream;
 

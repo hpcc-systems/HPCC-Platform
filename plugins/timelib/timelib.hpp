@@ -62,6 +62,7 @@ TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__res
 TIMELIB_API void TIMELIB_CALL tlTimeToString(size32_t &__lenResult, char* &__result, unsigned int time, const char* format);
 TIMELIB_API unsigned int TIMELIB_CALL tlAdjustDate(unsigned int date, short year_delta, int month_delta, int day_delta);
 TIMELIB_API void TIMELIB_CALL tlSecondsToString(size32_t &__lenResult, char* &__result, __int64 seconds, const char* format);
+TIMELIB_API __int64 TIMELIB_CALL tlStringToSeconds(size32_t lenS, const char* s, const char* fmtin, bool is_local_time);
 TIMELIB_API unsigned int TIMELIB_CALL tlAdjustDateBySeconds(unsigned int date, int seconds_delta);
 TIMELIB_API unsigned int TIMELIB_CALL tlAdjustTime(unsigned int time, short hour_delta, int minute_delta, int second_delta);
 TIMELIB_API unsigned int TIMELIB_CALL tlAdjustTimeBySeconds(unsigned int time, int seconds_delta);
