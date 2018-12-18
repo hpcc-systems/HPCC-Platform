@@ -27267,7 +27267,7 @@ protected:
         }
         inline void join()
         {
-            thread.join();
+            thread.join(INFINITE);
         }
     private:
         CThreadedPersistent thread;

@@ -61,7 +61,7 @@ private:
 public:
     CPersistentTask(const char *name, IThreaded *_owner);
     void start();
-    bool join(unsigned timeout=INFINITE);
+    bool join(unsigned timeout=INFINITE, bool throwException = true);
 };
 #else
 typedef CThreadedPersistent CPersistentTask;

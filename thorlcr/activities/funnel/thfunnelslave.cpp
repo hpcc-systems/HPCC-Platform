@@ -66,7 +66,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         }
         void join()
         {
-            threaded.join();
+            threaded.join(INFINITE);
         }
 
 // IThreaded impl.

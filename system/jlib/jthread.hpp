@@ -190,7 +190,7 @@ public:
     CThreadedPersistent(const char *name, IThreaded *_owner);
     ~CThreadedPersistent();
     void start();
-    bool join(unsigned timeout=INFINITE);
+    bool join(unsigned timeout, bool throwException = true);
 };
 
 
