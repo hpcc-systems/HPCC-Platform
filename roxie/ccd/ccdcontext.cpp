@@ -2188,6 +2188,8 @@ protected:
                 {
                     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                     Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
+                    if (!externalWU)
+                        throw MakeStringException(ROXIE_FILE_ERROR, "Failed to open workunit %s", wuid);
                     externalWU->remoteCheckAccess(queryUserDescriptor(), false);
                     Owned<IConstWUResult> wuResult = getWorkUnitResult(externalWU, stepname, sequence);
                     if (!wuResult)
