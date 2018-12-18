@@ -103,6 +103,22 @@ IPropertyTree *createContextMethodConfig(IPropertyTree *methodConfig)
     return LINK(methodConfig); //no copy, nothing changed
 }
 
+bool skipContextConfig(IPropertyTree *cfg)
+{
+    if (!cfg->getPropBool("@contextConfig", true)) //explicitly disabled
+        return true;
+
+    const char *elInclude = cfg->queryProp("@contextInclude");
+    const char *elRemove = cfg->queryProp("@contextRemove");
+    const char *attRemove = cfg->queryProp("@contextAttRemove");
+
+    bool noElIncluded = elInclude && !*elInclude; //empty xpath
+    bool allElRemoved = (elRemove && streq(elRemove, "*"));
+    bool allAttRemoved = (attRemove && streq(attRemove, "*"));
+
+    return (allAttRemoved && (noElIncluded || allElRemoved));
+}
+
 IPropertyTree *CEsdlSvcEngine::createTargetContext(IEspContext &context, IPropertyTree *tgtcfg, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *req_pt)
 {
     Owned<IPropertyTree> localCtx(createPTreeFromIPT(m_service_ctx, ipt_none));
@@ -112,11 +128,14 @@ IPropertyTree *CEsdlSvcEngine::createTargetContext(IEspContext &context, IProper
     localCtx->setProp("Row/Common/ESP/ServiceName", context.queryServiceName(""));
     //removing this entry since the Row/Common/ESP/Config/Method tree should have an attribute @name
     //localCtx->setProp("Row/Common/ESP/MethodName", mthdef.queryMethodName());
-    Owned<IPropertyTree> config = createContextMethodConfig(tgtcfg);
-    if (config && (config->hasChildren() || config->getAttributes()->count()>0))
+    if (!skipContextConfig(tgtcfg))
     {
-        ensurePTree(localCtx, "Row/Common/ESP/Config");
-        localCtx->addPropTree("Row/Common/ESP/Config/Method", config.getClear());
+        Owned<IPropertyTree> config = createContextMethodConfig(tgtcfg);
+        if (config && (config->hasChildren() || config->getAttributes()->count()>0))
+        {
+            ensurePTree(localCtx, "Row/Common/ESP/Config");
+            localCtx->addPropTree("Row/Common/ESP/Config/Method", config.getClear());
+        }
     }
     return localCtx.getLink();
 }
