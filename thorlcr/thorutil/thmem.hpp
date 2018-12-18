@@ -438,7 +438,7 @@ public:
     roxiemem::IRowManager *queryRowManager() const { return CThorExpandingRowArray::queryRowManager(); }
     void kill();
     void compact();
-    bool flush();
+    bool flush(bool force=false);
     bool shrink();
     inline bool isFlushed() const { return numRows == numCommitted(); }
     inline bool append(const void *row) __attribute__((warn_unused_result))
@@ -515,6 +515,7 @@ public:
     bool shrink(rowidx_t requiredRows);
     void transferRowsCopy(const void **outRows, bool takeOwnership);
     void readBlock(const void **outRows, rowidx_t readRows);
+    const void **getBlock(rowidx_t readRows);
 
     virtual IThorArrayLock &queryLock() { return *this; }
 // IThorArrayLock
@@ -523,7 +524,6 @@ public:
 
 private:
     void clearRows();
-    const void **getBlock(rowidx_t readRows);
 };
 
 

@@ -310,6 +310,15 @@ public:
             if (pythonLibrary)
                 FreeSharedObject(pythonLibrary);
         }
+        else
+        {
+            // Need to avoid releasing the associated py objects when these members destructors are called.
+            namedtuple.getClear();
+            namedtupleTypes.getClear();
+            compiledScripts.getClear();
+            preservedScopes.getClear();
+
+        }
     }
     bool isInitialized()
     {
@@ -554,28 +563,10 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         }
     }
 #else
-    FILE *diskfp = fopen("/proc/self/maps", "r");
-    if (diskfp)
+    StringBuffer modname;
+    if (findLoadedModule(modname, "libpy3embed"))
     {
-        char ln[_MAX_PATH];
-        while (fgets(ln, sizeof(ln), diskfp))
-        {
-            if (strstr(ln, "libpy3embed"))
-            {
-                const char *fullName = strchr(ln, '/');
-                if (fullName)
-                {
-                    char *tail = (char *) strstr(fullName, SharedObjectExtension);
-                    if (tail)
-                    {
-                        tail[strlen(SharedObjectExtension)] = 0;
-                        keepLoadedHandle = LoadSharedObject(fullName, false, false);
-                        break;
-                    }
-                }
-            }
-        }
-        fclose(diskfp);
+        keepLoadedHandle = LoadSharedObject(modname, false, false);
     }
 #endif
     return true;
