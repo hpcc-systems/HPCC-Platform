@@ -52,7 +52,6 @@
 #include "hqlcache.hpp"
 
 #define ADD_IMPLICIT_FILEPOS_FIELD_TO_INDEX         TRUE
-#define FAST_FIND_FIELD
 //#define USE_WHEN_FOR_SIDEEFFECTS
 #define MANYFIELDS_THRESHOLD                        2000
 #define MAX_SENSIBLE_FIELD_LENGTH                   1000000000
@@ -947,9 +946,9 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         OwnedHqlExpr threadlocal = pluginScope->lookupSymbol(threadlocalId, LSFpublic, lookupCtx);
         if (matchesBoolean(threadlocal, true))
             args.append(*createAttribute(_threadlocal_Atom));
-        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
-        OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
-        if (!isImport & (syntaxCheckFunc || precompile))
+        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(isImport ? checkImportId : syntaxCheckId, LSFpublic, lookupCtx);
+        OwnedHqlExpr precompile = isImport ? nullptr : pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
+        if (syntaxCheckFunc || precompile)
             args.append(*createExprAttribute(_original_Atom, LINK(language)));  // Add this so that we can complete the syntax check/precompile later (in checkEmbedBody), as we don't know func name until then
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
         IHqlExpression *projectedAttr = queryAttribute(projectedAtom, args);
@@ -1018,7 +1017,7 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
 
     result.setown(createLocationAnnotation(result.getClear(), errpos.pos));
 
-    if (queryParametered())
+    if (queryParametered())  // MORE - this code should be in checkEmbedBody?
     {
         HqlExprArray args;
         args.append(*LINK(result));
@@ -1451,52 +1450,9 @@ bool HqlGram::checkAlreadyAssigned(const attribute & errpos, IHqlExpression * se
 IHqlExpression * HqlGram::findAssignment(IHqlExpression *field)
 {
 //  assertex(field->getOperator() == no_select);
-#ifdef FAST_FIND_FIELD
     IHqlExpression * match = (IHqlExpression *)field->queryTransformExtra();
     if (match && !match->isAttribute())
         return match;
-    return NULL;
-#else
-    unsigned kids = curTransform->numChildren();
-    for (unsigned idx = 0; idx < kids; idx++)
-    {
-        IHqlExpression *kid = curTransform->queryChild(idx);
-        IHqlExpression * ret = doFindAssignment(kid,field);
-        if (ret)
-            return ret;
-    }
-
-    return NULL;
-#endif
-}
-
-IHqlExpression * HqlGram::doFindAssignment(IHqlExpression* in, IHqlExpression* field)
-{
-    switch (in->getOperator())
-    {
-    case no_assign:
-        if (in->queryChild(0) == field)
-            return in->queryChild(1);
-        return NULL;
-    case no_assignall:
-        {
-            unsigned kids = in->numChildren();
-            for (unsigned idx = 0; idx < kids; idx++)
-            {
-                IHqlExpression *kid = in->queryChild(idx);
-                IHqlExpression * ret = doFindAssignment(kid,field);
-                if (ret)
-                    return ret;
-            }
-        }
-        break;
-    case no_attr:
-    case no_attr_link:
-    case no_attr_expr:
-        return NULL;
-    default:
-        assertex(false);
-    }
     return NULL;
 }
 
@@ -1595,23 +1551,14 @@ void HqlGram::addAssignment(const attribute & errpos, IHqlExpression * targetExp
 class SelfReferenceReplacer
 {
 public:
-    SelfReferenceReplacer(IHqlExpression * transform, IHqlExpression * _self) : self(_self)
+    SelfReferenceReplacer(HqlGram * _parser, IHqlExpression * _self) : parser(_parser), self(_self)
     {
-        lockTransformMutex();
-        expandTransformAssigns(transform);
-    }
-    ~SelfReferenceReplacer()
-    {
-        unlockTransformMutex();
     }
 
     IHqlExpression * replaceExpression(IHqlExpression * expr)
     {
-        ok = true;
         return recursiveReplaceExpression(expr);
     }
-
-    inline bool allFieldsReplaced() { return ok; }
 
 protected:
     IHqlExpression * doRecursiveReplaceExpression(IHqlExpression * expr)
@@ -1626,7 +1573,7 @@ protected:
         }
 
         if (expr == self)
-            ok = false;
+            return LINK(expr);
 
         unsigned max = expr->numChildren();
         if (max == 0)
@@ -1676,7 +1623,28 @@ protected:
 
         IHqlExpression * mapped = (IHqlExpression *)expr->queryTransformExtra();
         if (mapped)
-            return LINK(mapped);
+        {
+            if (mapped == alreadyAssignedNestedTag)
+            {
+                if (parser->haveAssignedToAllChildren(expr))
+                {
+                    //create a new nested project from the child assignments.
+                    //This will always succeed since we have assigned to all the children
+                    IHqlExpression * childRecord = expr->queryRecord();
+                    OwnedHqlExpr childSelf = getSelf(childRecord);
+                    HqlExprArray subAssigns;
+                    bool modified;
+                    const attribute errpos;
+                    parser->doCheckAssignedNormalizeTransform(&subAssigns, expr, childSelf, childRecord, childRecord, errpos, modified);
+
+                    OwnedHqlExpr newTransform = createValue(no_transform, makeTransformType(childRecord->getType()), subAssigns);
+                    return createRow(no_createrow, newTransform.getClear());
+                }
+
+                return LINK(expr);
+            }
+            return ensureExprType(mapped, expr->queryType());
+        }
 
         IHqlExpression * ret = doRecursiveReplaceExpression(expr);
         expr->setTransformExtra(ret);
@@ -1710,7 +1678,7 @@ protected:
 
 protected:
     LinkedHqlExpr self;
-    bool ok;
+    HqlGram * parser;
 };
 
 IHqlExpression * HqlGram::replaceSelfReferences(IHqlExpression * transform, IHqlExpression * rhs, IHqlExpression * self, const attribute& errpos)
@@ -1718,11 +1686,16 @@ IHqlExpression * HqlGram::replaceSelfReferences(IHqlExpression * transform, IHql
     //MORE: This could be done more efficiently by replacing all the self references in a single pass
     //would need to tag assigns in the transform, and process incrementally at the end.
     //Seems to be fast enough anyway at the moment.
-    SelfReferenceReplacer replacer(transform, self);
+    SelfReferenceReplacer replacer(this, self);
 
     OwnedHqlExpr ret = replacer.replaceExpression(rhs);
-    if (!replacer.allFieldsReplaced())
-        reportError(ERR_SELF_ILL_HERE, errpos, "Reference to field in SELF that has not yet been defined");
+    if (containsSelf(ret))
+    {
+        //Horrible can have an assignment to an attribute which is then used in a nested transform - so as well as
+        //checking if it depends on self, need to check if it is the correct self.  Ugly ECL code!
+        if (containsSelfWithinExpr(ret, self))
+            reportError(ERR_SELF_ILL_HERE, errpos, "Reference to field in SELF that has not yet been defined");
+    }
     return ret.getClear();
 }
 
@@ -1788,7 +1761,9 @@ void HqlGram::appendTransformAssign(IHqlExpression * transform, IHqlExpression *
     if (okToAddLocation(assign))
         assign = createLocationAnnotation(assign, errpos.pos);
     transform->addOperand(assign);
-#ifdef FAST_FIND_FIELD
+
+    //Associate the expression with target assignments, so we can quickly check if something has been assigned to,
+    //and also substiture refrences to SELF.x on the rhs of an assignment.
     to->setTransformExtraOwned(from.getClear());
 
     IHqlExpression * parent = to->queryChild(0);
@@ -1797,7 +1772,6 @@ void HqlGram::appendTransformAssign(IHqlExpression * transform, IHqlExpression *
         parent->setTransformExtra(alreadyAssignedNestedTag);
         parent = parent->queryChild(0);
     }
-#endif
 }
 
 IHqlExpression * HqlGram::forceEnsureExprType(IHqlExpression * expr, ITypeInfo * type)
@@ -1888,12 +1862,47 @@ bool haveAssignedToChildren(IHqlExpression * select, IHqlExpression * transform)
 
 bool HqlGram::haveAssignedToChildren(IHqlExpression * select)
 {
-#ifdef FAST_FIND_FIELD
     return select->queryTransformExtra() == alreadyAssignedNestedTag;
-#else
-    return ::haveAssignedToChildren(select, curTransform);
-#endif
 }
+
+bool HqlGram::haveAssignedToAllChildren(IHqlExpression * select, IHqlExpression * record)
+{
+    IHqlExpression * match = static_cast<IHqlExpression *>(select->queryTransformExtra());
+    if (!match)
+        return false;
+    if (match != alreadyAssignedNestedTag)
+        return true;
+    if (!record)
+        return false;
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            if (!haveAssignedToAllChildren(select, cur))
+                return false;
+            break;
+        case no_ifblock:
+            if (!haveAssignedToAllChildren(select, cur->queryChild(1)))
+                return false;
+            break;
+        case no_field:
+        {
+            OwnedHqlExpr nested = createSelectExpr(LINK(select), LINK(cur));
+            if (!haveAssignedToAllChildren(nested, cur->queryRecord()))
+                return false;
+        }
+        }
+    }
+    return true;
+}
+
+bool HqlGram::haveAssignedToAllChildren(IHqlExpression * select)
+{
+    return haveAssignedToAllChildren(select, select->queryRecord());
+}
+
 
 void HqlGram::addAssignall(IHqlExpression *tgt, IHqlExpression *src, const attribute& errpos)
 {
@@ -2092,7 +2101,7 @@ void HqlGram::doAddAssignCompound(IHqlExpression * assignall, IHqlExpression * t
                             else
                                 doAddAssignCompound(assignall,lhs,rhs,NULL,errpos);
                         }
-                        else
+                        else if (!haveAssignedToAllChildren(lhs))
                             doAddAssignCompound(assignall,lhs,rhs,NULL,errpos);
                     }
                     else if (tc == type_table || tc == type_groupedtable)
@@ -9734,7 +9743,8 @@ IHqlExpression * HqlGram::checkEmbedBody(const attribute & errpos, DefineIdSt * 
         language = language->queryChild(0);
         IHqlExpression *embedText = body->queryChild(0);
         IHqlScope *pluginScope = language->queryScope();
-        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
+        bool isImport = body->hasAttribute(importAtom);
+        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(isImport ? checkImportId : syntaxCheckId, LSFpublic, lookupCtx);
         bool failedSyntaxCheck = false;
         if (syntaxCheckFunc)
         {
@@ -9795,28 +9805,31 @@ IHqlExpression * HqlGram::checkEmbedBody(const attribute & errpos, DefineIdSt * 
             }
             else
             {
-                reportWarning(CategoryError, WRN_EMBEDFOLD, errpos.pos, "Embedded syntax check function could not be called");
+                DBGLOG("Embedded syntax check function could not be called");  // Don't make it a warning - it happens on client machines all the time...
             }
         }
-        OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
-        if (precompile && !failedSyntaxCheck && !lookupCtx.syntaxChecking())
+        if (!isImport)
         {
-            HqlExprArray precompileArgs;
-            precompileArgs.append(*createConstant(defineid->id->queryStr()));
-            embedText->unwindList(precompileArgs, no_comma);
-            // Replace queryText with compiled version of it
-            precompileArgs.append(*argNamesParam.getLink());
-            precompileArgs.append(*compilerOptions.getLink());
-            precompileArgs.append(*persistOptions.getLink());
-            OwnedHqlExpr compiled = createBoundFunction(this, precompile, precompileArgs, lookupCtx.functionCache, true);
-            OwnedHqlExpr folded = foldHqlExpression(compiled);  // Best to fold here if we can, as the syntax check may cache on the assumption that next call is the compile. There may be a better way
-            if (folded)
-                bodyArgs.replace(*folded.getClear(), 0);
-            else
-                bodyArgs.replace(*compiled.getClear(), 0);
-            bodyArgs.append(*createAttribute(_precompile_Atom));
+            OwnedHqlExpr precompile = pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
+            if (precompile && !failedSyntaxCheck && !lookupCtx.syntaxChecking())
+            {
+                HqlExprArray precompileArgs;
+                precompileArgs.append(*createConstant(defineid->id->queryStr()));
+                embedText->unwindList(precompileArgs, no_comma);
+                // Replace queryText with compiled version of it
+                precompileArgs.append(*argNamesParam.getLink());
+                precompileArgs.append(*compilerOptions.getLink());
+                precompileArgs.append(*persistOptions.getLink());
+                OwnedHqlExpr compiled = createBoundFunction(this, precompile, precompileArgs, lookupCtx.functionCache, true);
+                OwnedHqlExpr folded = foldHqlExpression(compiled);  // Best to fold here if we can, as the syntax check may cache on the assumption that next call is the compile. There may be a better way
+                if (folded)
+                    bodyArgs.replace(*folded.getClear(), 0);
+                else
+                    bodyArgs.replace(*compiled.getClear(), 0);
+                bodyArgs.append(*createAttribute(_precompile_Atom));
+            }
+            return body->clone(bodyArgs);
         }
-        return body->clone(bodyArgs);
     }
     return nullptr;
 }
@@ -12111,9 +12124,9 @@ void HqlGram::beginTransform(ITypeInfo * recordType, IHqlExpression * originalRe
     curTransformRecord.set(originalRecord);
     transformScope = createPrivateScope();
     enterScope(transformScope, false, false);
-#ifdef FAST_FIND_FIELD
+
+    //The processing for a transform uses target->queryTransformExtra() to record whether it has been assigned to
     lockTransformMutex();
-#endif
 }
 
 IHqlExpression * HqlGram::endTransform(const attribute &errpos)
@@ -12124,9 +12137,7 @@ IHqlExpression * HqlGram::endTransform(const attribute &errpos)
     ::Release(transformScope);
     transformScope = NULL;
     leaveScope(errpos);
-#ifdef FAST_FIND_FIELD
     unlockTransformMutex();
-#endif
     IHqlExpression *ret = curTransform->closeExpr();
     curTransform = NULL;
     curTransformRecord.clear();

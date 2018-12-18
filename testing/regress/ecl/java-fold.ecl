@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,11 +15,13 @@
     limitations under the License.
 ############################################################################## */
 
-EXPORT Language := SERVICE : plugin('v8embed')
-  integer getEmbedContext():cpp,pure,namespace='javascriptLanguageHelper',fold,entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
-  STRING syntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javascriptLanguageHelper',entrypoint='syntaxCheck',fold;
-END;
-EXPORT getEmbedContext := Language.getEmbedContext;
-EXPORT syntaxCheck := Language.syntaxCheck;
-EXPORT boolean supportsImport := false;
-EXPORT boolean supportsScript := true;
+//class=embedded
+//class=3rdparty
+
+import java;
+string jcat(string a, string b) := IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;' : classpath('/opt/HPCCSystems/classes'),FOLD);
+integer jadd(integer a, integer b) := IMPORT(java, 'JavaCat.add:(II)I' :FOLD);
+
+ASSERT(jcat('Hello',' world')='Hello world', CONST);
+ASSERT(jadd(1,2)=3, CONST);
+OUTPUT('ok');

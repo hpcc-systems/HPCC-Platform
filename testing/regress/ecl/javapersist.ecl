@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,11 +15,37 @@
     limitations under the License.
 ############################################################################## */
 
-EXPORT Language := SERVICE : plugin('v8embed')
-  integer getEmbedContext():cpp,pure,namespace='javascriptLanguageHelper',fold,entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
-  STRING syntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javascriptLanguageHelper',entrypoint='syntaxCheck',fold;
+//class=embedded
+//class=3rdparty
+//nohthor
+
+import java;
+
+integer accumulate(integer a) := EMBED(Java: persist('thread'))
+public class persisty
+{
+  public persisty()
+  {
+  }
+  public synchronized int accumulate(int a)
+  {
+    tot = tot + a;
+    return tot;
+  }
+  private int tot = 0;
+}
+ENDEMBED;
+
+r := record
+  integer i;
+end;
+
+r t(r l) := TRANSFORM
+  SELF.i := accumulate(l.i);
 END;
-EXPORT getEmbedContext := Language.getEmbedContext;
-EXPORT syntaxCheck := Language.syntaxCheck;
-EXPORT boolean supportsImport := false;
-EXPORT boolean supportsScript := true;
+
+d1 := DATASET([{1}, {2}, {3}], r);
+d2 := DATASET([{3}, {4}, {5}], r);
+
+accumulated := PROJECT(d1, t(LEFT))+PROJECT(d2, t(LEFT));
+max(accumulated, i) = 3+4+5;  // The order cannot be predicted but the max should be consistent.

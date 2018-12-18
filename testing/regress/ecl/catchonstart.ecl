@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,11 +15,18 @@
     limitations under the License.
 ############################################################################## */
 
-EXPORT Language := SERVICE : plugin('v8embed')
-  integer getEmbedContext():cpp,pure,namespace='javascriptLanguageHelper',fold,entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
-  STRING syntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javascriptLanguageHelper',entrypoint='syntaxCheck',fold;
-END;
-EXPORT getEmbedContext := Language.getEmbedContext;
-EXPORT syntaxCheck := Language.syntaxCheck;
-EXPORT boolean supportsImport := false;
-EXPORT boolean supportsScript := true;
+//nohthor
+//nothor
+
+r := { unsigned i };
+
+namesRecord :=
+            RECORD
+string20        surname;
+dataset(r)      ids;
+            END;
+
+//Deliberately read a non-existant value to force a failure during activity start
+in2 := dataset(workunit('nonExistant', 'DoesNotExist'), namesRecord);
+caught := CATCH(in2, onFAIL(transform(namesRecord, SELF.ids := DATASET([FAILCODE], r); SELF.surname := 'Not Found')));
+output(caught);

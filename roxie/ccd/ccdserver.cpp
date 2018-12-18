@@ -20134,11 +20134,13 @@ public:
         }
         catch (IException *E)
         {
+            ensureCreated();
             onException(E);
             started = true;
         }
         catch (...)
         {
+            ensureCreated();
             onException(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught"));
             started = true;
         }

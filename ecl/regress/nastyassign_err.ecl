@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,11 +15,31 @@
     limitations under the License.
 ############################################################################## */
 
-EXPORT Language := SERVICE : plugin('v8embed')
-  integer getEmbedContext():cpp,pure,namespace='javascriptLanguageHelper',fold,entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
-  STRING syntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javascriptLanguageHelper',entrypoint='syntaxCheck',fold;
+r1 := RECORD
+    unsigned v;
+    boolean n;
 END;
-EXPORT getEmbedContext := Language.getEmbedContext;
-EXPORT syntaxCheck := Language.syntaxCheck;
-EXPORT boolean supportsImport := false;
-EXPORT boolean supportsScript := true;
+
+r2 := RECORD
+    r1 myVal;
+    r1 myVal2;
+    unsigned extra;
+END;
+
+r3 := RECORD
+    unsigned myVal;
+    unsigned extra;
+END;
+
+
+d3 := DATASET('d3', r3, thor);
+
+r2 t(r3 l) := TRANSFORM
+    SELF.myVal.v := 1;
+//    SELF.myVal := ROW(transform(r1, SELF.v := 1; SELF.n := false));
+    SELF := l;
+    SELF.myVal2 := SELF.myVal;
+END;
+
+p := PROJECT(d3, t(LEFT));
+output(p);

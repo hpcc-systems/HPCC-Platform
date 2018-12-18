@@ -293,8 +293,19 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     if (!heapBase)
     {
         const memsize_t hugePageSize = getHugePageSize();
-        bool useTransparentHugePages = allowTransparentHugePages && areTransparentHugePagesEnabled();
+        HugePageMode mode = queryTransparentHugePagesMode();
+        bool hasTransparenHugePages = areTransparentHugePagesEnabled(mode);
+        bool useTransparentHugePages = allowTransparentHugePages && hasTransparenHugePages;
         memsize_t heapAlignment = useTransparentHugePages ? hugePageSize : HEAP_ALIGNMENT_SIZE;
+        if (mode == HugePageMode::Always)
+        {
+            //Always return memory in multiples of the huge page size - even if it is not being used
+            heapAlignment = hugePageSize;
+            OERRLOG("WARNING: The OS is configured to always use transparent huge pages.  This may cause unexplained pauses "
+                    "while transparent huge pages are coalesced. The recommended setting for "
+                    "/sys/kernel/mm/transparent_hugepage/enabled is madvise");
+        }
+
         if (heapAlignment < HEAP_ALIGNMENT_SIZE)
             heapAlignment = HEAP_ALIGNMENT_SIZE;
 

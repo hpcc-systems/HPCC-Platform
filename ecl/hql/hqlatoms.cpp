@@ -35,6 +35,7 @@ IIdAtom * bindUnicodeParamId;
 IIdAtom * bindUnsignedParamId;
 IIdAtom * bindUnsignedSizeParamId;
 IIdAtom * bindUtf8ParamId;
+IIdAtom * checkImportId;
 IIdAtom * compileEmbeddedScriptId;
 IIdAtom * getEmbedContextId;
 IIdAtom * getBooleanResultId;
@@ -505,6 +506,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEID(bindUnsignedParam);
     MAKEID(bindUnsignedSizeParam);
     MAKEID(bindUtf8Param);
+    MAKEID(checkImport);
     MAKEID(compileEmbeddedScript);
     defaultFieldNameId = createIdAtom("__f1__");
     MAKEID(fail);

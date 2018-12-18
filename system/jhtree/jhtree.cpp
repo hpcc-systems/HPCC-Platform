@@ -279,7 +279,7 @@ void SegMonitorList::finish(unsigned keyedSize)
             if (offset == keyedSize)
             {
                 DBGLOG("SegMonitor record does not match key");  // Can happen when reading older indexes that don't save key information in metadata properly
-                keySegCount - segMonitors.length();
+                keySegCount = segMonitors.length();
                 break;
             }
             size32_t size = recInfo.getFixedOffset(idx+1) - offset;
