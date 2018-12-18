@@ -39,6 +39,70 @@ CEsdlSvcEngineSoapBindingEx::CEsdlSvcEngineSoapBindingEx(IPropertyTree* cfg, con
 {
 }
 
+IPropertyTree *createContextMethodConfig(IPropertyTree *methodConfig)
+{
+    const char *include = "*";
+    if (methodConfig->hasProp("@contextInclude"))
+        include = methodConfig->queryProp("@contextInclude");
+    const char *remove = "Transforms|xsdl:CustomRequestTransform";
+    if (methodConfig->hasProp("@contextRemove"))
+        remove = methodConfig->queryProp("@contextRemove");
+    const char *removeAttrs = "@contextInclude|@contextRemove|@contextAttRemove";
+    if (methodConfig->hasProp("@contextAttRemove"))
+        removeAttrs = methodConfig->queryProp("@contextAttRemove");
+
+    Owned<IPropertyTree> contextConfig;
+    if (include && !streq(include, "*"))
+    {
+        contextConfig.setown(createPTree("Method", ipt_ordered));
+        Owned<IAttributeIterator> aiter = methodConfig->getAttributes(); //for now include all attributes
+        ForEach (*aiter)
+            contextConfig->addProp(aiter->queryName(), aiter->queryValue());
+
+        if (*include) //if *include==0 we should have an empty tree
+        {
+            StringArray xpaths;
+            xpaths.appendListUniq(include, "|", true); //don't supported quoted | for now
+            ForEachItemIn(pos, xpaths)
+            {
+                Owned<IPropertyTreeIterator> toInclude = methodConfig->getElements(xpaths.item(pos));
+                ForEach(*toInclude)
+                    contextConfig->addPropTree(toInclude->query().queryName(), LINK(&toInclude->query()));
+            }
+        }
+    }
+    if (remove && *remove)
+    {
+        if (!contextConfig)
+            contextConfig.setown(createPTreeFromIPT(methodConfig, ipt_ordered));
+        if (contextConfig->hasChildren())
+        {
+            StringArray xpaths;
+            xpaths.appendListUniq(remove, "|", true); //don't supported quoted | for now
+            ForEachItemIn(pos, xpaths)
+            {
+                Owned<IPropertyTreeIterator> toRemove = contextConfig->getElements(xpaths.item(pos));
+                ForEach(*toRemove)
+                    contextConfig->removeTree(&toRemove->query());
+            }
+        }
+    }
+
+    if (removeAttrs && *removeAttrs)
+    {
+        if (!contextConfig)
+            contextConfig.setown(createPTreeFromIPT(methodConfig, ipt_ordered));
+        StringArray xpaths;
+        xpaths.appendListUniq(removeAttrs, "|", true); //don't supported quoted | for now
+        ForEachItemIn(pos, xpaths)
+            contextConfig->removeProp(xpaths.item(pos));
+    }
+
+    if (contextConfig)
+        return contextConfig.getClear();
+    return LINK(methodConfig); //no copy, nothing changed
+}
+
 IPropertyTree *CEsdlSvcEngine::createTargetContext(IEspContext &context, IPropertyTree *tgtcfg, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *req_pt)
 {
     Owned<IPropertyTree> localCtx(createPTreeFromIPT(m_service_ctx, ipt_none));
@@ -48,8 +112,12 @@ IPropertyTree *CEsdlSvcEngine::createTargetContext(IEspContext &context, IProper
     localCtx->setProp("Row/Common/ESP/ServiceName", context.queryServiceName(""));
     //removing this entry since the Row/Common/ESP/Config/Method tree should have an attribute @name
     //localCtx->setProp("Row/Common/ESP/MethodName", mthdef.queryMethodName());
-    ensurePTree(localCtx, "Row/Common/ESP/Config");
-    localCtx->addPropTree("Row/Common/ESP/Config/Method", LINK(tgtcfg));
+    Owned<IPropertyTree> config = createContextMethodConfig(tgtcfg);
+    if (config && (config->hasChildren() || config->getAttributes()->count()>0))
+    {
+        ensurePTree(localCtx, "Row/Common/ESP/Config");
+        localCtx->addPropTree("Row/Common/ESP/Config/Method", config.getClear());
+    }
     return localCtx.getLink();
 }
 
