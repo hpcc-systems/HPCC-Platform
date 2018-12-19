@@ -93,7 +93,21 @@ IPropertyTree *createContextMethodConfig(IPropertyTree *methodConfig)
         if (!contextConfig)
             contextConfig.setown(createPTreeFromIPT(methodConfig, ipt_ordered));
         StringArray xpaths;
-        xpaths.appendListUniq(removeAttrs, "|", true); //don't supported quoted | for now
+        StringBuffer temp;
+        if (streq(removeAttrs, "*"))
+        {
+            Owned<IAttributeIterator> attrs = contextConfig->getAttributes();
+            ForEach(*attrs)
+            {
+                if (!temp.isEmpty())
+                    temp.append('|');
+                temp.append(attrs->queryName());
+            }
+            removeAttrs=temp.str();
+        }
+
+        xpaths.appendListUniq(removeAttrs, "|", true); //don't support quoted | for now
+
         ForEachItemIn(pos, xpaths)
             contextConfig->removeProp(xpaths.item(pos));
     }
