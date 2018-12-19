@@ -105,17 +105,18 @@ IPropertyTree *createContextMethodConfig(IPropertyTree *methodConfig)
 
 bool skipContextConfig(IPropertyTree *cfg)
 {
-    if (!cfg->getPropBool("@contextConfig", true)) //explicitly disabled
+    const char *elRemove = cfg->queryProp("@contextRemove");
+    if (elRemove && streq(elRemove, ".")) //remove entire node
         return true;
 
     const char *elInclude = cfg->queryProp("@contextInclude");
-    const char *elRemove = cfg->queryProp("@contextRemove");
     const char *attRemove = cfg->queryProp("@contextAttRemove");
 
     bool noElIncluded = elInclude && !*elInclude; //empty xpath
-    bool allElRemoved = (elRemove && streq(elRemove, "*"));
-    bool allAttRemoved = (attRemove && streq(attRemove, "*"));
+    bool allElRemoved = (elRemove && streq(elRemove, "*"));  //remove all child elements
+    bool allAttRemoved = (attRemove && streq(attRemove, "*")); //remove top level attributes (affects root node only)
 
+    //note that @contextRemove="." is equivalent to (@contextRemove="*" and @contextAttRemove="*") because the empty root tag is removed
     return (allAttRemoved && (noElIncluded || allElRemoved));
 }
 
