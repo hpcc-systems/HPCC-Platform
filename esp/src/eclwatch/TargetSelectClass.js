@@ -331,8 +331,8 @@ define([
                             Name: Name
                         }
                     }).then(function (response) {
-                        context.set("disabled", false);
                         if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
+                            context.set("disabled", false);
                             context.set("options", []);
                             context.options.push({
                                 label: "&nbsp;",

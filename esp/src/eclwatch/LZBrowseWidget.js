@@ -180,6 +180,7 @@ define([
                 var context = this;
                 var targetRow;
                 if (!this.dropZoneTargetSelect.initalized) {
+                    this.dropZoneFolderSelect.set("disabled", true);
                     this.dropZoneTargetSelect.init({
                         DropZones: true,
                         callback: function (value, row) {
@@ -200,16 +201,21 @@ define([
                             var path = targetRow.machine.Directory.indexOf("\\");
                             targetRow.machine.Name = value
                             targetRow.machine.Netaddress = value
-                            if (context.dropZoneFolderSelect) {
-                                context.dropZoneFolderSelect._dropZoneTarget = targetRow;
-                                if (path > -1) {
-                                    context.dropZoneFolderSelect.defaultValue = "\\"
-                                    pathSepChar = "\\"
-                                } else {
-                                    context.dropZoneFolderSelect.defaultValue = "/"
-                                    pathSepChar = "/"
+                            if (!value) {
+                                context.dropZoneFolderSelect.set("disabled", true);
+                            } else {
+                                context.dropZoneFolderSelect.set("disabled", false);
+                                if (context.dropZoneFolderSelect) {
+                                    context.dropZoneFolderSelect._dropZoneTarget = targetRow;
+                                    if (path > -1) {
+                                        context.dropZoneFolderSelect.defaultValue = "\\"
+                                        pathSepChar = "\\"
+                                    } else {
+                                        context.dropZoneFolderSelect.defaultValue = "/"
+                                        pathSepChar = "/"
+                                    }
+                                    context.dropZoneFolderSelect.loadDropZoneFolders(pathSepChar);
                                 }
-                                context.dropZoneFolderSelect.loadDropZoneFolders(pathSepChar);
                             }
                         }
                     });
@@ -300,6 +306,7 @@ define([
 
             _onUploadCancel: function (event) {
                 this.fileListDialog.hide();
+                this.uploader.reset();
             },
 
             _onDownload: function (event) {
