@@ -63,6 +63,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="Services" type="xs:string" use="optional" default="GetTransactionSeed,UpdateLog">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>the names of logging services to be supported in this logging agent.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="MaxTriesGTS" type="xs:nonNegativeInteger" use="optional" default="3">
         <xs:annotation>
           <xs:appinfo>
@@ -238,6 +245,7 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    
     <xs:attribute name="ksName" type="xs:string" use="optional" >
       <xs:annotation>
          <xs:appinfo>

@@ -58,26 +58,6 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
     if(!_logAgent)
         throw MakeStringException(-1,"No Logging agent interface for %s", _agentName);
 
-    const char* servicesConfig = _cfg->queryProp("@services");
-    if (!servicesConfig || !*servicesConfig)
-        throw MakeStringException(-1,"No Logging Service defined for %s", _agentName);
-
-    StringArray serviceArray;
-    serviceArray.appendListUniq(servicesConfig, ",");
-
-    unsigned i=0;
-    ForEachItemIn(s, serviceArray)
-    {
-        const char* service = serviceArray.item(s);
-        if (service && strieq(service, "UpdateLOG"))
-            services[i++] = LGSTUpdateLOG;
-        else if (service && strieq(service, "GetTransactionSeed"))
-            services[i++] = LGSTGetTransactionSeed;
-        else if (service && strieq(service, "GetTransactionID"))
-            services[i++] = LGSTGetTransactionID;
-    }
-    services[i] = LGSTterm;
-
     logAgent.setown(_logAgent);
 
     maxLogQueueLength = _cfg->getPropInt(PropMaxLogQueueLength, MaxLogQueueLength);

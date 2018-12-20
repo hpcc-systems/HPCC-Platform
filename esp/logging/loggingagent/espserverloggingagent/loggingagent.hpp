@@ -27,7 +27,7 @@
     #define ESPSERVERLOGGINGAGENT_API DECL_IMPORT
 #endif
 
-class CESPServerLoggingAgent : public CInterface, implements IEspLogAgent
+class CESPServerLoggingAgent : public CLogAgentBase
 {
     StringBuffer serviceName, loggingAgentName, defaultGroup;
     StringBuffer serverUrl, serverUserID, serverPassword;

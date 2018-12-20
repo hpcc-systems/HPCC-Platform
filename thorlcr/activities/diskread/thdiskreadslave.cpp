@@ -256,57 +256,87 @@ void CDiskRecordPartHandler::open()
     Owned<ITranslator> translator = activity.getTranslators(*partDesc);
     IOutputMetaData *actualFormat = translator ? &translator->queryActualFormat() : expectedFormat;
     bool canSerializeTypeInfo = actualFormat->queryTypeInfo()->canSerialize() && projectedFormat->queryTypeInfo()->canSerialize();
+
+    /* If part can potentially be remotely streamed, 1st check if any part is local,
+     * then try to remote stream, and otherwise failover to legacy remote access
+     */
     if (canSerializeTypeInfo)
     {
+        std::vector<unsigned> remoteCandidates;
+        // scan for non remote candidate part 1st
         for (unsigned copy=0; copy<partDesc->numCopies(); copy++)
+        {
+            RemoteFilename rfn;
+            partDesc->getFilename(copy, rfn);
+            StringBuffer localPath;
+            if (!isRemoteReadCandidate(activity, rfn, localPath))
+            {
+                Owned<IFile> iFile = createIFile(localPath.str());
+                try
+                {
+                    if (iFile->exists())
+                    {
+                        remoteCandidates.clear();
+                        break;
+                    }
+                }
+                catch (IException *e)
+                {
+                    ActPrintLog(&activity, e, "CDiskRecordPartHandler::open()");
+                    e->Release();
+                }
+            }
+            else
+                remoteCandidates.push_back(copy);
+        }
+        for (unsigned &copy: remoteCandidates) // only if no local part found above
         {
             RemoteFilename rfn;
             partDesc->getFilename(copy, rfn);
 
             StringBuffer path;
-            if (isRemoteReadCandidate(activity, rfn, path))
+            rfn.getLocalPath(path);
+            // Open a stream from remote file, having passed actual, expected, projected, and filters to it
+            SocketEndpoint ep(rfn.queryEndpoint());
+            setDafsEndpointPort(ep);
+
+            RowFilter actualFilter;
+            if (activity.fieldFilters.ordinality())
             {
-                // Open a stream from remote file, having passed actual, expected, projected, and filters to it
-                SocketEndpoint ep(rfn.queryEndpoint());
-                setDafsEndpointPort(ep);
+                if (actualFormat != expectedFormat && translator->queryKeyedTranslator())
+                    translator->queryKeyedTranslator()->translate(actualFilter, activity.fieldFilters);
+                else
+                    actualFilter.appendFilters(activity.fieldFilters);
+            }
+            Owned<IRemoteFileIO> iRemoteFileIO = createRemoteFilteredFile(ep, path, actualFormat, projectedFormat, actualFilter, compressed, activity.grouped, activity.remoteLimit);
+            if (iRemoteFileIO)
+            {
+                StringBuffer tmp;
+                iRemoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFilename.get());
+                iRemoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(fileBaseOffset).str());
+                iRemoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(partDesc->queryPartIndex()).str());
+                rfn.getPath(path);
+                filename.set(path);
+                checkFileCrc = false;
 
-                RowFilter actualFilter;
-                if (activity.fieldFilters.ordinality())
+                try
                 {
-                    if (actualFormat != expectedFormat && translator->queryKeyedTranslator())
-                        translator->queryKeyedTranslator()->translate(actualFilter, activity.fieldFilters);
-                    else
-                        actualFilter.appendFilters(activity.fieldFilters);
+                    iRemoteFileIO->ensureAvailable(); // force open now, because want to failover to other copies if fails (e.g. remote part is missing)
                 }
-                Owned<IRemoteFileIO> iRemoteFileIO = createRemoteFilteredFile(ep, path, actualFormat, projectedFormat, actualFilter, compressed, activity.grouped, activity.remoteLimit);
-                if (iRemoteFileIO)
+                catch (IException *e)
                 {
-                    StringBuffer tmp;
-                    iRemoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFilename.get());
-                    iRemoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(fileBaseOffset).str());
-                    iRemoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(partDesc->queryPartIndex()).str());
-                    rfn.getPath(path);
-                    filename.set(path);
-                    checkFileCrc = false;
-
-                    try
-                    {
-                        iRemoteFileIO->ensureAvailable(); // force open now, because want to failover to other copies if fails (e.g. remote part is missing)
-                    }
-                    catch (IException *e)
-                    {
-                        EXCLOG(e, nullptr);
-                        e->Release();
-                        continue; // try next copy and ultimately failover to local when no more copies
-                    }
-                    partStream.setown(createRowStreamEx(iRemoteFileIO, activity.queryProjectedDiskRowInterfaces(), 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, nullptr, this));
-                    ActPrintLog(&activity, "%s[part=%d]: reading remote dafilesrv file '%s' (logical file = %s)", kindStr, which, path.str(), activity.logicalFilename.get());
-                    break;
+                    EXCLOG(e, nullptr);
+                    e->Release();
+                    continue; // try next copy and ultimately failover to local when no more copies
                 }
+                partStream.setown(createRowStreamEx(iRemoteFileIO, activity.queryProjectedDiskRowInterfaces(), 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, nullptr, this));
+                ActPrintLog(&activity, "%s[part=%d]: reading remote dafilesrv file '%s' (logical file = %s)", kindStr, which, path.str(), activity.logicalFilename.get());
+                break;
             }
         }
     }
 
+    // either local file was found, or no streamable remote parts
     if (!partStream)
     {
         CDiskPartHandlerBase::open(); // NB: base opens an IFile

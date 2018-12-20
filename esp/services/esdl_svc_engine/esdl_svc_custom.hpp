@@ -35,6 +35,7 @@
 #include <map>
 #include <mutex>
 #include <thread>
+#include <initializer_list>
 
 #include "tokenserialization.hpp"
 #include "xpathprocessor.hpp"
@@ -131,6 +132,8 @@ private:
 interface IEsdlCustomTransform : extends IInterface
 {
        virtual void processTransform(IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg)=0;
+       virtual void processTransform(IEspContext * context, IPropertyTree *theroot, IXpathContext *xpathContext, const char *defaultTarget)=0;
+
 };
 
 class CEsdlCustomTransform : implements IEsdlCustomTransform, public CInterface
@@ -166,6 +169,10 @@ public:
     }
 
     void processTransform(IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg) override;
+    void processTransform(IEspContext * context, IPropertyTree *theroot, IXpathContext *xpathContext, const char *defaultTarget) override;
+
 };
+
+void processServiceAndMethodTransforms(std::initializer_list<IEsdlCustomTransform *> const &transforms, IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg);
 
 #endif /* ESDL_SVC_CUSTOM_HPP_ */
