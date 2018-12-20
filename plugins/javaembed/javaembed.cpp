@@ -519,6 +519,10 @@ public:
         return checkException();
     }
 
+    jobject NewObjectA(jclass clazz, jmethodID methodID, const jvalue *args)
+    {
+        return checkException(JNIEnv::NewObjectA(clazz,methodID,args));
+    }
     jobject NewObject(jclass clazz, jmethodID methodID, ...)
     {
         va_list args;
@@ -565,9 +569,10 @@ static bool printNameForClass(CheckedJNIEnv *JNIenv, jobject clsObj)
 
 static void printClassForObject(CheckedJNIEnv *JNIenv, jobject obj)
 {
+    printf("Object %p ", obj);
     if (!obj)
     {
-        printf("Object %p is null\n", obj);
+        printf("is null\n");
         return;
     }
     jclass objClass = JNIenv->GetObjectClass(obj);
@@ -578,6 +583,23 @@ static void printClassForObject(CheckedJNIEnv *JNIenv, jobject obj)
         printf("  ");
         printNameForClass(JNIenv, obj);
     }
+}
+
+static StringBuffer &getClassNameForObject(CheckedJNIEnv *JNIenv, StringBuffer &ret, jobject obj)
+{
+    if (obj)
+    {
+        jclass objClass = JNIenv->GetObjectClass(obj);
+        jmethodID mid = JNIenv->GetMethodID(objClass, "getClass", "()Ljava/lang/Class;");
+        jobject clsObj = JNIenv->CallObjectMethod(obj, mid);
+        jclass cls = JNIenv->GetObjectClass(clsObj);
+        mid = JNIenv->GetMethodID(cls, "getName", "()Ljava/lang/String;");
+        jstring strObj = (jstring) JNIenv->CallObjectMethod(clsObj, mid);
+        const char* str = JNIenv->GetStringUTFChars(strObj, NULL);
+        ret.append(str);
+        JNIenv->ReleaseStringUTFChars(strObj, str);
+    }
+    return ret;
 }
 
 static jobject getClassLoader(CheckedJNIEnv *JNIenv, jclass obj)
@@ -2899,8 +2921,19 @@ public:
     }
 
 private:
+    bool isConstructor(const char *name) const
+    {
+        const char *shortClass = strrchr(className, '/');
+        if (shortClass)
+            shortClass++;
+        else
+            shortClass = className;
+        return streq(shortClass, name);
+    }
     unsigned getFunctionIdx(const char *funcName) const
     {
+        if (isConstructor(funcName))
+            funcName = "<init>";
         unsigned methodIdx = (unsigned) -1;
         ForEachItemIn(idx, methodNames)
         {
@@ -3099,6 +3132,23 @@ public:
     {
         if (*returnType=='L')
             return (unsigned __int64) JNIenv->NewGlobalRef(result.l);
+        else if (*returnType=='V' && strieq(methodName, "<init>"))
+        {
+            jobject thisObject = JNIenv->NewGlobalRef(result.l);
+            if (persistMode==persistThread)
+                UNIMPLEMENTED;
+            if (engine)
+            {
+                // Register this object to be removed automatically at end of specified scope...
+                VStringBuffer scopeKey("O.%p", thisObject);
+                PersistedObjectCriticalBlock persistBlock;
+                persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
+                assertex(!persistBlock.getInstance());
+                engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
+                persistBlock.leave(thisObject);
+            }
+            return (unsigned __int64) thisObject;
+        }
         throw MakeStringException(MSGAUD_user, 0, "javaembed: Unsigned results not supported"); // Java doesn't support unsigned
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
@@ -3424,11 +3474,24 @@ public:
     }
     virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
     {
-        bindUnsignedParam(name, val);
+        throw MakeStringException(MSGAUD_user, 0, "javaembed: Unsigned parameters not supported"); // Java doesn't support unsigned
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
-        throw MakeStringException(MSGAUD_user, 0, "javaembed: Unsigned parameters not supported"); // Java doesn't support unsigned
+        if (!strchr(importName, '.') && argcount==0)  // Could require a flag, or a special parameter name...
+        {
+            if (importName[0]=='~')
+                instance = (jobject) val;  // Should ensure it gets released at end of function
+            else
+                instance = JNIenv->NewGlobalRef((jobject) val);
+            loadFunction(classpath, 0, nullptr);
+            reinit();
+        }
+        else
+        {
+            // We could match a java class, to allow objects returned from one embed to be passed as parameters to another
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Unsigned parameters not supported"); // Java doesn't support unsigned
+        }
     }
     virtual void bindStringParam(const char *name, size32_t len, const char *val)
     {
@@ -3790,8 +3853,14 @@ public:
     virtual void importFunction(size32_t lenChars, const char *utf) override
     {
         if (!javaClass)
-            loadFunction(lenChars, utf, classpath, 0, nullptr);
-        reinit();
+        {
+            size32_t bytes = rtlUtf8Size(lenChars, utf);
+            importName.set(utf, bytes);
+            if (strchr(importName, '.'))
+                loadFunction(classpath, 0, nullptr);
+        }
+        if (javaClass)
+            reinit();
     }
     virtual void callFunction()
     {
@@ -3801,22 +3870,33 @@ public:
         if (nonStatic)
         {
             if (!instance)
-                throw MakeStringException(0, "javaembed: non static member function %s called, but no instance available", methodName.get());  // Should never happen
-
-            switch (*returnType)
             {
-            case 'C': result.c = JNIenv->CallCharMethodA(instance, javaMethodID, args); break;
-            case 'Z': result.z = JNIenv->CallBooleanMethodA(instance, javaMethodID, args); break;
-            case 'J': result.j = JNIenv->CallLongMethodA(instance, javaMethodID, args); break;
-            case 'F': result.f = JNIenv->CallFloatMethodA(instance, javaMethodID, args); break;
-            case 'D': result.d = JNIenv->CallDoubleMethodA(instance, javaMethodID, args); break;
-            case 'I': result.i = JNIenv->CallIntMethodA(instance, javaMethodID, args); break;
-            case 'S': result.s = JNIenv->CallShortMethodA(instance, javaMethodID, args); break;
-            case 'B': result.s = JNIenv->CallByteMethodA(instance, javaMethodID, args); break;
-            case '[':
-            case 'L': result.l = JNIenv->CallObjectMethodA(instance, javaMethodID, args); break;
-            case 'V': JNIenv->CallVoidMethodA(instance, javaMethodID, args); result.l = nullptr; break;
-            default: throwUnexpected();
+                if (streq(methodName, "<init>"))
+                    result.l = JNIenv->NewObjectA(javaClass, javaMethodID, args);
+                else
+                    throw MakeStringException(0, "javaembed: non static member function %s called, but no instance available", methodName.get());  // Should never happen
+            }
+            else if (javaMethodID)
+            {
+                switch (*returnType)
+                {
+                case 'C': result.c = JNIenv->CallCharMethodA(instance, javaMethodID, args); break;
+                case 'Z': result.z = JNIenv->CallBooleanMethodA(instance, javaMethodID, args); break;
+                case 'J': result.j = JNIenv->CallLongMethodA(instance, javaMethodID, args); break;
+                case 'F': result.f = JNIenv->CallFloatMethodA(instance, javaMethodID, args); break;
+                case 'D': result.d = JNIenv->CallDoubleMethodA(instance, javaMethodID, args); break;
+                case 'I': result.i = JNIenv->CallIntMethodA(instance, javaMethodID, args); break;
+                case 'S': result.s = JNIenv->CallShortMethodA(instance, javaMethodID, args); break;
+                case 'B': result.s = JNIenv->CallByteMethodA(instance, javaMethodID, args); break;
+                case '[':
+                case 'L': result.l = JNIenv->CallObjectMethodA(instance, javaMethodID, args); break;
+                case 'V': JNIenv->CallVoidMethodA(instance, javaMethodID, args); result.l = nullptr; break;
+                default: throwUnexpected();
+                }
+            }
+            else
+            {
+                assertex(methodName[0]=='~');
             }
         }
         else
@@ -3852,7 +3932,9 @@ public:
             b.setEndian(__BIG_ENDIAN);
             uint32_t siglen; b.read(siglen);
             const char *sig = (const char *) b.readDirect(siglen);
-            loadFunction(siglen, sig, classpath, bytecodeLen, (const byte *) bytecode);
+            size32_t bytes = rtlUtf8Size(siglen, sig);  // MORE - check that this size is serialized in chars not bytes!
+            importName.set(sig, bytes);
+            loadFunction(classpath, bytecodeLen, (const byte *) bytecode);
         }
         reinit();
     }
@@ -3977,10 +4059,8 @@ protected:
         }
     }
 
-    void loadFunction(size32_t lenChars, const char *utf, const char *classpath, size32_t bytecodeLen, const byte *bytecode)
+    void loadFunction(const char *classpath, size32_t bytecodeLen, const byte *bytecode)
     {
-        size32_t bytes = rtlUtf8Size(lenChars, utf);
-        importName.set(utf, bytes);
         StringBuffer classname;
         // Name should be in the form class.method:signature
         const char *funcname = strrchr(importName, '.');
@@ -4009,24 +4089,24 @@ protected:
         }
         else
             methodName.set(funcname);
-
+        bool isConstructor = streq(methodName, "<init>");
         {
             PersistedObjectCriticalBlock persistBlock;
-            if (nonStatic && !instance && persistMode > persistThread) // MORE - there may be a persist mode between Thread and Wuid, meaning shared between multiple on this thread
+            StringBuffer scopeKey;
+            if (nonStatic && !instance && persistMode > persistThread && !isConstructor) // MORE - there may be a persist mode between Thread and Wuid, meaning shared between multiple on this thread
             {
                 // If the persist scope is global, query, or workunit, we may want to use a pre-existing object. If we do we share its classloader, class, etc.
-                StringBuffer scopeKey;
                 getScopeKey(scopeKey);
                 persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
                 instance = persistBlock.getInstance();
                 if (instance)
-                {
                     persistBlock.leave();
-                    // Copy class from instance
-                    javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(instance));
-                    classLoader = JNIenv->NewGlobalRef(getClassLoader(JNIenv, javaClass));
-                    sharedCtx->setThreadClassLoader(classLoader);
-                }
+            }
+            if (instance)
+            {
+                javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(instance));
+                classLoader = JNIenv->NewGlobalRef(getClassLoader(JNIenv, javaClass));
+                sharedCtx->setThreadClassLoader(classLoader);
             }
             if (!javaClass)
             {
@@ -4047,27 +4127,54 @@ protected:
                 }
                 javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
             }
-            if (nonStatic && !instance)
+            if (nonStatic && !instance && !isConstructor)
             {
-                constructor = JNIenv->GetMethodID(javaClass, "<init>", "()V");
-                if (!constructor)
+                jmethodID constructor;
+                try
+                {
+                    constructor = JNIenv->GetMethodID(javaClass, "<init>", "()V");
+                }
+                catch (IException *E)
+                {
+                    Owned<IException> e = E;
                     throw MakeStringException(0, "javaembed: in method %s: parameterless constructor required", queryReportName());
+                }
                 instance = JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
                 if (persistBlock.locked())
+                {
+                    if (engine)
+                        engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
                     persistBlock.leave(JNIenv->NewGlobalRef(instance));
+                }
             }
         }
-
-        if (!signature)
-            getSignature(signature, JNIenv, javaClass, funcname);
-        StringBuffer javaSignature;
-        patchSignature(javaSignature, signature);
-
-        if (nonStatic)
-            javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
+        if (methodName[0]=='~')
+        {
+            if (!instance)
+                throw MakeStringException(0, "javaembed: in method %s: ~ invalid without instance", queryReportName());
+            StringBuffer myClassName;
+            getClassNameForObject(JNIenv, myClassName, instance);
+            const char *shortClassName = strrchr(myClassName, '.');
+            if (shortClassName)
+                shortClassName++;
+            else
+                shortClassName = myClassName;
+            if (!streq(methodName+1, shortClassName))
+                throw MakeStringException(0, "javaembed: in method %s: class name %s does not match", queryReportName(), shortClassName);
+            signature.set("()V");
+        }
         else
-            javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
+        {
+            if (!signature)
+                getSignature(signature, JNIenv, javaClass, funcname);
+            StringBuffer javaSignature;
+            patchSignature(javaSignature, signature);
 
+            if (nonStatic)
+                javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
+            else
+                javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
+        }
         returnType = strrchr(signature, ')');
         assertex(returnType);  // Otherwise how did Java accept it??
         returnType++;
@@ -4077,7 +4184,7 @@ protected:
     {
         // We need to patch up the provided signature - any instances of <classname; need to be replaced by Ljava.utils.iterator
         const char *finger = signature;
-        while (*finger)
+        while (finger && *finger)
         {
             if (*finger == '<')
             {
@@ -4146,7 +4253,6 @@ protected:
     jclass javaClass = nullptr;
     jobject classLoader = nullptr;
     jmethodID javaMethodID = nullptr;
-    jmethodID constructor = nullptr;
     StringAttr methodName;
     StringAttr importName;
     StringAttr signature;
@@ -4461,8 +4567,9 @@ void doPrecompile(size32_t & __lenResult, void * & __result, const char *funcNam
         VStringBuffer mainfile("%s" PATHSEPSTR "%s.class", tmpDirName.str(), classname.str());
         JavaClassReader reader(mainfile);
         DBGLOG("Analysing generated class %s", reader.queryClassName());
-        if (persistMode > persistThread && (reader.getFlags(funcName) & JavaClassReader::ACC_SYNCHRONIZED)==0)
-            errors.appendf("Warning: persist mode set but function is not synchronized\n");
+        // Not sure how useful this warning is.
+        //if (persistMode > persistThread && (reader.getFlags(funcName) & JavaClassReader::ACC_SYNCHRONIZED)==0)
+        //    errors.appendf("Warning: persist mode set but function is not synchronized\n");
         reader.getEmbedData(result, funcName, true);
         removeFileTraceIfFail(mainfile);
         // Now read nested classes
