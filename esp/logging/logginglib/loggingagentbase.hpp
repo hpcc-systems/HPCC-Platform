@@ -241,6 +241,7 @@ interface IEspLogAgent : extends IInterface
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
     virtual void getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID) = 0;
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
+    virtual bool hasService(LOGServiceType service) = 0;
     virtual IEspUpdateLogRequestWrap* filterLogContent(IEspUpdateLogRequestWrap* req) = 0;
 };
 
@@ -284,7 +285,50 @@ public:
     IEspUpdateLogRequestWrap* filterLogContent(IEspUpdateLogRequestWrap* req);
 };
 
-class LOGGINGCOMMON_API CDBLogAgentBase : public CInterface, implements IEspLogAgent
+class LOGGINGCOMMON_API CLogAgentBase : public CInterface, implements IEspLogAgent
+{
+protected:
+    StringAttr agentName;
+    LOGServiceType services[MAXLOGSERVICES];
+
+    bool hasService(LOGServiceType service)
+    {
+        unsigned int i = 0;
+        while (services[i] != LGSTterm)
+        {
+            if (services[i] == service)
+                return true;
+            i++;
+        }
+        return false;
+    }
+    void setServices(const char* servicesConfig)
+    {
+        StringArray serviceArray;
+        serviceArray.appendListUniq(servicesConfig, ",");
+
+        unsigned i=0;
+        ForEachItemIn(s, serviceArray)
+        {
+            const char* service = serviceArray.item(s);
+            if (service && strieq(service, "UpdateLOG"))
+                services[i++] = LGSTUpdateLOG;
+            else if (service && strieq(service, "GetTransactionSeed"))
+                services[i++] = LGSTGetTransactionSeed;
+            else if (service && strieq(service, "GetTransactionID"))
+                services[i++] = LGSTGetTransactionID;
+        }
+        services[i] = LGSTterm;
+    };
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CLogAgentBase() { services[0] = LGSTterm; };
+    virtual ~CLogAgentBase() {};
+};
+
+
+class LOGGINGCOMMON_API CDBLogAgentBase : public CLogAgentBase
 {
 protected:
     StringBuffer defaultDB, transactionTable, loggingTransactionSeed;
