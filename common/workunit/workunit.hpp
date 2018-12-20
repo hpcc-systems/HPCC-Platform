@@ -1467,6 +1467,7 @@ interface IWorkUnitFactory : extends IPluggableFactory
 {
     virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual bool deleteWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual bool deleteWorkUnitEx(const char *wuid, bool throwException, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnit * openWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;

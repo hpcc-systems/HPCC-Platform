@@ -211,8 +211,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     {
                         cw.clear();
-                        if (!factory->deleteWorkUnit(wuid))
-                            throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "%s: Workunit cannot be deleted. Please check ESP log.", wuid);
+                        factory->deleteWorkUnitEx(wuid, true),
                         AuditSystemAccess(context.queryUserId(), true, "Deleted %s", wuid);
                     }
                     break;
@@ -1271,8 +1270,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         case WUStateAborted:
         case WUStateCompleted:
         case WUStateFailed:
-            if (!factory->deleteWorkUnit(wuid.str()))
-                throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "Workunit %s cannot be deleted.", wuid.str());
+            factory->deleteWorkUnitEx(wuid.str(), true);
             break;
         default:
             abortWorkUnit(wuid.str(), context.querySecManager(), context.queryUser());
@@ -1373,8 +1371,7 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
             resp.setDependencies(dependencies);
         }
         cw.clear();
-        if (!factory->deleteWorkUnit(wuid.str()))
-            throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "%s: Workunit cannot be deleted. Please check ESP log.", wuid.str());
+        factory->deleteWorkUnitEx(wuid.str(), true);
     }
     catch(IException* e)
     {
@@ -1444,8 +1441,7 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
         wu->commit();
         wu.clear();
 
-        if (!factory->deleteWorkUnit(wuid.str()))
-            throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "%s: Workunit cannot be deleted. Please check ESP log.", wuid.str());
+        factory->deleteWorkUnitEx(wuid.str(), true);
     }
     catch(IException* e)
     {
