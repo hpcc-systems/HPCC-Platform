@@ -17,9 +17,11 @@
 
 EXPORT Language := SERVICE : plugin('Rembed')
   boolean getEmbedContext():cpp,pure,namespace='Rembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
+  STRING syntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='Rembed',entrypoint='syntaxCheck',fold;
   unload():cpp,pure,namespace='Rembed',entrypoint='unload';
 END;
 
 EXPORT getEmbedContext := Language.getEmbedContext;
+EXPORT syntaxCheck := Language.syntaxCheck;
 EXPORT boolean supportsImport := false;
 EXPORT boolean supportsScript := true;

@@ -1396,9 +1396,24 @@ extern DECL_EXPORT IEmbedContext* getEmbedContext()
     return new REmbedContext;
 }
 
-extern DECL_EXPORT bool syntaxCheck(const char *script)
+extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult, char * & __result, const char *funcname, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions)
 {
-    return true; // MORE
+    StringBuffer result;
+    try
+    {
+        Owned<REmbedFunctionContext> ctx =  new REmbedFunctionContext(*queryGlobalState()->R);
+        // MORE - could check supplied persistOptions are valid
+        StringBuffer text;
+        text.append(rtlUtf8Size(charsBody, body), body);
+        text.stripChar('\r');
+        Rcpp::ExpressionVector exp(text);
+    }
+    catch (std::exception &E)
+    {
+        result.append("Rembed: Parse error from R while checking embedded code"); // Unfortunately we don't get any info about the error position or nature, just "Parse error."
+    }
+    __lenResult = result.length();
+    __result = result.detach();
 }
 
 } // namespace
