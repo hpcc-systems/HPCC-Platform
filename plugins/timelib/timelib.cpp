@@ -56,6 +56,7 @@ static const char * EclDefinition =
 "  STRING DateToString(UNSIGNED4 date, CONST VARSTRING format) : c,pure,entrypoint='tlDateToString'; \n"
 "  STRING TimeToString(UNSIGNED3 time, CONST VARSTRING format) : c,pure,entrypoint='tlTimeToString'; \n"
 "  STRING SecondsToString(INTEGER8 seconds, CONST VARSTRING format) : c,pure,entrypoint='tlSecondsToString'; \n"
+"  INTEGER8 StringToSeconds(CONST STRING src, CONST VARSTRING format, BOOLEAN is_local_time) : c,pure,entrypoint='tlStringToSeconds'; \n"
 "  UNSIGNED4 AdjustDate(UNSIGNED4 date, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta) : c,pure,entrypoint='tlAdjustDate'; \n"
 "  UNSIGNED4 AdjustDateBySeconds(UNSIGNED4 date, INTEGER4 seconds_delta) : c,pure,entrypoint='tlAdjustDateBySeconds'; \n"
 "  UNSIGNED4 AdjustTime(UNSIGNED3 time, INTEGER2 hour_delta, INTEGER4 minute_delta, INTEGER4 second_delta) : c,pure,entrypoint='tlAdjustTime'; \n"
@@ -653,6 +654,23 @@ TIMELIB_API void TIMELIB_CALL tlSecondsToString(size32_t &__lenResult, char* &__
         __result = reinterpret_cast<char*>(rtlMalloc(__lenResult));
         memcpy(__result, buffer, __lenResult);
     }
+}
+
+//------------------------------------------------------------------------------
+
+TIMELIB_API __int64 TIMELIB_CALL tlStringToSeconds(size32_t lenS, const char* s, const char* fmtin, bool is_local_time)
+{
+    struct tm       timeInfo;
+    
+    memset(&timeInfo, 0, sizeof(timeInfo));
+    timeInfo.tm_isdst = -1;
+    
+    if (simple_strptime(lenS, s, fmtin, &timeInfo))
+    {
+        return static_cast<__int64>(tlMKTime(&timeInfo, is_local_time));
+    }
+
+    return 0;
 }
 
 //------------------------------------------------------------------------------

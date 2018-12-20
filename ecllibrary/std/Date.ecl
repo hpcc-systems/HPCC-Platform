@@ -677,7 +677,7 @@ EXPORT Date_t FromString(STRING date_text, VARSTRING format) :=
  *
  * Supported characters:
     %H          Hour (two digits)
-    %k          (two digits, or a space followed by a single digit)
+    %k          Hour (two digits, or a space followed by a single digit)
     %M          Minute (two digits)
     %S          Second (two digits)
     %t          Whitespace
@@ -685,6 +685,41 @@ EXPORT Date_t FromString(STRING date_text, VARSTRING format) :=
 
 EXPORT Time_t FromStringToTime(STRING time_text, VARSTRING format) :=
     StringLib.StringToTimeOfDay(time_text, format);
+
+
+/**
+ * Converts a string to a Seconds_t using the relevant string format.
+ *
+ * @param datetime_text The string to be converted.
+ * @param format        The format of the input string.
+ *                      (See documentation for strftime)
+ * @param is_local_time TRUE if datetime_text is expressed in local time
+ *                      rather than UTC, FALSE otherwise.  Optional, defaults
+ *                      to FALSE.
+ * @return              The seconds that was matched in the string.  Returns 0 if failed to match.
+ *
+ * Supported date characters:
+    %B          Full month name
+    %b or %h    Abbreviated month name
+    %d          Day of month (two digits)
+    %e          Day of month (two digits, or a space followed by a single digit)
+    %m          Month (two digits)
+    %y          Year within century (00-99)
+    %Y          Full year (yyyy)
+    %j          Julian day (1-366)
+ *
+ * Supported time characters:
+    %H          Hour (two digits)
+    %k          Hour (two digits, or a space followed by a single digit)
+    %M          Minute (two digits)
+    %S          Second (two digits)
+ *
+ * Other supported characters:
+    %t          Whitespace
+ */
+
+EXPORT Seconds_t FromStringToSeconds(STRING datetime_text, VARSTRING format, BOOLEAN is_local_time = FALSE) :=
+    TimeLib.StringToSeconds(datetime_text, format, is_local_time);
 
 
 /**

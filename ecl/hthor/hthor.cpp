@@ -8266,9 +8266,43 @@ bool CHThorDiskReadBaseActivity::openNext()
                 actualFilter.appendFilters(fieldFilters);
 
             bool canSerializeTypeInfo = actualDiskMeta->queryTypeInfo()->canSerialize() && projectedDiskMeta->queryTypeInfo()->canSerialize();
+
+            /* If part can potentially be remotely streamed, 1st check if any part is local,
+             * then try to remote stream, and otherwise failover to legacy remote access
+             */
+            unsigned localCopy = NotFound;
             if (canSerializeTypeInfo && (rt_binary == readType))
             {
-                for (unsigned copy=0; copy < numCopies; copy++)
+                std::vector<unsigned> remoteCandidates;
+                // scan for local part 1st
+                for (unsigned copy=0; copy<numCopies; copy++)
+                {
+                    RemoteFilename rfn;
+                    curPart->getFilename(rfn, copy);
+                    StringBuffer localPath;
+                    if (!isRemoteReadCandidate(agent, rfn, localPath))
+                    {
+                        Owned<IFile> iFile = createIFile(localPath.str());
+                        try
+                        {
+                            if (iFile->exists())
+                            {
+                                localCopy = copy;
+                                remoteCandidates.clear();
+                                break;
+                            }
+                        }
+                        catch (IException *e)
+                        {
+                            EXCLOG(e, "CHThorDiskReadBaseActivity::openNext()");
+                            e->Release();
+                        }
+                    }
+                    else
+                        remoteCandidates.push_back(copy);
+                }
+
+                for (unsigned &copy: remoteCandidates)
                 {
                     RemoteFilename rfilename;
                     if (curPart)
@@ -8281,42 +8315,43 @@ bool CHThorDiskReadBaseActivity::openNext()
                     {
                         // NB: only binary handles can be remotely processed by dafilesrv at the moment
 
-                        StringBuffer path;
-                        if (isRemoteReadCandidate(agent, rfilename, path))
+                        // Open a stream from remote file, having passed actual, expected, projected, and filters to it
+                        SocketEndpoint ep(rfilename.queryEndpoint());
+                        setDafsEndpointPort(ep);
+
+                        StringBuffer localPath;
+                        rfilename.getLocalPath(localPath);
+                        Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, localPath, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
+                        if (remoteFileIO)
                         {
-                            // Open a stream from remote file, having passed actual, expected, projected, and filters to it
-                            SocketEndpoint ep(rfilename.queryEndpoint());
-                            setDafsEndpointPort(ep);
+                            StringBuffer tmp;
+                            remoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFileName.str());
+                            remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
+                            remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
 
-                            Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
-                            if (remoteFileIO)
+                            try
                             {
-                                StringBuffer tmp;
-                                remoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFileName.str());
-                                remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
-                                remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
+                                remoteFileIO->ensureAvailable(); // force open now, because want to failover to other copies or legacy if fails
+                            }
+                            catch (IException *e)
+                            {
+                                EXCLOG(e, nullptr);
+                                e->Release();
+                                continue; // try next copy and ultimately failover to local when no more copies
+                            }
 
-                                try
-                                {
-                                    remoteFileIO->ensureAvailable(); // force open now, because want to failover to other copies or legacy if fails
-                                }
-                                catch (IException *e)
-                                {
-                                    EXCLOG(e, nullptr);
-                                    e->Release();
-                                    continue; // try next copy and ultimately failover to local when no more copies
-                                }
+                            Owned<IFile> iFile = createIFile(rfilename);
 
-                                inputfile.setown(createIFile(rfilename));
-
-                                actualDiskMeta.set(projectedDiskMeta);
-                                expectedDiskMeta = projectedDiskMeta;
-                                actualFilter.clear();
-                                inputfileio.setown(remoteFileIO.getClear());
+                            actualDiskMeta.set(projectedDiskMeta);
+                            expectedDiskMeta = projectedDiskMeta;
+                            actualFilter.clear();
+                            inputfileio.setown(remoteFileIO.getClear());
+                            if (inputfileio)
+                            {
+                                inputfile.setown(iFile.getClear());
+                                break;
                             }
                         }
-                        if (inputfileio)
-                            break;
                     }
                     catch (IException *E)
                     {
@@ -8330,7 +8365,9 @@ bool CHThorDiskReadBaseActivity::openNext()
             }
             if (!inputfile)
             {
-                for (unsigned copy=0; copy < numCopies; copy++)
+                unsigned startCopy = (NotFound != localCopy) ? localCopy : 0;
+                unsigned copy = startCopy;
+                while (true)
                 {
                     RemoteFilename rfilename;
                     if (curPart)
@@ -8368,6 +8405,10 @@ bool CHThorDiskReadBaseActivity::openNext()
                         else
                             saveOpenExc.setown(E);
                     }
+                    if (++copy == numCopies) // wrap
+                        copy = 0;
+                    if (copy == startCopy) // reached starting copy, so scanned all and failed to open any.
+                        break;
                 }
             }
 

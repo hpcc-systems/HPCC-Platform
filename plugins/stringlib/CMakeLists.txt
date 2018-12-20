@@ -15,7 +15,7 @@
 ################################################################################
 
 
-# Component: stringlib 
+# Component: stringlib
 
 #####################################################
 # Description:
@@ -26,14 +26,14 @@
 set ( toolsdir "${HPCC_SOURCE_DIR}/tools" )
 
 
-project( stringlib ) 
+project( stringlib )
 
-set (    SRCS 
-         stringlib.cpp 
+set (    SRCS
+         stringlib.cpp
     )
 
-include_directories ( 
-         ./../../system/include 
+include_directories (
+         ./../../system/include
          ./../../system/jlib
          ./../../rtl/include
          ./../../rtl/eclrtl

@@ -321,6 +321,9 @@ void CDBLogAgentBase::readTransactionCfg(IPropertyTree* cfg)
 
 bool CDBLogAgentBase::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp)
 {
+    if (!hasService(LGSTGetTransactionSeed))
+        throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "%s: no getTransactionSeed service configured", agentName.get());
+
     bool bRet = false;
     StringBuffer appName = req.getApplication();
     appName.trim();
@@ -366,6 +369,9 @@ bool CDBLogAgentBase::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
 
 bool CDBLogAgentBase::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp)
 {
+    if (!hasService(LGSTUpdateLOG))
+        throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "%s: no updateLog service configured", agentName.get());
+
     unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
     bool ret = false;
     try

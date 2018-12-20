@@ -504,14 +504,10 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue(LogMin, "method", mthName);
 
+    if (m_serviceLevelCrtFail)
+        throw MakeStringException(-1, "%s::%s disabled due to Custom Transform errors. Review transform template in configuration.", srvdef.queryName(), mthName);
 
     IEsdlCustomTransform *crt = m_customRequestTransformMap.getValue(mthdef.queryMethodName());
-    if (!crt)
-    {
-        if (m_serviceLevelCrtFail)
-            throw MakeStringException(-1, "%s::%s disabled due to Custom Transform errors. Review transform template in configuration.", srvdef.queryName(), mthName);
-        crt = m_serviceLevelRequestTransform;
-    }
 
     MapStringTo<SecAccessFlags>&  methaccessmap = const_cast<MapStringTo<SecAccessFlags>&>(mthdef.queryAccessMap());
     if (methaccessmap.ordinality() > 0)
@@ -669,7 +665,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             reqcontent.set(reqWriter->str());
             context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
 
-            handleFinalRequest(context, crt, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy);
+            handleFinalRequest(context, m_serviceLevelRequestTransform, crt, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy);
             context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq");
 
             if (isPublishedQuery(implType))
@@ -833,7 +829,8 @@ void EsdlServiceImpl::getSoapError( StringBuffer& out,
 }
 
 void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
-                                         IEsdlCustomTransform *crt,
+                                         IEsdlCustomTransform *serviceCrt,
+                                         IEsdlCustomTransform *methodCrt,
                                          Owned<IPropertyTree> &tgtcfg,
                                          Owned<IPropertyTree> &tgtctx,
                                          IEsdlDefService &srvdef,
@@ -904,10 +901,10 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
     const char *tgtUrl = tgtcfg->queryProp("@url");
     if (!isEmptyString(tgtUrl))
     {
-        if (crt)
+        if (serviceCrt || methodCrt)
         {
             context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
-            crt->processTransform(&context, tgtcfg.get(), tgtctx.get(), srvdef, mthdef, soapmsg, m_oEspBindingCfg.get());
+            processServiceAndMethodTransforms({serviceCrt, methodCrt}, &context, tgtcfg.get(), tgtctx.get(), srvdef, mthdef, soapmsg, m_oEspBindingCfg.get());
             context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
         }
 

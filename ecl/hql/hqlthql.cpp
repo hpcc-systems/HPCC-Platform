@@ -215,8 +215,10 @@ HqltHql::~HqltHql()
 
 StringBuffer & HqltHql::appendId(StringBuffer & s, IIdAtom * id)
 {
-    //MORE: We may want to lose the case conversion and use return s.append(id->str());
-    return s.append(str(lower(id)));
+    if (lowerCaseIds)
+        return s.append(str(lower(id)));
+    else
+        return s.append(str(id));
 }
 
 

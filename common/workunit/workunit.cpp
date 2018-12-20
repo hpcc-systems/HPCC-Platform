@@ -4575,7 +4575,7 @@ IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *scope, 
     return ret;
 }
 
-bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser)
+bool CWorkUnitFactory::deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secmgr, ISecUser *secuser)
 {
     if (workUnitTraceLevel > 1)
         PrintLog("deleteWorkUnit %s", wuid);
@@ -4584,19 +4584,30 @@ bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, IS
     Owned<CLocalWorkUnit> cw = _updateWorkUnit(wuid, secmgr, secuser);
     if (!checkWuSecAccess(*cw.get(), secmgr, secuser, SecAccess_Full, "delete", true, true))
         return false;
-    try
-    {
+
+    if (throwException)
         cw->cleanupAndDelete(true, true);
-    }
-    catch (IException *E)
+    else
     {
-        StringBuffer s;
-        LOG(MCexception(E, MSGCLS_warning), E, s.append("Exception during deleteWorkUnit: ").append(wuid).str());
-        E->Release();
-        return false;
+        try
+        {
+            cw->cleanupAndDelete(true, true);
+        }
+        catch (IException *E)
+        {
+            StringBuffer s;
+            LOG(MCexception(E, MSGCLS_warning), E, s.append("Exception during deleteWorkUnit: ").append(wuid).str());
+            E->Release();
+            return false;
+        }
     }
     removeWorkUnitFromAllQueues(wuid); //known active workunits wouldn't make it this far
     return true;
+}
+
+bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    return deleteWorkUnitEx(wuid, false, secmgr, secuser);
 }
 
 IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
@@ -5733,6 +5744,12 @@ public:
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
         return baseFactory->deleteWorkUnit(wuid, secMgr, secUser);
+    }
+    virtual bool deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secMgr, ISecUser *secUser)
+    {
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->deleteWorkUnitEx(wuid, throwException, secMgr, secUser);
     }
     virtual IConstWorkUnit* openWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser)
     {

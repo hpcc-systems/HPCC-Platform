@@ -43,6 +43,12 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
     if (!cfg)
         return false;
 
+    agentName.set(name);
+    const char* servicesConfig = cfg->queryProp("@services");
+    if (isEmptyString(servicesConfig))
+        throw MakeStringException(-1,"No Logging Service defined for %s", agentName.get());
+    setServices(servicesConfig);
+
     IPropertyTree* espServer = cfg->queryBranch(PropESPServer);
     if(!espServer)
         throw MakeStringException(-1,"Unable to find ESPServer settings for log agent %s:%s", name, type);
@@ -59,63 +65,73 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
         decrypt(serverPassword, password);
     }
     maxServerWaitingSeconds = cfg->getPropInt(PropServerWaitingSeconds);
-    maxGTSRetries = cfg->getPropInt(MaxTriesGTS, DefaultMaxTriesGTS);
 
+    if (hasService(LGSTUpdateLOG))
+    {
+        BoolHash uniqueGroupNames;
+        StringBuffer sourceName, groupName, dbName;
+        Owned<IPropertyTreeIterator> iter = cfg->getElements("LogSourceMap/LogSource");
+        ForEach(*iter)
+        {
+            ensureInputString(iter->query().queryProp("@name"), false, sourceName, -1, "LogSource @name required");
+            ensureInputString(iter->query().queryProp("@maptologgroup"), true, groupName, -1, "LogSource @maptologgroup required");
+            ensureInputString(iter->query().queryProp("@maptodb"), true, dbName, -1, "LogSource @maptodb required");
+            Owned<CLogSource> logSource = new CLogSource(sourceName.str(), groupName.str(), dbName.str());
+            logSources.setValue(sourceName.str(), logSource);
+
+            bool* found = uniqueGroupNames.getValue(groupName.str());
+            if (!found || !*found)
+            {
+                uniqueGroupNames.setValue(groupName.str(), true);
+
+                unsigned maxSeq = 0;
+                unsigned maxLength = 0;
+                unsigned seedExpiredSeconds = 0;
+                VStringBuffer xpath("LogGroup/[@name='%s']", groupName.str());
+                IPropertyTree* logGroup = cfg->queryBranch(xpath.str());
+                if (logGroup)
+                {
+                    maxLength = logGroup->getPropInt(PropMaxTransIDLength, 0);
+                    maxSeq = logGroup->getPropInt(PropMaxTransIDSequenceNumber, 0),
+                    seedExpiredSeconds = 60 * logGroup->getPropInt(PropMaxTransSeedTimeoutMinutes, 0);
+                }
+
+                if (!hasService(LGSTGetTransactionSeed) && !hasService(LGSTGetTransactionID))
+                    continue;
+
+                StringBuffer transactionSeed, statusMessage;
+                getTransactionSeed(groupName.str(), transactionSeed, statusMessage);
+                if (transactionSeed.length() > 0)
+                {
+                    Owned<CTransIDBuilder> entry = new CTransIDBuilder(transactionSeed.str(), false, transactionSeedType.get(),
+                        maxLength, maxSeq, seedExpiredSeconds);
+                    transIDMap.setValue(groupName.str(), entry);
+                    if (iter->query().getPropBool("@default", false))
+                        defaultGroup.set(groupName.str());
+                }
+                else
+                    PROGLOG("Failed to get TransactionSeed for <%s>", groupName.str());
+            }
+        }
+        logContentFilter.readAllLogFilters(cfg);
+    }
+
+    if (!hasService(LGSTGetTransactionSeed) && !hasService(LGSTGetTransactionID))
+        return true;
+
+    maxGTSRetries = cfg->getPropInt(MaxTriesGTS, DefaultMaxTriesGTS);
     transactionSeedType.set(cfg->hasProp(PropTransactionSeedType) ? cfg->queryProp(PropTransactionSeedType) :
         DefaultTransactionSeedType);
     alternativeTransactionSeedType.set(cfg->hasProp(PropAlternativeTransactionSeedType) ?
         cfg->queryProp(PropAlternativeTransactionSeedType) : DefaultAlternativeTransactionSeedType);
 
-    BoolHash uniqueGroupNames;
-    StringBuffer sourceName, groupName, dbName, localTransactionSeed;
-    Owned<IPropertyTreeIterator> iter = cfg->getElements("LogSourceMap/LogSource");
-    ForEach(*iter)
-    {
-        ensureInputString(iter->query().queryProp("@name"), false, sourceName, -1, "LogSource @name required");
-        ensureInputString(iter->query().queryProp("@maptologgroup"), true, groupName, -1, "LogSource @maptologgroup required");
-        ensureInputString(iter->query().queryProp("@maptodb"), true, dbName, -1, "LogSource @maptodb required");
-        Owned<CLogSource> logSource = new CLogSource(sourceName.str(), groupName.str(), dbName.str());
-        logSources.setValue(sourceName.str(), logSource);
-
-        bool* found = uniqueGroupNames.getValue(groupName.str());
-        if (!found || !*found)
-        {
-            uniqueGroupNames.setValue(groupName.str(), true);
-
-            unsigned maxSeq = 0;
-            unsigned maxLength = 0;
-            unsigned seedExpiredSeconds = 0;
-            VStringBuffer xpath("LogGroup/[@name='%s']", groupName.str());
-            IPropertyTree* logGroup = cfg->queryBranch(xpath.str());
-            if (logGroup)
-            {
-                maxLength = logGroup->getPropInt(PropMaxTransIDLength, 0);
-                maxSeq = logGroup->getPropInt(PropMaxTransIDSequenceNumber, 0),
-                seedExpiredSeconds = 60 * logGroup->getPropInt(PropMaxTransSeedTimeoutMinutes, 0);
-            }
-
-            StringBuffer transactionSeed, statusMessage;
-            getTransactionSeed(groupName.str(), transactionSeed, statusMessage);
-            if (transactionSeed.length() > 0)
-            {
-                Owned<CTransIDBuilder> entry = new CTransIDBuilder(transactionSeed.str(), false, transactionSeedType.get(),
-                    maxLength, maxSeq, seedExpiredSeconds);
-                transIDMap.setValue(groupName.str(), entry);
-                if (iter->query().getPropBool("@default", false))
-                    defaultGroup.set(groupName.str());
-            }
-            else
-                PROGLOG("Failed to get TransactionSeed for <%s>", groupName.str());
-        }
-    }
-
+    StringBuffer localTransactionSeed;
     createLocalTransactionSeed(localTransactionSeed);
     Owned<CTransIDBuilder> localTransactionEntry = new CTransIDBuilder(localTransactionSeed.str(), true, alternativeTransactionSeedType.get(),
         cfg->getPropInt(PropMaxTransIDLength, 0), cfg->getPropInt(PropMaxTransIDSequenceNumber, 0),
         60 * cfg->getPropInt(PropMaxTransSeedTimeoutMinutes, 0));
     transIDMap.setValue(appESPServerLoggingAgent, localTransactionEntry);
 
-    logContentFilter.readAllLogFilters(cfg);
     return true;
 }
 
@@ -132,6 +148,9 @@ void CESPServerLoggingAgent::createLocalTransactionSeed(StringBuffer& transactio
 
 bool CESPServerLoggingAgent::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp)
 {
+    if (!hasService(LGSTGetTransactionSeed))
+        throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "%s: no getTransactionSeed service configured", agentName.get());
+
     StringBuffer statusMessage, transactionSeed;
     int statusCode = getTransactionSeed(req.getApplication(), transactionSeed, statusMessage);
     resp.setStatusCode(statusCode);
@@ -229,6 +248,9 @@ void CESPServerLoggingAgent::resetTransSeed(CTransIDBuilder *builder, const char
 
 void CESPServerLoggingAgent::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID)
 {
+    if (!hasService(LGSTGetTransactionID))
+        throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "%s: no getTransactionID service configured", agentName.get());
+
     const char* groupName = nullptr;
     CTransIDBuilder* transIDBuilder = nullptr;
     StringAttr* source = nullptr;
@@ -272,6 +294,9 @@ bool CESPServerLoggingAgent::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdate
 {
     try
     {
+        if (!hasService(LGSTUpdateLOG))
+            throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "%s: no updateLog service configured", agentName.get());
+
         StringBuffer soapreq(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
             "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""

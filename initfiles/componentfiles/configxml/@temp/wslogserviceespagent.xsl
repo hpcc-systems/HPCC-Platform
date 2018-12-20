@@ -40,7 +40,13 @@ xmlns:set="http://exslt.org/sets">
             <xsl:message terminate="yes">Log Data XPath is undefined for <xsl:value-of select="$agentName"/> </xsl:message>
         </xsl:if>
 
-        <LogAgent name="{$agentName}" type="LogAgent" services="GetTransactionSeed,UpdateLog,GetTransactionID" plugin="wslogserviceespagent">
+        <xsl:variable name="Services">
+            <xsl:choose>
+                <xsl:when test="string($agentNode/@Services) != ''"><xsl:value-of select="$agentNode/@Services"/></xsl:when>
+                <xsl:otherwise>GetTransactionSeed,UpdateLog,GetTransactionID</xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+        <LogAgent name="{$agentName}" type="LogAgent" services="{$Services}" plugin="wslogserviceespagent">
             <LoggingServer url="{$loggingServerUrl}" user="{$loggingServer/@User}" password="{$loggingServer/@Password}"/>
             <xsl:if test="string($agentNode/@FailSafe) != ''">
                 <FailSafe><xsl:value-of select="$agentNode/@FailSafe"/></FailSafe>

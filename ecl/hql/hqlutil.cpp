@@ -8187,8 +8187,10 @@ public:
         StringBuffer namespaceValue;
         getAttribute(body, namespaceAtom, namespaceValue);
         if (namespaceValue.length())
-            mangled.append("N").append(namespaceValue.length()).append(lookupRepeat(namespaceValue));
-
+        {
+            VStringBuffer nsName("%d%s", namespaceValue.length(), namespaceValue.str());
+            mangled.append("N").append(lookupRepeat(nsName));
+        }
         mangled.append(entrypoint.length()).append(entrypoint);
         if (namespaceValue.length())
             mangled.append("E");
@@ -8198,13 +8200,13 @@ public:
         mangleFunctionReturnType(mangledReturn, mangledReturnParameters, retType);
 
         if (functionBodyUsesContext(body))
-            mangled.append("P12ICodeContext");
+            mangled.append(lookupRepeat("P12ICodeContext"));
         else if (body->hasAttribute(globalContextAtom) )
-            mangled.append("P18IGlobalCodeContext");
+            mangled.append(lookupRepeat("P18IGlobalCodeContext"));
         else if (body->hasAttribute(userMatchFunctionAtom))
-            mangled.append("P12IMatchWalker");
+            mangled.append(lookupRepeat("P12IMatchWalker"));
         if (functionBodyIsActivity(body))
-            mangled.append("P20IThorActivityContext");
+            mangled.append(lookupRepeat("P20IThorActivityContext"));
 
         mangled.append(mangledReturnParameters);
 

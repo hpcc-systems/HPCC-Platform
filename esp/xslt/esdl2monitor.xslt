@@ -749,7 +749,7 @@ END;
 </xsl:text>
 </xsl:template>
 
-<xsl:template match="EsdlElement[@type and (@_nomon='1' or @_mon='0')]" mode="CheckCompare">
+<xsl:template match="EsdlElement[@type and (@_nomon='1' and (@_mon='0' or not(@_mon)))]" mode="CheckCompare">
 </xsl:template>
 
 <xsl:template match="EsdlArray" mode="CheckCompare">
