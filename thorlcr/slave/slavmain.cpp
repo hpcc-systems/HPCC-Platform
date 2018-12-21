@@ -1139,12 +1139,12 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     {
         if (activeKManagersByHandle.size())
         {
-            WARNLOG("KJService: clearing active %lu key manager container(s), that were not closed cleanly", activeKManagersByHandle.size());
+            WARNLOG("KJService: clearing active %u key manager container(s), that were not closed cleanly", (unsigned)activeKManagersByHandle.size());
             activeKManagersByHandle.clear();
         }
         if (activeFetchContextsByHandle.size())
         {
-            WARNLOG("KJService: clearing %lu fetch context(s), that were not closed cleanly", activeFetchContextsByHandle.size());
+            WARNLOG("KJService: clearing %u fetch context(s), that were not closed cleanly", (unsigned)activeFetchContextsByHandle.size());
             activeFetchContextsByHandle.clear();
         }
         cachedKMs.clear();
