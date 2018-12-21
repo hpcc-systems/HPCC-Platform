@@ -35,7 +35,11 @@ public:
         if (headerLines)
             mpTag = container.queryJob().allocateMPTag();
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void validateFile(IDistributedFile *file) override
+    {
+        // NB: CSV can be used to read any format
+    }
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override
     {
         CDiskReadMasterBase::serializeSlaveData(dst, slave);
         if (mapping && mapping->queryMapWidth(slave)>=1)

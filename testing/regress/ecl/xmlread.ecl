@@ -18,6 +18,8 @@
 //class=file
 //version multiPart=true
 
+#onwarning(10138, ignore);
+
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
 useLocal := #IFDEFINED(root.useLocal, false);
