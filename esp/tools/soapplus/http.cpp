@@ -84,6 +84,7 @@ HttpStat::HttpStat()
     totalreqlen = 0;
     totalresplen = 0;
     numrequests = 0;
+    numfails = 0;
 }
 
 void HttpStat::printStat(FILE* ofile)
@@ -93,6 +94,7 @@ void HttpStat::printStat(FILE* ofile)
         fprintf(ofile, "%s", sepstr);
         fprintf(ofile, "Number of Threads:                %d\n", threads);
         fprintf(ofile, "Total hits:                       %" I64F "d\n", numrequests);
+        fprintf(ofile, "Total fails:                      %" I64F "d\n", numfails);
         fprintf(ofile, "Run length(millisecond):          %d\n", duration);
         if(duration > 0)
             fprintf(ofile, "Hits per second:                  %3.1f\n", numrequests/(duration*0.001));
@@ -1033,6 +1035,7 @@ int HttpClient::sendStressRequests(HttpStat* overall_stat)
             overall_stat->totalreqlen += stat->totalreqlen;
             overall_stat->totalresplen += stat->totalresplen;
             overall_stat->numrequests += stat->numrequests;
+            overall_stat->numfails += stat->numfails;
             if(overall_stat->fastest > stat->fastest)
                 overall_stat->fastest = stat->fastest;
             if(overall_stat->slowest < stat->slowest)
@@ -1286,6 +1289,8 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<C
         int ret = sock->connect(m_serveraddr.get());
         if (ret < 0)
         {
+            if (stat)
+                stat->numfails++;
             return -1;
         }
     }
@@ -1313,7 +1318,15 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<C
                         fprintf(m_logfile, "%s", recvbuf);
                 }
                 else
+                {
+                    if (total_len == 0)
+                    {
+                        if (stat)
+                            stat->numfails++;
+                        return -1;
+                    }
                     break;
+                }
             }
         }
         else
@@ -1362,6 +1375,8 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<C
                                 else
                                 {
                                     sock->close();
+                                    if (stat)
+                                        stat->numfails++;
                                     return -1;
                                 }
                             }
@@ -1378,6 +1393,8 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<C
                 else
                 {
                     sock->close();
+                    if (stat && len < 0)
+                        stat->numfails++;
                     return -1;
                 }
             }
@@ -1389,6 +1406,8 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<C
     {
         fprintf(m_logfile, "Failed to send request.\n");
         sock->close();
+        if (stat)
+            stat->numfails++;
         return -1;
     }
 
