@@ -34,3 +34,6 @@
 [submodule "plugins/sqs/aws-sdk-cpp"]
 	path = plugins/sqs/aws-sdk-cpp
 	url = https://github.com/hpcc-systems/aws-sdk-cpp
+[submodule "plugins/h3/uber-h3"]
+	path = plugins/h3/uber-h3
+	url = https://github.com/uber/h3.git
