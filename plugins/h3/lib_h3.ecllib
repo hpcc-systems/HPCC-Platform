@@ -1,0 +1,63 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the License);
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an AS IS BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+EXPORT h3_index_t := UNSIGNED8;
+EXPORT h3_stringIndex_t := VARSTRING;
+EXPORT h3_degrees_t := REAL8;
+EXPORT h3_rads_t := REAL8;
+EXPORT h3_resolution_t := UNSIGNED4;
+EXPORT h3_latlng_t := SET OF h3_degrees_t;
+EXPORT h3_boundary_t := RECORD 
+    h3_degrees_t lat;
+    h3_degrees_t lng;
+END;
+
+EXPORT h3 := SERVICE : plugin('h3plugin'), library('h3'), namespace('h3'), CPP, PURE
+
+    //  Indexing  ---
+    h3_index_t index(CONST h3_degrees_t lat, CONST h3_degrees_t lng, CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='index';
+    SET OF h3_degrees_t center(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='center';
+    SET OF h3_degrees_t boundary(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='boundary';
+
+    //  Introspection  ---
+    h3_resolution_t resolution(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='resolution';
+    UNSIGNED4 baseCell(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='baseCell';
+    STRING toString(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='toString';
+    h3_index_t fromString(CONST VARSTRING strIdx) : cpp,action,context,fold,entrypoint='fromString';
+    BOOLEAN isValid(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='isValid';
+
+    //  Traversal  ---
+    SET OF h3_index_t kRing(CONST h3_index_t idx, CONST INTEGER4 k) : cpp,action,context,fold,entrypoint='kRing';
+    SET OF h3_index_t hexRing(CONST h3_index_t idx, CONST UNSIGNED4 k) : cpp,action,context,fold,entrypoint='hexRing';
+    INTEGER4 distance(CONST h3_index_t fromIdx, CONST h3_index_t toIdx) : cpp,action,context,fold,entrypoint='distance';
+
+    //  Hierarchy  ---
+    h3_index_t parent(CONST h3_index_t idx, CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='parent';
+    SET OF h3_index_t children(CONST h3_index_t idx, CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='children';
+    SET OF h3_index_t compact(CONST SET OF h3_index_t indexes) : cpp,action,context,fold,entrypoint='compact';
+    SET OF h3_index_t uncompact(CONST SET OF h3_index_t indexes, CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='uncompact';
+
+    // Regions  ---
+    SET OF h3_index_t polyfill(CONST LINKCOUNTED DATASET(h3_boundary_t) boundary, CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='polyfill';
+
+    //  Misc  ---
+    h3_rads_t degsToRads(CONST h3_degrees_t degrees) : cpp,action,context,fold,entrypoint='degsToRads';
+    h3_degrees_t radsToDegs(CONST h3_rads_t radians) : cpp,action,context,fold,entrypoint='radsToDegs';
+    REAL8 hexAreaKm2(CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='hexAreaKm2';
+    REAL8 hexAreaM2(CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='hexAreaM2';
+    UNSIGNED8 numHexagons(CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='numHexagons';
+END;
