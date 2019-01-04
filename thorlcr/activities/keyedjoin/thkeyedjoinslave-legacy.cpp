@@ -618,7 +618,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             ~CKeyedFetchResultProcessor()
             {
                 stop();
-                threaded.join();
+                threaded.join(INFINITE, false);
             }
             void stop()
             {
@@ -744,7 +744,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             ~CKeyedFetchRequestProcessor()
             {
                 stop();
-                threaded.join();
+                threaded.join(INFINITE, false);
             }
             void stop()
             {
@@ -955,7 +955,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         ~CKeyedFetchHandler()
         {
             abort();
-            threaded.join();
+            threaded.join(INFINITE, false);
 
             ::Release(requestProcessor);
             ::Release(resultProcessor);
@@ -1038,7 +1038,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     pendingSendsSem.signal();
                 }
                 crit.leave();
-                threaded.join();
+                threaded.join(INFINITE);
                 if (stopPending) // stop groups in progress
                 {
                     if (aborted) // don't stop request processor unless aborting, other nodes may depend on it's reply.

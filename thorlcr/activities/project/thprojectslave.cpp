@@ -172,7 +172,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
         {
             stopped = true;
             fullSem.signal();
-            threaded.join();
+            threaded.join(INFINITE, false);
             while (prefetchQueue.ordinality())
                 ::Release(prefetchQueue.dequeue());
         }

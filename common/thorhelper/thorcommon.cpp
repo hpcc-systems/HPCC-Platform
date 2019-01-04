@@ -2180,12 +2180,12 @@ void CPersistentTask::start()
     tbb::task::spawn(*task);
 }
 
-bool CPersistentTask::join(unsigned timeout)
+bool CPersistentTask::join(unsigned timeout, bool throwException)
 {
     end->wait_for_all();
     end->destroy(*end);
     end = nullptr;
-    if (exception.get())
+    if (throwException && exception.get())
         throw exception.getClear();
     return true;
 }

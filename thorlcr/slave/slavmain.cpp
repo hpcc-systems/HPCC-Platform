@@ -1240,7 +1240,7 @@ public:
         queryNodeComm().cancel(RANK_ALL, keyLookupMpTag);
         processorPool->stopAll(true);
         processorPool->joinAll(true);
-        threaded.join();
+        threaded.join(INFINITE);
         clearAll();
     }
     void processKeyLookupRequest(CMessageBuffer &msg, CKMContainer *kmc, rank_t sender, mptag_t replyTag)
@@ -1527,7 +1527,7 @@ public:
         queryNodeComm().cancel(RANK_ALL, keyLookupMpTag);
         processorPool->stopAll(true);
         processorPool->joinAll(true);
-        while (!threaded.join(60000))
+        while (!threaded.join(60000, false))
             PROGLOG("Receiver waiting on remote handlers to signal completion");
         if (aborted)
             return;
