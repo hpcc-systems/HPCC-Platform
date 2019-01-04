@@ -60,7 +60,7 @@ irisFitRec := RECORD
   STRING100 fit;
 END;
 
-// We return a record containing predicitons and fit
+// We return a record containing predictions and fit
 resultRec := RECORD
   DATASET(irisPredictedRec) predictions;
   DATASET(irisFitRec) fit;
@@ -68,9 +68,6 @@ END;
 
 // Main embedded R script for building and scoring models
 resultRec runAnalyses(DATASET(irisRec) ds) := EMBED(R)
-
-  ds <- data.frame(lapply(ds, unlist))
-  
   # Build models
   lmMdl <- lm(label ~ ., data = ds) # same as glm with Gaussian family
   glmMdl <- glm(label ~ ., family = binomial, data = ds)
