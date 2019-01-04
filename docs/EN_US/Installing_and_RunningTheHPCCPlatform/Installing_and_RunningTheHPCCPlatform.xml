@@ -37,7 +37,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -300,7 +300,15 @@
               </varlistentry>
             </variablelist></para>
 
-          <para><programlisting>sudo wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
+          <para><programlisting>sudo wget \
+ http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
+
+          <para>This will add the devtools-2.repo file to your system. Verify
+          that the following information is in the devtools-2.repo file for
+          the yum installation to work. <programlisting>[testing-devtools-2-centos-6]
+name=testing 2 devtools for CentOS 6 
+baseurl=http://people.centos.org/tru/devtools-2/6/$basearch/RPMS
+gpgcheck=0</programlisting></para>
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
