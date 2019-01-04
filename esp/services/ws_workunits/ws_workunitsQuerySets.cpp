@@ -509,14 +509,14 @@ bool reloadCluster(IConstWUClusterInfo *clusterInfo, unsigned wait)
         catch(IMultiException *me)
         {
             StringBuffer err;
-            DBGLOG("ERROR control:reloading roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+            IERRLOG("ERROR control:reloading roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
             me->Release();
             return false;
         }
         catch(IException *e)
         {
             StringBuffer err;
-            DBGLOG("ERROR control:reloading roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+            IERRLOG("ERROR control:reloading roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
             e->Release();
             return false;
         }
@@ -796,14 +796,14 @@ bool CWsWorkunitsEx::isQuerySuspended(const char* query, IConstWUClusterInfo *cl
     catch(IMultiException *me)
     {
         StringBuffer err;
-        DBGLOG("ERROR control:queries roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+        IERRLOG("ERROR control:queries roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
         me->Release();
         return false;
     }
     catch(IException *e)
     {
         StringBuffer err;
-        DBGLOG("ERROR control:queries roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+        IERRLOG("ERROR control:queries roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
         e->Release();
         return false;
     }
@@ -1059,7 +1059,7 @@ void retrieveQuerysetDetailsFromAlias(IEspContext &context, IPropertyTree *regis
     Owned<IPropertyTreeIterator> regAliases = registry->getElements(xpath.str());
     if (!regAliases->first())
     {
-        DBGLOG("Alias %s not found", name);
+        OWARNLOG("Alias %s not found", name);
         return;
     }
 
@@ -1074,7 +1074,7 @@ void retrieveQuerysetDetailsFromAlias(IEspContext &context, IPropertyTree *regis
         IPropertyTree *query = registry->queryPropTree(xpath);
         if (!query)
         {
-            DBGLOG("No matching Query %s found for Alias %s", a->getId(), name);
+            OWARNLOG("No matching Query %s found for Alias %s", a->getId(), name);
             return;
         }
 
@@ -1095,7 +1095,7 @@ void retrieveQuerysetDetailsFromQuery(IEspContext &context, IPropertyTree *regis
     Owned<IPropertyTreeIterator> regQueries = registry->getElements(xpath.str());
     if (!regQueries->first())
     {
-        DBGLOG("No matching Query %s found for %s", value, type);
+        OWARNLOG("No matching Query %s found for %s", value, type);
         return;
     }
 
@@ -1350,7 +1350,7 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
         Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, querySetId, checkAllNodes);
         if (!queriesOnCluster)
         {
-            DBGLOG("getQueriesOnCluster() returns NULL for cluster<%s> and querySetId<%s>", cluster, querySetId);
+            OWARNLOG("getQueriesOnCluster() returns NULL for cluster<%s> and querySetId<%s>", cluster, querySetId);
             return;
         }
 
@@ -2122,14 +2122,14 @@ bool CWsWorkunitsEx::getQueryFiles(IEspContext &context, const char* wuid, const
     catch(IMultiException *me)
     {
         StringBuffer err;
-        DBGLOG("ERROR control:getQueryXrefInfo roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+        IERRLOG("ERROR control:getQueryXrefInfo roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
         me->Release();
         return false;
     }
     catch(IException *e)
     {
         StringBuffer err;
-        DBGLOG("ERROR control:getQueryXrefInfo roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+        IERRLOG("ERROR control:getQueryXrefInfo roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
         e->Release();
         return false;
     }

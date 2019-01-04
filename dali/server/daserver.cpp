@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
                 RemoteFilename rfn;
                 rfn.setRemotePath(dataPath);
                 if (!rfn.isLocal()) {
-                    ERRLOG("if a dataPath is specified, it must be on local machine");
+                    OERRLOG("if a dataPath is specified, it must be on local machine");
                     return 0;
                 }
                 addPathSepChar(dataPath);

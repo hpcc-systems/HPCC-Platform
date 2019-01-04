@@ -93,7 +93,7 @@ void CWsDfuXRefEx::init(IPropertyTree *cfg, const char *process, const char *ser
 
     if (!daliClientActive())
     {
-        ERRLOG("No Dali Connection Active.");
+        OERRLOG("No Dali Connection Active.");
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
     XRefNodeManager.setown(CreateXRefNodeFactory());    
@@ -119,14 +119,14 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
 
         if(*req.getAction() == 0 || *req.getType() == 0 || *req.getCluster() == 0)
         {
-            ERRLOG("Invalid Parameters into CWsDfuXRefEx::onDFUXRefArrayAction");
+            IERRLOG("Invalid Parameters into CWsDfuXRefEx::onDFUXRefArrayAction");
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Action, cluster, or type not defined.");
         }
         
         Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(req.getCluster());
         if (xRefNode.get() == 0)
         {
-            ERRLOG("Unable to resolve XRef cluster name %s",req.getCluster());
+            OERRLOG("Unable to resolve XRef cluster name %s",req.getCluster());
             throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Unable to resolve cluster name %s",req.getCluster());
         }
 
@@ -134,7 +134,7 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
         Owned<IXRefFilesNode> _fileNode = getFileNodeInterface(*xRefNode.get(),req.getType());
         if (_fileNode.get() == 0)
         {
-            ERRLOG("Unable to find a suitable IXRefFilesNode interface for %s",req.getType());
+            IERRLOG("Unable to find a suitable IXRefFilesNode interface for %s",req.getType());
             throw MakeStringException(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "Unable to find a suitable IXRefFilesNode interface for %s",req.getType());
         }
 

@@ -353,7 +353,7 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
         {
             StringBuffer err;
             e->errorMessage(err);
-            ERRLOG("CDfsLogicalFileName::expand %s",err.str());
+            IERRLOG("CDfsLogicalFileName::expand %s",err.str());
             throw;
         }
     }
@@ -921,7 +921,7 @@ const char *CDfsLogicalFileName::queryTail() const
         WARNLOG("CDfsLogicalFileName::queryTail called on multi-lfn %s",get());
     const char *tail = get()+tailpos;
     if (strstr(tail,"::")!=NULL) {
-        ERRLOG("Tail contains '::'!");
+        OERRLOG("Tail contains '::'!");
     }
     return get()+tailpos;
 }
@@ -1545,7 +1545,7 @@ unsigned getFileGroups(IPropertyTree *pt,StringArray &groups, bool checkclusters
                 on = "<UNKNOWN>";
             unsigned nc = pt->getPropInt("@numclusters");
             if (nc&&(nc!=groups.ordinality())) {
-                ERRLOG("%s groups/numclusters mismatch",on);
+                OERRLOG("%s groups/numclusters mismatch",on);
             }
             MemoryAttr ma;
             unsigned ng = groups.ordinality();
@@ -1566,7 +1566,7 @@ unsigned getFileGroups(IPropertyTree *pt,StringArray &groups, bool checkclusters
                 ForEachItemIn(i,groups) {
                     if (strcmp(cname,groups.item(i))==0) {
                         if (found[i]) {
-                            ERRLOG("'%s' has duplicate cluster",on);
+                            OERRLOG("'%s' has duplicate cluster",on);
                         }
                         else
                             found[i] = true;
@@ -1576,7 +1576,7 @@ unsigned getFileGroups(IPropertyTree *pt,StringArray &groups, bool checkclusters
                 }
                 if (!ok) {
                     const char * gs = pt->queryProp("@group");
-                    ERRLOG("'%s' has missing cluster(%s) in groups(%s)",on,cname,gs?gs:"NULL");
+                    OERRLOG("'%s' has missing cluster(%s) in groups(%s)",on,cname,gs?gs:"NULL");
                 }
             }
             if (anyfound) {
@@ -1653,7 +1653,7 @@ void expandFileTree(IPropertyTree *file,bool expandnodes,const char *cluster)
                 break;
             }
         if (i==ng)
-            ERRLOG("expandFileTree: Cluster %s not found in file",cluster);
+            OERRLOG("expandFileTree: Cluster %s not found in file",cluster);
     }
     if (cn<ng) {
         const char *gname = groups.item(cn);
@@ -2755,7 +2755,7 @@ public:
     ~CDFSredirection()
     {
         if (linked)
-            ERRLOG("CDFSredirection: cDFSredirect leaked(%d)",linked);
+            IERRLOG("CDFSredirection: cDFSredirect leaked(%d)",linked);
         clear();
     }
 
@@ -2875,7 +2875,7 @@ public:
         // *doesn't* reload (but invalidates last load time)
         Owned<IRemoteConnection> conn = querySDS().connect("Files/Redirection", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
         if (!conn) {
-            ERRLOG("Cannot update Files/Redirection");
+            OERRLOG("Cannot update Files/Redirection");
             return;
         }
         IPropertyTree &root = *conn->queryRoot();

@@ -1733,10 +1733,10 @@ public:
     {
         stop(); // if hasn't been already
         if (!reader.join(1000*60))
-            ERRLOG("~CMultiCoreJoinHelper reader join timed out");
+            IERRLOG("~CMultiCoreJoinHelper reader join timed out");
         for (unsigned i=0;i<numworkers;i++) {
             if (!workers[i]->join(1000*60))
-                ERRLOG("~CMultiCoreJoinHelper worker[%d] join timed out",i);
+                IERRLOG("~CMultiCoreJoinHelper worker[%d] join timed out",i);
         }
         for (unsigned i=0;i<numworkers;i++) 
             delete workers[i];
@@ -1980,11 +1980,11 @@ public:
         workqueue.stop();
         multiWriter->abort();
         if (!reader.join(1000*60))
-            ERRLOG("~CMulticoreUnorderedJoinHelper reader join timed out");
+            IERRLOG("~CMulticoreUnorderedJoinHelper reader join timed out");
         for (unsigned i=0;i<numworkers;i++)
         {
             if (!workers[i]->join(1000*60))
-                ERRLOG("~CMulticoreUnorderedJoinHelper worker[%d] join timed out",i);
+                IERRLOG("~CMulticoreUnorderedJoinHelper worker[%d] join timed out",i);
         }
         while (workqueue.ordinality())
             delete workqueue.dequeueNow();

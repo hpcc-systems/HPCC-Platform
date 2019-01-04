@@ -152,7 +152,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         {
             StringBuffer errStr("Thor master/slave build mismatch, master = ");
             errStr.append(masterBuildTag).append(", slave = ").append(BUILD_TAG);
-            ERRLOG("%s", errStr.str());
+            OERRLOG("%s", errStr.str());
 #ifndef _DEBUG
             replyError(TE_FailedToRegisterSlave, errStr.str());
             return false;
@@ -173,7 +173,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 
         PROGLOG("verifying mp connection to rest of cluster");
         if (!queryNodeComm().verifyAll())
-            ERRLOG("Failed to connect to all nodes");
+            OERRLOG("Failed to connect to all nodes");
         else
             PROGLOG("verified mp connection to rest of cluster");
         LOG(MCdebugProgress, thorJob, "registered %s",slfStr.str());

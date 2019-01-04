@@ -21,7 +21,7 @@ int CAuthMap::add(const char* path, ISecResourceList* resourceList)
 {
     if(!path || !*path)
     {
-        DBGLOG("can't add to CAuthMap, path is NULL");
+        OWARNLOG("Can't add to CAuthMap, path is NULL");
         return -1;
     }
 

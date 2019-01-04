@@ -217,7 +217,7 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
     const char *javaScopedMethod = entry.queryProp("@javamethod");
     if (!javaScopedMethod || !*javaScopedMethod)
     {
-        DBGLOG("ESDL binding - found java target method \"%s\" without java method defined.", method);
+        OWARNLOG("ESDL binding - found java target method \"%s\" without java method defined.", method);
         return;
     }
 
@@ -225,7 +225,7 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
     javaNodes.appendList(javaScopedMethod, ".");
     if (javaNodes.length()!=3) //adf: may become more flexible?
     {
-        DBGLOG("ESDL binding - target method \"%s\", configured java method currently must be of the form 'package.class.method', found (%s).", method, javaScopedMethod);
+        OWARNLOG("ESDL binding - target method \"%s\", configured java method currently must be of the form 'package.class.method', found (%s).", method, javaScopedMethod);
         return;
     }
 
@@ -247,7 +247,7 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
             else
             {
                 //Log error, but try again next reload, in case the java class is fixed
-                DBGLOG("ESDL binding - failed to load java class %s for target method %s", javaScopedClass.str(), method);
+                OWARNLOG("ESDL binding - failed to load java class %s for target method %s", javaScopedClass.str(), method);
             }
         }
         catch (IException *E)
@@ -264,13 +264,13 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
     const char *url = entry.queryProp("@url");
     if (!url || !*url)
     {
-        DBGLOG("ESDL binding - found target method \"%s\" without target url!", method);
+        OWARNLOG("ESDL binding - found target method \"%s\" without target url!", method);
         return;
     }
 
     if (!entry.hasProp("@queryname"))
     {
-        DBGLOG("ESDL binding - found target method \"%s\" without target query!", method);
+        OWARNLOG("ESDL binding - found target method \"%s\" without target query!", method);
         return;
     }
 
@@ -312,13 +312,13 @@ void EsdlServiceImpl::addServiceLevelRequestTransform(IPropertyTree *customReque
         m_serviceLevelCrtFail = true;
         StringBuffer msg;
         e->errorMessage(msg);
-        ERRLOG("Service Level Custom Request Transform could not be processed!!: \n\t%s", msg.str());
+        IERRLOG("Service Level Custom Request Transform could not be processed!!: \n\t%s", msg.str());
         e->Release();
     }
     catch (...)
     {
         m_serviceLevelCrtFail = true;
-        ERRLOG("Service Level Custom Request Transform could not be processed!!");
+        IERRLOG("Service Level Custom Request Transform could not be processed!!");
     }
 }
 
@@ -339,14 +339,14 @@ void EsdlServiceImpl::addMethodLevelRequestTransform(const char *method, IProper
         VStringBuffer errmsg("Custom Request Transform for method %s could not be processed!!: %s", method, msg.str());
 
         m_methodCRTransformErrors.setValue(method, errmsg.str());
-        ERRLOG("%s", errmsg.str());
+        OERRLOG("%s", errmsg.str());
         e->Release();
     }
     catch (...)
     {
         VStringBuffer errmsg("Custom Request Transform for method %s could not be processed!!", method);
         m_methodCRTransformErrors.setValue(method, errmsg.str());
-        ERRLOG("%s", errmsg.str());
+        IERRLOG("%s", errmsg.str());
     }
 }
 
@@ -391,7 +391,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             VStringBuffer errmsg("Encountered error while fetching \"xsdl:CustomRequestTransform\" from service \"%s\" ESDL configuration: %s ", service, msg.str());
 
             m_serviceLevelCrtFail = true;
-            ERRLOG("%s", errmsg.str());
+            OERRLOG("%s", errmsg.str());
             e->Release();
         }
 
@@ -437,7 +437,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
                 VStringBuffer errmsg("Encountered error while fetching 'xsdl:CustomRequestTransform' from service '%s', method '%s' ESDL configuration: %s ", service, method, msg.str());
 
                 m_methodCRTransformErrors.setValue(method, errmsg.str());
-                ERRLOG("%s", errmsg.str());
+                OERRLOG("%s", errmsg.str());
                 e->Release();
             }
 
@@ -1000,11 +1000,11 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
         }
         catch (XmlPullParserException& xppe)
         {
-            ERRLOG("Unable to echo transformed request to response: %s", xppe.what());
+            OERRLOG("Unable to echo transformed request to response: %s", xppe.what());
         }
         catch (...)
         {
-            ERRLOG("Unable to echo transformed request to response");
+            IERRLOG("Unable to echo transformed request to response");
         }
     }
 
@@ -1141,12 +1141,12 @@ void EsdlServiceImpl::sendTargetSOAP(IEspContext & context,
 
     if (status.length()==0)
     {
-        ERRLOG("EsdlBindingImpl::sendTargetSOAP sendRequest() status not reported, response content: %s", resp.str());
+        UERRLOG("EsdlBindingImpl::sendTargetSOAP sendRequest() status not reported, response content: %s", resp.str());
         throw makeWsException( ERR_ESDL_BINDING_UNAVAIL, WSERR_CLIENT, "ESP", "Internal Server Unavailable");
     }
     else if (strncmp("500", status.str(), 3)==0)  //process internal service errors.
     {
-        ERRLOG("EsdlBindingImpl::sendTargetSOAP sendRequest() status: %s", status.str());
+        UERRLOG("EsdlBindingImpl::sendTargetSOAP sendRequest() status: %s", status.str());
         StringBuffer out;
         getSoapError(out,resp,":Text", ":Text>");
 
@@ -1164,7 +1164,7 @@ void EsdlServiceImpl::sendTargetSOAP(IEspContext & context,
     }
     else if (strncmp("200", status.str(), 3)!=0)
     {
-        ERRLOG("EsdlBindingImpl::sendTargetSOAP sendRequest() status: %s", status.str());
+        UERRLOG("EsdlBindingImpl::sendTargetSOAP sendRequest() status: %s", status.str());
         throw makeWsException( 3402, WSERR_SERVER, "ESP", "SoapCallStatus:%s", status.str());
     }
 
@@ -1420,7 +1420,7 @@ bool EsdlBindingImpl::reloadDefinitionsFromCentralStore(IPropertyTree * esdlBndC
 
         if (!loadDefinitions(m_espServiceName.get(), tempESDLDef, esdlBndCng, loadedname, m_esdlStateFilesLocation.str()))
         {
-            DBGLOG("Failed to reload ESDL definitions");
+            OERRLOG("Failed to reload ESDL definitions");
             return false;
         }
 
@@ -1433,7 +1433,7 @@ bool EsdlBindingImpl::reloadDefinitionsFromCentralStore(IPropertyTree * esdlBndC
         return true;
     }
 
-    DBGLOG("Cannot reload definitions because the service implementation is not available");
+    OERRLOG("Cannot reload definitions because the service implementation is not available");
     return false;
 }
 
@@ -1482,12 +1482,12 @@ bool EsdlBindingImpl::reloadBindingFromCentralStore(const char* bindingId)
     {
        StringBuffer msg;
        e->errorMessage(msg);
-       DBGLOG("Exception caught in EsdlBindingImpl::EsdlBindingImpl: %s", msg.str());
+       IERRLOG("Exception caught in EsdlBindingImpl::EsdlBindingImpl: %s", msg.str());
        e->Release();
     }
     catch (...)
     {
-        DBGLOG("Exception caught in EsdlBindingImpl::EsdlBindingImpl: Could Not load Binding %s information from Dali!", bindingId);
+        IERRLOG("Exception caught in EsdlBindingImpl::EsdlBindingImpl: Could Not load Binding %s information from Dali!", bindingId);
     }
     return true;
 }

@@ -145,7 +145,7 @@ public:
         printf("...done\n");
     }
 
-    virtual bool fireException(IException *e) { StringBuffer msg; ERRLOG("Scheduler error (skipping event): %d: %s", e->errorCode(), e->errorMessage(msg).str()); e->Release(); return true; }
+    virtual bool fireException(IException *e) { StringBuffer msg; IERRLOG("Scheduler error (skipping event): %d: %s", e->errorCode(), e->errorMessage(msg).str()); e->Release(); return true; }
 private:
     StringAttr serverName;
 };

@@ -1088,7 +1088,7 @@ public:
 
     virtual bool stop() override
     {
-        ERRLOG("RoxieQueryWorker stopped with queries active");
+        IERRLOG("RoxieQueryWorker stopped with queries active");
         return true;
     }
 

@@ -91,19 +91,19 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
     const Elf64_Ehdr * hdr = (const Elf64_Ehdr *) start_addr;
     if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0)
     {
-        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF binary", filename);
+        UERRLOG("Failed to extract resource %s: Does not appear to be a ELF binary", filename);
         return false;
     }
     if (hdr->e_ident[EI_CLASS] != ELFCLASS64)
     {
-        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF 64-bit binary", filename);
+        UERRLOG("Failed to extract resource %s: Does not appear to be a ELF 64-bit binary", filename);
         return false;
     }
 
     //Check that there is a symbol table for the sections.
     if (hdr->e_shstrndx == SHN_UNDEF)
     {
-        DBGLOG("Failed to extract resource %s: Does not include a section symbol table", filename);
+        UERRLOG("Failed to extract resource %s: Does not include a section symbol table", filename);
         return false;
     }
 
@@ -125,26 +125,26 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
         }
     }
 
-    DBGLOG("Failed to extract resource %s: Does not include a matching entry", filename);
+    UERRLOG("Failed to extract resource %s: Does not include a matching entry", filename);
     return false;
 #else
     // The first bytes are the ELF header
     const Elf32_Ehdr * hdr = (const Elf32_Ehdr *) start_addr;
     if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0)
     {
-        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF binary", filename);
+        UERRLOG("Failed to extract resource %s: Does not appear to be a ELF binary", filename);
         return false;
     }
     if (hdr->e_ident[EI_CLASS] != ELFCLASS32)
     {
-        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF 32-bit binary", filename);
+        UERRLOG("Failed to extract resource %s: Does not appear to be a ELF 32-bit binary", filename);
         return false;
     }
 
     //Check that there is a symbol table for the sections.
     if (hdr->e_shstrndx == SHN_UNDEF)
     {
-        DBGLOG("Failed to extract resource %s: Does not include a section symbol table", filename);
+        UERRLOG("Failed to extract resource %s: Does not include a section symbol table", filename);
         return false;
     }
 
@@ -166,7 +166,7 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
         }
     }
 
-    DBGLOG("Failed to extract resource %s: Does not include a matching entry", filename);
+    UERRLOG("Failed to extract resource %s: Does not include a matching entry", filename);
     return false;
 #endif
 }
@@ -189,7 +189,7 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
         dllHandle = LoadLibraryEx(filename, NULL, LOAD_LIBRARY_AS_DATAFILE); // the LOAD_LIBRARY_AS_IMAGE_RESOURCE flag is not supported on all versions of Windows
     if (dllHandle == NULL)
     {
-        DBGLOG("Failed to load library %s: %d", filename, GetLastError());
+        UERRLOG("Failed to load library %s: %d", filename, GetLastError());
         return false;
     }
     HRSRC hrsrc = FindResource(dllHandle, MAKEINTRESOURCE(id), type);
@@ -206,7 +206,7 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
     int fd = open(filename, O_RDONLY);
     if (fd == -1)
     {
-        DBGLOG("Failed to load library %s: %d", filename, errno);
+        UERRLOG("Failed to load library %s: %d", filename, errno);
         return false;
     }
 
@@ -217,7 +217,7 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
         const byte *start_addr = (const byte *) mmap(0, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
         if (start_addr == MAP_FAILED)
         {
-            DBGLOG("Failed to load library %s: %d", filename, errno);
+            UERRLOG("Failed to load library %s: %d", filename, errno);
         }
         else
         {
@@ -226,7 +226,7 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
         }
     }
     else
-        DBGLOG("Failed to load library %s: %d", filename, errno);
+        UERRLOG("Failed to load library %s: %d", filename, errno);
 
     close(fd);
     return ok;

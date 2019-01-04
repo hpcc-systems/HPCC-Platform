@@ -182,12 +182,12 @@ void PermissionProcessor::getCachedSid(const char* name, MemoryBuffer& sid)
         {
             StringBuffer errmsg;
             e->errorMessage(errmsg);
-            DBGLOG("error getPropbin - %s", errmsg.str());
+            OERRLOG("error getPropbin - %s", errmsg.str());
             e->Release();
         }
         catch(...)
         {
-            DBGLOG("Unknow exception getPropBin");
+            OERRLOG("Unknow exception getPropBin");
         }
     }
 }
@@ -212,12 +212,12 @@ void PermissionProcessor::cacheSid(const char* name, int len, const void* sidbuf
         {
             StringBuffer errmsg;
             e->errorMessage(errmsg);
-            DBGLOG("error addPropBin - %s", errmsg.str());
+            OERRLOG("error addPropBin - %s", errmsg.str());
             e->Release();
         }
         catch(...)
         {
-            DBGLOG("Unknow exception addPropBin");
+            OERRLOG("Unknow exception addPropBin");
         }
     }
 }
@@ -277,7 +277,7 @@ bool PermissionProcessor::retrieveUserInfo(ISecUser& user)
     const char* username = user.getName();
     if(username == NULL || strlen(username) == 0)
     {
-        DBGLOG("retrieveUserInfo : username is empty");
+        OWARNLOG("retrieveUserInfo : username is empty");
         return false;
     }
 
@@ -286,7 +286,7 @@ bool PermissionProcessor::retrieveUserInfo(ISecUser& user)
     int sidlen = umb.length();
     if(sidlen <= 0)
     {
-        DBGLOG("user %s not found", username);
+        OWARNLOG("user %s not found", username);
         return false;
     }
 

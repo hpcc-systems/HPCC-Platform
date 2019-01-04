@@ -433,7 +433,7 @@ private:
         if (success)
             DBGLOG("Result of deserializing '%s' to type '%s': %s", buffer, typeStr, resultStr);
         else
-            ERRLOG("Result of deserializing '%s' to type '%s': %s", buffer, typeStr, resultStr);
+            OERRLOG("Result of deserializing '%s' to type '%s': %s", buffer, typeStr, resultStr);
     }
     bool isEmptyOrWhitespace(const char* buffer) const
     {

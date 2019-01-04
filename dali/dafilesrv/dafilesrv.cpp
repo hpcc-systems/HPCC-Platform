@@ -76,7 +76,7 @@ void LogError( const char *s,DWORD dwError )
     FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwError,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
             (LPTSTR) &lpBuffer, 0, NULL );   
-    ERRLOG( "%s(%d): %s", s, dwError, lpBuffer );   
+    OERRLOG( "%s(%d): %s", s, dwError, lpBuffer );   
     LocalFree( lpBuffer );
 }
 
@@ -278,7 +278,7 @@ bool uninstallService(const char *servicename,const char *servicedisplayname)
                 if ( ss.dwCurrentState == SERVICE_STOPPED ) 
                     PROGLOG("%s Service stopped",servicedisplayname); 
                 else 
-                    ERRLOG("%s failed to stop",servicedisplayname); 
+                    oERRLOG("%s failed to stop",servicedisplayname); 
             } 
             CloseServiceHandle(hService); 
         }

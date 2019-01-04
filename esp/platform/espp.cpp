@@ -171,7 +171,7 @@ int start_init_main(int argc, char** argv, int (*init_main_func)(int, char**))
             GetStartupInfo(&si); 
             if(!CreateProcess(NULL, (char*)command.str(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &process)) 
             { 
-                ERRLOG("Process failed: %d\r\n",GetLastError()); 
+                IERRLOG("Process failed: %d\r\n",GetLastError()); 
                 exit(-1); 
             } 
             WaitForSingleObject(process.hProcess,INFINITE); 
@@ -216,7 +216,7 @@ createworker:
    childpid = fork(); 
    if(childpid < 0) 
    { 
-      ERRLOG("Unable to create new process"); 
+      IERRLOG("Unable to create new process"); 
       result = -1; 
    } 
    else if(childpid == 0) 
@@ -436,13 +436,13 @@ int init_main(int argc, char* argv[])
     catch(IException* e)
     {
         StringBuffer description;
-        ERRLOG("ESP Unhandled IException (%d -- %s)", e->errorCode(), e->errorMessage(description).str());
+        IERRLOG("ESP Unhandled IException (%d -- %s)", e->errorCode(), e->errorMessage(description).str());
         e->Release();
         return -1;
     }
     catch (...)
     {
-        ERRLOG("ESP Unhandled General Exception.");
+        IERRLOG("ESP Unhandled General Exception.");
         return -1;
     }
 
@@ -466,13 +466,13 @@ int init_main(int argc, char* argv[])
         catch(IException* e)
         {
             StringBuffer description;
-            ERRLOG("ESP Unhandled IException (%d -- %s)", e->errorCode(), e->errorMessage(description).str());
+            IERRLOG("ESP Unhandled IException (%d -- %s)", e->errorCode(), e->errorMessage(description).str());
             e->Release();
             return -1;
         }
         catch (...)
         {
-            ERRLOG("ESP Unhandled General Exception.");
+            IERRLOG("ESP Unhandled General Exception.");
             return -1;
         }
 
@@ -482,7 +482,7 @@ int init_main(int argc, char* argv[])
     }
     else
     {
-        ERRLOG("!!! Unable to load ESP configuration.");
+        OERRLOG("!!! Unable to load ESP configuration.");
     }
     
     return result;

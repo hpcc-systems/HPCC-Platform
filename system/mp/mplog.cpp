@@ -171,7 +171,7 @@ int LogMsgChildReceiverThread::run()
                     removeChildFromManager(cid, true);
                 }
                 else
-                    ERRLOG("LogMsgChildReceiverThread::run() : unknown control character on received message");
+                    IERRLOG("LogMsgChildReceiverThread::run() : unknown control character on received message");
                 if(sender) sender->Release();
             }
         }
@@ -182,7 +182,7 @@ int LogMsgChildReceiverThread::run()
         }
         catch(...)
         {
-            ERRLOG("LogMsgChildReceiverThread::run() : unknown exception");
+            IERRLOG("LogMsgChildReceiverThread::run() : unknown exception");
         }
     }
     return 0;
@@ -464,7 +464,7 @@ int LogMsgParentReceiverThread::run()
                     removeParentFromManager(pid, true);
                 }
                 else
-                    ERRLOG("LogMsgParentReceiverThread::run() : unknown control character on received message");
+                    IERRLOG("LogMsgParentReceiverThread::run() : unknown control character on received message");
                 if(sender) sender->Release();
             }
         }
@@ -475,7 +475,7 @@ int LogMsgParentReceiverThread::run()
         }
         catch(...)
         {
-            ERRLOG("LogMsgParentReceiverThread::run() : unknown exception");
+            IERRLOG("LogMsgParentReceiverThread::run() : unknown exception");
         }
     }
     return 0;

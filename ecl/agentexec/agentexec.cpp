@@ -76,7 +76,7 @@ void CEclAgentExecutionServer::start()
     agentName.set(sb);
     if (!agentName.length())
     {
-        ERRLOG("'name' not specified in properties file\n");
+        OERRLOG("'name' not specified in properties file\n");
         throwUnexpected();
     }
     setStatisticsComponentName(SCThthor, agentName, true);
@@ -85,7 +85,7 @@ void CEclAgentExecutionServer::start()
     properties->getProp("@daliServers", daliServers);
     if (!daliServers.length())
     {
-        ERRLOG("'daliServers' not specified in properties file\n");
+        OERRLOG("'daliServers' not specified in properties file\n");
         throwUnexpected();
     }
 
@@ -129,7 +129,7 @@ int CEclAgentExecutionServer::run()
     }
     catch(...)
     {
-        ERRLOG("Terminating unexpectedly");
+        IERRLOG("Terminating unexpectedly");
     }
 
     CSDSServerStatus serverStatus("HThorServer");
@@ -159,13 +159,13 @@ int CEclAgentExecutionServer::run()
                 }
                 catch(...)
                 {
-                    ERRLOG("Unexpected exception in CEclAgentExecutionServer::run caught");
+                    IERRLOG("Unexpected exception in CEclAgentExecutionServer::run caught");
                 }
             }
             else
             {
                 if (started)
-                    ERRLOG("Unexpected dequeue of bogus job queue item, exiting agentexec");
+                   IERRLOG("Unexpected dequeue of bogus job queue item, exiting agentexec");
                 removeSentinelFile(sentinelFile);//no reason to restart
                 assert(!started);
                 break;

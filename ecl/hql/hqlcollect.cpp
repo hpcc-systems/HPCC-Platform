@@ -796,7 +796,7 @@ CXmlEclElement * CXmlEclElement::select(IIdAtom * _name, EclSourceType _type, IP
     else if (_tree)
     {
         //Some old archives seeem to contain duplicate definitions.  Clean then up then delete this code
-        DBGLOG("Source Seems to have duplicate definition of %s", str(_name));
+        OWARNLOG("Source Seems to have duplicate definition of %s", str(_name));
         //throwUnexpected();
     }
 

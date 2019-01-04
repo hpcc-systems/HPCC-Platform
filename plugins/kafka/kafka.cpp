@@ -96,7 +96,7 @@ namespace KafkaPlugin
                         {
                             if (globalConfigPtr->set(key.str(), value, errStr) != RdKafka::Conf::CONF_OK)
                             {
-                                DBGLOG("Kafka: Failed to set config param from file %s: '%s' = '%s'; error: '%s'", configFilePath, key.str(), value, errStr.c_str());
+                                OWARNLOG("Kafka: Failed to set config param from file %s: '%s' = '%s'; error: '%s'", configFilePath, key.str(), value, errStr.c_str());
                             }
                             else if (traceLevel > 4)
                             {
@@ -106,7 +106,7 @@ namespace KafkaPlugin
                     }
                     else
                     {
-                        DBGLOG("Kafka: Setting '%s' ignored in config file %s", key.str(), configFilePath);
+                        OWARNLOG("Kafka: Setting '%s' ignored in config file %s", key.str(), configFilePath);
                     }
                 }
             }

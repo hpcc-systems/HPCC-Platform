@@ -1485,7 +1485,7 @@ public:
             {
                 if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
                 {
-                    ERRLOG("CKJService: Failed to send error response");
+                    OERRLOG("CKJService: Failed to send error response");
                     break;
                 }
             }
@@ -1681,7 +1681,7 @@ public:
                     Owned<ICommunicator> comm = jobListener.mpServers.item(channel).createCommunicator(&queryClusterGroup());
                     PROGLOG("verifying mp connection to rest of slaves (from channel=%d)", channel);
                     if (!comm->verifyAll())
-                        ERRLOG("Failed to connect to rest of slaves");
+                        OERRLOG("Failed to connect to rest of slaves");
                     else
                         PROGLOG("verified mp connection to rest of slaves");
                 }

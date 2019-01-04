@@ -5725,7 +5725,7 @@ void EspServInfo::write_esp_binding()
     outs("\t{\n");
     outs("\t\tresponse->set_status(SOAP_CLIENT_ERROR);\n");
     outs("\t\tresponse->set_err(\"No service method specified\");\n");
-    outs("\t\tERRLOG(\"No service method specified\");\n");
+    outs("\t\tUERRLOG(\"No service method specified\");\n");
     outs("\t\treturn -1;\n");
     outs("\t}\n");
 
@@ -5834,7 +5834,7 @@ void EspServInfo::write_esp_binding()
     outs("\tresponse->set_status(SOAP_CLIENT_ERROR);\n");
     outs("\tStringBuffer msg, svcName;\n");
     outs("\tmsg.appendf(\"Method %s not available in service %s\",thecall->get_name(),getServiceName(svcName).str());\n");
-    outs("\tERRLOG(\"%s\", msg.str());\n");
+    outs("\tUERRLOG(\"%s\", msg.str());\n");
     outs("\tresponse->set_err(msg);\n");
     outs("\treturn -1;\n");
     outs("}\n");
@@ -6710,11 +6710,11 @@ void EspServInfo::write_esp_client()
     outs(3,     "catch(IException* ex){\n");
     outs(4,         "StringBuffer errorStr;\n");
     outs(4,         "ex->errorMessage(errorStr);\n");
-    outf(4,         "ERRLOG(\"CClient%s::espWorkerThread(%%s)--Exception caught while posting async request: %%s\", request->getMethod(), errorStr.str());\n", name_);
+    outf(4,         "UERRLOG(\"CClient%s::espWorkerThread(%%s)--Exception caught while posting async request: %%s\", request->getMethod(), errorStr.str());\n", name_);
     outs(4,         "ex->Release();\n");
     outs(3,     "}\n");
     outs(3,     "catch(...){\n");
-    outs(4,         "ERRLOG(\"Unknown exception caught while posting async request\");\n");
+    outs(4,         "UERRLOG(\"Unknown exception caught while posting async request\");\n");
     outs(3,     "}\n");
     outs(2, "}\n");
 

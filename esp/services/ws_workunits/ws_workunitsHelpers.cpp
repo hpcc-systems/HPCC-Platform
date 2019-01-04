@@ -311,7 +311,7 @@ void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned long flags)
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         info.setSourceFilesDesc(eMsg.str());
         e->Release();
     }
@@ -350,7 +350,7 @@ void WsWuInfo::getVariables(IEspECLWorkunit &info, unsigned long flags)
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         info.setVariablesDesc(eMsg.str());
         e->Release();
     }
@@ -459,7 +459,7 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned long flags)
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         info.setTimersDesc(eMsg.str());
         e->Release();
     }
@@ -497,7 +497,7 @@ unsigned WsWuInfo::getTimerCount()
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         e->Release();
     }
 
@@ -524,7 +524,7 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
         Owned <IConstWUQuery> query = cw->getQuery();
         if(!query)
         {
-            ERRLOG("Cannot get Query for this workunit.");
+            OERRLOG("Cannot get Query for this workunit.");
             info.setHelpersDesc("Cannot get Query for this workunit.");
         }
         else
@@ -632,7 +632,7 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         info.setHelpersDesc(eMsg.str());
         e->Release();
     }
@@ -662,7 +662,7 @@ void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned long flags)
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         info.setApplicationValuesDesc(eMsg.str());
         e->Release();
     }
@@ -704,7 +704,7 @@ void WsWuInfo::getDebugValues(IEspECLWorkunit &info, unsigned long flags)
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         info.setDebugValuesDesc(eMsg.str());
         e->Release();
     }
@@ -740,7 +740,7 @@ bool WsWuInfo::hasSubGraphTimings()
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         e->Release();
     }
 
@@ -827,7 +827,7 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned long flags)
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         info.setGraphsDesc(eMsg.str());
         e->Release();
     }
@@ -1329,7 +1329,7 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned long flags)
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         info.setWorkflowsDesc(eMsg.str());
         e->Release();
     }
@@ -1583,7 +1583,7 @@ void WsWuInfo::getResults(IEspECLWorkunit &info, unsigned long flags)
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         info.setResultsDesc(eMsg.str());
         e->Release();
     }
@@ -1821,7 +1821,7 @@ bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsign
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         e->Release();
     }
 
@@ -1839,7 +1839,7 @@ unsigned WsWuInfo::getResourceURLCount()
     catch(IException* e)
     {
         StringBuffer eMsg;
-        ERRLOG("%s", e->errorMessage(eMsg).str());
+        IERRLOG("%s", e->errorMessage(eMsg).str());
         e->Release();
     }
 
@@ -3060,7 +3060,7 @@ int WUSchedule::run()
                         catch(IException *e)
                         {
                             StringBuffer msg;
-                            ERRLOG("Exception %d:%s in WsWorkunits Schedule::run while processing WU", e->errorCode(), e->errorMessage(msg).str());
+                            IERRLOG("Exception %d:%s in WsWorkunits Schedule::run while processing WU", e->errorCode(), e->errorMessage(msg).str());
                             e->Release();
                         }
                     }
@@ -3069,12 +3069,12 @@ int WUSchedule::run()
             catch(IException *e)
             {
                 StringBuffer msg;
-                ERRLOG("Exception %d:%s in WsWorkunits Schedule::run while fetching scheduled WUs from DALI", e->errorCode(), e->errorMessage(msg).str());
+                IERRLOG("Exception %d:%s in WsWorkunits Schedule::run while fetching scheduled WUs from DALI", e->errorCode(), e->errorMessage(msg).str());
                 e->Release();
             }
             catch(...)
             {
-                ERRLOG("Unknown exception in WsWorkunits Schedule::run while fetching scheduled WUs from DALI");
+                IERRLOG("Unknown exception in WsWorkunits Schedule::run while fetching scheduled WUs from DALI");
             }
         }
         else
@@ -3453,7 +3453,7 @@ void CWsWuFileHelper::createProcessLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo&
         {
             StringBuffer s;
             e->errorMessage(s);
-            DBGLOG("Error accessing Process Log file %s: %s", logSpec.str(), s.str());
+            IERRLOG("Error accessing Process Log file %s: %s", logSpec.str(), s.str());
             writeToFile(fileName.str(), s.length(), s.str());
             e->Release();
         }
@@ -3639,7 +3639,7 @@ void CWsWuFileHelper::createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, 
             Owned<IFile> rFile = createIFile(rfn);
             if (!rFile)
             {
-                DBGLOG("Cannot open %s on %s", ssb.str(), ip.str());
+                OERRLOG("Cannot open %s on %s", ssb.str(), ip.str());
                 continue;
             }
             archiveContents.loadFile(rFile);
@@ -3648,7 +3648,7 @@ void CWsWuFileHelper::createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, 
         {
             StringBuffer s;
             e->errorMessage(s);
-            DBGLOG("Error accessing archive file %s: %s", ssb.str(), s.str());
+            OERRLOG("Error accessing archive file %s: %s", ssb.str(), s.str());
             archiveContents.insert(0, "Error accessing archive file ").appendf("%s: %s\r\n\r\n", ssb.str(), s.str());
             e->Release();
         }

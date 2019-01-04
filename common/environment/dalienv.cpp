@@ -381,14 +381,14 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
     xpath.appendf("Environment/Hardware/Computer[@netAddress=\"%s\"]", ips.str());
     Owned<IPropertyTreeIterator> iter = querySDS().getElementsRaw(xpath,remotedali,timeout);
     if (!iter->first()) {
-        ERRLOG("Unable to find machine for %s on dali %s", ips.str(),dalis.str());
+        OERRLOG("Unable to find machine for %s on dali %s", ips.str(),dalis.str());
         return false;
     }
     Owned<IPropertyTree> machine;
     machine.setown(&iter->get());
     const char *domainname = machine->queryProp("@domain");
     if (!domainname||!*domainname) {
-        ERRLOG("Unable to find domain for %s on dali %s", ips.str(),dalis.str());
+        OERRLOG("Unable to find domain for %s on dali %s", ips.str(),dalis.str());
         return false;
     }
 

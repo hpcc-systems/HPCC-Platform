@@ -216,7 +216,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                                 lscfg.setown(proc_cfg->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
                             if(lscfg == NULL)
                             {
-                                ERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
+                                OERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
                                 throw MakeStringException(-1, "can't find bnd_cfg for LdapSecurity %s", lsname.str());
                             }
                         }
@@ -1088,7 +1088,7 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
         {
             VStringBuffer s("*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
             out.append(s);
-            ERRLOG("%s", s.str());
+            IERRLOG("%s", s.str());
             return;
         }
 
@@ -1147,7 +1147,7 @@ static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, const char
     else 
     {
         const char* value = tree->queryProp(NULL);
-        DBGLOG("Unknown xml tag ignored: <%s>%s</%s>", name, value?value:"", name);
+        OWARNLOG("Unknown xml tag ignored: <%s>%s</%s>", name, value?value:"", name);
     }
 }
 
@@ -1242,7 +1242,7 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
         {
             VStringBuffer s("*** Invalid array definition: tag=%s, indent=%d, itemName=%s", tag, indent,itemName?itemName:"NULL");
             out.append(s);
-            ERRLOG(s);
+            IERRLOG(s);
             return;
         }
 
@@ -1544,7 +1544,7 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
         response->send();
         return 0;
     }
-    DBGLOG("Config access denied");
+    OERRLOG("Config access denied");
     return onGetNotFound(context, request, response, NULL);
 }
 
@@ -2740,12 +2740,12 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
         }
     } catch (IException* e) {
         StringBuffer msg;
-        DBGLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
+        IERRLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
     }
 
     // schema
     getSchema(xsd,context,request,serviceQName,methodQName,true);
-            
+
     // validation
     if (getEspLogLevel()>LogMax)
         DBGLOG("[VALIDATE] xml: %s\nxsd: %s\nns: %s",xml.str(), xsd.str(), ns.str());
@@ -2803,6 +2803,6 @@ void EspHttpBinding::sortResponse(IEspContext& context, CHttpRequest* request, M
         content.setBuffer(len, result.detach(), true);      
     } catch (IException* e) {
         StringBuffer msg;
-        DBGLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
+        IERRLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
     }
 }

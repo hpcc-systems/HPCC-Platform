@@ -187,7 +187,7 @@ bool ESPMemCached::checkServersUp()
     for (unsigned i = 0; i < numberOfServers-1; ++i)
     {
         if (!streq(stats[i].version, stats[i+1].version))
-            DBGLOG("ESPMemCached: Inhomogeneous versions of memcached across servers.");
+            OWARNLOG("ESPMemCached: Inhomogeneous versions of memcached across servers.");
     }
     return true;
 }

@@ -217,7 +217,7 @@ public:
     {
         if (m_hostArray.ordinality() == 1)
         {
-            DBGLOG("Cannot blacklist the only configured ldap server %s", m_hostArray.item(m_curHostIdx));
+            OWARNLOG("Cannot blacklist the only configured ldap server %s", m_hostArray.item(m_curHostIdx));
             return;
         }
 
@@ -306,7 +306,7 @@ public:
         }
         else
         {
-            DBGLOG("LDAP serverType not specified, will try to deduce");
+            OWARNLOG("LDAP serverType not specified, will try to deduce");
         }
 
         StringBuffer hostsbuf;
@@ -779,7 +779,7 @@ private:
         }
         else
         {
-            DBGLOG("LDAP: sysuser bind failed - %s", ldap_err2string(rc));
+            OWARNLOG("LDAP: sysuser bind failed - %s", ldap_err2string(rc));
             LDAP_UNBIND(m_ld);
             m_ld = NULL;
         }
@@ -816,7 +816,7 @@ public:
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
                 if(retries < LDAPSEC_MAX_RETRIES)
-                    DBGLOG("Server temporarily unreachable, retrying ...");
+                    OWARNLOG("Server temporarily unreachable, retrying ...");
             }
 
             if(rc == LDAP_SERVER_DOWN)
@@ -1039,7 +1039,7 @@ public:
         {
             StringBuffer emsg;
             e->errorMessage(emsg);
-            DBGLOG("getConnection exception - %s", emsg.str());
+            OWARNLOG("getConnection exception - %s", emsg.str());
             e->Release();
         }
         catch(...)
@@ -1529,7 +1529,7 @@ public:
             const char* password = user.credentials().getPassword();
             if(!username || !*username || !password || !*password)
             {
-                DBGLOG("CLdapClient::authenticate username/password must be provided");
+                OWARNLOG("CLdapClient::authenticate username/password must be provided");
                 return false;
             }
 
@@ -1775,14 +1775,14 @@ public:
         const char* basedn = m_ldapconfig->getResourceBasedn(rtype);
         if(basedn == NULL || *basedn == '\0')
         {
-            DBGLOG("corresponding basedn is not defined for authorize");
+            OWARNLOG("corresponding basedn is not defined for authorize");
             return false;
         }
 
         const char* username = user.getName();
         if(!username || !*username)
         {
-            DBGLOG("CLdapClient::authorize username must be specified");
+            OWARNLOG("CLdapClient::authorize username must be specified");
             return false;
         }
 
@@ -1973,7 +1973,7 @@ public:
 
         if(username == NULL || strlen(username) == 0)
         {
-            DBGLOG("LDAP: getUserInfo : username is empty");
+            OWARNLOG("LDAP: getUserInfo : username is empty");
             return false;
         }
         
@@ -2219,13 +2219,13 @@ public:
 
         if ( rc != LDAP_SUCCESS )
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
+            OERRLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
             return NULL;
         }
 
         if(ldap_count_entries(ld, searchResult) < 1)
         {
-            DBGLOG("No entries are found for user with uid %0X", uid);
+            OWARNLOG("No entries are found for user with uid %0X", uid);
             return NULL;
         }
 
@@ -2312,7 +2312,7 @@ public:
 
         if ( rc != LDAP_SUCCESS )
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
+            OERRLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
             return false;
         }
 
@@ -2399,7 +2399,7 @@ public:
 
         if ( rc != LDAP_SUCCESS )
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter, basedn);
+            OERRLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter, basedn);
             return;
         }
 
@@ -2630,7 +2630,7 @@ public:
         const char* usrName = usr.getName();
         if(!usrName || !*usrName)
         {
-            DBGLOG("CLdapClient::addUserTree username must be provided");
+            OWARNLOG("CLdapClient::addUserTree username must be provided");
             return;
         }
 
@@ -2735,7 +2735,7 @@ public:
         const char* username = user.getName();
         if(!username || !*username)
         {
-            DBGLOG("CLdapClient::updateUser username must be provided");
+            OWARNLOG("CLdapClient::updateUser username must be provided");
             return false;
         }
 
@@ -3182,7 +3182,7 @@ public:
 
         if ( rc != LDAP_SUCCESS )
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
+            OERRLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
             return false;
         }
 
@@ -3280,7 +3280,7 @@ public:
         const char* username = user.getName();
         if(!username || !*username)
         {
-            DBGLOG("CLdapClient::updateUserPassword username must be provided");
+            OWARNLOG("CLdapClient::updateUserPassword username must be provided");
             return false;
         }
 
@@ -3301,7 +3301,7 @@ public:
     {
         if(!username || !*username)
         {
-            DBGLOG("CLdapClient::updateUserPassword username must be provided");
+            OWARNLOG("CLdapClient::updateUserPassword username must be provided");
             return false;
         }
 
@@ -3637,7 +3637,7 @@ public:
     {
         if (!name || !*name)
         {
-            DBGLOG("CLdapClient::addResourceTree resource name must be provided");
+            OWARNLOG("CLdapClient::addResourceTree resource name must be provided");
             return;
         }
 
@@ -3893,7 +3893,7 @@ public:
     {
         if (!name || !*name)
         {
-            DBGLOG("CLdapClient::addGroupTree groupname must be provided");
+            OWARNLOG("CLdapClient::addGroupTree groupname must be provided");
             return;
         }
 
@@ -4068,7 +4068,7 @@ public:
 
             if(user == NULL || strlen(user) == 0)
             {
-                DBGLOG("CLdapClient::getGroups username must be provided");
+                OWARNLOG("CLdapClient::getGroups username must be provided");
                 return;
             }
             StringBuffer filter("sAMAccountName=");
@@ -4162,13 +4162,13 @@ public:
     {
         if(user == NULL)
         {
-            DBGLOG("CLdapClient::deleteUser ISecUser must be provided");
+            OWARNLOG("CLdapClient::deleteUser ISecUser must be provided");
             return false;
         }
         const char* username = user->getName();
         if(username == NULL || *username == '\0')
         {
-            DBGLOG("CLdapClient::deleteUser username must be provided");
+            OWARNLOG("CLdapClient::deleteUser username must be provided");
             return false;
         }
 
@@ -4215,7 +4215,7 @@ public:
     {
         if(groupname == NULL || *groupname == '\0')
         {
-            DBGLOG("CLdapClient::addGroup groupname must be provided");
+            OWARNLOG("CLdapClient::addGroup groupname must be provided");
             return;
         }
 
@@ -4509,7 +4509,7 @@ public:
 
         if ( rc != LDAP_SUCCESS )
         {
-            DBGLOG("error deleting %s: %s", dn.str(), ldap_err2string(rc));
+            OERRLOG("error deleting %s: %s", dn.str(), ldap_err2string(rc));
             //throw MakeStringException(-1, "error deleting %s: %s", dn.str(), ldap_err2string(rc));
         }
         
@@ -4547,7 +4547,7 @@ public:
 
             if (rc != LDAP_SUCCESS )
             {
-                DBGLOG("Error changing unc %s to %s - %s", oldname, newname, ldap_err2string( rc ));
+                OERRLOG("Error changing unc %s to %s - %s", oldname, newname, ldap_err2string( rc ));
                 //throw MakeStringException(-1, "Error changing unc %s to %s - %s", oldname, newname, ldap_err2string( rc ));
             }
         }
@@ -4559,7 +4559,7 @@ public:
 #endif
         if (rc != LDAP_SUCCESS )
         {
-            DBGLOG("Error renaming %s to %s - %s", oldname, newname, ldap_err2string( rc ));
+            OERRLOG("Error renaming %s to %s - %s", oldname, newname, ldap_err2string( rc ));
             //throw MakeStringException(-1, "Error renaming %s to %s - %s", oldname, newname, ldap_err2string( rc ));
         }
     }
@@ -4597,7 +4597,7 @@ public:
     {
         if(user == NULL || user->getName() == NULL)
         {
-            DBGLOG("CLdapClient::isSuperUser Populated ISecUser must be provided");
+            OWARNLOG("CLdapClient::isSuperUser Populated ISecUser must be provided");
             return false;
         }
 
@@ -4675,7 +4675,7 @@ public:
                 int err = ldap_search_ext_s(ld, "cn=config", LDAP_SCOPE_BASE, "objectClass=*", pw_attrs, false, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &msg.msg);
                 if(err != LDAP_SUCCESS)
                 {
-                    DBGLOG("ldap_search_ext_s error: %s", ldap_err2string( err ));
+                    OERRLOG("ldap_search_ext_s error: %s", ldap_err2string( err ));
                     return NULL;
                 }
                 LDAPMessage* entry = LdapFirstEntry(ld, msg);
@@ -4825,7 +4825,7 @@ private:
     {
         if(dn == NULL || *dn == '\0')
         {
-            DBGLOG("CLdapClient::getUidFromDN dn must be provided");
+            OWARNLOG("CLdapClient::getUidFromDN dn must be provided");
             return;
         }
 
@@ -4880,7 +4880,7 @@ private:
     {
         if(groupname == NULL)
         {
-            DBGLOG("CLdapClient::getGroupDN groupname must be provided");
+            OWARNLOG("CLdapClient::getGroupDN groupname must be provided");
             return;
         }
         LdapServerType stype = m_ldapconfig->getServerType();
@@ -4903,7 +4903,7 @@ private:
     {
         if(groupname == NULL)
         {
-            DBGLOG("CLdapClient::getGroupBaseDN groupname must be provided");
+            OWARNLOG("CLdapClient::getGroupBaseDN groupname must be provided");
             return;
         }
         LdapServerType stype = m_ldapconfig->getServerType();
@@ -5101,14 +5101,14 @@ private:
         int len = sdlist.length();
         if(len == 0)
         {
-            DBGLOG("CLdapClient::getSecurityDescriptors sdlist cannot be empty");
+            OWARNLOG("CLdapClient::getSecurityDescriptors sdlist cannot be empty");
             return;
         }
 
         const char* rbasedn = m_ldapconfig->getResourceBasedn(rtype);
         if(rbasedn == NULL || *rbasedn == '\0')
         {
-            DBGLOG("corresponding resource basedn is not defined");
+            OWARNLOG("corresponding resource basedn is not defined");
             return;
         }
             
@@ -5165,7 +5165,7 @@ private:
         int len = sdlist.length();
         if(len == 0)
         {
-            DBGLOG("CLdapClient::getSecurityDescriptors2 sdlist cannot be empty");
+            OWARNLOG("CLdapClient::getSecurityDescriptors2 sdlist cannot be empty");
             return;
         }
 
@@ -5271,7 +5271,7 @@ private:
         int len = sdlist.length();
         if(len == 0)
         {
-            DBGLOG("CLdapClient::getSecurityDescriptorsScope sdlist cannot be empty");
+            OWARNLOG("CLdapClient::getSecurityDescriptorsScope sdlist cannot be empty");
             return;
         }
 
@@ -5446,14 +5446,14 @@ private:
     {
         if(basedn == NULL || basedn[0] == '\0')
         {
-            DBGLOG("CLdapClient::createLdapBasedn basedn must be provided");
+            OWARNLOG("CLdapClient::createLdapBasedn basedn must be provided");
             return;
         }
 
         const char* ptr = strstr(basedn, "ou=");
         if(ptr == NULL)
         {
-            DBGLOG("CLdapClient::createLdapBasedn OU= missing from basedn");
+            OWARNLOG("CLdapClient::createLdapBasedn OU= missing from basedn");
             return;
         }
         ptr += 3;
@@ -5482,13 +5482,13 @@ private:
     {
         if(name == NULL || basedn == NULL)
         {
-            DBGLOG("CLdapClient::addOrganizationalUnit OU name must be provided");
+            OWARNLOG("CLdapClient::addOrganizationalUnit OU name must be provided");
             return false;
         }
 
         if(strchr(name, '/') != NULL || strchr(name, '=') != NULL)
         {
-            DBGLOG("CLdapClient::addOrganizationalUnit Invalid characters in OU");
+            OWARNLOG("CLdapClient::addOrganizationalUnit Invalid characters in OU");
             return false;
         }
 
@@ -5610,7 +5610,7 @@ private:
     {
         if(resourcename == NULL || *resourcename == '\0')
         {
-            DBGLOG("CLdapClient::name2rdn resourcename must be provided");
+            OWARNLOG("CLdapClient::name2rdn resourcename must be provided");
             return;
         }
 
@@ -5666,14 +5666,14 @@ private:
     {
         if(resource == NULL)
         {
-            DBGLOG("CLdapClient::addResource can't add resource, ISecResource must be specified");
+            OWARNLOG("CLdapClient::addResource can't add resource, ISecResource must be specified");
             return true;
         }
 
         char* resourcename = (char*)resource->getName();
         if(resourcename == NULL)
         {
-            DBGLOG("CLdapClient::addResource can't add resource, empty resource name");
+            OWARNLOG("CLdapClient::addResource can't add resource, empty resource name");
             return false;
         }
 
@@ -5688,13 +5688,13 @@ private:
         }
         if(rbasedn == NULL || *rbasedn == '\0')
         {
-            DBGLOG("CLdapClient::addResource Can't add resource '%s', corresponding resource basedn is not defined",resourcename);
+            OWARNLOG("CLdapClient::addResource Can't add resource '%s', corresponding resource basedn is not defined",resourcename);
             return false;
         }
 
         if(strchr(resourcename, '/') != NULL || strchr(resourcename, '=') != NULL)
         {
-            DBGLOG("CLdapClient::addResource Can't add resource '%s', invalid characters specified",resourcename);
+            OWARNLOG("CLdapClient::addResource Can't add resource '%s', invalid characters specified",resourcename);
             return false;
         }
 
@@ -6239,7 +6239,7 @@ private:
         const char* basedn = m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE);
         if(basedn == NULL || *basedn == '\0')
         {
-            DBGLOG("corresponding basedn is not defined");
+            OWARNLOG("corresponding basedn is not defined");
             return SecAccess_Unavailable;
         }
         const char* basebasedn = strchr(basedn, ',') + 1;

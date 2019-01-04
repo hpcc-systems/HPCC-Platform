@@ -46,7 +46,7 @@ CEsdlCustomTransformChoose::CEsdlCustomTransformChoose(IPropertyTree * choosewhe
             }
         }
         else
-            ERRLOG("CEsdlCustomTransformChoose: Found xsdl:choose clause without required xsdl:when");
+            OERRLOG("CEsdlCustomTransformChoose: Found xsdl:choose clause without required xsdl:when");
     }
 }
 
@@ -84,7 +84,7 @@ void CEsdlCustomTransformChoose::processClauses(IPropertyTree *request, IXpathCo
                         if (!optional)
                             throw MakeStringException(-1, "%s", msg.str());
                         else
-                            ERRLOG("%s", msg.str());
+                            OERRLOG("%s", msg.str());
                     }
                 }
                 else
@@ -156,7 +156,7 @@ void CEsdlCustomTransformChoose::compileClauses(IPropertyTreeIterator * rulesite
             if(!optional)
                 throw MakeStringException(-1, "%s", msg.str());
             else
-                ERRLOG("%s", msg.str());
+                OERRLOG("%s", msg.str());
                 continue;
         }
 
@@ -167,7 +167,7 @@ void CEsdlCustomTransformChoose::compileClauses(IPropertyTreeIterator * rulesite
             if(!optional)
                 throw MakeStringException(-1, "%s", msg.str());
             else
-                ERRLOG("%s", msg.str());
+                OERRLOG("%s", msg.str());
                 continue;
         }
 
@@ -209,7 +209,7 @@ bool CEsdlCustomTransformChoose::evaluate(IXpathContext * xpathContext)
     }
     catch (...)
     {
-        DBGLOG("CEsdlCustomTransformChoose:evaluate: Could not evaluate xpath '%s'", xpathContext->getXpath());
+        WARNLOG("CEsdlCustomTransformChoose:evaluate: Could not evaluate xpath '%s'", xpathContext->getXpath());
     }
     return evalresp;
 }
@@ -248,7 +248,7 @@ void CEsdlCustomTransformChoose::process(IEspContext * context, IPropertyTree *r
     }
     catch (...)
     {
-        ERRLOG("EsdlCustomTransformClause::process internal error");
+        IERRLOG("EsdlCustomTransformClause::process internal error");
     }
 }
 
@@ -312,7 +312,7 @@ void processServiceAndMethodTransforms(std::initializer_list<IEsdlCustomTransfor
 
         VStringBuffer ver("%g", context->getClientVersion());
         if(!xpathContext->addVariable("clientversion", ver.str()))
-            ERRLOG("Could not set custom transform variable: clientversion:'%s'", ver.str());
+            OERRLOG("Could not set custom transform variable: clientversion:'%s'", ver.str());
         //in case transform wants to make use of these values:
         xpathContext->addVariable("query", tgtcfg->queryProp("@queryname"));
         xpathContext->addVariable("method", mthdef.queryMethodName());

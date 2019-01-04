@@ -3163,7 +3163,7 @@ public:
                     {
                         if (minor < minorVersion)
                         {
-                            DBGLOG("WARNING: repository version %d.%d is older than current version %d.%d - adding required columns", major, minor, majorVersion, minorVersion);
+                            OWARNLOG("WARNING: repository version %d.%d is older than current version %d.%d - adding required columns", major, minor, majorVersion, minorVersion);
                             switch (minor)
                             {
                             case 1:
@@ -3178,7 +3178,7 @@ public:
                             createVersionTable(true);
                         }
                         else
-                            DBGLOG("WARNING: repository version %d.%d is newer than current version %d.%d - some columns will not be updated", major, minor, majorVersion, minorVersion);
+                            OWARNLOG("WARNING: repository version %d.%d is newer than current version %d.%d - some columns will not be updated", major, minor, majorVersion, minorVersion);
                     }
                 }
             }
@@ -3944,7 +3944,7 @@ private:
         }
         catch (...)
         {
-            DBGLOG("WARNING: Unknown exception caught while trying to retrieve Cassandra repository version information");
+            OWARNLOG("WARNING: Unknown exception caught while trying to retrieve Cassandra repository version information");
         }
         return NULL;
     }

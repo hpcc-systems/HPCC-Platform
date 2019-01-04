@@ -65,7 +65,7 @@ void saveAsFile(const char * filepath, const char *filename, const char *text, c
     if (io.get())
         io->write(0, strlen(text), text);
     else
-        DBGLOG("File %s can't be created", file->queryFilename());
+        OERRLOG("File %s can't be created", file->queryFilename());
 }
 
 //=========================================================================================

@@ -89,7 +89,7 @@ CEspHttpServer::~CEspHttpServer()
     }
     catch (...)
     {
-        ERRLOG("In CEspHttpServer::~CEspHttpServer() -- Unknown Exception.");
+        IERRLOG("In CEspHttpServer::~CEspHttpServer() -- Unknown Exception.");
     }
 }
 
@@ -137,7 +137,7 @@ static bool authenticateOptionalFailed(IEspContext& ctx, IEspHttpBinding* bindin
         if(!user || user->getStatus()==SecUserStatus_Inhouse || user->getStatus()==SecUserStatus_Unknown)
             return false;
 
-        ERRLOG("User %s trying to access unauthorized feature: internal", user->getName() ? user->getName() : ctx.queryUserId());
+        OERRLOG("User %s trying to access unauthorized feature: internal", user->getName() ? user->getName() : ctx.queryUserId());
         return true;
     }
     // TODO: handle binding specific optionals
@@ -200,7 +200,7 @@ int CEspHttpServer::processRequest()
     }
     catch (...)
     {
-        DBGLOG("Unknown Exception - reading request [CEspHttpServer::processRequest()]");
+        IERRLOG("Unknown Exception - reading request [CEspHttpServer::processRequest()]");
         return 0;
     }
 
@@ -401,8 +401,8 @@ int CEspHttpServer::processRequest()
     {
         StringBuffer content_type;
         __int64 len = m_request->getContentLength();
-        DBGLOG("Unknown Exception - processing request");
-        DBGLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %" I64F "d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
+        OWARNLOG("Unknown Exception - processing request");
+        OWARNLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %" I64F "d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
         if (len > 0)
             m_request->logMessage(LOGCONTENT, "HTTP request content received:\n");
         return 0;

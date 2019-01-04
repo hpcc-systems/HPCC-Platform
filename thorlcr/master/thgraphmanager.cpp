@@ -103,7 +103,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             catch (IException *E)
             {
                 StringBuffer s;
-                DBGLOG("ERROR: Invalid XML received from %s:%s", E->errorMessage(s).str(), rawText.str());
+                WARNLOG("processDebugCommand: Invalid XML received from %s:%s", E->errorMessage(s).str(), rawText.str());
                 throw;
             }
 
@@ -309,7 +309,7 @@ void CJobManager::fatal(IException *e)
     }
     catch (...)
     {
-        ERRLOG("Unknown exception in CJobManager::fatal");
+        IERRLOG("Unknown exception in CJobManager::fatal");
     }
     LOG(daliAuditLogCat,",Progress,Thor,Terminate,%s,%s,%s,exception",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
@@ -451,7 +451,7 @@ void CJobManager::run()
     Owned<IMPServer> mpServer = getMPServer();
     Owned<ICommunicator> comm = mpServer->createCommunicator(&queryClusterGroup());
     if (!comm->verifyAll())
-        ERRLOG("Failed to connect to all slaves");
+        OERRLOG("Failed to connect to all slaves");
     else
         PROGLOG("verified mp connection to all slaves");
 
@@ -811,7 +811,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
         replyMb.append((unsigned)DAMP_THOR_REPLY_GOOD);
     if (!conversation->send(replyMb)) {
         s.clear();
-        ERRLOG("Failed to reply to agent %s",agentep.getUrlStr(s).str());
+        OERRLOG("Failed to reply to agent %s",agentep.getUrlStr(s).str());
     }
     conversation.clear();
     handlingConversation = false;

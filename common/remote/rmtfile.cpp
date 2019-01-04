@@ -832,12 +832,12 @@ static void installFileHook(const char *hookFile)
             {
                 so->unload();
                 delete so;
-                DBGLOG("File hook library %s could not be loaded", hookFile);
+                OERRLOG("File hook library %s could not be loaded", hookFile);
             }
         }
         else
         {
-            DBGLOG("File hook library %s not found", hookFile);
+            OERRLOG("File hook library %s not found", hookFile);
         }
     }
     else

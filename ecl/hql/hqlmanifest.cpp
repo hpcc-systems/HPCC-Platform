@@ -182,7 +182,7 @@ bool ResourceManifest::checkResourceFilesExist()
         const char *filepath = resources->query().queryProp("@originalFilename");
         if (!checkFileExists(filepath))
         {
-            ERRLOG("Error: RESOURCE file '%s' does not exist", filepath);
+            OERRLOG("Error: RESOURCE file '%s' does not exist", filepath);
             return false;
         }
     }
@@ -274,7 +274,7 @@ bool isManifestFileValid(const char *filename)
 {
     if (!checkFileExists(filename))
     {
-        ERRLOG("Error: MANIFEST file '%s' does not exist", filename);
+        OERRLOG("Error: MANIFEST file '%s' does not exist", filename);
         return false;
     }
     ResourceManifest manifest(filename);

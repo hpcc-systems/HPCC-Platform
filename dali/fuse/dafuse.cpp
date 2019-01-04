@@ -684,7 +684,7 @@ class CFuseDaliDFS: public CFuseBase
                             part.getFilename(rfn,1);
                             rfn.getRemotePath(tmp);
                         }
-                        ERRLOG("%s part %d not found at %s",path,pn+1,tmp.str());
+                        OERRLOG("%s part %d not found at %s",path,pn+1,tmp.str());
                         return -ENOENT;
                     }
                     part.getFilename(rfn,copy);
@@ -694,7 +694,7 @@ class CFuseDaliDFS: public CFuseBase
                 if (!srcio) {
                     StringBuffer tmp;
                     rfn.getRemotePath(tmp);
-                    ERRLOG("could not open '%s' for read",tmp.str());
+                    OERRLOG("could not open '%s' for read",tmp.str());
                     return -EACCES;
                 }
                 bool blocked;
@@ -1051,7 +1051,7 @@ int main(int argc, char *_argv[])
 
     StringBuffer daliServer;
     if (!prop->getProp("DALISERVER", daliServer)) {
-        ERRLOG("DALISERVER setting not found in dafuse.ini");
+        OERRLOG("DALISERVER setting not found in dafuse.ini");
         return 1;
     }
     int res;

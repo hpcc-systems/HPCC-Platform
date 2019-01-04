@@ -5119,13 +5119,13 @@ public:
         Owned<IRemoteConnection> conn = sdsManager->connect(wuRoot.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
         if (!conn)
         {
-            ERRLOG("restoreWorkUnit could not create to %s", wuRoot.str());
+            OERRLOG("restoreWorkUnit could not create to %s", wuRoot.str());
             return false;
         }
         IPropertyTree *root = conn->queryRoot();
         if (root->hasChildren())
         {
-            ERRLOG("restoreWorkUnit WUID %s already exists", wuid);
+            OERRLOG("restoreWorkUnit WUID %s already exists", wuid);
             return false;
         }
         root->setPropTree(NULL, pt.getClear());
@@ -6374,7 +6374,7 @@ bool CLocalWorkUnit::setDistributedAccessToken(const char * user)
         }
         else
         {
-            ERRLOG("Cannot create workunit Distributed Access Token, digisign failed");
+            OERRLOG("Cannot create workunit Distributed Access Token, digisign failed");
             return false;
         }
     }
@@ -6917,7 +6917,7 @@ wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
         StringBuffer sig(++finger);
         if (!pDSM->digiVerify(sig, token))
         {
-            ERRLOG("verifyWorkunitDAToken : workunit distributed access token does not verify");
+            OERRLOG("verifyWorkunitDAToken : workunit distributed access token does not verify");
             return wuTokenInvalid;
         }
     }
@@ -6934,7 +6934,7 @@ wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
     {
         if (!streq(cw->queryUser(), tokUser.str()))
         {
-            ERRLOG("verifyWorkunitDAToken : token user does not match workunit");
+            OERRLOG("verifyWorkunitDAToken : token user does not match workunit");
             return wuTokenInvalid;
         }
     }
@@ -6955,7 +6955,7 @@ wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
         wuActive = true;
         break;
     default:
-        ERRLOG("verifyWorkunitDAToken : Workunit %s not active, state is '%s'", cw->queryWuid(), getWorkunitStateStr(cw->getState()));
+        OERRLOG("verifyWorkunitDAToken : Workunit %s not active, state is '%s'", cw->queryWuid(), getWorkunitStateStr(cw->getState()));
         wuActive = false;
         break;
     }

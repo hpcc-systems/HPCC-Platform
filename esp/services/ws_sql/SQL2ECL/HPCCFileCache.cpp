@@ -270,7 +270,7 @@ HPCCFile * HPCCFileCache::fetchHpccFileByName(const char * filename, const char 
                 {
                     StringBuffer s;
                     se->errorMessage(s);
-                    DBGLOG("Error fetching keyed file %s info: %s", filename, s.str());
+                    IERRLOG("Error fetching keyed file %s info: %s", filename, s.str());
                     se->Release();
                     if (file)
                         file.clear();
@@ -292,7 +292,7 @@ HPCCFile * HPCCFileCache::fetchHpccFileByName(const char * filename, const char 
     {
         StringBuffer s;
         se->errorMessage(s);
-        DBGLOG("Error fetching file %s info: %s", filename, s.str());
+        IERRLOG("Error fetching file %s info: %s", filename, s.str());
         se->Release();
         if (file)
             file.clear();

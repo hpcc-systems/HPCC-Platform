@@ -521,7 +521,7 @@ public:
                 putStatsValue(&edge, "NumStarts", "sum", _started);
         }
         else
-            ERRLOG("unexpected call to getEdgeProcessInfo for output %d in activity %d", output, queryId());
+            IERRLOG("unexpected call to getEdgeProcessInfo for output %d in activity %d", output, queryId());
     }
 
     virtual void getNodeProgressInfo(IPropertyTree &node) const
@@ -25019,7 +25019,7 @@ public:
         {
             StringBuffer errors;
             E->errorMessage(errors);
-            DBGLOG("%s File error = %s", (isLoadDataOnly) ? "LOADDATAONLY" : "SUSPENDED QUERY", errors.str());
+            OERRLOG("%s File error = %s", (isLoadDataOnly) ? "LOADDATAONLY" : "SUSPENDED QUERY", errors.str());
             E->Release();
         }
     }
@@ -27543,7 +27543,7 @@ public:
         }
         catch (...)
         {
-            DBGLOG("Exception thrown in child query - cleaning up");
+            IERRLOG("Exception thrown in child query - cleaning up");
             reset();
             throw;
         }

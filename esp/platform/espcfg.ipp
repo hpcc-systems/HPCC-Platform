@@ -208,7 +208,7 @@ public:
         }
         catch(...)
         {
-            DBGLOG("Lost Dali Connection");
+            OERRLOG("Lost Dali Connection");
         }
         return false;
     }
@@ -251,7 +251,7 @@ public:
         catch(IException* ie)
         {
             if (isDetachedFromDali())
-                ERRLOG("Could not load ESP service(s) while DETACHED from DALI - Consider re-attaching ESP process.");
+                OERRLOG("Could not load ESP service(s) while DETACHED from DALI - Consider re-attaching ESP process.");
             throw(ie);
         }
         loadProtocols();

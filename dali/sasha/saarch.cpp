@@ -1184,7 +1184,7 @@ protected:
 
         bool backup()
         {
-            ERRLOG("cDFUWUBranchItem backup not supported");
+            IERRLOG("cDFUWUBranchItem backup not supported");
             return true;
         }
 
@@ -1275,7 +1275,7 @@ class CDFUrecoveryArchiver: public CBranchArchiver
 
         bool backup()
         {
-            ERRLOG("cDRBranchItem backup not supported");
+            IERRLOG("cDRBranchItem backup not supported");
             return true;
         }
 

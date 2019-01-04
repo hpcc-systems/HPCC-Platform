@@ -1957,7 +1957,7 @@ private:
                     }
                     catch (...)
                     {
-                        DBGLOG("Unknown exception in AutoReloadThread");
+                        OERRLOG("Unknown exception in AutoReloadThread");
                     }
                     owner.forcePending = false;
                 }

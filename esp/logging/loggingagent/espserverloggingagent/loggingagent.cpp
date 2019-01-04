@@ -187,7 +187,7 @@ int CESPServerLoggingAgent::getTransactionSeed(const char* appName, StringBuffer
         {
             StringBuffer errorStr;
             statusMessage.set("Failed to get TransactionSeed: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
-            ERRLOG("%s -- try %d", statusMessage.str(), retry);
+            OERRLOG("%s -- try %d", statusMessage.str(), retry);
             e->Release();
             if (retry >= maxGTSRetries)
             {
@@ -320,7 +320,7 @@ bool CESPServerLoggingAgent::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdate
     {//retry will be in update log queue.
         StringBuffer errorStr, errorMessage;
         errorMessage.append("Failed to update log: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
-        ERRLOG("%s", errorMessage.str());
+        IERRLOG("%s", errorMessage.str());
         resp.setStatusCode(-1);
         resp.setStatusMessage(errorMessage.str());
         e->Release();

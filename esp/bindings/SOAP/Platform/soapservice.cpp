@@ -243,7 +243,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
         } catch (...) {
             response.set_status(SOAP_CLIENT_ERROR);
             response.set_err("Unknown error when parsing soap body XML");
-            ERRLOG("SOAP request from %s@%s. Unknown error when parsing: %s",  (userId&&*userId)?userId:"unknown",
+            OERRLOG("SOAP request from %s@%s. Unknown error when parsing: %s",  (userId&&*userId)?userId:"unknown",
                 (peerStr.length()>0)?peerStr.str():"unknown", requeststr.str());
             return 0;
         }

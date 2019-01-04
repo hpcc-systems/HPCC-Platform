@@ -240,12 +240,12 @@ void CLogSerializer::loadSendLogs(GuidSet& ackSet, GuidMap& missedLogs, unsigned
     {
         StringBuffer errorStr;
         ex->errorMessage(errorStr);
-        ERRLOG("Exception caught within CSendLogSerializer::LoadDataMap: %s",errorStr.str());
+        IERRLOG("Exception caught within CSendLogSerializer::LoadDataMap: %s",errorStr.str());
         ex->Release();
     }
     catch(...)
     {
-        DBGLOG("Unknown Exception thrown in CSendLogSerializer::LoadDataMap");
+        IERRLOG("Unknown Exception thrown in CSendLogSerializer::LoadDataMap");
     }
     Close();
 }
@@ -291,7 +291,7 @@ void CLogSerializer::loadAckedLogs(GuidSet& ackedLogs)//
     {
         StringBuffer errorStr;
         ex->errorMessage(errorStr);
-        ERRLOG("Exception caught within CLogSerializer::loadAckedLogs: %s",errorStr.str());
+        IERRLOG("Exception caught within CLogSerializer::loadAckedLogs: %s",errorStr.str());
         ex->Release();
     }
     catch(...)
@@ -384,12 +384,12 @@ void CSendLogSerializer::LoadDataMap(GuidMap& ACKMap,StringArray& MissedLogs)
     {
         StringBuffer errorStr;
         ex->errorMessage(errorStr);
-        ERRLOG("Exception caught within CSendLogSerializer::LoadDataMap: %s",errorStr.str());
+        IERRLOG("Exception caught within CSendLogSerializer::LoadDataMap: %s",errorStr.str());
         ex->Release();
     }
     catch(...)
     {
-        DBGLOG("Unknown Exception thrown in CSendLogSerializer::LoadDataMap");
+        IERRLOG("Unknown Exception thrown in CSendLogSerializer::LoadDataMap");
     }
     Close();
 }
@@ -483,7 +483,7 @@ void CRecieveLogSerializer::LoadDataMap(GuidMap& GUIDmap)
     {
         StringBuffer errorStr;
         ex->errorMessage(errorStr);
-        ERRLOG("Exception caught within CRecieveLogSerializer::LoadDataMap: %s",errorStr.str());
+        IERRLOG("Exception caught within CRecieveLogSerializer::LoadDataMap: %s",errorStr.str());
         ex->Release();
     }
     catch(...)

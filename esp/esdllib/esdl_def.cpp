@@ -976,7 +976,7 @@ static SecAccessFlags translateAuthLevel(const char* flag)
     if (!stricmp(flag,"Full"))
         return SecAccess_Full;
 
-    DBGLOG("Unknown access level: %s", flag);
+    OWARNLOG("Unknown access level: %s", flag);
     return SecAccess_Full;
 }
 
@@ -2085,7 +2085,7 @@ void EsdlDefinition::addDefinitionsFromFile(const char *filename)
 void EsdlDefinition::addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefId)
 {
     if (!esdlDefId || !*esdlDefId)
-        DBGLOG("XML ESDL definition cannot be loaded with out definition ID.");
+        OWARNLOG("XML ESDL definition cannot be loaded with out definition ID.");
 
     if (!added.getValue(esdlDefId))
     {
@@ -2106,13 +2106,13 @@ void EsdlDefinition::addDefinitionFromXML(const StringBuffer & xmlDef, const cha
 {
     if (!esdlDefName || !*esdlDefName)
     {
-        DBGLOG("XML ESDL definition cannot be loaded with out definition name.");
+        OWARNLOG("XML ESDL definition cannot be loaded with out definition name.");
         return;
     }
 
     if (ver <= 0 )
     {
-        DBGLOG("XML ESDL definition cannot be loaded with out valid definition version.");
+        OWARNLOG("XML ESDL definition cannot be loaded with out valid definition version.");
         return;
     }
 

@@ -131,7 +131,7 @@ CXRefNode::CXRefNode(IPropertyTree* pTreeRoot)
     }
     catch(...)
     {
-        ERRLOG("Error in creation of XRefNode...");
+        IERRLOG("Error in creation of XRefNode...");
     }
 }
 
@@ -408,7 +408,7 @@ bool CXRefNode::removeEmptyDirectories(StringBuffer &errstr)
         return false;
     Owned<IGroup> group = queryNamedGroupStore().lookup(clustername);
     if (!group) {
-        ERRLOG("%s cluster not found",clustername);
+        OERRLOG("%s cluster not found",clustername);
         errstr.appendf("ERROR: %s cluster not found",clustername);
         return false;
     }
@@ -588,7 +588,7 @@ void CXRefNode::progress(const char *text)
 }
 void CXRefNode::error(const char *text)
 {
-    DBGLOG("ERROR: %s\n",text);
+    OERRLOG("ERROR: %s\n",text);
     setStatus(text);
     commit();
 }

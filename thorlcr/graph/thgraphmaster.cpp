@@ -1156,12 +1156,12 @@ public:
         {
             StringBuffer m;
             E->errorMessage(m);
-            DBGLOG("Unable to record exception in workunit: %s", m.str());
+            OERRLOG("Unable to record exception in workunit: %s", m.str());
             E->Release();
         }
         catch (...)
         {
-            DBGLOG("Unable to record exception in workunit: unknown exception");
+            OERRLOG("Unable to record exception in workunit: unknown exception");
         }
     }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) override
@@ -1177,12 +1177,12 @@ public:
         {
             StringBuffer m;
             E->errorMessage(m);
-            DBGLOG("Unable to record exception in workunit: %s", m.str());
+            OERRLOG("Unable to record exception in workunit: %s", m.str());
             E->Release();
         }
         catch (...)
         {
-            DBGLOG("Unable to record exception in workunit: unknown exception");
+            OERRLOG("Unable to record exception in workunit: unknown exception");
         }
         if (isAbort)
             rtlFailOnAssert();      // minimal implementation

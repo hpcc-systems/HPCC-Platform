@@ -288,7 +288,7 @@ public:
 void CRestrictionType::addFacet(RestrictionFacetType type, RestrictionFacetValue value)
 {
     if (m_types & type)
-        ERRLOG(-1,"Error in CRestrictionType::addFacet: one facet type can only have one value");
+        OERRLOG(-1,"Error in CRestrictionType::addFacet: one facet type can only have one value");
     else 
     {
         m_types |= type;
@@ -349,7 +349,7 @@ void CRestrictionType::getSampleValue(StringBuffer& out, const char* fieldName)
     }
     else
     {
-        ERRLOG("CRestrictionType::getSampleValue() unimplemeted yet");
+        IERRLOG("CRestrictionType::getSampleValue() unimplemeted yet");
         m_baseType->getSampleValue(out,fieldName);
     }
 }

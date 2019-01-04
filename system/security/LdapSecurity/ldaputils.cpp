@@ -76,7 +76,7 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
         {
             if (throwOnError)
                 throw MakeStringException(-1, "ldap_initialize error %s", ldap_err2string(rc));
-            DBGLOG("ldap_initialize error %s", ldap_err2string(rc));
+            OERRLOG("ldap_initialize error %s", ldap_err2string(rc));
             return nullptr;
         }
         int reqcert = LDAP_OPT_X_TLS_NEVER;
@@ -101,7 +101,7 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
         {
             if (throwOnError)
                 throw MakeStringException(-1, "ldap_initialize(%s,%d) error %s", host, port, ldap_err2string(rc));
-            DBGLOG("ldap_initialize error %s", ldap_err2string(rc));
+            OERRLOG("ldap_initialize error %s", ldap_err2string(rc));
             return nullptr;
         }
 #endif
@@ -171,7 +171,7 @@ int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const cha
     {
         if(userdn == NULL)
         {
-            DBGLOG("userdn can't be NULL in order to bind to ldap server.");
+            OERRLOG("userdn can't be NULL in order to bind to ldap server.");
             return LDAP_INVALID_CREDENTIALS;
         }
         int rc = LdapSimpleBind(ld, ldapTimeout, (char*)userdn, (char*)password);
@@ -195,17 +195,17 @@ int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const cha
 #ifdef LDAP_OPT_DIAGNOSTIC_MESSAGE
                     char *msg=NULL;
                     ldap_get_option(ld, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
-                    DBGLOG("LDAP bind error for user %s with %d - %s. %s", logonname.str(), rc, ldap_err2string(rc), msg&&*msg?msg:"");
+                    OERRLOG("LDAP bind error for user %s with %d - %s. %s", logonname.str(), rc, ldap_err2string(rc), msg&&*msg?msg:"");
                     ldap_memfree(msg);
 #else
-                    DBGLOG("LDAP bind error for user %s with 0x%" I64F "x - %s", username, (unsigned __int64) rc, ldap_err2string(rc));
+                    OERRLOG("LDAP bind error for user %s with 0x%" I64F "x - %s", username, (unsigned __int64) rc, ldap_err2string(rc));
 #endif
                     return rc;
                 }
             }
             else
             {
-                DBGLOG("LDAP bind error for user %s with 0x%" I64F "x - %s", username, (unsigned __int64) rc, ldap_err2string(rc));
+                OERRLOG("LDAP bind error for user %s with 0x%" I64F "x - %s", username, (unsigned __int64) rc, ldap_err2string(rc));
                 return rc;
             }
         }
@@ -220,16 +220,16 @@ LDAP* LdapUtils::ldapInitAndSimpleBind(const char* ldapserver, const char* userD
     if (ld == nullptr)
     {
         VStringBuffer uri("%s://%s:%d", ldapprotocol, ldapserver, ldapport);
-        ERRLOG("ldap init error(%s)",uri.str());
+        OERRLOG("ldap init error(%s)",uri.str());
         *err = -1;
         return nullptr;
     }
     *err = LdapSimpleBind(ld, timeout, (char*)userDN, (char*)pwd);
     if (*err != LDAP_SUCCESS)
     {
-        DBGLOG("LdapSimpleBind error (%d) - %s for admin user %s", *err, ldap_err2string(*err), isEmptyString(userDN) ? "NULL" : userDN);
+        OERRLOG("LdapSimpleBind error (%d) - %s for admin user %s", *err, ldap_err2string(*err), isEmptyString(userDN) ? "NULL" : userDN);
         if (!isEmptyString(userDN))
-            DBGLOG("Please make sure your LDAP configuration 'systemBasedn' contains the complete path, including the complete 'dc=domainComponent'");
+            OERRLOG("Please make sure your LDAP configuration 'systemBasedn' contains the complete path, including the complete 'dc=domainComponent'");
         return nullptr;
     }
     return ld;
@@ -255,11 +255,11 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
 
     if(nullptr == ld)
     {
-        DBGLOG("ldap bind error (%d) - %s", err, ldap_err2string(err));
+        OERRLOG("ldap bind error (%d) - %s", err, ldap_err2string(err));
 
         // for new versions of openldap, version 2.2.*
         if(err == LDAP_PROTOCOL_ERROR)
-            DBGLOG("If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
+            OERRLOG("If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
 
         return err;
     }
@@ -270,7 +270,7 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
     err = ldap_search_ext_s(ld, NULL, LDAP_SCOPE_BASE, "objectClass=*", attrs, false, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &msg);
     if(err != LDAP_SUCCESS)
     {
-        DBGLOG("ldap_search_ext_s error: %s", ldap_err2string( err ));
+        OERRLOG("ldap_search_ext_s error: %s", ldap_err2string( err ));
         if (msg)
             ldap_msgfree(msg);
         return err;

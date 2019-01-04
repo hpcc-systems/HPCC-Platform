@@ -279,8 +279,8 @@ public:
                         int code = ep->getPropInt("./Code", 0);
                         SocketEndpoint peerEp;
                         StringBuffer peerStr;
-                        ERRLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getUrlStr(peerStr).str());
-                        ERRLOG("Roxie exception: %s", body.str());
+                        OERRLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getUrlStr(peerStr).str());
+                        OERRLOG("Roxie exception: %s", body.str());
                         throw new ReceivedRoxieException(code, body.str());
                     }
                     else if (resultName.length() == 0 || strcmp(finger, resultName.str()) == 0)
@@ -305,8 +305,8 @@ public:
                     delete x;
                     SocketEndpoint peerEp;
                     StringBuffer peerStr;
-                    ERRLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getUrlStr(peerStr).str());
-                    ERRLOG("Roxie exception: %s", xml.str());
+                    OERRLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getUrlStr(peerStr).str());
+                    OERRLOG("Roxie exception: %s", xml.str());
                     int code = 0;
                     try
                     {
@@ -390,7 +390,7 @@ public:
                                     Aborting = true;
                                     if (fatalError.length()==0) 
                                         e->errorMessage(fatalError);
-                                    ERRLOG("Exiting: maxRetries exceeded");
+                                    OERRLOG("Exiting: maxRetries exceeded");
                                     break;
                                 }
                             }
@@ -409,7 +409,7 @@ public:
                                 s.append(" - Failed to connect to ").append(hosts);
                                 if (fatalError.length()==0) 
                                     fatalError.append(s.str());
-                                ERRLOG("%s",s.str());
+                                OERRLOG("%s",s.str());
                                 break;
                             }
                             EXCLOG(e, "Caught exception - retrying");
@@ -714,7 +714,7 @@ int main(int argc, char *argv[])
         }
     }
     if (fatalError.length()) {
-        ERRLOG("EXIT: %s",fatalError.str());
+        OERRLOG("EXIT: %s",fatalError.str());
         fprintf(stderr, "%s\n", fatalError.str());
         fflush(stderr);
         Sleep(1000);

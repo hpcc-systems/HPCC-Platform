@@ -86,7 +86,7 @@ int main(int argc, const char *argv[])
         }
         catch (...)
         {
-            ERRLOG("Eclagent execution error: Unexpected exception");
+            IERRLOG("Eclagent execution error: Unexpected exception");
             ret = 2;
         }
         releaseAtoms();

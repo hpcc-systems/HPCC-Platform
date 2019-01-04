@@ -1124,7 +1124,7 @@ public:
                 if (grp)
                     n = grp->ordinality();
                 else {
-                    ERRLOG("DFUWU: Logical group %s not found",s.str());
+                    OERRLOG("DFUWU: Logical group %s not found",s.str());
                     return 0;
                 }
                 ClusterPartDiskMapSpec mspec;
@@ -3162,7 +3162,7 @@ dfuwu_decl unsigned queuedJobs(const char *queuename,StringAttrArray &wulist)
     catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
-        ERRLOG("DFUWU runningJobs(%s) %s",queuename,msg.str());
+        IERRLOG("DFUWU runningJobs(%s) %s",queuename,msg.str());
         e->Release();
     }
     try{
@@ -3182,7 +3182,7 @@ dfuwu_decl unsigned queuedJobs(const char *queuename,StringAttrArray &wulist)
     catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
-        ERRLOG("DFUWU queuedJobs(%s) %s",queuename,msg.str());
+        IERRLOG("DFUWU queuedJobs(%s) %s",queuename,msg.str());
         e->Release();
     }
     return ret;

@@ -1216,7 +1216,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             catch (IException *E)
             {
                 StringBuffer x;
-                DBGLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
+                IERRLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
                 E->Release();
             }
         }
@@ -1239,7 +1239,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     catch (IException *E)
     {
         StringBuffer x;
-        DBGLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
+        IERRLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
         E->Release();
     }
 

@@ -148,7 +148,7 @@ int main(int argc, const char *argv[])
             e->Release();
         }
         catch (const char *s) {
-            ERRLOG("DFU: %s",s);
+            IERRLOG("DFU: %s",s);
         }
     }
     catch(IException *e){ 
@@ -159,7 +159,7 @@ int main(int argc, const char *argv[])
         e->Release();
     }
     catch (const char *s) {
-        ERRLOG("DFU: %s",s);
+        IERRLOG("DFU: %s",s);
     }
     
     closeEnvironment();

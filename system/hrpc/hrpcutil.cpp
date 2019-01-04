@@ -141,7 +141,7 @@ bool FastMultipleConnect(unsigned n,HRPCmodule **modules,bool *done,int timeout)
         else {
             StringBuffer epstr;
             eps.item(i).getUrlStr(epstr);
-            //ERRLOG("Failed to connect to %s",epstr.str());
+            //OERRLOG("Failed to connect to %s",epstr.str());
             ret = false;
         }
     }

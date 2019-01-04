@@ -342,7 +342,7 @@ public:
             {
                 EXCLOG(MCoperatorError, E, "Read error");
                 E->Release();
-                DBGLOG("Failed to read length %d offset %" I64F "x file %s", len, pos, sources.item(activeIdx).queryFilename());
+                OERRLOG("Failed to read length %d offset %" I64F "x file %s", len, pos, sources.item(activeIdx).queryFilename());
                 {
                     CriticalBlock b(crit);
                     if (currentIdx == activeIdx)
@@ -446,7 +446,7 @@ public:
                         catch(IException *E)
                         {
                             StringBuffer err;
-                            DBGLOG("HARD LINK ERROR %s", E->errorMessage(err).str());
+                            OERRLOG("HARD LINK ERROR %s", E->errorMessage(err).str());
                             E->Release();
                         }
                     }
@@ -766,7 +766,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         catch(IException *E)
         {
             StringBuffer err;
-            DBGLOG("Could not remove tmp file %s", E->errorMessage(err).str());
+            OERRLOG("Could not remove tmp file %s", E->errorMessage(err).str());
             E->Release();
         }
         catch(...)
@@ -846,7 +846,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             catch(...)
             {
                 f->setCopying(false);
-                DBGLOG("%s exception - remove templocal", msg);
+                IERRLOG("%s exception - remove templocal", msg);
                 destFile->remove();
                 deleteTempFiles(targetFilename);
                 throw;
@@ -893,7 +893,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             else
                 destPath.append('.');
             if (!checkDirExists(destPath.str())) {
-                ERRLOG("Dest directory %s does not exist", destPath.str());
+                OERRLOG("Dest directory %s does not exist", destPath.str());
                 return false;
             }
             
@@ -1043,7 +1043,7 @@ public:
         }
         catch (...) 
         {
-            DBGLOG("Unknown exception in background copy thread");
+            IERRLOG("Unknown exception in background copy thread");
         }
         if (traceLevel)
             DBGLOG("Background copy thread %p exiting", this);
@@ -1074,7 +1074,7 @@ public:
         }
         catch (...) 
         {
-            DBGLOG("Unknown exception in handle closer thread");
+            IERRLOG("Unknown exception in handle closer thread");
         }
         if (traceLevel)
             DBGLOG("Handle closer thread %p exiting", this);
@@ -2458,7 +2458,7 @@ public:
             }
             catch (IException *e)
             {
-                ERRLOG(-1, "Error removing file %s (%s)", lfn.get(), physicalName.get());
+                OERRLOG(-1, "Error removing file %s (%s)", lfn.get(), physicalName.get());
                 e->Release();
             }
         }

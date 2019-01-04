@@ -1666,7 +1666,7 @@ void CSafeSocket::sendSoapException(IException *E, const char *queryName)
     {
         StringBuffer error("While reporting exception: ");
         EE->errorMessage(error);
-        DBGLOG("%s", error.str());
+        IERRLOG("%s", error.str());
         EE->Release();
     }
 #ifndef _DEBUG
@@ -1696,7 +1696,7 @@ void CSafeSocket::sendJsonException(IException *E, const char *queryName)
     catch(IException *EE)
     {
         StringBuffer error("While reporting exception: ");
-        DBGLOG("%s", EE->errorMessage(error).str());
+        IERRLOG("%s", EE->errorMessage(error).str());
         EE->Release();
     }
 #ifndef _DEBUG

@@ -234,7 +234,7 @@ public:
         unsigned requiredFlags = COL_PREFIX;
 #ifdef _DEBUG
         if((flags & ~optionalFlags) != requiredFlags)
-            ERRLOG("Index file %s did not have expected index flags set (%x)", filename, (flags & ~optionalFlags) );
+            IERRLOG("Index file %s did not have expected index flags set (%x)", filename, (flags & ~optionalFlags) );
 #else
         if((flags & ~optionalFlags) != requiredFlags)
             throw MakeStringException(0, "Index file %s did not have expected index flags set (%x)", filename, (flags & ~optionalFlags) );

@@ -229,7 +229,7 @@ protected:
             buff = (char *)::malloc(buffhigh);
 #ifdef LOG
         if (!buff) 
-            ERRLOG("HRPC parameter out of memory %d,%d",sz,buffhigh);
+            OERRLOG("HRPC parameter out of memory %d,%d",sz,buffhigh);
 #endif
         assertex(buff);
     }

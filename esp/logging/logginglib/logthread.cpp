@@ -223,7 +223,7 @@ void CLogThread::sendLog()
                 {
                     logRequest->Release();
                 }
-                ERRLOG("%s", errorMessage.str());
+                IERRLOG("%s", errorMessage.str());
             }
         }
     }
@@ -231,12 +231,12 @@ void CLogThread::sendLog()
     {
         StringBuffer errorStr, errorMessage;
         errorMessage.append("Exception thrown within update log thread: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
-        ERRLOG("%s", errorMessage.str());
+        IERRLOG("%s", errorMessage.str());
         e->Release();
     }
     catch(...)
     {
-        ERRLOG("Unknown exception thrown within update log thread");
+        IERRLOG("Unknown exception thrown within update log thread");
     }
 
     return;
@@ -294,12 +294,12 @@ void CLogThread::checkRollOver()
     {
         StringBuffer str;
         Ex->errorMessage(str);
-        ERRLOG("Exception thrown during tank file rollover: %s",str.str());
+        IERRLOG("Exception thrown during tank file rollover: %s",str.str());
         Ex->Release();
     }
     catch(...)
     {
-        ERRLOG("Unknown exception thrown during tank file rollover.");
+        IERRLOG("Unknown exception thrown during tank file rollover.");
     }
 }
 
@@ -339,10 +339,10 @@ void CLogThread::checkPendingLogs(bool bOneRecOnly)
 
             Owned<IEspUpdateLogRequestWrap> logRequest = unserializeLogRequestContent(logData.str());
             if (!logRequest)
-                ERRLOG("checkPendingLogs: failed to unserialize: %s", logData.str());
+                IERRLOG("checkPendingLogs: failed to unserialize: %s", logData.str());
             else if (!enqueue(logRequest))
             {
-                ERRLOG("checkPendingLogs: failed to add a log request to queue");
+                OERRLOG("checkPendingLogs: failed to add a log request to queue");
                 queueLogError=true;
             }
 
@@ -357,12 +357,12 @@ void CLogThread::checkPendingLogs(bool bOneRecOnly)
     {
         StringBuffer errorStr;
         ex->errorMessage(errorStr);
-        ERRLOG("CheckPendingLogs: %s:" ,errorStr.str());
+        IERRLOG("CheckPendingLogs: %s:" ,errorStr.str());
         ex->Release();
     }
     catch(...)
     {
-        ERRLOG("Unknown exception thrown in CheckPendingLogs");
+        IERRLOG("Unknown exception thrown in CheckPendingLogs");
     }
 }
 
@@ -397,10 +397,10 @@ void CLogThread::writeJobQueue(IEspUpdateLogRequestWrap* jobToWrite)
 
         int QueueSize = logQueue.ordinality();
         if(QueueSize > maxLogQueueLength)
-            ERRLOG("LOGGING QUEUE SIZE %d EXECEEDED MaxLogQueueLength %d, check the logging server.",QueueSize, maxLogQueueLength);
+            OERRLOG("LOGGING QUEUE SIZE %d EXCEEDED MaxLogQueueLength %d, check the logging server.",QueueSize, maxLogQueueLength);
 
         if(QueueSize!=0 && QueueSize % signalGrowingQueueAt == 0)
-            ERRLOG("Logging Queue at %d records. Check the logging server.",QueueSize);
+            OERRLOG("Logging Queue at %d records. Check the logging server.",QueueSize);
 
         logQueue.enqueue(LINK(jobToWrite));
     }

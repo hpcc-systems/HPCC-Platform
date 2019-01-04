@@ -341,7 +341,7 @@ static unsigned short getDafsPort(const SocketEndpoint &ep,unsigned &numfails,Cr
     StringBuffer err("Failed to connect to DaFileSrv on ");
     ep.getIpText(err);
 #ifdef _WIN32
-    ERRLOG("%s",err.str());
+    OERRLOG("%s",err.str());
     if (sect) {
         CriticalBlock block(*sect);
         numfails++;
@@ -520,7 +520,7 @@ public:
             msgcallback->progress(cbline.str());
         }
         else {
-            ERRLOG("%s: %s",lname,line.str());
+            OERRLOG("%s: %s",lname,line.str());
         }
     }
 
@@ -2693,7 +2693,7 @@ IPropertyTree *  runXRef(unsigned nclusters,const char **clusters,IXRefProgressC
         if (callback)
             callback->error(s.str());
         else
-            ERRLOG("%s",s.str());
+            IERRLOG("%s",s.str());
     }
     return ret;
 }
@@ -2720,7 +2720,7 @@ IPropertyTree * runXRefCluster(const char *cluster,IXRefNode *nodeToUpdate)
         if (callback)
             callback->error(s.str());
         else
-            ERRLOG("%s",s.str());
+            IERRLOG("%s",s.str());
     }
     if(ret)
     {

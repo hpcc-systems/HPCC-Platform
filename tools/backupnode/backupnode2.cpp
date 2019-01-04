@@ -68,7 +68,7 @@ public:
         StringBuffer line;
         line.valist_appendf(format, args);
         va_end(args);
-        ERRLOG(LOGPFX "%s",line.str());
+        OERRLOG(LOGPFX "%s",line.str());
     }
 
     void warn(const char * format, ...) __attribute__((format(printf, 2, 3)))
@@ -146,7 +146,7 @@ public:
             addIpHash(ep,i);
         }   
         if (grphasports)
-            ERRLOG(LOGPFX "Group has ports!");
+            OERRLOG(LOGPFX "Group has ports!");
 
 
         class cfilescan1 : public CSDSFileScanner

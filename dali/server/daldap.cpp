@@ -98,7 +98,7 @@ public:
                 /* Do not give an error if blank ldap server provided (for backward compat of old configuration
 
                 const char* pszErrMsg = "Invalid LDAP server address!";
-                ERRLOG(pszErrMsg);
+                OERRLOG(pszErrMsg);
                 throw MakeStringException(-1, pszErrMsg);
                 */
             }
@@ -174,7 +174,7 @@ public:
                 {
                     StringBuffer localDaliTimeUTC;
                     now.getString(localDaliTimeUTC, false);//get UTC timestamp
-                    ERRLOG("getPermissions(%s) scope=%s user=%s Request digital signature UTC timestamp %s from the future (Dali UTC time %s). Check configured allowedClockVariance (%d sec)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str(), requestSignatureAllowedClockVarianceSeconds);
+                    OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Request digital signature UTC timestamp %s from the future (Dali UTC time %s)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str());
                     return SecAccess_None;//deny
                 }
 
@@ -187,7 +187,7 @@ public:
                 {
                     StringBuffer localDaliTimeUTC;
                     now.getString(localDaliTimeUTC, false);//get UTC timestamp
-                    ERRLOG("getPermissions(%s) scope=%s user=%s Expired request digital signature UTC timestamp %s (Dali UTC time %s, configured expiry %d minutes. Check configured allowedClockVariance (%d sec))",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str(), requestSignatureExpiryMinutes, requestSignatureAllowedClockVarianceSeconds);
+                    OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Expired request digital signature UTC timestamp %s (Dali UTC time %s, configured expiry %d minutes)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str(), requestSignatureExpiryMinutes);
                     return SecAccess_None;//deny
                 }
 
@@ -196,7 +196,7 @@ public:
 
                 if (!pDSM->digiVerify(b64Signature, expectedStr))//does the digital signature match what we expect?
                 {
-                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails digital signature verification",key?key:"NULL",obj?obj:"NULL",username.str());
+                    OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails digital signature verification",key?key:"NULL",obj?obj:"NULL",username.str());
                     return SecAccess_None;//deny
                 }
 
@@ -205,7 +205,7 @@ public:
                 user->setAuthenticateStatus(AS_AUTHENTICATED);
             }
             else
-                ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Dali received signed request, however Dali is not configured to verify digital signatures",key?key:"NULL",obj?obj:"NULL",username.str());
+                OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Dali received signed request, however Dali is not configured to verify digital signatures",key?key:"NULL",obj?obj:"NULL",username.str());
         }
 
         if (!isEmptyString(user->credentials().getPassword()) && !isWorkunitDAToken(user->credentials().getPassword()))
@@ -215,7 +215,7 @@ public:
                 const char * extra = "";
                 if (isEmptyString(reqSignature))
                     extra = " (Password or Dali Signature not provided)";
-                ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails LDAP authentication%s",key?key:"NULL",obj?obj:"NULL",username.str(), extra);
+                OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails LDAP authentication%s",key?key:"NULL",obj?obj:"NULL",username.str(), extra);
                 return SecAccess_None;//deny
             }
         }
@@ -292,7 +292,7 @@ public:
                 StringBuffer b64Signature(udesc->querySignature());
                 if (!pDSM->digiVerify(b64Signature, username))//digital signature valid?
                 {
-                    ERRLOG("LDAP: enableScopeScans(%s) : Invalid user digital signature", username.str());
+                    OERRLOG("LDAP: enableScopeScans(%s) : Invalid user digital signature", username.str());
                     *err = -1;
                     return false;
                 }

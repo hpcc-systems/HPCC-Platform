@@ -123,8 +123,9 @@ public:
     void stop() { processor->stop(); }
     virtual bool fireException(IException *e) 
     { 
-        StringBuffer msg; ERRLOG("Scheduler error: %d: %s", e->errorCode(), e->errorMessage(msg).str()); e->Release(); 
-        ERRLOG("Scheduler will now terminate"); 
+        StringBuffer msg;
+        IERRLOG("Scheduler error: %d: %s", e->errorCode(), e->errorMessage(msg).str()); e->Release(); 
+        IERRLOG("Scheduler will now terminate"); 
         waiter.onAbort();
         return false; 
     }
@@ -144,7 +145,7 @@ private:
                 Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid);
                 if (!w)
                 {
-                    ERRLOG("Scheduled workunit %s no longer exists - descheduling", wuid);
+                    OERRLOG("Scheduled workunit %s no longer exists - descheduling", wuid);
                     descheduleWorkunit(wuid);
                     wfconn->remove();
                 }
@@ -193,7 +194,7 @@ int main(int argc, const char *argv[])
         iniFileName = "eclccserver.xml";
     else
     {
-        ERRLOG("Cannot find eclscheduler.xml or eclccserver.xml");
+        OERRLOG("Cannot find eclscheduler.xml or eclccserver.xml");
         return 1;
     }
     try
@@ -202,7 +203,7 @@ int main(int argc, const char *argv[])
     }
     catch(...)
     {
-        ERRLOG("Failed to load %s", iniFileName);
+        OERRLOG("Failed to load %s", iniFileName);
         return 1;
     }
     openLogFile();
@@ -248,7 +249,7 @@ int main(int argc, const char *argv[])
     }
     catch(...)
     {
-        ERRLOG("Terminating unexpectedly");
+        IERRLOG("Terminating unexpectedly");
     }
     globals.clear();
     UseSysLogForOperatorMessages(false);

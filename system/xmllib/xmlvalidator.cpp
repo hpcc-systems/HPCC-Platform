@@ -225,7 +225,7 @@ int CDomXmlValidator::setXmlSource(const char* pszFile)
             loadFile(m_xmlBuf, pszFile);
         } catch (IException* e) {
             StringBuffer msg;
-            DBGLOG("Exception: %s\n", e->errorMessage(msg).str());
+            WARNLOG("Exception loading xml source file(%s): %s\n", pszFile, e->errorMessage(msg).str());
             e->Release();
             return 0; 
         }
@@ -251,7 +251,7 @@ int CDomXmlValidator::setSchemaSource(const char* pszFile)
             loadFile(m_xsdBuf, pszFile);
         } catch (IException* e) {
             StringBuffer msg;
-            DBGLOG("Exception: %s\n", e->errorMessage(msg).str());
+            WARNLOG("Exception loading xml source file(%s): %s\n", pszFile,e->errorMessage(msg).str());
             e->Release();
             return 0; 
         }
@@ -304,7 +304,7 @@ void CDomXmlValidator::validate()
                 //DBGLOG("%s = %s\n", attrs->queryName(), attrs->queryValue());
                 if (strcmp(attrs->queryName(),"@xmlns")==0)
                 {
-                    DBGLOG("Defalt namespace in xml: %s\n", attrs->queryValue());
+                    DBGLOG("Default namespace in xml: %s\n", attrs->queryValue());
                     hasXmlns = true;
                     break;
                 }

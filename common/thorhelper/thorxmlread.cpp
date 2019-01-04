@@ -605,7 +605,7 @@ IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree 
                     }
                     catch (...)
                     {
-                        ERRLOG(0, "Unexpected exception decoding XML for dataset");
+                        UERRLOG(0, "Unexpected exception decoding XML for dataset");
                     }
                 }
             }

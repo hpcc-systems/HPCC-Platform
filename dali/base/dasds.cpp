@@ -573,7 +573,7 @@ public:
                     msg.append("INFINITE");
                 else
                     msg.append(timeout);
-                ERRLOG("Invalid connection: %s", msg.str());
+                IERRLOG("Invalid connection: %s", msg.str());
                 ForEachItemIn(i, ptreePath)
                 {
                     PTree &tree = ptreePath.item(i);
@@ -2174,7 +2174,7 @@ bool CPTStack::_fill(IPropertyTree &current, const char *xpath, IPropertyTree &t
         {
             if (&tail==&iter->query()) // Afaics, this should not be possible (so this test/block should really be removed)
             {
-                ERRLOG("_fill() - tail (%s) found at intermediate level: %s", tail.queryName(), head.str());
+                IERRLOG("_fill() - tail (%s) found at intermediate level: %s", tail.queryName(), head.str());
                 append(*LINK((PTree *)&iter->query()));
                 append(*LINK((PTree *)&current));
                 return true;
@@ -2220,7 +2220,7 @@ StringBuffer &CPTStack::getAbsolutePath(StringBuffer &str)
 #ifdef DEBUG_HPCC_11202
             if (NotFound == pos)
             {
-                ERRLOG("Invalid CPTStack detected");
+                IERRLOG("Invalid CPTStack detected");
                 ForEachItemIn(i, *this)
                 {
                     PTree &tree = item(i);
@@ -5803,7 +5803,7 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     {
         char cwd[1024];
         if (!GetCurrentDirectory(1024, cwd)) {
-            ERRLOG("CCovenSDSManager: Current directory path too big, setting local path to null");
+            OERRLOG("CCovenSDSManager: Current directory path too big, setting local path to null");
             cwd[0] = 0;
         }
         rfn.setLocalPath(cwd);

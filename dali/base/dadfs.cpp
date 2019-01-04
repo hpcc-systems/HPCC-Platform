@@ -178,7 +178,7 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partm
     if (!name||!*name) {
         if (!partmask||!*partmask) {
             partmask = "!ERROR!._$P$_of_$N$"; // could use logical tail name if I had it
-            ERRLOG("No partmask for constructPartFilename");
+            IERRLOG("No partmask for constructPartFilename");
         }
         name = expandMask(tmp,partmask,partno,partmax).str();
     }
@@ -922,7 +922,7 @@ public:
             const char *cls = clustlist.item(ci);
             Owned<IGroup> grp = queryNamedGroupStore().lookup(cls);
             if (!grp) {
-                ERRLOG("IDistributedFile::setPreferred - cannot find cluster %s",cls);
+                IERRLOG("IDistributedFile::setPreferred - cannot find cluster %s",cls);
                 return;
             }
             if (!firstgrp.get())
@@ -2996,7 +2996,7 @@ public:
                 dfCheckRoot("setProtect.1",root,conn);
             }
             else
-                ERRLOG("setProtect - cannot protect %s (no connection in file)",owner?owner:"");
+                IERRLOG("setProtect - cannot protect %s (no connection in file)",owner?owner:"");
         }
     }
 
@@ -3104,7 +3104,7 @@ public:
                 t.setown(addNamedPropTree(root,"SuperOwner","@name",superfile));
         }
         else
-            ERRLOG("linkSuperOwner - cannot link to %s (no connection in file)",superfile);
+            IERRLOG("linkSuperOwner - cannot link to %s (no connection in file)",superfile);
     }
 
     void setAccessed()
@@ -3592,13 +3592,13 @@ public:
 #endif
 
                 if (!cluster.queryGroup(&queryNamedGroupStore())) {
-                    ERRLOG("IDistributedFileDescriptor cannot set cluster for %s",logicalName.get());
+                    IERRLOG("IDistributedFileDescriptor cannot set cluster for %s",logicalName.get());
                 }
                 clusters.append(cluster);
             }
         }
         else
-            ERRLOG("No cluster specified for %s",logicalName.get());
+            OERRLOG("No cluster specified for %s",logicalName.get());
     }
 
     virtual unsigned numClusters() override
@@ -6565,12 +6565,12 @@ CDistributedFilePart::CDistributedFilePart(CDistributedFile &_parent,unsigned _p
     dirty = false;
     if (pd) {
         if (pd->isMulti())
-            ERRLOG("Multi filenames not supported in Dali DFS Part %d of %s",_part+1,_parent.queryLogicalName());
+            OERRLOG("Multi filenames not supported in Dali DFS Part %d of %s",_part+1,_parent.queryLogicalName());
         overridename.set(pd->queryOverrideName());
         setAttr(*pd->getProperties());
     }
     else
-        ERRLOG("CDistributedFilePart::CDistributedFilePart no IPartDescriptor for part");
+        IERRLOG("CDistributedFilePart::CDistributedFilePart no IPartDescriptor for part");
 }
 
 void CDistributedFilePart::Link(void) const
@@ -6635,7 +6635,7 @@ StringBuffer & CDistributedFilePart::getPartName(StringBuffer &partname)
     const char *mask=parent.queryPartMask();
     if (!mask||!*mask) {
         const char *err ="CDistributedFilePart::getPartName cannot determine part name (no mask)";
-        ERRLOG("%s", err);
+        IERRLOG("%s", err);
         throw MakeStringExceptionDirect(-1, err);
     }
     expandMask(partname,mask,partIndex,parent.numParts());
@@ -6697,7 +6697,7 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
             dir.append(defdir);
     }
     if (dir.length()==0)
-        ERRLOG("IDistributedFilePart::getPartDirectory unable to determine part directory");
+        IERRLOG("IDistributedFilePart::getPartDirectory unable to determine part directory");
     else {
         parent.adjustClusterDir(partIndex,copy,dir);
         ret.append(dir);
@@ -8190,7 +8190,7 @@ bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *u
         StringBuffer msg(logicalname.get());
         msg.append(" - cause: ");
         e->errorMessage(msg);
-        ERRLOG("%s", msg.str());
+        IERRLOG("%s", msg.str());
         if (throwException)
             throw new CDFS_Exception(DFSERR_FailedToDeleteFile, msg.str());
         e->Release();
@@ -9315,7 +9315,7 @@ class CInitGroups
                 CMachineEntryPtr *m = machinemap.getValue(computer);
                 if (!m)
                 {
-                    ERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
+                    OERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
                     return NULL;
                 }
                 ep.set((*m)->ep);
@@ -9326,7 +9326,7 @@ class CInitGroups
             }
             else
             {
-                ERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
+                OERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
                 return NULL;
             }
             switch (groupType)

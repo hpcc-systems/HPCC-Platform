@@ -76,7 +76,7 @@ public:
     {
         if (m_protocol)
             return dynamic_cast<ISocketSelectNotify*>(m_protocol);
-        DBGLOG("protocol is NULL");
+        IERRLOG("protocol is NULL");
         return NULL;
     }
 

@@ -312,26 +312,26 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         int ret;
         if ((ret = posix_memalign((void **) &heapBase, heapAlignment, memsize)) != 0) {
 
-        	switch (ret)
-        	{
-        	case EINVAL:
-        		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
-        				"(EINVAL The alignment argument was not a power of two, or was not a multiple of sizeof(void *)!)",
-        		                    (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
-        		break;
+            switch (ret)
+            {
+                case EINVAL:
+                    DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
+                           "(EINVAL The alignment argument was not a power of two, or was not a multiple of sizeof(void *)!)",
+                           (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
+                    break;
 
-        	case ENOMEM:
-        		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
-        				"(ENOMEM There was insufficient memory to fulfill the allocation request.)",
-        		        		                    (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
-        		break;
+                case ENOMEM:
+                    DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
+                           "(ENOMEM There was insufficient memory to fulfill the allocation request.)",
+                           (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
+                    break;
 
-        	default:
-        		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d",
-        		                    (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
-        		break;
+                default:
+                    DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d",
+                           (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
+                    break;
 
-        	}
+            }
             HEAPERROR("RoxieMemMgr: Unable to create heap");
         }
 
@@ -3471,7 +3471,7 @@ void Heaplet::verifySpaceList()
 {
     if (nextSpace.load(std::memory_order_relaxed) == 0)
     {
-        ERRLOG("%p@%" I64F "u: Verify failed: %p %u", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull());
+        IERRLOG("%p@%" I64F "u: Verify failed: %p %u", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull());
     }
 }
 
@@ -3479,7 +3479,7 @@ void ChunkedHeaplet::verifySpaceList()
 {
     if (nextSpace.load(std::memory_order_relaxed) == 0)
     {
-        ERRLOG("%p@%" I64F "u: Verify failed: %p %u %x %x", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull(), freeBase.load(), r_blocks.load());
+        IERRLOG("%p@%" I64F "u: Verify failed: %p %u %x %x", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull(), freeBase.load(), r_blocks.load());
     }
 }
 

@@ -1398,7 +1398,7 @@ protected: friend class CRemoteFileIO;
             else
                 msg.append("ERROR #").append(errCode);
 #ifdef _DEBUG
-            ERRLOG("%s",msg.str());
+            IERRLOG("%s",msg.str());
             PrintStackReport();
 #endif
             throw createDafsException(errCode,msg.str());

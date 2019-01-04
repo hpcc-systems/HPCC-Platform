@@ -172,7 +172,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
             case JSOCKERR_connectionless_socket: //= -9,    // accept, cancel_accept
             default:
             {
-                ERRLOG("In BufferedSocket::readline() -- Exception(%d, %s) reading from socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket->OShandle());
+                OERRLOG("In BufferedSocket::readline() -- Exception(%d, %s) reading from socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket->OShandle());
                 break;
             }
         }
@@ -185,7 +185,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
     }
     catch(...)
     {
-        ERRLOG("In BufferedSocket::readline() -- Unknown exception reading from socket(%d).", m_socket->OShandle());
+        OERRLOG("In BufferedSocket::readline() -- Unknown exception reading from socket(%d).", m_socket->OShandle());
         return -1;
     }
     
@@ -255,7 +255,7 @@ int BufferedSocket::read(char* buf, int maxlen)
                     case JSOCKERR_connectionless_socket: //= -9,    // accept, cancel_accept
                     default:
                     {
-                        ERRLOG("In BufferedSocket::readline() -- Exception(%d, %s) reading from socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket->OShandle());
+                        OERRLOG("In BufferedSocket::readline() -- Exception(%d, %s) reading from socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket->OShandle());
                         break;
                     }
                 }
@@ -265,7 +265,7 @@ int BufferedSocket::read(char* buf, int maxlen)
             }
             catch(...)
             {
-                ERRLOG("In BufferedSocket::read() -- Unknown exception reading from socket(%d).", m_socket->OShandle());
+                OERRLOG("In BufferedSocket::read() -- Unknown exception reading from socket(%d).", m_socket->OShandle());
                 return -1;
             }
 

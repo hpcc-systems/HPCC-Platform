@@ -296,7 +296,7 @@ void doTransform()
             xslbuf.loadFile(gArgv[2]);
         } catch (IException* e) {
             StringBuffer msg;
-            ERRLOG("Exception caught: %s", e->errorMessage(msg).str());
+            IERRLOG("Exception caught: %s", e->errorMessage(msg).str());
             e->Release();
             return;
         }
@@ -331,7 +331,7 @@ void doTransform()
             catch (IException* e) 
             {
                 StringBuffer msg;
-                ERRLOG("Exception caught: %s", e->errorMessage(msg).str());
+                IERRLOG("Exception caught: %s", e->errorMessage(msg).str());
                 e->Release();
             }
         }
@@ -359,7 +359,7 @@ void doTransform()
             catch (IException* e) 
             {
                 StringBuffer msg;
-                ERRLOG("Exception caught: %s", e->errorMessage(msg).str());
+                IERRLOG("Exception caught: %s", e->errorMessage(msg).str());
                 e->Release();
             }
         }
@@ -407,7 +407,7 @@ void doTransform()
             catch (IException* e) 
             {
                 StringBuffer msg;
-                ERRLOG("Exception caught: %s", e->errorMessage(msg).str());
+                IERRLOG("Exception caught: %s", e->errorMessage(msg).str());
                 e->Release();
             }
             

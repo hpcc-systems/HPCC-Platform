@@ -840,7 +840,7 @@ int verify_callback(int ok, X509_STORE_CTX *store)
             ok = true;
         }
         else
-            DBGLOG("Error with certificate: issuer=%s,subject=%s,err %d - %s", issuer, subject,err,X509_verify_cert_error_string(err));
+            OERRLOG("Error with certificate: issuer=%s,subject=%s,err %d - %s", issuer, subject,err,X509_verify_cert_error_string(err));
     }
     return ok;
 }

@@ -241,7 +241,7 @@ private:
             m_xmlDoc = xmlParseDoc((const unsigned char *)xmldoc);
             if (m_xmlDoc == nullptr)
             {
-                ERRLOG("XpathProcessor:setxmldoc Error: Unable to parse XMLLib document");
+                OERRLOG("XpathProcessor:setxmldoc Error: Unable to parse XMLLib document");
                 return false;
             }
 
@@ -249,7 +249,7 @@ private:
             m_xpathContext = xmlXPathNewContext(m_xmlDoc);
             if(m_xpathContext == nullptr)
             {
-                ERRLOG("XpathProcessor:setxmldoc: Error: Unable to create new XMLLib XPath context");
+                OERRLOG("XpathProcessor:setxmldoc: Error: Unable to create new XMLLib XPath context");
                 return false;
             }
             return true;

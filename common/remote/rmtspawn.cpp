@@ -248,7 +248,7 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
     if (error)
         throw error;
     if (!result)
-        ERRLOG("Failed to connect to slave (%d)", replyTag);
+        OERRLOG("Failed to connect to slave (%d)", replyTag);
     return result;
 }
 

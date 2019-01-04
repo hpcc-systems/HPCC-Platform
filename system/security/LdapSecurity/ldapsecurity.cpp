@@ -448,7 +448,7 @@ ISecResource* CLdapSecResourceList::addResource(const char * name)
 {
     if(!name || !*name)
     {
-        DBGLOG("CLdapSecResourceList::addResource resource name must be provided");
+        OWARNLOG("CLdapSecResourceList::addResource resource name must be provided");
         return NULL;
     }
 
@@ -467,13 +467,13 @@ void CLdapSecResourceList::addResource(ISecResource * resource)
 {
     if(resource == NULL)
     {
-        DBGLOG("CLdapSecResourceList::addResource2 ISecResource cannot be NULL");
+        OWARNLOG("CLdapSecResourceList::addResource2 ISecResource cannot be NULL");
         return;
     }
     const char* name = resource->getName();
     if(!name || !*name)
     {
-        DBGLOG("CLdapSecResourceList::addResource2 resource name must be provided");
+        OWARNLOG("CLdapSecResourceList::addResource2 resource name must be provided");
         return;
     }
 
@@ -494,7 +494,7 @@ ISecResource * CLdapSecResourceList::getResource(const char * Resource)
 {
     if(!Resource || !*Resource)
     {
-        DBGLOG("CLdapSecResourceList::getResource resource name must be provided");
+        OWARNLOG("CLdapSecResourceList::getResource resource name must be provided");
         return NULL;
     }
 
@@ -537,7 +537,7 @@ ISecProperty* CLdapSecResourceList::findProperty(const char* name)
 {
     if(!name || !*name)
     {
-        DBGLOG("CLdapSecResourceList::findProperty property name must be provided");
+        OWARNLOG("CLdapSecResourceList::findProperty property name must be provided");
         return NULL;
     }
     return m_rmap[name];
@@ -648,7 +648,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
 {
     if(!user)
     {
-        DBGLOG("CLdapSecManager::authenticate user cannot be NULL");
+        OWARNLOG("CLdapSecManager::authenticate user cannot be NULL");
         return false;
     }
 
@@ -1116,7 +1116,7 @@ ISecUser * CLdapSecManager::findUser(const char * username)
 {
     if(username == NULL || strlen(username) == 0)
     {
-        DBGLOG("findUser - username is empty");
+        OWARNLOG("findUser - username is empty");
         return NULL;
     }
 
@@ -1195,7 +1195,7 @@ void CLdapSecManager::setExtraParam(const char * name, const char * value)
 {
     if(name == NULL || name[0] == '\0')
     {
-        DBGLOG("CLdapSecManager::setExtraParam name must be provided");
+        OWARNLOG("CLdapSecManager::setExtraParam name must be provided");
         return;
     }
 

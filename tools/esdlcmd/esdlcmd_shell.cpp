@@ -126,7 +126,7 @@ int EsdlCMDShell::run()
 #ifndef _DEBUG
     catch (...)
     {
-        ERRLOG("Unexpected exception\n");
+        OERRLOG("Unexpected exception\n");
         return 4;
     }
 #endif

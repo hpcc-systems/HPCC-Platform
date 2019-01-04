@@ -800,7 +800,7 @@ void checkRequest(IEspContext& ctx)
         {
             if(user->getStatus()!=SecUserStatus_Inhouse)
             {
-                ERRLOG("User %s trying to access unauthorized feature: internal", user->getName() ? user->getName() : ctx.queryUserId());
+                OERRLOG("User %s trying to access unauthorized feature: internal", user->getName() ? user->getName() : ctx.queryUserId());
                 throw MakeStringException(400,"Bad request");
             }
         }

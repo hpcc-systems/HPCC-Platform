@@ -2499,7 +2499,7 @@ public:
             }
             if (err.length())
             {
-                ERRLOG("%s", err.str());
+                IERRLOG("%s", err.str());
                 CPPUNIT_FAIL(err.str());
             }
         }

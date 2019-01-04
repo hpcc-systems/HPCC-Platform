@@ -225,7 +225,7 @@ int CDomXmlValidator::setXmlSource(const char* pszFile)
             loadFile(m_xmlBuf, pszFile);
         } catch (IException* e) {
             StringBuffer msg;
-            DBGLOG("Exception: %s\n", e->errorMessage(msg).str());
+            WARNLOG("Exception loading xml source file(%s): %s\n", pszFile, e->errorMessage(msg).str());
             e->Release();
             return 0; 
         }
@@ -251,7 +251,7 @@ int CDomXmlValidator::setSchemaSource(const char* pszFile)
             loadFile(m_xsdBuf, pszFile);
         } catch (IException* e) {
             StringBuffer msg;
-            DBGLOG("Exception: %s\n", e->errorMessage(msg).str());
+            WARNLOG("Exception loading xml source file(%s): %s\n", pszFile, e->errorMessage(msg).str());
             e->Release();
             return 0; 
         }

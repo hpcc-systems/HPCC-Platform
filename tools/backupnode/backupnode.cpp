@@ -62,7 +62,7 @@ static bool inexactDateMatch = false;
 
 #ifdef USE_JLOG // and why not?
 #define println PROGLOG
-#define printerr ERRLOG
+#define printerr OERRLOG
 #else
 static void println(const char *format, ...) __attribute__((format(printf, 1, 2)))
 {

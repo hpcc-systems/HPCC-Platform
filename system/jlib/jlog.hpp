@@ -803,8 +803,8 @@ inline void DISLOG(char const * format, ...)
     va_end(args);
 }
 
-inline void ERRLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
-inline void ERRLOG(char const * format, ...) 
+inline void UERRLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
+inline void UERRLOG(char const * format, ...) 
 {
     va_list args;
     va_start(args, format);
@@ -839,6 +839,15 @@ inline void WARNLOG(char const * format, ...)
     va_end(args);
 }
 
+inline void OWARNLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
+inline void OWARNLOG(char const * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    VALOG(MCoperatorWarning, unknownJob, format, args);
+    va_end(args);
+}
+
 inline void PROGLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void PROGLOG(char const * format, ...)
 {
@@ -866,14 +875,24 @@ inline void DISLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
-inline void ERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
-inline void ERRLOG(LogMsgCode code, char const * format, ...)
+inline void UERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
+inline void UERRLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
     VALOG(MCuserError, unknownJob, code, format, args);
     va_end(args);
 }
+
+inline void OERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
+inline void OERRLOG(LogMsgCode code, char const * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    VALOG(MCoperatorError, unknownJob, code, format, args);
+    va_end(args);
+}
+
 
 inline void IERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
 inline void IERRLOG(LogMsgCode code, char const * format, ...)
@@ -905,6 +924,18 @@ inline void PROGLOG(LogMsgCode code, char const * format, ...)
 inline IException *DBGLOG(IException *except, const char *prefix=NULL)
 {
     LOG(MCdebugInfo, except, prefix);
+    return except;
+}
+
+inline IException *UERRLOG(IException *except, const char *prefix=NULL)
+{
+    LOG(MCuserError, except, prefix);
+    return except;
+}
+
+inline IException *OERRLOG(IException *except, const char *prefix=NULL)
+{
+    LOG(MCoperatorError, except, prefix);
     return except;
 }
 
@@ -952,7 +983,7 @@ extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char c
 /* The simplest logging commands are:                                      */
 /*   DBGLOG(format, ...) [for temporary logs while debugging, MCdebugInfo] */
 /*   DISLOG(format, ...) [for disasters, MCdisaster]                       */
-/*   ERRLOG(format, ...) [for errors reported to user, MCuserError]        */
+/*   UERRLOG(format, ...) [for errors reported to user, MCuserError]        */
 /*   OERRLOG(format, ...) [for errors reported to operator]                */
 /*   IERRLOG(format, ...) [for errors reported to internal & programmer]   */
 /*   WARNLOG(format, ...) [for warnings reported to user, MCuserWarning]   */
@@ -960,7 +991,7 @@ extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char c
 /* There are equivalent commands which take a LogMsgCode:                  */
 /*   DBGLOG(code, format, ...)                                             */
 /*   DISLOG(code, format, ...)                                             */
-/*   ERRLOG(code, format, ...)                                             */
+/*   UERRLOG(code, format, ...)                                             */
 /*   OERRLOG(code, format, ...)                                            */
 /*   IERRLOG(code, format, ...)                                            */
 /*   WARNLOG(code, format, ...)                                            */

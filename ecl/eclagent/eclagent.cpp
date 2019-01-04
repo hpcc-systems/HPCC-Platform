@@ -215,7 +215,7 @@ public:
                 ++port;
             else
             {
-                DBGLOG("No DEBUG ports currently available in range %d - %d",HTHOR_DEBUG_BASE_PORT, HTHOR_DEBUG_BASE_PORT + HTHOR_DEBUG_PORT_RANGE); // MORE - or has terminated?
+                OWARNLOG("No DEBUG ports currently available in range %d - %d",HTHOR_DEBUG_BASE_PORT, HTHOR_DEBUG_BASE_PORT + HTHOR_DEBUG_PORT_RANGE); // MORE - or has terminated?
                 MilliSleep(5000);
                 port = HTHOR_DEBUG_BASE_PORT;
             }
@@ -349,7 +349,7 @@ public:
                 if (traceLevel > 8)
                 {
                     StringBuffer b;
-                    DBGLOG("No data reading query from socket");
+                    OWARNLOG("No data reading query from socket");
                 }
                 client.clear();
                 return;
@@ -361,7 +361,7 @@ public:
             if (traceLevel > 0)
             {
                 StringBuffer b;
-                DBGLOG("Error reading query from socket: %s", E->errorMessage(b).str());
+                IERRLOG("Error reading query from socket: %s", E->errorMessage(b).str());
             }
             E->Release();
             client.clear();
@@ -387,7 +387,7 @@ public:
             catch (IException *E)
             {
                 StringBuffer s;
-                DBGLOG("ERROR: Invalid XML received from %s:%s", E->errorMessage(s).str(), rawText.str());
+                OERRLOG("ERROR: Invalid XML received from %s:%s", E->errorMessage(s).str(), rawText.str());
                 throw;
             }
             bool isRequest = false;
@@ -422,7 +422,7 @@ public:
 
     virtual bool stop() override
     {
-        ERRLOG("CHThorDebugSocketWorker stopped with queries active");
+        IERRLOG("CHThorDebugSocketWorker stopped with queries active");
         return true; 
     }
 
@@ -670,7 +670,7 @@ void EclAgent::unlockWorkUnit()
     {
         IWorkUnit *w = wuWrite.getClear();
         if (!w->Release()) 
-            ERRLOG("EclAgent::unlockWorkUnit workunit not released");
+            IERRLOG("EclAgent::unlockWorkUnit workunit not released");
     }
 }
 
@@ -2414,7 +2414,7 @@ void EclAgent::logException(ErrorSeverity severity, unsigned code, const char * 
 {
     addException(severity, "eclagent", code, text, NULL, 0, 0, true, isAbort);
     if (severity == SeverityError)
-        ERRLOG(code, "%s", text);
+        IERRLOG(code, "%s", text);
 }
 
 void EclAgent::addException(ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort)
@@ -3173,7 +3173,7 @@ void EclAgent::abortMonitor()
             while (abortmonitor->sem.wait(ABORT_DEADMAN_INTERVAL*1000))
                 if (abortmonitor->stopping)
                     return; // stopped in time
-            ERRLOG("EclAgent failed to abort within %ds - killing process",ABORT_DEADMAN_INTERVAL);
+            IERRLOG("EclAgent failed to abort within %ds - killing process",ABORT_DEADMAN_INTERVAL);
             break;
         }
     }

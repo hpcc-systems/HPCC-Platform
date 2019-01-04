@@ -76,12 +76,12 @@ bool WuResubmit(const char *wuid)
     Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
     if (!wu)
     {
-        ERRLOG("WuResubmit(%s): could not find workunit",wuid);
+        OERRLOG("WuResubmit(%s): could not find workunit",wuid);
         return false;
     }
     if (wu->getState()!=WUStateFailed)
     {
-        ERRLOG("WuResubmit(%s): could not resubmit as workunit state is '%s'", wuid, wu->queryStateDesc());
+        OERRLOG("WuResubmit(%s): could not resubmit as workunit state is '%s'", wuid, wu->queryStateDesc());
         return false;
     }
     SCMStringBuffer daToken;
@@ -138,7 +138,7 @@ protected:
     {
         Owned<IRemoteConnection> conn = querySDS().connect("/SwapNode", myProcessSession(), RTM_LOCK_WRITE|(create?RTM_CREATE_QUERY:0), 1000*60*5);
         if (!conn) {
-            ERRLOG("SWAPNODE: could not connect to /SwapNode branch");
+            OERRLOG("SWAPNODE: could not connect to /SwapNode branch");
             return NULL;
         }
         StringBuffer xpath;
@@ -159,11 +159,11 @@ protected:
         Owned<INode> newNode = createINode(newip);
         Owned<INode> oldNode = createINode(oldip);
         if (!group->isMember(oldNode)) {
-            ERRLOG("Node %s is not part of group %s", oldip, groupName.get());
+            OERRLOG("Node %s is not part of group %s", oldip, groupName.get());
             return false;
         }
         if (group->isMember(newNode)) {
-            ERRLOG("Node %s is already part of group %s", newip, groupName.get());
+            OERRLOG("Node %s is already part of group %s", newip, groupName.get());
             return false;
         }
         queryNamedGroupStore().swapNode(oldNode->endpoint(),newNode->endpoint());
@@ -297,7 +297,7 @@ public:
             if (out)
                 out->append("No swapnode info\n");
             else
-                ERRLOG("No swapnode info");
+                OERRLOG("No swapnode info");
             return;
         }
         StringBuffer line;
@@ -431,7 +431,7 @@ public:
                         ep.getIpText(ips);
                         int r = (int)grp->rank(ep);
                         if (r<0) {  // shouldn't occur
-                            ERRLOG("SWAPNODE node %s not found in group %s",ips.str(),groupName.get());
+                            OERRLOG("SWAPNODE node %s not found in group %s",ips.str(),groupName.get());
                             continue;
                         }
                         PROGLOG("CheckSwapNode FAILED(%d) %s : %s",failedcodes.item(i),ips.str(),failedmessages.item(i));
@@ -604,13 +604,13 @@ class CAutoSwapNode : public CSwapNode
             xpath.clear().appendf("BadNode[@netAddress=\"%s\"]",ips.str());
             IPropertyTree *bnt = info->queryPropTree(xpath.str());
             if (!bnt) {
-                ERRLOG("SWAPNODE node %s not found in swapnode info!",ips.str());
+                OERRLOG("SWAPNODE node %s not found in swapnode info!",ips.str());
                 return false;
             }
             bnt->setProp("@time",ts.str());
             int r = bnt->getPropInt("@rank",-1);
             if ((int)r<0) { // shouldn't occur
-                ERRLOG("SWAPNODE node %s rank not found in group %s",ips.str(),groupName.get());
+                OERRLOG("SWAPNODE node %s rank not found in group %s",ips.str(),groupName.get());
                 return false;
             }
             badrank.append((unsigned)r);
@@ -622,7 +622,7 @@ class CAutoSwapNode : public CSwapNode
                     (r1==(r+1)%grp->ordinality())) {
                     StringBuffer ips1;
                     ep1.getIpText(ips1);
-                    ERRLOG("SWAPNODE adjacent nodes %d (%s) and %d (%s) are bad!",r+1,ips.str(),r1+1,ips1.str());
+                    OERRLOG("SWAPNODE adjacent nodes %d (%s) and %d (%s) are bad!",r+1,ips.str(),r1+1,ips1.str());
                     abort = true;
                 }
             }
@@ -653,13 +653,13 @@ class CAutoSwapNode : public CSwapNode
                 badep.port = 0;
                 if (swappedep.equals(badep)) {
                     // not sure if *really* want this
-                    ERRLOG("Node %d (%s) was swapped out on %s (too recent)",badr+1,ips,dt1s);
+                    OERRLOG("Node %d (%s) was swapped out on %s (too recent)",badr+1,ips,dt1s);
                     abort = true;
                 }
                 else if ((badr==(r1+1)%grp->ordinality())||
                     (r1==(badr+1)%grp->ordinality())) {
                     StringBuffer bs;
-                    ERRLOG("SWAPNODE adjacent node to bad node %d (%s), %d (%s) was swapped on %s (too recent) !",badr+1,badep.getIpText(bs).str(),r1+1,ips,dt1s);
+                    OERRLOG("SWAPNODE adjacent node to bad node %d (%s), %d (%s) was swapped on %s (too recent) !",badr+1,badep.getIpText(bs).str(),r1+1,ips,dt1s);
                     abort = true;
                 }
             }
@@ -673,7 +673,7 @@ class CAutoSwapNode : public CSwapNode
         if (!abort) {
             spareGroup.setown(queryNamedGroupStore().lookup(spareGroupName));
             if (!spareGroup) {
-                ERRLOG("SWAPNODE could not find spare group %s", spareGroupName.get());
+                OERRLOG("SWAPNODE could not find spare group %s", spareGroupName.get());
                 abort = true;
             }
             else
@@ -689,14 +689,14 @@ class CAutoSwapNode : public CSwapNode
                     }
                     else {
                         abort = true;
-                        ERRLOG("SWAPNODE no spare available to swap for node %d (%s)",badrank.item(i3)+1,from.str());
+                        OERRLOG("SWAPNODE no spare available to swap for node %d (%s)",badrank.item(i3)+1,from.str());
                     }
                 }
             }
         }
         // now list what can do
         if (abort) {
-            ERRLOG("SWAPNODE: problems found (listed above), no swap %s be attempted",intent);
+            OERRLOG("SWAPNODE: problems found (listed above), no swap %s be attempted",intent);
             return false;
         }
         if (dryRun)

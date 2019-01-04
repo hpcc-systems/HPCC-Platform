@@ -198,7 +198,7 @@ static void unlock_file(const char *lfpath)
         attempt++;
         Sleep(500);
     }
-    ERRLOG("NamedMutex cannot unlock file (%d)",errno);
+    IERRLOG("NamedMutex cannot unlock file (%d)",errno);
 }
 
 static CriticalSection lockPrefixCS;

@@ -225,7 +225,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         if (!ep.set(m_host.get(), m_port))
         {
             errmsg.appendf("Bad host name/ip: %s", m_host.get());
-            ERRLOG("%s", errmsg.str());
+            UERRLOG("%s", errmsg.str());
             return -1;
         }
         //TODO: should it be 443 for HTTPS??
@@ -237,7 +237,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         if (!ep.set(m_proxy.str()))
         {
             errmsg.appendf("Bad proxy name/ip: %s", m_proxy.str());
-            ERRLOG("%s", errmsg.str());
+            UERRLOG("%s", errmsg.str());
             return -1;
         }
         //TODO: should it be 443 for HTTPS??
@@ -279,7 +279,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         catch(IException *e)
         {
             StringBuffer url;
-            ERRLOG("Error connecting to %s", ep.getUrlStr(url).str());
+            UERRLOG("Error connecting to %s", ep.getUrlStr(url).str());
             DBGLOG(e);
             e->Release();
             m_socket = nullptr;
@@ -288,7 +288,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         catch(...)
         {
             StringBuffer url;
-            ERRLOG("Unknown exception connecting to %s", ep.getUrlStr(url).str());
+            UERRLOG("Unknown exception connecting to %s", ep.getUrlStr(url).str());
             m_socket = nullptr;
             return -1;
         }
@@ -894,7 +894,7 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
             response.set_status(SOAP_CLIENT_ERROR);
 
         response.set_err(errmsg.str());
-        DBGLOG("SOAP_CLIENT_ERROR: %s", errmsg.str());
+        UERRLOG("SOAP_CLIENT_ERROR: %s", errmsg.str());
         return HttpClientErrCode::Error;
     }
     else if(statusClass == '5')
@@ -905,13 +905,13 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
         parseSoapFault(httpresponse->getContent(content),errmsg);
 
         response.set_err(errmsg.str());
-        DBGLOG("SOAP_SERVER_ERROR: %s", errmsg.str());
+        UERRLOG("SOAP_SERVER_ERROR: %s", errmsg.str());
 
         return HttpClientErrCode::Error;
     }
     else
     {
-        DBGLOG("%s", errmsg.str());
+        UERRLOG("%s", errmsg.str());
 
         StringBuffer msg;
         if (me->ordinality())
@@ -927,7 +927,7 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
             }
 
         }
-        DBGLOG("SOAP_RPC_ERROR = %s", msg.str());
+        UERRLOG("SOAP_RPC_ERROR = %s", msg.str());
         response.set_status(SOAP_RPC_ERROR);
         response.set_err(msg);
         return HttpClientErrCode::Error;

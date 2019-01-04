@@ -143,7 +143,7 @@ class CdelayedTerminate: public Thread // slightly obfuscated stop code
     int run()
     {
         while (getRandom()%711!=0) getRandom(); // look busy
-        ERRLOG("Server fault %d",(int)err);
+        IERRLOG("Server fault %d",(int)err);
         while (getRandom()%7!=0) Sleep(1);
         exit(0);
     }
@@ -1262,7 +1262,7 @@ public:
     static CLdapWorkItem *get(IDaliLdapConnection *_ldapconn,Semaphore &_threaddone)
     {
         if (!_threaddone.wait(1000*60*5)) {
-            ERRLOG("Too many stalled LDAP threads");
+            IERRLOG("Too many stalled LDAP threads");
             return NULL;
         }
         return new CLdapWorkItem(_ldapconn,_threaddone);
@@ -1698,7 +1698,7 @@ protected:
         MemoryBuffer mb;
         bool abort=true;
         mb.append(abort);
-        ERRLOG("Session Manager - adding unknown session ID %" I64F "x", nstub->getSessionId());
+        OERRLOG("Session Manager - adding unknown session ID %" I64F "x", nstub->getSessionId());
         subs->notify(mb); 
         delete nstub;
         return;

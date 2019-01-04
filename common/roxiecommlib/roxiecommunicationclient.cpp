@@ -306,7 +306,7 @@ public:
             StringBuffer err;
             err.appendf("%d ", errCode);
             e->errorMessage(err);
-            DBGLOG("ERROR loading query info directly to roxie %s", err.str());
+            IERRLOG("ERROR loading query info directly to roxie %s", err.str());
             e->Release();
         }
     }

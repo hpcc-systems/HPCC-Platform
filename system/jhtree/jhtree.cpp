@@ -1108,7 +1108,7 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
     }
     catch (...)
     {
-        DBGLOG("Unknown exception in key %s, position 0x%" I64F "x", name.get(), pos);
+        OERRLOG("Unknown exception in key %s, position 0x%" I64F "x", name.get(), pos);
         throw;
     }
 }

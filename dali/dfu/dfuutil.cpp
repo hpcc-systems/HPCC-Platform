@@ -203,7 +203,7 @@ public:
                         break;
                 }
                 if (!got) {
-                    ERRLOG("copyLogicalFile: part %d missing any copies",pn+1);
+                    OERRLOG("copyLogicalFile: part %d missing any copies",pn+1);
                     if (!exc.get())
                         exc.setown(MakeStringException(-1,"copyLogicalFile: part %d missing any copies",pn+1));
                     return;
@@ -348,7 +348,7 @@ public:
                         break;
                 }
                 if (cpy>=nc) {
-                    ERRLOG("replicateLogicalFile: %s part %d missing any copies",filename,pn+1);
+                    OERRLOG("replicateLogicalFile: %s part %d missing any copies",filename,pn+1);
                     if (!exc.get())
                         exc.setown(MakeStringException(-1,"replicateLogicalFile: %s part %d missing any copies",filename,pn+1));
                     return;

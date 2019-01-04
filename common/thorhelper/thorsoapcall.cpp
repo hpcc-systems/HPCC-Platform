@@ -632,7 +632,7 @@ public:
                 excptEntry->getStringX(len, message, "Message");
                 StringBuffer mstr(len, message);
                 rtlFree(message);
-                DBGLOG("Roxie exception: %s", mstr.str());
+                IERRLOG("Roxie exception: %s", mstr.str());
                 e.setown(new ReceivedRoxieException(code, mstr.str()));
                 parent.processException(url, parent.getInputRows().item(idx), e.getLink());
             }

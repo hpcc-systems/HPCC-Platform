@@ -2228,7 +2228,7 @@ void CMPServer::checkTagOK(mptag_t tag)
     if ((int)tag<=(int)TAG_REPLY_BASE) {
         int dif = (int)TAG_REPLY_BASE-(int)tag;
         if (dif%16!=RTsalt) {
-            ERRLOG("**Invalid MP tag used");
+            IERRLOG("**Invalid MP tag used");
             PrintStackReport();
         }
     }

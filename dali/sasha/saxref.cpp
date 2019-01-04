@@ -356,7 +356,7 @@ struct cDirDesc
             cMisplacedRec *mp = file->misplaced;
             while (mp) {
                 if (mp->eq(drv,pf,node,numnodes)) {
-                    ERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,name);
+                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,name);
                     return NULL;
                 }
                 mp = mp->next;
@@ -370,7 +370,7 @@ struct cDirDesc
             // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
         }
         if (file->setpresent(drv,pf)) {
-            ERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,name);
+            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,name);
             file = NULL;
         }
         return file;
@@ -513,7 +513,7 @@ public:
                 errors.append(*new cMessage("","error limit exceeded (1000), truncating"));
         }
 
-        ERRLOG("%s: %s",lname,line.str());
+        OERRLOG("%s: %s",lname,line.str());
     }
 
     void warn(const char *lname,const char * format, ...) __attribute__((format(printf, 3, 4)))
@@ -747,7 +747,7 @@ public:
         GroupType groupType;
         grp.setown(queryNamedGroupStore().lookup(grpstr.str(), basedir, groupType));
         if (!grp) {
-            ERRLOG(LOGPFX "Cluster %s node group %s not found",clustname.get(),grpstr.str());
+            OERRLOG(LOGPFX "Cluster %s node group %s not found",clustname.get(),grpstr.str());
             return false;
         }
         ForEachItemIn(i1,done) {
@@ -1708,7 +1708,7 @@ public:
                 errors.append(*new cMessage("","error limit exceeded (1000), truncating"));
         }
 
-        ERRLOG("%s: %s",lname,line.str());
+        OERRLOG("%s: %s",lname,line.str());
     }
 
     void checkSuperFileLinkage()
@@ -2043,7 +2043,7 @@ public:
         }
         synchronized block(runmutex);   // hopefully stopped should stop
         if (!join(1000*60*3))
-            ERRLOG("CSashaXRefServer aborted");
+            OERRLOG("CSashaXRefServer aborted");
     }
 
     void runXRef(const char *clustcsl,bool updateeclwatch,bool byscheduler)
@@ -2083,7 +2083,7 @@ public:
         }
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (!conn) {
-            ERRLOG("Could not connect to /Environment/Software");
+            OERRLOG("Could not connect to /Environment/Software");
             return;
         }
         StringArray groups;
@@ -2288,7 +2288,7 @@ public:
         }
         synchronized block(runmutex);   // hopefully stopped should stop
         if (!join(1000*60*3))
-            ERRLOG("CSashaExpiryServer aborted");
+            OERRLOG("CSashaExpiryServer aborted");
     }
 
     void runExpiry()

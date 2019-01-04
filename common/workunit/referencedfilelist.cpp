@@ -344,7 +344,7 @@ void ReferencedFile::resolveLocal(const char *dstCluster, const char *srcCluster
     else
     {
         flags |= RefFileNotFound;
-        DBGLOG("ReferencedFile not found (local) %s", logicalName.str());
+        OERRLOG("ReferencedFile not found (local) %s", logicalName.str());
     }
 }
 
@@ -455,7 +455,7 @@ void ReferencedFile::cloneInfo(unsigned updateFlags, IDFUhelper *helper, IUserDe
     catch (...)
     {
         flags |= RefFileCopyInfoFailed;
-        DBGLOG("ReferencedFile Unknown error copying file info for [%s::] %s, from %s on dfs-dali %s", filePrefix.str(), logicalName.str(), fileSrcCluster.length() ? fileSrcCluster.get() : "*", daliip.str());
+        IERRLOG("ReferencedFile Unknown error copying file info for [%s::] %s, from %s on dfs-dali %s", filePrefix.str(), logicalName.str(), fileSrcCluster.length() ? fileSrcCluster.get() : "*", daliip.str());
     }
 }
 
@@ -506,7 +506,7 @@ void ReferencedFile::cloneSuperInfo(unsigned updateFlags, ReferencedFileList *li
     catch (...)
     {
         flags |= RefFileCopyInfoFailed;
-        DBGLOG("ReferencedFile Unknown error copying superfile info for %s", logicalName.str());
+        IERRLOG("ReferencedFile Unknown error copying superfile info for %s", logicalName.str());
     }
 }
 

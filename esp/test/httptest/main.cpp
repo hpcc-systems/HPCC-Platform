@@ -288,12 +288,12 @@ int main(int argc, char* argv[])
     catch(IException *excpt)
     {
         StringBuffer errMsg;
-        DBGLOG("Error - %d:%s", excpt->errorCode(), excpt->errorMessage(errMsg).str());
+        IERRLOG("Error - %d:%s", excpt->errorCode(), excpt->errorMessage(errMsg).str());
         return -1;
     }
     catch(...)
     {
-        DBGLOG("Unknown exception");
+        IERRLOG("Unknown exception");
         return -1;
     }
 

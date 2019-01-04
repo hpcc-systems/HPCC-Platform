@@ -86,7 +86,7 @@ int Schedule::run()
                     catch(IException *e)
                     {
                         StringBuffer msg;
-                        ERRLOG("Exception %d:%s in WsWorkunits Schedule::run", e->errorCode(), e->errorMessage(msg).str());
+                        IERRLOG("Exception %d:%s in WsWorkunits Schedule::run", e->errorCode(), e->errorMessage(msg).str());
                         e->Release();
                     }
                     itr->next();
@@ -95,12 +95,12 @@ int Schedule::run()
             catch(IException *e)
             {
                 StringBuffer msg;
-                ERRLOG("Exception %d:%s in WS_FS Schedule::run", e->errorCode(), e->errorMessage(msg).str());
+                IERRLOG("Exception %d:%s in WS_FS Schedule::run", e->errorCode(), e->errorMessage(msg).str());
                 e->Release();
             }
             catch(...)
             {
-                ERRLOG("Unknown exception in WS_FS Schedule::run");
+                IERRLOG("Unknown exception in WS_FS Schedule::run");
             }
         }
         else
@@ -163,7 +163,7 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
 
     if (!daliClientActive())
     {
-        ERRLOG("No Dali Connection Active.");
+        OERRLOG("No Dali Connection Active.");
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
 

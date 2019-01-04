@@ -114,7 +114,7 @@ public:
                     m_waitForExit.wait(1000); //if detached, should we wait longer?
                 else
                 {
-                    DBGLOG("Exiting ESP -- Lost DALI connection!");
+                    OERRLOG("Exiting ESP -- Lost DALI connection!");
                     break;
                 }
             }

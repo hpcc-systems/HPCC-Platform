@@ -4691,7 +4691,7 @@ public:
         {
             StringBuffer errors;
             E->errorMessage(errors);
-            DBGLOG("%s File error = %s", (isLoadDataOnly) ? "LOADDATAONLY" : "SUSPENDED QUERY", errors.str());
+            OERRLOG("%s File error = %s", (isLoadDataOnly) ? "LOADDATAONLY" : "SUSPENDED QUERY", errors.str());
             E->Release();
         }
     }

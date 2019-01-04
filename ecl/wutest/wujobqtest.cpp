@@ -475,7 +475,7 @@ static void cmd_activity(IJobQueue *queue,const char *qname)
     xpath.appendf("Server[@queue=\"%s\"]/WorkUnit",qname);
     Owned<IRemoteConnection> conn = querySDS().connect("Status/Servers", myProcessSession(), 0, 100000);
     if (!conn) {
-        ERRLOG("cannot connect to Status/Servers");
+        OERRLOG("cannot connect to Status/Servers");
         return;
     }
     for (;;) {

@@ -723,7 +723,7 @@ void initMyNode(unsigned short port)
         SocketEndpoint ep(port);
         MyNode = new MPNode(ep);
         if (ep.isLoopBack()) {
-            DBGLOG("MP Warning - localhost used for MP host address, NIC adaptor not identified");
+            OWARNLOG("MP Warning - localhost used for MP host address, NIC adaptor not identified");
         }
         queryNullNode();
     }
