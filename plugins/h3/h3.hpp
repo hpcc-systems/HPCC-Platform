@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef ECL_H3_SYNC_INCL
-#define ECL_H3_SYNC_INCL
+#ifndef H3_INCL
+#define H3_INCL
 
 #ifdef _WIN32
 #define ECL_H3_CALL _cdecl
@@ -36,15 +36,17 @@
 extern "C"
 {
     ECL_H3_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
-    ECL_H3_API void setPluginContext(IPluginContext * _ctx);
+    ECL_H3_API void setPluginContext(IPluginContext *_ctx);
 }
 
 extern "C++"
 {
-namespace ExamplePlugin {
-    //--------------------------SET----------------------------------------
-    ECL_H3_API unsigned ECL_H3_CALL func1  (ICodeContext * _ctx, const char * param1, const char * param2, unsigned param3);
-    ECL_H3_API void ECL_H3_CALL func2 (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * param1, const char * param2, size32_t param3ValueLength, const char * param3Value);
-}
+    namespace h3
+    {
+        //--------------------------SET----------------------------------------
+        // ECL_H3_API unsigned ECL_H3_CALL func1  (ICodeContext * _ctx, const char * param1, const char * param2, unsigned param3);
+        // ECL_H3_API void ECL_H3_CALL func2 (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * param1, const char * param2, size32_t param3ValueLength, const char * param3Value);
+        ECL_H3_API uint64_t ECL_H3_CALL latLngToH3(ICodeContext *_ctx, float lat, float lng, uint32_t resolution);
+    } // namespace h3
 }
 #endif

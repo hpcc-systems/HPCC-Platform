@@ -45,7 +45,7 @@ ECL_H3_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
-namespace ExamplePlugin
+namespace h3
 {
 
 //--------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ ECL_H3_API void ECL_H3_CALL func2(ICodeContext *_ctx, size32_t &returnLength, ch
     return;
 }
 */
-ECL_H3_API uint64_t ECL_H3_CALL eclGeoToH3(ICodeContext *_ctx, float lat, float lng, uint32_t resolution)
+ECL_H3_API uint64_t ECL_H3_CALL latLngToH3(ICodeContext *_ctx, float lat, float lng, uint32_t resolution)
 {
     GeoCoord location;
     location.lat = degsToRads(lat);
@@ -75,4 +75,4 @@ ECL_H3_API uint64_t ECL_H3_CALL eclGeoToH3(ICodeContext *_ctx, float lat, float 
     return indexed;
 }
 
-} // namespace ExamplePlugin
+} // namespace h3

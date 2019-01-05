@@ -24,18 +24,27 @@
 
 project(h3)
 
-if(H3)
-    include("uber-h3/cmake/CheckAlloca.cmake")
-    include("uber-h3/cmake/CheckVLA.cmake")
-
-    check_alloca(have_alloca)
-    check_vla(have_vla)
+if(USE_H3)
 
     set(SRCS
-        ./uber-h3/src/h3lib/lib/algos.c
-
         h3.hpp
-        h3.cpp)
+        h3.cpp
+        uber-h3/src/h3lib/lib/algos.c
+        uber-h3/src/h3lib/lib/coordijk.c
+        uber-h3/src/h3lib/lib/bbox.c
+        uber-h3/src/h3lib/lib/polygon.c
+        uber-h3/src/h3lib/lib/h3Index.c
+        uber-h3/src/h3lib/lib/vec2d.c
+        uber-h3/src/h3lib/lib/vec3d.c
+        uber-h3/src/h3lib/lib/linkedGeo.c
+        uber-h3/src/h3lib/lib/localij.c
+        uber-h3/src/h3lib/lib/geoCoord.c
+        uber-h3/src/h3lib/lib/h3UniEdge.c
+        uber-h3/src/h3lib/lib/mathExtensions.c
+        uber-h3/src/h3lib/lib/vertexGraph.c
+        uber-h3/src/h3lib/lib/faceijk.c
+        uber-h3/src/h3lib/lib/baseCells.c        
+        )
 
     include_directories(
         ./../../system/include
@@ -55,12 +64,7 @@ if(H3)
         set_target_properties(h3 PROPERTIES NO_SONAME 1)
     endif()
 
-    if(have_alloca)
-        target_compile_definitions(h3 PUBLIC H3_HAVE_ALLOCA)
-    endif()
-    if(have_vla)
-        target_compile_definitions(h3 PUBLIC H3_HAVE_VLA)
-    endif()
+    target_compile_definitions(h3 PUBLIC H3_HAVE_ALLOCA)
 
     install(
         TARGETS h3
@@ -70,9 +74,9 @@ if(H3)
         eclrtl
         jlib
         ${EXAMPLE_PLUGIN_DEP_LIBRARIES})
-endif()
+endif(USE_H3)
 
-if(PLATFORM)
+if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_h3.ecllib
         DESTINATION plugins
