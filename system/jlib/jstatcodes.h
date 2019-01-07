@@ -213,6 +213,20 @@ enum StatisticKind
     StNumSmartJoinDegradedToLocal,      // number of times global smart join degraded to local smart join (<=1 unless in loop)
     StNumSmartJoinSlavesDegradedToStd,  // number of times a slave in smart join degraded from local smart join to standard hash join
     StNumAttribsSimplifiedTooComplex,
+    StNumSysContextSwitches,            // System wide context switches
+    StTimeOsUser,                      // System wide user time
+    StTimeOsSystem,
+    StTimeOsTotal,
+    StCycleOsUserCycles,
+    StCycleOsSystemCycles,
+    StCycleOsTotalCycles,
+    StNumContextSwitches,               // Context switches for this process
+    StTimeUser,                         // Time for in user mode for this process
+    StTimeSystem,
+    StTimeTotal,
+    StCycleUserCycles,                  // Time for in user mode for this process
+    StCycleSystemCycles,
+    StCycleTotalCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

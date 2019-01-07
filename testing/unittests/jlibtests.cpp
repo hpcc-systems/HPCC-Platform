@@ -1601,4 +1601,75 @@ CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingTest, "AtomicTimingTest");
 
 
+//=====================================================================================================================
+
+class MachineInfoTimingTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(MachineInfoTimingTest);
+        CPPUNIT_TEST(runAllTests);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+
+    void getSystemTiming()
+    {
+        const unsigned num = 10000;
+        CpuInfo temp;
+        CCycleTimer timer;
+        for (unsigned i=0; i < num; i++)
+            temp.getSystemTimes();
+        printf("Time to get system cpu activity = %" I64F "uns\n", timer.elapsedNs()/num);
+    }
+    void getProcessTiming()
+    {
+        const unsigned num = 10000;
+        CpuInfo temp;
+        CCycleTimer timer;
+        for (unsigned i=0; i < num; i++)
+            temp.getProcessTimes();
+        printf("Time to get process cpu activity = %" I64F "uns\n", timer.elapsedNs()/num);
+    }
+    void runAllTests()
+    {
+        getSystemTiming();
+        getSystemTiming(); // Second call seems to be faster - so more representative
+        getProcessTiming();
+        getProcessTiming(); // Second call seems to be faster - so more representative
+
+        CpuInfo prevSystem;
+        CpuInfo prevProcess;
+        CpuInfo curProcess(true, false);
+        CpuInfo curSystem(false, true);
+        volatile unsigned x = 0;
+        for (unsigned i=0; i < 10; i++)
+        {
+            prevProcess = curProcess;
+            prevSystem = curSystem;
+            curProcess.getProcessTimes();
+            curSystem.getSystemTimes();
+            CpuInfo deltaProcess = curProcess - prevProcess;
+            CpuInfo deltaSystem = curSystem - prevSystem;
+            if (deltaSystem.getTotalNs())
+            {
+                printf(" System: User(%u) System(%u) Total(%u) %u%% Ctx(%" I64F "u)  ",
+                        (unsigned)(deltaSystem.getUserNs() / 1000000), (unsigned)(deltaSystem.getSystemNs() / 1000000), (unsigned)(deltaSystem.getTotalNs() / 1000000),
+                        (unsigned)((deltaSystem.getUserNs() * 100) / deltaSystem.getTotalNs()), deltaSystem.getNumContextSwitches());
+                printf(" Process: User(%u) System(%u) Total(%u) %u%% Ctx(%" I64F "u)\n",
+                        (unsigned)(deltaProcess.getUserNs() / 1000000), (unsigned)(deltaProcess.getSystemNs() / 1000000), (unsigned)(deltaProcess.getTotalNs() / 1000000),
+                        (unsigned)((deltaProcess.getUserNs() * 100) / deltaSystem.getTotalNs()), deltaProcess.getNumContextSwitches());
+            }
+
+            for (unsigned j=0; j < i*100000000; j++)
+                x += j*j;
+            Sleep(1000);
+        }
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(MachineInfoTimingTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(MachineInfoTimingTest, "MachineInfoTimingTest");
+
+
+
 #endif // _USE_CPPUNIT
