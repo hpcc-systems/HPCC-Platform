@@ -111,7 +111,11 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
             current = 0;
             stopped = true;
         }
-        ~CWriter() { stop(); }
+        ~CWriter()
+        {
+            if (!stopped)
+                threaded.join(INFINITE, false);
+        }
         virtual void threadmain() override
         {
             // NB: This thread will not get started if there was a failure during prepareInput()
@@ -129,7 +133,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
             if (!stopped)
             {
                 stopped = true;
-                threaded.join();
+                threaded.join(INFINITE);
             }
         }
     } writer;

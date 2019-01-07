@@ -1139,12 +1139,12 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     {
         if (activeKManagersByHandle.size())
         {
-            WARNLOG("KJService: clearing active %lu key manager container(s), that were not closed cleanly", activeKManagersByHandle.size());
+            WARNLOG("KJService: clearing active %u key manager container(s), that were not closed cleanly", (unsigned)activeKManagersByHandle.size());
             activeKManagersByHandle.clear();
         }
         if (activeFetchContextsByHandle.size())
         {
-            WARNLOG("KJService: clearing %lu fetch context(s), that were not closed cleanly", activeFetchContextsByHandle.size());
+            WARNLOG("KJService: clearing %u fetch context(s), that were not closed cleanly", (unsigned)activeFetchContextsByHandle.size());
             activeFetchContextsByHandle.clear();
         }
         cachedKMs.clear();
@@ -1240,7 +1240,7 @@ public:
         queryNodeComm().cancel(RANK_ALL, keyLookupMpTag);
         processorPool->stopAll(true);
         processorPool->joinAll(true);
-        threaded.join();
+        threaded.join(INFINITE);
         clearAll();
     }
     void processKeyLookupRequest(CMessageBuffer &msg, CKMContainer *kmc, rank_t sender, mptag_t replyTag)
@@ -1527,7 +1527,7 @@ public:
         queryNodeComm().cancel(RANK_ALL, keyLookupMpTag);
         processorPool->stopAll(true);
         processorPool->joinAll(true);
-        while (!threaded.join(60000))
+        while (!threaded.join(60000, false))
             PROGLOG("Receiver waiting on remote handlers to signal completion");
         if (aborted)
             return;

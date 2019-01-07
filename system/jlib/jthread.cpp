@@ -547,7 +547,7 @@ CThreadedPersistent::CThreadedPersistent(const char *name, IThreaded *_owner) : 
 
 CThreadedPersistent::~CThreadedPersistent()
 {
-    join(INFINITE);
+    join(INFINITE, false);
     halt = true;
     sem.signal();
     athread.join();
@@ -596,7 +596,7 @@ void CThreadedPersistent::start()
     sem.signal();
 }
 
-bool CThreadedPersistent::join(unsigned timeout)
+bool CThreadedPersistent::join(unsigned timeout, bool throwException)
 {
     unsigned expected = s_running;
     if (state.compare_exchange_strong(expected, s_joining))
@@ -607,11 +607,11 @@ bool CThreadedPersistent::join(unsigned timeout)
             if (state.compare_exchange_strong(expected, s_running)) // if still joining, restore running state
                 return false;
             // if here, threadmain() set s_ready after timeout and has or will signal
-            if (!joinSem.wait(60000)) // should be instant
+            if (!joinSem.wait(60000) && throwException) // should be instant
                 throwUnexpected();
             return true;
         }
-        if (exception.get())
+        if (throwException && exception.get())
         {
             // switch back to ready state and throw
             Owned<IException> e = exception.getClear();

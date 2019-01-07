@@ -814,6 +814,10 @@ inline bool isPartTLK(IPropertyTree &pt) { const char *kind = pt.queryProp("@kin
 inline bool isPartTLK(IDistributedFilePart *p) { return isPartTLK(p->queryAttributes()); }
 inline bool isPartTLK(IPartDescriptor *p) { return isPartTLK(p->queryProperties()); }
 
+inline const char *queryFileKind(IPropertyTree &pt) { return pt.queryProp("@kind"); }
+inline const char *queryFileKind(IDistributedFile *f) { return queryFileKind(f->queryAttributes()); }
+inline const char *queryFileKind(IFileDescriptor *f) { return queryFileKind(f->queryProperties()); }
+
 extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned timeoutms=INFINITE);
 
 extern da_decl bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg);

@@ -745,9 +745,9 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 thread2.start();
                 thread3.start();
                 ret = call_from_thread(count);
-                thread1.join();
-                thread2.join();
-                thread3.join();
+                thread1.join(INFINITE);
+                thread2.join(INFINITE);
+                thread3.join(INFINITE);
             }
             ret += t1.ret + t2.ret + t3.ret;
             DBGLOG("ThreadedPersistant %d , %d, %d", count, msTick() - start, ret);
@@ -817,9 +817,9 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 task2.start();
                 task3.start();
                 ret = call_from_thread(count);
-                task1.join();
-                task2.join();
-                task3.join();
+                task1.join(INFINITE);
+                task2.join(INFINITE);
+                task3.join(INFINITE);
             }
             ret += t1.ret + t2.ret + t3.ret;
             DBGLOG("PersistantTask %d , %d, %d", count, msTick() - start, ret);

@@ -127,11 +127,11 @@ class CBroadcaster : public CSimpleInterface
             aborted = true;
             broadcaster.cancelReceive();
             if (join)
-                threaded.join();
+                threaded.join(INFINITE);
         }
         void wait()
         {
-            threaded.join();
+            threaded.join(INFINITE);
         }
     // IThreaded
         virtual void threadmain() override
@@ -198,13 +198,13 @@ class CBroadcaster : public CSimpleInterface
             broadcastQueue.stop();
             clearQueue();
             if (join)
-                threaded.join();
+                threaded.join(INFINITE);
         }
         void wait()
         {
             ActPrintLog(&broadcaster.activity, "CSend::wait(), messages to send: %d", broadcastQueue.ordinality());
             addBlock(NULL);
-            threaded.join();
+            threaded.join(INFINITE);
         }
     // IThreaded
         virtual void threadmain() override
@@ -872,7 +872,7 @@ protected:
         }
         void wait()
         {
-            threaded.join();
+            threaded.join(INFINITE);
             if (exception)
                 throw exception.getClear();
         }

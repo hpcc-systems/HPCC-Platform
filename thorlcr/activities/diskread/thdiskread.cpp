@@ -31,9 +31,12 @@ class CDiskReadMasterVF : public CDiskReadMasterBase
 {
 public:
     CDiskReadMasterVF(CMasterGraphElement *info) : CDiskReadMasterBase(info) { }
-    virtual void validateFile(IDistributedFile *file)
+    virtual void validateFile(IDistributedFile *file) override
     {
         IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *)queryHelper();
+        IOutputMetaData *recordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta();
+        if (!recordSize->isFixedSize())
+            checkFileType(this, file, "flat", true); // throws an exception if variable size and type mismatch
         bool codeGenGrouped = 0 != (TDXgrouped & helper->getFlags());
         bool isGrouped = fileDesc->isGrouped();
         if (isGrouped != codeGenGrouped)
@@ -43,7 +46,6 @@ public:
         }
         if (RecordTranslationMode::None == getTranslationMode(*this))
         {
-            IOutputMetaData *recordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta();
             if (recordSize->isFixedSize()) // fixed size
             {
                 if (0 != fileDesc->queryProperties().getPropInt("@recordSize"))
@@ -78,14 +80,14 @@ public:
         if (_helper)
             baseHelper.set(_helper);
     }
-    virtual void done()
+    virtual void done() override
     {
         CDiskReadMasterVF::done();
         IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *)queryHelper();
         if (0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
             container.queryTempHandler()->deregisterFile(fileName, fileDesc->queryProperties().getPropBool("@pausefile"));
     }
-    virtual void init()
+    virtual void init() override
     {
         CDiskReadMasterVF::init();
         IHThorDiskReadArg *helper = (IHThorDiskReadArg *)queryHelper();
@@ -110,13 +112,13 @@ public:
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
     }
-    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override
     {
         CDiskReadMasterVF::serializeSlaveData(dst, slave);
         if (!container.queryLocalOrGrouped())
             dst.append(mpTag);
     }
-    virtual void process()
+    virtual void process() override
     {
         IRecordSize *recordSize = helper->queryOutputMeta();
 
@@ -130,7 +132,7 @@ public:
         if (!queryJobChannel().queryJobComm().send(msg, 1, mpTag, 5000))
             throw MakeThorException(0, "Failed to give result to slave");
     }
-    virtual void abort()
+    virtual void abort() override
     {
         CDiskReadMasterVF::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
@@ -159,7 +161,7 @@ public:
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
     }
-    virtual void init()
+    virtual void init() override
     {
         CDiskReadMasterVF::init();
         bool canMatch = container.queryLocalOrGrouped() || helper->canMatchAny(); // if local, assume may match
@@ -183,7 +185,7 @@ public:
             }
         }
     }
-    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override
     {
         CDiskReadMasterVF::serializeSlaveData(dst, slave);
         if (!container.queryLocalOrGrouped())
@@ -191,7 +193,7 @@ public:
         dst.append(totalCountKnown);
         dst.append(totalCount);
     }
-    virtual void process()
+    virtual void process() override
     {
         if (totalCountKnown) return;
         if (container.queryLocalOrGrouped())
@@ -204,7 +206,7 @@ public:
         if (!queryJobChannel().queryJobComm().send(msg, 1, mpTag, 5000))
             throw MakeThorException(0, "Failed to give result to slave");
     }
-    virtual void abort()
+    virtual void abort() override
     {
         CDiskReadMasterVF::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
@@ -225,7 +227,7 @@ public:
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
     }
-    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override
     {
         CDiskReadMasterVF::serializeSlaveData(dst, slave);
         if (!container.queryLocalOrGrouped())

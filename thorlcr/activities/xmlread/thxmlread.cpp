@@ -23,8 +23,12 @@ class CXmlReadMaster : public CDiskReadMasterBase
 {
 public:
     CXmlReadMaster(CMasterGraphElement * info) : CDiskReadMasterBase(info) { }
-};
 
+    virtual void validateFile(IDistributedFile *file) override
+    {
+        checkFileType(this, file, (container.getKind() == TAKjsonread) ? "json" : "xml", false);
+    }
+};
 
 CActivityBase *createXmlReadActivityMaster(CMasterGraphElement *container)
 {
