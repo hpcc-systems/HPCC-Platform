@@ -20,6 +20,7 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"
 xmlns:set="http://exslt.org/sets">
+    <xsl:import href="esp_logging_agent_basic.xsl"/>
     <xsl:import href="esp_logging_transid.xsl"/>
 
     <xsl:template name="WsLogServiceESPAgent" type="DefaultLoggingAgent">
@@ -48,24 +49,9 @@ xmlns:set="http://exslt.org/sets">
         </xsl:variable>
         <LogAgent name="{$agentName}" type="LogAgent" services="{$Services}" plugin="wslogserviceespagent">
             <LoggingServer url="{$loggingServerUrl}" user="{$loggingServer/@User}" password="{$loggingServer/@Password}"/>
-            <xsl:if test="string($agentNode/@FailSafe) != ''">
-                <FailSafe><xsl:value-of select="$agentNode/@FailSafe"/></FailSafe>
-            </xsl:if>
-            <xsl:if test="string($agentNode/@FailSafeLogsDir) != ''">
-                <FailSafeLogsDir><xsl:value-of select="$agentNode/@FailSafeLogsDir"/></FailSafeLogsDir>
-            </xsl:if>
-            <xsl:if test="string($agentNode/@MaxLogQueueLength) != ''">
-                <MaxLogQueueLength><xsl:value-of select="$agentNode/@MaxLogQueueLength"/></MaxLogQueueLength>
-            </xsl:if>
-            <xsl:if test="string($agentNode/@MaxTriesGTS) != ''">
-                <MaxTriesGTS><xsl:value-of select="$agentNode/@MaxTriesGTS"/></MaxTriesGTS>
-            </xsl:if>
-            <xsl:if test="string($agentNode/@MaxTriesRS) != ''">
-                <MaxTriesRS><xsl:value-of select="$agentNode/@MaxTriesRS"/></MaxTriesRS>
-            </xsl:if>
-            <xsl:if test="string($agentNode/@QueueSizeSignal) != ''">
-                <QueueSizeSignal><xsl:value-of select="$agentNode/@QueueSizeSignal"/></QueueSizeSignal>
-            </xsl:if>
+            <xsl:call-template name="EspLoggingAgentBasic">
+                <xsl:with-param name="agentNode" select="$agentNode"/>
+            </xsl:call-template>
             <xsl:if test="string($agentNode/@TransactionSeedType) != ''">
                 <TransactionSeedType><xsl:value-of select="$agentNode/@TransactionSeedType"/></TransactionSeedType>
             </xsl:if>
