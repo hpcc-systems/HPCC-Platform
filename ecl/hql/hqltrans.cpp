@@ -4918,6 +4918,111 @@ bool containsExternalParameter(IHqlExpression * expr, IHqlExpression * params)
 
 //------------------------------------------------------------------------------------------------
 
+//Count the number of unique expressions in a tree - it does not have to be accurate, so based on
+//QuickHqlTransformer rather than NewHqlTransformer for speed (to reduce info allocations).
+static HqlTransformerInfo expressionCountAnalyserInfo("ExpressionCountAnalyser");
+class ExpressionCountAnalyser : public QuickHqlTransformer
+{
+public:
+    ExpressionCountAnalyser(bool _onlyActivities, bool _processColon, bool _processSequential) :
+        QuickHqlTransformer(expressionCountAnalyserInfo, NULL),
+        onlyActivities(_onlyActivities), processColon(_processColon), processSequential(_processSequential)
+    {
+    }
+
+    virtual void doAnalyse(IHqlExpression * expr);
+
+    unsigned __int64 getNumExprs() const { return numExpressions; }
+
+protected:
+    HqlExprCopyArray expanded;
+    bool onlyActivities;
+    bool processColon;
+    bool processSequential;
+    unsigned __int64 numExpressions = 0;
+};
+
+void ExpressionCountAnalyser::doAnalyse(IHqlExpression * expr)
+{
+    //This will only be called if it has not been visited already.
+    IHqlExpression * body = expr->queryBody();
+    node_operator op = body->getOperator();
+    switch (op)
+    {
+    case no_colon:
+    {
+        if (processColon)
+        {
+            if (!expanded.contains(*body))
+            {
+                expanded.append(*body);
+                //Enter a new nested transform so that any expressions previously matched will not be short circuited by analyse()
+                TransformMutexBlock nested;
+                QuickHqlTransformer::doAnalyse(body);
+            }
+            return;
+        }
+        break;
+    }
+    case no_sequential:
+    {
+        if (processSequential)
+        {
+            if (expr->numChildren())
+            {
+                analyse(expr->queryChild(0));
+                ForEachChildFrom(i, expr, 1)
+                {
+                    //Ensure any expressions in subsequent SEQUENTIAL arguments will not be commoned up
+                    TransformMutexBlock nested;
+                    analyse(expr->queryChild(i));
+                }
+            }
+            return;
+        }
+        break;
+    }
+    case no_record:
+    case no_field:
+        return;
+    case no_select:
+        if (!isNewSelector(body))
+            return;
+        break;
+    }
+
+    if (onlyActivities)
+    {
+        if (body->isDataset() || body->isAction())
+        {
+            if (op != no_assign)
+                numExpressions++;
+        }
+    }
+    else
+        numExpressions++;
+
+    QuickHqlTransformer::doAnalyse(body);
+}
+
+
+unsigned getExpressionCount(const HqlExprArray & exprs, bool onlyActivities, bool processColon, bool processSequential)
+{
+    ExpressionCountAnalyser analyser(onlyActivities, processColon, processSequential);
+    analyser.analyseArray(exprs);
+    return analyser.getNumExprs();
+}
+
+unsigned getExpressionCount(IHqlExpression * expr, bool onlyActivities, bool processColon, bool processSequential)
+{
+    ExpressionCountAnalyser analyser(onlyActivities, processColon, processSequential);
+    analyser.analyse(expr);
+    return analyser.getNumExprs();
+}
+
+//------------------------------------------------------------------------------------------------
+
+
 /*
 
 Some notes on selector ambiguity.

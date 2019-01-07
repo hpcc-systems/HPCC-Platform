@@ -131,6 +131,7 @@ const char * const helpText[] = {
     "?!  -fapplyInstantEclTransformations  Limit non-file outputs with a CHOOSEN",
     "?!  -fapplyInstantEclTransformationsLimit  Number of rows to limit outputs to",
     "?!  -fcheckAsserts          Check ASSERT() statements",
+    "?!  -fcheckDuplicateThreshold=n Warn if SEQUENTIAL or workflow may duplicate more than n%% activities",
     "?!  -fexportDependencies    Generate information about inter-definition dependencies",
     "?!  -fmaxCompileThreads     Number of compiler instances to compile the c++",
     "?!  -fmaxErrors             Maximum number of errors to report",
