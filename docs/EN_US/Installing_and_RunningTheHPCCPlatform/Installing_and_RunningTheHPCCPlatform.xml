@@ -37,7 +37,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -515,6 +515,17 @@
               <listitem>
                 <para>Install the <emphasis role="bold">ECL IDE and Client
                 Tools for Windows</emphasis>.</para>
+
+                <variablelist>
+                  <varlistentry>
+                    <term>Note:</term>
+
+                    <listitem>
+                      <para>The ECL IDE only runs on Windows operating
+                      systems.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist>
               </listitem>
 
               <listitem>
