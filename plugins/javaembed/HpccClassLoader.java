@@ -19,18 +19,51 @@ package com.HPCCSystems;
 
 import java.net.*;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.ArrayList;
 import java.lang.reflect.Method;
 import java.lang.Throwable;
 
-public class HpccClassLoader extends java.net.URLClassLoader
+public class HpccClassLoader extends java.lang.ClassLoader
 {
     private long bytecode;
     private int bytecodeLen;
     private native Class<?> defineClassForEmbed(int bytecodeLen, long bytecode, String name);
     private Hashtable<String, Class<?>> classes = new Hashtable<>();
-    private HpccClassLoader(java.net.URL [] urls, ClassLoader parent, int _bytecodeLen, long _bytecode, String dllname)
+    static private Hashtable<String, java.net.URLClassLoader> pathLoaders = new Hashtable<>();
+    private java.net.URLClassLoader pathLoader;
+    private HpccClassLoader(String classPath, ClassLoader parent, int _bytecodeLen, long _bytecode, String dllname)
     {
-        super(urls, parent);
+        super(parent);
+        if (classPath != null && !classPath.isEmpty())
+        {
+            synchronized(pathLoaders)
+            {
+                pathLoader = pathLoaders.get(classPath);
+                if (pathLoader == null)
+                {
+                    List<URL> urls = new ArrayList<>();
+                    String[] paths = classPath.split(";");
+                    for (String path : paths)
+                    {
+                        try
+                        {
+                            if (path.contains(":"))
+                                urls.add(new URL(path));
+                            else
+                                urls.add(new URL("file:" + path));
+                        }
+                        catch (MalformedURLException E)
+                        {
+                            // Ignore any that we don't recognize
+                            // System.out.print(E.toString());
+                        }
+                    }
+                    pathLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]));
+                    pathLoaders.put(classPath, pathLoader);
+                }
+            }
+        }
         System.load(dllname);
         bytecodeLen = _bytecodeLen;
         bytecode = _bytecode;
@@ -42,15 +75,17 @@ public class HpccClassLoader extends java.net.URLClassLoader
         {
             if (bytecodeLen != 0)
                 result = defineClassForEmbed(bytecodeLen, bytecode, className.replace(".","/"));
-            if ( result == null)
+            if ( result == null && pathLoader != null)
+                result = pathLoader.loadClass(className);
+            if (result == null)
                 return super.findClass(className);
             classes.put(className, result);
         }
         return result; 
     }
-    public static HpccClassLoader newInstance(java.net.URL [] urls, ClassLoader parent, int _bytecodeLen, long _bytecode, String dllname)
+    public static HpccClassLoader newInstance(String classPath, ClassLoader parent, int _bytecodeLen, long _bytecode, String dllname)
     {
-        return new HpccClassLoader(urls, parent, _bytecodeLen, _bytecode, dllname); 
+        return new HpccClassLoader(classPath, parent, _bytecodeLen, _bytecode, dllname); 
     }
     
     public static String getSignature(Method m)
