@@ -71,7 +71,7 @@
       <title>Spark Installation</title>
 
       <para>To add Spark integration to your HPCC Systems cluster, you must
-      have an HPCC Cluster running version 7.0.0 or later. Java 8 is also a
+      have an HPCC Cluster running version 7.0.0 or later. Java 8 is also
       required. You will need to configure the Sparkthor component. The
       Sparkthor component needs to be associated with a valid existing Thor
       cluster. The Spark slave nodes will be created alongside each Thor
@@ -201,10 +201,10 @@
         </listitem>
 
         <listitem>
-          <para>Right-click on the Navigator panel on left side</para>
+          <para>Right-click on the Navigator panel on the left side</para>
 
           <para>Choose <emphasis role="bold">New Components</emphasis> then
-          <emphasis role="bold">Sparkthor</emphasis></para>
+          choose <emphasis role="bold">Sparkthor</emphasis></para>
         </listitem>
 
         <listitem>
@@ -664,7 +664,8 @@
         examples. If you are already logged onto a node on an integrated
         Spark-HPCC Cluster run the spark-shell:</para>
 
-        <programlisting> /opt/HPCCSystems/externals/spark-hadoop/bin/spark-shell</programlisting>
+        <programlisting> /opt/HPCCSystems/externals \
+ /spark-hadoop/bin/spark-shell --master=spark://{sparkhost-IP}:{sparkport}</programlisting>
 
         <para>The next step is to establish your HpccFile and your RDD for
         that file. You need the name of the file, the protocol (http or
@@ -775,8 +776,8 @@
         <programlisting> val lr = new LogisticRegression()
  val iris_model = lr.fit(iris_fv)</programlisting>
 
-        <para>We know want to apply our prediction and evaluate the results.
-        As noted before, we would use a holdout dataset to perform the
+        <para>We now want to apply our prediction and evaluate the results. As
+        noted before, we would use a holdout dataset to perform the
         evaluation. We are going to be lazy and just use the original data to
         avoid the sampling task. We use the <emphasis>transform(…)</emphasis>
         function for the model to add the prediction. The function adds a
