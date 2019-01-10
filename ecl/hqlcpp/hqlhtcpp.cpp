@@ -1944,16 +1944,14 @@ void ActivityInstance::addNameAttribute(IHqlExpression * symbol)
     //We should probably perform some deduping instead.
     addLocationAttribute(symbol);
 
-    IAtom * name = symbol->queryName();
+    IIdAtom * name = symbol->queryId();
     if (!name)
         return;
 
-    ForEachItemIn(i, names)
-    {
-        if (names.item(i).queryName() == name)
-            return;
-    }
-    names.append(*symbol);
+    if (names.contains(*name))
+        return;
+
+    names.append(*name);
     addAttribute(WaEclName, str(name));
 }
 
