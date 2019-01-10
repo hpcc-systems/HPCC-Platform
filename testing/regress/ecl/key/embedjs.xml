@@ -29,7 +29,7 @@
  <Row><Result_10><Item>one</Item><Item>three</Item><Item>two</Item></Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
- <Row><Result_11><Item>uno</Item><Item>tre</Item><Item>dos</Item></Result_11></Row>
+ <Row><Result_11><Item>uno     </Item><Item>tre     </Item><Item>dos     </Item></Result_11></Row>
 </Dataset>
 <Dataset name='Result 12'>
  <Row><Result_12><Item>un</Item><Item>trois</Item><Item>deux</Item></Result_12></Row>
