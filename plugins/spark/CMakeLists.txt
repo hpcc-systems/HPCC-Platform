@@ -26,6 +26,8 @@ cmake_minimum_required(VERSION 3.3)
 
 project(spark-integration)
 
+option(DOWNLOAD_SPARK_JARS "Download spark jars if jars aren't supplied on command line" OFF)
+
 if(SPARK)
     ADD_PLUGIN(spark PACKAGES Java MINVERSION 1.8.0)
 
@@ -57,7 +59,7 @@ if(SPARK)
 
     set(CENTRAL_REPO "https://repo1.maven.org/maven2")
 
-    if(NOT SPARK_HPCC_JAR)
+    if(NOT SPARK_HPCC_JAR AND DOWNLOAD_SPARK_JARS)
         if(NOT SPARK_HPCC_VERSION)
             set(SPARK_HPCC_VERSION "7.0.0")
         endif()
@@ -67,6 +69,8 @@ if(SPARK)
             INACTIVITY_TIMEOUT 30
             TIMEOUT 90)
         set(SPARK_HPCC_JAR ${CMAKE_CURRENT_BINARY_DIR}/spark-hpcc-${SPARK_HPCC_VERSION}.jar)
+    else()
+        message(FATAL_ERROR "No spark jar supplied and DOWNLOAD_SPARK_JARS=OFF")
     endif()
 
     if(NOT WSCLIENT_JAR)    
@@ -79,46 +83,15 @@ if(SPARK)
             INACTIVITY_TIMEOUT 30
             TIMEOUT 90)
         set(WSCLIENT_JAR ${CMAKE_CURRENT_BINARY_DIR}/wsclient-${WSCLIENT_VERSION}-jar-with-dependencies.jar)
+    else()
+        message(FATAL_ERROR "No wsclient jar supplied and DOWNLOAD_SPARK_JARS=OFF")
     endif(NOT WSCLIENT_JAR)
 
-
-    message("")
-    message("SPARK VERSION: ${SPARK_VERSION}")
-    message("HADOOP VERSION: ${HADOOP_VERSION}")
-    message("SPARK Package URI: ${SPARK_URL}")
-    message("")
-
-    if(SHA512)
-        set( SHA512STRING "${SHA512}" )
-    else(SHA512)
-        set( SHA512STRING "DC3A97F3D99791D363E4F70A622B84D6E313BD852F6FDBC777D31EAB44CBC112CEEAA20F7BF835492FB654F48AE57E9969F93D3B0E6EC92076D1C5E1B40B4696" )
-    endif(SHA512)
-
-    string(TOLOWER "${SHA512STRING}" SHA512STRING)
-    set(URL_HASHSTRING "SHA512=${SHA512STRING}")
-
-    message("${URL_HASHSTRING}")
-
-    include(ExternalProject)
-    ExternalProject_Add(
-        fetch-spark-source
-        URL ${SPARK_URL}
-        URL_HASH ${URL_HASHSTRING}
-        TIMEOUT 300
-        DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads
-        SOURCE_DIR ${CMAKE_BINARY_DIR}/downloads/spark-hadoop
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND "")
-
-    add_custom_target(
-        spark-source ALL
-        DEPENDS fetch-spark-source
-        COMMAND ${CMAKE_COMMAND} -E remove -f ${SPARK_PACKAGE_NAME}.tgz
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/downloads)
+    message(STATUS "SPARK VERSION: ${SPARK_VERSION}")
+    message(STATUS "HADOOP VERSION: ${HADOOP_VERSION}")
 
     install(
-        DIRECTORY "${CMAKE_BINARY_DIR}/downloads/spark-hadoop"
+        DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/spark-hadoop"
         USE_SOURCE_PERMISSIONS
         COMPONENT runtime
         DESTINATION "externals"
@@ -132,7 +105,6 @@ if(SPARK)
         DESTINATION "jars/spark/"
         )
 
-    
     configure_file(spark-defaults.conf.in spark-defaults.conf @ONLY)
     configure_file(spark-env.sh.in spark-env.sh @ONLY)
     install(

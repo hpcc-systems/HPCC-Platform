@@ -43,3 +43,6 @@
 [submodule "esp/services/ws_sql/antlr-jars"]
 	path = esp/services/ws_sql/antlr-jars
 	url = https://github.com/Michael-Gardner/antlr-jars.git
+[submodule "plugins/spark/spark-hadoop"]
+	path = plugins/spark/spark-hadoop
+	url = https://github.com/michael-gardner/spark-hadoop.git
