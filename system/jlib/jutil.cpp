@@ -2884,8 +2884,8 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
 #else
         dir.append(getenv("TMPDIR"));
         if (!dir.length())
-            dir.append("/var/lib");
-        dir.append("/HPCCSystems/hpcc-data/temp");
+            dir.append(RUNTIME_DIR);
+        dir.append("/hpcc-data/temp");
 #endif
     }
     dir.append(PATHSEPCHAR).append(component);
