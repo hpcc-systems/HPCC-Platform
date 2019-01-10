@@ -308,6 +308,7 @@ public:
         CriticalBlock b(detachCritSec);
         if(m_isAttached)
             return true;
+        m_pCentralStore->attachToBackend();
         queryEsdlMonitor()->subscribe();
         m_isAttached = true;
         if(m_bindingId.length() != 0)
@@ -324,6 +325,7 @@ public:
         if(!m_isAttached)
             return true;
         m_isAttached = false;
+        m_pCentralStore->detachFromBackend();
         queryEsdlMonitor()->unsubscribe();
         return true;
     }

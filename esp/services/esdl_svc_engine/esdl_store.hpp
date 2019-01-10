@@ -50,6 +50,9 @@ interface IEsdlStore : public IInterface
     virtual IPropertyTree* getBindingTree(const char* bindingId, StringBuffer& msg) = 0;
     virtual IPropertyTree* getDefinitions() = 0;
     virtual IPropertyTree* getBindings() = 0;
+    virtual void detachFromBackend() = 0;
+    virtual void attachToBackend() = 0;
+    virtual bool isAttachedToBackend() = 0;
 };
 
 enum class EsdlNotifyType
