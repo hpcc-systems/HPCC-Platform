@@ -40,7 +40,10 @@ public class HpccClassLoader extends java.net.URLClassLoader
         Class<?> result = classes.get(className);
         if (result == null)
         {
-            result = defineClassForEmbed(bytecodeLen, bytecode, className.replace(".","/"));
+            if (bytecodeLen != 0)
+                result = defineClassForEmbed(bytecodeLen, bytecode, className.replace(".","/"));
+            if ( result == null)
+                return super.findClass(className);
             classes.put(className, result);
         }
         return result; 
