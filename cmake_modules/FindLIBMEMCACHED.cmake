@@ -24,7 +24,7 @@
 #  MEMCACHED_USE_EXTERNAL_LIBRARY is ON, we will fetch, build, and include a copy of the neccessary
 #  Libraries.
 
-option(MEMCACHED_USE_EXTERNAL_LIBRARY "Pull and build source from external location if local is not found" ON)
+option(MEMCACHED_USE_EXTERNAL_LIBRARY "Pull and build source from external location if local is not found" OFF)
 
 # Search for native library to build against
 if(WIN32)
