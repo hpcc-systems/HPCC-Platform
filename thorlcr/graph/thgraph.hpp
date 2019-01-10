@@ -1165,8 +1165,10 @@ interface IExpander;
 interface IThorFileCache : extends IInterface
 {
     virtual bool remove(const char *filename) = 0;
-    virtual IDelayedFile *lookup(CActivityBase &activity, const char *logicalFilenae, IPartDescriptor &partDesc, IExpander *expander=NULL) = 0;
+    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilenae, IPartDescriptor &partDesc, IExpander *expander=nullptr) = 0;
 };
+
+extern graph_decl IDelayedFile *createDelayedFile(IFileIO *iFileIO);
 
 class graph_decl CThorResourceBase : implements IThorResource, public CInterface
 {
