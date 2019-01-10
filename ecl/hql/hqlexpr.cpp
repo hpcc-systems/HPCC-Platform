@@ -2685,6 +2685,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_owned_ds:
     case no_dataset_alias:
     case no_ensureresult:
+    case no_createdictionary:
         return 1;
     case no_executewhen:
     case no_setresult:
