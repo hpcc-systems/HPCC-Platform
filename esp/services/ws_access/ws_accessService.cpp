@@ -457,23 +457,7 @@ bool Cws_accessEx::onUsers(IEspContext &context, IEspUserRequest &req, IEspUserR
                 if (version >= 1.07)
                 {
                     StringBuffer sb;
-                    switch (usr->getPasswordDaysRemaining())//-1 if expired, -2 if never expires
-                    {
-                    case scPasswordExpired:
-                        sb.set("Expired");
-                        break;
-                    case scPasswordNeverExpires:
-                        sb.set("Never");
-                        break;
-                    default:
-                        {
-                            CDateTime dt;
-                            usr->getPasswordExpiration(dt);
-                            dt.getDateString(sb);
-                            break;
-                        }
-                    }
-                    oneusr->setPasswordexpiration(sb.str());
+                    oneusr->setPasswordexpiration(getPasswordExpiration(usr, sb));
                 }
                 espusers.append(*oneusr.getLink());
             }
@@ -486,6 +470,27 @@ bool Cws_accessEx::onUsers(IEspContext &context, IEspUserRequest &req, IEspUserR
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
+}
+
+const char *Cws_accessEx::getPasswordExpiration(ISecUser *usr, StringBuffer &passwordExpiration)
+{
+    switch (usr->getPasswordDaysRemaining())//-1 if expired, -2 if never expires
+    {
+    case scPasswordExpired:
+        passwordExpiration.set("Expired");
+        break;
+    case scPasswordNeverExpires:
+        passwordExpiration.set("Never");
+        break;
+    default:
+        {
+            CDateTime dt;
+            usr->getPasswordExpiration(dt);
+            dt.getDateString(passwordExpiration);
+            break;
+        }
+    }
+    return passwordExpiration.str();
 }
 
 bool Cws_accessEx::onUserQuery(IEspContext &context, IEspUserQueryRequest &req, IEspUserQueryResponse &resp)
@@ -3714,9 +3719,15 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
 
         resp.setFirstname(user->getFirstName());
         resp.setLastname(user->getLastName());
-        if (context.getClientVersion() >= 1.10)
+        double version = context.getClientVersion();
+        if (version >= 1.10)
         {
             resp.setEmployeeID(user->getEmployeeID());
+            if (version >= 1.12)
+            {
+                StringBuffer sb;
+                resp.setPasswordExpiration(getPasswordExpiration(user, sb));
+            }
         }
     }
     catch(IException* e)

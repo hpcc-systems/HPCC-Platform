@@ -82,6 +82,7 @@ class Cws_accessEx : public Cws_access
     int enableDisableScopeScans(IEspContext &context, bool doEnable, StringBuffer &retMsg);
     CLdapSecManager* queryLDAPSecurityManager(IEspContext &context);
     void addResourcePermission(const char *name, int type, int allows, int denies, IArrayOf<IEspResourcePermission> &permissions);
+    const char* getPasswordExpiration(ISecUser *usr, StringBuffer &passwordExpiration);
 
 public:
     IMPLEMENT_IINTERFACE;

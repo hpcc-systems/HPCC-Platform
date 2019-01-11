@@ -35,33 +35,34 @@
 #define SENDING   "_sending_"
 
 const char* const RolloverExt=".old";
-const unsigned long SAFE_ROLLOVER_THRESHOLD = 500000L;
 const unsigned int TRACE_PENDING_LOGS_MIN = 10;
 const unsigned int TRACE_PENDING_LOGS_MAX = 50;
 
-extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(const char* logType, const char* logsdir)
+extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(IPropertyTree* cfg, const char* logType)
 {
-    return new CLogFailSafe(logType, logsdir);
+    return new CLogFailSafe(cfg, logType);
 }
 
-extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(const char* pszService, const char* logType, const char* logsdir)
+extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(IPropertyTree* cfg, const char* pszService, const char* logType)
 {
-    return new CLogFailSafe(pszService, logType, logsdir && *logsdir ? logsdir : "./FailSafeLogs");
+    return new CLogFailSafe(cfg, pszService, logType);
 }
 
 CLogFailSafe::CLogFailSafe()
 {
 }
 
-CLogFailSafe::CLogFailSafe(const char* logType, const char* logsdir) : m_LogType(logType), m_logsdir(logsdir)
+CLogFailSafe::CLogFailSafe(IPropertyTree* cfg, const char* logType) : m_LogType(logType)
 {
+    readCfg(cfg);
     loadFailed(logType);
     createNew(logType);
 }
 
-CLogFailSafe::CLogFailSafe(const char* pszService, const char* logType, const char* logsdir)
-    : m_LogService(pszService), m_LogType(logType), m_logsdir(logsdir)
+CLogFailSafe::CLogFailSafe(IPropertyTree* cfg, const char* pszService, const char* logType)
+    : m_LogService(pszService), m_LogType(logType)
 {
+    readCfg(cfg);
     loadPendingLogReqsFromExistingLogFiles();
 
     StringBuffer send, receive;
@@ -76,6 +77,63 @@ CLogFailSafe::~CLogFailSafe()
     ESPLOG(LogMax, "CLogFailSafe::~CLogFailSafe()");
     m_Added.Close();
     m_Cleared.Close();
+}
+
+void CLogFailSafe::readCfg(IPropertyTree* cfg)
+{
+    StringBuffer safeRolloverThreshold = cfg->queryProp(PropSafeRolloverThreshold);
+    if (!safeRolloverThreshold.isEmpty())
+        readSafeRolloverThresholdCfg(safeRolloverThreshold);
+
+    const char* logsDir = cfg->queryProp(PropFailSafeLogsDir);
+    if (!isEmptyString(logsDir))
+        m_logsdir.set(logsDir);
+    else
+        m_logsdir.set(DefaultFailSafeLogsDir);
+}
+
+void CLogFailSafe::readSafeRolloverThresholdCfg(StringBuffer& safeRolloverThreshold)
+{
+    safeRolloverThreshold.trim();
+
+    const char* ptrStart = safeRolloverThreshold.str();
+    const char* ptrAfterDigit = ptrStart;
+    while (*ptrAfterDigit && isdigit(*ptrAfterDigit))
+        ptrAfterDigit++;
+
+    if (!*ptrAfterDigit)
+    {
+        safeRolloverReqThreshold = atol(safeRolloverThreshold.str());
+        return;
+    }
+
+    const char* ptr = ptrAfterDigit;
+    while (*ptr && (ptr[0] == ' '))
+        ptr++;
+    char c = ptr[0];
+    safeRolloverThreshold.setLength(ptrAfterDigit - ptrStart);
+    safeRolloverSizeThreshold = atol(safeRolloverThreshold.str());
+    switch (c)
+    {
+    case 'k':
+    case 'K':
+        safeRolloverSizeThreshold *= 1000;
+        break;
+    case 'm':
+    case 'M':
+        safeRolloverSizeThreshold *= 1000000;
+        break;
+    case 'g':
+    case 'G':
+        safeRolloverSizeThreshold *= 1000000000;
+        break;
+    case 't':
+    case 'T':
+        safeRolloverSizeThreshold *= 1000000000000;
+        break;
+    default:
+        break;
+    }
 }
 
 bool CLogFailSafe::FindOldLogs()
@@ -232,10 +290,18 @@ void CLogFailSafe::Add(const char* GUID, const StringBuffer& strContents)
 {
     VStringBuffer dataStr("<cache>%s</cache>", strContents.str());
 
-    unsigned long item_count = m_Added.getItemCount();
-    if (item_count > SAFE_ROLLOVER_THRESHOLD)
-        SafeRollover();
-
+    if (safeRolloverSizeThreshold <= 0)
+    {
+        unsigned long item_count = m_Added.getItemCount();
+        if (item_count > safeRolloverReqThreshold)
+            SafeRollover();
+    }
+    else
+    {
+        unsigned long fileSize = m_Added.getFileSize();
+        if (fileSize > safeRolloverSizeThreshold)
+            SafeRollover();
+    }
     m_Added.Append(GUID, dataStr.str());
 }
 

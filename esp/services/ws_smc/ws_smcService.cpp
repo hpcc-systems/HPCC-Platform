@@ -439,7 +439,9 @@ void CActivityInfo::readRunningWUsOnStatusServer(IEspContext& context, IProperty
         IPropertyTree& serverStatusNode = itrStatusServer->query();
 
         StringBuffer serverInstance;
-        if ((statusServerType == WsSMCSSTThorLCRCluster) || (statusServerType == WsSMCSSTRoxieCluster))
+        if (statusServerType == WsSMCSSTThorLCRCluster)
+            serverStatusNode.getProp("@thorname", serverInstance);
+        else if (statusServerType == WsSMCSSTRoxieCluster)
             serverStatusNode.getProp("@cluster", serverInstance);
         else
             serverInstance.appendf("%s on %s", serverName, serverStatusNode.queryProp("@node"));

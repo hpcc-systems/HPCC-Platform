@@ -107,6 +107,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="SafeRolloverThreshold" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>The threshold to switch to a new tank file: a number of requests or file size (xBytes, xMBs, etc).</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="MaxTransIDLength" type="xs:nonNegativeInteger" use="optional">
         <xs:annotation>
           <xs:appinfo>

@@ -33,6 +33,7 @@ class CLogSerializer : public CInterface
 {
     __int64 m_bytesWritten;
     unsigned long m_ItemCount;//
+    unsigned long fileSize;//
     CriticalSection crit;
 protected:
     IFile* m_file;
@@ -63,6 +64,7 @@ public:
     void SafeRollover(const char* Directory,const char* NewFileName,const char* Prefix, const char* ClosedPrefix);
 
     unsigned long getItemCount() const { return m_ItemCount; }//
+    unsigned long getFileSize() const { return fileSize; }//
     static StringBuffer& extractFileName(const char* fullName, StringBuffer& fileName);//
     virtual void loadSendLogs(GuidSet& ACKSet, GuidMap& MissedLogs, unsigned long& total_missed);//
     virtual void loadAckedLogs(GuidSet& ReceiveMap);//
