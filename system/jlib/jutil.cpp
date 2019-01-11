@@ -2868,29 +2868,103 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
     return 0;
 }
 
+#ifndef _WIN32
+# define ALL_PERMS (S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH)
+#endif
+
 jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree)
 {
     StringBuffer dir;
     if (pTree)
         getConfigurationDirectory(pTree->queryPropTree("Directories"),"temp",component,pTree->queryProp("@name"),dir);
-    if (!dir.length())
+    bool ok = false;
+    if (!dir.isEmpty())
+    {
+        ok = recursiveCreateDirectory(dir.str());
+        if (ok)
+        {
+#ifdef _WIN32
+            return target.set(dir);
+#else
+            int srtn = access(dir.str(), R_OK|W_OK|X_OK);
+            if (!srtn)
+            {
+                chmod(dir.str(), ALL_PERMS);
+                return target.set(dir);
+            }
+#endif
+        }
+    }
+
+    // runtime dir
+    dir.clear();
+    dir.append(RUNTIME_DIR);
+    dir.append(PATHSEPCHAR).append("hpcc-data").append(PATHSEPCHAR).append(component);
+    dir.append(PATHSEPCHAR).append("temp");
+    ok = recursiveCreateDirectory(dir.str());
+    if (ok)
     {
 #ifdef _WIN32
-        char path[_MAX_PATH+1];
-        if(GetTempPath(sizeof(path),path))
-            dir.append(path).append("HPCCSystems\\hpcc-data");
-        else
-            dir.append("c:\\HPCCSystems\\hpcc-data\\temp");
+        return target.set(dir);
 #else
-        dir.append(getenv("TMPDIR"));
-        if (!dir.length())
-            dir.append(RUNTIME_DIR);
-        dir.append("/hpcc-data/temp");
+        int srtn = access(dir.str(), R_OK|W_OK|X_OK);
+        if (!srtn)
+        {
+            chmod(dir.str(), ALL_PERMS);
+            return target.set(dir);
+        }
 #endif
     }
-    dir.append(PATHSEPCHAR).append(component);
-    recursiveCreateDirectory(dir.str());
-    return target.set(dir);
+
+    // tmp dir
+    StringBuffer tmpdir;
+#ifdef _WIN32
+    char path[_MAX_PATH+1];
+    if(GetTempPath(sizeof(path),path))
+        tmpdir.append(path);
+    else
+        tmpdir.append("C:\\TEMP"); // or C:\\Windows\\TEMP ?
+#else
+    tmpdir.append(getenv("TMPDIR"));
+    if (tmpdir.isEmpty())
+        tmpdir.append("/tmp");
+#endif
+
+    dir.clear();
+    dir.append(tmpdir);
+    dir.append(PATHSEPCHAR).append("HPCCSystems");
+    dir.append(PATHSEPCHAR).append("hpcc-data").append(PATHSEPCHAR).append(component);
+    dir.append(PATHSEPCHAR).append("temp");
+    ok = recursiveCreateDirectory(dir.str());
+    if (ok)
+    {
+#ifdef _WIN32
+        return target.set(dir);
+#else
+        int srtn = access(dir.str(), R_OK|W_OK|X_OK);
+        if (!srtn)
+        {
+            chmod(dir.str(), ALL_PERMS);
+            return target.set(dir);
+        }
+#endif
+    }
+
+#ifdef _WIN32
+    throw MakeStringException(-1, "Unable to create temp directory");
+#else
+    // uniq tmp - perhaps previous dirs above were owned by others ...
+    dir.clear();
+    dir.append(tmpdir);
+    dir.append(PATHSEPCHAR).append("HPCCSystems-XXXXXX");
+    char templt[256];
+    strcpy(templt, dir.str());
+    char *td = mkdtemp(templt);
+    if (!td)
+        throw MakeStringException(-1, "Unable to create temp directory");
+    chmod(templt, ALL_PERMS);
+    return target.set(templt);
+#endif
 }
 
 const char *getEnumText(int value, const EnumMapping *map)
