@@ -670,9 +670,6 @@ static void setupGlobals(CheckedJNIEnv *J)
 
         langStringClass = J->FindGlobalClass("java/lang/String");
 
-        netURLClass = J->FindGlobalClass("java/net/URL");
-        netURL_constructor = J->GetMethodID(netURLClass, "<init>","(Ljava/lang/String;)V");
-
         langIllegalArgumentExceptionClass = J->FindGlobalClass("java/lang/IllegalArgumentException");
     }
     catch (IException *E)
@@ -684,7 +681,7 @@ static void setupGlobals(CheckedJNIEnv *J)
     try
     {
         customLoaderClass = J->FindGlobalClass("com/HPCCSystems/HpccClassLoader");
-        clc_newInstance = J->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;IJLjava/lang/String;)Lcom/HPCCSystems/HpccClassLoader;");
+        clc_newInstance = J->GetStaticMethodID(customLoaderClass, "newInstance","(Ljava/lang/String;Ljava/lang/ClassLoader;IJLjava/lang/String;)Lcom/HPCCSystems/HpccClassLoader;");
         clc_getSignature = J->GetStaticMethodID(customLoaderClass, "getSignature","(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/String;");
         hpccIteratorClass = J->FindGlobalClass("com/HPCCSystems/HpccUtils");
         hi_constructor = J->GetMethodID(hpccIteratorClass, "<init>", "(JLjava/lang/String;)V");
@@ -3077,7 +3074,7 @@ public:
     virtual void getDataResult(size32_t &__len, void * &__result)
     {
         if (strcmp(returnType, "[B")!=0)
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+            throw resultMismatchException("data");
         jbyteArray array = (jbyteArray) result.l;
         __len = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
         __result = (__len > 0 ? rtlMalloc(__len) : NULL);
@@ -3097,12 +3094,12 @@ public:
                     return 0;
                 jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "doubleValue", "()D");
                 if (!getVal)
-                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+                    throw resultMismatchException("real");
                 double ret = JNIenv->CallDoubleMethod(result.l, getVal);
                 return ret;
             }
         default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+            throw resultMismatchException("real");
         }
     }
     virtual __int64 getSignedResult()
@@ -3120,12 +3117,12 @@ public:
                     return 0;
                 jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "longValue", "()J");
                 if (!getVal)
-                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+                    throw resultMismatchException("integer");
                 __int64 ret = JNIenv->CallLongMethod(result.l, getVal);
                 return ret;
             }
         default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+            throw resultMismatchException("integer");
         }
     }
     virtual unsigned __int64 getUnsignedResult()
@@ -3149,7 +3146,7 @@ public:
             }
             return (unsigned __int64) thisObject;
         }
-        throw MakeStringException(MSGAUD_user, 0, "javaembed: Unsigned results not supported"); // Java doesn't support unsigned
+        throw makeStringExceptionV(MSGAUD_user, 0, "javaembed: In method %s: Unsigned results not supported", queryReportName()); // Java doesn't support unsigned
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
     {
@@ -3177,7 +3174,7 @@ public:
             break;
         }
         default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+            throw resultMismatchException("string");
         }
     }
     virtual void getUTF8Result(size32_t &__chars, char * &__result)
@@ -3205,7 +3202,7 @@ public:
             break;
         }
         default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+            throw resultMismatchException("utf8");
         }
     }
     virtual void getUnicodeResult(size32_t &__chars, UChar * &__result)
@@ -3234,13 +3231,13 @@ public:
             break;
         }
         default:
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+            throw resultMismatchException("unicode");
         }
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int _elemType, size32_t elemSize)
     {
         if (*returnType != '[')
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result (array expected)");
+            throw resultMismatchException("array");
         type_t elemType = (type_t) _elemType;
         jarray array = (jarray) result.l;
         int numResults = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
@@ -3266,7 +3263,7 @@ public:
                 break;
             case 'C':
                 // we COULD map to a set of string1, but is there any point?
-                throw MakeStringException(0, "javaembed: Return type mismatch (char[] not supported)");
+                throw MakeStringException(0, "javaembed: In method %s: Return type mismatch (char[] not supported)", queryReportName());
                 break;
             case 'S':
                 checkType(type_int, sizeof(jshort), elemType, elemSize);
@@ -3356,7 +3353,7 @@ public:
                         }
                         default:
                             JNIenv->ReleaseStringUTFChars(elem, text);
-                            throw MakeStringException(0, "javaembed: Return type mismatch (ECL string type expected)");
+                            throw MakeStringException(0, "javaembed: In method %s: Return type mismatch (ECL string type expected)", queryReportName());
                         }
                         JNIenv->ReleaseStringUTFChars(elem, text);
                         JNIenv->DeleteLocalRef(elem);
@@ -3365,7 +3362,7 @@ public:
                     }
                 }
                 else
-                    throw MakeStringException(0, "javaembed: Return type mismatch (%s[] not supported)", returnType+2);
+                    throw MakeStringException(0, "javaembed: In method %s: Return type mismatch (%s[] not supported)", queryReportName(), returnType+2);
                 break;
             }
         }
@@ -3474,7 +3471,7 @@ public:
     }
     virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
     {
-        throw MakeStringException(MSGAUD_user, 0, "javaembed: Unsigned parameters not supported"); // Java doesn't support unsigned
+        throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Unsigned parameters not supported", queryReportName()); // Java doesn't support unsigned
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
@@ -3490,7 +3487,7 @@ public:
         else
         {
             // We could match a java class, to allow objects returned from one embed to be passed as parameters to another
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: Unsigned parameters not supported"); // Java doesn't support unsigned
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Unsigned parameters not supported", queryReportName()); // Java doesn't support unsigned
         }
     }
     virtual void bindStringParam(const char *name, size32_t len, const char *val)
@@ -3862,60 +3859,86 @@ public:
         if (javaClass)
             reinit();
     }
+
+    IException *translateException(IException *E)
+    {
+        StringBuffer msg;
+        E->errorMessage(msg);
+        const char *text = msg;
+        if (strncmp(text, "javaembed: ", 11)==0)
+            text += 11;
+        auto code = E->errorCode();
+        auto aud = E->errorAudience();
+        E->Release();
+        return makeStringExceptionV(aud, code, "javaembed: In method %s: %s", queryReportName(), text);
+    }
+
+    IException *resultMismatchException(const char *expected)
+    {
+        return makeStringExceptionV(0, "javaembed: In method %s: Type mismatch on result (%s expected)", queryReportName(), expected);
+    }
+
     virtual void callFunction()
     {
-        if (*argsig != ')')
-            throw MakeStringException(0, "javaembed: Too few ECL parameters passed for Java signature %s", signature.get());
-        JNIenv->ExceptionClear();
-        if (nonStatic)
+        try
         {
-            if (!instance)
+            if (*argsig != ')')
+                throw MakeStringException(0, "Too few ECL parameters passed for Java signature %s", signature.get());
+            JNIenv->ExceptionClear();
+            if (nonStatic)
             {
-                if (streq(methodName, "<init>"))
-                    result.l = JNIenv->NewObjectA(javaClass, javaMethodID, args);
-                else
-                    throw MakeStringException(0, "javaembed: non static member function %s called, but no instance available", methodName.get());  // Should never happen
-            }
-            else if (javaMethodID)
-            {
-                switch (*returnType)
+                if (!instance)
                 {
-                case 'C': result.c = JNIenv->CallCharMethodA(instance, javaMethodID, args); break;
-                case 'Z': result.z = JNIenv->CallBooleanMethodA(instance, javaMethodID, args); break;
-                case 'J': result.j = JNIenv->CallLongMethodA(instance, javaMethodID, args); break;
-                case 'F': result.f = JNIenv->CallFloatMethodA(instance, javaMethodID, args); break;
-                case 'D': result.d = JNIenv->CallDoubleMethodA(instance, javaMethodID, args); break;
-                case 'I': result.i = JNIenv->CallIntMethodA(instance, javaMethodID, args); break;
-                case 'S': result.s = JNIenv->CallShortMethodA(instance, javaMethodID, args); break;
-                case 'B': result.s = JNIenv->CallByteMethodA(instance, javaMethodID, args); break;
-                case '[':
-                case 'L': result.l = JNIenv->CallObjectMethodA(instance, javaMethodID, args); break;
-                case 'V': JNIenv->CallVoidMethodA(instance, javaMethodID, args); result.l = nullptr; break;
-                default: throwUnexpected();
+                    if (streq(methodName, "<init>"))
+                        result.l = JNIenv->NewObjectA(javaClass, javaMethodID, args);
+                    else
+                        throw MakeStringException(0, "non static member function %s called, but no instance available", methodName.get());  // Should never happen
+                }
+                else if (javaMethodID)
+                {
+                    switch (*returnType)
+                    {
+                    case 'C': result.c = JNIenv->CallCharMethodA(instance, javaMethodID, args); break;
+                    case 'Z': result.z = JNIenv->CallBooleanMethodA(instance, javaMethodID, args); break;
+                    case 'J': result.j = JNIenv->CallLongMethodA(instance, javaMethodID, args); break;
+                    case 'F': result.f = JNIenv->CallFloatMethodA(instance, javaMethodID, args); break;
+                    case 'D': result.d = JNIenv->CallDoubleMethodA(instance, javaMethodID, args); break;
+                    case 'I': result.i = JNIenv->CallIntMethodA(instance, javaMethodID, args); break;
+                    case 'S': result.s = JNIenv->CallShortMethodA(instance, javaMethodID, args); break;
+                    case 'B': result.s = JNIenv->CallByteMethodA(instance, javaMethodID, args); break;
+                    case '[':
+                    case 'L': result.l = JNIenv->CallObjectMethodA(instance, javaMethodID, args); break;
+                    case 'V': JNIenv->CallVoidMethodA(instance, javaMethodID, args); result.l = nullptr; break;
+                    default: throwUnexpected();
+                    }
+                }
+                else
+                {
+                    assertex(methodName[0]=='~');
                 }
             }
             else
             {
-                assertex(methodName[0]=='~');
+                switch (*returnType)
+                {
+                case 'C': result.c = JNIenv->CallStaticCharMethodA(javaClass, javaMethodID, args); break;
+                case 'Z': result.z = JNIenv->CallStaticBooleanMethodA(javaClass, javaMethodID, args); break;
+                case 'J': result.j = JNIenv->CallStaticLongMethodA(javaClass, javaMethodID, args); break;
+                case 'F': result.f = JNIenv->CallStaticFloatMethodA(javaClass, javaMethodID, args); break;
+                case 'D': result.d = JNIenv->CallStaticDoubleMethodA(javaClass, javaMethodID, args); break;
+                case 'I': result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
+                case 'S': result.s = JNIenv->CallStaticShortMethodA(javaClass, javaMethodID, args); break;
+                case 'B': result.s = JNIenv->CallStaticByteMethodA(javaClass, javaMethodID, args); break;
+                case '[':
+                case 'L': result.l = JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args); break;
+                case 'V': JNIenv->CallStaticVoidMethodA(javaClass, javaMethodID, args); result.l = nullptr; break;
+                default: throwUnexpected();
+                }
             }
         }
-        else
+        catch (IException *E)
         {
-            switch (*returnType)
-            {
-            case 'C': result.c = JNIenv->CallStaticCharMethodA(javaClass, javaMethodID, args); break;
-            case 'Z': result.z = JNIenv->CallStaticBooleanMethodA(javaClass, javaMethodID, args); break;
-            case 'J': result.j = JNIenv->CallStaticLongMethodA(javaClass, javaMethodID, args); break;
-            case 'F': result.f = JNIenv->CallStaticFloatMethodA(javaClass, javaMethodID, args); break;
-            case 'D': result.d = JNIenv->CallStaticDoubleMethodA(javaClass, javaMethodID, args); break;
-            case 'I': result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
-            case 'S': result.s = JNIenv->CallStaticShortMethodA(javaClass, javaMethodID, args); break;
-            case 'B': result.s = JNIenv->CallStaticByteMethodA(javaClass, javaMethodID, args); break;
-            case '[':
-            case 'L': result.l = JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args); break;
-            case 'V': JNIenv->CallStaticVoidMethodA(javaClass, javaMethodID, args); result.l = nullptr; break;
-            default: throwUnexpected();
-            }
+            throw translateException(E);
         }
     }
 
@@ -3985,13 +4008,13 @@ protected:
                 break;
             }
         case ')':
-            throw MakeStringException(0, "javaembed: Too many ECL parameters passed for Java signature %s", signature.get());
+            throw MakeStringException(0, "javaembed: In method %s: Too many ECL parameters passed for Java signature", queryReportName());
         default:
-            throw MakeStringException(0, "javaembed: Unrecognized character %c in java signature %s", *argsig, signature.get());
+            throw MakeStringException(0, "javaembed: In method %s: Unrecognized character %c in Java signature", queryReportName(), *argsig);
         }
         if (!javaLen)
-            javaLen = strlen(argsig);
-        throw MakeStringException(0, "javaembed: ECL type %s cannot be passed to Java type %.*s", ECLtype, javaLen, javaType);
+            javaLen = strlen(javaType);
+        throw MakeStringException(0, "javaembed: In Method %s: ECL type %s cannot be passed to Java type %.*s", queryReportName(), ECLtype, javaLen, javaType);
     }
     void addArg(jvalue &arg)
     {
@@ -4020,6 +4043,8 @@ protected:
 
     const char *queryReportName()
     {
+        if (!importName.length())
+            return "";
         const char *report = strrchr(importName.get(), '/');
         if (report)
             report++;
@@ -4032,24 +4057,9 @@ protected:
     {
         if (bytecodeLen || (classPath && *classPath))
         {
-            StringArray paths;
-            paths.appendList(classPath, ";");  // NOTE - as we need to be able to include : in the urls, we can't use ENVSEP here
-            jobjectArray URLArray = JNIenv->NewObjectArray(paths.length(), netURLClass, NULL);
-            ForEachItemIn(idx, paths)
-            {
-                StringBuffer usepath;
-                const char *path = paths.item(idx);
-                if (!strchr(path, ':'))
-                    usepath.append("file:");
-                usepath.append(path);
-                jstring jstr = JNIenv->NewStringUTF(usepath.str());
-                jobject URLobj = JNIenv->NewObject(netURLClass, netURL_constructor, jstr);
-                JNIenv->SetObjectArrayElement(URLArray, idx, URLobj);
-                JNIenv->DeleteLocalRef(URLobj);
-                JNIenv->DeleteLocalRef(jstr);
-            }
+            jstring jClassPath = (classPath && *classPath) ? JNIenv->NewStringUTF(classPath) : nullptr;
             jobject helperName = JNIenv->NewStringUTF(helperLibraryName);
-            jobject contextClassLoaderObj = JNIenv->CallStaticObjectMethod(customLoaderClass, clc_newInstance, URLArray, sharedCtx->getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, helperName);
+            jobject contextClassLoaderObj = JNIenv->CallStaticObjectMethod(customLoaderClass, clc_newInstance, jClassPath, sharedCtx->getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, helperName);
             assertex(contextClassLoaderObj);
             return contextClassLoaderObj;
         }
@@ -4061,123 +4071,130 @@ protected:
 
     void loadFunction(const char *classpath, size32_t bytecodeLen, const byte *bytecode)
     {
-        StringBuffer classname;
-        // Name should be in the form class.method:signature
-        const char *funcname = strrchr(importName, '.');
-        if (funcname)
+        try
         {
-            classname.append(funcname-importName, importName);
-            classname.replace('/', '.');
-            funcname++;  // skip the '.'
-        }
-        else
-        {
-            nonStatic = true;  // we assume we are going to call a method of a cached object - and we will get the class from that
-            funcname = importName;
-        }
-        const char *sig = strchr(funcname, ':');
-        if (sig)
-        {
-            methodName.set(funcname, sig-funcname);
-            sig++; // skip the ':'
-            if (*sig == '@') // indicates a non-static method
+            StringBuffer classname;
+            // Name should be in the form class.method:signature
+            const char *funcname = strrchr(importName, '.');
+            if (funcname)
             {
-                nonStatic = true;
-                sig++;
+                classname.append(funcname-importName, importName);
+                classname.replace('/', '.');
+                funcname++;  // skip the '.'
             }
-            signature.set(sig);
-        }
-        else
-            methodName.set(funcname);
-        bool isConstructor = streq(methodName, "<init>");
-        {
-            PersistedObjectCriticalBlock persistBlock;
-            StringBuffer scopeKey;
-            if (nonStatic && !instance && persistMode > persistThread && !isConstructor) // MORE - there may be a persist mode between Thread and Wuid, meaning shared between multiple on this thread
+            else
             {
-                // If the persist scope is global, query, or workunit, we may want to use a pre-existing object. If we do we share its classloader, class, etc.
-                getScopeKey(scopeKey);
-                persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
-                instance = persistBlock.getInstance();
+                nonStatic = true;  // we assume we are going to call a method of a cached object - and we will get the class from that
+                funcname = importName;
+            }
+            const char *sig = strchr(funcname, ':');
+            if (sig)
+            {
+                methodName.set(funcname, sig-funcname);
+                sig++; // skip the ':'
+                if (*sig == '@') // indicates a non-static method
+                {
+                    nonStatic = true;
+                    sig++;
+                }
+                signature.set(sig);
+            }
+            else
+                methodName.set(funcname);
+            bool isConstructor = streq(methodName, "<init>");
+            {
+                PersistedObjectCriticalBlock persistBlock;
+                StringBuffer scopeKey;
+                if (nonStatic && !instance && persistMode > persistThread && !isConstructor) // MORE - there may be a persist mode between Thread and Wuid, meaning shared between multiple on this thread
+                {
+                    // If the persist scope is global, query, or workunit, we may want to use a pre-existing object. If we do we share its classloader, class, etc.
+                    getScopeKey(scopeKey);
+                    persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
+                    instance = persistBlock.getInstance();
+                    if (instance)
+                        persistBlock.leave();
+                }
                 if (instance)
-                    persistBlock.leave();
-            }
-            if (instance)
-            {
-                javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(instance));
-                classLoader = JNIenv->NewGlobalRef(getClassLoader(JNIenv, javaClass));
-                sharedCtx->setThreadClassLoader(classLoader);
-            }
-            if (!javaClass)
-            {
-                if (!classname)
-                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", importName.str());
-                classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode));
-                sharedCtx->setThreadClassLoader(classLoader);
+                {
+                    javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(instance));
+                    classLoader = JNIenv->NewGlobalRef(getClassLoader(JNIenv, javaClass));
+                    sharedCtx->setThreadClassLoader(classLoader);
+                }
+                if (!javaClass)
+                {
+                    if (!classname)
+                        throw MakeStringException(MSGAUD_user, 0, "Invalid import name - Expected classname.methodname:signature");
+                    classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode));
+                    sharedCtx->setThreadClassLoader(classLoader);
 
-                jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-                try
-                {
-                    javaClass = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, JNIenv->NewStringUTF(classname));
+                    jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+                    try
+                    {
+                        javaClass = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, JNIenv->NewStringUTF(classname));
+                    }
+                    catch (IException *E)
+                    {
+                        Owned<IException> e = E;
+                        throw makeWrappedExceptionV(E, E->errorCode(), "Failed to resolve class name %s", classname.str());
+                    }
+                    javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
                 }
-                catch (IException *E)
+                if (nonStatic && !instance && !isConstructor)
                 {
-                    Owned<IException> e = E;
-                    throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Failed to resolve class name %s", classname.str());
+                    jmethodID constructor;
+                    try
+                    {
+                        constructor = JNIenv->GetMethodID(javaClass, "<init>", "()V");
+                    }
+                    catch (IException *E)
+                    {
+                        Owned<IException> e = E;
+                        throw MakeStringException(0, "parameterless constructor required");
+                    }
+                    instance = JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
+                    if (persistBlock.locked())
+                    {
+                        if (engine)
+                            engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
+                        persistBlock.leave(JNIenv->NewGlobalRef(instance));
+                    }
                 }
-                javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
             }
-            if (nonStatic && !instance && !isConstructor)
+            if (methodName[0]=='~')
             {
-                jmethodID constructor;
-                try
-                {
-                    constructor = JNIenv->GetMethodID(javaClass, "<init>", "()V");
-                }
-                catch (IException *E)
-                {
-                    Owned<IException> e = E;
-                    throw MakeStringException(0, "javaembed: in method %s: parameterless constructor required", queryReportName());
-                }
-                instance = JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
-                if (persistBlock.locked())
-                {
-                    if (engine)
-                        engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
-                    persistBlock.leave(JNIenv->NewGlobalRef(instance));
-                }
+                if (!instance)
+                    throw MakeStringException(0, "~ invalid without instance");
+                StringBuffer myClassName;
+                getClassNameForObject(JNIenv, myClassName, instance);
+                const char *shortClassName = strrchr(myClassName, '.');
+                if (shortClassName)
+                    shortClassName++;
+                else
+                    shortClassName = myClassName;
+                if (!streq(methodName+1, shortClassName))
+                    throw MakeStringException(0, "class name %s does not match", shortClassName);
+                signature.set("()V");
             }
-        }
-        if (methodName[0]=='~')
-        {
-            if (!instance)
-                throw MakeStringException(0, "javaembed: in method %s: ~ invalid without instance", queryReportName());
-            StringBuffer myClassName;
-            getClassNameForObject(JNIenv, myClassName, instance);
-            const char *shortClassName = strrchr(myClassName, '.');
-            if (shortClassName)
-                shortClassName++;
             else
-                shortClassName = myClassName;
-            if (!streq(methodName+1, shortClassName))
-                throw MakeStringException(0, "javaembed: in method %s: class name %s does not match", queryReportName(), shortClassName);
-            signature.set("()V");
-        }
-        else
-        {
-            if (!signature)
-                getSignature(signature, JNIenv, javaClass, funcname);
-            StringBuffer javaSignature;
-            patchSignature(javaSignature, signature);
+            {
+                if (!signature)
+                    getSignature(signature, JNIenv, javaClass, funcname);
+                StringBuffer javaSignature;
+                patchSignature(javaSignature, signature);
 
-            if (nonStatic)
-                javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
-            else
-                javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
+                if (nonStatic)
+                    javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
+                else
+                    javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
+            }
+            returnType = strrchr(signature, ')');
+            assertex(returnType);  // Otherwise how did Java accept it??
+            returnType++;
         }
-        returnType = strrchr(signature, ')');
-        assertex(returnType);  // Otherwise how did Java accept it??
-        returnType++;
+        catch(IException *E)
+        {
+            throw translateException(E);
+        }
     }
 
     static StringBuffer &patchSignature(StringBuffer &ret, const char *signature)

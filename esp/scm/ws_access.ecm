@@ -233,6 +233,7 @@ ESPresponse UserInfoEditInputResponse
     string firstname;
     string lastname;
     [min_ver("1.10")] string employeeID;
+    [min_ver("1.12")] string PasswordExpiration;
 };
 
 ESPrequest UserInfoEditRequest
@@ -976,7 +977,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
     [http_content("application/octet-stream")] binary Result;
 };
 
-ESPservice [version("1.11"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.12"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);

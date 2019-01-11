@@ -2377,6 +2377,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_assertgrouped:
     case no_assertdistributed:
     case no_extractresult:
+    case no_createdictionary:
         return childdataset_dataset;
     case no_alias_scope:
         if (expr->isDataset())
