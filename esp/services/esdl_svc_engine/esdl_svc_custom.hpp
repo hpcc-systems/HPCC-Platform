@@ -56,7 +56,7 @@ public:
     CEsdlCustomTransformRule(const char * transferName, const char * targetfield, const char * xpathToValue, bool optional, bool attemptToSet)
     :  m_ruleName(transferName), m_targetField(targetfield), m_xpathToValue(xpathToValue), m_optional(optional), m_attemptToSet(attemptToSet)
     {
-        m_compiledValueXpath.set(getCompiledXpath(xpathToValue));
+        m_compiledValueXpath.setown(compileXpath(xpathToValue));
     }
 
 #if defined(_DEBUG)
