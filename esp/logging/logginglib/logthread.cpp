@@ -26,7 +26,6 @@ const char* const PropMaxLogQueueLength = "MaxLogQueueLength";
 const char* const PropQueueSizeSignal = "QueueSizeSignal";
 const char* const PropMaxTriesRS = "MaxTriesRS";
 const char* const PropFailSafe = "FailSafe";
-const char* const PropFailSafeLogsDir = "FailSafeLogsDir";
 
 #define     MaxLogQueueLength   500000 //Write a warning into log when queue length is greater than 500000
 #define     QueueSizeSignal     10000 //Write a warning into log when queue length is increased by 10000
@@ -65,13 +64,8 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
     maxLogRetries = _cfg->getPropInt(PropMaxTriesRS, DefaultMaxTriesRS);
     ensureFailSafe = _cfg->getPropBool(PropFailSafe);
     if(ensureFailSafe)
-    {
-        const char * logsDir = _cfg->queryProp(PropFailSafeLogsDir);
-        if (!logsDir || !*logsDir)
-            logsDir = "./FailSafeLogs";
+        logFailSafe.setown(createFailSafeLogger(_cfg, _service, _agentName));
 
-        logFailSafe.setown(createFailSafeLogger(_service, _agentName, logsDir));
-    }
     time_t tNow;
     time(&tNow);
     localtime_r(&tNow, &m_startTime);
