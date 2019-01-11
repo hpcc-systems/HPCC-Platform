@@ -46,4 +46,16 @@ if ( PLATFORM AND UNIX )
 endif ()
 
 Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/examples DESTINATION "." COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN ".svn" EXCLUDE )
-Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/classes DESTINATION "." COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN ".svn" EXCLUDE )
+
+find_package(Java 1.8 COMPONENTS Development)
+set(example_java_sources examples/embed/JavaCat.java)
+set(example_java_classes ${CMAKE_CURRENT_BINARY_DIR}/JavaCat.class ${CMAKE_CURRENT_BINARY_DIR}/JavaCat\$NestedClass.class)
+add_custom_command ( OUTPUT ${example_java_classes}
+    COMMAND ${Java_JAVAC_EXECUTABLE} ${example_java_sources} -d ${CMAKE_CURRENT_BINARY_DIR} -target 1.8
+    DEPENDS ${example_java_sources}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+add_custom_target(build-example-java-classes ALL
+  DEPENDS ${example_java_classes}
+)
+Install ( FILES ${example_java_classes} DESTINATION "classes" COMPONENT Runtime )

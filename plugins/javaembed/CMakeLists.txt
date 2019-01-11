@@ -28,6 +28,7 @@ project(javaembed)
 if(JAVAEMBED)
     ADD_PLUGIN(javaembed PACKAGES JNI)
     if(MAKE_JAVAEMBED)
+        find_package(Java 1.8 COMPONENTS Development)
         set(
             SRCS
             javaembed.cpp)
@@ -49,9 +50,22 @@ if(JAVAEMBED)
             ${CMAKE_BINARY_DIR}
             ${CMAKE_BINARY_DIR}/oss)
 
+        set(java_sources HpccClassLoader.java HpccUtils.java)
+        set(java_classes ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccClassLoader.class ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccUtils.class)
+        add_custom_command ( OUTPUT ${java_classes}
+            COMMAND ${Java_JAVAC_EXECUTABLE} ${java_sources} -d ${CMAKE_CURRENT_BINARY_DIR} -target 1.8
+            DEPENDS ${java_sources}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+        add_custom_target(build-java-classes ALL
+          DEPENDS ${java_classes}
+        )
+            
         add_definitions(-D_USRDLL -DJAVAEMBED_EXPORTS)
 
         HPCC_ADD_LIBRARY(javaembed SHARED ${SRCS})
+        add_dependencies(javaembed build-java-classes)
+
         if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
             message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
         elseif(NOT APPLE)
@@ -62,7 +76,7 @@ if(JAVAEMBED)
             TARGETS javaembed
             DESTINATION plugins)
         install(
-            FILES ${CMAKE_CURRENT_SOURCE_DIR}/HpccUtils.class ${CMAKE_CURRENT_SOURCE_DIR}/HpccClassLoader.class
+            FILES ${java_classes}
             DESTINATION classes/com/HPCCSystems
             COMPONENT Runtime)
 
