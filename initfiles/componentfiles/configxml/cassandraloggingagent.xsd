@@ -115,7 +115,7 @@
       <xs:attribute name="SafeRolloverThreshold" type="xs:string" use="required">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>The threshold to switch to a new tank file: a number of requests or file size (xBytes, xMBs, etc).</tooltip>
+            <tooltip>The threshold at which a new tank file will be started: n for number of requests, nB, nMB, or nGB for file size.</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
