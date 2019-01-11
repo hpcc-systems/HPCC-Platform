@@ -194,7 +194,7 @@ public:
                 user->setAuthenticateStatus(AS_AUTHENTICATED);
             }
             else
-                ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s digital signature support not available",key?key:"NULL",obj?obj:"NULL",username.str());
+                ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Dali received signed request, however Dali is not configured to verify digital signatures",key?key:"NULL",obj?obj:"NULL",username.str());
         }
 
         if (!isEmptyString(user->credentials().getPassword()) && !isWorkunitDAToken(user->credentials().getPassword()))
