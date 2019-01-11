@@ -670,9 +670,6 @@ static void setupGlobals(CheckedJNIEnv *J)
 
         langStringClass = J->FindGlobalClass("java/lang/String");
 
-        netURLClass = J->FindGlobalClass("java/net/URL");
-        netURL_constructor = J->GetMethodID(netURLClass, "<init>","(Ljava/lang/String;)V");
-
         langIllegalArgumentExceptionClass = J->FindGlobalClass("java/lang/IllegalArgumentException");
     }
     catch (IException *E)
@@ -684,7 +681,7 @@ static void setupGlobals(CheckedJNIEnv *J)
     try
     {
         customLoaderClass = J->FindGlobalClass("com/HPCCSystems/HpccClassLoader");
-        clc_newInstance = J->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;IJLjava/lang/String;)Lcom/HPCCSystems/HpccClassLoader;");
+        clc_newInstance = J->GetStaticMethodID(customLoaderClass, "newInstance","(Ljava/lang/String;Ljava/lang/ClassLoader;IJLjava/lang/String;)Lcom/HPCCSystems/HpccClassLoader;");
         clc_getSignature = J->GetStaticMethodID(customLoaderClass, "getSignature","(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/String;");
         hpccIteratorClass = J->FindGlobalClass("com/HPCCSystems/HpccUtils");
         hi_constructor = J->GetMethodID(hpccIteratorClass, "<init>", "(JLjava/lang/String;)V");
@@ -4032,24 +4029,9 @@ protected:
     {
         if (bytecodeLen || (classPath && *classPath))
         {
-            StringArray paths;
-            paths.appendList(classPath, ";");  // NOTE - as we need to be able to include : in the urls, we can't use ENVSEP here
-            jobjectArray URLArray = JNIenv->NewObjectArray(paths.length(), netURLClass, NULL);
-            ForEachItemIn(idx, paths)
-            {
-                StringBuffer usepath;
-                const char *path = paths.item(idx);
-                if (!strchr(path, ':'))
-                    usepath.append("file:");
-                usepath.append(path);
-                jstring jstr = JNIenv->NewStringUTF(usepath.str());
-                jobject URLobj = JNIenv->NewObject(netURLClass, netURL_constructor, jstr);
-                JNIenv->SetObjectArrayElement(URLArray, idx, URLobj);
-                JNIenv->DeleteLocalRef(URLobj);
-                JNIenv->DeleteLocalRef(jstr);
-            }
+            jstring jClassPath = (classPath && *classPath) ? JNIenv->NewStringUTF(classPath) : nullptr;
             jobject helperName = JNIenv->NewStringUTF(helperLibraryName);
-            jobject contextClassLoaderObj = JNIenv->CallStaticObjectMethod(customLoaderClass, clc_newInstance, URLArray, sharedCtx->getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, helperName);
+            jobject contextClassLoaderObj = JNIenv->CallStaticObjectMethod(customLoaderClass, clc_newInstance, jClassPath, sharedCtx->getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, helperName);
             assertex(contextClassLoaderObj);
             return contextClassLoaderObj;
         }
