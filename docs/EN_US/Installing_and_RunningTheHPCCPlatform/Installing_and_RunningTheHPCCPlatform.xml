@@ -523,6 +523,17 @@ gpgcheck=0</programlisting></para>
               <listitem>
                 <para>Install the <emphasis role="bold">ECL IDE and Client
                 Tools for Windows</emphasis>.</para>
+
+                <variablelist>
+                  <varlistentry>
+                    <term>Note:</term>
+
+                    <listitem>
+                      <para>The ECL IDE only runs on Windows operating
+                      systems.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist>
               </listitem>
 
               <listitem>
