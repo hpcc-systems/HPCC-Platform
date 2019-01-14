@@ -23,17 +23,17 @@
 #include <vector>
 #include <memory>
 
-class Input;
+class Variable;
 
-class Inputs
+class Variables
 {
     public:
 
-        Inputs() = default;
-        ~Inputs() = default;
-        void add(const std::shared_ptr<Input> pInput);
-        const std::vector<std::shared_ptr<Input>> &all(unsigned phase=0) const  { return m_inputValues; }
-        std::shared_ptr<Input> getInput(const std::string &name, bool throwIfNotFound = true) const;
+        Variables() = default;
+        ~Variables() = default;
+        void add(const std::shared_ptr<Variable> pVariable);
+        const std::vector<std::shared_ptr<Variable>> &all() const  { return m_variables; }
+        std::shared_ptr<Variable> getVariable(const std::string &name, bool throwIfNotFound = true) const;
         void setInputIndex(size_t idx) { m_curIndex = idx; }
         std::string doValueSubstitution(const std::string &value) const;
         void prepare();
@@ -48,7 +48,7 @@ class Inputs
 
     private:
 
-        std::vector<std::shared_ptr<Input>> m_inputValues;
+        std::vector<std::shared_ptr<Variable>> m_variables;
         size_t m_curIndex = 0;
 };
 

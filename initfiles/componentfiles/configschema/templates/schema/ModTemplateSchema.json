@@ -1,166 +1,379 @@
 {
-    "$schema" : "http://json-schema.org/draft-04/schema#",
-    "description" : "Schema for validating environment modification template",
-    "type" : "object",
-    "properties" : {
-        "name" : {
-            "type" : "string"
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "Schema for validating environment modification template",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description" : "Name for the template"
         },
-        "description" : {
-            "type" : "string"
+        "description": {
+            "type": "string",
+            "description" : "A description of the template"
         },
-        "type" : {
-            "type" : "string",
-            "enum" : [
+        "type": {
+            "type": "string",
+            "enum": [
                 "new",
                 "modification"
-            ]
+            ],
+            "description" : "Type of template. Mainly used for filtering templates."
         },
-        "subtype" : {
-            "type" : "string"
-        },
-        "inputs" : {
-            "type" : "array",
-            "minItems" : 0,
-            "items" : {
-                "type" : "object",
-                "properties" : {
-                    "name" : {
-                        "type" : "string"
+        "variables": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description" : "Name of the variable to which the input is assigned. This value is available using {{name}} anywhere in the template"
                     },
-                    "type" : {
-                        "type" : "string",
-                        "enum" : [
+                    "type": {
+                        "type": "string",
+                        "enum": [
                             "string",
                             "iprange",
                             "ipaddress",
                             "hostname"
-                        ]
+                        ],
+                        "description" : "The variable type."
                     },
-                    "prompt" : {
-                        "type" : "string"
+                    "prompt": {
+                        "type": "string",
+                        "description" : "String shown to user during interactive input"
                     },
-                    "description" : {
-                        "type" : "string"
+                    "description": {
+                        "type": "string",
+                        "description" : "Description of what this value represents in the template."
                     },
-                    "tooltip" : {
-                        "type" : "string"
+                    "values": {
+                        "type": "array",
+                        "items" : {
+                            "type" : "string"
+                        },
+                        "description" : "Pre-assigned values"
                     },
-                    "value" : {
-                        "type" : "string"
+                    "user_input": {
+                        "type": "boolean",
+                        "description" : "Set to true if user must input this value(s) (defaults to true)",
+                        "default" : true
                     },
-                    "non_user_input" : {
-                        "type" : "boolean"
-                    },
-                    "prepared_value" : {
-                        "type" : "string"
+                    "prepared_value": {
+                        "type": "string",
+                        "description" : "Optional. Used to prepare the final value for use during template execution. Usually combined with other variable values of the form {{varname}}"
                     }
                 },
-                "required" : [
+                "required": [
                     "name",
                     "type"
                 ]
+            },
+            "description" : "Array of variables for template execution. Some may require user input."
+        },
+        "operations": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+                "$ref": "#/definitions/operation"
             }
-        },
-        "rules" : {
-            "type" : "object"
-        },
-        "operations" : {
-            "type" : "array",
-            "minItems" : 0,
-            "items" : { "$ref" : "#/definitions/operation"}
         }
     },
-    "required" : [
+    "required": [
         "name",
         "type",
         "operations"
     ],
-
-    "definitions" : {
-
-        "operation" : {
-            "type" : "object",
-            "properties" : {
-                "action" : {
-                    "type" : "string"
+    "definitions": {
+        "operation": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
                 },
-                "save_nodeid" : {
-                    "type" : "string"
+                "action": {
+                    "type" : "string",
+                    "enum": [
+                        "create_node",
+                        "modify_node",
+                        "find_node",
+                        "delete_node"
+                    ],
+                    "description" : "Action to perform for this operation"
                 },
-                "path" : {
-                    "type" : "string"
+                "parent_path": {
+                    "type": "string"
                 },
-                "parent_nodeid" : {
-                    "type" : "string"
-                },
-                "node_type" : {
-                    "type" : "string"
-                },
-                "count" : {
-                    "type" : "string"
-                },
-                "start_index" : {
-                    "type" : "string"
-                },
-                "attributes" : {
-                    "$ref" : "#/definitions/attribute_values"
+                "parent_nodeid": {
+                    "type": "string"
                 }
             },
-            "allOf" : [
+            "allOf": [
                 {
-                    "oneOf" : [
-
+                    "oneOf": [
                         {
-                            "properties" : {
-                                "action" : { "enum" : [ "create_node"]}
+                            "properties": {
+                                "action": {
+                                    "enum": [
+                                        "create_node"
+                                    ]
+                                },
+                                "data": {
+                                    "$ref": "#/definitions/create_data_info"
+                                }
                             },
-                            "required" : ["node_type"]
+                            "required": [
+                                "action",
+                                "data"
+                            ]
                         },
                         {
-                            "properties" : {
-                                "action" : { "enum" : ["modify_node", "noop"]}
-                            }
+                            "properties": {
+                                "action": {
+                                    "enum": [
+                                        "modify_node"
+                                    ]
+                                },
+                                "data": {
+                                    "$ref": "#/definitions/modify_data_info"
+                                }
+                            },
+                            "required": [
+                                "action",
+                                "data"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "action": {
+                                    "enum": [
+                                        "find_node"
+                                    ]
+                                },
+                                "data": {
+                                    "$ref": "#/definitions/find_data_info"
+                                }
+                            },
+                            "required": [
+                                "action"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "action": {
+                                    "enum": [
+                                        "delete_node"
+                                    ]
+                                },
+                                "data": {
+                                    "$ref": "#/definitions/delete_data_info"
+                                }
+                            },
+                            "required": [
+                                "action"
+                            ]
                         }
                     ]
                 },
                 {
-                    "oneOf" : [
-                        { "required" : [ "path" ]},
-                        { "required" : [ "parent_nodeid" ]}
+                    "oneOf": [
+                        {
+                            "required": [
+                                "parent_path"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "parent_nodeid"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "description" : "Definition of the operation to perform"
+        },
+        "create_data_info": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "string"
+                },
+                "start_index": {
+                    "type": "string"
+                },
+                "node_type": {
+                    "type": "string"
+                },
+                "save_nodeid": {
+                    "$ref": "#/definitions/save_info"
+                },
+                "attributes": {
+                    "$ref": "#/definitions/attribute_values"
+                }
+            },
+            "allOf": [
+                {
+                    "required": [
+                        "node_type"
+                    ]
+                }
+            ]
+        },
+        "modify_data_info": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "string"
+                },
+                "start_index": {
+                    "type": "string"
+                },
+                "save_nodeid": {
+                    "$ref": "#/definitions/save_info"
+                },
+                "attributes": {
+                    "$ref": "#/definitions/attribute_values"
+                }
+            },
+            "allOf": [
+                {
+                    "required": [
+                        "attributes"
+                    ]
+                }
+            ]
+        },
+        "find_data_info": {
+            "type": "object",
+            "properties": {
+                "node_type": {
+                    "type": "string"
+                },
+                "save_nodeid": {
+                    "$ref": "#/definitions/save_info"
+                },
+                "error_if_not_found": {
+                    "type": "boolean",
+                    "default" : true
+                },
+                "create_if_not_found": {
+                    "type": "boolean",
+                    "default" : false
+                },
+                "attributes": {
+                    "$ref": "#/definitions/attribute_refs"
+                }
+            }
+        },
+        "delete_data_info": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "string"
+                },
+                "start_index": {
+                    "type": "string"
+                },
+                "error_if_not_found": {
+                    "type": "boolean",
+                    "default" : true
+                }
+            }
+        },
+        "attribute_value": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                },
+                "save_value": {
+                    "$ref": "#/definitions/save_info"
+                },
+                "do_not_set": {
+                    "type": "boolean"
+                },
+                "error_if_not_found" : {
+                    "type" : "boolean",
+                    "default" : false,
+                    "description" : "Used for actions that are looking for the presence of the attribute"
+                }
+            },
+            "required": [
+                "name",
+                "value"
+            ],
+            "not" : {
+                "required" : ["first_of"]
+            }
+        },
+        "attribute_values": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/attribute_value"
+            }
+        },
+        "attribute_ref" : {
+            "type": "object",
+            "properties": {
+                "first_of" : {
+                    "type" : "array",
+                    "items" : {
+                        "type" : "string"
+                    },
+                    "description" : "Finds the first attribute from the array of names"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "save_value": {
+                    "$ref": "#/definitions/save_info"
+                },
+                "error_if_not_found" : {
+                    "type" : "boolean",
+                    "default" : false,
+                    "description" : "Used for actions that are looking for the presence of the attribute"
+                },
+                "error_if_empty" : {
+                    "type" : "boolean",
+                    "default" : false,
+                    "description" : "Requires the attribute to be present and have a value (one of first of also)"
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "name"
                     ]
                 },
                 {
-                    "required" : ["action"]
+                    "required" : [
+                        "first_of"
+                    ]
                 }
             ]
-
         },
-
-        "attribute_value" : {
-            "type" : "object",
-            "properties" : {
-                "name" : {
-                    "type" : "string"
+        "attribute_refs": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/attribute_ref"
+            }
+        },
+        "save_info": {
+            "type": "object",
+            "properties": {
+                "save_name": {
+                    "type": "string"
                 },
-                "value" : {
-                    "type" : "string"
-                },
-                "save_value" : {
-                    "type" : "string"
-                },
-                "do_not_set" : {
-                    "type" : "boolean"
+                "duplicate_ok": {
+                    "type": "boolean"
                 }
             },
-            "required" : ["name", "value"]
-        },
-
-        "attribute_values" : {
-            "type" : "array",
-            "items" : {
-                "$ref" : "#/definitions/attribute_value"
-            }
+            "required": [
+                "save_name"
+            ]
         }
     }
 }

@@ -54,8 +54,10 @@ class DECL_EXPORT EnvironmentMgr
         bool loadEnvironment(const std::string &qualifiedFilename);
         std::shared_ptr<EnvironmentNode> findEnvironmentNodeById(const std::string &nodeId) const;
         std::shared_ptr<EnvironmentNode> getNewEnvironmentNode(const std::string &parentNodeId, const std::string &inputItem, Status &status) const;
-        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::string &parentNodeId, const std::string &configType, std::vector<NameValue> &initAttributes, Status &status);
-        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pNewCfgItem, std::vector<NameValue> &initAttributes, Status &status);
+        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::string &parentNodeId, const std::string &configType,
+                std::vector<NameValue> &initAttributes, Status &status, bool allowInvalid=false, bool forceCreate=false);
+        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pNewCfgItem,
+                std::vector<NameValue> &initAttributes, Status &status, bool allowInvalid=false, bool forceCreate=false);
         bool removeEnvironmentNode(const std::string &nodeId);
         bool saveEnvironment(const std::string &qualifiedFilename);
         void discardEnvironment() { m_pRootNode = nullptr; m_nodeIds.clear();}
@@ -76,7 +78,8 @@ class DECL_EXPORT EnvironmentMgr
         void assignNodeIds(const std::shared_ptr<EnvironmentNode> &pNode);
         void insertExtraEnvironmentData(std::shared_ptr<EnvironmentNode> pNode);
         std::shared_ptr<SchemaItem> findInsertableItem(const std::shared_ptr<EnvironmentNode> &pNode, const std::string &itemType) const;
-        void getInitAttributesFromItemType(const std::string &inputItemType, std::string &itemType, std::vector<NameValue> &initAttributes) const;
+        void getPredefinedAttributeValues(const std::string &inputItemType, std::string &itemType,
+                                          std::vector<NameValue> &initAttributes) const;
 
 
     protected:

@@ -16,11 +16,8 @@
 ################################################################################
 
 if (USE_CPPUNIT)
-    FOREACH( iFILES
-            ${CMAKE_CURRENT_SOURCE_DIR}/ParseFromFileTest.json
-            ${CMAKE_CURRENT_SOURCE_DIR}/OperationsTest1.json
-            ${CMAKE_CURRENT_SOURCE_DIR}/SubstitutionTest-1.json
-            )
-        Install ( FILES ${iFILES} DESTINATION testing/configmgr/templates COMPONENT Runtime)
-    ENDFOREACH ( iFILES )
+    FILE(GLOB tmpltFiles "${CMAKE_CURRENT_SOURCE_DIR}/*.json")
+    FOREACH( tmpltFile ${tmpltFiles} )
+        Install ( FILES ${tmpltFile} DESTINATION testing/configmgr/templates COMPONENT Runtime)
+    ENDFOREACH ()
 endif()

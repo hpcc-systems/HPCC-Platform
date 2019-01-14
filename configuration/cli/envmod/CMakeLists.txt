@@ -14,5 +14,21 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (configmgr)
-HPCC_ADD_SUBDIRECTORY (cli)
+project ( envmod )
+
+SET (SRC_FILES
+        envmod.cpp
+)
+
+INCLUDE_DIRECTORIES(
+        ${CMAKE_BINARY_DIR}
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/configuration/configmgr/configmgrlib
+        ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
+)
+
+HPCC_ADD_EXECUTABLE ( envmod ${SRC_FILES} )
+
+INSTALL ( TARGETS envmod RUNTIME DESTINATION ${EXEC_DIR} )
+
+TARGET_LINK_LIBRARIES(envmod configmgr)

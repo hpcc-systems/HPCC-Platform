@@ -15,21 +15,19 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef HPCCSYSTEMS_PLATFORM_IPADDRESS_HPP
-#define HPCCSYSTEMS_PLATFORM_IPADDRESS_HPP
+#include "HostNameVariable.hpp"
+#include "TemplateException.hpp"
+#include "Utils.hpp"
 
-#include "Input.hpp"
-#include <vector>
-#include <string>
+void HostNameVariable::addValue(const std::string &value) {
 
-class IPAddressInput : public Input
-{
-    public:
-        IPAddressInput() = default;
-        ~IPAddressInput() = default;
-        void setValue(const std::string &value);
+    std::string hostname = trim(value);
+    bool isValid = true;
 
-};
+    if (hostname.empty())
+    {
+        throw TemplateException("Hostname is empty", false);
+    }
 
-
-#endif //HPCCSYSTEMS_PLATFORM_IPADDRESS_HPP
+    m_values.emplace_back(hostname);
+}

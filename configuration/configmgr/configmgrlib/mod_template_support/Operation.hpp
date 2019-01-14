@@ -18,24 +18,31 @@
 #ifndef HPCCSYSTEMS_PLATFORM_OPERATION_HPP
 #define HPCCSYSTEMS_PLATFORM_OPERATION_HPP
 
-#include "Input.hpp"
-#include "Inputs.hpp"
+#include "Variable.hpp"
+#include "Variables.hpp"
+#include "EnvironmentMgr.hpp"
 #include <string>
 #include <vector>
-#include <map>
 
 
 struct modAttribute {
-    modAttribute(const std::string &_name, const std::string &_value) :
-        name(_name), value(_value) { };
+    modAttribute() : duplicateSaveValueOk(false), doNotSet(false),
+            errorIfNotFound(false), errorIfEmpty(false) {}
     ~modAttribute() = default;
-    std::string name;
+    void addName(const std::string &_name) { names.emplace_back(_name); }
+    const std::string &getName(std::size_t idx=0) { return names[idx]; }
+    std::size_t getNumNames() { return names.size(); }
+    std::vector<std::string> names;
     std::string value;
     std::string startIndex;
     std::string cookedValue;
     std::string saveValue;
     bool doNotSet;
+    bool duplicateSaveValueOk;
+    bool errorIfNotFound;
+    bool errorIfEmpty;
 };
+
 
 class EnvironmentMgr;
 
@@ -46,30 +53,34 @@ class Operation
 
         Operation() : m_count("1"), m_startIndex("0") {}
         virtual ~Operation() = default;
-        bool execute(EnvironmentMgr *pEnvMgr, Inputs *pInputs);
-        void setPath(const std::string &path) { m_path = path; }
-        std::string getPath() const { return m_path; }
-        void setParentNodeId(const std::string &id) { m_parentNodeId = id; }
-        std::string getParentNodeId() const { return m_parentNodeId; }
-        bool hasNodeId() const { return !m_parentNodeId.empty(); }
+        bool execute(EnvironmentMgr *pEnvMgr, Variables *pInputs);
         void addAttribute(modAttribute &newAttribute);
-        void assignAttributeCookedValues(Inputs *pInputs);
-        void setCount(const std::string &count) { m_count = count; }
-        void setStartIndex(const std::string &startIndex) { m_startIndex = startIndex; }
+        void assignAttributeCookedValues(Variables *pInputs);
 
 
     protected:
 
-        virtual void doExecute(EnvironmentMgr *pEnvMgr, Inputs *pInputs) = 0;
+        virtual void doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs) = 0;
+        void getParentNodeIds(EnvironmentMgr *pEnvMgr, Variables *pInputs);
+        std::shared_ptr<Variable> createInput(std::string inputName, const std::string &inputType, Variables *pInputs, bool existingOk);
+        bool createAttributeSaveInputs(Variables *pInputs);
+        void saveAttributeValues(Variables *pInputs, const std::shared_ptr<EnvironmentNode> &pEnvNode);
 
 
     protected:
 
         std::string m_path;
         std::string m_parentNodeId;
+        std::vector<std::string> m_parentNodeIds;
         std::vector<modAttribute> m_attributes;
         std::string m_count;
         std::string m_startIndex;
+        bool m_throwOnEmpty = true;
+        std::string m_saveNodeIdName;
+        bool m_duplicateSaveNodeIdInputOk = false;
+
+
+    friend class EnvModTemplate;
 };
 
 

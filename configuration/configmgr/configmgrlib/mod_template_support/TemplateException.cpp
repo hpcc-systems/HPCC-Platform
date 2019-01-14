@@ -21,5 +21,4 @@ TemplateException::TemplateException(const rapidjson::Document *pDocument)
 {
     m_reason = "There was an error parsing the JSON, offset: " + std::to_string(pDocument->GetErrorOffset()) +
             ", error = " + rapidjson::GetParseError_En(pDocument->GetParseError());
-    setBadJson(true);
 }

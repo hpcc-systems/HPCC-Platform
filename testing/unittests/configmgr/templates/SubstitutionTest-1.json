@@ -2,61 +2,64 @@
     "name" : "test",
     "type" : "modification",
     "description" : "add a subchild to an existing node in an environment",
-    "inputs" : [
+    "variables" : [
         {
             "name" : "name",
             "type" : "string",
-            "value" : "myname"
+            "values" : ["myname"]
         },
         {
             "name" : "numsystems",
             "type" : "string",
-            "value" : "10"
+            "values" : ["10"]
         },
         {
             "name" : "ccnum",
             "type" : "string",
-            "value" : "2"
+            "values" : ["2"]
         },
         {
             "name" : "hwips",
             "type" : "iprange",
-            "value" : "1.2.3.1-10"
+            "values" : ["1.2.3.1-10"]
         },
         {
             "name" : "baseip",
             "type" : "ipaddress",
-            "value" : "1.2.3.1"
+            "values" : ["1.2.3.1"]
         },
         {
             "name" : "systemips",
             "type" : "iprange",
+            "user_input" : false,
             "prepared_value" : "{{baseip}}*{{numsystems}}"
         }
     ],
     "operations" : [
         {
-            "action" : "noop",
-            "path" : "/Root/Child1",
-            "count" : "{{numsystems}}",
-            "attributes" : [
-                {
-                    "name" : "name",
-                    "value" : "{{name}}"
-                },
-                {
-                    "name" : "ipaddress",
-                    "value" : "{{hwips}}"
-                },
-                {
-                    "name" : "daliIp",
-                    "value" : "{{hwips[0]}}"
-                },
-                {
-                    "name" : "ccIp",
-                    "value" : "{{hwips[{{numsystems}}-{{ccnum}}]}}"
-                }
-            ]
+            "action" : "modify_node",
+            "parent_path" : "/Root/Child1",
+            "data" : {
+                "count" : "{{numsystems}}",
+                "attributes" : [
+                    {
+                        "name" : "name",
+                        "value" : "{{name}}"
+                    },
+                    {
+                        "name" : "ipaddress",
+                        "value" : "{{hwips}}"
+                    },
+                    {
+                        "name" : "daliIp",
+                        "value" : "{{hwips[0]}}"
+                    },
+                    {
+                        "name" : "ccIp",
+                        "value" : "{{hwips[{{numsystems}}-{{ccnum}}]}}"
+                    }
+                ]
+            }
         }
     ]
 }

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Root>
     <Child1>
+        <SubChild1/>
     </Child1>
-    <Child2>
-    </Child2>
 </Root>

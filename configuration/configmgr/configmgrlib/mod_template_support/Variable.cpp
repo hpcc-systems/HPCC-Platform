@@ -15,45 +15,44 @@
     limitations under the License.
 ############################################################################## */
 
-#include "Input.hpp"
+#include "Variable.hpp"
 #include "TemplateException.hpp"
-#include "IPAddressRangeInput.hpp"
-#include "IPAddressInput.hpp"
-#include "HostNameInput.hpp"
+#include "IPAddressRangeVariable.hpp"
+#include "IPAddressVariable.hpp"
+#include "HostNameVariable.hpp"
 #include <memory>
 
 // todo add more types that correspond to XSD types so that modification template inputs can be validated earlier
 
-std::shared_ptr<Input> inputValueFactory(const std::string &type, const std::string &name)
+std::shared_ptr<Variable> variableFactory(const std::string &type, const std::string &name)
 {
-    std::shared_ptr<Input> pInput;
+    std::shared_ptr<Variable> pInput;
     if (type == "string")
     {
-        pInput = std::make_shared<Input>();
+        pInput = std::make_shared<Variable>(name);
     }
     else if (type == "iprange")
     {
-        pInput = std::make_shared<IPAddressRangeInput>();
+        pInput = std::make_shared<IPAddressRangeVariable>(name);
     }
     else if (type == "ipaddress")
     {
-        pInput = std::make_shared<IPAddressInput>();
+        pInput = std::make_shared<IPAddressVariable>(name);
     }
     else if (type == "hostname")
     {
-        pInput = std::make_shared<HostNameInput>();
+        pInput = std::make_shared<HostNameVariable>(name);
     }
     else
     {
         throw TemplateException("Invalid input type '" + type + "'");
     }
-    pInput->setName(name);
     return pInput;
 }
 
 
 
-std::string Input::getValue(size_t idx) const
+std::string Variable::getValue(size_t idx) const
 {
     //
     // If no value assigned yet, throw an exception
@@ -82,14 +81,7 @@ std::string Input::getValue(size_t idx) const
 }
 
 
-void Input::setValue(const std::string &value)
+void Variable::addValue(const std::string &value)
 {
-    if (!m_values.empty())
-    {
-        m_values[0] = value;
-    }
-    else
-    {
-        m_values.emplace_back(value);
-    }
+    m_values.emplace_back(value);
 }

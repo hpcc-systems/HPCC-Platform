@@ -24,32 +24,26 @@
 #include <memory>
 #include <vector>
 
-class Input;
+class Variable;
 
-std::shared_ptr<Input> inputValueFactory(const std::string &type, const std::string &name);
+std::shared_ptr<Variable> variableFactory(const std::string &type, const std::string &name);
 
-class Input
+class Variable
 {
     public:
 
-        Input() = default;
-        virtual ~Input() = default;
+        explicit Variable(const std::string &name) : m_name(name) {}
+        virtual ~Variable() = default;
         const std::string &getName() const { return m_name; }
-        void setName(const std::string &name) { m_name = name; }
         const std::string &getUserPrompt() const { return m_userPrompt; }
-        void setUserPrompt(const std::string &userPrompt) { m_userPrompt = userPrompt; }
         const std::string &getDescription() const { return m_description; }
-        void setDescription(const std::string &description) { m_description = description; }
-        const std::string &getTooltip() const { return m_tooltip; }
-        void setTooltip(const std::string &tooltip) { m_tooltip = tooltip; }
         size_t getNumValues() const { return m_values.size(); }
-        virtual void setValue(const std::string &value);
-        void addValue(const std::string &value) { m_values.emplace_back(value); }
+        virtual void addValue(const std::string &value);
+//        void addValue(const std::string &value) { m_values.emplace_back(value); }
         virtual std::string getValue(size_t idx) const;
-        void setPreparedValue(const std::string &value) { m_preparedValue = value; }
+        bool isUserInput() const { return m_userInput; }
         const std::string &getPreparedValue() const { return m_preparedValue; }
-        void setNonUserInput(bool val) { m_nonUserInput = val; }
-        bool needsUserInput() const { return !m_nonUserInput; }
+
 
 
     protected:
@@ -57,10 +51,12 @@ class Input
         std::string m_name;
         std::string m_userPrompt;
         std::string m_description;
-        std::string m_tooltip;
         std::string m_preparedValue;
-        bool m_nonUserInput = false;
+        bool m_userInput = true;
         std::vector<std::string> m_values;
+
+
+    friend class EnvModTemplate;
 };
 
 

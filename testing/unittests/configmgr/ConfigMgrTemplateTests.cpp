@@ -28,6 +28,7 @@
 // Config2 manager includes
 #include "jexcept.hpp"
 #include "mod_template_support/TemplateException.hpp"
+#include "mod_template_support/TemplateExecutionException.hpp"
 #include "EnvironmentMgr.hpp"
 #include "build-config.h"
 #include <string>
@@ -35,7 +36,7 @@
 #include <algorithm>
 #include <vector>
 #include "mod_template_support/EnvModTemplate.hpp"
-#include "mod_template_support/IPAddressRangeInput.hpp"
+#include "mod_template_support/IPAddressRangeVariable.hpp"
 
 //
 // This class validates that the system XSDs are wellformed and parse with no errors
@@ -48,6 +49,8 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             CPPUNIT_TEST(Test_Inputs);
             CPPUNIT_TEST(Test_SubstitutionTests);
             CPPUNIT_TEST(Test_OperationsTests);
+            CPPUNIT_TEST(Test_FindNodeTests);
+            CPPUNIT_TEST(Test_CreateNodeTests);
         CPPUNIT_TEST_SUITE_END();
 
 
@@ -67,13 +70,22 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
 
         bool loadEnvironment(const std::string &envFilename)
         {
+            bool rc = true;
+            CPPUNIT_ASSERT_MESSAGE("No envionrment manager loaded", m_pEnvMgr != nullptr);
             std::string xmlEnvDir = INSTALL_DIR PATHSEPSTR "testing/configmgr/schema/environments/";
             m_pEnvMgr->discardEnvironment();   // in case one is currently loaded
-            return(m_pEnvMgr->loadEnvironment(xmlEnvDir + envFilename));
+
+            if (!m_pEnvMgr->loadEnvironment(xmlEnvDir + envFilename))
+            {
+                std::string msg = "There was a problem loading environment " + envFilename + "Error: " + m_pEnvMgr->getLastEnvironmentMessage();
+                CPPUNIT_ASSERT_MESSAGE(msg, false);
+                rc = false;
+            }
+            return rc;
         }
 
 
-        void CreateEnvironmentManager(const std::string &schemaFilename, const std::string &environmentFile)
+        void CreateEnvironmentManager(const std::string &schemaFilename)
         {
             //
             // Standard configuration for HPCC
@@ -93,20 +105,13 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             std::map<std::string, std::string> cfgParms;
             rc = m_pEnvMgr->loadSchema(schemaXSDDir, schemaFilename, cfgParms);
             CPPUNIT_ASSERT_MESSAGE("Unable to load configuration schema, error = " + m_pEnvMgr->getLastSchemaMessage(), rc);
-
-            //
-            // Load the environment if specified
-            if (!environmentFile.empty())
-            {
-                bool rc = loadEnvironment(environmentFile);
-                CPPUNIT_ASSERT_MESSAGE("Unable to load environment, error = " + m_pEnvMgr->getLastEnvironmentMessage(), rc);
-            }
             printf("complete.");
         }
 
 
         void LoadTemplate(const std::string &templateFilename)
         {
+            CPPUNIT_ASSERT_MESSAGE("No envionrment manager loaded", m_pEnvMgr != nullptr);
             printf("\n  Instantiating template %s ...", templateFilename.c_str());
             std::string templateSchema = INSTALL_DIR PATHSEPSTR "componentfiles/configschema/templates/schema/ModTemplateSchema.json";
             if (m_pTemplate != nullptr)
@@ -145,7 +150,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             }
             catch (TemplateException &e)
             {
-                if (e.isBadJson()) // || e.isInvalidTemplate())
+                if (!e.isTemplateInvalid())
                 {
                     rc = false;
                     assertMsg += e.what();
@@ -164,17 +169,36 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
         }
 
 
+        void executeTemplate(bool expectFailure)
+        {
+            printf("\n  Executing template...");try
+            {
+                m_pTemplate->execute();
+            }
+            catch (TemplateExecutionException &e)
+            {
+                if (!expectFailure)
+                {
+                    std::string assertMsg;
+                    assertMsg = "Failed when expected to pass, msg = ";
+                    assertMsg += e.what();
+                    CPPUNIT_ASSERT_MESSAGE(assertMsg, false);
+                }
+            }
+            printf("complete.");
+        }
+
         void Test_LoadingTemplates()
         {
             bool rc = false;
             printf("\n*** ConfigMgr 2.0 - Templates - Loading Only ***");
-            CreateEnvironmentManager("Simple.xsd", "");
+            CreateEnvironmentManager("Simple.xsd");
 
             //
             // Simple template create
             printf("\n  Instantiating a template...");
             std::string templateSchema = INSTALL_DIR PATHSEPSTR "componentfiles/configschema/templates/schema/ModTemplateSchema.json";
-            EnvModTemplate *pTemplate = new EnvModTemplate(m_pEnvMgr, templateSchema);
+            auto *pTemplate = new EnvModTemplate(m_pEnvMgr, templateSchema);
             printf("complete.");
 
             //
@@ -184,7 +208,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
                 pTemplate->loadTemplateFromJson("{ \"key\" : \"value\" }");
                 rc = false;  // the load should throw
             } catch (TemplateException &te) {
-                rc = te.isInvalidTemplate();
+                rc = te.isTemplateInvalid();
             }
             CPPUNIT_ASSERT_MESSAGE("Unable to load JSON from a string.", rc);
             printf("passed.");
@@ -193,10 +217,10 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             // Load invalid JSON from a string and make sure it detects invalid JSON
             printf("\n  Testing invalid JSON parse from a string...");
             try {
-                pTemplate->loadTemplateFromJson("{ \"key : \"value\" }");
+                pTemplate->loadTemplateFromJson("{ key\" : \"value\" }");
                 rc = false;
             } catch (TemplateException &te) {
-                rc = te.isBadJson();
+                rc = true;
             }
             CPPUNIT_ASSERT_MESSAGE("Unable to detect invalid JSON from a string.", rc);
             printf("passed.");
@@ -208,7 +232,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
                 pTemplate->loadTemplateFromFile(m_templateDir + "ParseFromFileTest.json");
                 rc = true;
             } catch (TemplateException &te) {
-                rc = te.isInvalidTemplate();  // this is the expected error
+                rc = te.isTemplateInvalid();  // this is the expected error
             }
             CPPUNIT_ASSERT_MESSAGE("Unable to parse valid JSON.", rc);
             printf("passed.");
@@ -224,25 +248,25 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             std::string msg;
             bool rc = false;
             printf("\n*** ConfigMgr 2.0 - Templates - Inputs ***");
-            CreateEnvironmentManager("Simple.xsd", "");
+            CreateEnvironmentManager("Simple.xsd");
             LoadTemplate("");
 
             std::string json;
             std::vector<templateInfo> inputTests;
 
             // Inputs testing: validate required values
-            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"inputs\" : 7 }", true, "Invalid Inputs section type (non array)"));
-            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"inputs\" : [] }", false, "Valid Inputs section type (array)"));
-            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"inputs\" : [\"bad\"] }", true, "Invalid Inputs array element (non-object)"));
-            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"inputs\" : [{}] }", true, "Invalid Inputs array element (missing required values)"));
-            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"inputs\" : [{\"name\":\"x\"}] }", true, "Invalid Inputs array element (missing required values)"));
+            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"variables\" : 7 }", true, "Invalid Inputs section type (non array)"));
+            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"variables\" : [] }", false, "Valid Inputs section type (array)"));
+            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"variables\" : [\"bad\"] }", true, "Invalid Inputs array element (non-object)"));
+            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"variables\" : [{}] }", true, "Invalid Inputs array element (missing required values)"));
+            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"variables\" : [{\"name\":\"x\"}] }", true, "Invalid Inputs array element (missing required values)"));
 
             // Inputs: test types
-            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"inputs\" : [{\"name\":\"x\",\"type\":\"string\"}] }", false, "Valid Inputs array element (type 'string')"));
-            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"inputs\" : [{\"name\":\"x\",\"type\":\"badtype\"}] }", true, "Invalid Input type"));
+            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"variables\" : [{\"name\":\"x\",\"type\":\"string\"}] }", false, "Valid Inputs array element (type 'string')"));
+            inputTests.emplace_back(templateInfo("{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"variables\" : [{\"name\":\"x\",\"type\":\"badtype\"}] }", true, "Invalid Variable type"));
 
             // Inputs: duplicate name
-            json = "{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"inputs\" : [{\"name\":\"x\",\"type\":\"string\"}, {\"name\":\"x\",\"type\":\"string\"}] }";
+            json = "{ \"name\" : \"x\", \"type\" : \"new\", \"operations\" : [], \"variables\" : [{\"name\":\"x\",\"type\":\"string\"}, {\"name\":\"x\",\"type\":\"string\"}] }";
             inputTests.emplace_back(templateInfo(json, true, "Invalid, Duplicate input name"));
 
             //
@@ -253,34 +277,34 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             }
 
             // Inputs; retrieving by name with >1 inputs
-            json =  R"({"name" : "x", "type" : "new", "operations" : [], "inputs" : [)";
-            json += R"({"name":"x","type":"string", "prompt":"prompt","description":"description","tooltip":"tooltip"})";
+            json =  R"({"name" : "x", "type" : "new", "operations" : [], "variables" : [)";
+            json += R"({"name":"x","type":"string", "prompt":"prompt","description":"description"})";
             json += R"(,{"name":"y","type":"string"})";
             json += R"(,{"name":"ips","type":"iprange"})";
-            json += R"(,{"name":"preset","type":"string","value":"myvalue"})";
+            json += R"(,{"name":"preset","type":"string","values": ["myvalue"]})";
             json += "] }";
             templateInfo ti1(json, false, "Valid multi-inputs");
             doTemplateLoad(ti1);
 
             printf("\n  Test getting inputs from template...");
-            std::vector<std::shared_ptr<Input>> inputs = m_pTemplate->getInputs();
+            std::vector<std::shared_ptr<Variable>> inputs = m_pTemplate->getVariables();
             CPPUNIT_ASSERT_MESSAGE("Number of inputs was not 4", inputs.size() == 4);
             printf("passed.");
 
             printf("\n  Test retrieving first defined input 'x'...");
-            auto pInput = m_pTemplate->getInput("x", false);
+            auto pInput = m_pTemplate->getVariable("x", false);
             CPPUNIT_ASSERT_MESSAGE("Unable to find input named 'x'", pInput);
             printf("passed.");
 
             printf("\n  Test retrieving second defined input 'y'...");
-            pInput = m_pTemplate->getInput("y", false);
+            pInput = m_pTemplate->getVariable("y", false);
             CPPUNIT_ASSERT_MESSAGE("Unable to find input named 'y'", pInput);
             printf("passed.");
 
             //
             // Test string type inputs (and other input attributes)
             printf("\n  Test retrieving string input 'x'...");
-            pInput = m_pTemplate->getInput("x", false);
+            pInput = m_pTemplate->getVariable("x", false);
             CPPUNIT_ASSERT_MESSAGE("Unable to find input named 'x'", pInput);
             printf("passed.");
 
@@ -296,23 +320,18 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             CPPUNIT_ASSERT_MESSAGE(msg, returnedDesc == "description");
             printf("passed.");
 
-            printf("\n  Test retrieving 'tooltip'...");
-            std::string returnedTooltip = pInput->getTooltip();
-            msg = "Expected tooltip value 'tooltip' did not match returned value '" + returnedTooltip + "'";
-            CPPUNIT_ASSERT_MESSAGE(msg, returnedTooltip == "tooltip");
-            printf("passed.");
 
             //
             // test string type inputs
             printf("\n  Test retrieving string input 'y'...");
-            pInput = m_pTemplate->getInput("y", false);
+            pInput = m_pTemplate->getVariable("y", false);
             CPPUNIT_ASSERT_MESSAGE("Unable to find input named 'y'", pInput);
             printf("passed.");
 
             printf("\n  Test setting and getting string value...");
             if (pInput)
             {
-                pInput->setValue("aaaBBBccc");
+                pInput->addValue("aaaBBBccc");
                 CPPUNIT_ASSERT_MESSAGE("Get value did not match the set value (aaaBBBccc)", pInput->getValue(0) == "aaaBBBccc");
             }
             else
@@ -325,8 +344,8 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             // IPrange inputs
             printf("\n  Testing IPRange input...");
             printf("\n  Testing getting an IPRange input pointer...");
-            pInput = m_pTemplate->getInput("ips");
-            std::shared_ptr<IPAddressRangeInput> pIpRangeInput = std::dynamic_pointer_cast<IPAddressRangeInput>(pInput);
+            pInput = m_pTemplate->getVariable("ips");
+            std::shared_ptr<IPAddressRangeVariable> pIpRangeInput = std::dynamic_pointer_cast<IPAddressRangeVariable>(pInput);
             if (!pIpRangeInput)
             {
                 CPPUNIT_ASSERT_MESSAGE("Unable to dynamic cast input poniter to expected type of IPRange", false);
@@ -336,7 +355,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             printf("\n  Set single IP address...");
             try
             {
-                pIpRangeInput->setValue("1.2.3.4");
+                pIpRangeInput->addValue("1.2.3.4");
                 rc = pIpRangeInput->getValue(0) == "1.2.3.4";
                 CPPUNIT_ASSERT_MESSAGE("Return value did not match expected value", rc);
             }
@@ -348,7 +367,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             printf("\n  Set multiple IP addresses (';' separated IP addresses)...");
             try
             {
-                pIpRangeInput->setValue("1.2.3.4;1.2.3.5");
+                pIpRangeInput->addValue("1.2.3.4;1.2.3.5");
                 rc = pIpRangeInput->getValue(0) == "1.2.3.4";
             }
             catch (TemplateException &te)
@@ -360,7 +379,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             printf("\n  Set a single range (1.2.3.1-5)...");
             try
             {
-                pIpRangeInput->setValue("1.2.3.1-5");
+                pIpRangeInput->addValue("1.2.3.1-5");
                 CPPUNIT_ASSERT_MESSAGE("Expected 5 values for variable", pIpRangeInput->getNumValues() == 5);
 
                 rc  = pIpRangeInput->getValue(0) == "1.2.3.1";
@@ -379,7 +398,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             printf("\n  Set a valid and arange (3.4.5.6;1.2.3.1-5)...");
             try
             {
-                pIpRangeInput->setValue("3.4.5.6;1.2.3.1-5");
+                pIpRangeInput->addValue("3.4.5.6;1.2.3.1-5");
                 CPPUNIT_ASSERT_MESSAGE("Expected 6 values for variable", pIpRangeInput->getNumValues() == 6);
 
                 rc  = pIpRangeInput->getValue(0) == "3.4.5.6";
@@ -397,10 +416,19 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             printf("complete");
 
             printf("\n  Preset value...");
-            pInput = m_pTemplate->getInput("preset", false);
+            pInput = m_pTemplate->getVariable("preset", false);
             CPPUNIT_ASSERT_MESSAGE("Unable to find input named 'preset'", pInput);
             CPPUNIT_ASSERT_MESSAGE("Variable does not have expected value", pInput->getValue(0) == "myvalue");
             printf("complete");
+
+            //
+            // Inputs from a file
+            //
+            // - need an InputsTest1.json that defines a number of inputs, no operations needed
+            // - need an InputsForInputsTest1-1.json file that has the inputs
+            //     all defined properly
+            // - InputsForInputsTest1-2.json has an incorrect input name expect to fail
+
 
             //
             // Test complete
@@ -414,19 +442,22 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             std::string msg;
             bool rc = false;
             printf("\n*** ConfigMgr 2.0 - Templates - Variable substitution tests ***");
-            CreateEnvironmentManager("Simple.xsd", "template_test.xml");
-            LoadTemplate("");
+            CreateEnvironmentManager("Simple.xsd");
+            LoadTemplate("");  // Just loads the schema
 
-            templateInfo si("SubstitutionTest-1.json", false, "Loading variable substitution test 1 template");
-            doTemplateLoad(si);
-            printf("complete.");
-
-            printf("\n  Executing template...");
-            m_pTemplate->execute();
-            printf("complete.");
-
+            if (loadEnvironment("template_test.xml"))
+            {
+                templateInfo si("SubstitutionTest-1.json", false, "Loading variable substitution test 1 template");
+                doTemplateLoad(si);
+                printf("complete.");
+                printf("\n  Executing template...");
+                m_pTemplate->execute();
+                printf("complete.");
+            }
             delete m_pTemplate;
         }
+
+
 
 
         void Test_OperationsTests()
@@ -434,22 +465,83 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             std::string msg;
             bool rc = false;
             printf("\n*** ConfigMgr 2.0 - Templates - Execute Templates ***");
-            CreateEnvironmentManager("Simple.xsd", "template_test.xml");
+            CreateEnvironmentManager("Simple.xsd");
 
             //
             // Test a simple add of a sub element with two attributes
             //   load the template
-            //   get inuts (both string) and set values (should be two)
+            //   get inputs (both string) and set values (should be two)
             //   execute the template
             //   retrieve node from changed environment to validate added properly
             LoadTemplate("OperationsTest1.json");
+            loadEnvironment("findnodes_test.xml");
+            executeTemplate(false);
 
-            m_pTemplate->execute();
+            //
+            // Test a duplicate save node id input name where it is OK for a duplicate save name
+            LoadTemplate("OperationsTest2.json");
+            loadEnvironment("findnodes_test.xml");
+            executeTemplate(false);
 
+            //
+            // Test a duplicate save node id input name where it is not OK for a duplicate save name
+            LoadTemplate("OperationsTest3.json");
+            loadEnvironment("findnodes_test.xml");
+            executeTemplate(true);  // expect this to fail
 
+            //
+            // Test a duplicate save of attribute values to the same input var name
+            LoadTemplate("OperationsTest4.json");
+            loadEnvironment("findnodes_test.xml");
+            executeTemplate(false);
+
+            //
+            // Test a duplicate save of attribute values to the same input var name where not allowed
+            LoadTemplate("OperationsTest5.json");
+            loadEnvironment("findnodes_test.xml");
+            executeTemplate(true);
 
             delete m_pTemplate;
         }
+
+
+        //
+        // Tests the action find_node
+        void Test_FindNodeTests()
+        {
+            std::string msg;
+            bool rc = false;
+            printf("\n*** ConfigMgr 2.0 - Templates - Find Node Tests ***");
+            CreateEnvironmentManager("Simple.xsd");
+            loadEnvironment("findnodes_test.xml");
+
+            //
+            // Execute the template, then query the environment to validate. Note that there
+            // may some modifications done in order to be able to verify
+            LoadTemplate("FindNodeTest1.json");
+            executeTemplate(false);
+
+
+        }
+
+
+        //
+        // Tests the action find_node
+        void Test_CreateNodeTests()
+        {
+            std::string msg;
+            bool rc = false;
+            printf("\n*** ConfigMgr 2.0 - Templates - Create Node Tests ***");
+            CreateEnvironmentManager("Simple.xsd");
+            loadEnvironment("createnode_test1.xml");
+
+            //
+            // Execute the template, then query the environment to validate. Note that there
+            // may some modifications done in order to be able to verify
+            LoadTemplate("CreateNodeTest1.json");
+            executeTemplate(false);
+        }
+
 
 
     private:
