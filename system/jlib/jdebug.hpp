@@ -301,6 +301,69 @@ protected:
     __uint64 ctx =0;
 };
 
+//Information about a single IO device
+class jlib_decl BlockIoStats
+{
+public:
+    void clear();
+    BlockIoStats & operator += (const BlockIoStats & other);
+    BlockIoStats operator - (const BlockIoStats & other) const;
+
+    unsigned getSectorSize() const { return 512; }
+
+public:
+    unsigned rd_ios = 0;        // Read I/O operations
+    unsigned rd_merges = 0;     // Reads merged
+    __uint64 rd_sectors = 0;    // Sectors read
+    unsigned rd_ticks = 0;      // Time in queue + service for read
+    unsigned wr_ios = 0;        // Write I/O operations
+    unsigned wr_merges = 0;     // Writes merged
+    __uint64 wr_sectors = 0;    // Sectors written
+    unsigned wr_ticks = 0;      // Time in queue + service for write
+    unsigned ticks = 0;         // Time of requests in queue
+    unsigned aveq = 0;          // Average queue length
+};
+
+
+//Information about all the block IO devices being tracked
+class jlib_decl OsDiskStats
+{
+public:
+    OsDiskStats();
+    OsDiskStats(bool updateNow);
+    ~OsDiskStats();
+
+    bool updateCurrent();
+    unsigned getNumPartitions() const;
+    const BlockIoStats & queryStats(unsigned i) const { return stats[i]; }
+    const BlockIoStats & querySummaryStats() const { return total; }
+
+protected:
+    BlockIoStats * stats;
+    BlockIoStats total;
+};
+
+
+class jlib_decl OsNetworkStats
+{
+public:
+    OsNetworkStats() = default;
+    OsNetworkStats(const char * ifname);
+
+    bool updateCurrent(const char * ifname);    // ifname = null gathers all matches
+    OsNetworkStats operator - (const OsNetworkStats & other) const;
+
+public:
+    __uint64 rxbytes = 0;
+    __uint64 rxpackets = 0;
+    __uint64 rxerrors = 0;
+    __uint64 rxdrops = 0;
+    __uint64 txbytes = 0;
+    __uint64 txpackets = 0;
+    __uint64 txerrors = 0;
+    __uint64 txdrops = 0;
+};
+
 
 interface IPerfMonHook : extends IInterface
 {

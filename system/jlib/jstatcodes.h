@@ -227,6 +227,8 @@ enum StatisticKind
     StCycleUserCycles,                  // Time for in user mode for this process
     StCycleSystemCycles,
     StCycleTotalCycles,
+    StSizeOsDiskRead,
+    StSizeOsDiskWrite,
     StMax,
 
     //For any quantity there is potentially the following variants.
