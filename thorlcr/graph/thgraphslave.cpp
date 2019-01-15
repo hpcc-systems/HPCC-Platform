@@ -1560,6 +1560,10 @@ public:
     {
         return result.append(jobChannel.queryJob().queryWuid());
     }
+    virtual const StringArray &queryManifestFiles(const char *type) const override
+    {
+        return querySo.queryManifestFiles(type, jobChannel.queryJob().queryWuid());
+    }
     virtual void onTermination(QueryTermCallback callback, const char *key, bool isShared) const
     {
         TerminationCallbackInfo *term(new TerminationCallbackInfo(callback, key));

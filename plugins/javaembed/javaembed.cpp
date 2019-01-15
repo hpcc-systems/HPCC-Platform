@@ -3003,14 +3003,22 @@ public:
     {
         if (instance)
             instance = JNIenv->NewGlobalRef(instance);
-        if (flags & EFthreadlocal)
-            sharedCtx->registerContext(this);
         argcount = 0;
         argsig = NULL;
         nonStatic = (instance != nullptr);
         javaClass = nullptr;
         StringArray opts;
         opts.appendList(options, ",");
+        engine = codeCtx->queryEngineContext();
+        StringBuffer lclassPath;
+        if (engine)
+        {
+            const StringArray &manifestJars = engine->queryManifestFiles("jar");
+            ForEachItemIn(idx, manifestJars)
+            {
+                lclassPath.append(';').append(manifestJars.item(idx));
+            }
+        }
         ForEachItemIn(idx, opts)
         {
             const char *opt = opts.item(idx);
@@ -3020,7 +3028,7 @@ public:
                 StringBuffer optName(val-opt, opt);
                 val++;
                 if (stricmp(optName, "classpath")==0)
-                    classpath.set(val);
+                    lclassPath.append(';').append(val);
                 else if (strieq(optName, "persist"))
                 {
                     if (persistMode != persistNone)
@@ -3030,7 +3038,6 @@ public:
                     {
                     case persistWorkunit:
                     case persistQuery:
-                        engine = codeCtx->queryEngineContext();
                         if (!engine)
                             throw MakeStringException(MSGAUD_user, 0, "javaembed: Persist mode '%s' not supported here", val);
                         break;
@@ -3040,6 +3047,10 @@ public:
                     throw MakeStringException(0, "javaembed: Unknown option %s", optName.str());
             }
         }
+        if (lclassPath.length()>1)
+            classpath.set(lclassPath.str()+1);
+        if (flags & EFthreadlocal)
+            sharedCtx->registerContext(this);  // Do at end - otherwise an exception thrown during construction will leave this reference dangling
     }
     ~JavaEmbedImportContext()
     {
@@ -3132,11 +3143,15 @@ public:
         else if (*returnType=='V' && strieq(methodName, "<init>"))
         {
             jobject thisObject = JNIenv->NewGlobalRef(result.l);
-            if (persistMode==persistThread)
-                UNIMPLEMENTED;
-            if (engine)
+            switch (persistMode)
             {
+            case persistThread:
+                UNIMPLEMENTED;  // MORE - think about what this means?
+                break;
+            case persistWorkunit:
+            case persistQuery:
                 // Register this object to be removed automatically at end of specified scope...
+                assertex(engine);
                 VStringBuffer scopeKey("O.%p", thisObject);
                 PersistedObjectCriticalBlock persistBlock;
                 persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
@@ -4154,8 +4169,11 @@ protected:
                     instance = JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
                     if (persistBlock.locked())
                     {
-                        if (engine)
+                        if (persistMode==persistQuery || persistMode==persistWorkunit)
+                        {
+                            assertex(engine);
                             engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
+                        }
                         persistBlock.leave(JNIenv->NewGlobalRef(instance));
                     }
                 }

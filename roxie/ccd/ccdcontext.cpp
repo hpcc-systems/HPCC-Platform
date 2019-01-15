@@ -3129,6 +3129,12 @@ public:
             logctx.getLogPrefix(result);
         return result;
     }
+    virtual const StringArray &queryManifestFiles(const char *type) const override
+    {
+        ILoadedDllEntry *dll = factory->queryDll();
+        StringBuffer id;
+        return dll->queryManifestFiles(type, getQueryId(id, true).str());
+    }
 
     mutable CIArrayOf<TerminationCallbackInfo> callbacks;
     mutable CriticalSection callbacksCrit;
