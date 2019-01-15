@@ -2778,6 +2778,7 @@ bool Cws_accessEx::onClearPermissionsCache(IEspContext &context, IEspClearPermis
     Owned<ISecUser> user = secmgr->createUser(context.queryUserId());
     ISecCredentials& cred = user->credentials();
     cred.setPassword(context.queryPassword());
+    cred.setSessionToken(context.querySessionToken());
     bool ok = secmgr->clearPermissionsCache(*user);
 
     //Request DALI to clear its cache
