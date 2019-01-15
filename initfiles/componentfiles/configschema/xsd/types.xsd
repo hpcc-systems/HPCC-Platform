@@ -44,6 +44,13 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="cronSchedule">
+        <xs:restriction base="xs:string">
+            <xs:pattern
+                    value="^(\*|((\*\/)?[1-5]?[0-9])) (\*|((\*\/)?[1-5]?[0-9])) (\*|((\*\/)?(1?[0-9]|2[0-3]))) (\*|((\*\/)?([1-9]|[12][0-9]|3[0-1]))) (\*|((\*\/)?([1-9]|1[0-2]))) (\*|((\*\/)?[0-6]))$"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="ipV4Address">
         <xs:restriction base="xs:string">
             <xs:pattern
@@ -161,7 +168,7 @@
                                             </xs:sequence>
                                             <xs:attribute name="name" type="xs:string" use="required"/>
                                             <xs:attribute name="multipleInstances" type="xs:boolean"
-                                                          hpcc:presetValue="false" use="optional"/>
+                                                          hpcc:presetValue="false"/>
                                         </xs:complexType>
                                     </xs:element>
                                 </xs:sequence>
