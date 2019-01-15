@@ -301,6 +301,11 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     loginURL.set(getUserNameURL);
                 else
                     loginURL.set(DEFAULT_GET_USER_NAME_URL);
+                const char* _loginLogoURL = authcfg->queryProp("@loginLogoURL");
+                if (!isEmptyString(_loginLogoURL))
+                    loginLogoURL.set(_loginLogoURL);
+                else
+                    loginLogoURL.set(DEFAULT_LOGIN_LOGO_URL);
                 domainAuthType = AuthUserNameOnly;
             }
         }
@@ -389,6 +394,11 @@ void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
             loginURL.set(_loginURL);
         else
             loginURL.set(DEFAULT_LOGIN_URL);
+        const char* _loginLogoURL = authDomainTree->queryProp("@loginLogoURL");
+        if (!isEmptyString(_loginLogoURL))
+            loginLogoURL.set(_loginLogoURL);
+        else
+            loginLogoURL.set(DEFAULT_LOGIN_LOGO_URL);
 
         const char* _logoutURL = authDomainTree->queryProp("@logoutURL");
         if (!isEmptyString(_logoutURL))
