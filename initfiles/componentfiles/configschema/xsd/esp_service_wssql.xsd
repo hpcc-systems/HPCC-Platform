@@ -27,7 +27,7 @@
                 <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name"
                               hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="ws_sql_service"
                               hpcc:uniqueKey="espservice_name" hpcc:tooltip="Name for this WsSQL service"/>
-                <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description"
+                <xs:attribute name="description" type="xs:string" hpcc:displayName="Description"
                               hpcc:tooltip="Web Service providing an SQL interface into HPCC"/>
             </xs:complexType>
         </xs:element>
