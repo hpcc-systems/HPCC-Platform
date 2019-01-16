@@ -99,7 +99,7 @@ void XMLEnvironmentLoader::parse(const pt::ptree &envTree, const std::shared_ptr
     }
 
     //
-    // Find elements in environment tree cooresponding to this config item, then parse each
+    // Find elements in environment tree corresponding to this config item, then parse each
     for (auto it = envTree.begin(); it != envTree.end(); ++it)
     {
         std::string elemName = it->first;

@@ -1,0 +1,72 @@
+{
+    "name" : "Find nodes test 1",
+    "type" : "modification",
+    "description" : "Finds a node that exists",
+    "variables" : [
+        {
+            "name" : "child",
+            "values" : ["SubChild1"],
+            "type" : "string"
+        },
+        {
+            "name" : "ipaddresses",
+            "type" : "ipaddress"
+        }
+    ],
+    "operations" : [
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child1/{{child}}",
+            "data" : {
+                "save_nodeid" : {
+                    "save_name" : "parent1"
+                }
+            }
+        },
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child1/SubChild1[@attr1='child1_subchild1_2']"
+        },
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child2"
+        },
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child3",
+            "data" : {
+                "error_if_not_found" : false
+            }
+        },
+        {
+            "action" : "modify_node",
+            "parent_nodeid" : "{{parent1}}",
+            "data" : {
+                "attributes" : [
+                    {
+                        "name" : "attr2",
+                        "value" : "4"
+                    }
+                ]
+            }
+        },
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child1/SubChild1[@attr2='4']"
+        },
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child1/SubChild1",
+            "data" : {
+                "attributes" : [
+                    {
+                        "first_of" : ["attr2", "attr1"],
+                        "save_value" : {
+                            "save_name" : "fn2"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

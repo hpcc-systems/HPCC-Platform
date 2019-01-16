@@ -15,59 +15,71 @@
     limitations under the License.
 ############################################################################## */
 
-#include "Input.hpp"
-#include "Inputs.hpp"
+#include "Variable.hpp"
+#include "Variables.hpp"
 #include "TemplateException.hpp"
 
 
-void Inputs::add(const std::shared_ptr<Input> pNewInput)
+void Variables::add(const std::shared_ptr<Variable> pVariable)
 {
-    for (auto &pInput: m_inputValues)
+    for (auto &pVar: m_variables)
     {
-        if (pInput->getName() == pNewInput->getName())
+        if (pVar->getName() == pVariable->getName())
         {
-            throw TemplateException("Input '" + pNewInput->getName() + "' is a duplicate.");
+            throw TemplateException("Variable '" + pVariable->getName() + "' is a duplicate.", true);
         }
     }
 
-    m_inputValues.emplace_back(pNewInput);
+    m_variables.emplace_back(pVariable);
 }
 
 
-std::shared_ptr<Input> Inputs::getInput(const std::string &name, bool throwIfNotFound) const
+std::shared_ptr<Variable> Variables::getVariable(const std::string &name, bool throwIfNotFound) const
 {
-    std::shared_ptr<Input> pRetInput;
-    for (auto &pInput: m_inputValues)
+    std::shared_ptr<Variable> pRetVar;
+    std::string varName = name;
+
+    //
+    // Accept both a regular string or a {{name}} string for the input name
+    std::size_t bracesStartPos = name.find("{{");
+    if (bracesStartPos != std::string::npos)
     {
-        if (pInput->getName() == name)
+        std::size_t bracesEndPos = findClosingDelimiter(name, bracesStartPos,"{{", "}}");
+        varName = name.substr(bracesStartPos + 2, bracesEndPos - bracesStartPos - 2);
+    }
+
+
+    for (auto &pVar: m_variables)
+    {
+        if (pVar->getName() == varName)
         {
-            pRetInput = pInput;
+            pRetVar = pVar;
             break;
         }
     }
 
-    if (!pRetInput && throwIfNotFound)
+    if (!pRetVar && throwIfNotFound)
     {
-        throw TemplateException("Unable to find input, name = '" + name + "'.");
+        throw TemplateException("Unable to find variable, name = '" + name + "'.");
     }
-    return pRetInput;
+    return pRetVar;
 }
 
 
-void Inputs::prepare()
+void Variables::prepare()
 {
-    for (auto &pInput: m_inputValues)
+    for (auto &pVar: m_variables)
     {
-        std::string preparedValue = pInput->getPreparedValue();
+        std::string preparedValue = pVar->getPreparedValue();
         if (!preparedValue.empty())
         {
-            pInput->setValue(doValueSubstitution(preparedValue));
+            pVar->addValue(doValueSubstitution(preparedValue));
         }
     }
 }
 
 
-std::string Inputs::doValueSubstitution(const std::string &value) const
+std::string Variables::doValueSubstitution(const std::string &value) const
 {
     //
     // A value has the form {{name}}[{{index}}] where name and index can be simple strings and the index is optional
@@ -92,7 +104,7 @@ std::string Inputs::doValueSubstitution(const std::string &value) const
 
         if (bracketStartPos != std::string::npos && sizePos != std::string::npos)
         {
-            throw TemplateException("Both [] and .size may not appear in a variable input");
+            throw TemplateException("Both [] and .size may not appear in a variable variable");
         }
 
         if (bracketStartPos != std::string::npos)
@@ -109,11 +121,11 @@ std::string Inputs::doValueSubstitution(const std::string &value) const
 
         if (sizePos != std::string::npos)
         {
-            result = std::to_string(getInput(varName, true)->getNumValues());
+            result = std::to_string(getVariable(varName, true)->getNumValues());
         }
         else
         {
-            std::string substitueValue = doValueSubstitution(getInput(varName, true)->getValue(index));
+            std::string substitueValue = doValueSubstitution(getVariable(varName, true)->getValue(index));
             std::string newResult = result.substr(0, bracesStartPos);
             newResult += substitueValue;
             newResult += result.substr(bracesEndPos + 2);
@@ -132,7 +144,7 @@ std::string Inputs::doValueSubstitution(const std::string &value) const
 
 
 
-std::size_t Inputs::findClosingDelimiter(const std::string &input, std::size_t startPos, const std::string &openDelim, const std::string &closeDelim) const
+std::size_t Variables::findClosingDelimiter(const std::string &input, std::size_t startPos, const std::string &openDelim, const std::string &closeDelim) const
 {
     std::size_t curPos = startPos + openDelim.length();
     std::size_t openPos, closePos;
@@ -174,7 +186,7 @@ std::size_t Inputs::findClosingDelimiter(const std::string &input, std::size_t s
 }
 
 
-std::string Inputs::evaluate(const std::string &expr) const
+std::string Variables::evaluate(const std::string &expr) const
 {
     std::size_t opPos;
     std::string result = expr;
@@ -211,7 +223,7 @@ std::string Inputs::evaluate(const std::string &expr) const
 }
 
 
-void Inputs::clear()
+void Variables::clear()
 {
-    m_inputValues.clear();
+    m_variables.clear();
 }

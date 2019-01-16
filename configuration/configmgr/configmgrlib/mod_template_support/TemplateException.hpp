@@ -27,15 +27,11 @@ class TemplateException : public std::exception
 {
     public:
 
-        TemplateException(const rapidjson::Document *pDocument);
-        TemplateException(const std::string &reason, bool badTemplate = true) : m_reason(reason), m_invalidTemplate(badTemplate) { };
-        TemplateException() { };
+        explicit TemplateException(const rapidjson::Document *pDocument);
+        explicit TemplateException(const std::string &reason, bool badTemplate = false) : m_reason(reason), m_invalidTemplate(badTemplate) { };
+        TemplateException() = default;
 
-        void setBadJson(bool isBad) { m_badJson = isBad; }
-        bool isBadJson() const { return m_badJson; }
-        void setInvalidTemplate(bool isBad) { m_invalidTemplate = isBad; }
-        bool isInvalidTemplate() const { return m_invalidTemplate; }
-
+        bool isTemplateInvalid() const { return  m_invalidTemplate; }
         const char *what() const throw() override
         {
             return m_reason.c_str();
@@ -45,7 +41,6 @@ class TemplateException : public std::exception
     private:
 
         std::string m_reason;
-        bool m_badJson = false;
         bool m_invalidTemplate = false;
 };
 

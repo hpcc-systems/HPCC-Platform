@@ -235,12 +235,65 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
 
 //-------------------------------------------------------------------------------------------------------------------
 
+class ManifestFileList : public MappingBase
+{
+    StringArray filenames;
+    StringAttr type;
+    StringAttr dir;
+    void recursiveRemoveDirectory(const char *fullPath)
+    {
+        if (rmdir(fullPath) == 0 && !streq(fullPath, dir))
+        {
+            StringBuffer head;
+            splitFilename(fullPath, &head, &head, NULL, NULL);
+            if (head.length() > 1)
+            {
+                head.setLength(head.length()-1);
+                recursiveRemoveDirectory(head);
+            }
+        }
+    }
+    void removeFileAndEmptyParents(const char *fullFileName)
+    {
+        remove(fullFileName);
+        StringBuffer path;
+        splitFilename(fullFileName, &path, &path, NULL, NULL);
+        if (path.length() > 1)
+        {
+            path.setLength(path.length()-1);
+            recursiveRemoveDirectory(path.str());
+        }
+    }
+
+public:
+    ManifestFileList(const char *_type, const char *_dir) : type(_type), dir(_dir) {}
+    ~ManifestFileList()
+    {
+        ForEachItemIn(idx, filenames)
+        {
+            removeFileAndEmptyParents(filenames.item(idx));
+        }
+        rmdir(dir);  // If the specified temporary directory is now empty, remove it.
+    }
+    void append(const char *filename)
+    {
+        assertex(strncmp(filename, dir, strlen(dir))==0);
+        filenames.append(filename);
+    }
+    inline const StringArray &queryFileNames() { return filenames; }
+    virtual const void * getKey() const { return type; }
+};
+
 class HelperDll : implements ILoadedDllEntry, public CInterface
 {
     SharedObject so;
     StringAttr name;
     Linked<const IFileIO> dllFile;
     Owned<IMemoryMappedFile> mappedDll;
+    mutable std::atomic<IPropertyTree *> manifest {nullptr};
+    mutable CriticalSection manifestLock;
+    mutable StringMapOf<ManifestFileList> manifestFiles;
+
     bool logLoad;
 public:
     IMPLEMENT_IINTERFACE;
@@ -255,7 +308,8 @@ public:
     virtual const char * queryName() const;
     virtual const byte * getResource(unsigned id) const;
     virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id, bool trace) const;
-
+    virtual IPropertyTree &queryManifest() const override;
+    virtual const StringArray &queryManifestFiles(const char *type, const char *wuid) const override;
     bool load(bool isGlobal, bool raiseOnError);
     bool loadCurrentExecutable();
     bool loadResources();
@@ -278,7 +332,7 @@ public:
 };
 
 HelperDll::HelperDll(const char *_name, const IFileIO *_dllFile)
-: name(_name), dllFile(_dllFile)
+: name(_name), dllFile(_dllFile), manifestFiles(false)
 {
     logLoad = false;
 }
@@ -312,6 +366,7 @@ HelperDll::~HelperDll()
 {
     if (logLoad)
         DBGLOG("Unloading dll %s", name.get());
+    ::Release(manifest.load(std::memory_order_relaxed));
 }
 
 HINSTANCE HelperDll::getInstance() const
@@ -433,6 +488,66 @@ bool HelperDll::getResource(size32_t & len, const void * & data, const char * ty
         return getResourceFromMappedFile(name, mappedDll->base(), len, data, type, id);
     }
 }
+
+IPropertyTree &HelperDll::queryManifest() const
+{
+    return *querySingleton(manifest, manifestLock, [this]{ return getEmbeddedManifestPTree(this); });
+}
+
+const StringArray &HelperDll::queryManifestFiles(const char *type, const char *wuid) const
+{
+    CriticalBlock b(manifestLock);
+    Linked<ManifestFileList> list = manifestFiles.find(type);
+    if (!list)
+    {
+        // The temporary path we unpack to is based on so file's current location and workunit
+        StringBuffer tempDir;
+        splitFilename(name, &tempDir, &tempDir, &tempDir, nullptr);
+        list.setown(new ManifestFileList(type, tempDir));
+        tempDir.append(PATHSEPCHAR).append(wuid);
+        VStringBuffer xpath("Resource[@type='%s']", type);
+        Owned<IPropertyTreeIterator> resourceFiles = queryManifest().getElements(xpath.str());
+        ForEach(*resourceFiles)
+        {
+            IPropertyTree &resourceFile = resourceFiles->query();
+            unsigned id = resourceFile.getPropInt("@id", 0);
+            size32_t len = 0;
+            const void *data = nullptr;
+            if (!getResource(len, data, type, id, false))
+                throwUnexpected();
+            MemoryBuffer decompressed;
+            if (resourceFile.getPropBool("@compressed"))
+            {
+                // MORE - would be better to try to spot files that are not worth recompressing (like jar files)?
+                decompressResource(len, data, decompressed);
+                data = decompressed.toByteArray();
+                len = decompressed.length();
+            }
+            else
+            {
+                // Data is preceded by the resource header
+                // MORE - does this depend on whether @header is set? is that what @header means?
+                data = ((const byte *) data) + resourceHeaderLength;
+                len -= resourceHeaderLength;
+            }
+            StringBuffer extractName(tempDir);
+            extractName.append(PATHSEPCHAR);
+            if (resourceFile.hasProp("@filename"))
+                resourceFile.getProp("@filename", extractName);
+            else
+                extractName.append(id).append('.').append(type);
+            recursiveCreateDirectoryForFile(extractName);
+            OwnedIFile f = createIFile(extractName);
+            OwnedIFileIO o = f->open(IFOcreaterw);
+            assertex(o.get() != nullptr);
+            o->write(0, len, data);
+            list->append(extractName);
+        }
+        manifestFiles.replaceOwn(*list.getLink());
+    }
+    return list->queryFileNames();
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -580,13 +695,19 @@ extern DLLSERVER_API bool getEmbeddedWorkUnitXML(ILoadedDllEntry *dll, StringBuf
     return decompressResource(len, data, xml);
 }
 
-extern DLLSERVER_API bool getEmbeddedManifestXML(ILoadedDllEntry *dll, StringBuffer &xml)
+extern DLLSERVER_API bool getEmbeddedManifestXML(const ILoadedDllEntry *dll, StringBuffer &xml)
 {
     size32_t len = 0;
     const void * data = NULL;
     if (!dll->getResource(len, data, "MANIFEST", 1000))
         return false;
     return decompressResource(len, data, xml);
+}
+
+extern DLLSERVER_API IPropertyTree *getEmbeddedManifestPTree(const ILoadedDllEntry *dll)
+{
+    StringBuffer xml;
+    return getEmbeddedManifestXML(dll, xml) ? createPTreeFromXMLString(xml.str()) : createPTree();
 }
 
 extern DLLSERVER_API bool checkEmbeddedWorkUnitXML(ILoadedDllEntry *dll)

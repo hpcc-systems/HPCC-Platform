@@ -15,19 +15,19 @@
     limitations under the License.
 ############################################################################## */
 
-#include "HostNameInput.hpp"
-#include "TemplateException.hpp"
-#include "Utils.hpp"
+#ifndef HPCCSYSTEMS_PLATFORM_HOSTNAMEINPUT_HPP
+#define HPCCSYSTEMS_PLATFORM_HOSTNAMEINPUT_HPP
 
-void HostNameInput::setValue(const std::string &value) {
+#include "Variable.hpp"
+#include <string>
 
-    std::string hostname = trim(value);
-    bool isValid = true;
+class HostNameVariable : public Variable
+{
+    public:
+        explicit HostNameVariable(const std::string &name) : Variable(name) {}
+        ~HostNameVariable() override = default;
+        void addValue(const std::string &value) override;
+};
 
-    if (hostname.empty())
-    {
-        throw TemplateException("Hostname is empty", false);
-    }
 
-    m_values.emplace_back(hostname);
-}
+#endif //HPCCSYSTEMS_PLATFORM_HOSTNAMEINPUT_HPP

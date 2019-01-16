@@ -372,6 +372,8 @@ IPropertyTree *WuWebView::ensureManifest()
     if (!manifest)
     {
         StringBuffer xml;
+        // Is this threadsafe? Does it need to be? Should it use getEmbeddedManifestPTree ?
+        // It looks like WuWebView classes are created when needed, so not shared between threads.
         manifest.setown((loadDll() && getEmbeddedManifestXML(dll, xml)) ? createPTreeFromXMLString(xml.str()) : createPTree());
     }
     return manifest.get();

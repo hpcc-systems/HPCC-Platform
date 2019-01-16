@@ -16,11 +16,8 @@
 ################################################################################
 
 if (USE_CPPUNIT)
-    if (USE_CPPUNIT)
-        FOREACH( iFILES
-                ${CMAKE_CURRENT_SOURCE_DIR}/template_test.xml
-                )
-            Install ( FILES ${iFILES} DESTINATION testing/configmgr/schema/environments COMPONENT Runtime)
-        ENDFOREACH ( iFILES )
-    endif()
+    FILE(GLOB envFiles "${CMAKE_CURRENT_SOURCE_DIR}/*.xml")
+    FOREACH( envFile ${envFiles} )
+        Install ( FILES ${envFile} DESTINATION testing/configmgr/schema/environments COMPONENT Runtime)
+    ENDFOREACH ()
 endif()

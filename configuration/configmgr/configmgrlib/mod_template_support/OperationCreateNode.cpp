@@ -20,67 +20,40 @@
 #include "EnvironmentMgr.hpp"
 #include "EnvironmentNode.hpp"
 #include "EnvironmentValue.hpp"
-#include "TemplateException.hpp"
+#include "TemplateExecutionException.hpp"
 #include "Status.hpp"
-#include <vector>
 
 
-
-void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Inputs *pInputs)
+void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs)
 {
     std::shared_ptr<EnvironmentNode> pNewEnvNode;
-    std::vector<std::string> parentNodeIds;
 
     //
     // Find the parent node(s). Either was input, or based on a path, which may match more than one node
-    if (!m_parentNodeId.empty())
-    {
-        parentNodeIds.emplace_back(m_parentNodeId);
-    }
-    else
-    {
-        std::vector<std::shared_ptr<EnvironmentNode>> envNodes;
-        pEnvMgr->fetchNodes(m_path, envNodes);
-        for (auto &envNode: envNodes)
-            parentNodeIds.emplace_back(envNode->getId());
-    }
+    getParentNodeIds(pEnvMgr, pInputs);
 
     //
     // Create an input to hold the newly created node ID(s) if indicated. The IDs are saved as the node(s) is/are
     // created.
-    std::shared_ptr<Input> pSaveNodeIdInput;
+    std::shared_ptr<Variable> pSaveNodeIdInput;
     if (!m_saveNodeIdName.empty())
     {
-        pSaveNodeIdInput = inputValueFactory("string", m_saveNodeIdName);
-        pInputs->add(pSaveNodeIdInput);
+        pSaveNodeIdInput = createInput(m_saveNodeIdName, "string", pInputs, m_duplicateSaveNodeIdInputOk);
     }
 
     //
-    // If any attribute values are to be saved from the created node(s), create the inputs.
-    for (auto &attr: m_attributes)
-    {
-        //
-        // If this is a saved attribute value, make sure the input exists
-        if (!attr.saveValue.empty())
-        {
-            std::shared_ptr<Input> pInput = pInputs->getInput(attr.saveValue, false);
-            if (pInput)
-            {
-                throw TemplateException("Attribute '" + attr.name + "' save value '" + attr.saveValue + "' already exists.", false);
-            }
-            pInput = inputValueFactory("string", attr.saveValue);
-            pInputs->add(pInput);
-        }
-    }
-
+    // Create any attribute save inputs
+    createAttributeSaveInputs(pInputs);
 
     //
     // Execute for each parent node
-    if (!parentNodeIds.empty())
+    if (!m_parentNodeIds.empty())
     {
-        for (auto parentNodeId: parentNodeIds)
+        for (auto &parentNodeId: m_parentNodeIds)
         {
             Status status;
+
+            std::string nodeId = pInputs->doValueSubstitution(parentNodeId);
 
             //
             // Get a new node for insertion (this does not insert the node, but rather returns an orphaned node that
@@ -96,21 +69,20 @@ void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Inputs *pInputs)
                 {
                     if (!attr.doNotSet)
                     {
-                        attrValues.emplace_back(NameValue(attr.name, attr.cookedValue));
+                        attrValues.emplace_back(NameValue(attr.getName(), attr.cookedValue));
                     }
                 }
 
                 //
                 // Add the new node to the environment
-                pNewEnvNode = pEnvMgr->addNewEnvironmentNode(parentNodeId, m_nodeType, attrValues, status);
+                pNewEnvNode = pEnvMgr->addNewEnvironmentNode(parentNodeId, m_nodeType, attrValues, status, true, true);
                 if (pNewEnvNode)
                 {
                     // construct a status for just this new node's ID so we can see if there is an error
                     Status newNodeStatus(status, pNewEnvNode->getId());
                     if (newNodeStatus.isError())
                     {
-                        throw TemplateException("There was a problem adding the new node, status returned an error",
-                                                false);
+                        throw TemplateExecutionException("There was a problem adding the new node, status returned an error");
                     }
 
                     //
@@ -121,29 +93,22 @@ void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Inputs *pInputs)
                     }
 
                     //
-                    // Save any required attribute values
-                    for (auto &attr: m_attributes)
-                    {
-                        if (!attr.saveValue.empty())
-                        {
-                            std::shared_ptr<Input> pInput = pInputs->getInput(attr.saveValue);
-                            pInput->addValue(pNewEnvNode->getAttribute(attr.name)->getValue());
-                        }
-                    }
+                    // Save any attribute values to inputs for use later
+                    saveAttributeValues(pInputs, pNewEnvNode);
                 }
                 else
                 {
-                    throw TemplateException("There was a problem adding the new node", false);
+                    throw TemplateExecutionException("There was a problem adding the new node");
                 }
             }
             else
             {
-                throw TemplateException("Unable to get new node", false);
+                throw TemplateExecutionException("Unable to get new node");
             }
         }
     }
     else
     {
-        throw TemplateException("Unable to find parent node", false);
+        throw TemplateExecutionException("Unable to find parent node");
     }
 }

@@ -28,7 +28,7 @@
                     <xs:element name="Instance" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:displayName="Instances" hpcc:requiredInstanceComponents="/Evnironment/Software/[#itemType='dafilesrv']">
                         <xs:complexType>
                             <xs:attributeGroup ref="computerNodeReference"/>
-                            <xs:attribute name="directory" type="xs:string" use="optional" hpcc:presetValue="c$\backupnode" hpcc:hidden="true"/>
+                            <xs:attribute name="directory" type="xs:string" hpcc:presetValue="c$\backupnode" hpcc:hidden="true"/>
                         </xs:complexType>
                     </xs:element>
                     <xs:element name="NodeGroup" hpcc:displayName="Thor Node Groups" hpcc:class="elementSet" maxOccurs="unbounded">

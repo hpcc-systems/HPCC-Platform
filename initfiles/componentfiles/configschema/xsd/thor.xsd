@@ -31,7 +31,7 @@
                                           hpcc:sourceKey="computer_name"
                                           hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue"
                                           hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
-                            <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="optional"
+                            <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address"
                                           hpcc:readOnly="true" hpcc:noOutput="true"
                                           hpcc:sourceKey="computer_netaddress"
                                           hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
@@ -46,7 +46,7 @@
                                           hpcc:sourceKey="computer_name"
                                           hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue"
                                           hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
-                            <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="optional"
+                            <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address"
                                           hpcc:readOnly="true" hpcc:noOutput="true"
                                           hpcc:sourceKey="computer_netaddress"
                                           hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
@@ -61,7 +61,7 @@
                                           hpcc:sourceKey="computer_name"
                                           hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue"
                                           hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
-                            <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="optional"
+                            <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address"
                                           hpcc:readOnly="true" hpcc:noOutput="true"
                                           hpcc:sourceKey="computer_netaddress"
                                           hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>

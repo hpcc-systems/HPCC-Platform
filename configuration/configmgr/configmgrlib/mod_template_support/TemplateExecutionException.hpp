@@ -15,20 +15,37 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef HPCCSYSTEMS_PLATFORM_HOSTNAMEINPUT_HPP
-#define HPCCSYSTEMS_PLATFORM_HOSTNAMEINPUT_HPP
+#ifndef HPCCSYSTEMS_PLATFORM_TEMPLATEEXECUTIONEXCEPTION_HPP
+#define HPCCSYSTEMS_PLATFORM_TEMPLATEEXECUTIONEXCEPTION_HPP
 
-#include "Input.hpp"
-#include <vector>
+#include <exception>
 #include <string>
+#include "rapidjson/document.h"
+#include "rapidjson/error/en.h"
 
-class HostNameInput : public Input
+class TemplateExecutionException : public std::exception
 {
     public:
-        HostNameInput() = default;
-        ~HostNameInput() = default;
-        void setValue(const std::string &value);
+
+        TemplateExecutionException(const std::string &reason) :
+                m_reason(reason) { }
+        TemplateExecutionException() = default;
+
+        void setStep(const std::string &step)
+        {
+            m_reason = "There was a problem executing " + step + ", the cause is " + m_reason;
+        }
+
+        const char *what() const throw() override
+        {
+            return m_reason.c_str();
+        }
+
+
+    private:
+
+        std::string m_reason;
 };
 
 
-#endif //HPCCSYSTEMS_PLATFORM_HOSTNAMEINPUT_HPP
+#endif //HPCCSYSTEMS_PLATFORM_TEMPLATEEXECUTIONEXCEPTION_HPP

@@ -15,11 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-#include "IPAddressInput.hpp"
+#include "IPAddressVariable.hpp"
 #include "TemplateException.hpp"
 #include "Utils.hpp"
 
-void IPAddressInput::setValue(const std::string &value) {
+void IPAddressVariable::addValue(const std::string &value) {
 
     std::string ipAddr = trim(value);
     bool isValid = true;

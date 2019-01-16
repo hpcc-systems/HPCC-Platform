@@ -33,7 +33,7 @@ interface XMLLIB_API IXpathContext : public IInterface
 public:
 
     virtual bool addVariable(const char * name, const char * val) = 0;
-    virtual const char * getVariable(const char * name) = 0;
+    virtual const char * getVariable(const char * name, StringBuffer & variable) = 0;
     virtual bool evaluateAsBoolean(const char * xpath) = 0;
     virtual bool evaluateAsString(const char * xpath, StringBuffer & evaluated) = 0;
     virtual bool evaluateAsBoolean(ICompiledXpath * compiledXpath) = 0;
@@ -42,7 +42,7 @@ public:
     virtual bool setXmlDoc(const char * xmldoc) = 0;
 };
 
-extern "C" XMLLIB_API ICompiledXpath* getCompiledXpath(const char * xpath);
+extern "C" XMLLIB_API ICompiledXpath* compileXpath(const char * xpath);
 extern "C" XMLLIB_API IXpathContext*  getXpathContext(const char * xmldoc);
 
 #endif /* XPATH_MANAGER_HPP_ */

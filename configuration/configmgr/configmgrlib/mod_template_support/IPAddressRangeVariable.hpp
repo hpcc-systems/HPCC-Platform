@@ -15,11 +15,20 @@
     limitations under the License.
 ############################################################################## */
 
-#include "OperationNoop.hpp"
-#include "EnvironmentMgr.hpp"
-#include "EnvironmentNode.hpp"
+#ifndef HPCCSYSTEMS_PLATFORM_IPRANGE_HPP
+#define HPCCSYSTEMS_PLATFORM_IPRANGE_HPP
 
-void OperationNoop::doExecute(EnvironmentMgr *pEnvMgr, Inputs *pInputs)
+#include "Variable.hpp"
+#include <string>
+
+class IPAddressRangeVariable : public Variable
 {
-    return;
-}
+    public:
+        explicit IPAddressRangeVariable(const std::string &name) : Variable(name) {}
+        ~IPAddressRangeVariable() override = default;
+        void addValue(const std::string &value) override;
+
+};
+
+
+#endif //HPCCSYSTEMS_PLATFORM_IPRANGE_HPP

@@ -15,24 +15,25 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef HPCCSYSTEMS_PLATFORM_OPERATIONNOOP_HPP
-#define HPCCSYSTEMS_PLATFORM_OPERATIONNOOP_HPP
+#ifndef HPCCSYSTEMS_PLATFORM_OPERATIONDELETENODE_HPP
+#define HPCCSYSTEMS_PLATFORM_OPERATIONDELETENODE_HPP
 
 #include "Operation.hpp"
 
-class OperationNoop : public Operation
+class OperationDeleteNode :public Operation
 {
     public:
 
-        OperationNoop() = default;
-        ~OperationNoop() = default;
+        OperationDeleteNode() = default;
+        ~OperationDeleteNode() override = default;
 
 
     protected:
 
-        void doExecute(EnvironmentMgr *pEnvMgr, Inputs *pInputs);
+        void doExecute(EnvironmentMgr *pEnvMgr, Variables *pVariables) override;
 
+    friend class EnvModTemplate;
 };
 
 
-#endif //HPCCSYSTEMS_PLATFORM_OPERATIONNOOP_HPP
+#endif //HPCCSYSTEMS_PLATFORM_OPERATIONDELETENODE_HPP

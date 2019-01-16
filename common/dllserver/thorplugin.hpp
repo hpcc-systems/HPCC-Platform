@@ -31,12 +31,16 @@ interface ILoadedDllEntry : extends IInterface
     virtual const char * queryName() const = 0;
     virtual const byte * getResource(unsigned id) const = 0;
     virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id, bool trace=true) const = 0;
+    virtual IPropertyTree &queryManifest() const = 0;
+    virtual const StringArray &queryManifestFiles(const char *type, const char *tempDir) const = 0;
 };
 
 extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *name, bool isGlobal, const IFileIO *dllFile, bool resourcesOnly);
 extern DLLSERVER_API ILoadedDllEntry * createExeDllEntry(const char *name);
 extern DLLSERVER_API bool getEmbeddedWorkUnitXML(ILoadedDllEntry *dll, StringBuffer &xml);
-extern DLLSERVER_API bool getEmbeddedManifestXML(ILoadedDllEntry *dll, StringBuffer &xml);
+extern DLLSERVER_API bool getEmbeddedManifestXML(const ILoadedDllEntry *dll, StringBuffer &xml);
+extern DLLSERVER_API IPropertyTree *getEmbeddedManifestPTree(const ILoadedDllEntry *dll);
+
 extern DLLSERVER_API bool checkEmbeddedWorkUnitXML(ILoadedDllEntry *dll);
 extern DLLSERVER_API bool getResourceFromFile(const char *filename, MemoryBuffer &data, const char * type, unsigned id);
 extern DLLSERVER_API bool getResourceXMLFromFile(const char *filename, const char *type, unsigned id, StringBuffer &xml);

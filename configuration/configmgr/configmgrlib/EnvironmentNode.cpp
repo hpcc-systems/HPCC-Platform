@@ -160,7 +160,16 @@ void EnvironmentNode::setAttributeValue(const std::string &attrName, const std::
 
     if (pEnvValue)
     {
-        pEnvValue->setValue(value, &status, allowInvalid);
+        //
+        // If the value is not empty, set the attribute to the new value. If empty, delete the attribute
+        if (!value.empty())
+        {
+            pEnvValue->setValue(value, &status, allowInvalid);
+        }
+        else
+        {
+            m_attributes.erase(it);
+        }
     }
     else
     {
@@ -385,10 +394,17 @@ void EnvironmentNode::doFetchNodes(ConfigPath &configPath, std::vector<std::shar
     {
         if (pPathItem->isRoot())
         {
-            std::shared_ptr<const EnvironmentNode> pRoot = getRoot();
+            std::shared_ptr<EnvironmentNode> pRoot = getRoot();
             if (pRoot->getName() == pPathItem->getElementName())
             {
-                pRoot->doFetchNodes(configPath, nodes);
+                if (configPath.isPathRemaining())
+                {
+                    pRoot->doFetchNodes(configPath, nodes);
+                }
+                else
+                {
+                    nodes.emplace_back(pRoot);
+                }
             }
             else
             {
@@ -475,12 +491,12 @@ void EnvironmentNode::doFetchNodes(ConfigPath &configPath, std::vector<std::shar
 }
 
 
-std::shared_ptr<const EnvironmentNode> EnvironmentNode::getRoot() const
+std::shared_ptr<EnvironmentNode> EnvironmentNode::getRoot() const
 {
-    if (!m_pParent.expired())
+    std::shared_ptr<EnvironmentNode> pParent = m_pParent.lock();
+    if (pParent)
     {
-        return m_pParent.lock()->getRoot();
+        return pParent->getRoot();
     }
-    std::shared_ptr <const EnvironmentNode> ptr = shared_from_this();
-    return ptr;
+    return std::const_pointer_cast<EnvironmentNode>(shared_from_this());
 }
