@@ -328,7 +328,7 @@ define([
                                     NetAddress: item.NetAddress,
                                     Path: item.fullFolderPath,
                                     OS: item.OS,
-                                    Names: item.displayName
+                                    Names: item.name
                                 },
                                 load: function (response) {
                                     context.refreshGrid(true);
