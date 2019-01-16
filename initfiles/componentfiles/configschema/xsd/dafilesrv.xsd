@@ -8,12 +8,12 @@
                     hpcc:docid="daFs.t">
             <xs:complexType>
                 <xs:attributeGroup name="executionSettings">
-                    <xs:attribute name="parallelRequestLimit" type="percent" use="optional" hpcc:presetValue="20"
+                    <xs:attribute name="parallelRequestLimit" type="percent" hpcc:presetValue="20"
                                   hpcc:tooltip="Defines the maximum number of concurrent dafilesrv requests allowed. Requests that exceed the limit will be delayed. A value of 0 disables throttling. Overrides global settting."/>
-                    <xs:attribute name="throttleDelayMs" type="xs:nonNegativeInteger" use="optional"
+                    <xs:attribute name="throttleDelayMs" type="xs:nonNegativeInteger"
                                   hpcc:presetValue="5000"
                                   hpcc:tooltip="Defines how many milliseconds delayed requests will be delayed by. Overrides global settting."/>
-                    <xs:attribute name="throttleCPULimit" type="xs:nonNegativeInteger" use="optional"
+                    <xs:attribute name="throttleCPULimit" type="xs:nonNegativeInteger"
                                   hpcc:presetValue="75"
                                   hpcc:tooltip="if after the initial delay, the CPU % falls below this setting, the transaction will be allowed to continue, i.e. the limit can be exceeded this way. Overrides global settting."/>
                 </xs:attributeGroup>
@@ -22,7 +22,7 @@
                                 hpcc:displayName="Bound Computers">
                         <xs:complexType>
                             <xs:attributeGroup ref="computerNodeReference"/>
-                            <xs:attribute name="directory" type="xs:string" use="optional"
+                            <xs:attribute name="directory" type="xs:string"
                                           hpcc:presetValue="c$\dafilesrv" hpcc:hidden="true"/>
                             <xs:attributeGroup ref="executionSettings"/>
                         </xs:complexType>
@@ -30,9 +30,9 @@
                 </xs:sequence>
                 <xs:attributeGroup ref="buildInfo"/>
                 <xs:attribute name="name" type="xs:string" use="required" hpcc:tooltip="Name for this process"/>
-                <xs:attribute name="description" type="xs:string" use="optional" hpcc:presetValue="DaFileSrv process"
+                <xs:attribute name="description" type="xs:string" hpcc:presetValue="DaFileSrv process"
                               hpcc:tooltip="Description for this process"/>
-                <xs:attribute name="version" type="xs:string" use="optional" hpcc:presetValue="1"
+                <xs:attribute name="version" type="xs:string" hpcc:presetValue="1"
                               hpcc:tooltip="Version identifier used to select which process will be started"/>
                 <xs:attributeGroup ref="executionSettings"/>
             </xs:complexType>

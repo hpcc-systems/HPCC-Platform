@@ -36,7 +36,7 @@
                                             hpcc:class="elementSet" hpcc:displayName="URL Authentication"
                                             hpcc:docid="ESP.t1">
                                     <xs:complexType>
-                                        <xs:attribute name="description" type="xs:string" use="optional"
+                                        <xs:attribute name="description" type="xs:string"
                                                       hpcc:displayName="Description"/>
                                         <xs:attribute name="path" type="xs:string" use="required" hpcc:presetValue="/"
                                                       hpcc:displayName="Path"
@@ -63,7 +63,7 @@
                                             hpcc:class="elementSet" hpcc:displayName="Feature Authentication"
                                             hpcc:docid="ESP.t2">
                                     <xs:complexType>
-                                        <xs:attribute name="authenticate" use="optional" hpcc:presetValue="Yes"
+                                        <xs:attribute name="authenticate" hpcc:presetValue="Yes"
                                                       hpcc:displayName="Authenticate"
                                                       hpcc:tooltip="Validate access rights for this capability?">
                                             <xs:simpleType>
@@ -74,7 +74,7 @@
                                                 </xs:restriction>
                                             </xs:simpleType>
                                         </xs:attribute>
-                                        <xs:attribute name="description" type="xs:string" use="optional"
+                                        <xs:attribute name="description" type="xs:string"
                                                       hpcc:displayName="Description"/>
                                         <xs:attribute name="path" type="xs:string" use="required"
                                                       hpcc:displayName="Path" hpcc:presetValue="/"
@@ -87,10 +87,10 @@
                                 <xs:element name="CustomBindingParameter" minOccurs="0" maxOccurs="unbounded"
                                             hpcc:class="elementSet" hpcc:displayName="Custom Binding Parameters">
                                     <xs:complexType>
-                                        <xs:attribute name="key" type="xs:string" use="optional"
+                                        <xs:attribute name="key" type="xs:string"
                                                       hpcc:uniqueKey="custombindingparameter_key"
                                                       hpcc:displayName="Key"/>
-                                        <xs:attribute name="value" type="xs:string" use="optional"
+                                        <xs:attribute name="value" type="xs:string"
                                                       hpcc:displayName="Value"/>
                                     </xs:complexType>
                                 </xs:element>
@@ -115,22 +115,22 @@
                             </xs:attribute>
                             <xs:attribute name="port" type="xs:nonNegativeInteger" use="required"
                                           hpcc:displayName="Port" hpcc:tooltip="Port to which the service is bound"/>
-                            <xs:attribute name="wsdlServiceAddress" type="xs:string" use="optional"
+                            <xs:attribute name="wsdlServiceAddress" type="xs:string"
                                           hpcc:displayName="wsdlServiceAddress"
                                           hpcc:tooltip="Overrides the address used by client applications to connect to the service"/>
-                            <xs:attribute name="defaultServiceVersion" type="version" use="optional"
+                            <xs:attribute name="defaultServiceVersion" type="version"
                                           hpcc:displayName="Default Service Version"
                                           hpcc:tooltip="The default version for WSDL, XSD and the ESP form"/>
-                            <xs:attribute name="resourcesBasedn" type="xs:string" use="optional" hpcc:displayName=""
+                            <xs:attribute name="resourcesBasedn" type="xs:string" hpcc:displayName=""
                                           hpcc:tooltip="Base location for resources (used with ldap security)"/>
-                            <xs:attribute name="workunitsBasedn" type="xs:string" use="optional"
+                            <xs:attribute name="workunitsBasedn" type="xs:string"
                                           hpcc:presetValue="ou=workunits,ou=ecl" hpcc:displayName="WorkUnits BaseDn"
                                           hpcc:tooltip="Base location for workunit resources (used with ldap security)"
                                           hpcc:requiredIf="xpath,xpath..."/>
                             <xs:attribute name="defaultForPort" type="xs:boolean" use="required" hpcc:presetValue="true"
                                           hpcc:displayName="Default for port"
                                           hpcc:tooltip="This binding is determines root access"/>
-                            <xs:attribute name="type" type="xs:string" use="optional"
+                            <xs:attribute name="type" type="xs:string"
                                           hpcc:displayName="Security Manager Plugin" hpcc:sourceKey="secmgrplugin_name"
                                           hpcc:hiddenIf="../Authentication[@method=('ldap','ldaps')]"
                                           hpcc:requiredIf="../Authentication[@method!=('ldap','ldaps')]"
@@ -162,10 +162,10 @@
                                     </xs:restriction>
                                 </xs:simpleType>
                             </xs:attribute>
-                            <xs:attribute name="ldapServer" type="xs:string" use="optional"
+                            <xs:attribute name="ldapServer" type="xs:string"
                                           hpcc:displayName="LDAP Server" hpcc:requiredIf=".[@method=('ldap','ldaps')]"
                                           hpcc:tooltip="The ldap server to be used for authentication"/>
-                            <xs:attribute name="ldapAuthMethod" type="xs:string" use="optional"
+                            <xs:attribute name="ldapAuthMethod" type="xs:string"
                                           hpcc:presetValue="kerberos" hpcc:displayName="LDAP Auth Method"
                                           hpcc:requiredIf=".[@method=('ldap','ldaps')]"
                                           hpcc:tooltip="The protocol to use for LDAP authentication">
@@ -176,25 +176,25 @@
                                     </xs:restriction>
                                 </xs:simpleType>
                             </xs:attribute>
-                            <xs:attribute name="ldapConnections" type="xs:nonNegativeInteger" use="optional"
+                            <xs:attribute name="ldapConnections" type="xs:nonNegativeInteger"
                                           hpcc:presetValue="10" hpcc:displayName="LDAP Connections"
                                           hpcc:tooltip="Maximum number of connections to the LDAP server"
                                           hpcc:requiredIf=".[@method=('ldap','ldaps')]"/>
                             <xs:attribute name="passwordExpirationWarningDays" type="xs:nonNegativeInteger"
-                                          use="optional" hpcc:presetValue="10"
+                                          hpcc:presetValue="10"
                                           hpcc:requiredIf=".[@method=('ldap','ldaps')]"
                                           hpcc:displayName="Passowrd Expiration Warning Days"
                                           hpcc:tooltip="In this time period, ESP displays a warning about password expiration"/>
-                            <xs:attribute name="checkViewPermissions" type="xs:boolean" use="optional"
+                            <xs:attribute name="checkViewPermissions" type="xs:boolean"
                                           hpcc:presetValue="false" hpcc:displayName="Check View Permissions"
                                           hpcc:requiredIf=".[@method=('ldap','ldaps')]"
                                           hpcc:tooltip="Enable file and column access permission checking for all view enabled queries"/>
                             <xs:attribute name="getUserNameURL" type="xs:string" hpcc:displayName="Username URL"
-                                          use="optional" hpcc:presetValue="/esp/files/GetUserName.html"
+                                          hpcc:presetValue="/esp/files/GetUserName.html"
                                           hpcc:requiredIf=".[@method='userNameOnly']"
                                           hpcc:tooltip="URL to getUserName"/>
                             <xs:attribute name="getUserNameUnrestrictedResources" type="xs:string"
-                                          hpcc:displayName="Unrestricted Resources Name" use="optional"
+                                          hpcc:displayName="Unrestricted Resources Name"
                                           hpcc:presetValue="/favicon.ico,/esp/files/*,/esp/xslt/*"
                                           hpcc:requiredIf=".[@method='userNameOnly']"
                                           hpcc:tooltip="unrestricted resources for getUserNameURL"/>
@@ -214,18 +214,18 @@
                                     </xs:restriction>
                                 </xs:simpleType>
                             </xs:attribute>
-                            <xs:attribute name="domainName" type="xs:string" use="optional"
+                            <xs:attribute name="domainName" type="xs:string"
                                           hpcc:displayName="Domain Name"
                                           hpcc:tooltip="Unique string to identify an auth domain in case > 1 domains in an esp"/>
-                            <xs:attribute name="logonURL" type="xs:string" use="optional"
+                            <xs:attribute name="logonURL" type="xs:string"
                                           hpcc:presetValue="/esp/files/eclwatch/templates/Login.html"
                                           hpcc:displayName="Logon URL" hpcc:tooltip="Logon URL"/>
-                            <xs:attribute name="logoutURL" type="xs:string" use="optional" hpcc:presetValue=""
+                            <xs:attribute name="logoutURL" type="xs:string" hpcc:presetValue=""
                                           hpcc:displayName="Logout URL" hpcc:tooltip="Logout URL"/>
-                            <xs:attribute name="sessionTimeoutMinutes" type="xs:integer" use="optional"
+                            <xs:attribute name="sessionTimeoutMinutes" type="xs:integer"
                                           hpcc:presetValue="60" hpcc:displayName="Session Timeout Minutes"
                                           hpcc:tooltip="Inactive session duration, in minutes. Specify 0 for default timeout, -1 for never timeout"/>
-                            <xs:attribute name="resourceURL" type="xs:string" use="optional"
+                            <xs:attribute name="resourceURL" type="xs:string"
                                           hpcc:presetValue="/favicon.ico,/esp/files/img/favicon.ico,/esp/files/eclwatch/img/Loginlogo.png,/esp/files/dojo/*,/esp/files/eclwatch/nls/*"
                                           hpcc:displayName="Resurce URL" hpcc:tooltip="??"/>
                         </xs:complexType>
@@ -233,49 +233,49 @@
 
                     <xs:element name="HTTPS" minOccurs="0" hpcc:class="valueSet" hpcc:requiredIf="">
                         <xs:complexType>
-                            <xs:attribute name="acceptSelfSigned" type="xs:boolean" use="optional"
+                            <xs:attribute name="acceptSelfSigned" type="xs:boolean"
                                           hpcc:presetValue="true" hpcc:displayName="Accept Self Signed"
                                           hpcc:tooltip="whether to accept self-signed certificates"/>
-                            <xs:attribute name="CA_Certificates_Path" type="xs:string" use="optional"
+                            <xs:attribute name="CA_Certificates_Path" type="xs:string"
                                           hpcc:presetValue="ca.pem" hpcc:displayName="Certificates Path"
                                           hpcc:requiredIf="../EspBinding[@protocol='https']"
                                           hpcc:tooltip="path to the file that contains CA certificates"/>
-                            <xs:attribute name="certificateFileName" type="xs:string" use="optional"
+                            <xs:attribute name="certificateFileName" type="xs:string"
                                           hpcc:presetValue="certificate.cer" hpcc:displayName="Certificate Filename"
                                           hpcc:tooltip="Name of destination file in which the certificate will be written"/>
-                            <xs:attribute name="cipherList" type="xs:string" use="optional"
+                            <xs:attribute name="cipherList" type="xs:string"
                                           hpcc:presetValue="ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5"
                                           hpcc:displayName="Cipher List"
                                           hpcc:tooltip="Sets the ordered list of available ciphers for use by openssl.  See openssl documentation on ciphers for information on use and formatting."/>
-                            <xs:attribute name="passphrase" type="xs:string" use="optional"
+                            <xs:attribute name="passphrase" type="xs:string"
                                           hpcc:modifiers="mask,verify,ignoreNoChange,encrypt"
                                           hpcc:displayName="Passphrase"
                                           hpcc:tooltip="The passphrase used to generate the private key"/>
-                            <xs:attribute name="privateKeyFileName" type="xs:string" use="optional"
+                            <xs:attribute name="privateKeyFileName" type="xs:string"
                                           hpcc:presetValue="privatekey.cer" hpcc:displayName="Private Key Filename"
                                           hpcc:requiredIf="../EspBinding[@protocol='https']"
                                           hpcc:tooltip="Name of destination file in which the private key will be written"/>
                             <!-- The following are deprecated and marked hidden so that they don't appear to the user -->
                             <xs:attribute name="city" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string"
-                                          use="optional"/>
+                                         />
                             <xs:attribute name="country" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string"
-                                          use="optional"/>
+                                         />
                             <xs:attribute name="daysValid" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string"
-                                          use="optional"/>
+                                         />
                             <xs:attribute name="enableVerification" hpcc:deprecated="true" hpcc:hidden="true"
-                                          type="xs:boolean" use="optional"/>
+                                          type="xs:boolean"/>
                             <xs:attribute name="organization" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string"
-                                          use="optional"/>
+                                         />
                             <xs:attribute name="organizationalUnit" hpcc:deprecated="true" hpcc:hidden="true"
-                                          type="xs:string" use="optional"/>
+                                          type="xs:string"/>
                             <xs:attribute name="regenerateCredentials" hpcc:deprecated="true" hpcc:hidden="true"
-                                          type="xs:boolean" use="optional"/>
+                                          type="xs:boolean"/>
                             <xs:attribute name="requireAddressMatch" hpcc:deprecated="true" hpcc:hidden="true"
-                                          type="xs:boolean" use="optional"/>
+                                          type="xs:boolean"/>
                             <xs:attribute name="state" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string"
-                                          use="optional"/>
+                                         />
                             <xs:attribute name="trustedPeers" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string"
-                                          use="optional"/>
+                                         />
                         </xs:complexType>
                     </xs:element>
 
@@ -306,8 +306,8 @@
                                             hpcc:tooltip="The generated Certificate Signing Request (CSR) is displayed here after first deployment"/>
                             </xs:sequence>
                             <xs:attributeGroup ref="computerNodeReference"/>
-                            <xs:attribute name="directory" type="absolutePath" use="optional" hpcc:hidden="true"/>
-                            <xs:attribute name="FQDN" type="xs:string" use="optional"
+                            <xs:attribute name="directory" type="absolutePath" hpcc:hidden="true"/>
+                            <xs:attribute name="FQDN" type="xs:string"
                                           hpcc:displayName="Fully Qualified Domain Name"
                                           hpcc:tooltip="Enter the fully qualified domain name"/>
                         </xs:complexType>
@@ -319,69 +319,69 @@
                 <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name"
                               hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="myesp"
                               hpcc:uniqueKey="espprocess_name" hpcc:tooltip="Name for this process"/>
-                <xs:attribute name="description" type="xs:string" use="optional" hpcc:presetValue="ESP server"
+                <xs:attribute name="description" type="xs:string" hpcc:presetValue="ESP server"
                               hpcc:displayName="Description" hpcc:tooltip="Description for this process"/>
                 <xs:attribute name="daliServers" type="xs:string" use="required" hpcc:displayName="Dali Servers"
                               hpcc:tooltip="Specifies the dali server to which this ESP is attached"/>
-                <xs:attribute name="enableSEHMapping" type="xs:boolean" use="optional" hpcc:presetValue="true"
+                <xs:attribute name="enableSEHMapping" type="xs:boolean" hpcc:presetValue="true"
                               hpcc:displayName="Enable SEH Mapping" hpcc:tooltip="Enables SEH to exception mapping"/>
-                <xs:attribute name="httpConfigAccess" type="xs:boolean" use="optional" hpcc:presetValue="true"
+                <xs:attribute name="httpConfigAccess" type="xs:boolean" hpcc:presetValue="true"
                               hpcc:displayName="HTTP Config Access"
                               hpcc:tooltip="Allows esp config file to be viewed via a web browser"/>
-                <xs:attribute name="formOptionsAccess" type="xs:boolean" use="optional" hpcc:presetValue="false"
+                <xs:attribute name="formOptionsAccess" type="xs:boolean" hpcc:presetValue="false"
                               hpcc:displayName="Form Options Access"
                               hpcc:tooltip="Allows show Options in test form page"/>
-                <xs:attribute name="maxRequestEntityLength" type="xs:nonNegativeInteger" use="optional"
+                <xs:attribute name="maxRequestEntityLength" type="xs:nonNegativeInteger"
                               hpcc:presetValue="8000000" hpcc:displayName="Max Request Entity Length"
                               hpcc:tooltip="The maximum length of request entity allowed"/>
-                <xs:attribute name="maxConcurrentThreads" type="xs:nonNegativeInteger" use="optional"
+                <xs:attribute name="maxConcurrentThreads" type="xs:nonNegativeInteger"
                               hpcc:presetValue="0" hpcc:displayName="Max Concurrent Threads"
                               hpcc:tooltip="The maximum number of concurrent threads. 0 means unlimited"/>
-                <xs:attribute name="maxBacklogQueueSize" type="xs:nonNegativeInteger" use="optional"
+                <xs:attribute name="maxBacklogQueueSize" type="xs:nonNegativeInteger"
                               hpcc:presetValue="200" hpcc:displayName="Max Backlog Queue Size"
                               hpcc:tooltip="Sets the sockets parameter for the maximum number of backlogged requests"/>
-                <xs:attribute name="perfReportDelay" type="xs:nonNegativeInteger" use="optional" hpcc:presetValue="60"
+                <xs:attribute name="perfReportDelay" type="xs:nonNegativeInteger" hpcc:presetValue="60"
                               hpcc:displayName="Resource Usage Stats Logging Frequency"
                               hpcc:tooltip="Sets the frequency for logging resource usage stats"/>
                 <xs:attribute name="portalurl" type="xs:string" hpcc:presetValue="http://hpccsystems.com/download"
                               hpcc:hidden="true" hpcc:tooltip="portal to HPCC Systems® web site"/>
-                <xs:attribute name="controlPort" type="xs:nonNegativeInteger" use="optional" hpcc:presetValue="8010"
+                <xs:attribute name="controlPort" type="xs:nonNegativeInteger" hpcc:presetValue="8010"
                               hpcc:displayName="Control Port" hpcc:uniqueKey="espprocess_controlport"
                               hpcc:tooltip="Sets the network port for ESP control"/>
-                <xs:attribute name="logLevel" type="xs:nonNegativeInteger" use="optional" hpcc:presetValue="1"
+                <xs:attribute name="logLevel" type="xs:nonNegativeInteger" hpcc:presetValue="1"
                               hpcc:displayName="Log Level"
                               hpcc:tooltip="ets the log level [0: none, 1: min, 5: noraml, 10: max]"/>
-                <xs:attribute name="componentfilesDir" type="xs:string" use="optional"
+                <xs:attribute name="componentfilesDir" type="xs:string"
                               hpcc:presetValue="${COMPONENTFILES_PATH}" hpcc:displayName="Component Files Dir"
                               hpcc:tooltip="Sets the componentfiles directory"/>
-                <xs:attribute name="logRequests" type="xs:boolean" use="optional" hpcc:presetValue="true"
+                <xs:attribute name="logRequests" type="xs:boolean" hpcc:presetValue="true"
                               hpcc:displayName="Log Requests"/>
-                <xs:attribute name="logResponses" type="xs:boolean" use="optional" hpcc:presetValue="false"
+                <xs:attribute name="logResponses" type="xs:boolean" hpcc:presetValue="false"
                               hpcc:displayName="Log Responses"/>
-                <xs:attribute name="txSummaryLevel" type="xs:nonNegativeInteger" use="optional" hpcc:presetValue="1"
+                <xs:attribute name="txSummaryLevel" type="xs:nonNegativeInteger" hpcc:presetValue="1"
                               hpcc:displayName="Tx Summary Level"
                               hpcc:tooltip="Sets the TxSummary level [0: none, 1: min, 5: noraml, 10: max]"/>
-                <xs:attribute name="txSummaryResourceReq" type="xs:boolean" use="optional" hpcc:presetValue="false"
+                <xs:attribute name="txSummaryResourceReq" type="xs:boolean" hpcc:presetValue="false"
                               hpcc:displayName="Tx Summary Resource Req"
                               hpcc:tooltip="Log TxSummary for Resource Requests"/>
-                <xs:attribute name="espCacheInitString" type="xs:string" use="optional"
+                <xs:attribute name="espCacheInitString" type="xs:string"
                               hpcc:displayName="Cache Init String"
                               hpcc:tooltip="String used for initializing ESP cache client"/>
-                <xs:attribute name="checkSessionTimeoutSeconds" type="xs:nonNegativeInteger" use="optional"
+                <xs:attribute name="checkSessionTimeoutSeconds" type="xs:nonNegativeInteger"
                               hpcc:displayName="Check Session Timeout(s)"
                               hpcc:tooltip="Check Session Timeout in every given seconds"/>
-                <xs:attribute name="urlAlias" type="xs:string" use="optional" hpcc:displayName="URL Alias"
+                <xs:attribute name="urlAlias" type="xs:string" hpcc:displayName="URL Alias"
                               hpcc:tooltip="The URL alias for this ESP. This can be used to detect Cross-Origin Resource Sharing (CORS) access"/>
-                <xs:attribute name="PageCacheTimeoutSeconds" type="xs:nonNegativeInteger" use="optional"
+                <xs:attribute name="PageCacheTimeoutSeconds" type="xs:nonNegativeInteger"
                               hpcc:diaplayName="Page Cache Timeout(s)" hpcc:presetValue="600"
                               hpcc:tooltip="Paging data timeout in the given seconds"/>
-                <xs:attribute name="MaxPageCacheItems" type="xs:nonNegativeInteger" use="optional"
+                <xs:attribute name="MaxPageCacheItems" type="xs:nonNegativeInteger"
                               hpcc:displayName="Max Page Cache Items" hpcc:presetValue="1000"
                               hpcc:tooltip="The maximum number of cached items inside one page cache. 0 means no cache"/>
-                <xs:attribute name="maxPersistentIdleTime" type="xs:integer" use="optional"
+                <xs:attribute name="maxPersistentIdleTime" type="xs:integer"
                               hpcc:displayName="Max Persistent Idle Time(s)" hpcc:presetValue="60"
                               hpcc:tooltip="The maximum idle time in seconds (-1 for unlimited, 0 to disable)"/>
-                <xs:attribute name="maxPersistentRequests" type="xs:integer" use="optional"
+                <xs:attribute name="maxPersistentRequests" type="xs:integer"
                               hpcc:displayName="Max Persistent Requests" hpcc:presetValue="100"
                               hpcc:tooltip="Maximum number of query requests per persistent http connection. (-1 for unlimited, 0 to disable)"/>
 
