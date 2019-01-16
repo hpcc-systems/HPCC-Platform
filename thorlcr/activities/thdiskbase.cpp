@@ -44,6 +44,7 @@ void CDiskReadMasterBase::init()
     StringBuffer expandedFileName;
     queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName, mangle);
     fileName.set(expandedFileName);
+    reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
 
     Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
     if (file)
@@ -55,7 +56,6 @@ void CDiskReadMasterBase::init()
         else
             fileDesc.setown(file->getFileDescriptor());
         validateFile(file);
-        reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
         if (container.queryLocal() || helper->canMatchAny()) // if local, assume may match
         {
             bool temp = 0 != (TDXtemporary & helper->getFlags());

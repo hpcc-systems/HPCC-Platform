@@ -59,6 +59,7 @@ struct EspAuthRequest
 interface IRemoteConnection;
 class CEspHttpServer : implements IHttpServerService, public CInterface
 {
+    bool isSSL = false;
     CriticalSection critDaliSession;
 protected:
     ISocket&                m_socket;
@@ -101,6 +102,7 @@ protected:
     void resetSessionTimeout(EspAuthRequest& authReq, unsigned sessionID, StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
     void sendException(EspAuthRequest& authReq, unsigned code, const char* msg);
     void sendMessage(const char* msg, const char* msgType);
+    void sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest& authReq, const char* msg);
     bool isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName);
     IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
 
@@ -139,6 +141,7 @@ public:
 
     virtual const char * getServiceType() {return "HttpServer";};
     bool persistentEligible();
+    void setIsSSL(bool _isSSL) { isSSL = _isSSL; };
 };
 
 

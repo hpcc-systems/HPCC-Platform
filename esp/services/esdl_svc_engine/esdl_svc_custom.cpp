@@ -33,7 +33,7 @@ CEsdlCustomTransformChoose::CEsdlCustomTransformChoose(IPropertyTree * choosewhe
         {
             StringBuffer testatt;
             testatt.set(whentree->queryProp("@test"));
-            m_compiledConditionalXpath.set(getCompiledXpath(testatt.str()));
+            m_compiledConditionalXpath.setown(compileXpath(testatt.str()));
 
             compileClauses(whentree, false);
             compileChildChoose(whentree, false);
@@ -136,7 +136,8 @@ void CEsdlCustomTransformChoose::compileChildChoose(IPropertyTree * nested, bool
     ForEach(*conditionalIterator)
     {
         auto xslchooseelement = &conditionalIterator->query();
-        addChildTransformClause(new CEsdlCustomTransformChoose(xslchooseelement), otherwise);
+        Owned<CEsdlCustomTransformChoose> esdlCustomTransformChoose = new CEsdlCustomTransformChoose(xslchooseelement);
+        addChildTransformClause(esdlCustomTransformChoose, otherwise);
     }
 }
 
@@ -170,14 +171,17 @@ void CEsdlCustomTransformChoose::compileClauses(IPropertyTreeIterator * rulesite
                 continue;
         }
 
-        addTransformClause(new CEsdlCustomTransformRule(ruleName, targetFieldPath, pathToValue, optional, typeIsSet ), otherwise);
+        Owned<CEsdlCustomTransformRule> esdlCustomTransformRule = new CEsdlCustomTransformRule(ruleName, targetFieldPath, pathToValue, optional, typeIsSet );
+        addTransformClause(esdlCustomTransformRule, otherwise);
     }
 }
 
 void CEsdlCustomTransformChoose::compileClauses(IPropertyTree * rules, bool otherwise)
 {
-    compileClauses(rules->getElements("xsdl:SetValue"), otherwise, true);
-    compileClauses(rules->getElements("xsdl:AppendValue"), otherwise, false);
+    Owned<IPropertyTreeIterator> setValueItr = rules->getElements("xsdl:SetValue");
+    Owned<IPropertyTreeIterator> appendValueItr = rules->getElements("xsdl:AppendValue");
+    compileClauses(setValueItr, otherwise, true);
+    compileClauses(appendValueItr, otherwise, false);
 }
 
 void CEsdlCustomTransformChoose::addTransformClause(CEsdlCustomTransformRule * fieldmapping, bool otherwise)
@@ -224,10 +228,11 @@ void CEsdlCustomTransformChoose::process(IEspContext * context, IPropertyTree *r
     if (xpath.length())
     {
         //we can use real xpath processing in the future, for now simple substitution is fine
-        xpath.replaceString("{$query}", xpathContext->getVariable("query"));
-        xpath.replaceString("{$method}", xpathContext->getVariable("method"));
-        xpath.replaceString("{$service}", xpathContext->getVariable("service"));
-        xpath.replaceString("{$request}", xpathContext->getVariable("request"));
+        StringBuffer variable;
+        xpath.replaceString("{$query}", xpathContext->getVariable("query", variable));
+        xpath.replaceString("{$method}", xpathContext->getVariable("method", variable.clear()));
+        xpath.replaceString("{$service}", xpathContext->getVariable("service", variable.clear()));
+        xpath.replaceString("{$request}", xpathContext->getVariable("request", variable.clear()));
 
         reqTarget = origTree->queryPropTree(xpath.str());  //get pointer to the write-able area
         if (!reqTarget)

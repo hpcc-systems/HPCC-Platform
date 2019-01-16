@@ -1088,7 +1088,8 @@ bool HqlParseContext::createCache(const char * simplifiedEcl, bool isMacro)
             return false;
     }
 
-    recursiveCreateDirectoryForFile(baseFilename);
+    if (!recursiveCreateDirectoryForFile(baseFilename))
+        return false;
     StringBuffer filename(baseFilename);
     filename.append(".cache");
     StringBuffer tmpfilename;

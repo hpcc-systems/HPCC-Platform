@@ -1530,6 +1530,97 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
     }
 }
 
+void CEspHttpServer::sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest& authReq, const char* errMsg)
+{
+    StringBuffer espURL, ip;
+    short port = 0;
+    ctx->getServAddress(ip, port);
+    if (isSSL)
+        espURL.set("https://");
+    else
+        espURL.set("http://");
+    espURL.append(ip).append(":").append(port);
+
+    StringBuffer content(
+        "<!DOCTYPE html>"
+            "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
+            "<head>"
+            "<meta charset=utf-8\"/>"
+            "<title class=\"loginStr\"></title>"
+            "<style type=\"text/css\">"
+                "body {"
+                    "font-family: Lucida Sans, Lucida Grande, Arial !important;"
+                    "font-size: 15px !important;"
+                    "background-color: #1A9BD7;"
+                "}"
+
+                ".container {"
+                    "width: 99%;"
+                    "position: absolute;"
+                    "top: 50%;"
+                    "transform: translateY(-50%);"
+                "}"
+
+                ".container a {"
+                    "color: #1A9BD7;"
+                "}"
+
+                ".container a:visited, .container a:link {"
+                    "color: #1A9BD7;"
+                "}"
+
+                ".formContainer {"
+                    "width: 500px;"
+                    "padding: 20px 0 20px 0;"
+                    "border-radius: 5px;"
+                    "background-color: #fff;"
+                    "margin: auto;"
+                "}"
+
+                ".login {"
+                    "width: 400px;"
+                    "margin: auto;"
+                "}"
+
+                ".login input {"
+                    "margin-bottom: 20px;"
+                    "width: 300px;"
+                    "padding: 8px;"
+                    "border: 1px solid #bfbfbf;"
+                "}"
+
+                ".login form {"
+                    "margin: auto;"
+                    "width: 300px;"
+                "}"
+
+                "img {"
+                    "display: block;"
+                    "margin: auto;"
+                "}"
+
+                "p {"
+                    "text-align: center"
+                "}"
+            "</style>"
+            "</head>"
+            "<body>"
+                "<div id=\"container\" class=\"container\">"
+                    "<div class=\"formContainer\">");
+        content.appendf("<img id=\"logo\" src=\"%s%s\" />", espURL.str(), authReq.authBinding->queryLoginLogoURL());
+         content.append("<div class=\"login\">");
+            content.appendf("<p class=\"loginStr\">%s <a href=\"%s\" class=\"loginStr\">Please click here to reload page</a></p>", errMsg, espURL.str());
+         content.append("</div>"
+                    "</div>"
+                 "</div>"
+            "</body>"
+       "</html>");
+    m_response->setContent(content.length(), content.str());
+    m_response->setContentType("text/html");
+    m_response->setStatus(HTTP_STATUS_OK);
+    m_response->send();
+}
+
 EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsigned sessionID)
 {
     ESPLOG(LogMax, "authExistingSession: %s<%u>", PropSessionID, sessionID);
@@ -1577,8 +1668,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        m_request->queryContext()->setResponseFormat(ESPSerializationJSON); //ECLwatch code can only support JSON for now.
-        sendException(authReq, 401, "Authentication failed: invalid session. Please relogin by refreshing the page.");
+        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: invalid session. Please relogin.");
         ESPLOG(LogMin, "Authentication failed: invalid session ID '%u'. clearSessionCookies() called for the session.", sessionID);
         return authFailed;
     }
@@ -1589,8 +1679,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        m_request->queryContext()->setResponseFormat(ESPSerializationJSON); //ECLwatch code can only support JSON for now.
-        sendException(authReq, 401, "Authentication failed: network address for ESP session changed. Please relogin by refreshing the page.");
+        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: network address for ESP session changed. Please relogin.");
         ESPLOG(LogMin, "Authentication failed: session ID %u from IP %s. ", sessionID, peer.str());
         return authFailed;
     }
