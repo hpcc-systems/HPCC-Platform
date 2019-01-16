@@ -24,9 +24,10 @@
 #include "rapidjson/istreamwrapper.h"
 #include "TemplateException.hpp"
 #include <string>
-#include "Input.hpp"
-#include "Inputs.hpp"
+#include "Variable.hpp"
+#include "Variables.hpp"
 #include "Operation.hpp"
+#include "OperationFindNode.hpp"
 #include <map>
 #include <vector>
 
@@ -36,14 +37,15 @@ class EnvModTemplate
 
     public:
 
-        EnvModTemplate(EnvironmentMgr *pEnvMgr, const std::string &fqSchemaFile);
+        EnvModTemplate(EnvironmentMgr *pEnvMgr, const std::string &schemaFile);
         ~EnvModTemplate();
 
         void loadTemplateFromJson(const std::string &templateJson);
         void loadTemplateFromFile(const std::string &fqTemplateFile);
-        std::shared_ptr<Input> getInput(const std::string &name, bool throwIfNotFound = true) const;
-        std::vector<std::shared_ptr<Input>> getInputs(int phase = 0) const;
-        bool execute();
+        std::shared_ptr<Variable> getVariable(const std::string &name, bool throwIfNotFound = true) const;
+        std::vector<std::shared_ptr<Variable>> getVariables(bool userInputOnly = false) const;
+        void assignVariablesFromFile(const std::string &filepath);
+        void execute();
 
 
     protected:
@@ -51,13 +53,12 @@ class EnvModTemplate
         void releaseTemplate();
         void loadTemplate(rapidjson::IStreamWrapper &stream);
         void parseTemplate();
-        void parseInputs(const rapidjson::Value &inputs);
-        void parseInput(const rapidjson::Value &input);
+        void parseVariables(const rapidjson::Value &variables);
+        void parseVariable(const rapidjson::Value &varValue);
         void parseOperations(const rapidjson::Value &operations);
         void parseOperation(const rapidjson::Value &operation);
-        void parseOperationCommon(const rapidjson::Value &operation, std::shared_ptr<Operation> pOp);
-        std::shared_ptr<Operation> parseCreateNodeOperation(const rapidjson::Value &operation);
-        std::shared_ptr<Operation> parseOperationNoop(const rapidjson::Value &operation);
+        void parseOperationCommonData(const rapidjson::Value &operationData, std::shared_ptr<Operation> pOp);
+        void parseOperationFindAttributes(const rapidjson::Value &operationData, std::shared_ptr<OperationFindNode> pFindOp);
 
 
     protected:
@@ -65,7 +66,7 @@ class EnvModTemplate
         rapidjson::SchemaDocument *m_pSchema;
         rapidjson::Document *m_pTemplate;   // same as GenericDocument<UTF8<> >
         EnvironmentMgr *m_pEnvMgr;
-        Inputs m_inputs;
+        Variables m_variables;
         std::vector<std::shared_ptr<Operation>> m_operations;
 };
 

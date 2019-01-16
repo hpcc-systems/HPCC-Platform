@@ -15,21 +15,30 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef HPCCSYSTEMS_PLATFORM_IPRANGE_HPP
-#define HPCCSYSTEMS_PLATFORM_IPRANGE_HPP
+#ifndef HPCCSYSTEMS_PLATFORM_OPERATIONMODIFYNODE_HPP
+#define HPCCSYSTEMS_PLATFORM_OPERATIONMODIFYNODE_HPP
 
-#include "Input.hpp"
-#include <vector>
-#include <string>
+#include "Operation.hpp"
 
-class IPAddressRangeInput : public Input
+class OperationModifyNode : public Operation
 {
     public:
-        IPAddressRangeInput() = default;
-        ~IPAddressRangeInput() = default;
-        void setValue(const std::string &value);
+
+        OperationModifyNode() = default;
+        ~OperationModifyNode() override = default;
+        void addAttributeForDeletion(std::string name) { m_deleteAttributes.emplace_back(name); }
+
+
+    protected:
+
+        void doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs) override;
+
+
+    protected:
+
+        std::vector<std::string> m_deleteAttributes;
 
 };
 
 
-#endif //HPCCSYSTEMS_PLATFORM_IPRANGE_HPP
+#endif //HPCCSYSTEMS_PLATFORM_OPERATIONMODIFYNODE_HPP

@@ -15,34 +15,31 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef HPCCSYSTEMS_PLATFORM_TEMPLATEEXCEPTION_HPP
-#define HPCCSYSTEMS_PLATFORM_TEMPLATEEXCEPTION_HPP
+#ifndef HPCCSYSTEMS_PLATFORM_OPERATIONFINDNODE_HPP
+#define HPCCSYSTEMS_PLATFORM_OPERATIONFINDNODE_HPP
 
-#include <exception>
-#include <string>
-#include "rapidjson/document.h"
-#include "rapidjson/error/en.h"
+#include "OperationCreateNode.hpp"
 
-class TemplateException : public std::exception
+class OperationFindNode : public OperationCreateNode
 {
     public:
 
-        explicit TemplateException(const rapidjson::Document *pDocument);
-        explicit TemplateException(const std::string &reason, bool badTemplate = false) : m_reason(reason), m_invalidTemplate(badTemplate) { };
-        TemplateException() = default;
+        OperationFindNode() = default;
+        ~OperationFindNode() override = default;
 
-        bool isTemplateInvalid() const { return  m_invalidTemplate; }
-        const char *what() const throw() override
-        {
-            return m_reason.c_str();
-        }
+
+    protected:
+
+        void doExecute(EnvironmentMgr *pEnvMgr, Variables *pVariables) override;
 
 
     private:
 
-        std::string m_reason;
-        bool m_invalidTemplate = false;
+        bool m_createIfNotFound = false;
+
+
+    friend class EnvModTemplate;
 };
 
 
-#endif //HPCCSYSTEMS_PLATFORM_TEMPLATEEXCEPTION_HPP
+#endif //HPCCSYSTEMS_PLATFORM_OPERATIONFINDNODE_HPP

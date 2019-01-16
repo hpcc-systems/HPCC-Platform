@@ -15,16 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-#include "IPAddressRangeInput.hpp"
+#include "IPAddressRangeVariable.hpp"
 #include "TemplateException.hpp"
 #include "Utils.hpp"
 
-void IPAddressRangeInput::setValue(const std::string &range)
+void IPAddressRangeVariable::addValue(const std::string &range)
 {
     //
     // Formats accepted:
     //  iplist = ip[;ip]
-    //  ip = a.b.c.d | a.b.c.g-h
+    //  ip = a.b.c.d | a.b.c.g-h | a.b.c.d*10
 
     m_values.clear();
     std::vector<std::string> ipDefs = splitString(range, ";");

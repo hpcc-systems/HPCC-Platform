@@ -19,6 +19,7 @@
 #include "XSDSchemaParser.hpp"
 #include "XMLEnvironmentLoader.hpp"
 #include "Exceptions.hpp"
+#include "boost/version.hpp"
 
 
 bool XMLEnvironmentMgr::createParser()
@@ -54,7 +55,15 @@ bool XMLEnvironmentMgr::save(std::ostream &out)
         pt::ptree envTree, topTree;
         serialize(envTree, m_pRootNode);
         topTree.add_child("Environment", envTree);
-        pt::write_xml(out, topTree);
+//        boost::property_tree::xml_writer_settings<std::string> settings;
+        //pt::write_xml(out, topTree, pt::xml_parser::xml_writer_make_settings<std::string>(' ', 4));
+#if BOOST_VERSION >= 105800
+        pt::write_xml(out, topTree, pt::xml_parser::xml_writer_make_settings<std::string>(' ', 4));
+#else
+        const char * myIndent = " ";
+        pt::write_xml(out, topTree, pt::xml_parser::xml_writer_make_settings<char>(*myIndent , 4));
+#endif
+
     }
     catch (const std::exception &e)
     {

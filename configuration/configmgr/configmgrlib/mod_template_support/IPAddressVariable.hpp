@@ -15,34 +15,20 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef HPCCSYSTEMS_PLATFORM_TEMPLATEEXCEPTION_HPP
-#define HPCCSYSTEMS_PLATFORM_TEMPLATEEXCEPTION_HPP
+#ifndef HPCCSYSTEMS_PLATFORM_IPADDRESS_HPP
+#define HPCCSYSTEMS_PLATFORM_IPADDRESS_HPP
 
-#include <exception>
+#include "Variable.hpp"
 #include <string>
-#include "rapidjson/document.h"
-#include "rapidjson/error/en.h"
 
-class TemplateException : public std::exception
+class IPAddressVariable : public Variable
 {
     public:
+        explicit IPAddressVariable(const std::string &name) : Variable(name) {}
+        ~IPAddressVariable() override = default;
+        void addValue(const std::string &value) override;
 
-        explicit TemplateException(const rapidjson::Document *pDocument);
-        explicit TemplateException(const std::string &reason, bool badTemplate = false) : m_reason(reason), m_invalidTemplate(badTemplate) { };
-        TemplateException() = default;
-
-        bool isTemplateInvalid() const { return  m_invalidTemplate; }
-        const char *what() const throw() override
-        {
-            return m_reason.c_str();
-        }
-
-
-    private:
-
-        std::string m_reason;
-        bool m_invalidTemplate = false;
 };
 
 
-#endif //HPCCSYSTEMS_PLATFORM_TEMPLATEEXCEPTION_HPP
+#endif //HPCCSYSTEMS_PLATFORM_IPADDRESS_HPP

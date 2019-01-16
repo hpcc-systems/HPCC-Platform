@@ -1,0 +1,28 @@
+{
+    "name" : "",
+    "type" : "modification",
+    "description" : "Test allowing duplicate save node ID names, should execute w/o error",
+    "variables" : [
+    ],
+    "operations" : [
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child1",
+            "data" : {
+                "save_nodeid" : {
+                    "save_name" : "nodes"
+                }
+            }
+        },
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child2",
+            "data" : {
+                "save_nodeid" : {
+                    "save_name" : "nodes",
+                    "duplicate_ok" : true
+                }
+            }
+        }
+    ]
+}

@@ -149,7 +149,7 @@ void EnvironmentValue::initialize()
         //      until unique. prefix_ uses an _ between value and the number (value_3)
         //   prefix# - always appends a number thus creating an incrementing unique value starting at 1
         //      (value1, value2, value3, ...)
-        if (type == "prefix" || type=="prefix_" || "prefix#")
+        if (type == "prefix" || type == "prefix_" || type == "prefix#")
         {
             std::string connector = (type == "prefix_") ? "_" : "";
             std::string newName;

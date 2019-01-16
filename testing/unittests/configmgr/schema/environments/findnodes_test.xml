@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Root>
+    <Child1>
+        <SubChild1/>
+        <SubChild1 attr1="child1_subchild1_2" attr2="7"/>
+    </Child1>
+    <Child2>
+        <SubChild2 attr1="a value"/>
+    </Child2>
+</Root>

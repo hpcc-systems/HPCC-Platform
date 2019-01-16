@@ -20,29 +20,26 @@
 
 #include "Operation.hpp"
 
-#include "../../RapidJSON/include/rapidjson/document.h"
-
 
 class OperationCreateNode : public Operation
 {
     public:
 
         OperationCreateNode() = default;
-        ~OperationCreateNode() = default;
-        void setNodeType(const std::string &type) { m_nodeType = type; }
-        std::string getNodeType() const { return m_nodeType; }
-        void setSaveNodeIdName(const std::string &name) { m_saveNodeIdName = name; }
-        std::string getSaveNodeIdName() const { return m_saveNodeIdName; }
+        ~OperationCreateNode() override = default;
 
 
     protected:
 
-        void doExecute(EnvironmentMgr *pEnvMgr, Inputs *pInputs);
+        void doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs) override;
 
-    private:
+
+    protected:
 
         std::string m_nodeType;
-        std::string m_saveNodeIdName;
+
+
+    friend class EnvModTemplate;
 };
 
 

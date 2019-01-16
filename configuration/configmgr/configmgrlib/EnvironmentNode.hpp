@@ -34,7 +34,7 @@ class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<Environm
 {
     public:
 
-        EnvironmentNode(const std::shared_ptr<SchemaItem> &pCfgItem, const std::string &elemName, const std::shared_ptr<EnvironmentNode> &pParent = nullptr) :
+        EnvironmentNode(const std::shared_ptr<SchemaItem> &pCfgItem, const std::string &elemName, const std::shared_ptr<EnvironmentNode> &pParent = std::shared_ptr<EnvironmentNode>()) :
             m_pSchemaItem(pCfgItem), m_name(elemName), m_pParent(pParent) { }
         ~EnvironmentNode() { }
         const std::string &getName() const { return m_name;  }
@@ -68,7 +68,7 @@ class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<Environm
         void getInsertableItems(std::vector<InsertableItem> &items) const;
         void initialize();
         void fetchNodes(const std::string &path, std::vector<std::shared_ptr<EnvironmentNode>> &nodes) const;
-        std::shared_ptr<const EnvironmentNode> getRoot() const;
+        std::shared_ptr<EnvironmentNode> getRoot() const;
         void addEnvironmentInsertData(const std::string &envData) { m_insertData = envData; }
         const std::string &getEnvironmentInsertData() const { return m_insertData; }
         void clearEnvironmentInsertData() { m_insertData.clear();  }

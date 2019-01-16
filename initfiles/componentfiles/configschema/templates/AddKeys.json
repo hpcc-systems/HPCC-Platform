@@ -1,0 +1,72 @@
+{
+    "name" : "Add Key",
+    "type" : "modification",
+    "inputs" : [
+        {
+            "name" : "keypair_name",
+            "type" : "string",
+            "value" : "mythor"
+        },
+        {
+            "name" : "public_key",
+            "type" : "string",
+            "value" : "/home/jsmith/.ssh/id_rsa.pub.pem"
+        },
+        {
+            "name" : "private_key",
+            "type" : "string",
+            "value" : "/home/jsmith/.ssh/id_rsa"
+        },
+        {
+            "name" : "key_pair_name",
+            "type" : "string",
+            "value" : "mythor"
+        }
+    ],
+    "operations" : [
+        {
+            "action" : "find_node",
+            "target_type" : "path",
+            "target" : "/Environment/EnvSettings/Keys",
+            "node_type" : "keys",
+            "save_nodeid" : "keys_node",
+            "create" : true
+        },
+        {
+            "action" : "create_node",
+            "target_type" : "nodeid",
+            "target" : "{{keys_node}}",
+            "node_type" : "KeyPair",
+            "attributes" : [
+                {
+                    "name" : "name",
+                    "value" : "{{keypair_name}}"
+                },
+                {
+                    "name" : "publicKey",
+                    "value" : "{{public_key}}"
+                },
+                {
+                    "name" : "privakeKey",
+                    "value" : "{{private_key}}"
+                }
+            ]
+        },
+        {
+            "action" : "create_node",
+            "target_type" : "nodeid",
+            "target" : "{{keys_node}}",
+            "node_type" : "Cluster",
+            "attributes" : [
+                {
+                    "name" : "name",
+                    "value" : "{{keypair_name}}"
+                },
+                {
+                    "name" : "keyPairName",
+                    "value" : "{{keypair_name}}"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,38 @@
+{
+    "name" : "",
+    "type" : "modification",
+    "description" : "Test not allowing duplicate save of attribute values, should cause an error",
+    "variables" : [
+    ],
+    "operations" : [
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child1/SubChild1",
+            "data" : {
+                "attributes" : [
+                    {
+                        "name" : "attr1",
+                        "save_value" : {
+                            "save_name" : "attrvalue"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "action" : "find_node",
+            "parent_path" : "/Root/Child2/SubChild2",
+            "data" : {
+                "attributes" : [
+                    {
+                        "name" : "attr1",
+                        "save_value" : {
+                            "save_name" : "attrvalue",
+                            "duplicate_ok" : false
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

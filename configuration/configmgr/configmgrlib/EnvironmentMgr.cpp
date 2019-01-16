@@ -208,7 +208,7 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::getNewEnvironmentNode(const std
     {
         std::string itemType;
         std::vector<NameValue> initAttributeValues;
-        getInitAttributesFromItemType(inputItemType, itemType, initAttributeValues);
+        getPredefinedAttributeValues(inputItemType, itemType, initAttributeValues);
         std::shared_ptr<SchemaItem> pNewCfgItem = findInsertableItem(pParentNode, itemType);
         if (pNewCfgItem)
         {
@@ -227,19 +227,21 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::getNewEnvironmentNode(const std
 
 
 std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std::string &parentNodeId, const std::string &inputItemType,
-                                                                       std::vector<NameValue> &initAttributes, Status &status)
+                                                                       std::vector<NameValue> &initAttributes, Status &status, bool allowInvalid, bool forceCreate)
 {
     std::shared_ptr<EnvironmentNode> pNewNode;
     std::shared_ptr<EnvironmentNode> pParentNode = findEnvironmentNodeById(parentNodeId);
     if (pParentNode)
     {
         std::string itemType;
-        std::vector<NameValue> initAttributeValues;
-        getInitAttributesFromItemType(inputItemType, itemType, initAttributeValues);
+        std::vector<NameValue> attributeValues;
+        getPredefinedAttributeValues(inputItemType, itemType, attributeValues);
         std::shared_ptr<SchemaItem> pNewCfgItem = findInsertableItem(pParentNode, itemType);
         if (pNewCfgItem)
         {
-            pNewNode = addNewEnvironmentNode(pParentNode, pNewCfgItem, initAttributes, status);
+            // concatenate input attribute values with any predefined values.
+            attributeValues.insert( attributeValues.end(), initAttributes.begin(), initAttributes.end() );
+            pNewNode = addNewEnvironmentNode(pParentNode, pNewCfgItem, attributeValues, status, allowInvalid, forceCreate);
             if (pNewNode == nullptr)
             {
                 status.addMsg(statusMsg::error, "Unable to create new node for itemType: " + inputItemType);
@@ -263,7 +265,7 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
 
 
 std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pCfgItem,
-                                                                       std::vector<NameValue> &initAttributes, Status &status)
+                                                                       std::vector<NameValue> &initAttributes, Status &status, bool allowInvalid, bool forceCreate)
 {
     std::shared_ptr<EnvironmentNode> pNewEnvNode;
 
@@ -274,7 +276,7 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
 
     addPath(pNewEnvNode);
     pNewEnvNode->initialize();
-    pNewEnvNode->setAttributeValues(initAttributes, status, false, false);
+    pNewEnvNode->setAttributeValues(initAttributes, status, allowInvalid, forceCreate);
     pParentNode->addChild(pNewEnvNode);
 
     //
@@ -309,22 +311,25 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
 
 std::shared_ptr<SchemaItem> EnvironmentMgr::findInsertableItem(const std::shared_ptr<EnvironmentNode> &pNode, const std::string &itemType) const
 {
-    std::shared_ptr<SchemaItem> pItem;
+    // todo -should there be an environment strict mode that forces schema compliance?
+    std::shared_ptr<SchemaItem> pSchemaItem = std::make_shared<SchemaItem>(itemType, "default");  // default item if none found
     std::vector<InsertableItem> insertableItems;
     pNode->getInsertableItems(insertableItems);
     for (auto &pInsertableIt: insertableItems)
     {
         if (pInsertableIt.m_pSchemaItem->getItemType() == itemType)
         {
-            pItem = pInsertableIt.m_pSchemaItem;
+            pSchemaItem = pInsertableIt.m_pSchemaItem;
             break;  // we found the insertable item we wanted, so time to get out
         }
     }
-    return pItem;
+
+    return pSchemaItem;
 }
 
 
-void EnvironmentMgr::getInitAttributesFromItemType(const std::string &inputItemType, std::string &itemType, std::vector<NameValue> &initAttributes) const
+void EnvironmentMgr::getPredefinedAttributeValues(const std::string &inputItemType, std::string &itemType,
+                                                  std::vector<NameValue> &initAttributes) const
 {
     //
     // In case nothing specifed

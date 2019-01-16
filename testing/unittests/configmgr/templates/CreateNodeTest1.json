@@ -1,0 +1,60 @@
+{
+    "name" : "",
+    "type" : "modification",
+    "inputs" : [
+    ],
+    "operations" : [
+        {
+            "description" : "Create another subchild in the path specified",
+            "action" : "create_node",
+            "parent_path" : "/Root/Child1",
+            "data" : {
+                "node_type" : "subchild1",
+                "save_nodeid" : {
+                    "save_name" : "subchild1"
+                },
+                "attributes" : [
+                    {
+                        "name" : "attr1",
+                        "value" : "value1"
+                    },
+                    {
+                        "name" : "attr2",
+                        "value" : "4"
+                    }
+                ]
+            }
+        },
+        {
+            "description" : "now modify the attributes in what was added above",
+            "action" : "modify_node",
+            "parent_nodeid" : "{{subchild1}}",
+            "data" : {
+                "attributes" : [
+                    {
+                        "name" : "attr1",
+                        "value" : "new_value"
+                    },
+                    {
+                        "name" : "attr2",
+                        "value" : "5"
+                    }
+                ]
+            }
+        },
+        {
+            "description" : "create a new non defined node (no schema)",
+            "action" : "find_node",
+            "parent_path" : "/Root/AdHocNode",
+            "data" : {
+                "create_if_not_found" : true,
+                "attributes" : [
+                    {
+                        "name" : "newattr1",
+                        "value" : "iamnew"
+                    }
+                ]
+            }
+        }
+    ]
+}
