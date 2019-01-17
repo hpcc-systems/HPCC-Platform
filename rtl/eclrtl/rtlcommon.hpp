@@ -7,8 +7,9 @@
 #include "eclrtl.hpp"
 #include "eclhelper.hpp"
 
-//The CContiguousRowBuffer is a buffer used for reading ahead into a file, and unsuring there is a contiguous
+//The CContiguousRowBuffer is a buffer used for reading ahead into a file, and ensuring there is a contiguous
 //block of data available to the reader.  Fixed size files could use this directly.
+//NOTE: This class does not allocate a buffer - it uses the buffer in the input stream.
 class ECLRTL_API CContiguousRowBuffer
 {
 public:
@@ -114,6 +115,11 @@ public:
         readOffset = 0;
     }
 
+    inline void read(byte & next) { doRead(1, &next); }
+    inline void read(bool & next) { doRead(1, &next); }
+
+    size32_t doRead(size32_t len, void * ptr);
+
 protected:
     size32_t sizePackedInt();
     size32_t sizeUtf8(size32_t len);
@@ -122,8 +128,6 @@ protected:
     void reportReadFail();
 
 private:
-
-    void doRead(size32_t len, void * ptr);
 
     inline void ensureAccessible(size32_t required)
     {

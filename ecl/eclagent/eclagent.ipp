@@ -238,6 +238,11 @@ public:
         return ctx->getLayoutTranslationMode();
     }
 
+    virtual bool forceNewDiskReadActivity() const
+    {
+        return ctx->forceNewDiskReadActivity();
+    }
+
 protected:
     IAgentContext * ctx;
 };
@@ -354,6 +359,7 @@ private:
     bool isRemoteWorkunit;
     bool resolveFilesLocally;
     bool writeResultsToStdout;
+    bool useNewDiskReadActivity;
     Owned<IUserDescriptor> standAloneUDesc;
     outputFmts outputFmt;
     unsigned __int64 stopAfter;
@@ -411,6 +417,7 @@ private:
     virtual IDebuggableContext *queryDebugContext() const { return debugContext; };
 
     EclGraph * loadGraph(const char * graphName, IConstWorkUnit * wu, ILoadedDllEntry * dll, bool isLibrary);
+    virtual bool forceNewDiskReadActivity() const { return useNewDiskReadActivity; }
 
     class cAbortMonitor: public Thread, implements IExceptionHandler
     {

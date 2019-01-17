@@ -43,6 +43,7 @@
 #include "rtlrecord.hpp"
 #include "roxiemem.hpp"
 #include "roxierowbuff.hpp"
+#include "thorread.hpp"
 
 roxiemem::IRowManager * queryRowManager();
 using roxiemem::OwnedConstRoxieRow;
@@ -2919,6 +2920,131 @@ public:
 
     virtual bool isGrouped() override { return outputMeta.isGrouped(); }
 };
+
+
+class CHThorNewDiskReadBaseActivity : public CHThorActivityBase, implements IThorDiskCallback, implements IIndexReadContext
+{
+protected:
+    struct InputFileInfo : public CInterface
+    {
+        IDistributedFile * file;
+        Owned<IOutputMetaData> actualMeta;
+        Owned<IPropertyTree> meta;
+        unsigned actualCrc;
+    };
+
+    IHThorDiskReadBaseArg &helper;
+    IHThorCompoundBaseArg & segHelper;
+    IDiskRowReader * activeReader = nullptr;
+    IArrayOf<IDiskRowReader> readers;
+    IRawRowStream * rawRowStream = nullptr;
+    IAllocRowStream * roxieRowStream = nullptr;
+    StringBuffer mangledHelperFileName;
+    StringAttr tempFileName;
+    const char * logicalFileName = "";
+    CIArrayOf<InputFileInfo> subfiles;
+    Owned<ISuperFileDescriptor> superfile;
+    Owned<IDistributedFilePartIterator> dfsParts;
+    Owned<ILocalOrDistributedFile> ldFile;
+    IOutputMetaData *expectedDiskMeta = nullptr;
+    IOutputMetaData *projectedDiskMeta = nullptr;
+    IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
+    Owned<IPropertyTree> readerOptions;
+    unsigned partNum = 0;
+    RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
+    bool useRawStream = false; // Constant for the lifetime of the activity
+    bool grouped = false;
+    bool opened = false;
+    bool finishedParts = false;
+    unsigned __int64 stopAfter = 0;
+    unsigned __int64 offsetOfPart = 0;
+
+    void close();
+    void resolveFile();
+    virtual void verifyRecordFormatCrc();
+    virtual void gatherInfo(IFileDescriptor * fileDesc);
+    StringBuffer &translateLFNtoLocal(const char *filename, StringBuffer &localName);
+
+    inline void queryUpdateProgress()
+    {
+        agent.reportProgress(NULL);
+    }
+
+    RecordTranslationMode getLayoutTranslationMode()
+    {
+        if (recordTranslationModeHint != RecordTranslationMode::Unspecified)
+            return recordTranslationModeHint;
+        return agent.getLayoutTranslationMode();
+    }
+
+public:
+    CHThorNewDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *node);
+    ~CHThorNewDiskReadBaseActivity();
+    IMPLEMENT_IINTERFACE
+
+    virtual void ready();
+    virtual void stop();
+
+    IHThorInput *queryOutput(unsigned index)                { return this; }
+
+//interface IHThorInput
+    virtual bool isGrouped()                                { return grouped; }
+    virtual IOutputMetaData * queryOutputMeta() const               { return outputMeta; }
+
+//interface IFilePositionProvider
+    virtual unsigned __int64 getFilePosition(const void * row);
+    virtual unsigned __int64 getLocalFilePosition(const void * row);
+    virtual const char * queryLogicalFilename(const void * row);
+    virtual const byte * lookupBlob(unsigned __int64 id) { UNIMPLEMENTED; }
+
+//interface IIndexReadContext
+    virtual void append(IKeySegmentMonitor *segment) override { throwUnexpected(); }
+    virtual void append(FFoption option, const IFieldFilter * filter) override;
+
+protected:
+    bool openFirstPart();
+    bool initStream(IDiskRowReader * reader, const char * filename);
+    InputFileInfo * extractFileInformation(IDistributedFile * fileDesc);
+    bool openFilePart(const char * filename);
+    bool openFilePart(ILocalOrDistributedFile * localFile, IDistributedFilePart * filePart, unsigned whichPart);
+    void setEmptyStream();
+
+    virtual void open();
+    virtual bool openNext();
+    virtual void closepart();
+
+    bool openNextPart();
+    IDiskRowReader * ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, IPropertyTree * options);
+};
+
+
+class CHThorNewDiskReadActivity : public CHThorNewDiskReadBaseActivity
+{
+    typedef CHThorNewDiskReadBaseActivity PARENT;
+protected:
+    IHThorDiskReadArg &helper;
+    bool needTransform;
+    bool hasMatchFilter;
+    unsigned __int64 lastGroupProcessed;
+    RtlDynamicRowBuilder outBuilder;
+    unsigned __int64 limit;
+    unsigned __int64 remoteLimit = 0;
+
+public:
+    CHThorNewDiskReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind, IPropertyTree *node);
+
+    virtual void ready();
+    virtual void stop();
+    virtual bool needsAllocator() const { return true; }
+
+    //interface IHThorInput
+    virtual const void *nextRow();
+
+protected:
+    void onLimitExceeded();
+};
+
+
 
 
 #define MAKEFACTORY(NAME) \

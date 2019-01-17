@@ -126,6 +126,7 @@ public:
     inline MemoryBuffer()  { init(); }
     MemoryBuffer(size_t initial);
     MemoryBuffer(size_t len, const void * buffer);
+    MemoryBuffer(MemoryBuffer & value) = delete;
     inline ~MemoryBuffer() { kill(); }
     
     MemoryBuffer &  rewrite(size32_t pos = 0);
@@ -150,8 +151,7 @@ public:
     MemoryBuffer &  appendSwap(size32_t len, const void * value);
     MemoryBuffer &  appendPacked(unsigned __int64 value); // compatible with any unsigned size
     inline MemoryBuffer &  appendMemSize(memsize_t  value) { __int64 val=(__int64)value; append(val); return *this; }
-    
-    
+
     MemoryBuffer &  reset(size32_t pos = 0);
     MemoryBuffer &  read(char & value);
     MemoryBuffer &  read(unsigned char & value);
@@ -187,6 +187,7 @@ public:
     int             setEndian(int endian);          // pass __[BIG|LITTLE]_ENDIAN
     bool            setSwapEndian(bool swap);
     void            swapWith(MemoryBuffer & other);
+    bool            matches(const MemoryBuffer & other) const;
 
     inline size32_t capacity() { return (maxLen - curLen); }
     void *          ensureCapacity (unsigned max);
@@ -211,9 +212,6 @@ public:
     inline const byte * bytes() const { return curLen ? (const byte *)buffer : nullptr; }
 
 
-protected:
-    size32_t  readPos;
-    bool    swapEndian;
 private:
     MemoryBuffer &  read(unsigned long & value);    // unimplemented
     MemoryBuffer &  read(long & value);             // unimplemented
@@ -233,10 +231,9 @@ private:
     mutable char *  buffer;
     size32_t  curLen;
     size32_t  maxLen;
+    size32_t  readPos;
+    bool    swapEndian;
     bool    ownBuffer;
-    
-    MemoryBuffer(MemoryBuffer & value);
-    
 };
 
 // Utility class, to back patch a scalar into current position

@@ -211,6 +211,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKspillread] = "spillread" ;
     kindArray[TAKspillwrite] = "spillwrite" ;
     kindArray[TAKnwaydistribute] = "nwaydistribute";
+    kindArray[TAKnewdiskread] = "newdiskread";
 
 //Non standard
     kindArray[TAKsubgraph] = "subgraph";

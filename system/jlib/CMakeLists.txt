@@ -79,6 +79,7 @@ set (    SRCS
          jptree.cpp 
          jqueue.cpp
          jregexp.cpp 
+         jrowstream.cpp
          jsem.cpp 
          jset.cpp 
          jsmartsock.cpp 
@@ -148,6 +149,7 @@ set (    INCLUDES
         jqueue.tpp
         jregexp.hpp
         jrespool.tpp
+        jrowstream.hpp
         jscm.hpp
         jsem.hpp
         jset.hpp

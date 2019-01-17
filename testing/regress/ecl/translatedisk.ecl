@@ -17,15 +17,18 @@
 
 //version multiPart=false
 //version multiPart=true
+//version multiPart=true,optRemoteRead=true
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, false);
+optRemoteRead := #IFDEFINED(root.optRemoteRead, true);
 
 //--- end of version configuration ---
 
 #onwarning(2036, ignore);
 #onwarning(4522, ignore);
 #option ('layoutTranslation', true);
+#option('forceRemoteRead', optRemoteRead);
 import $.Setup;
 
 boolean useLocal := false;

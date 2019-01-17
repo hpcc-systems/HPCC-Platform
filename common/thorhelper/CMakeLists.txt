@@ -33,6 +33,7 @@ set (    SRCS
          thorfile.cpp 
          thorparse.cpp 
          thorpipe.cpp 
+         thorread.cpp
          thorrparse.cpp 
          thorsoapcall.cpp 
          thorstats.cpp
@@ -54,6 +55,7 @@ set (    SRCS
          thorfile.hpp 
          thorparse.hpp 
          thorpipe.hpp 
+         thorread.hpp
          thorrparse.hpp 
          thorsoapcall.hpp 
          thorstats.hpp
@@ -96,6 +98,7 @@ include_directories (
          ./../../testing/unittests
          ./../../system/tbb_sm/tbb/include
          ./../../system/security/shared
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
     )
 
 ADD_DEFINITIONS( -DTHORHELPER_EXPORTS -D_USRDLL )
