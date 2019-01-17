@@ -5173,6 +5173,31 @@ static void asyncRemoveFile(const char * ip, const char * name)
     deleteDllWorkQ->post(new asyncRemoveRemoteFileWorkItem(ip, name));
 }
 
+static WUState getWUState(const IPropertyTree * p, std::function<bool()> isAbortingFunc)
+{
+    WUState state = (WUState) getEnum(p, "@state", states);
+    switch (state)
+    {
+    case WUStateRunning:
+    case WUStateDebugPaused:
+    case WUStateDebugRunning:
+    case WUStateBlocked:
+    case WUStateCompiling:
+        if (isAbortingFunc())
+        {
+            state = WUStateAborting;
+        }
+        break;
+    case WUStateSubmitted:
+        if (isAbortingFunc())
+        {
+            state = WUStateAborted;
+        }
+        break;
+    }
+    return state;
+}
+
 class CDaliWorkUnitFactory : public CWorkUnitFactory, implements IDaliClientShutdown
 {
 public:
@@ -5462,8 +5487,64 @@ public:
                 }
                 if (!iter)
                     return NULL;
-                sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), unknownAttributes, elements);
+
+                Owned<IPropertyTreeIterator> lWWUPTreeIter = createWorkunitPTreeIterator(iter);
+                sortElements(lWWUPTreeIter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), unknownAttributes, elements);
                 return conn.getClear();
+            }
+            IPropertyTreeIterator* createWorkunitPTreeIterator(IPropertyTreeIterator* originalIter)
+            {
+                Owned<IRemoteConnection> conWorkUnitAborts = querySDS().connect("/WorkUnitAborts/", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+                if (!conWorkUnitAborts)
+                    return LINK(originalIter);
+
+                bool hasDynamicAbortingState = false;
+                Owned<IPropertyTree> lWWUPTreeRoot = createPTree("lWWUs");
+                IPropertyTree* wuAbortsPTree = conWorkUnitAborts->queryRoot();
+                ForEach(*originalIter)
+                {
+                    IPropertyTree& cur = originalIter->query();
+
+                    const char* wuid = cur.queryName();
+                    auto isAbortingFunc = [wuid, wuAbortsPTree] () { return wuAbortsPTree->hasProp(wuid); };
+
+                    //NB: In CLocalWorkUnit::getState() it also uses checkAgentRunning() to verify
+                    //the sessionId that the workunit is associated with is still alive. In this
+                    //implementation the cost of doing that per workunit would be prohibitively
+                    //expensive, so it's possible in the rare cases when the state is stale because
+                    //the sessionId is dead, the state from this workunit paging code will be out
+                    //of date.
+                    WUState state = (WUState) getEnum(&cur, "@state", states);
+                    WUState dynamicAbortingState = getWUState(&cur, isAbortingFunc);
+                    if (state == dynamicAbortingState)
+                        lWWUPTreeRoot->addPropTree(wuid, LINK(&cur));
+                    else
+                    {
+                        Owned<IPropertyTree> lWWUPTree = createLightweightWorkunitPTree(&cur, dynamicAbortingState);
+                        lWWUPTreeRoot->addPropTree(wuid, lWWUPTree.getClear());
+                        hasDynamicAbortingState = true;
+                    }
+                }
+                return hasDynamicAbortingState ? lWWUPTreeRoot->getElements("*") : LINK(originalIter);
+            }
+            IPropertyTree* createLightweightWorkunitPTree(IPropertyTree* originalWUTree, WUState& state)
+            {
+                Owned<IPropertyTree> lWWUPTree = createPTree();
+                lWWUPTree->setProp("@jobName", originalWUTree->queryProp("@jobName"));
+                lWWUPTree->setProp("@submitID", originalWUTree->queryProp("@submitID"));
+                lWWUPTree->setProp("@clusterName", originalWUTree->queryProp("@clusterName"));
+                lWWUPTree->setProp("@timeScheduled", originalWUTree->queryProp("@timeScheduled"));
+                lWWUPTree->setProp("@scope", originalWUTree->queryProp("@scope"));
+                lWWUPTree->setProp("Action", originalWUTree->queryProp("Action"));
+                lWWUPTree->setProp("@totalThorTime", originalWUTree->queryProp("@totalThorTime"));
+                lWWUPTree->setProp("@priorityClass", originalWUTree->queryProp("@priorityClass"));
+                lWWUPTree->setPropBool("@protected", originalWUTree->getPropBool("@protected"));
+                setEnum(lWWUPTree, "@state", state, states);
+
+                Owned<IPropertyTree> application = originalWUTree->getBranch("Application");
+                if (application)
+                    lWWUPTree->addPropTree("Application", application.getClear());
+                return lWWUPTree.getClear();
             }
             virtual bool allMatchingElementsReceived() { return true; }//For now, dali always returns all of matched WUs.
         };
@@ -6778,22 +6859,7 @@ void CLocalWorkUnit::checkAgentRunning(WUState & state)
 WUState CLocalWorkUnit::getState() const 
 {
     CriticalBlock block(crit);
-    WUState state = (WUState) getEnum(p, "@state", states);
-    switch (state)
-    {
-    case WUStateRunning:
-    case WUStateDebugPaused:
-    case WUStateDebugRunning:
-    case WUStateBlocked:
-    case WUStateCompiling:
-        if (aborting())
-            state = WUStateAborting;
-        break;
-    case WUStateSubmitted:
-        if (aborting())
-            state = WUStateAborted;
-        break;
-    }
+    WUState state = getWUState(p, std::bind(&CLocalWorkUnit::aborting, this));
     const_cast<CLocalWorkUnit *>(this)->checkAgentRunning(state); //need const_cast as will change state if agent has died
     return state;
 }
