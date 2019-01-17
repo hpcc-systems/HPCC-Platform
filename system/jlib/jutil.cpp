@@ -2868,10 +2868,6 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
     return 0;
 }
 
-#ifndef _WIN32
-# define ALL_PERMS (S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH)
-#endif
-
 jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree)
 {
     StringBuffer dir;
@@ -2888,10 +2884,7 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
 #else
             int srtn = access(dir.str(), R_OK|W_OK|X_OK);
             if (!srtn)
-            {
-                chmod(dir.str(), ALL_PERMS);
                 return target.set(dir);
-            }
 #endif
         }
     }
@@ -2909,10 +2902,7 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
 #else
         int srtn = access(dir.str(), R_OK|W_OK|X_OK);
         if (!srtn)
-        {
-            chmod(dir.str(), ALL_PERMS);
             return target.set(dir);
-        }
 #endif
     }
 
@@ -2943,10 +2933,7 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
 #else
         int srtn = access(dir.str(), R_OK|W_OK|X_OK);
         if (!srtn)
-        {
-            chmod(dir.str(), ALL_PERMS);
             return target.set(dir);
-        }
 #endif
     }
 
@@ -2962,7 +2949,6 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
     char *td = mkdtemp(templt);
     if (!td)
         throw MakeStringException(-1, "Unable to create temp directory");
-    chmod(templt, ALL_PERMS);
     return target.set(templt);
 #endif
 }
