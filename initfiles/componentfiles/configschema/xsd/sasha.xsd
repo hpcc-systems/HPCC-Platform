@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="SashaServerProcess" hpcc:displayName="Sasha Server Process" hpcc:itemType="sasha" minOccurs="0"
+                    maxOccurs="unbounded" hpcc:class="component" hpcc:docid="sh.t1">
+            <xs:complexType>
+
+                <xs:attributeGroup name="archiver" hpcc:groupByName="Archiver" hpcc:docid="sh.t2">
+                    <xs:attribute name="WUlimit" type="xs:nonNegativeInteger" hpcc:displayName="Workunit Limit"
+                                  hpcc:presetValue="1000"
+                                  hpcc:tooltop="threshold number of workunits before archiving starts (0 disables)"/>
+                    <xs:attribute name="WUcutoff" type="xs:nonNegativeInteger" hpcc:displayName="Workunit Cutoff (days)"
+                                  hpcc:presetValue="8" hpcc:tooltip="minimum workunit age to archive (days)"/>
+                    <xs:attribute name="WUbackup" type="xs:nonNegativeInteger" hpcc:displayName="Workunit Backup (days)"
+                                  hpcc:presetValue="0" hpcc:tooltip="minimum workunit age to backup (days, 0 disables)"/>
+                    <xs:attribute name="WUinterval" type="xs:nonNegativeInteger" hpcc:displayName="Workunit Interval (hours)"
+                                  hpcc:presetValue="6" hpcc:tooltip="minimum interval between running Workunit archiver(in hours, 0 disables)"/>
+                    <xs:attribute name="WUat" type="cronSchedule" hpcc:displayName="Schedule (cron format)" hpcc:presetValue="* * * * *"
+                                  hpcc:tooltip="schedule to run Workunit archiver (cron format)"/>
+                    <xs:attribute name="WUduration" type="xs:string" hpcc:displayName="Workunit Duration (hours)"
+                                  hpcc:presetValue="0" hpcc:tooltip="maximum duration to run Workunit archiving session (hours, 0 unlimited)"/>
+                    <xs:attribute name="WUthrottle" hpcc:displayName="Workunit Throttle Ratio" hpcc:presetValue="0"
+                                  hpcc:tooltip="throttle ratio (0-99, 0 no throttling, 50 is half speed)">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:nonNegativeInteger">
+                                <xs:minInclusive value="0"/>
+                                <xs:maxInclusive value="99"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="WUretryinterval" type="xs:nonNegativeInteger" hpcc:displayName="Workunit Retry Interval (days)"
+                                  hpcc:presetValue="7" hpcc:tooltip="minimal time before retrying archive of failed Workuuits (days)"/>
+                    <xs:attribute name="keepResultFiles" type="xs:boolean" hpcc:displayName="Keep Result Files"
+                                  hpcc:presetValue="false" hpcc:tooltip="option to keep result files owned by workunits after workunit is archived"/>
+                    <xs:attribute name="DFUrecoveryLimit" type="xs:nonNegativeInteger" hpcc:displayName="DFU Recovery Limit"
+                                  hpcc:presetValue="20" hpcc:tooltip="threshold number of DFU recovery items before archiving starts (0 disables)"/>
+                    <xs:attribute name="DFUrecoveryCutoff" type="xs:nonNegativeInteger" hpcc:displayName="DFU Recovery Cutoff (days)"
+                                  hpcc:presetValue="4" hpcc:tootip="minimum DFU recovery item age to archive (days)"/>
+                    <xs:attribute name="DFUrecoveryInterval" type="xs:nonNegativeInteger" hpcc:displayName="DFU Reovery Interval (hours)"
+                                  hpcc:presetValue="12" hpcc:tooltip="minimum interval between running DFU recovery archiver(in hours, 0 disables)"/>
+                    <xs:attribute name="DFUrecoveryAt" type="cronSchedule" hpcc:displayName="DFU Recovery Schedule (cron)"
+                                  hpcc:presetValue="* * * * *" hpcc:tooltip="schedule to run DFU recovery archiver (cron format)"/>
+                    <xs:attribute name="DFUWUlimit" type="xs:nonNegativeInteger" hpcc:displayName="DFU Workunit Limit"
+                                  hpcc:presetValue="1000" hpcc:tooltip="threshold number of DFU workunits before archiving starts (0 disables)"/>
+                    <xs:attribute name="DFUWUcutoff" type="xs:nonNegativeInteger" hpcc:displayName="DFU Workunit Cutoff (days)"
+                                  hpcc:presetValue="14" hpcc:tooltip="minimum DFU workunit age to archive (days)"/>
+                    <xs:attribute name="DFUWUinterval" type="xs:nonNegativeInteger" hpcc:displayName="DFU Workunit Interval (hours)"
+                                  hpcc:presetValue="24" hpcc:tooltip="minimum interval between running DFU recovery archiver (in hours, 0 disables)"/>
+                    <xs:attribute name="DFUWUat" type="cronSchedule" hpcc:displayName="DFU Workunit Schedule (cron)"
+                                  hpcc:presetVaue="* * * * *" hpcc:tooltip="schedule to run DFU workunit archiver (cron format)"/>
+                    <xs:attribute name="DFUWUduration" type="xs:string" hpcc:displayName="DFU Workunit Duration (hours)"
+                                  hpcc:presetValue="0" hpcc:tooltip="maximum duration to run DFU WorkUnit archiving session (hours, 0 unlimited)"/>
+                    <xs:attribute name="DFUWUthrottle" hpcc:displayName="DFU Workunit throttle" hpcc:presetValue="0"
+                                  hpcc:tooltip="throttle ratio (0-99, 0 no throttling, 50 is half speed)">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:nonNegativeInteger">
+                                <xs:minInclusive value="0"/>
+                                <xs:maxInclusive value="99"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="cachedWUlimit" type="xs:nonNegativeInteger" hpcc:displayName="Cached Workunit Limit"
+                                  hpcc:presetValue="100" hpcc:tooltip="threshold number of cached workunits before removal starts (0 disables"/>
+                    <xs:attribute name="cachedWUinterval" type="xs:nonNegativeInteger" hpcc:displayName="Cached Workunit Interval (hours)"
+                                  hpcc:presetValue="24" hpcc:tooltip="minimum interval between running cached workunit removal(in hours, 0 disables)"/>
+                    <xs:attribute name="cachedWUat" type="cronSchedule" hpcc:displayName="Cached Workunit Schedule (cron format)"
+                                  hpcc:presetValue="* * * * *" hpcc:tooltip="schedule to run cached workunit removal (cron format)"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="coalescer" hpcc:groupByName="Coalescer" hpcc:docid="sh.t3">
+                    <xs:attribute name="coalesceInterval" type="xs:nonNegativeInteger" hpcc:displayName="Coalesce Interval (hours)"
+                                  hpcc:presetValue="1" hpcc:tooltip="minimum interval between running Dali datastore coalescer (in hours, 0 disables)"/>
+                    <xs:attribute name="coalesceAt" type="cronSchedule" hpcc:displayName="Coalesce Schedule (cron format)"
+                                  hpcc:presetValue="* * * * *" hpcc:tooltip="schedule to run Dali datastore coalescer (cron format)"/>
+                    <xs:attribute name="minDeltaSize" type="xs:nonNegativeInteger" hpcc:displayName="Minimum Delta Size (KB)"
+                                  hpcc:presetValue="50000" hpcc:tooltip="Coalescing will only begin, if the delta size is above this threashold (K)"/>
+                    <xs:attribute name="recoverDeltaErrors" type="xs:boolean" hpcc:displayName="Recover Delta Errors"
+                                  hpcc:presetValue="false" hpcc:tooltip="Switch on to auto recover from corruption to delta files on load"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="dfuxref" hpcc:groupByName="DfuXRef" hpcc:docid="sh.t4">
+                    <xs:attribute name="xrefInterval" type="xs:nonNegativeInteger" hpcc:displayName="Xref Interval (hours)"
+                                  hpcc:presetValue="672" hpcc:tooltip="minimum interval between running DFU XREF (in hours, 0 disables)"/>
+                    <xs:attribute name="xrefAt" type="cronSchedule" hpcc:displayName="Xref Schedule (cron format)"
+                                  hpcc:presetValue="* 2 * * *" hpcc:tooltip="schedule to run DFU XREF (cron format)"/>
+                    <xs:attribute name="xrefList" type="xs:string" hpcc:displayName="Xref List" hpcc:presetValues="*"
+                                  hpcc:tooltip="comma separated list of clusters to xref (* for all clusters)"/>
+                    <xs:attribute name="xrefCutoff" type="xs:nonNegativeInteger" hpcc:displayName="Xref Cutoff (days)"
+                                  hpcc:presetValue="1" hpcc:tooltip="cutoff (in days) to ignore recent files"/>
+                    <xs:attribute name="xrefMaxScanThreads" type="xs:nonNegativeInteger" hpcc:displayName="Xref Max Scan Threads"
+                                  hpcc:presetValue="500" hpcc:tooltip="maximum thread count for scanning directories"/>
+                    <xs:attribute name="xrefEclWatchProvider" type="xs:boolean" hpcc:displayName="Xref ECL Watch Provider"
+                                  hpcc:presetValue="true" hpcc:tooltip="use sasha for EclWatch initiated xref"/>
+                    <xs:attribute name="xrefMaxMemory" type="xs:nonNegativeInteger" hpcc:displayName="Xref Max Memory (??)"
+                                  hpcc:presetValue="4096" hpcc:tooltip="The upper memory limit that xref can use"/>
+                    <xs:attribute name="suspendCoalescerDuringXref" type="xs:boolean" hpcc:displayName="Suspend Coalescer During Xref"
+                                  hpcc:presetValue="true" hpcc:tooltip="Suspend the coalescer whilst xrefing"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="dfuexpiry" hpcc:groupByName="DfuExpiry" hpcc:docid="sh.t5">
+                    <xs:attribute name="ExpiryInterval" type="xs:nonNegativeInteger" hpcc:displayName="Expiry Interval (hours)"
+                                  hpcc:presetValue="24" hpcc:tooltip="minimum interval between checking for distributed file expiry (in hours, 0 disables)"/>
+                    <xs:attribute name="ExpiryAt" type="cronSchedule" hpcc:displayName="Expiry Schedule (cron format)"
+                                  hpcc:presetValue="* 3 * * *" hpcc:tooltip="schedule to check for distributed file expiry (cron format)"/>
+                    <xs:attribute name="PersistExpiryDefault" type="xs:nonNegativeInteger" hpcc:displayName="Persist Expiry Default (days)"
+                                  hpcc:presetValue="7" hpcc:tooltip="Default number of days to delete unused persist files"/>
+                    <xs:attribute name="ExpiryDefault" type="xs:nonNegativeInteger" hpcc:displayName="Expiry Default (days)"
+                                  hpcc:presetValue="14" hpcc:tooltip="Default number of days to delete unused standard files that are flagged with EXPIRY"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="thorqmon" hpcc:groupByName="ThorQMon" hpcc:docid="sh.t6">
+                    <xs:attribute name="thorQMonQueues" type="xs:string" hpcc:displayName="Thor Q Mon Queues"
+                                  hpcc:presetValues="*" hpcc:tooltip="comma separated list of Thor queues to monitor (* for all)"/>
+                    <xs:attribute name="thorQMonInterval" type="xs:nonNegativeInteger" hpcc:displayName="Thor Q Monitor Interval (minutes)"
+                                  hpcc:presetValue="1" hpcc:tooltip="interval to monitor and log queue activity (in minutes)"/>
+                    <xs:attribute name="thorQMonSwitchMinTime" type="xs:nonNegativeInteger" hpcc:displayName="Thor Q Monitor Switch Minimum Time (minutes)"
+                                  hpcc:presetValue="0" hpcc:tooltip="minimum idle time before job will switch queues. (in minutes, 0 disables)"/>
+                </xs:attributeGroup>
+
+                <xs:attributeGroup name="dfsrvmon" hpcc:groupbyName="DaFileSrvMonitor" hpcc:docid="sh.t7">
+                    <xs:attribute name="dafsmonInterval" type="xs:nonNegativeInteger" hpcc:displayName="DaFileSrv Mon Interval (hours)"
+                                  hpcc:presetValue="0" hpcc:tooltip="minimum interval between running DaFileSrv monitor (in hours, 0 disables)"/>
+                    <xs:attribute name="dafsmonAt" type="cronSchedule" hpcc:displayName="DaFileSrv Monitor Schedule (cron format)"
+                                  hpcc:presetValue="* * * * *" hpcc:tooltip="schedule to run DaFileSrv monitor (cron format)"/>
+                    <xs:attribute name="dafsmonList" type="xs:string" hpcc:displayName="DaFileSrv Monitor List"
+                                  hpcc:presetValue="*" hpcc:tooltip="comma separated list of clusters and IPs to monitor (* for all clusters)"/>
+                </xs:attributeGroup>
+
+
+                <xs:sequence>
+
+                    <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded" hpcc:class="elementSet">
+                        <xs:complexType>
+                            <xs:attributeGroup ref="computerNodeReference"/>
+                            <xs:attribute name="directory" type="absolutePath" hpcc:hidden="true"/>
+                            <xs:attribute name="port" type="xs:nonNegativeInteger" hpcc:displayName="Port" use="required"
+                                          hpcc:presetValue="8877"/>
+                        </xs:complexType>
+                    </xs:element>
+
+                    <xs:element name="Notes" type="usernotes" hpcc:displayName="Notes" minOccurs="0" maxOccurs="unbounded"/>
+
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name"
+                              hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="sasha"
+                              hpcc:uniqueKey="sasha_name" hpcc:tooltip="Name for this process"/>
+                <xs:attribute name="description" type="xs:string" use="optional" hpcc:presetValue="ESP server"
+                              hpcc:displayName="Description" hpcc:tooltip="Description for this Sasha process"/>
+                <xs:attribute name="daliServers" type="xs:string" hpcc:displayName="Dali Server" use="required"
+                              hpcc:sourceKey="daliprocess_name" hpcc:tooltip="Specifies the Dali server to which this Sasha server is attached"/>
+                <xs:attribute name="logDir" type="xs:string" hpcc:displayName="Log Directory" use="required"
+                              hpcc:presetValue="." hpcc:tooltip="Specifies the Sasha server log directory"/>
+                <xs:attribute name="autoRestartInterval" type="xs:nonNegativeInteger" hpcc:displayName="Auto Restart interval (hours)"
+                              hpcc:presetValue="0" hpcc:tooltip="Specifies interval between sasha server auto-restart (hours, 0 to disable"/>
+                <xs:attribute name="LDSroot" type="xs:string" hpcc:displayName="LDS Root"
+                              hpcc:presetValue="LDS" hpcc:tooltip="Specifies the Sasha data store root directory"/>
+                <xs:attributeGroup ref="archiver"/>
+                <xs:attributeGroup ref="coalescer"/>
+                <xs:attributeGroup ref="dfuxref"/>
+                <xs:attributeGroup ref="dfuexpiry"/>
+                <xs:attributeGroup ref="thorqmon"/>
+                <xs:attributeGroup ref="dfsrvmon"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>
