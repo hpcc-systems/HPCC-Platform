@@ -31,10 +31,10 @@ searchIndex := Setup.Files(multiPart, false).getSearchIndex();
 
 //Multi level smart stepping, with priorities in the correct order
 
-i1 := STEPPED(searchIndex(kind=1 AND word='the'), doc, PRIORITY(3),HINT(maxseeklookahead(50)));
-i2 := STEPPED(searchIndex(kind=1 AND word='walls'), doc, PRIORITY(2),HINT(maxseeklookahead(50)));
-i3 := STEPPED(searchIndex(kind=1 AND word='jerico'), doc, PRIORITY(2),HINT(maxseeklookahead(50)));
+i1 := STEPPED(searchIndex(kind=1 AND word='the'), doc, PRIORITY(3),HINT(maxseeklookahead(50)), LOCAL);
+i2 := STEPPED(searchIndex(kind=1 AND word='walls'), doc, PRIORITY(2),HINT(maxseeklookahead(50)), LOCAL);
+i3 := STEPPED(searchIndex(kind=1 AND word='jerico'), doc, PRIORITY(2),HINT(maxseeklookahead(50)), LOCAL);
 
-output(TABLE(i1, { src := TS.docid2source(doc); UNSIGNED doc := TS.docid2doc(doc), cnt := COUNT(GROUP)},doc));
-output(TABLE(i2, { src := TS.docid2source(doc); UNSIGNED doc := TS.docid2doc(doc), cnt := COUNT(GROUP)},doc));
-output(TABLE(i3, { src := TS.docid2source(doc); UNSIGNED doc := TS.docid2doc(doc), cnt := COUNT(GROUP)},doc));
+output(SORT(TABLE(i1, { src := TS.docid2source(doc); UNSIGNED doc := TS.docid2doc(doc), cnt := COUNT(GROUP)},doc), src, doc));
+output(SORT(TABLE(i2, { src := TS.docid2source(doc); UNSIGNED doc := TS.docid2doc(doc), cnt := COUNT(GROUP)},doc), src, doc));
+output(SORT(TABLE(i3, { src := TS.docid2source(doc); UNSIGNED doc := TS.docid2doc(doc), cnt := COUNT(GROUP)},doc), src, doc));
