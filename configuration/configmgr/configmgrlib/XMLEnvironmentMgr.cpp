@@ -57,7 +57,7 @@ bool XMLEnvironmentMgr::save(std::ostream &out)
         topTree.add_child("Environment", envTree);
 //        boost::property_tree::xml_writer_settings<std::string> settings;
         //pt::write_xml(out, topTree, pt::xml_parser::xml_writer_make_settings<std::string>(' ', 4));
-#if BOOST_VERSION >= 105800
+#if BOOST_VERSION >= 105700
         pt::write_xml(out, topTree, pt::xml_parser::xml_writer_make_settings<std::string>(' ', 4));
 #else
         const char * myIndent = " ";

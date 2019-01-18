@@ -68,6 +68,7 @@ define([
 
             //  Hitched actions  ---
             _onSave: function (event) {
+                var context = this;
                 if (this.userForm.validate()) {
                     var formInfo = domForm.toObject(this.id + "UserForm");
                     WsAccess.UserInfoEdit({
@@ -88,6 +89,12 @@ define([
                                 newPassword: formInfo.newPassword,
                                 newPasswordRetype: formInfo.newPassword
                             }
+                        }).then(function(response){
+                            if (lang.exists("UserResetPassResponse", response)) {
+                                if (response.UserResetPassResponse.retcode === 0) {
+                                    context.getLatestUserData(context.user);
+                                }
+                            }
                         });
                     }
                 }
@@ -105,22 +112,7 @@ define([
                     this.updateInput("Username", null, this.user);
                     this.updateInput("PasswordExpiration", null, params.Passwordexpiration);
 
-                    var context = this;
-                    WsAccess.UserInfoEditInput({
-                        request: {
-                            username: this.user
-                        }
-                    }).then(function (response) {
-                        if (lang.exists("UserInfoEditInputResponse.firstname", response)) {
-                            context.updateInput("FirstName", null, response.UserInfoEditInputResponse.firstname);
-                        }
-                        if (lang.exists("UserInfoEditInputResponse.lastname", response)) {
-                            context.updateInput("LastName", null, response.UserInfoEditInputResponse.lastname);
-                        }
-                        if (lang.exists("UserInfoEditInputResponse.employeeID", response)) {
-                            context.updateInput("EmployeeID", null, response.UserInfoEditInputResponse.employeeID);
-                        }
-                    });
+                   this.getLatestUserData(this.user);
                 }
             },
 
@@ -142,6 +134,28 @@ define([
                         AccountName: this.user
                     });
                 }
+            },
+
+            getLatestUserData: function (user) {
+                var context = this;
+                WsAccess.UserInfoEditInput({
+                    request: {
+                        username: user
+                    }
+                }).then(function (response) {
+                    if (lang.exists("UserInfoEditInputResponse.firstname", response)) {
+                        context.updateInput("FirstName", null, response.UserInfoEditInputResponse.firstname);
+                    }
+                    if (lang.exists("UserInfoEditInputResponse.lastname", response)) {
+                        context.updateInput("LastName", null, response.UserInfoEditInputResponse.lastname);
+                    }
+                    if (lang.exists("UserInfoEditInputResponse.employeeID", response)) {
+                        context.updateInput("EmployeeID", null, response.UserInfoEditInputResponse.employeeID);
+                    }
+                    if (lang.exists("UserInfoEditInputResponse.PasswordExpiration", response)) {
+                        context.updateInput("PasswordExpiration", null, response.UserInfoEditInputResponse.PasswordExpiration);
+                    }
+                });
             }
         });
     });
