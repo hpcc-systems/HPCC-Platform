@@ -973,13 +973,18 @@ int CDfuPlusHelper::copysuper()
         req->setNorecover(globals->getPropBool("noRecover", false));
 
     Owned<IClientCopyResponse> result = sprayclient->Copy(req);
-    const char* ret = result->getResult();
-    if(ret == nullptr || *ret == '\0')
+    const char* wuid = result->getResult();
+    if(wuid == nullptr || *wuid == '\0')
         exc(result->getExceptions(),"copying");
-    else if (stricmp(ret,"OK")==0)
-        info("Superfile copy completed\n");
     else
-        info("Superfile copy failed: %s\n",ret);
+    {
+        const char* jobname = globals->queryProp("jobname");
+        if(jobname && *jobname)
+            updatejobname(wuid, jobname);
+
+        info("Superfile copy completed, WUID: %s\n", wuid);
+    }
+
 
     return 0;
 }
