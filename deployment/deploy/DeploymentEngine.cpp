@@ -1347,12 +1347,12 @@ void CDeploymentEngine::renameDir(const char* from, const char* to, EnvMachineOS
   if (!checkFileExists(oldPath))
       return;
 
-  char newPath[_MAX_PATH];
+  StringBuffer newPath;
   if (to && *to)
   {
       // Use destination provided
       assertex(strcmp(from, to) != 0);
-      strcpy(newPath, to);
+      newPath.append(to);
       removeTrailingPathSepChar(newPath);
   }
   else
@@ -1360,15 +1360,15 @@ void CDeploymentEngine::renameDir(const char* from, const char* to, EnvMachineOS
       // Create new path name with date suffix
       time_t t = time(NULL);
       struct tm* now = localtime(&t);
-      sprintf(newPath, "%s_%02d_%02d", oldPath, now->tm_mon + 1, now->tm_mday);
+      newPath.appendf("%s_%02d_%02d", oldPath, now->tm_mon + 1, now->tm_mday);
       while (checkFileExists(newPath))
       {
-          size32_t end = strlen(newPath) - 1;
-          char ch = newPath[end];
+          size32_t end = newPath.length() - 1;
+          char ch = newPath.charAt(end);
           if (ch >= 'a' && ch < 'z')
-              newPath[end] = ch + 1;
+              newPath.setCharAt(end, ch + 1);
           else
-              strcat(newPath, "a");
+              newPath.append('a');
       }
   }
 
@@ -1405,28 +1405,25 @@ void CDeploymentEngine::backupDir(const char* from)
 
 void CDeploymentEngine::getBackupDirName(const char* from, StringBuffer& to)
 {
-  // If from path doesn't exist, then nothing to backup
+    // If from path doesn't exist, then nothing to backup
     char fromPath[_MAX_PATH];
     strcpy(fromPath, from);
     removeTrailingPathSepChar(fromPath);
     if (!checkFileExists(fromPath)) return;
 
     // Create to path name with date suffix
-    char toPath[_MAX_PATH];
     time_t t = time(NULL);
     struct tm* now = localtime(&t);
-    sprintf(toPath, "%s_%02d_%02d", fromPath, now->tm_mon + 1, now->tm_mday);
-    while (checkFileExists(toPath))
+    to.clear().appendf("%s_%02d_%02d", fromPath, now->tm_mon + 1, now->tm_mday);
+    while (checkFileExists(to))
     {
-        size32_t end = strlen(toPath) - 1;
-        char ch = toPath[end];
+        size32_t end = to.length() - 1;
+        char ch = to.charAt(end);
         if (ch >= 'a' && ch < 'z')
-            toPath[end] = ch + 1;
+            to.setCharAt(end, ch + 1);
         else
-            strcat(toPath, "a");
+            to.append('a');
     }
-
-  to.clear().append(toPath);
 }
 
 //---------------------------------------------------------------------------
