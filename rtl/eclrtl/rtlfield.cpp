@@ -1851,7 +1851,7 @@ int RtlQStringTypeInfo::compare(const byte * left, const byte * right) const
     if (isFixedSize())
         // Logically this should be return rtlCompareQStrQStr(length, left, length, right);
         // but that acts as a memcmp if lengths match
-        return memcmp(left, right, length);
+        return memcmp(left, right, rtlQStrSize(length));
 
     size32_t lenLeft = rtlReadSize32t(left);
     size32_t lenRight = rtlReadSize32t(right);
