@@ -8606,6 +8606,7 @@ class RoxieMemStressTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RoxieMemStressTests );
     CPPUNIT_TEST(testSetup);
+    CPPUNIT_TEST(testHugeFragmentation);
     CPPUNIT_TEST(testFragmenting);
     CPPUNIT_TEST(testDoubleFragmenting);
     CPPUNIT_TEST(testResizeDoubleFragmenting);
@@ -8794,6 +8795,98 @@ protected:
         DBGLOG("Time for fragmenting double resize = %d, max allocation=%" I64F "u, limit = %" I64F "u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
         ASSERT(requestSize > memorySize/4);
     }
+
+    class IncrementalRowBuffer : implements IBufferedRowCallback
+    {
+    public:
+        IncrementalRowBuffer(size_t _maxRows, const void * * _rowset, unsigned _delta) :
+            maxRows(_maxRows), rowset(_rowset), delta(_delta)
+        {
+        }
+
+    //interface IBufferedRowCallback
+        virtual unsigned getSpillCost() const { return 100; }
+        virtual unsigned getActivityId() const { return 0; }
+        virtual bool freeBufferedRows(bool critical)
+        {
+            VStringBuffer msg("Pool memory exhausted: global(%u/%u) WM(%u..%u)", heapAllocated, heapTotalPages, heapLWM, heapHWM);
+            DBGLOG("%s", msg.str());
+            unsigned togo = delta;
+            while (togo--)
+            {
+                unsigned start = next;
+                do
+                {
+                    unsigned cur = next;
+                    next = (next+1) % maxRows;
+                    if (rowset[cur])
+                    {
+                        ::ReleaseRoxieRow(rowset[cur]);
+                        rowset[cur] = nullptr;
+                        break;
+                    }
+                } while (start != next);
+                if (start == next)
+                {
+                    throwUnexpected();
+                    return false;
+                }
+            }
+            return true;
+        }
+
+    protected:
+        size_t next = 0;
+        size_t maxRows;
+        unsigned delta;
+        const void * * rowset;
+    };
+
+
+    void testHugeFragmentation()
+    {
+        const unsigned maxAllocs = memorySize / HEAP_ALIGNMENT_SIZE;
+        const unsigned numAllocs = maxAllocs/4;
+        const unsigned rowsetSize = numAllocs*4;
+        const unsigned releaseSize = numAllocs * 3 / 4;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        const void * * rowset = new const void * [rowsetSize];
+        memset(rowset, 0, sizeof(void *) * rowsetSize);
+
+        IncrementalRowBuffer callback(rowsetSize, rowset, releaseSize);
+        rowManager->addRowBuffer(&callback);
+        try
+        {
+            for (unsigned i=0; i < 10000; i++)
+            {
+                unsigned total = 0;
+                for (unsigned j=0; j < numAllocs; j++)
+                {
+                    unsigned blks = ((rand() % 4) + 1);
+                    size_t size = blks * HEAP_ALIGNMENT_SIZE - HEAP_ALIGNMENT_SIZE/2;
+                    unsigned target = rand() % rowsetSize;
+                    if (rowset[target])
+                        continue;
+                    void * newrow = rowManager->allocate(size, 0);
+                    rowset[target] = newrow;
+                    total += numAllocs;
+                }
+            }
+        }
+        catch (...)
+        {
+            rowManager->removeRowBuffer(&callback);
+            ReleaseRoxieRowArray(rowsetSize, rowset);
+            delete [] rowset;
+            throw;
+        }
+
+        rowManager->removeRowBuffer(&callback);
+        ReleaseRoxieRowArray(rowsetSize, rowset);
+        delete [] rowset;
+    }
+
+
 
     void testDatamanagerThreading()
     {
