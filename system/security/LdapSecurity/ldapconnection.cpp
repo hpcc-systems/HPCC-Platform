@@ -6163,7 +6163,63 @@ private:
 
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes)
     {
-        getResourcesEx(RT_FILE_SCOPE, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), NULL, NULL, scopes);
+        //Get array of all file scopes listed in files baseDN
+        StringBuffer basednbuf;
+        LdapUtils::normalizeDn(m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), m_ldapconfig->getBasedn(), basednbuf);
+        basednbuf.toLowerCase();//Will look something like "ou=files,ou=dataland_ecl,dc=internal,dc=sds". Lowercase ensures proper strstr with StringArray elements below
+
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
+        Owned<ILdapConnection> lconn = m_connections->getConnection();
+        LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
+        char *attrs[] = {"canonicalName", NULL};
+
+        //Call LDAP to get the complete OU tree underneath basdnbuf
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_SUBTREE, "objectClass=*", attrs);
+        for (LDAPMessage *message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
+        {
+            CLDAPGetAttributesWrapper   atts(ld, message);
+            for ( char *attribute = atts.getFirst();
+                  attribute != NULL;
+                  attribute = atts.getNext())
+            {
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
+                if (vals.hasValues())
+                {
+                    const char* val = vals.queryCharValue(0);
+                    if(val)//this check probably isn't necessary since hasValues(), but could prevent a core
+                    {
+                        //Build filescope from everything below the file scope basedn
+                        StringArray OUarray;
+                        OUarray.appendList(val,"/",true);//create StringArray of OU elements. LDAP returns them in the form "internal.sds/files/dataland_ecl/hpccinternal/roxieuser
+
+                        //Find index of first StringArray item NOT in base search string (basednbuf)
+                        int curr = 1;//skip the first element, which are the combined domains. So "dc=internal,dc=sds" will appear here as "internal.sds"
+                        int end = OUarray.ordinality();
+                        for (; curr < end; curr++)
+                        {
+                            VStringBuffer theOU("ou=%s,",OUarray.item(curr));
+                            theOU.toLowerCase();//Lowercase to ensure proper strstr within basednbuf
+                            if (nullptr == strstr(basednbuf.str(), theOU.str()))//search baseDN for OU substring
+                                break;//found first element not in baseDN
+                        }
+
+                        //build OU string with remaining elements in the form "hpccinternal::roxieuser"
+                        StringBuffer sb;
+                        for (; curr < end; curr++)
+                        {
+                            sb.appendf("%s%s", sb.isEmpty() ? "" : "::", OUarray.item(curr));
+                        }
+
+                        if (!sb.isEmpty())
+                        {
+                            CLdapSecResource* resource = new CLdapSecResource(sb);
+                            scopes.append(*resource);
+                        }
+                    }
+                }
+            }
+        }
+        DBGLOG("getManagedFileScopes() found %d scopes under '%s'", scopes.length(), basednbuf.str());
         return scopes.length();
     }
 
