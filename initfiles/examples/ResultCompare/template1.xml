@@ -1,0 +1,59 @@
+<ResultMonitoringTemplate>
+  <OrganizationInfoResponse diff_monitor='Organization'>
+    <OrgName/>
+    <Address>
+      <type unimplemented='EsdlEnum'/>
+      <Line1/>
+      <Line2/>
+      <City/>
+      <State/>
+      <Zip/>
+    </Address>
+    <Members diff_match='Name.First+Name.Last' diff_monitor='Members|People'>
+      <Member>
+        <Name>
+          <First/>
+          <Middle/>
+          <Last/>
+          <Aliases>
+            <Alias/>
+          </Aliases>
+        </Name>
+        <Addresses diff_match='Line1+City+State' diff_monitor='Addresses|Members'>
+          <Address>
+            <type unimplemented='EsdlEnum'/>
+            <Line1/>
+            <Line2/>
+            <City/>
+            <State/>
+            <Zip/>
+            <Zip4/>
+          </Address>
+        </Addresses>
+      </Member>
+    </Members>
+    <Guests diff_match='Name.First+Name.Last' diff_monitor='Guests|People'>
+      <Guest>
+        <Name diff_monitor=''>
+          <First/>
+          <Middle/>
+          <Last/>
+          <Aliases>
+            <Alias/>
+          </Aliases>
+        </Name>
+        <Addresses diff_match='Line1+City+State' diff_monitor='Addresses|Guests'>
+          <Address>
+            <type unimplemented='EsdlEnum'/>
+            <Line1/>
+            <Line2/>
+            <City/>
+            <State/>
+            <Zip diff_monitor=''/>
+            <Zip4 diff_monitor=''/>
+          </Address>
+        </Addresses>
+      </Guest>
+    </Guests>
+  </OrganizationInfoResponse>
+</ResultMonitoringTemplate>
