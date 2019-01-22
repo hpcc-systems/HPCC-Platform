@@ -4526,7 +4526,7 @@ public:
 
     virtual void throwHeapExhausted(unsigned allocatorId, unsigned pages)
     {
-        VStringBuffer msg("Pool memory exhausted: pool id %u exhausted, requested %u heap(%u/%u) global(%u/%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), heapAllocated, heapTotalPages);
+        VStringBuffer msg("Pool memory exhausted: pool id %u exhausted, requested %u heap(%u/%u) global(%u/%u) WM(%u..%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), heapAllocated, heapTotalPages, heapLWM, heapHWM);
         DBGLOG("%s", msg.str());
         throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
     }
@@ -4983,7 +4983,7 @@ public:
 
     void throwHeapExhausted(unsigned allocatorId, unsigned pages)
     {
-        VStringBuffer msg("Shared global memory exhausted: pool id %u exhausted, requested %u heap(%u/%u/%u/%u)) global(%u/%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), globalPageLimit, maxPageLimit, heapAllocated, heapTotalPages);
+        VStringBuffer msg("Shared global memory exhausted: pool id %u exhausted, requested %u heap(%u/%u/%u/%u)) global(%u/%u) WM(%u..%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), globalPageLimit, maxPageLimit, heapAllocated, heapTotalPages, heapLWM, heapHWM);
         DBGLOG("%s", msg.str());
         throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
     }
