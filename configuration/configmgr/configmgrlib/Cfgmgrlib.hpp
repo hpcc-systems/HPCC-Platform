@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,33 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
+#ifndef _CONFIG2_CFGMGRLIB_HPP_
+#define _CONFIG2_CFGMGRLIB_HPP_
 
-#ifndef _CONFIG2_ENVIRONMENTLOADER_HPP_
-#define _CONFIG2_ENVIRONMENTLOADER_HPP_
-
-#include <string>
-#include <fstream>
-#include <vector>
-#include "SchemaItem.hpp"
-#include "EnvironmentNode.hpp"
-#include "Status.hpp"
-#include "NameValue.hpp"
-#include "platform.h"
-#include "Cfgmgrlib.hpp"
-
-
-class CFGMGRLIB_API EnvironmentLoader
-{
-    public:
-
-        EnvironmentLoader() { }
-        virtual ~EnvironmentLoader() { }
-        virtual std::vector<std::shared_ptr<EnvironmentNode>> load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) const = 0;
-
-
-    protected:
-
-        std::shared_ptr<SchemaItem> m_pSchemaItem;
-};
-
+#ifdef CFGMGRLIB_EXPORTS
+#define CFGMGRLIB_API DECL_EXPORT
+#else
+#define CFGMGRLIB_API DECL_IMPORT
 #endif
+
+
+#endif  // _CONFIG2_CFGMGRLIB_HPP_

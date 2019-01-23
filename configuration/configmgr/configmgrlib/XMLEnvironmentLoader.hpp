@@ -24,13 +24,14 @@
 #include "SchemaItem.hpp"
 #include "EnvironmentNode.hpp"
 #include "EnvironmentLoader.hpp"
+#include "Cfgmgrlib.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
 namespace pt = boost::property_tree;
 
-class DECL_EXPORT XMLEnvironmentLoader : public EnvironmentLoader
+class CFGMGRLIB_API XMLEnvironmentLoader : public EnvironmentLoader
 {
     public:
 

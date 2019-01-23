@@ -30,6 +30,7 @@
 #include "NameValue.hpp"
 #include "platform.h"
 #include "EnvSupportLib.hpp"
+#include "Cfgmgrlib.hpp"
 
 class EnvironmentMgr;
 
@@ -40,9 +41,9 @@ enum EnvironmentType
 };
 
 
-DECL_EXPORT EnvironmentMgr *getEnvironmentMgrInstance(const EnvironmentType envType);
+CFGMGRLIB_API EnvironmentMgr *getEnvironmentMgrInstance(const EnvironmentType envType);
 
-class DECL_EXPORT EnvironmentMgr
+class CFGMGRLIB_API EnvironmentMgr
 {
     public:
 

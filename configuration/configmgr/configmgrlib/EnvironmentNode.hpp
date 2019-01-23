@@ -28,9 +28,10 @@
 #include "NameValue.hpp"
 #include "platform.h"
 #include "ConfigPath.hpp"
+#include "Cfgmgrlib.hpp"
 
 
-class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<EnvironmentNode>
+class CFGMGRLIB_API EnvironmentNode : public std::enable_shared_from_this<EnvironmentNode>
 {
     public:
 

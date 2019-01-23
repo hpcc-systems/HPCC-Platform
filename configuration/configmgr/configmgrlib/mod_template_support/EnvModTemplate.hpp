@@ -30,11 +30,12 @@
 #include "OperationFindNode.hpp"
 #include <map>
 #include <vector>
+#include "platform.h"
+#include "Cfgmgrlib.hpp"
 
 
-class EnvModTemplate
+class CFGMGRLIB_API EnvModTemplate
 {
-
     public:
 
         EnvModTemplate(EnvironmentMgr *pEnvMgr, const std::string &schemaFile);
