@@ -36,6 +36,8 @@
 #define REQPATH_CREATEANDDOWNLOADZAP "/WsWorkunits/WUCreateAndDownloadZAPInfo"
 #define REQPATH_DOWNLOADFILES "/WsWorkunits/WUDownloadFiles"
 
+const unsigned DefaultMaxJobQueueItemsInWUGetJobQueueResponse = 1000;
+
 bool getClusterJobQueueXLS(StringBuffer &xml, const char* cluster, const char* startDate, const char* endDate, const char* showType)
 {
     CDateTime fromTime;
@@ -1784,3 +1786,76 @@ bool CWsWorkunitsEx::onWUClusterJobSummaryXLS(IEspContext &context, IEspWUCluste
     }
     return true;
 }
+
+bool CWsWorkunitsEx::onWUGetThorJobQueue(IEspContext &context, IEspWUGetThorJobQueueRequest &req, IEspWUGetThorJobQueueResponse &resp)
+{
+    try
+    {
+        SecAccessFlags accessOwn, accessOthers;
+        getUserWuAccessFlags(context, accessOwn, accessOthers, true);
+
+        const char *cluster = req.getCluster();
+        StringBuffer startDate = req.getStartDate();
+        StringBuffer endDate = req.getEndDate();
+        unsigned maxJobQueueItemsToReturn = req.getMaxJobQueueItemsToReturn();
+        if (maxJobQueueItemsToReturn == 0)
+            maxJobQueueItemsToReturn = DefaultMaxJobQueueItemsInWUGetJobQueueResponse;
+
+        CDateTime fromTime, toTime;
+        if (!startDate.isEmpty())
+        {
+            if (startDate.length() == 10)
+                startDate.append("T00:00:00");
+            fromTime.setString(startDate, NULL, false);
+        }
+        if (isEmptyString(endDate))
+            toTime.setNow();
+        else
+        {
+            if (endDate.length() == 10)
+                endDate.append("T23:59:59");
+            toTime.setString(endDate, NULL, false);
+        }
+
+        StringBuffer filter("ThorQueueMonitor");
+        if (!isEmptyString(cluster))
+            filter.appendf(",%s", cluster);
+
+        StringAttrArray queueInfoLines;
+        queryAuditLogs(fromTime, toTime, filter.str(), queueInfoLines);
+
+        WsWuJobQueueAuditInfo jq;
+        IArrayOf<IEspThorQueue> queues;
+        unsigned maxConnected = 0;
+        unsigned longestQueue = 0;
+        unsigned lastLineID = queueInfoLines.length() - 1;
+        ForEachItemIn(idx, queueInfoLines)
+        {
+            const char* line = queueInfoLines.item(idx).text;
+            if(isEmptyString(line))
+                continue;
+
+            jq.getAuditLineInfo(line, longestQueue, maxConnected, maxJobQueueItemsToReturn,
+                idx < lastLineID ? 1 : 2, queues);
+
+            if (queues.length() > maxJobQueueItemsToReturn)
+            {
+                queues.pop();
+                VStringBuffer msg("More than %u job queues are found. Only %u job queues are returned.",
+                    maxJobQueueItemsToReturn, maxJobQueueItemsToReturn);
+                resp.setWarning(msg.str());
+                break;
+            }
+        }
+
+        resp.setLongestQueue(longestQueue);
+        resp.setMaxThorConnected(maxConnected);
+        resp.setQueueList(queues);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+

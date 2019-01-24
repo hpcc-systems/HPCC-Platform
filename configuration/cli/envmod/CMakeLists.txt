@@ -22,6 +22,7 @@ SET (SRC_FILES
 
 INCLUDE_DIRECTORIES(
         ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/oss
         ${HPCC_SOURCE_DIR}/system/include
         ${HPCC_SOURCE_DIR}/configuration/configmgr/configmgrlib
         ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include

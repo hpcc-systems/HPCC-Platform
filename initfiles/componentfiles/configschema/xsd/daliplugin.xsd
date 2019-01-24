@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="DaliServerPlugin" hpcc:displayName="" hpcc:itemType="daliserverplugin" minOccurs="0" maxOccurs="unbounded"
+                    hpcc:class="component" hpcc:docid="daplug.t">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="Option" hpcc:displayName="Plugin Options" hpcc:itemType="dalipluginoption"
+                                hpcc:class="elementSet" minOccurs="0" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name"
+                                          hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="Option"
+                                          hpcc:uniqueKey="daliplugin_option_name" hpcc:tooltip="Name for this option"/>
+                            <xs:attribute name="value" type="xs:string" hpcc:displayName="Value" use="required"
+                                          hpcc:presetValue="value" hpcc:tooltip="Value for this option"/>
+                        </xs:complexType>
+                    </xs:element>
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+
+                <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name"
+                              hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="daliplugin"
+                              hpcc:uniqueKey="daliplugin_name" hpcc:tooltip="Name for this Dali plugin"/>
+                <xs:attribute name="entrypoint" type="xs:string"  hpcc:displayName="Entry Point"
+                              hpcc:presetValue="createWorkUnitFactory" hpcc:tooptip="Plugin entrypoint method"/>
+                <xs:attribute name="daliServers" type="xs:string" hpcc:displayName="Dali Server" use="required"
+                              hpcc:sourceKey="daliprocess_name" hpcc:tooltip="Specifies the Dali server to which this plugin is associated"/>
+                <xs:attribute name="pluginName" type="xs:string" hpcc:displayName="Plugin Name" use="required"
+                              hpcc:tooltip="name of the plugin"/>
+                <xs:attribute name="type" type="xs:string" hpcc:displayName="Type"
+                              hpcc:tooltip="Specifies the type of the plugin"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>
