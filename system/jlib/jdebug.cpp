@@ -1995,7 +1995,7 @@ public:
         // and match those with entries in /proc/diskstats
         StringBuffer cmd("lsblk -o TYPE,MAJ:MIN --pairs");
         Owned<IPipeProcess> pipe = createPipeProcess();
-        if (pipe->run("list disks", cmd, nullptr, false, true))
+        if (pipe->run("list disks", cmd, nullptr, false, true, true, 8192))
         {
             StringBuffer output;
             Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
@@ -2015,6 +2015,14 @@ public:
                         diskMajorMinor.appendUniq(mm);
                     }
                 }
+            }
+            else
+            {
+                StringBuffer outputErr;
+                Owned<ISimpleReadStream> pipeReaderErr = pipe->getErrorStream();
+                readSimpleStream(outputErr, *pipeReaderErr);
+                if (outputErr.length() > 0)
+                    WARNLOG("WARNING: Pipe: output: %s", outputErr.str());
             }
         }
 #endif // __linux__

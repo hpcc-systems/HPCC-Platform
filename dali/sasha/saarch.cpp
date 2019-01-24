@@ -303,21 +303,18 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             {
                 const char* outputField = outputFields.item(i);
 
-                const char *val = nullptr;;
                 if (strieq(outputField, "owner"))
-                    val = wu->queryProp("@submitID");
+                    output.append(',').append(wu->queryProp("@submitID"));
                 else if (strieq(outputField, "cluster"))
-                    val = wu->queryProp("@clusterName");
+                    output.append(',').append(wu->queryProp("@clusterName"));
                 else if (strieq(outputField, "jobname"))
-                    val = wu->queryProp("@jobName");
+                    output.append(',').append(wu->queryProp("@jobName"));
                 else if (strieq(outputField, "state"))
-                    val = wu->queryProp(dfu ? "Progress/@state" : "@state");
+                    output.append(',').append(wu->queryProp(dfu ? "Progress/@state" : "@state"));
                 else if (strieq(outputField, "command"))
-                    val = wu->queryProp("@command");
+                    output.append(',').append(wu->queryProp("@command"));
                 else if (strieq(outputField, "wuid"))
-                    val = wu->queryName();
-                if (val)
-                    output.append(',').append(val);
+                    output.append(',').append(wu->queryName());
             }
         }
         bool checkOnlineWU(IPropertyTree *wuTree)
