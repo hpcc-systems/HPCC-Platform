@@ -53,7 +53,7 @@ if(JAVAEMBED)
         set(java_sources HpccClassLoader.java HpccUtils.java)
         set(java_classes ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccClassLoader.class ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccUtils.class)
         add_custom_command ( OUTPUT ${java_classes}
-            COMMAND ${Java_JAVAC_EXECUTABLE} ${java_sources} -d ${CMAKE_CURRENT_BINARY_DIR} -target 1.8
+            COMMAND ${Java_JAVAC_EXECUTABLE} ${java_sources} -d ${CMAKE_CURRENT_BINARY_DIR} -source 1.8 -target 1.8
             DEPENDS ${java_sources}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         )
