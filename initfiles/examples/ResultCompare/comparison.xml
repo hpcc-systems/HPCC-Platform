@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="/esp/xslt/xmlformatter.xsl"?>
+<compare_organizationinfoResponse
+  xmlns="urn:hpccsystems:ecl:compare_organizationinfo">
+  <Result>
+    <Dataset
+      xmlns="urn:hpccsystems:ecl:compare_organizationinfo:result:difference"
+      name="Difference">
+      <Row>
+        <OrgName>Technology For All</OrgName>
+        <Address>
+          <DiffMeta></DiffMeta>
+          <type>Business</type>
+          <Line1>101 Main St.</Line1>
+          <Line2>Suite 202</Line2>
+          <City>MainVille</City>
+          <State>ME</State>
+          <Zip>4109</Zip>
+          <Zip4>0</Zip4>
+        </Address>
+        <Members>
+          <Member>
+            <DiffMeta></DiffMeta>
+            <Name>
+              <DiffMeta></DiffMeta>
+              <First>Jane</First>
+              <Middle>m</Middle>
+              <Last>Doe</Last>
+              <Aliases>
+                <Alias>Janie</Alias>
+                <Alias diff="added">Jenny2</Alias>
+                <Alias diff="deleted">Jenny</Alias>
+              </Aliases>
+            </Name>
+            <Addresses>
+              <Address diff="updated">
+                <DiffMeta>
+                  <Field name="Line2" prior="Apt 12"></Field>
+                  <Field name="Zip" prior="4109"></Field>
+                  <Field name="Zip4" prior="1111"></Field>
+                </DiffMeta>
+                <type>Business</type>
+                <Line1>202 Main St.</Line1>
+                <Line2>Apt 121</Line2>
+                <City>MainVille</City>
+                <State>ME</State>
+                <Zip>4108</Zip>
+                <Zip4>222</Zip4>
+              </Address>
+            </Addresses>
+          </Member>
+          <Member>
+            <DiffMeta></DiffMeta>
+            <Name diff="updated">
+              <DiffMeta>
+                <Field name="Middle" prior="m"></Field>
+              </DiffMeta>
+              <First>Joseph</First>
+              <Middle>m2</Middle>
+              <Last>Lowe</Last>
+              <Aliases>
+                <Alias>Joe</Alias>
+                <Alias>Joey</Alias>
+              </Aliases>
+            </Name>
+            <Addresses>
+              <Address diff="updated">
+                <DiffMeta>
+                  <Field name="Zip" prior="4109"></Field>
+                  <Field name="Zip4" prior="1222"></Field>
+                </DiffMeta>
+                <type>Business</type>
+                <Line1>303 Main St.</Line1>
+                <Line2>Apt 23</Line2>
+                <City>MainVille</City>
+                <State>ME</State>
+                <Zip>4107</Zip>
+                <Zip4>1333</Zip4>
+              </Address>
+            </Addresses>
+          </Member>
+        </Members>
+        <Guests>
+          <Guest>
+            <DiffMeta></DiffMeta>
+            <Name>
+              <DiffMeta></DiffMeta>
+              <First>Jonas</First>
+              <Middle>m</Middle>
+              <Last>Smith</Last>
+              <Aliases>
+                <Alias>John</Alias>
+                <Alias>Jon</Alias>
+              </Aliases>
+            </Name>
+            <Addresses>
+              <Address diff="updated">
+                <DiffMeta>
+                  <Field name="Line2"></Field>
+                </DiffMeta>
+                <type>Business</type>
+                <Line1>545 Second Blvd</Line1>
+                <Line2>x</Line2>
+                <City>SmallVille</City>
+                <State>ME</State>
+                <Zip>4105</Zip>
+                <Zip4>2225</Zip4>
+              </Address>
+            </Addresses>
+          </Guest>
+          <Guest>
+            <DiffMeta></DiffMeta>
+            <Name>
+              <DiffMeta></DiffMeta>
+              <First>Jerry</First>
+              <Middle>m2</Middle>
+              <Last>Llewyn</Last>
+              <Aliases>
+                <Alias>Jerold2</Alias>
+              </Aliases>
+            </Name>
+            <Addresses>
+              <Address>
+                <DiffMeta></DiffMeta>
+                <type>Business</type>
+                <Line1>545 Second Blvd</Line1>
+                <City>SmallVille</City>
+                <State>ME</State>
+                <Zip>4305</Zip>
+                <Zip4>2335</Zip4>
+              </Address>
+            </Addresses>
+          </Guest>
+        </Guests>
+      </Row>
+    </Dataset>
+    <Dataset
+      xmlns="urn:hpccsystems:ecl:compare_organizationinfo:result:selected"
+      name="Selected">
+      <Row monitor="Members" active="true"></Row>
+      <Row monitor="People" active="true"></Row>
+      <Row monitor="Addresses" active="true"></Row>
+      <Row monitor="Guests" active="true"></Row>
+    </Dataset>
+  </Result>
+</compare_organizationinfoResponse>
+

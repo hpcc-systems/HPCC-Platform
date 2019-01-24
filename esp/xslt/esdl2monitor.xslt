@@ -449,7 +449,7 @@ END;
       OR updated_<xsl:call-template name="output_ecl_name"/>
 </xsl:template>
 
-<xsl:template match="EsdlElement[@type and (@_nomon='1' or @_mon='0')]" mode="AppendUpdateFlag">
+<xsl:template match="EsdlElement[@type and (@_nomon='1' and (@_mon='0' or not(@_mon)))]" mode="AppendUpdateFlag">
 </xsl:template>
 
 <xsl:template match="EsdlStruct|EsdlRequest|EsdlResponse" mode="BuildMetaDataChildren">
@@ -687,11 +687,11 @@ END;
       path_<xsl:value-of select="$field"/> := path + '/<xsl:value-of select="$field"/>';
     <xsl:choose>
       <xsl:when test="@_nomon='1'">
-      updated_<xsl:value-of select="$field"/> := IF (path_<xsl:value-of select="$field"/> IN optional_fields, _df_<xsl:value-of select="$type"/><xsl:text>(</xsl:text>
+      updated_<xsl:value-of select="$field"/> := _df_<xsl:value-of select="$type"/><xsl:text>(</xsl:text>
 <xsl:call-template name="output_active_check">
   <xsl:with-param name="pathvar">path_<xsl:value-of select="$field"/></xsl:with-param>
 </xsl:call-template>
-<xsl:text>, path_</xsl:text><xsl:value-of select="$field"/>).AsRecord(L.<xsl:value-of select="$field"/>, R.<xsl:value-of select="$field"/>), L.R.<xsl:value-of select="$field"/>);
+<xsl:text>, path_</xsl:text><xsl:value-of select="$field"/>).AsRecord(L.<xsl:value-of select="$field"/>, R.<xsl:value-of select="$field"/>);
         </xsl:when>
         <xsl:otherwise>
       updated_<xsl:value-of select="$field"/> := _df_<xsl:value-of select="$type"/><xsl:text>(</xsl:text>
