@@ -808,13 +808,16 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 if (!optShared)
                     wu->setDebugValueInt("standAloneExe", 1, true);
                 EclGenerateTarget target = optWorkUnit ? EclGenerateNone : (optNoCompile ? EclGenerateCpp : optShared ? EclGenerateDll : EclGenerateExe);
-                gatherResourceManifestFilenames(instance, resourceManifestFiles);
-                ForEachItemIn(i, resourceManifestFiles)
-                    generator->addManifest(resourceManifestFiles.item(i));
                 if (instance.srcArchive)
                 {
-                    generator->addManifestFromArchive(instance.srcArchive);
+                    generator->addManifestsFromArchive(instance.srcArchive);
                     instance.srcArchive.clear();
+                }
+                else
+                {
+                    gatherResourceManifestFilenames(instance, resourceManifestFiles);
+                    ForEachItemIn(i, resourceManifestFiles)
+                        generator->addManifest(resourceManifestFiles.item(i));
                 }
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
