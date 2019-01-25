@@ -17,6 +17,7 @@
 
 #include "platform.h"
 #include "mysql.h"
+#include "mysqld_error.h"
 #include "jexcept.hpp"
 #include "jthread.hpp"
 #include "hqlplugins.hpp"
@@ -638,17 +639,16 @@ public:
     {
         // Create bindings for input parameters
         inputBindings.init(mysql_stmt_param_count(*stmt));
-        // And for results
-        res.setown(new MySQLResult(mysql_stmt_result_metadata(*stmt)));
-        if (*res)
-        {
-            resultBindings.bindResults(*res);
-            /* Bind the result buffers */
-            if (mysql_stmt_bind_result(*stmt, resultBindings.queryBindings()))
-                fail(mysql_stmt_error(*stmt));
-        }
-        else if (mysql_stmt_errno(*stmt))  // SQL actions don't return results...
+        // Bindings for results are created after the execute, as they are not always available until then (e.g. when calling a stored procedure)
+        if (mysql_stmt_errno(*stmt))
             fail(mysql_stmt_error(*stmt));
+    }
+    MySQLPreparedStatement(MySQLConnection *_conn, const char *_query, unsigned _len)
+    : conn(_conn)
+    {
+        // Used for cases with no parameters or result, that are not supported in prepared query protocol - e.g. DROP PROCEDURE
+        query.set(_query, _len);
+        inputBindings.init(0);
     }
     ~MySQLPreparedStatement()
     {
@@ -673,11 +673,27 @@ public:
     }
     void execute()
     {
-        assertex(stmt && *stmt);
-        if (inputBindings.numColumns() && mysql_stmt_bind_param(*stmt, inputBindings.queryBindings()))
-            fail(mysql_stmt_error(*stmt));
-        if (mysql_stmt_execute(*stmt))
-            fail(mysql_stmt_error(*stmt));
+        if (stmt && *stmt)
+        {
+            if (inputBindings.numColumns() && mysql_stmt_bind_param(*stmt, inputBindings.queryBindings()))
+                fail(mysql_stmt_error(*stmt));
+            if (mysql_stmt_execute(*stmt))
+                fail(mysql_stmt_error(*stmt));
+            // NOTE - we ignore all but the first result from stored procedures
+            res.setown(new MySQLResult(mysql_stmt_result_metadata(*stmt)));
+            if (*res)
+            {
+                resultBindings.bindResults(*res);
+                /* Bind the result buffers */
+                if (mysql_stmt_bind_result(*stmt, resultBindings.queryBindings()))
+                    fail(mysql_stmt_error(*stmt));
+            }
+        }
+        else
+        {
+            if (mysql_query(*conn, query))
+                fail(mysql_error(*conn));
+        }
     }
     inline const MySQLBindingArray &queryResultBindings() const
     {
@@ -697,6 +713,7 @@ protected:
     Owned<MySQLResult> res;
     MySQLBindingArray inputBindings;
     MySQLBindingArray resultBindings;
+    StringAttr query;
 };
 
 // Conversions from MySQL values to ECL data
@@ -1385,8 +1402,8 @@ static void initializeMySqlThread()
 class MySQLEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    MySQLEmbedFunctionContext(const IThorActivityContext *_ctx, const char *options)
-      : nextParam(0), activityCtx(_ctx)
+    MySQLEmbedFunctionContext(const IThorActivityContext *_ctx, unsigned _flags, const char *options)
+      : flags(_flags), nextParam(0), activityCtx(_ctx)
     {
         initializeMySqlThread();
         conn.setown(MySQLConnection::findCachedConnection(options, false));
@@ -1450,9 +1467,9 @@ public:
     }
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
     {
+        lazyExecute();
         if (!stmtInfo->hasResult())
             typeError("row", NULL);
-        lazyExecute();
         MySQLRowStream stream(NULL, stmtInfo, _resultAllocator);
         roxiemem::OwnedConstRoxieRow ret = stream.nextRow();
         roxiemem::OwnedConstRoxieRow ret2 = stream.nextRow();
@@ -1587,7 +1604,6 @@ public:
     {
     }
 
-
     virtual void importFunction(size32_t lenChars, const char *text)
     {
         throwUnexpected();
@@ -1611,6 +1627,18 @@ public:
                 fail("failed to create statement");
             if (mysql_stmt_prepare(*stmt, script, len))
             {
+                int rc = mysql_stmt_errno(*stmt);
+                if (rc == ER_UNSUPPORTED_PS)
+                {
+                    // Some functions are not supported in prepared statements, but are still handy to be able to call
+                    // So long as they have no bound vars and no return value, we can probably call them ok
+                    if ((flags & (EFnoreturn|EFnoparams)) == (EFnoreturn|EFnoparams))
+                    {
+                        stmtInfo.setown(new MySQLPreparedStatement(conn, script, len));
+                        break;
+                    }
+                    fail(mysql_stmt_error(*stmt));
+                }
                 // If we get an error, it could be that the cached connection is stale - retry
                 if (conn->wasCached())
                 {
@@ -1629,7 +1657,7 @@ public:
             failx("Not enough parameters supplied (%d parameters supplied, but statement has %d bound columns)", nextParam, stmtInfo->queryInputBindings().numColumns());
         // We actually do the execute later, when the result is fetched
         // Unless, there is no expected result, in that case execute query now
-        if (stmtInfo->queryResultBindings().numColumns() == 0)
+        if (flags & EFnoreturn)
             lazyExecute();
     }
 protected:
@@ -1642,9 +1670,9 @@ protected:
     }
     const MYSQL_BIND &getScalarResult()
     {
+        lazyExecute();
         if (!stmtInfo->hasResult() || stmtInfo->queryResultBindings().numColumns() != 1)
             typeError("scalar", NULL);
-        lazyExecute();
         if (!stmtInfo->next())
             typeError("scalar", NULL);
         return stmtInfo->queryResultBindings().queryColumn(0, NULL);
@@ -1665,6 +1693,7 @@ protected:
     Owned<MySQLPreparedStatement> stmtInfo;
     Owned<MySQLDatasetBinder> inputStream;
     const IThorActivityContext *activityCtx;
+    unsigned flags;
     int nextParam;
 };
 
@@ -1680,7 +1709,7 @@ public:
         if (flags & EFimport)
             UNSUPPORTED("IMPORT");
         else
-            return new MySQLEmbedFunctionContext(activityCtx, options);
+            return new MySQLEmbedFunctionContext(activityCtx, flags, options);
     }
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
