@@ -4039,13 +4039,6 @@ void setDefaultUser(const char * username,const char *password)
 
 //---------------------------------------------------------------------------
 
-
-
-
-    
-
-
-
 bool recursiveCreateDirectory(const char * path)
 {
     Owned<IFile> file = createIFile(path);
@@ -4059,6 +4052,30 @@ bool recursiveCreateDirectoryForFile(const char *fullFileName)
     StringBuffer path;
     splitFilename(fullFileName, &path, &path, NULL, NULL);
     return recursiveCreateDirectory(path.str());
+}
+
+void recursiveRemoveDirectory(IFile *dir)
+{
+    Owned<IDirectoryIterator> files = dir->directoryFiles(NULL, false, true);
+    ForEach(*files)
+    {
+        IFile *thisFile = &files->query();
+        if (thisFile->isDirectory()==foundYes)
+            recursiveRemoveDirectory(thisFile);
+        else
+        {
+            thisFile->setReadOnly(false);
+            thisFile->remove();
+        }
+    }
+    dir->remove();
+}
+
+void recursiveRemoveDirectory(const char *dir)
+{
+    Owned<IFile> f = createIFile(dir);
+    if (f->isDirectory())
+        recursiveRemoveDirectory(f);
 }
 
 

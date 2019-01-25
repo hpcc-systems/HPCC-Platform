@@ -143,21 +143,25 @@ public:
     virtual const char * queryLibrary(unsigned idx);
     virtual const char * queryObjectFile(unsigned idx);
     virtual const char * querySourceFile(unsigned idx);
+    virtual const char * querySourceFlags(unsigned idx);
+    virtual const char * queryTempDirectory(unsigned idx);
+    virtual bool querySourceIsTemp(unsigned idx);
     virtual HqlStmts * querySection(IAtom * section);
     virtual void flushHints();
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback);
     virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
     virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
-    virtual void addManifest(const char *filename){resources.addManifest(filename);}
-    virtual void addManifestsFromArchive(IPropertyTree *archive){resources.addManifestsFromArchive(archive);}
+    virtual void addManifest(const char *filename, ICodegenContextCallback *ctxCallback) { resources.addManifest(filename, ctxCallback); }
+    virtual void addManifestsFromArchive(IPropertyTree *archive, ICodegenContextCallback *ctxCallback) { resources.addManifestsFromArchive(archive, ctxCallback); }
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){resources.addWebServiceInfo(wsinfo);}
     virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId);
+    virtual void useSourceFile(const char * srcname, const char *flags, bool isTemp);
+    virtual void addTemporaryDir(const char * path);
     
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
     void useLibrary(const char * libname);
     void useObjectFile(const char * objname);
-    void useSourceFile(const char * srcname);
     unsigned addStringResource(unsigned len, const char * body);
     void addHint(const char * hintXml, ICodegenContextCallback * ctxCallback);
 
@@ -174,7 +178,10 @@ public:
     StringAttrArray     modules;
     StringAttrArray     objectFiles;
     StringAttrArray     sourceFiles;
+    StringAttrArray     sourceFlags;
+    StringAttrArray     tempDirs;
     StringAttrArray     includes;
+    BoolArray           sourceIsTemp;
     CIArray             extra;
     ResourceManager     resources;
     Owned<IWorkUnit>    workunit;

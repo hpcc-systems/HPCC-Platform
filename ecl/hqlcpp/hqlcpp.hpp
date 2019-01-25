@@ -109,15 +109,20 @@ public:
     virtual const char * queryLibrary(unsigned idx) = 0;
     virtual const char * queryObjectFile(unsigned idx) = 0;
     virtual const char * querySourceFile(unsigned idx) = 0;
+    virtual const char * querySourceFlags(unsigned idx) = 0;
+    virtual const char * queryTempDirectory(unsigned idx) = 0;
+    virtual bool querySourceIsTemp(unsigned idx) = 0;
     virtual HqlStmts * querySection(IAtom * section) = 0;
     virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id=(unsigned)-1) = 0;
     virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id=(unsigned)-1) = 0;
-    virtual void addManifest(const char *filename) = 0;
-    virtual void addManifestsFromArchive(IPropertyTree *archive) = 0;
+    virtual void addManifest(const char *filename, ICodegenContextCallback *ctxCallback) = 0;
+    virtual void addManifestsFromArchive(IPropertyTree *archive, ICodegenContextCallback *ctxCallback) = 0;
     virtual void addWebServiceInfo(IPropertyTree *wsinfo) = 0;
     virtual void flushHints() = 0;
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback) = 0;
     virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId) = 0;
+    virtual void useSourceFile(const char * srcname, const char *flags, bool isTemp) = 0;
+    virtual void addTemporaryDir(const char *path) = 0;
 };
 
 // A class used to hold the context about the expression being processed at this point in time.
