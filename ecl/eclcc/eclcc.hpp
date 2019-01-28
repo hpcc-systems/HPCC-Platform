@@ -75,6 +75,7 @@ const char * const helpText[] = {
     "Other options:",
     "!   -aoption[=value] Set an application option",
     "!   --allow=str   Allow use of named feature",
+    "!   --allowsigned=str Allow use of named feature in signed modules",
     "!   -b            Batch mode.  Each source file is processed in turn.  Output",
     "!                 name depends on the input filename",
     "!   -checkVersion Enable/disable ecl version checking from archives",
@@ -147,6 +148,13 @@ const char * const helpText[] = {
     "?!  -ftimeParser            Add timings for parsing each ECL attribute",
     "?!  -ftimeTransforms        Add timings for internal transforms to the workunit",
     "?!  -faddDefaultBloom       Generate Bloom filter for first field of index if none specified",
+    "!",
+    "!Features controlled by --allow, --allowsigned and --deny:",
+    "!   all           Indicates all features not specifically overridden using one of the below",
+    "!   userECL       User-supplied ECL code. If disallowed, only checked-in code is allowed",
+    "!   datafile      Access to datafiles",
+    "!   extern        Ability to define external code via SERVICE",
+    "!   cpp           Ability to embed non-ECL code (c++, java etc)",
     "",
 };
 
