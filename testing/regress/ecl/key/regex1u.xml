@@ -1,0 +1,43 @@
+<Dataset name='Result 1'>
+ <Row><surname>MacPherson          </surname><forename>Jimmy     </forename><userdate>03/14/2003</userdate></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><_unnamed_1>10/14/1998                    </_unnamed_1><_unnamed_2>!</_unnamed_2><_unnamed_3>10                            </_unnamed_3><_unnamed_4>!</_unnamed_4><_unnamed_5>14                            </_unnamed_5><_unnamed_6>!</_unnamed_6><_unnamed_7>1998                          </_unnamed_7><_unnamed_8>
+</_unnamed_8></Row>
+ <Row><_unnamed_1>12/01/1998                    </_unnamed_1><_unnamed_2>!</_unnamed_2><_unnamed_3>12                            </_unnamed_3><_unnamed_4>!</_unnamed_4><_unnamed_5>01                            </_unnamed_5><_unnamed_6>!</_unnamed_6><_unnamed_7>1998                          </_unnamed_7><_unnamed_8>
+</_unnamed_8></Row>
+ <Row><_unnamed_1>01/01/2000                    </_unnamed_1><_unnamed_2>!</_unnamed_2><_unnamed_3>01                            </_unnamed_3><_unnamed_4>!</_unnamed_4><_unnamed_5>01                            </_unnamed_5><_unnamed_6>!</_unnamed_6><_unnamed_7>2000                          </_unnamed_7><_unnamed_8>
+</_unnamed_8></Row>
+ <Row><_unnamed_1>03/14/2003                    </_unnamed_1><_unnamed_2>!</_unnamed_2><_unnamed_3>03                            </_unnamed_3><_unnamed_4>!</_unnamed_4><_unnamed_5>14                            </_unnamed_5><_unnamed_6>!</_unnamed_6><_unnamed_7>2003                          </_unnamed_7><_unnamed_8>
+</_unnamed_8></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>10/14/1998</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>10</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>14</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>1998</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>true</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>false</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>false</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>true</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>false</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>true</Result_12></Row>
+</Dataset>
