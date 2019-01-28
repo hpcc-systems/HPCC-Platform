@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
 
 #include <memory>
 #include "jliball.hpp"
@@ -136,4 +136,4 @@ void throwEVPExceptionV(int code, const char *format, ...)
 
 } // end of namespace cryptohelper
 
-#endif // #if defined(_USE_OPENSSL) && !defined(_WIN32)
+#endif // #if defined(_USE_OPENSSL)

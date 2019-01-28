@@ -18,7 +18,7 @@
 #ifndef CRYPTOCOMMON_HPP
 #define CRYPTOCOMMON_HPP
 
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
 
 #include <openssl/pem.h>
 #include <openssl/evp.h>
@@ -52,7 +52,7 @@ typedef OwnedPtrCustomFree<EVP_MD_CTX, EVP_MD_CTX_free> OwnedEVPMdCtx;
 
 } // end of namespace cryptohelper
 
-#endif // end of #if defined(_USE_OPENSSL) && !defined(_WIN32)
+#endif // end of #if defined(_USE_OPENSSL)
 
 #endif // CRYPTOCOMMON_HPP
 

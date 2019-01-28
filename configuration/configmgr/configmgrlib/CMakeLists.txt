@@ -65,6 +65,7 @@ if (USE_BOOST_REGEX)
         ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
         ${CMAKE_BINARY_DIR}
         ${CMAKE_BINARY_DIR}/oss
+        ${BOOST_REGEX_INCLUDE_DIR}
     )
 
     ADD_DEFINITIONS( -D_USRDLL -DCONFIGMGR_LIB)
@@ -74,5 +75,5 @@ if (USE_BOOST_REGEX)
     INSTALL ( TARGETS configmgr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 
 else ()
-    message(warning "skipping configmg - USE_BOOST_REGEX not defined")
+    message(warning "skipping configmgr - USE_BOOST_REGEX not defined")
 endif ()

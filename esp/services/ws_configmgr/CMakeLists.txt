@@ -22,9 +22,9 @@ include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set(SRCS
     ${ESPSCM_GENERATED_DIR}/ws_configmgr_esp.cpp
-        ws_configmgrService.cpp
-        ws_configmgr_plugin.cpp
-    )
+    ws_configmgrService.cpp
+    ws_configmgr_plugin.cpp
+)
 
 include_directories(
     ${HPCC_SOURCE_DIR}/esp/esplib
@@ -50,6 +50,7 @@ include_directories(
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/oss
     ${CMAKE_BINARY_DIR}/esp/services/ws_configmgr
+    ${BOOST_REGEX_INCLUDE_DIR}
     )
 
 add_definitions(-D_USRDLL)
@@ -60,7 +61,8 @@ install(
     RUNTIME DESTINATION ${EXEC_DIR}
     LIBRARY DESTINATION ${LIB_DIR}
     COMPONENT Runtime
-    )
+)
+
 add_dependencies(ws_configmgr espscm configmgr)
 target_link_libraries(ws_configmgr
     jlib

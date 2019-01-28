@@ -20,7 +20,7 @@
  * For now just RSA.
  */
 
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
 
 #include "jliball.hpp"
 #include <openssl/pem.h>
@@ -231,5 +231,5 @@ size32_t privateKeyDecrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes
 
 } // end of namespace cryptohelper
 
-#endif // end of #if defined(_USE_OPENSSL) && !defined(_WIN32)
+#endif // end of #if defined(_USE_OPENSSL)
 
