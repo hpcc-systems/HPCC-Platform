@@ -2790,14 +2790,27 @@ private:
 
     void copyPhysical() const
     {
+        RemoteFilename rfn, rdn;
+        dFile->getPartFilename(rfn, 0, 0);
+        StringBuffer physicalName, physicalDir, physicalBase;
+        rfn.getLocalPath(physicalName);
+        splitFilename(physicalName, &physicalDir, &physicalDir, &physicalBase, &physicalBase);
+        rdn.setLocalPath(physicalDir.str());
+        if (localCluster && getNumNodes() > 1)
+        {
+            unsigned buddy = myNodeIndex+1;
+            if (buddy >= getNumNodes())
+                buddy = 0;
+            SocketEndpoint buddyNode(0, getNodeAddress(buddy));
+            rdn.setEp(buddyNode);
+            rfn.setEp(buddyNode);
+            Owned<IFile> targetdir = createIFile(rdn);
+            Owned<IFile> target = createIFile(rfn);
+            targetdir->createDirectory();
+            copyFile(target, localFile);
+        }
         if (remoteNodes.length())
         {
-            RemoteFilename rfn, rdn;
-            dFile->getPartFilename(rfn, 0, 0);
-            StringBuffer physicalName, physicalDir, physicalBase;
-            rfn.getLocalPath(physicalName);
-            splitFilename(physicalName, &physicalDir, &physicalDir, &physicalBase, &physicalBase);
-            rdn.setLocalPath(physicalDir.str());
             ForEachItemIn(idx, remoteNodes)
             {
                 rdn.setEp(remoteNodes.item(idx).queryNode(0).endpoint());
@@ -2882,8 +2895,20 @@ private:
             if (localCluster)
                 throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s",
                         cluster, dFile->queryLogicalName());
-            localCluster.setown(group.getClear());
-            localClusterName.set(cluster);
+            SocketEndpointArray eps;
+            SocketEndpoint me(0, getNodeAddress(myNodeIndex));
+            eps.append(me);
+            if (getNumNodes() > 1)
+            {
+                unsigned buddy = myNodeIndex+1;
+                if (buddy >= getNumNodes())
+                    buddy = 0;
+                SocketEndpoint buddyNode(0, getNodeAddress(buddy));
+                eps.append(buddyNode);
+            }
+            localCluster.setown(createIGroup(eps));
+            StringBuffer clusterName;
+            localClusterName.set(eps.getText(clusterName));
         }
         else
         {
