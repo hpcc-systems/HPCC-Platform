@@ -111,7 +111,7 @@ class ScriptExecution(object):
 
         if len(self.hosts) == 0:
             print("Could not get any host. At least one host is required.")
-            print("Reference following log for more information: ")
+            print("Refer to the following log file for more information: ")
             print(self.log_file)
             exit(0)
 
@@ -216,11 +216,12 @@ class ScriptExecution(object):
         script_name = os.path.basename(self.script_file)
         if not no_error_found:
             print("\n\n\033[91mError found during " + script_name + " execution.\033[0m")
-            print("Reference following log for more information: ")
+            print("Refer to the following log file for more information: ")
             print(self.log_file)
         else:
             print("\n\n" + script_name + " run successfully on all hosts in the cluster")
-
+            print("\n\nRefer to the following log file for more information: ")
+            print(self.log_file)
         print("\n")
 
         return no_error_found
