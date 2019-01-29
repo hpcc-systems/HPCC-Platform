@@ -286,6 +286,37 @@ ESPresponse [exceptions_inline] GetParentsResponse
 };
 
 
+ESPrequest GetNodeCopyRequest
+{
+    string SessionId;
+    string NodeId;
+};
+
+
+ESPresponse GetNodeCopyResponse
+{
+    string ValidInsertPath(""); // path to where the copy can be inserted
+    string NodeCopy("");        // opaque copy, DO NOT MODIFY
+};
+
+
+ESPrequest PasteNodeCopyRequest
+{
+    string SessionId;
+    string SessionLockKey;
+    string ParentNodeId;
+    string NodeCopy;
+};
+
+
+ESPresponse PasteNodeCopyResponse
+{
+    bool NodeInserted(false);
+    ESPstruct StatusType Status;
+    string NewNodeId("");
+};
+
+
 //
 // Environment management
 
@@ -484,6 +515,14 @@ ESPservice [auth_feature("DEFERRED"),version("2.0"), default_client_version("2.0
         [
             description("Fetch nodes matching the indicated path")
         ] FetchNodes(FetchNodesRequest, FetchNodesResponse);
+    ESPMethod
+        [
+            description("Get a copy of a node for paste operations")
+        ] GetNodeCopy(GetNodeCopyRequest, GetNodeCopyResponse);
+    ESPMethod
+        [
+            description("Paste the copy of a node to an environment")
+        ] InsertNodeCopy(PasteNodeCopyRequest, PasteNodeCopyResponse);
 };
 
 

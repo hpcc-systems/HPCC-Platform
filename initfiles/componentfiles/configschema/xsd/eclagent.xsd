@@ -20,7 +20,7 @@
         xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
     <hpcc:insert hpcc:schemaPath="/Environment/Software">
-        <xs:element name="EclAgentProcess" hpcc:class="component" hpcc:itemType="eclAgent"
+        <xs:element name="EclAgentProcess" hpcc:class="component" hpcc:itemType="eclagent"
                     hpcc:displayName="ECL Agent Process" maxOccurs="unbounded" hpcc:docid="EA.t1">
             <xs:complexType>
                 <xs:attributeGroup name="options" hpcc:groupByName="Options" hpcc:docid="EA.t2">

@@ -20,6 +20,7 @@
 #include "SchemaItem.hpp"
 #include "InsertableItem.hpp"
 #include "jexcept.hpp"
+#include "jutil.hpp"
 #include "ws_configmgrError.hpp"
 #include "Exceptions.hpp"
 
@@ -257,6 +258,8 @@ bool Cws_configMgrEx::onSaveEnvironmentFile(IEspContext &context, IEspSaveEnviro
         pSession = getConfigSessionForUpdate(req.getSessionLockKey(), req.getSessionLockKey());
     }
 
+    //
+    // Save it
     if (!pSession->saveEnvironment(saveFilename))
     {
         throw MakeStringException(CFGMGR_ERROR_SAVE_ENVIRONMENT, "There was a problem saving the environment");
@@ -269,11 +272,11 @@ bool Cws_configMgrEx::onSaveEnvironmentFile(IEspContext &context, IEspSaveEnviro
     // environment locked would have prevented this session from locking the same environment.
     if (!saveFilename.empty())
     {
-        for (auto sessionIt = m_sessions.begin(); sessionIt != m_sessions.end(); ++sessionIt)
+        for (auto &sessionIt: m_sessions)
         {
-            if (sessionIt->second->curEnvironmentFile == saveFilename)
+            if (sessionIt.second->curEnvironmentFile == saveFilename)
             {
-                sessionIt->second->externallyModified = true;
+                sessionIt.second->externallyModified = true;
             }
         }
     }
@@ -352,7 +355,7 @@ bool Cws_configMgrEx::onGetNode(IEspContext &context, IEspGetNodeRequest &req, I
     }
 
     getNodeResponse(pNode, resp);
-    pNode->validate(status, false);  // validate this node only
+    pNode->getSchemaItem()->validate(status, false);  // validate this node only
     buildStatusResponse(status, pSession, resp.updateStatus());
 
     //
@@ -587,6 +590,103 @@ bool Cws_configMgrEx::onFetchNodes(IEspContext &context, IEspFetchNodesRequest &
     catch (ParseException &pe)
     {
         throw MakeStringException(CFGMGR_ERROR_PATH_INVALID, "%s", pe.what());
+    }
+
+    return true;
+}
+
+
+bool Cws_configMgrEx::onGetNodeCopy(IEspContext &context, IEspGetNodeCopyRequest &req, IEspGetNodeCopyResponse &resp)
+{
+    std::string nodeId = req.getNodeId();
+    std::string sessionId = req.getSessionId();
+    Status status;
+
+    ConfigMgrSession *pSession = getConfigSession(sessionId, true);
+
+    if (nodeId.empty())
+        nodeId = pSession->m_pEnvMgr->getRootNodeId();
+
+    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->findEnvironmentNodeById(nodeId);
+    if (pNode)
+    {
+        std::ostringstream nodeCopy;
+        if (pSession->m_pEnvMgr->serialize(nodeCopy, pNode))
+        {
+            std::string path;
+            pNode->getSchemaItem()->getParent()->getPath(path);
+            std::string nodeBuffer = path + "|" + pNode->getSchemaItem()->getItemType() + "|" + nodeCopy.str();
+            StringBuffer encodedData;
+            JBASE64_Encode(nodeBuffer.c_str(), nodeBuffer.length(), encodedData, false);
+            resp.setNodeCopy(encodedData);
+            resp.setValidInsertPath(path.c_str());
+        }
+    }
+    else
+    {
+        throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "Environment node ID is not valid");
+    }
+    return true;
+}
+
+
+bool Cws_configMgrEx::onInsertNodeCopy(IEspContext &context, IEspPasteNodeCopyRequest &req, IEspPasteNodeCopyResponse &resp)
+{
+    std::string parentNodeId = req.getParentNodeId();
+    std::string sessionId = req.getSessionId();
+    Status status;
+
+    std::string key = req.getSessionLockKey();
+    ConfigMgrSession *pSession = getConfigSessionForUpdate(sessionId, key);
+
+    //
+    // Empty node means to paste at the root.
+    if (parentNodeId.empty())
+        parentNodeId = pSession->m_pEnvMgr->getRootNodeId();
+
+    std::shared_ptr<EnvironmentNode> pParentNode = pSession->m_pEnvMgr->findEnvironmentNodeById(parentNodeId);
+    if (pParentNode)
+    {
+        StringBuffer decodedDataBuffer;
+        JBASE64_Decode(req.getNodeCopy(), decodedDataBuffer);
+        std::string nodeData = decodedDataBuffer.str();
+
+        std::size_t barPos1 = nodeData.find_first_of('|', 0);
+        if (barPos1 == std::string::npos)
+        {
+            throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "The node copy data buffer is not valid");
+        }
+        std::size_t barPos2 = nodeData.find_first_of('|', barPos1+1);
+        if (barPos2 == std::string::npos)
+        {
+            throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "The node copy data buffer is not valid");
+        }
+        std::string path = nodeData.substr(0, barPos1);
+        std::string itemType = nodeData.substr(barPos1+1, barPos2 - barPos1 - 1);
+        std::string nodeCopy = nodeData.substr(barPos2+1);
+
+        std::shared_ptr <EnvironmentNode> pNewNode = pSession->m_pEnvMgr->addNewEnvironmentNode(pParentNode, nodeCopy,
+                                                                                                status, itemType);
+        //
+        // If the node was added, save the new ID and validate the environment. If there was an error, return an empty
+        // node ID. Caller cannot use the status to tell if node added because the validate may have errors. An empty
+        // new node ID indicates the node was not created.
+        if (pNewNode)
+        {
+            pSession->modified = true;
+            resp.setNewNodeId(pNewNode->getId().c_str());
+            resp.setNodeInserted(true);
+        }
+        else
+        {
+            resp.setNewNodeId("");
+        }
+
+        buildStatusResponse(status, pSession, resp.updateStatus());
+    }
+    else
+    {
+        throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "Environment node ID is not valid");
     }
 
     return true;

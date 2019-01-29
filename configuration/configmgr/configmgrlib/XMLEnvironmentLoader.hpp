@@ -37,7 +37,8 @@ class CFGMGRLIB_API XMLEnvironmentLoader : public EnvironmentLoader
 
         XMLEnvironmentLoader() { }
         virtual ~XMLEnvironmentLoader() { }
-        virtual std::vector<std::shared_ptr<EnvironmentNode>> load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) const override;
+        virtual std::vector<std::shared_ptr<EnvironmentNode>> load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem,
+                const std::string itemType = std::string("")) const override;
         void parse(const pt::ptree &envTree, const std::shared_ptr<SchemaItem> &pConfigItem, std::shared_ptr<EnvironmentNode> &pEnvNode) const;
 
 };

@@ -120,7 +120,12 @@ struct ConfigMgrSession {
     {
         bool rc = false;
         std::string saveFile = (saveAsFilename != "") ? saveAsFilename : curEnvironmentFile;
-        if (m_pEnvMgr->saveEnvironment(saveFile))
+
+        std::ofstream out;
+        out.open(saveAsFilename);
+        std::shared_ptr<EnvironmentNode> pRootNode = m_pEnvMgr->findEnvironmentNodeById(m_pEnvMgr->getRootNodeId());
+
+        if (m_pEnvMgr->serialize(out, pRootNode))
         {
             modified = false;
             curEnvironmentFile = saveFile;

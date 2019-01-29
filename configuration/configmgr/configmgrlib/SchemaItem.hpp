@@ -28,6 +28,7 @@
 #include "platform.h"
 #include "EnvironmentEventHandlers.hpp"
 #include "ConfigPath.hpp"
+#include "Status.hpp"
 #include "Cfgmgrlib.hpp"
 
 class EnvironmentNode;
@@ -78,7 +79,7 @@ class CFGMGRLIB_API SchemaItem : public std::enable_shared_from_this<SchemaItem>
         void setProperty(const std::string &name, const std::string &value) { m_properties[name] = value; }
         void setHidden(bool hidden) { m_hidden = hidden; }
         bool isHidden() const { return m_hidden; }
-
+        std::shared_ptr<SchemaItem> getParent() const { return m_pParent.lock(); }
         void setParent(const std::shared_ptr<SchemaItem> &parent) { m_pParent = parent; }
         void setParentForChildren(std::shared_ptr<SchemaItem> pParent);
         std::shared_ptr<SchemaItem> getSchemaRoot();
@@ -87,6 +88,8 @@ class CFGMGRLIB_API SchemaItem : public std::enable_shared_from_this<SchemaItem>
         void getPath(std::string &path) const;
         void setRequiredInstanceComponents(const std::string list);
         const std::vector<std::string> &getRequiredInstanceComponents() const { return m_requiredInstanceComponents; }
+        void addEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pEnvNode) { m_envNodes.emplace_back(pEnvNode); }
+        void validate(Status &status, bool includeChildren=false, bool includeHiddenNodes=false) const;
 
 
     protected:
@@ -124,6 +127,8 @@ class CFGMGRLIB_API SchemaItem : public std::enable_shared_from_this<SchemaItem>
 
         std::vector<std::shared_ptr<EnvironmentEventHandler>> m_eventHandlers;
         std::vector<std::string> m_requiredInstanceComponents;
+
+        mutable std::vector<std::weak_ptr<EnvironmentNode>> m_envNodes;
 
         // Following are NOT copied in copy constructor
         std::weak_ptr<SchemaItem> m_pParent;
