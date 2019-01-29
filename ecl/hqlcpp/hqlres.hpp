@@ -32,7 +32,7 @@ public:
     void addNamed(const char * type, unsigned len, const void *data, IPropertyTree *entry=NULL, unsigned id=(unsigned)-1, bool addToManifest=true, bool compressed=false);
     bool addCompress(const char * type, unsigned len, const void *data, IPropertyTree *entry=NULL, unsigned id=(unsigned)-1, bool addToManifest=true);
     void addManifest(const char *filename);
-    void addManifestFromArchive(IPropertyTree *archive);
+    void addManifestsFromArchive(IPropertyTree *archive);
     void addWebServiceInfo(IPropertyTree *wsinfo);
     IPropertyTree *ensureManifestInfo(){if (!manifest) manifest.setown(createPTree("Manifest")); return manifest;}
     bool getDuplicateResourceId(const char *srctype, const char *respath, const char *filename, int &id);
