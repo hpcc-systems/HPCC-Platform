@@ -299,7 +299,7 @@ public:
     inline OwnedConstRoxieRow(const void * _ptr)            { ptr = _ptr; }
     inline OwnedConstRoxieRow(const OwnedConstRoxieRow & other) { ptr = other.getLink(); }
 
-    inline ~OwnedConstRoxieRow()                            { ReleaseRoxieRow(ptr); }
+    inline ~OwnedConstRoxieRow()                            { if (ptr) ReleaseRoxieRow(ptr); }
     
 private: 
     /* these overloaded operators are the devil of memory leak. Use set, setown instead. */
