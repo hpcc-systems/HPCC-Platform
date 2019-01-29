@@ -30,7 +30,7 @@ if(NOT CBLAS_FOUND)
         CBLAS_LIBRARIES 
         CBLAS_INCLUDE_DIR)
 
-    if (APPLE)
+    if (APPLE AND ${CMAKE_SYSTEM_VERSION} VERSION_LESS "18.2.0") # 18.2.0 is macOS Mojave (10.14)
       set(LIB_TO_DO ${CBLAS_LIBRARIES})
 
       set(CBLAS_DEPS_LIBS "")
@@ -54,7 +54,7 @@ if(NOT CBLAS_FOUND)
           set(LIB_TO_DO "${otoolOut}")
         endif()
       endforeach()
-    endif(APPLE)
+    endif()
 
     mark_as_advanced(CBLAS_INCLUDE_DIR CBLAS_LIBRARIES)
 endif()
