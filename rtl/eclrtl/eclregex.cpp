@@ -277,7 +277,11 @@ public:
     {
         matched = false;
 
+#if U_ICU_VERSION_MAJOR_NUM>=58
+        sample.setTo((const char16_t *) (_str + _from), _len);
+#else
         sample.setTo(_str + _from, _len);
+#endif
         matcher->reset(sample);
         matched = matcher->find() != FALSE;
         if (matched)

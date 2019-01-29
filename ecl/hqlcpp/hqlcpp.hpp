@@ -113,7 +113,7 @@ public:
     virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id=(unsigned)-1) = 0;
     virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id=(unsigned)-1) = 0;
     virtual void addManifest(const char *filename) = 0;
-    virtual void addManifestFromArchive(IPropertyTree *archive) = 0;
+    virtual void addManifestsFromArchive(IPropertyTree *archive) = 0;
     virtual void addWebServiceInfo(IPropertyTree *wsinfo) = 0;
     virtual void flushHints() = 0;
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback) = 0;

@@ -7503,7 +7503,7 @@ void CHThorWSCBaseActivity::init()
         userDesc->getUserName(uidpair);
         uidpair.append(":");
         userDesc->getPassword(uidpair);
-        JBASE64_Encode(uidpair.str(), uidpair.length(), authToken);
+        JBASE64_Encode(uidpair.str(), uidpair.length(), authToken, false);
     }
     soapTraceLevel = agent.queryWorkUnit()->getDebugValueInt("soapTraceLevel", 1);
 }

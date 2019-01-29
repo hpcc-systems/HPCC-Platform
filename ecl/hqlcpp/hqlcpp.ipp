@@ -149,7 +149,7 @@ public:
     virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
     virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
     virtual void addManifest(const char *filename){resources.addManifest(filename);}
-    virtual void addManifestFromArchive(IPropertyTree *archive){resources.addManifestFromArchive(archive);}
+    virtual void addManifestsFromArchive(IPropertyTree *archive){resources.addManifestsFromArchive(archive);}
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){resources.addWebServiceInfo(wsinfo);}
     virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId);
     
