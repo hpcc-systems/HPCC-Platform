@@ -590,11 +590,17 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
         *rethandle = (HANDLE)pid;
     if (wait)
     {
-
         int retv;
-        if (waitpid(pid, &retv, 0) != pid) {
-            ERRLOG("invoke_program(%s): wait failed (%d)",command_line,(int)pid);
-            return false;
+        while (1)
+        {
+            auto wpid = waitpid(pid, &retv, 0);
+            if (wpid == pid)
+                break;
+            if (errno != EINTR)
+            {
+                ERRLOG("invoke_program(%s): wait failed (%d, %d, %d)",command_line,(int) wpid, retv, errno);
+                return false;
+            }
         }
         if (!WIFEXITED(retv)) //did not exit normally
         {
