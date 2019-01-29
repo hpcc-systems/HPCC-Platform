@@ -28,12 +28,13 @@
 #include "platform.h"
 #include "EnvironmentEventHandlers.hpp"
 #include "ConfigPath.hpp"
+#include "Cfgmgrlib.hpp"
 
 class EnvironmentNode;
 class EnvironmentMgr;
 
 
-class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
+class CFGMGRLIB_API SchemaItem : public std::enable_shared_from_this<SchemaItem>
 {
     public:
 

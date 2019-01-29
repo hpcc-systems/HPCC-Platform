@@ -22,14 +22,13 @@
 #include <string>
 #include <memory>
 #include <vector>
-
-
 #include "SchemaItem.hpp"
 #include "Status.hpp"
 #include "platform.h"
+#include "Cfgmgrlib.hpp"
 
 
-class DECL_EXPORT SchemaParser
+class CFGMGRLIB_API SchemaParser
 {
     public:
 

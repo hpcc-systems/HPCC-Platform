@@ -22,10 +22,10 @@
 #include <vector>
 #include <string>
 #include "platform.h"
+#include "Cfgmgrlib.hpp"
 
 
-
-struct DECL_EXPORT statusMsg {
+struct CFGMGRLIB_API statusMsg {
 
     enum msgLevel
     {
@@ -45,7 +45,7 @@ struct DECL_EXPORT statusMsg {
 };
 
 
-class DECL_EXPORT Status
+class CFGMGRLIB_API Status
 {
     public:
 
