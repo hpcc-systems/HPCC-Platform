@@ -45,7 +45,7 @@ OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 1)));
 OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 3)));
 OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 7)));
 OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 22)));
-OUTPUT(Files.DG_IntIndex(KEYED(DG_parentId = 1) OR KEYED(DG_parentId = 22))); // testing key filter that cannot be partitioned
+OUTPUT(SORT(Files.DG_IntIndex(KEYED(DG_parentId = 1) OR KEYED(DG_parentId = 22)), DG_parentId)); // testing key filter that cannot be partitioned
 
 // test partitoned key with keyed join
 inds := DATASET(COUNT(Files.DG_IntIndex), TRANSFORM({unsigned id}, SELF.id := COUNTER-1));

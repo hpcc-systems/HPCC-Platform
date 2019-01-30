@@ -26,6 +26,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 //--- end of version configuration ---
 
 #option ('layoutTranslation', useTranslation);
+#onwarning(4523, ignore);
 
 import $.setup;
 import setup.TS;
@@ -40,12 +41,12 @@ END;
 
 outrec trans1(in L) := TRANSFORM
   SELF.word := L.word;
-  SELF.doc := SORTED(Files.getSearchSuperIndex()(KEYED(kind = TS.kindType.TextEntry),keyed(word = l.word)), doc)[1].doc;
+  SELF.doc := SORT(Files.getSearchSuperIndex()(KEYED(kind = TS.kindType.TextEntry),keyed(word = l.word)), doc)[1].doc;
 END;
 
 outrec trans2(in L) := TRANSFORM
   SELF.word := L.word;
-  SELF.doc := SORTED(Files.getSearchSuperIndex()(KEYED(kind = TS.kindType.TextEntry),keyed(word = 'gobbledegook'+l.word)), doc)[1].doc;
+  SELF.doc := SORT(Files.getSearchSuperIndex()(KEYED(kind = TS.kindType.TextEntry),keyed(word = 'gobbledegook'+l.word)), doc)[1].doc;
 END;
 
 outrec trans3(in L) := TRANSFORM
