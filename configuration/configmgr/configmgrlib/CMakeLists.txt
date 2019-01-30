@@ -17,63 +17,56 @@
 
 project ( configmgr )
 
-if (USE_BOOST_REGEX)
+SET(  SRCS
 
-    SET(  SRCS
+        EnvironmentMgr.cpp
+        XMLEnvironmentMgr.cpp
+        XMLEnvironmentLoader.cpp
+        SchemaParser.cpp
+        SchemaItem.cpp
+        SchemaValue.cpp
+        SchemaTypeLimits.cpp
+        SchemaTypeIntegerLimits.cpp
+        SchemaTypeStringLimits.cpp
+        EnvironmentNode.cpp
+        EnvironmentValue.cpp
+        XSDComponentParser.cpp
+        XSDSchemaParser.cpp
+        XSDValueSetParser.cpp
+        Status.cpp
+        EnvironmentEventHandlers.cpp
+        Utils.cpp
+        InsertableItem.cpp
+        ConfigPath.cpp
+        EnvSupportLib.cpp
+        mod_template_support/EnvModTemplate.cpp
+        mod_template_support/Variable.cpp
+        mod_template_support/TemplateException.cpp
+        mod_template_support/Operation.cpp
+        mod_template_support/OperationCreateNode.cpp
+        mod_template_support/OperationFindNode.cpp
+        mod_template_support/OperationModifyNode.cpp
+        mod_template_support/Variables.cpp
+        mod_template_support/IPAddressRangeVariable.cpp
+        mod_template_support/IPAddressVariable.cpp
+        mod_template_support/HostNameVariable.cpp
+        mod_template_support/OperationDeleteNode.cpp
+)
 
-            EnvironmentMgr.cpp
-            XMLEnvironmentMgr.cpp
-            XMLEnvironmentLoader.cpp
-            SchemaParser.cpp
-            SchemaItem.cpp
-            SchemaValue.cpp
-            SchemaTypeLimits.cpp
-            SchemaTypeIntegerLimits.cpp
-            SchemaTypeStringLimits.cpp
-            EnvironmentNode.cpp
-            EnvironmentValue.cpp
-            XSDComponentParser.cpp
-            XSDSchemaParser.cpp
-            XSDValueSetParser.cpp
-            Status.cpp
-            EnvironmentEventHandlers.cpp
-            Utils.cpp
-            InsertableItem.cpp
-            ConfigPath.cpp
-            EnvSupportLib.cpp
-            mod_template_support/EnvModTemplate.cpp
-            mod_template_support/Variable.cpp
-            mod_template_support/TemplateException.cpp
-            mod_template_support/Operation.cpp
-            mod_template_support/OperationCreateNode.cpp
-            mod_template_support/OperationFindNode.cpp
-            mod_template_support/OperationModifyNode.cpp
-            mod_template_support/Variables.cpp
-            mod_template_support/IPAddressRangeVariable.cpp
-            mod_template_support/IPAddressVariable.cpp
-            mod_template_support/HostNameVariable.cpp
-            mod_template_support/OperationDeleteNode.cpp
-    )
+INCLUDE_DIRECTORIES(
+    ${HPCC_SOURCE_DIR}/system/include
+    ${HPCC_SOURCE_DIR}/system/jlib
+    ${HPCC_SOURCE_DIR}/deployment/deploy
+    ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../hpcc_support
+    ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/oss
+)
 
-    INCLUDE_DIRECTORIES(
-        ${HPCC_SOURCE_DIR}/system/include
-        ${HPCC_SOURCE_DIR}/system/jlib
-        ${HPCC_SOURCE_DIR}/deployment/deploy
-        ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/../hpcc_support
-        ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
-        ${CMAKE_BINARY_DIR}
-        ${CMAKE_BINARY_DIR}/oss
-        ${BOOST_REGEX_INCLUDE_DIR}
-    )
+ADD_DEFINITIONS( -D_USRDLL -DCFGMGRLIB_EXPORTS)
+HPCC_ADD_LIBRARY( configmgr SHARED ${SRCS} )
+TARGET_LINK_LIBRARIES( configmgr jlib)
 
-    ADD_DEFINITIONS( -D_USRDLL -DCFGMGRLIB_EXPORTS)
-    HPCC_ADD_LIBRARY( configmgr SHARED ${SRCS} )
-    TARGET_LINK_LIBRARIES( configmgr jlib ${BOOST_REGEX_LIBRARIES})
-
-    INSTALL ( TARGETS configmgr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-
-else ()
-    message(warning "skipping configmgr - USE_BOOST_REGEX not defined")
-endif ()
+INSTALL ( TARGETS configmgr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
