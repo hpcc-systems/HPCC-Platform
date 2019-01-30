@@ -129,6 +129,7 @@ public:
     virtual void toXML(const byte * self, IXmlWriter & out) { }
     virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
     virtual unsigned getMetaFlags()                         { return std::is_pod<T>() ? 0 : MDFneeddestruct; }
+    virtual const RtlTypeInfo * queryTypeInfo() const       { return nullptr; }
     virtual void destruct(byte * self)                      { reinterpret_cast<T *>(self)->~T(); }
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
@@ -136,6 +137,7 @@ public:
     virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
     virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); } // could provide a static implementation if needed
@@ -352,6 +354,7 @@ public:
 
     virtual void toXML(const byte * self, IXmlWriter & out)  { original->toXML(self+offset, out); }
     virtual unsigned getVersion() const { return original->getVersion(); }
+    virtual const RtlTypeInfo * queryTypeInfo() const { return nullptr; }
 
     virtual unsigned getMetaFlags() { return original->getMetaFlags(); }
     virtual void destruct(byte * self) { original->destruct(self+offset); }
@@ -380,6 +383,9 @@ public:
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)
     {
         return new CPrefixedRowDeserializer(offset, original->createInternalDeserializer(ctx, activityId));
+    }
+    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to)
+    {
     }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor)
     {
@@ -490,6 +496,7 @@ public:
 
     virtual void toXML(const byte * self, IXmlWriter & out)  { original->toXML(self, out); }
     virtual unsigned getVersion() const { return original->getVersion(); }
+    virtual const RtlTypeInfo * queryTypeInfo() const { return nullptr; }
 
     virtual unsigned getMetaFlags() { return original->getMetaFlags(); }
     virtual void destruct(byte * self) { original->destruct(self); }
@@ -518,6 +525,9 @@ public:
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)
     {
         return new CSuffixedRowDeserializer(offset, original->createInternalDeserializer(ctx, activityId));
+    }
+    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to)
+    {
     }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor)
     {

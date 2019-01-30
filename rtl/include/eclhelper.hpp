@@ -545,7 +545,7 @@ interface IOutputMetaData : public IRecordSize
     virtual void toXML(const byte * self, IXmlWriter & out) = 0;
     virtual unsigned getVersion() const = 0;
     virtual unsigned getMetaFlags() = 0;
-    virtual const RtlTypeInfo * queryTypeInfo() const { return NULL; }                                          // non null for meta from generated code
+    virtual const RtlTypeInfo * queryTypeInfo() const = 0;
 
     virtual void destruct(byte * self) = 0;
 
@@ -557,7 +557,7 @@ interface IOutputMetaData : public IRecordSize
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) = 0;        // ctx is currently allowed to be NULL
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) = 0;
 
-    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}            // from and to are *hints* for the range of fields to call through with
+    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) = 0;           // from and to are *hints* for the range of fields to call through with
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) = 0;
     virtual IOutputMetaData * queryChildMeta(unsigned i) = 0;
     virtual const RtlRecord &queryRecordAccessor(bool expand) const = 0;
@@ -1210,7 +1210,7 @@ struct IHThorIndexWriteArg : public IHThorArg
 struct IHThorFirstNArg : public IHThorArg
 {
     virtual __int64 getLimit() = 0;
-    virtual __int64 numToSkip()                             { return 0; }
+    virtual __int64 numToSkip() = 0;
     virtual bool preserveGrouping() = 0;
 };
 
@@ -1247,13 +1247,13 @@ struct IHThorDiskWriteArg : public IHThorArg
 struct IHThorFilterArg : public IHThorArg
 {
     virtual bool isValid(const void * _left) = 0;
-    virtual bool canMatchAny()                              { return true; }
+    virtual bool canMatchAny() = 0;
 };
 
 struct IHThorFilterGroupArg : public IHThorArg
 {
     virtual bool isValid(unsigned _num, const void * * _rows) = 0;
-    virtual bool canMatchAny()                              { return true; }
+    virtual bool canMatchAny() = 0;
 };
 
 struct IHThorGroupArg : public IHThorArg
@@ -1286,13 +1286,13 @@ struct IHThorProcessArg : public IHThorArg
 
 struct IHThorProjectArg : public IHThorArg
 {
-    virtual bool canFilter()                                { return false; }
+    virtual bool canFilter() = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left) = 0;
 };
 
 struct IHThorCountProjectArg : public IHThorArg
 {
-    virtual bool canFilter()                                { return false; }
+    virtual bool canFilter() = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, unsigned __int64 _counter) = 0;
 };
 
@@ -1337,19 +1337,19 @@ struct IHThorQuantileArg : public IHThorArg
 
 struct IHThorCombineArg : public IHThorArg
 {
-    virtual bool canFilter()                                { return false; }
+    virtual bool canFilter() = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder, unsigned _num, const void * * _rows) = 0;
 };
 
 struct IHThorCombineGroupArg : public IHThorArg
 {
-    virtual bool canFilter()                                { return false; }
+    virtual bool canFilter() = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, unsigned _num, const void * * _rows) = 0;
 };
 
 struct IHThorRollupGroupArg : public IHThorArg
 {
-    virtual bool canFilter()                                { return false; }
+    virtual bool canFilter() = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder, unsigned _num, const void * * _rows) = 0;
 };
 
@@ -1360,7 +1360,7 @@ typedef IHThorArg IHThorNullArg;
 
 struct IHThorActionArg : public IHThorArg
 {
-    virtual void action() {};
+    virtual void action() = 0;
 };
 typedef IHThorActionArg IHThorSideEffectArg;
 
@@ -1390,7 +1390,7 @@ struct IHThorCatchArg : public IHThorArg
 struct IHThorSplitArg : public IHThorArg
 {
     virtual unsigned numBranches() = 0;
-    virtual bool isBalanced()                               { return false; }
+    virtual bool isBalanced() = 0;
 };
 
 struct IHThorSpillExtra : public IInterface
@@ -1741,10 +1741,10 @@ struct IHThorFetchContext
     virtual const char * getFileName() = 0;                 // Returns filename of raw file fpos'es refer into
     virtual IOutputMetaData * queryDiskRecordSize() = 0;            // Expected layout
     virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;   // Projected layout
-    virtual unsigned getFetchFlags() { return 0; }              
-    virtual unsigned getDiskFormatCrc() { return 0; }
-    virtual unsigned getProjectedFormatCrc() { return getDiskFormatCrc(); }  // Should really be crc of queryProjectedDiskRecordSize layout
-    virtual void getFileEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+    virtual unsigned getFetchFlags() = 0;
+    virtual unsigned getDiskFormatCrc() = 0;
+    virtual unsigned getProjectedFormatCrc() = 0;
+    virtual void getFileEncryptKey(size32_t & keyLen, void * & key) = 0;
 };
 
 struct IHThorKeyedJoinBaseArg : public IHThorArg
@@ -1752,7 +1752,7 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
     // For the data going to the indexRead remote activity:
     virtual size32_t extractIndexReadFields(ARowBuilder & rowBuilder, const void * _input) = 0;
     virtual IOutputMetaData * queryIndexReadInputRecordSize() = 0;
-    virtual bool leftCanMatch(const void * inputRow) { return true; }
+    virtual bool leftCanMatch(const void * inputRow) = 0;
 
     // Inside the indexRead remote activity:
     virtual const char * getIndexFileName() = 0;
@@ -1763,7 +1763,7 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
     virtual unsigned getJoinLimit() = 0;                                        // if a key joins more than this limit no records are output (0 = no limit)
     virtual unsigned getKeepLimit() = 0;                                        // limit to number of matches that are kept (0 = no limit)
     virtual unsigned getIndexFormatCrc() = 0;
-    virtual unsigned getProjectedIndexFormatCrc() { return getIndexFormatCrc(); }  // Should really be crc of queryIndexReadInputRecordSize layout (?)
+    virtual unsigned getProjectedIndexFormatCrc() = 0;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
 
     // For the data going to the fetch remote activity:
@@ -1779,20 +1779,20 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
     virtual size32_t createDefaultRight(ARowBuilder & rowBuilder) = 0;
     virtual unsigned getJoinFlags() = 0;
     virtual bool diskAccessRequired() = 0;                  // if false, all transform values can be fulfilled from the key, which is passed as right.
-    virtual unsigned __int64 getRowLimit()                  { return (unsigned __int64) -1; }
-    virtual void onLimitExceeded()                          { }
-    virtual unsigned __int64 getSkipLimit()                 { return 0; }
+    virtual unsigned __int64 getRowLimit() = 0;
+    virtual void onLimitExceeded() = 0;
+    virtual unsigned __int64 getSkipLimit() = 0;
     virtual unsigned getMatchAbortLimit() = 0;
-    virtual void onMatchAbortLimitExceeded()                { }
+    virtual void onMatchAbortLimitExceeded() = 0;
 
     //keyedFpos is always 0
-    virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _dummyRight, const void * _origRow, unsigned __int64 keyedFpos, IException * e) { return 0; }
+    virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _dummyRight, const void * _origRow, unsigned __int64 keyedFpos, IException * e) = 0;
 //Join:
 //Denormalize:
     //The _filepos field is used for full keyed join to pass in the fileposition.  It should really use the disk IThorDiskCallback interface.
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned __int64 keyedFpos, unsigned counter) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned __int64 keyedFpos, unsigned counter) = 0;
 //Denormalize group:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned _numRows, const void * * _rows) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned _numRows, const void * * _rows) = 0;
 
     inline bool hasNewSegmentMonitors()                     { return (getJoinFlags() & JFnewfilters) != 0; }
 
@@ -1848,12 +1848,12 @@ struct IHThorKeyedDistributeArg : public IHThorArg
 
 struct IHThorFetchBaseArg : public IHThorArg, public IHThorFetchContext
 {
-    virtual unsigned __int64 getRowLimit() { return (unsigned __int64) -1; }
-    virtual void onLimitExceeded()         { }
-    inline  bool transformNeedsRhs()       { return queryExtractedSize() != 0; }
-    virtual size32_t extractJoinFields(ARowBuilder & rowBuilder, const void * _right) { return 0; }
-    virtual bool extractAllJoinFields()    { return false; }
-    virtual IOutputMetaData * queryExtractedSize() { return NULL; }               
+    virtual unsigned __int64 getRowLimit() = 0;
+    virtual void onLimitExceeded() = 0;
+    inline  bool transformNeedsRhs()       { return queryExtractedSize() != nullptr; }
+    virtual size32_t extractJoinFields(ARowBuilder & rowBuilder, const void * _right) = 0;
+    virtual bool extractAllJoinFields() = 0;
+    virtual IOutputMetaData * queryExtractedSize() = 0;
 };
 
 struct IHThorBinFetchExtra : public IInterface
@@ -2003,7 +2003,7 @@ struct IHThorLocalResultReadArg : public IHThorArg
 struct IHThorLocalResultWriteArg : public IHThorArg
 {
     virtual unsigned querySequence() = 0;
-    virtual bool usedOutsideGraph() { return true; }
+    virtual bool usedOutsideGraph() = 0;
 };
 
 struct IHThorGraphLoopResultReadArg : public IHThorArg
@@ -2088,13 +2088,13 @@ struct IHThorXmlParseArg : public IHThorArg
     virtual const char * getXmlIteratorPath() = 0;
     virtual void getSearchText(size32_t & retLen, char * & retText, const void * _self) = 0;
     virtual bool searchTextNeedsFree() = 0;
-    virtual bool requiresContents() { return false; }
+    virtual bool requiresContents() = 0;
 };
 
 struct IHThorXmlFetchExtra : public IInterface
 {
     virtual size32_t transform(ARowBuilder & rowBuilder, IColumnProvider * rowLeft, const void * right, unsigned __int64 _fpos) = 0;
-    virtual bool requiresContents() { return false; }
+    virtual bool requiresContents() = 0;
 };
 
 struct IHThorXmlFetchArg : public IHThorFetchBaseArg, public IHThorXmlFetchExtra
@@ -2106,10 +2106,10 @@ struct IHThorXmlFetchArg : public IHThorFetchBaseArg, public IHThorXmlFetchExtra
 struct IHThorXmlWriteExtra : public IInterface
 {
     virtual void toXML(const byte * self, IXmlWriter & out) = 0;
-    virtual const char * getXmlIteratorPath()         { return NULL; }             // supplies the prefix and suffix for a row
-    virtual const char * getHeader()                   { return NULL; }
-    virtual const char * getFooter()                   { return NULL; }
-    virtual unsigned getXmlFlags()                     { return 0; }
+    virtual const char * getXmlIteratorPath() = 0;
+    virtual const char * getHeader() = 0;
+    virtual const char * getFooter() = 0;
+    virtual unsigned getXmlFlags() = 0;
 };
 
 struct IHThorXmlWriteArg : public IHThorDiskWriteArg, public IHThorXmlWriteExtra
@@ -2151,8 +2151,8 @@ struct IHThorPipeWriteArg : public IHThorArg
     virtual const char * getPipeProgram() = 0;
     virtual int getSequence() = 0;
     virtual IOutputMetaData * queryDiskRecordSize() = 0;
-    virtual char * getNameFromRow(const void * _self)       { return NULL; }
-    virtual bool recreateEachRow()                          { return false; }
+    virtual char * getNameFromRow(const void * _self) = 0;
+    virtual bool recreateEachRow() = 0;
     virtual unsigned getPipeFlags() = 0;
     virtual IHThorCsvWriteExtra * queryCsvOutput() = 0;
     virtual IHThorXmlWriteExtra * queryXmlOutput() = 0;
@@ -2161,8 +2161,8 @@ struct IHThorPipeWriteArg : public IHThorArg
 struct IHThorPipeThroughArg : public IHThorArg
 {
     virtual const char * getPipeProgram() = 0;
-    virtual char * getNameFromRow(const void * _self)       { return NULL; }
-    virtual bool recreateEachRow()                          { return false; }
+    virtual char * getNameFromRow(const void * _self) = 0;
+    virtual bool recreateEachRow() = 0;
     virtual unsigned getPipeFlags() = 0;
     virtual IHThorCsvWriteExtra * queryCsvOutput() = 0;
     virtual IHThorXmlWriteExtra * queryXmlOutput() = 0;
@@ -2347,10 +2347,10 @@ interface IHThorSteppedSourceExtra
 // where-ever possible because that improves the scope for cse.
 struct IHThorCompoundBaseArg : public IHThorArg
 {
-    virtual bool canMatchAny()                              { return true; }
-    virtual void createSegmentMonitors(IIndexReadContext *ctx) {}
-    virtual bool canMatch(const void * row)                 { return true; }
-    virtual bool hasMatchFilter()                           { return false; }
+    virtual bool canMatchAny() = 0;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) = 0;
+    virtual bool canMatch(const void * row) = 0;
+    virtual bool hasMatchFilter() = 0;
 };
 
 struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg
@@ -2366,7 +2366,7 @@ struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg
 
     inline bool hasSegmentMonitors()                        { return (getFlags() & TIRnofilter) == 0; }
     inline bool hasNewSegmentMonitors()                     { return (getFlags() & TIRnewfilters) != 0; }
-    virtual IHThorSteppedSourceExtra *querySteppingExtra()  { return NULL; }
+    virtual IHThorSteppedSourceExtra *querySteppingExtra() = 0;
 };
 
 struct IHThorDiskReadBaseArg : extends IHThorCompoundBaseArg
@@ -2377,7 +2377,7 @@ struct IHThorDiskReadBaseArg : extends IHThorCompoundBaseArg
     virtual unsigned getFlags() = 0;
     virtual unsigned getDiskFormatCrc() = 0;
     virtual unsigned getProjectedFormatCrc() = 0;
-    virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+    virtual void getEncryptKey(size32_t & keyLen, void * & key) = 0;
     virtual void setCallback(IThorDiskCallback * callback) = 0;
 
     inline bool hasSegmentMonitors()                        { return (getFlags() & TDRkeyed) != 0; }
@@ -2388,9 +2388,9 @@ struct IHThorDiskReadBaseArg : extends IHThorCompoundBaseArg
 // common between Read, Normalize
 struct IHThorCompoundExtra : public IInterface
 {
-    virtual unsigned __int64 getChooseNLimit()              { return I64C(0x7fffffffffffffff); }
-    virtual unsigned __int64 getRowLimit()                  { return (unsigned __int64) -1; }
-    virtual void onLimitExceeded()                          { }
+    virtual unsigned __int64 getChooseNLimit() = 0;
+    virtual unsigned __int64 getRowLimit() = 0;
+    virtual void onLimitExceeded() = 0;
 };
 
 struct IHThorSourceCountLimit : public IInterface
@@ -2428,8 +2428,8 @@ struct IHThorCompoundNormalizeExtra : public IHThorCompoundExtra
     virtual bool first(const void * src) = 0;
     virtual bool next() = 0;                            //NB: src from transformFirst() must stay in memory while transformNext() is being called.
     virtual size32_t transform(ARowBuilder & rowBuilder) = 0;
-    virtual unsigned __int64 getKeyedLimit()                { return (unsigned __int64) -1; }
-    virtual void onKeyedLimitExceeded()                     { }
+    virtual unsigned __int64 getKeyedLimit() = 0;
+    virtual void onKeyedLimitExceeded() = 0;
 };
 
 
@@ -2446,10 +2446,10 @@ struct IHThorCompoundAggregateExtra : public IInterface
 //Count
 struct IHThorCompoundCountExtra : public IInterface
 {
-    virtual bool hasFilter()                                                { return false; }       // also true if denormalized(!)
-    virtual size32_t numValid(const void * src)                             { return 1; }           //NB: Can be > 1 if source is normlized
+    virtual bool hasFilter() = 0;
+    virtual size32_t numValid(const void * src) = 0;
     virtual size32_t numValid(size32_t srcLen, const void * src) = 0;
-    virtual unsigned __int64 getChooseNLimit()                              { return (unsigned __int64) -1; }
+    virtual unsigned __int64 getChooseNLimit() = 0;
 };
 
 //NormalizeAggregate
@@ -2603,7 +2603,6 @@ struct IHThorChildNormalizeArg : public IHThorArg
     virtual bool first() = 0;
     virtual bool next() = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder) = 0;
-//??    virtual bool canMatchAny()                              { return true; }
 };
 
 //Aggregate
