@@ -613,8 +613,10 @@ struct HqlCppOptions
     unsigned            searchDistanceThreshold;
     unsigned            generateActivityThreshold;    // Record activities which take more than this value (in ms) to generate (0 disables)
     cycle_t             generateActivityThresholdCycles;
-   int                 defaultNumPersistInstances;
+    int                 defaultNumPersistInstances;
     unsigned            reportDFSinfo;
+    unsigned            checkDuplicateThreshold;
+    unsigned            checkDuplicateMinActivities;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
     bool                peephole;
@@ -1898,6 +1900,8 @@ protected:
     bool useRowAccessorClass(IHqlExpression * record, bool isTargetRow);
 
     void ensureSerialized(BuildCtx & ctx, const CHqlBoundTarget & variable);
+
+    void checkWorkflowDuplication(HqlExprArray & exprs);
 
     void doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * leftSelector, IHqlExpression * rightRecord, IHqlExpression * rightSelector, StringBuffer & selectorText, bool isCount);
     void doBuildExprRowDiff(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
