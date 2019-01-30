@@ -766,7 +766,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             if (expr->getOperator() != no_rows)
             {
                 HqlExprCopyArray inScope;
-                expr->gatherTablesUsed(NULL, &inScope);
+                expr->gatherTablesUsed(inScope);
     #ifdef SHOW_TABLES_EXISTANCE
                 if (inScope.ordinality())
                     s.append("[[!]]");
