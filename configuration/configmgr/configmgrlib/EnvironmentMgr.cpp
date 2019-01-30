@@ -160,6 +160,13 @@ std::string EnvironmentMgr::getRootNodeId() const
 }
 
 
+bool EnvironmentMgr::serialize(std::ostream &out, const std::shared_ptr<EnvironmentNode> &pStartNode)
+{
+   return false;
+}
+
+
+
 bool EnvironmentMgr::saveEnvironment(const std::string &qualifiedFilename)
 {
     bool rc = false;
@@ -249,7 +256,7 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
             }
             else
             {
-                pNewNode->validate(status, true, false);
+                m_pSchema->validate(status, true, false);
             }
         }
         else
@@ -306,6 +313,27 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
         }
     }
 
+    return pNewEnvNode;
+}
+
+
+std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::string &nodeData,
+        Status &status, const std::string &itemType)
+{
+    std::shared_ptr<EnvironmentNode> pNewEnvNode;
+    std::istringstream newNodeData(nodeData);
+    std::vector<std::shared_ptr<EnvironmentNode>> newNodes = doLoadEnvironment(newNodeData, pParentNode->getSchemaItem(), itemType);  // not root
+    if (!newNodes.empty())
+    {
+        pNewEnvNode = newNodes[0];
+        pParentNode->addChild(pNewEnvNode);
+        assignNodeIds(pNewEnvNode);
+        validate(status);
+    }
+    else
+    {
+        status.addMsg(statusMsg::error, "Error pasting new node data.");
+    }
     return pNewEnvNode;
 }
 
@@ -410,7 +438,7 @@ void EnvironmentMgr::validate(Status &status, bool includeHiddenNodes) const
 {
     if (m_pRootNode)
     {
-        m_pRootNode->validate(status, true, includeHiddenNodes);
+        m_pSchema->validate(status, true, includeHiddenNodes);
     }
     else
     {

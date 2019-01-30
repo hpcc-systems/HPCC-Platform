@@ -16,11 +16,10 @@
 ############################################################################## */
 
 #include "XMLEnvironmentLoader.hpp"
-#include "XSDSchemaParser.hpp"
 #include "Exceptions.hpp"
 
 
-std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentLoader::load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) const
+std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentLoader::load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem, const std::string itemType) const
 {
     std::vector<std::shared_ptr<EnvironmentNode>> envNodes;
     std::shared_ptr<EnvironmentNode> pEnvNode;
@@ -29,7 +28,6 @@ std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentLoader::load(std::is
     try
     {
         pt::read_xml(in, envTree, pt::xml_parser::trim_whitespace | pt::xml_parser::no_comments);
-        //auto rootIt = envTree.begin();
 
         // if root, want to start with rootIt, but auto match rootIt first with schemaItem, then parse on down, but want to return
         // envNode for the root
@@ -37,6 +35,9 @@ std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentLoader::load(std::is
         // if not root, to through rootIt with schema item as parent for each elemement, return envNode of each item iterated
 
         std::shared_ptr<SchemaItem> pParseRootSchemaItem;
+
+        //
+        // For each top level element, parse it
         for (auto envIt = envTree.begin(); envIt != envTree.end(); ++envIt)
         {
             if (envIt->first == pSchemaItem->getProperty("name"))
@@ -46,12 +47,15 @@ std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentLoader::load(std::is
             else
             {
                 std::vector<std::shared_ptr<SchemaItem>> children;
-                pSchemaItem->getChildren(children, envIt->first);
+                pSchemaItem->getChildren(children, envIt->first, itemType);  // will only return 1 or no entries
                 if (children.empty())
                 {
                     throw (ParseException("Unable to start parsing environment, root node element " + envIt->first + " not found"));
                 }
-                pParseRootSchemaItem = children[0];
+                else
+                {
+                    pParseRootSchemaItem = children[0];
+                }
             }
 
             pEnvNode = std::make_shared<EnvironmentNode>(pParseRootSchemaItem, envIt->first);  // caller may need to set the parent
@@ -128,7 +132,10 @@ void XMLEnvironmentLoader::parse(const pt::ptree &envTree, const std::shared_ptr
             pConfigItem->getChildren(children, elemName, typeName);
             if (children.empty())
             {
-                pSchemaItem = std::make_shared<SchemaItem>(elemName, "default", pConfigItem);  // default item if none found
+                //
+                // No defined schema item found. Allocate a default one and add it to the tree
+                pSchemaItem = std::make_shared<SchemaItem>(elemName, "default", pConfigItem);
+                pConfigItem->addChild(pSchemaItem);
             }
             else if (children.size() > 1)
             {
@@ -139,8 +146,9 @@ void XMLEnvironmentLoader::parse(const pt::ptree &envTree, const std::shared_ptr
                 pSchemaItem = children[0];
             }
 
-            // If no schema item is found, that's ok, the node just has no defined configuration
+            // Note that if no schema item was found then a default schema item was allocated above and is used
             std::shared_ptr<EnvironmentNode> pElementNode = std::make_shared<EnvironmentNode>(pSchemaItem, elemName, pEnvNode);
+            pSchemaItem->addEnvironmentNode(pElementNode);
             parse(it->second, pSchemaItem, pElementNode);
             pEnvNode->addChild(pElementNode);
         }

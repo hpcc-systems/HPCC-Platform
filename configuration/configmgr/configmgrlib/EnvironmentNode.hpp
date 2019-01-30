@@ -63,7 +63,7 @@ class CFGMGRLIB_API EnvironmentNode : public std::enable_shared_from_this<Enviro
         bool hasAttributes() const { return m_attributes.size() != 0; }
         void setId(const std::string &id) { m_id = id; }
         const std::string &getId() const { return m_id;  }
-        void validate(Status &status, bool includeChildren=false, bool includeHiddenNodes=false) const;
+        void validate(Status &status) const;
         void getAttributeValueForAllSiblings(const std::string &attrName, std::vector<std::string> &result) const;
         const std::shared_ptr<SchemaItem> &getSchemaItem() const { return m_pSchemaItem; }
         void getInsertableItems(std::vector<InsertableItem> &items) const;

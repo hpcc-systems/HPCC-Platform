@@ -217,66 +217,53 @@ std::string EnvironmentNode::getLocalValue() const
 }
 
 
-void EnvironmentNode::validate(Status &status, bool includeChildren, bool includeHiddenNodes) const
+void EnvironmentNode::validate(Status &status) const
 {
-    if (!m_pSchemaItem->isHidden() || includeHiddenNodes)
+    //
+    // Check node value
+    if (m_pLocalValue)
     {
-        //
-        // Check node value
-        if (m_pLocalValue)
-        {
-            m_pLocalValue->validate(status, m_id);
-        }
+        m_pLocalValue->validate(status, m_id);
+    }
+
+    //
+    // Check any attributes
+    for (auto &attrIt: m_attributes)
+    {
+        attrIt.second->validate(status, m_id);
 
         //
-        // Check any attributes
-        for (auto attrIt = m_attributes.begin(); attrIt != m_attributes.end(); ++attrIt)
+        // If this value must be unique, make sure it is
+        if (attrIt.second->getSchemaValue()->isUniqueValue())
         {
-            attrIt->second->validate(status, m_id);
-
-            //
-            // If this value must be unique, make sure it is
-            if (attrIt->second->getSchemaValue()->isUniqueValue())
+            bool found = false;
+            std::vector<std::string> allValues;
+            attrIt.second->getAllValuesForSiblings(allValues);
+            std::set<std::string> unquieValues;
+            for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
             {
-                bool found = false;
-                std::vector<std::string> allValues;
-                attrIt->second->getAllValuesForSiblings(allValues);
-                std::set<std::string> unquieValues;
-                for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
-                {
-                    auto ret = unquieValues.insert(*it);
-                    found = !ret.second;
-                }
-
-                if (found)
-                {
-                    status.addUniqueMsg(statusMsg::error, m_id, attrIt->second->getName(), "Attribute value must be unique");
-                }
+                auto ret = unquieValues.insert(*it);
+                found = !ret.second;
             }
 
-            //
-            // Does this value need to be from another set of values?
-            if (attrIt->second->getSchemaValue()->isFromUniqueValueSet())
+            if (found)
             {
-                bool found = false;
-                std::vector<std::string> allValues;
-                attrIt->second->getSchemaValue()->getAllKeyRefValues(allValues);
-                for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
-                    found = *it == attrIt->second->getValue();
-                if (!found)
-                {
-                    status.addMsg(statusMsg::error, m_id, attrIt->second->getName(), "Attribute value must be from a unique set");
-                }
+                status.addUniqueMsg(statusMsg::error, m_id, attrIt.second->getName(), "Attribute value must be unique");
             }
         }
 
         //
-        // Now check all children
-        if (includeChildren)
+        // Does this value need to be from another set of values?
+        if (attrIt.second->getSchemaValue()->isFromUniqueValueSet())
         {
-            for (auto childIt = m_children.begin(); childIt != m_children.end(); ++childIt)
+            bool found = false;
+            std::vector<std::string> allValues;
+            attrIt.second->getSchemaValue()->getAllKeyRefValues(allValues);
+            for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
+                found = *it == attrIt.second->getValue();
+            if (!found)
             {
-                childIt->second->validate(status, includeChildren, includeHiddenNodes);
+                status.addMsg(statusMsg::error, m_id, attrIt.second->getName(), "Attribute value must be from a unique set");
             }
         }
     }

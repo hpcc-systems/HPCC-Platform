@@ -56,6 +56,8 @@ public:
     virtual bool onGetOpenSessions(IEspContext &context, IEspListOpenSessionsRequest &req, IEspListOpenSessionsResponse &resp);
     virtual bool onGetNodeTree(IEspContext &context, IEspGetTreeRequest &req, IEspGetTreeResponse &resp);
     virtual bool onFetchNodes(IEspContext &context, IEspFetchNodesRequest &req, IEspFetchNodesResponse &resp);
+    virtual bool onGetNodeCopy(IEspContext &context, IEspGetNodeCopyRequest &req, IEspGetNodeCopyResponse &resp);
+    virtual bool onInsertNodeCopy(IEspContext &context, IEspPasteNodeCopyRequest &req, IEspPasteNodeCopyResponse &resp);
 
 
 private:

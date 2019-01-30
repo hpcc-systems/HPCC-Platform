@@ -20,7 +20,7 @@
         xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
     <hpcc:insert hpcc:schemaPath="/Environment/Software">
-        <xs:element name="EspService" hpcc:class="component" hpcc:category="ESP Service" hpcc:itemType="dynesdl"
+        <xs:element name="EspService" hpcc:class="component" hpcc:category="ESP Service" hpcc:itemType="DynamicESDL"
                     hpcc:displayName="Dynamic ESDL" minOccurs="0" maxOccurs="unbounded">
             <xs:complexType>
                 <xs:sequence>

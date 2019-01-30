@@ -57,9 +57,12 @@ class CFGMGRLIB_API EnvironmentMgr
         std::shared_ptr<EnvironmentNode> getNewEnvironmentNode(const std::string &parentNodeId, const std::string &inputItem, Status &status) const;
         std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::string &parentNodeId, const std::string &configType,
                 std::vector<NameValue> &initAttributes, Status &status, bool allowInvalid=false, bool forceCreate=false);
+        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::string &nodeData,
+                Status &status, const std::string &itemType);
         std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pNewCfgItem,
                 std::vector<NameValue> &initAttributes, Status &status, bool allowInvalid=false, bool forceCreate=false);
         bool removeEnvironmentNode(const std::string &nodeId);
+        virtual bool serialize(std::ostream &out, const std::shared_ptr<EnvironmentNode> &pStartNode);
         bool saveEnvironment(const std::string &qualifiedFilename);
         void discardEnvironment() { m_pRootNode = nullptr; m_nodeIds.clear();}
         void validate(Status &status, bool includeHiddenNodes=false) const;
@@ -74,7 +77,7 @@ class CFGMGRLIB_API EnvironmentMgr
 
         void addPath(const std::shared_ptr<EnvironmentNode> pNode);
         virtual bool createParser() = 0;
-        virtual std::vector<std::shared_ptr<EnvironmentNode>> doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) = 0;
+        virtual std::vector<std::shared_ptr<EnvironmentNode>> doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem, const std::string itemType = std::string("")) = 0;
         virtual bool save(std::ostream &out) = 0;
         void assignNodeIds(const std::shared_ptr<EnvironmentNode> &pNode);
         void insertExtraEnvironmentData(std::shared_ptr<EnvironmentNode> pNode);

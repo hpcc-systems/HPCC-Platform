@@ -32,14 +32,15 @@ class XMLEnvironmentMgr :   public EnvironmentMgr
 
         XMLEnvironmentMgr() : EnvironmentMgr() { }
         ~XMLEnvironmentMgr() { }
+        bool serialize(std::ostream &out, const std::shared_ptr<EnvironmentNode> &pStartNode);
 
 
     protected:
 
         bool createParser() override;
-        std::vector<std::shared_ptr<EnvironmentNode>> doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) override;
+        std::vector<std::shared_ptr<EnvironmentNode>> doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem, const std::string itemType = std::string("")) override;
         bool save(std::ostream &out) override;
-        void serialize(pt::ptree &envTree, std::shared_ptr<EnvironmentNode> &pEnvNode) const;
+        void serializeTree(pt::ptree &envTree, const std::shared_ptr<EnvironmentNode> &pEnvNode) const;
 
 };
 
