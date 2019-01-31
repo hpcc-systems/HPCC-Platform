@@ -6123,6 +6123,12 @@ void CWsDfuEx::getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAc
     accessInfo.setExpiryTime(expiryTime);
     accessInfo.setFileAccessPort(port);
     accessInfo.setFileAccessSSL(secure);
+
+    StringBuffer userName;
+    if (udesc)
+        udesc->getUserName(userName);
+    LOG(daliAuditLogCat,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", req.getCluster(),
+        userName.str(), fileName.str(), req.getJobId(), req.getExpirySeconds());
 }
 
 
@@ -6458,7 +6464,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
             newFile->queryAttributes().setPropInt64("@size", req.getFileSize());
         newFile->attach(newFileName.str(), userDesc);
 
-        LOG(daliAuditLogCat,",FileAccess,,CREATED,%s,%s,%s", groupName, userId.str(), newFileName.str());
+        LOG(daliAuditLogCat,",FileAccess,EspProcess,CREATED,%s,%s,%s", groupName, userId.str(), newFileName.str());
     }
     catch (IException *e)
     {
