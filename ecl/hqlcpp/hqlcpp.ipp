@@ -149,7 +149,7 @@ public:
     virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
     virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
     virtual void addManifest(const char *filename){resources.addManifest(filename);}
-    virtual void addManifestFromArchive(IPropertyTree *archive){resources.addManifestFromArchive(archive);}
+    virtual void addManifestsFromArchive(IPropertyTree *archive){resources.addManifestsFromArchive(archive);}
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){resources.addWebServiceInfo(wsinfo);}
     virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId);
     
@@ -613,8 +613,10 @@ struct HqlCppOptions
     unsigned            searchDistanceThreshold;
     unsigned            generateActivityThreshold;    // Record activities which take more than this value (in ms) to generate (0 disables)
     cycle_t             generateActivityThresholdCycles;
-   int                 defaultNumPersistInstances;
+    int                 defaultNumPersistInstances;
     unsigned            reportDFSinfo;
+    unsigned            checkDuplicateThreshold;
+    unsigned            checkDuplicateMinActivities;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
     bool                peephole;
@@ -1898,6 +1900,8 @@ protected:
     bool useRowAccessorClass(IHqlExpression * record, bool isTargetRow);
 
     void ensureSerialized(BuildCtx & ctx, const CHqlBoundTarget & variable);
+
+    void checkWorkflowDuplication(HqlExprArray & exprs);
 
     void doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * leftSelector, IHqlExpression * rightRecord, IHqlExpression * rightSelector, StringBuffer & selectorText, bool isCount);
     void doBuildExprRowDiff(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);

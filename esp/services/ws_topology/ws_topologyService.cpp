@@ -1264,6 +1264,10 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
             {       
                 m_TpWrapper.getTpEclSchedulers( ServiceList.getTpEclSchedulers() );
             }
+            if (version >= 1.28)
+            {       
+                m_TpWrapper.getTpSparkThors(version, nullptr, ServiceList.getTpSparkThors() );
+            }
         }
 
         resp.setMemThreshold( m_memThreshold );

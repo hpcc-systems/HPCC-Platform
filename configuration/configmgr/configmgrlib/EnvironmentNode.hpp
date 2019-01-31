@@ -28,9 +28,10 @@
 #include "NameValue.hpp"
 #include "platform.h"
 #include "ConfigPath.hpp"
+#include "Cfgmgrlib.hpp"
 
 
-class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<EnvironmentNode>
+class CFGMGRLIB_API EnvironmentNode : public std::enable_shared_from_this<EnvironmentNode>
 {
     public:
 
@@ -43,7 +44,7 @@ class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<Environm
         void removeAllChildren(std::vector<std::string> &removedNodeIds);
         void getChildren(std::vector<std::shared_ptr<EnvironmentNode>> &children, const std::string &name=std::string("")) const;
         bool hasChildren() const { return m_children.size() != 0; }
-        int getNumChildren() const { return m_children.size(); }
+        int getNumChildren() const { return (int)m_children.size(); }
         std::shared_ptr<EnvironmentNode> getParent() const;
         void setParent(const std::shared_ptr<EnvironmentNode> &pParent) { m_pParent = pParent; }
         bool addAttribute(const std::string &name, std::shared_ptr<EnvironmentValue> pValue);
@@ -62,7 +63,7 @@ class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<Environm
         bool hasAttributes() const { return m_attributes.size() != 0; }
         void setId(const std::string &id) { m_id = id; }
         const std::string &getId() const { return m_id;  }
-        void validate(Status &status, bool includeChildren=false, bool includeHiddenNodes=false) const;
+        void validate(Status &status) const;
         void getAttributeValueForAllSiblings(const std::string &attrName, std::vector<std::string> &result) const;
         const std::shared_ptr<SchemaItem> &getSchemaItem() const { return m_pSchemaItem; }
         void getInsertableItems(std::vector<InsertableItem> &items) const;

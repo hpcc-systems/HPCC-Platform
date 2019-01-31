@@ -21,7 +21,7 @@
     <xs:include schemaLocation="types.xsd"/>
     <hpcc:insert hpcc:schemaPath="/Environment/Software">
         <xs:element name="CassandraLoggingAgent" hpcc:displayName="Cassandra Logging Agent"
-                    hpcc:itemType="loggingagent_cassandra" hpcc:category="Logging Agent"
+                    hpcc:itemType="cassandraloggingagent" hpcc:category="Logging Agent"
                     maxOccurs="unbounded" hpcc:class="component">
             <xs:complexType>
                 <xs:attributeGroup name="cassandra" hpcc:groupByName="Cassandra">

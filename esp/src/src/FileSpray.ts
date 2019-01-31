@@ -107,14 +107,14 @@ var LandingZonesFilterStore = declare([ESPRequest.Store], {
         }
     },
     preProcessRow: function (row) {
-        var fullPath = this.dropZone.machine.Directory + row.name;
+        var fullPath = this.dropZone.machine.Directory + "/" + (row.Path === null ? "" : (row.Path + "/"));
         lang.mixin(row, {
             NetAddress: this.dropZone.machine.Netaddress,
             Directory: this.dropZone.machine.Directory,
             calculatedID: this.dropZone.machine.Netaddress + fullPath,
-            fullPath: fullPath,
-            fullFolderPath: row.Path,
-            displayName: row.Path ? row.Path + row.name : row.name,
+            OS: this.dropZone.machine.OS,
+            fullFolderPath: fullPath,
+            displayName: row.Path ? (row.Path + "/" + row.name) : row.name,
             type: row.isDir ? "filteredFolder" : "file"
         });
     }

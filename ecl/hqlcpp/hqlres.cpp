@@ -92,6 +92,8 @@ static void loadResource(const char *filepath, MemoryBuffer &content)
 {
     Owned <IFile> f = createIFile(filepath);
     Owned <IFileIO> fio = f->open(IFOread);
+    if (!fio)
+        throw makeStringExceptionV(0, "Failed to open resource file %s", filepath);
     read(fio, 0, (size32_t) f->size(), content);
 }
 
@@ -246,7 +248,7 @@ void ResourceManager::addManifestInclude(IPropertyTree &include, const char *dir
     addManifestFile(includePath.str());
 }
 
-void ResourceManager::addManifestFromArchive(IPropertyTree *archive)
+void ResourceManager::addManifestsFromArchive(IPropertyTree *archive)
 {
     if (!archive)
         return;

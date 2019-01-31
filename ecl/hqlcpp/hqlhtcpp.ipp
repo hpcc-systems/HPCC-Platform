@@ -222,7 +222,7 @@ public:
     IHqlStmt * classGroup;
     unsigned    initialGroupMarker;
     HqlExprArray constructorArgs;
-    HqlExprCopyArray names;
+    ICopyArrayOf<IIdAtom> names;
     LocationArray locations;
 
     Linked<IPropertyTree> graphNode;

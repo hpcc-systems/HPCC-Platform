@@ -92,7 +92,7 @@ public:
     virtual bool generatePackage(const char * packageName);
     virtual void setMaxCompileThreads(unsigned value) { defaultMaxCompileThreads = value; }
     virtual void addManifest(const char *filename) { code->addManifest(filename); }
-    virtual void addManifestFromArchive(IPropertyTree *archive) { code->addManifestFromArchive(archive); }
+    virtual void addManifestsFromArchive(IPropertyTree *archive) { code->addManifestsFromArchive(archive); }
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){ code->addWebServiceInfo(wsinfo); }
 
     virtual double getECLcomplexity(IHqlExpression * exprs);

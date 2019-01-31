@@ -29,13 +29,13 @@ bool XMLEnvironmentMgr::createParser()
 }
 
 
-std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentMgr::doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem)
+std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentMgr::doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem, const std::string itemType)
 {
     std::vector<std::shared_ptr<EnvironmentNode>> envNodes;
     try
     {
         XMLEnvironmentLoader envLoader;
-        envNodes = envLoader.load(in, pSchemaItem);
+        envNodes = envLoader.load(in, pSchemaItem, itemType);
     }
     catch (const std::exception &e)
     {
@@ -47,13 +47,30 @@ std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentMgr::doLoadEnvironme
 }
 
 
+bool XMLEnvironmentMgr::serialize(std::ostream &out, const std::shared_ptr<EnvironmentNode> &pStartNode)
+{
+    pt::ptree envTree, topTree;
+    serializeTree(envTree, pStartNode);
+    topTree.add_child(pStartNode->getName(), envTree);
+
+#if BOOST_VERSION >= 105800
+    pt::write_xml(out, topTree, pt::xml_parser::xml_writer_make_settings<std::string>(' ', 4));
+#else
+    const char * myIndent = " ";
+        pt::write_xml(out, topTree, pt::xml_parser::xml_writer_make_settings<char>(*myIndent , 4));
+#endif
+
+    return true;
+}
+
+
 bool XMLEnvironmentMgr::save(std::ostream &out)
 {
     bool rc = true;
     try
     {
         pt::ptree envTree, topTree;
-        serialize(envTree, m_pRootNode);
+        serializeTree(envTree, m_pRootNode);
         topTree.add_child("Environment", envTree);
 //        boost::property_tree::xml_writer_settings<std::string> settings;
         //pt::write_xml(out, topTree, pt::xml_parser::xml_writer_make_settings<std::string>(' ', 4));
@@ -75,7 +92,7 @@ bool XMLEnvironmentMgr::save(std::ostream &out)
 }
 
 
-void XMLEnvironmentMgr::serialize(pt::ptree &envTree, std::shared_ptr<EnvironmentNode> &pEnvNode) const
+void XMLEnvironmentMgr::serializeTree(pt::ptree &envTree, const std::shared_ptr<EnvironmentNode> &pEnvNode) const
 {
     std::vector<std::shared_ptr<EnvironmentValue>> attributes;
     pEnvNode->getAttributes(attributes);
@@ -99,7 +116,7 @@ void XMLEnvironmentMgr::serialize(pt::ptree &envTree, std::shared_ptr<Environmen
     for (auto childIt = children.begin(); childIt != children.end(); ++childIt)
     {
         pt::ptree nodeTree;
-        serialize(nodeTree, *childIt);
+        serializeTree(nodeTree, *childIt);
         envTree.add_child((*childIt)->getName(), nodeTree);
     }
 }

@@ -106,41 +106,41 @@ static const char* const PropSessionLoginURL = "@loginurl";
 
 interface IEspSecureContext;
 
-ESPHTTP_API IEspContext* createEspContext(IEspSecureContext* secureContext = NULL);
+esp_http_decl IEspContext* createEspContext(IEspSecureContext* secureContext = NULL);
 
 // Get URL parameters (include these from Content)
 // Return: a=b&c=d format. 
-ESPHTTP_API bool getUrlParams(IProperties *props, StringBuffer& params);
+esp_http_decl bool getUrlParams(IProperties *props, StringBuffer& params);
 
 // Only the original URL (not these from Content: URL form encoded)
 // Also remove these params that start with dot (.).
 // Return: a=b&c=d format. 
-ESPHTTP_API void getEspUrlParams(IEspContext& ctx, StringBuffer& params, const char* excludeParams[]);
+esp_http_decl void getEspUrlParams(IEspContext& ctx, StringBuffer& params, const char* excludeParams[]);
 
-ESPHTTP_API void addEspNativeArray(StringBuffer& schema, const char* xsdType, const char* arrayType);
-ESPHTTP_API void checkRequest(IEspContext& ctx);
+esp_http_decl void addEspNativeArray(StringBuffer& schema, const char* xsdType, const char* arrayType);
+esp_http_decl void checkRequest(IEspContext& ctx);
 
-ESPHTTP_API LogLevel getEspLogLevel(IEspContext* );
-ESPHTTP_API LogLevel getEspLogLevel();
-ESPHTTP_API bool getEspLogRequests();
-ESPHTTP_API bool getEspLogResponses();
-ESPHTTP_API LogLevel getTxSummaryLevel();
-ESPHTTP_API bool getTxSummaryResourceReq();
-ESPHTTP_API unsigned getSlowProcessingTime();
+esp_http_decl LogLevel getEspLogLevel(IEspContext* );
+esp_http_decl LogLevel getEspLogLevel();
+esp_http_decl bool getEspLogRequests();
+esp_http_decl bool getEspLogResponses();
+esp_http_decl LogLevel getTxSummaryLevel();
+esp_http_decl bool getTxSummaryResourceReq();
+esp_http_decl unsigned getSlowProcessingTime();
 
-ESPHTTP_API void ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)));
-ESPHTTP_API void ESPLOG(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
-ESPHTTP_API void setEspContainer(IEspContainer* container);
+esp_http_decl void ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)));
+esp_http_decl void ESPLOG(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
+esp_http_decl void setEspContainer(IEspContainer* container);
 
-ESPHTTP_API IEspContainer* getESPContainer();
+esp_http_decl IEspContainer* getESPContainer();
 
-ESPHTTP_API void setCFD(const char* cfd);
-ESPHTTP_API const char* getCFD();
+esp_http_decl void setCFD(const char* cfd);
+esp_http_decl const char* getCFD();
 
-ESPHTTP_API void setBuildVersion(const char* buildVersion);
-ESPHTTP_API const char* getBuildVersion();
-ESPHTTP_API void setBuildLevel(const char* buildLevel);
-ESPHTTP_API const char* getBuildLevel();
-ESPHTTP_API IEspServer* queryEspServer();
+esp_http_decl void setBuildVersion(const char* buildVersion);
+esp_http_decl const char* getBuildVersion();
+esp_http_decl void setBuildLevel(const char* buildLevel);
+esp_http_decl const char* getBuildLevel();
+esp_http_decl IEspServer* queryEspServer();
 #endif
 

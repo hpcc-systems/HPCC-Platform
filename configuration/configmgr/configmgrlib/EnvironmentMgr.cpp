@@ -20,8 +20,9 @@
 #include "XMLEnvironmentMgr.hpp"
 #include "InsertableItem.hpp"
 #include "Utils.hpp"
+#ifndef WIN32
 #include <dlfcn.h>
-
+#endif
 std::atomic_int EnvironmentMgr::m_key(1);
 
 EnvironmentMgr *getEnvironmentMgrInstance(const EnvironmentType envType)
@@ -159,6 +160,13 @@ std::string EnvironmentMgr::getRootNodeId() const
 }
 
 
+bool EnvironmentMgr::serialize(std::ostream &out, const std::shared_ptr<EnvironmentNode> &pStartNode)
+{
+   return false;
+}
+
+
+
 bool EnvironmentMgr::saveEnvironment(const std::string &qualifiedFilename)
 {
     bool rc = false;
@@ -248,7 +256,7 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
             }
             else
             {
-                pNewNode->validate(status, true, false);
+                m_pSchema->validate(status, true, false);
             }
         }
         else
@@ -299,12 +307,33 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
     std::vector<NameValue> empty;
     for (auto &pCfgChild: cfgItemChildren)
     {
-        for (int i = 0; i<pCfgChild->getMinInstances(); ++i)
+        for (unsigned i = 0; i<pCfgChild->getMinInstances(); ++i)
         {
             addNewEnvironmentNode(pNewEnvNode, pCfgChild, empty, status);
         }
     }
 
+    return pNewEnvNode;
+}
+
+
+std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::string &nodeData,
+        Status &status, const std::string &itemType)
+{
+    std::shared_ptr<EnvironmentNode> pNewEnvNode;
+    std::istringstream newNodeData(nodeData);
+    std::vector<std::shared_ptr<EnvironmentNode>> newNodes = doLoadEnvironment(newNodeData, pParentNode->getSchemaItem(), itemType);  // not root
+    if (!newNodes.empty())
+    {
+        pNewEnvNode = newNodes[0];
+        pParentNode->addChild(pNewEnvNode);
+        assignNodeIds(pNewEnvNode);
+        validate(status);
+    }
+    else
+    {
+        status.addMsg(statusMsg::error, "Error pasting new node data.");
+    }
     return pNewEnvNode;
 }
 
@@ -409,7 +438,7 @@ void EnvironmentMgr::validate(Status &status, bool includeHiddenNodes) const
 {
     if (m_pRootNode)
     {
-        m_pRootNode->validate(status, true, includeHiddenNodes);
+        m_pSchema->validate(status, true, includeHiddenNodes);
     }
     else
     {

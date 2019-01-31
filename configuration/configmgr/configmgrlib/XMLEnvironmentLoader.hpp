@@ -24,19 +24,21 @@
 #include "SchemaItem.hpp"
 #include "EnvironmentNode.hpp"
 #include "EnvironmentLoader.hpp"
+#include "Cfgmgrlib.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
 namespace pt = boost::property_tree;
 
-class DECL_EXPORT XMLEnvironmentLoader : public EnvironmentLoader
+class CFGMGRLIB_API XMLEnvironmentLoader : public EnvironmentLoader
 {
     public:
 
         XMLEnvironmentLoader() { }
         virtual ~XMLEnvironmentLoader() { }
-        virtual std::vector<std::shared_ptr<EnvironmentNode>> load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) const override;
+        virtual std::vector<std::shared_ptr<EnvironmentNode>> load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem,
+                const std::string itemType = std::string("")) const override;
         void parse(const pt::ptree &envTree, const std::shared_ptr<SchemaItem> &pConfigItem, std::shared_ptr<EnvironmentNode> &pEnvNode) const;
 
 };

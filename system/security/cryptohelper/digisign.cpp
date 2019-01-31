@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 #include "jliball.hpp"
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -28,7 +28,7 @@
 namespace cryptohelper
 {
 
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
 
 
 //Create base 64 encoded digital signature of given data
@@ -353,7 +353,7 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const c
 //Caller must release when no longer needed
 IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(CLoadedKey *pubKey, CLoadedKey *privKey)
 {
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
     return new CDigitalSignatureManager(pubKey, privKey);
 #else
     return nullptr;
