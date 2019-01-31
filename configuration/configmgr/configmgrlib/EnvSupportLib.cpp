@@ -21,30 +21,17 @@
 #include "HPCCConfigSupport.hpp"
 #include "jutil.hpp"
 
-EnvSupportLib::EnvSupportLib(const std::string &libName, EnvironmentMgr *pEnvMgr) : m_libName(libName), m_libHandle(nullptr)
+EnvSupportLib::EnvSupportLib(const std::string &libName, EnvironmentMgr *pEnvMgr) :
+    m_libName(libName), m_libHandle(nullptr), m_pSupportLib(nullptr)
 {
-    if (m_libName.empty())
+    m_libHandle = LoadSharedObject(m_libName.c_str(), true, false);
+    if (m_libHandle != nullptr)
     {
-        std::string msg = "Error missing library name";
-        throw (ParseException(msg));
-    }
-
-    m_libHandle = LoadSharedObject(m_libName.c_str(),true,false);
-    if (m_libHandle == nullptr)
-    {
-        std::string msg = "Error opening support library " + libName + ", error = " + GetSharedObjectErrorString();
-        throw (ParseException(msg));
-    }
-
-    getHPCCSupportLib_t getInstanceProc = (getHPCCSupportLib_t)GetSharedProcedure(m_libHandle, "getInstance");
-    if (getInstanceProc != nullptr)
-    {
-        m_pSupportLib = getInstanceProc(pEnvMgr);;
-    }
-    else
-    {
-        std::string msg = "Error getting getInstance function " + libName + ", error = " + GetSharedObjectErrorString();
-        throw (ParseException(msg));
+        auto getInstanceProc = (getHPCCSupportLib_t) GetSharedProcedure(m_libHandle, "getCfgMgrSupportInstance");
+        if (getInstanceProc != nullptr)
+        {
+            m_pSupportLib = getInstanceProc(pEnvMgr);;
+        }
     }
 }
 
