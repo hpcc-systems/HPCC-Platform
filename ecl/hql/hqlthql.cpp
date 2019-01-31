@@ -918,9 +918,9 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     StringBuffer temp;
                     scope.append(NULL);
                     if (expr->isDataset())
-                        temp.appendf("dataset%p ", expr);
+                        temp.appendf("dataset%012" I64F "x ", (__uint64)(memsize_t)expr);
                     else
-                        temp.appendf("dictionary%p ", expr);
+                        temp.appendf("dictionary%012" I64F "x ", (__uint64)(memsize_t)expr);
 #ifdef SHOW_NORMALIZED
                     if (expandProcessed)
                         temp.appendf("[N%p] ", expr->queryNormalizedSelector());
@@ -936,9 +936,9 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     expr->setTransformExtra(expr);
                 }   
                 if (expr->isDataset())
-                    s.appendf("dataset%p", expr);
+                    s.appendf("dataset%012" I64F "x", (__uint64)(memsize_t)expr);
                 else
-                    s.appendf("dictionary%p", expr);
+                    s.appendf("dictionary%012" I64F "x", (__uint64)(memsize_t)expr);
                 if (paren)
                     s.append(')');
                 return;
@@ -992,7 +992,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
 
                     StringBuffer temp;
                     scope.append(NULL);
-                    temp.appendf("alias%p ", expr);
+                    temp.appendf("alias%012" I64F "x ", (__uint64)(memsize_t)expr);
                     temp.append(":= ");
 
                     toECL(expr, temp, false, false, 0, true);
@@ -1003,7 +1003,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     insideNewTransform = wasInsideNewTransform;
                     expr->setTransformExtra(expr);
                 }
-                s.appendf("alias%p", expr);
+                s.appendf("alias%012" I64F "x", (__uint64)(memsize_t)expr);
                 if (paren)
                     s.append(')');
                 return;
@@ -1016,7 +1016,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             {
                 StringBuffer temp;
                 scope.append(NULL);
-                temp.appendf("record%p := ", expr);
+                temp.appendf("record%012" I64F "x := ", (__uint64)(memsize_t)expr);
 
                 toECL(expr, temp, false, false, 0, true);
                 temp.append(";").newline();
@@ -1025,7 +1025,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 scope.pop();
                 expr->setTransformExtra(expr);
             }   
-            s.appendf("record%p", expr);
+            s.appendf("record%012" I64F "x", (__uint64)(memsize_t)expr);
             return;
         }
 
@@ -1046,7 +1046,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     
                     StringBuffer temp;
                     scope.append(NULL);
-                    temp.appendf("pattern%p := ", expr);
+                    temp.appendf("pattern%012" I64F "x := ", (__uint64)(memsize_t)expr);
 
                     toECL(expr, temp, false, false, 0, true);
                     temp.append(";").newline();
@@ -1055,8 +1055,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     scope.pop();
                     insideNewTransform = wasInsideNewTransform;
                     expr->setTransformExtra(expr);
-                }   
-                s.appendf("pattern%p", expr);
+                }
+                s.appendf("pattern%012" I64F "x", (__uint64)(memsize_t)expr);
                 return;
             }
             else if (expandProcessed)
