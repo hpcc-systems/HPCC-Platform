@@ -234,6 +234,18 @@
                 var url = protocol + "://" + window.location.hostname + ":" + port;
                 parent.document.location.href = url;
             }
+            function showPopup(protocol, ip, port)
+            {
+                if (!protocol || protocol.length === 0)
+                    protocol = "http";
+                var url = protocol + "://" + ip + ":" + port;
+                popupWin = window.open (url,
+                    "popupWin", "location=0,status=1,scrollbars=1,resizable=1,width=500,height=600");
+                if (popupWin.opener == null)
+                    popupWin.opener = window;
+                popupWin.focus();
+                return false;
+            }
             allowReloadPage = false;
             ]]>
         </xsl:text>
@@ -319,11 +331,17 @@
                 <xsl:with-param name="nodes" select="TpEspServers/TpEspServer"/>
                 <xsl:with-param name="compType" select="'EspProcess'"/>
             </xsl:call-template>
-            
+
             <xsl:call-template name="showMachines">
                 <xsl:with-param name="caption" select="$hpccStrings/st[@id='FTSlaves']"/>
                 <xsl:with-param name="nodes" select="TpFTSlaves/TpFTSlave"/>
                 <xsl:with-param name="checked" select="0"/>
+            </xsl:call-template>
+            
+            <xsl:call-template name="showMachines">
+                <xsl:with-param name="caption" select="$hpccStrings/st[@id='SparkThor']"/>
+                <xsl:with-param name="nodes" select="TpSparkThors/TpSparkThor"/>
+                <xsl:with-param name="compType" select="'SparkThorProcess'"/>
             </xsl:call-template>                    
             
             <xsl:call-template name="showMachines">
@@ -386,7 +404,7 @@
     </form>
     </body>
 </xsl:template>
-        
+
 <xsl:template name="showMachines">
     <xsl:param name="caption"/>
     <xsl:param name="showCheckbox" select="1"/>
@@ -426,6 +444,12 @@
             <xsl:variable name="nodeCount" select="position()" />
             <xsl:for-each select="TpMachines/*">
                 <xsl:variable name="machineCount" select="position()" />
+                <xsl:variable name="absolutePath">
+                    <xsl:call-template name="makeAbsolutePath">
+                        <xsl:with-param name="path" select="Directory"/>
+                        <xsl:with-param name="isLinuxInstance" select="OS!=0"/>
+                    </xsl:call-template>
+                </xsl:variable>
                 <tr>
                     <xsl:variable name="compName" select="../../Name"/>
                     <xsl:if test="$showBindings">
@@ -484,6 +508,30 @@
                             </xsl:if>
                           </a>
                         </xsl:when>
+                        <xsl:when test="$compType!='' and $compType='SparkThorProcess'">
+                            <table class="C">
+                                <tbody>
+                                    <tr>
+                                        <td><xsl:value-of select="../../Name"/></td>
+                                        <td>
+                                            (<a>
+                                                <xsl:attribute name="href">
+                                                    <xsl:text>/WsTopology/TpMachineQuery?Type=THORMACHINES&amp;Cluster=</xsl:text>
+                                                    <xsl:value-of select="../../ThorClusterName"/>
+                                                    <xsl:text>&amp;Directory=</xsl:text>
+                                                    <xsl:value-of select="$absolutePath"/>
+                                                    <xsl:text>&amp;LogDirectory=</xsl:text>
+                                                    <xsl:value-of select="../../LogDirectory"/>
+                                                    <xsl:text>&amp;Path=</xsl:text>
+                                                    <xsl:value-of select="../../ThorPath"/>
+                                                </xsl:attribute>
+                                                <xsl:value-of select="../../ThorClusterName"/>
+                                            </a>)
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </xsl:when>
                         <xsl:otherwise>
                                                     <xsl:value-of select="../../Name"/>
                                                     <xsl:if test="count(../TpMachine) &gt; 1"> (Instance <xsl:value-of select="position()"/>)</xsl:if>
@@ -507,12 +555,6 @@
                     </td>
                     <td>
                         <xsl:if test="$showDirectory">
-                            <xsl:variable name="absolutePath">
-                                <xsl:call-template name="makeAbsolutePath">
-                                    <xsl:with-param name="path" select="Directory"/>
-                                    <xsl:with-param name="isLinuxInstance" select="OS!=0"/>
-                                </xsl:call-template>
-                            </xsl:variable>
                             <table width="100%" cellpadding="0" cellspacing="0" class="C">
                                 <tbody>
                                     <tr>
@@ -638,6 +680,9 @@
                                         </xsl:if>
                                         <td width="14">
                                             <xsl:choose>
+                                                <xsl:when test="$compType!='' and $compType='SparkThorProcess'">
+                                                    <img onclick="return showPopup('http', '{Netaddress}', '{../../SparkMasterWebUIPort}')" border="0" src="/esp/files_/img/information.png" alt="{$hpccStrings/st[@id='ViewSparkClusterInfo']}" title="{$hpccStrings/st[@id='ViewSparkClusterInfo']}" width="14" height="14"/>
+                                                </xsl:when>
                                                 <xsl:when test="$compType!='' and ($compType!='EclAgentProcess' or OS=0)">
                           <xsl:variable name="captionLen" select="string-length($caption)-1"/>
                           <xsl:variable name="href0">
@@ -726,12 +771,6 @@
                     </tr>
                 </xsl:if>
         <xsl:if test="$showAgentExec">
-          <xsl:variable name="absolutePath">
-            <xsl:call-template name="makeAbsolutePath">
-              <xsl:with-param name="path" select="string(Directory)"/>
-              <xsl:with-param name="isLinuxInstance" select="OS!=0"/>
-            </xsl:call-template>
-          </xsl:variable>
           <xsl:variable name="logDir" select="string(../../LogDir)"/>
           <xsl:variable name="logPath">
             <xsl:choose>

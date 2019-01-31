@@ -181,7 +181,6 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
     EndTag etag;
     StringBuffer peerStr;
     ctx->getPeer(peerStr);
-    const char* userId = ctx->queryUserId();
     Owned<CRpcResponse> rpc_response;
     rpc_response.setown(new CRpcResponse);
     rpc_response->setContext(req.queryContext());
@@ -195,6 +194,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
     {
         rpc_call->preunmarshall(xpp.get());
         rpc_call->unmarshall(xpp.get(), multipart.get());
+        const char* userId = ctx->queryUserId();
         DBGLOG("JSON method <%s> from %s@%s.", rpc_call->get_name(),  (userId&&*userId)?userId:"unknown",
             (peerStr.length()>0)?peerStr.str():"unknown");
         ctx->setHTTPMethod("JSON");
@@ -230,6 +230,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
         }
 
         CBody* req_body = req_envelope->get_body();
+        const char* userId = ctx->queryUserId();
         try {
             req_body->nextRpcMessage(rpc_call.get());
             rpc_call->unmarshall(xpp.get(), multipart.get());
