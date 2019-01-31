@@ -79,7 +79,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         if (lexer->macroParms->getProp(str(name), macroval))
         {
             lexer->pushText(macroval.str());
-            return lexer->yyLex(returnToken, lookup, activeState);
+            return INTERNAL_READ_NEXT_TOKEN;
         }
     }
     
@@ -325,14 +325,14 @@ xpathseq      ([^}\r\n])+
                         if (lexer->macroGathering || lexer->skipNesting)
                             return SKIPPED;
                         lexer->doError(returnToken, true); 
-                        return lexer->yyLex(returnToken, lookup, activeState);
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #WARNING            {
                         setupdatepos; 
                         if (lexer->macroGathering || lexer->skipNesting)
                             return SKIPPED;
                         lexer->doError(returnToken, false); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #FOR                {
                         setupdatepos; 
@@ -345,7 +345,7 @@ xpathseq      ([^}\r\n])+
                             return SKIPPED;
                         }
                         lexer->doFor(returnToken, false); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #FORALL             {
                         setupdatepos; 
@@ -358,7 +358,7 @@ xpathseq      ([^}\r\n])+
                             return SKIPPED;
                         }
                         lexer->doFor(returnToken, true); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #LOOP               {
                         setupdatepos; 
@@ -371,7 +371,7 @@ xpathseq      ([^}\r\n])+
                             return SKIPPED;
                         }
                         lexer->doLoop(returnToken); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #BREAK              {
                         setupdatepos; 
@@ -393,77 +393,77 @@ xpathseq      ([^}\r\n])+
                             return SKIPPED;
                         }
                         lexer->doIf(returnToken, false);
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #EXPAND             {
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doExpand(returnToken); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #DECLARE            { 
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doDeclare(returnToken); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #SET                { 
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doSet(returnToken, false); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #TRACE              { 
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doTrace(returnToken); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #EXPORT             { 
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doExport(returnToken, false); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #EXPORTXML              { 
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doExport(returnToken, true); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #MANGLE             { 
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doMangle(returnToken, false); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #DEMANGLE           { 
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doMangle(returnToken, true); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #APPLY              { 
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doApply(returnToken); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #APPEND             {
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doSet(returnToken, true); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #CONSTANT           { 
                         setupdatepos;
@@ -476,7 +476,7 @@ xpathseq      ([^}\r\n])+
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doDefined(returnToken);
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #ELSE               {
                         setupdatepos;
@@ -513,7 +513,7 @@ xpathseq      ([^}\r\n])+
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doGetDataType(returnToken); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 
 #INMODULE           {
@@ -521,14 +521,14 @@ xpathseq      ([^}\r\n])+
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doInModule(returnToken); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #ISVALID            {
                         setupdatepos; 
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED; 
                         lexer->doIsValid(returnToken); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #ISDEFINED          {
                         setupdatepos; 
@@ -537,12 +537,12 @@ xpathseq      ([^}\r\n])+
                         bool defined = lexer->doIsDefined(returnToken);
 //                      RETURNHARD(defined ? TOK_TRUE : TOK_FALSE);
                         lexer->pushText(defined ? "true" : "false");
-                        return lexer->yyLex(returnToken, lookup, activeState);
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #LINE               {
                         setupdatepos;
                         lexer->doLine(returnToken);
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #LINK               {
                         setupdatepos;
@@ -582,7 +582,7 @@ xpathseq      ([^}\r\n])+
                             return SKIPPED; 
                         }
                         lexer->doUniqueName(returnToken); 
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #WORKUNIT           { 
                         setupdatepos;
@@ -603,11 +603,11 @@ __LINE__            {
                     }
 #REGION[^\n]*       { 
                         updatepos1;
-                        return INTERNAL_READ_NEXT_TOKEN; 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #ENDREGION          {
                         updatepos1;
-                        return INTERNAL_READ_NEXT_TOKEN; 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
 #END                { 
 //Place #END last so the specialised versions are hit first
@@ -625,7 +625,7 @@ __LINE__            {
                         StringBuffer msg("Unknown # command: ");
                         msg.append(CUR_TOKEN_TEXT);
                         lexer->reportError(returnToken, ERR_TMPLT_UNKNOWNCOMMAND, "%s", msg.str());
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     }
         
 ABS                 { RETURNSYM(ABS); }
@@ -1053,7 +1053,7 @@ __TARGET_PLATFORM__ { RETURNSYM(__TARGET_PLATFORM__); }
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED;
                         lexer->doPreprocessorLookup(returnToken, false, 0);
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     };
 
 {percent}'{alphanumcolon}*'{percent} {
@@ -1061,14 +1061,14 @@ __TARGET_PLATFORM__ { RETURNSYM(__TARGET_PLATFORM__); }
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED;
                         lexer->doPreprocessorLookup(returnToken, true, 1);
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     };
 {percent}\{{xpathseq}\}{percent} {
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED;
                         lexer->doPreprocessorLookup(returnToken, false, 1);
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     };
 
 {percent}'\{{xpathseq}\}'{percent} {
@@ -1076,7 +1076,7 @@ __TARGET_PLATFORM__ { RETURNSYM(__TARGET_PLATFORM__); }
                         if (lexer->skipNesting || lexer->macroGathering)
                             return SKIPPED;
                         lexer->doPreprocessorLookup(returnToken, true, 2);
-                        return lexer->yyLex(returnToken, lookup, activeState); 
+                        return INTERNAL_READ_NEXT_TOKEN;
                     };
 INTEGER{digit}+ { 
                       setupdatepos; 
