@@ -7002,6 +7002,7 @@ class CEnvironmentClusterInfo: implements IConstWUClusterInfo, public CInterface
     StringAttr alias;
     StringAttr serverQueue;
     StringAttr agentQueue;
+    StringAttr agentName;
     StringAttr roxieProcess;
     SocketEndpointArray roxieServers;
     StringAttr thorQueue;
@@ -7096,6 +7097,7 @@ public:
         {
             assertex(!roxie);
             agentQueue.set(getClusterEclAgentQueueName(queue.clear(), name));
+            agentName.set(agent->queryProp("@name"));
         }
         else if (roxie)
             agentQueue.set(getClusterRoxieQueueName(queue.clear(), name));
@@ -7120,6 +7122,11 @@ public:
     IStringVal & getAgentQueue(IStringVal & str) const
     {
         str.set(agentQueue);
+        return str;
+    }
+    IStringVal & getAgentName(IStringVal & str) const
+    {
+        str.set(agentName);
         return str;
     }
     virtual IStringVal & getServerQueue(IStringVal & str) const
