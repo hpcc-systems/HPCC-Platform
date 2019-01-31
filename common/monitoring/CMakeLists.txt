@@ -16,3 +16,4 @@
 add_subdirectory (prosysinfo)
 
 Install ( PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/preflight DESTINATION sbin COMPONENT Runtime )
+Install ( PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/usage DESTINATION sbin COMPONENT Runtime )

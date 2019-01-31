@@ -29,6 +29,7 @@ class CMachineInfoThreadParam;
 class CRoxieStateInfoThreadParam;
 class CMetricsThreadParam;
 class CRemoteExecThreadParam;
+class CGetMachineUsageThreadParam;
 
 static const char *legacyFilterStrings[] = {"AttrServerProcess:attrserver", "DaliProcess:daserver",
 "DfuServerProcess:dfuserver", "DKCSlaveProcess:dkcslave", "EclServerProcess:eclserver", "EclCCServerProcess:eclccserver",
@@ -734,6 +735,9 @@ public:
     bool onGetMachineInfoEx(IEspContext &context, IEspGetMachineInfoRequestEx &req, IEspGetMachineInfoResponseEx &resp);
     bool onGetComponentStatus(IEspContext &context, IEspGetComponentStatusRequest &req, IEspGetComponentStatusResponse &resp);
     bool onUpdateComponentStatus(IEspContext &context, IEspUpdateComponentStatusRequest &req, IEspUpdateComponentStatusResponse &resp);
+    bool onGetComponentUsage(IEspContext &context, IEspGetComponentUsageRequest &req, IEspGetComponentUsageResponse &resp);
+    bool onGetTargetClusterUsage(IEspContext &context, IEspGetTargetClusterUsageRequest &req, IEspGetTargetClusterUsageResponse &resp);
+    bool onGetNodeGroupUsage(IEspContext &context, IEspGetNodeGroupUsageRequest &req, IEspGetNodeGroupUsageResponse &resp);
 
     bool onGetMetrics(IEspContext &context, IEspMetricsRequest &req, IEspMetricsResponse &resp);
     bool onStartStop( IEspContext &context, IEspStartStopRequest &req,  IEspStartStopResponse &resp);
@@ -744,6 +748,7 @@ public:
     void doGetMachineInfo(IEspContext& context, CMachineInfoThreadParam* pReq);
     void doGetMetrics(CMetricsThreadParam* pParam);
     bool doStartStop(IEspContext &context, StringArray& addresses, char* userName, char* password, bool bStop, IEspStartStopResponse &resp);
+    void getMachineUsage(IEspContext& context, CGetMachineUsageThreadParam* param);
 
     IConstEnvironment* getConstEnvironment();
 
@@ -805,6 +810,35 @@ private:
     unsigned addRoxieStateHash(const char* hash, StateHashes& stateHashes, unsigned& totalUniqueHashes);
     void updateMajorRoxieStateHash(StateHashes& stateHashes, CIArrayOf<CRoxieStateData>& roxieStates);
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
+
+    StringArray& listTargetClusterNames(IConstEnvironment* constEnv, StringArray& targetClusters);
+    StringArray& listThorHThorNodeGroups(IConstEnvironment* constEnv, StringArray& nodeGroups);
+    IArrayOf<IConstComponent>& listComponentsForCheckingUsage(IConstEnvironment* constEnv, IArrayOf<IConstComponent>& componentList);
+    IArrayOf<IConstComponent>& listComponentsByType(IPropertyTree* envRoot, const char* componentType, IArrayOf<IConstComponent>& componentList);
+    IPropertyTree* createDiskUsageReq(IPropertyTree* envDirectories, const char* pathName,
+        const char* componentType, const char* componentName);
+    IPropertyTree* createMachineUsageReq(IConstEnvironment* constEnv, const char* computer);
+    void readTargetClusterUsageReq(IEspGetTargetClusterUsageRequest& req, IConstEnvironment* constEnv,
+        IPropertyTree* usageReq, IPropertyTree* uniqueUsages);
+    void readNodeGroupUsageReq(IEspGetNodeGroupUsageRequest& req, IConstEnvironment* constEnv,
+        IPropertyTree* usageReq, IPropertyTree* uniqueUsages);
+    void readComponentUsageReq(IEspGetComponentUsageRequest& req, IConstEnvironment* constEnv, IPropertyTree* usageReq,
+        IPropertyTree* uniqueUsages);
+    void readThorUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);
+    void readRoxieUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);
+    void readDropZoneUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);
+    void readOtherComponentUsageReq(const char* name, const char* type, IConstEnvironment* constEnv, IPropertyTree* usageReq);
+    void setUniqueMachineUsageReq(IPropertyTree* usageReq, IPropertyTree* uniqueUsages);
+    void getMachineUsages(IEspContext& context, IPropertyTree* uniqueUsageReq);
+    bool getEclAgentNameFromNodeGroupName(const char* nodeGroupName, StringBuffer& agentName);
+    void getThorClusterNamesByGroupName(IPropertyTree* envRoot, const char* group, StringArray& thorClusters);
+    void readTargetClusterUsageResult(IEspContext& context, IPropertyTree* usageReq, IPropertyTree* uniqueUsages,
+        IArrayOf<IEspTargetClusterUsage>& targetClusterUsages);
+    void readNodeGroupUsageResult(IEspContext& context, IPropertyTree* usageReq, IPropertyTree* uniqueUsages,
+        IArrayOf<IEspNodeGroupUsage>& nodeGroupUsages);
+    void readComponentUsageResult(IEspContext& context, IPropertyTree* usageReq, IPropertyTree* uniqueUsages,
+        IArrayOf<IEspComponentUsage>& componentUsages);
+    bool readDiskSpaceResponse(const char* buf, __int64& free, __int64& used, int& percentAvail, StringBuffer& pathUsed);
 
     //Still used in StartStop/Rexec, so keep them for now.
     enum OpSysType { OS_Windows, OS_Solaris, OS_Linux };
