@@ -197,7 +197,7 @@ sequential (
   PARALLEL (
       OUTPUT(testMySQLDS()),
       COUNT(testMySQLDS2()),
-      OUTPUT(SORT(testMySQLDS2a(), name)),
+
       OUTPUT(testMySQLDS3(), {name}),
       OUTPUT(testMySQLRow().name),
       OUTPUT(testMySQLParms('name1', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße')),
