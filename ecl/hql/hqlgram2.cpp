@@ -10188,6 +10188,9 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
             curBase->getSymbols(syms);
             syms.sort(compareSymbolsByName);
 
+            QuickExpressionReplacer virtualMapper;
+            if (baseVirtualAttr)
+                virtualMapper.setMapping(baseVirtualAttr, virtualSeqAttr);
             ForEachItemIn(iSym, syms)
             {
                 IIdAtom * id = syms.item(iSym).queryId();
@@ -10199,8 +10202,8 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
 
                 LinkedHqlExpr mapped = baseSym;
                 //Replace any references to the base module attribute with this new module.
-                if (baseVirtualAttr)
-                    mapped.setown(quickFullReplaceExpression(mapped, baseVirtualAttr, virtualSeqAttr));
+                if (baseVirtualAttr && (baseVirtualAttr != virtualSeqAttr))
+                    mapped.setown(virtualMapper.transform(mapped));
 
                 if (match)
                 {
