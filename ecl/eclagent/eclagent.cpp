@@ -595,22 +595,7 @@ const char *EclAgent::queryTempfilePath()
     if (agentTempDir.isEmpty()) 
     {
         StringBuffer dir;
-        if (!getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"temp","eclagent",agentTopology->queryProp("@name"),dir))
-        {
-            dir.clear();
-#ifdef _WIN32
-            char path[_MAX_PATH+1];
-            DWORD len = GetEnvironmentVariable("TEMP",path,sizeof(path));
-            if (len)
-                dir.append(path);
-            else
-                dir.append("c:");
-            dir.append("\\HPCCSystems\\hthortemp");
-#else
-            dir.append("/tmp/HPCCSystems/hthortemp");
-#endif
-        }
-        recursiveCreateDirectory(dir.str());
+        getTempFilePath(dir, "eclagent", agentTopology);
         agentTempDir.set(dir.str());
     }
     return agentTempDir.str();

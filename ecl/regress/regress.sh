@@ -30,7 +30,7 @@ syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-I include_dir ...] [-e ecl
 
 ## Default arguments
 target_dir=run_$$
-compare_dir=
+compare_dir=-
 include_dir=
 compare_only=0
 userflags=
@@ -93,12 +93,14 @@ if [[ $* != '' ]]; then
                 np="$OPTARG"
                 ;;
             v)
-               	valgrind="valgrind --leak-check=full --suppressions=suppressions.txt "
-               	eclcc="$valgrind $eclcc"
-               	compare_dir=
-               	;;
+                valgrind="valgrind --leak-check=full --suppressions=suppressions.txt "
+                userflags="$userflags --leakcheck"
+                eclcc="$valgrind $eclcc"
+                compare_dir=
+                ;;
             w)
                 valgrind="valgrind --leak-check=full --suppressions=suppressions.txt --vgdb-error=0 "
+                userflags="$userflags --leakcheck"
                 valgrind="$valgrind --track-origins=yes "
                 eclcc="$valgrind $eclcc"
                 compare_dir=
@@ -164,7 +166,7 @@ if [[ $eclcc != '' ]]; then
 fi
 
 ## Compare to golden standard (ignore obvious differences)
-if [[ $compare_dir ]]; then
+if [[ $compare_dir != '-' ]]; then
     if [[ ! -d $target_dir ]]; then
         echo " ++ No target dir to compare"
         exit 1

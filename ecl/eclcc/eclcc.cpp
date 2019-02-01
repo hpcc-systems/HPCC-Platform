@@ -808,13 +808,16 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 if (!optShared)
                     wu->setDebugValueInt("standAloneExe", 1, true);
                 EclGenerateTarget target = optWorkUnit ? EclGenerateNone : (optNoCompile ? EclGenerateCpp : optShared ? EclGenerateDll : EclGenerateExe);
-                gatherResourceManifestFilenames(instance, resourceManifestFiles);
-                ForEachItemIn(i, resourceManifestFiles)
-                    generator->addManifest(resourceManifestFiles.item(i));
                 if (instance.srcArchive)
                 {
-                    generator->addManifestFromArchive(instance.srcArchive);
+                    generator->addManifestsFromArchive(instance.srcArchive);
                     instance.srcArchive.clear();
+                }
+                else
+                {
+                    gatherResourceManifestFilenames(instance, resourceManifestFiles);
+                    ForEachItemIn(i, resourceManifestFiles)
+                        generator->addManifest(resourceManifestFiles.item(i));
                 }
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
@@ -1246,6 +1249,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             parseCtx.globalDependTree.setown(createPTree(ipt_fast)); //to locate associated manifests, keep separate from user specified MetaOptions
         if (optGenerateMeta || optIncludeMeta)
         {
+            //Currently the meta information is generated as a side-effect of parsing the attributes, so disable
+            //using the simplified expressions if meta information is requested.  HPCC-20716 will improve this.
+            parseCtx.setIgnoreCache();
+
             HqlParseContext::MetaOptions options;
             options.includePublicDefinitions = instance.wu->getDebugValueBool("metaIncludePublic", true);
             options.includePrivateDefinitions = instance.wu->getDebugValueBool("metaIncludePrivate", true);
@@ -1325,6 +1332,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
                 updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsSimplified, NULL, parseCtx.numAttribsSimplified);
                 updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsProcessed, NULL, parseCtx.numAttribsProcessed);
                 updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsFromCache, NULL, parseCtx.numAttribsFromCache);
+                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsSimplifiedTooComplex, NULL, parseCtx.numSimplifiedTooComplex);
             }
 
             if (exportDependencies)

@@ -95,6 +95,8 @@
 #define THOROPT_KEYLOOKUP_COMPRESS_MESSAGES "keyedJoinCompressMsgs" // compress key and fetch request messages                                   (default = true)
 #define THOROPT_FORCE_REMOTE_DISABLED "forceRemoteDisabled"     // disable remote (via dafilesrv) reads (NB: takes precedence over forceRemoteRead) (default = false)
 #define THOROPT_FORCE_REMOTE_READ     "forceRemoteRead"         // force remote (via dafilesrv) read (NB: takes precedence over environment.conf setting) (default = false)
+#define THOROPT_ACTINIT_WAITTIME_MINS "actInitWaitTimeMins"     // max time to wait for slave activity initialization message from master
+#define THOROPT_MAXLFN_BLOCKTIME_MINS "maxLfnBlockTimeMins"     // max time permitted to be blocked on a DFS logical file operation.
 
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
@@ -140,6 +142,7 @@ public:
     {
         reset();
     }
+    bool isCancelled() const { return cancelled; }
     void reset()
     {
         clear();

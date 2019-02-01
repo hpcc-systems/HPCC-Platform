@@ -601,6 +601,9 @@ void CMemberInfo::buildOffset(HqlCppTranslator & translator, BuildCtx & ctx, IRe
             IHqlExpression * accessor = selector->queryRootRow()->ensureAccessor(translator, ctx);
             assertex(accessor);
             value.setown(createValue(no_select, LINK(sizetType), LINK(accessor), LINK(cachedAccessorOffset.queryVarSize())));
+            //The type in the line above is a lie.  It is actually a size_t (rather than a size32_t).
+            //Add a cast to ensure that all offsets are calculated as size32_t to avoid problems with (temporary) numeric underflow
+            value.setown(createValue(no_cast, LINK(sizetType), value.getClear()));
         }
         bound.expr.setown(createSizeExpression(value, cachedAccessorOffset.getFixedSize()));
     }
@@ -1112,7 +1115,12 @@ void CContainerInfo::buildSizeOf(HqlCppTranslator & translator, BuildCtx & ctx, 
         IHqlExpression * accessor = selector->queryRootRow()->ensureAccessor(translator, ctx);
         assertex(accessor);
         if (accessorSize.queryVarSize())
+        {
             bound.expr.setown(createValue(no_select, LINK(sizetType), LINK(accessor), LINK(accessorSize.queryVarSize())));
+            //The type in the line above is a lie.  It is actually a size_t (rather than a size32_t).
+            //Add a cast to ensure that all offsets are calculated as size32_t to avoid problems with (temporary) numeric underflow
+            bound.expr.setown(createValue(no_cast, LINK(sizetType), bound.expr.getClear()));
+        }
         bound.expr.setown(createSizeExpression(bound.expr, accessorSize.getFixedSize()));
     }
     else
@@ -1378,6 +1386,34 @@ void CIfBlockInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ct
     //MORE: This test could be avoided if the first child is *actually* variable length
     ensureTargetAvailable(translator, condctx, selector, CContainerInfo::getTotalMinimumSize());
     CContainerInfo::buildDeserialize(translator, condctx, selector, helper, serializeForm);
+
+    //Avoid recalculating the size outside of the ifblock()
+    translator.buildExprAssign(condctx, cachedSize, sizeOfIfBlock);
+
+    ctx.associateExpr(sizeOfIfBlock, cachedSize.expr);
+}
+
+void CIfBlockInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, int direction)
+{
+    //MORE: This should really associate offset of the ifblock with the offset of its first child as well.
+    CHqlBoundExpr boundOffset;
+    buildOffset(translator, ctx, selector, boundOffset);
+
+    //NB: Sizeof(ifblock) has an unusual representation...
+    OwnedHqlExpr sizeOfIfBlock = createValue(no_sizeof, makeIntType(4,false), createSelectExpr(LINK(selector->queryExpr()), LINK(column)));
+    CHqlBoundTarget cachedSize;
+    cachedSize.expr.setown(ctx.getTempDeclare(sizetType, queryZero()));
+
+    //MORE: Should also conditionally set a variable to the size of the ifblock to simplify subsequent generated code
+    OwnedHqlExpr cond = selector->queryRootRow()->bindToRow(condition, queryRootSelf());
+    CHqlBoundExpr bound;
+    translator.buildSimpleExpr(ctx, cond, bound);
+    BuildCtx condctx(ctx);
+    condctx.addFilter(bound.expr);
+
+    //MORE: This test could be avoided if the first child is *actually* variable length
+    ensureTargetAvailable(translator, condctx, selector, CContainerInfo::getTotalMinimumSize());
+    CContainerInfo::buildClear(translator, condctx, selector, direction);
 
     //Avoid recalculating the size outside of the ifblock()
     translator.buildExprAssign(condctx, cachedSize, sizeOfIfBlock);
@@ -2147,7 +2183,7 @@ void CSpecialVStringColumnInfo::setColumn(HqlCppTranslator & translator, BuildCt
         args.append(*LINK(length));
         args.append(*translator.getElementPointer(bound.expr));
         translator.callProcedure(ctx, str2VStrId, args);
-        associateSizeOf(ctx, selector, LINK(targetSize), 0);
+        associateSizeOf(ctx, selector, targetSize, 0);
     }
 }
 

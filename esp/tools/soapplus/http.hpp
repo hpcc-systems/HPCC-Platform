@@ -94,6 +94,7 @@ public:
     __int64 totalreqlen;
     __int64 totalresplen;
     __int64 numrequests;
+    __int64 numfails;
 
 public:
     IMPLEMENT_IINTERFACE;

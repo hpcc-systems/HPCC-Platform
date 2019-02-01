@@ -908,7 +908,8 @@ unsigned Cws_machineEx::addRoxieStateHash(const char* hash, StateHashes& stateHa
     {
         //Add a new 'StateHash'. Set its hashID to totalUniqueHashes and set its count to 1.
         hashID = totalUniqueHashes;
-        stateHashes.setValue(hash, new CStateHash(hashID, 1));
+        Owned<IStateHash> newStateHash = new CStateHash(hashID, 1);
+        stateHashes.setValue(hash, newStateHash);
         totalUniqueHashes++;
     }
     return hashID;
@@ -1180,10 +1181,10 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
         if (command.length() < 1)
             return exitCode;
 
-        IFRunSSH * connection = createFRunSSH();
+        Owned<IFRunSSH> connection = createFRunSSH();
         connection->init(command.str(),NULL,NULL,NULL,m_SSHConnectTimeoutSeconds,0);
         // executed as single connection
-        connection->exec(sAddress,NULL,true);
+        connection->exec(sAddress, NULL, false);
         response.append(connection->getReplyText()[0]);
         exitCode = connection->getReply()[0];
         int len = response.length();

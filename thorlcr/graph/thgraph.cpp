@@ -244,6 +244,7 @@ public:
         IThorResult *counterResult = results->createResult(activity, pos, countRowIf, thorgraphresult_nul, SPILL_PRIORITY_DISABLE);
         Owned<IRowWriter> counterResultWriter = counterResult->getWriter();
         counterResultWriter->putRow(counterRowFinal.getClear());
+        graph->setLoopCounter(loopCounter);
     }
     virtual void prepareLoopAgainResult(CActivityBase &activity, IThorGraphResults *results, unsigned pos)
     {
@@ -258,49 +259,6 @@ public:
         ThorGraphResultType resultType = activity.queryGraph().isLocalChild() ? thorgraphresult_nul : thorgraphresult_distributed;
         IThorResult *loopResult =  activity.queryGraph().createResult(activity, 0, results, resultRowIf, resultType); // loop output
         IThorResult *inputResult = activity.queryGraph().createResult(activity, 1, results, resultRowIf, resultType); // loop input
-    }
-    virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *results, IRowWriterMultiReader *inputStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
-    {
-        if (counter)
-            graph->setLoopCounter(counter);
-        Owned<IThorResult> inputResult = results->getResult(1);
-        if (inputStream)
-            inputResult->setResultStream(inputStream, rowStreamCount);
-        graph->executeChild(parentExtractSz, parentExtract, results, NULL);
-    }
-    virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *graphLoopResults, size32_t parentExtractSz, const byte *parentExtract)
-    {
-        Owned<IThorGraphResults> results = graph->createThorGraphResults(1);
-        if (counter)
-        {
-            prepareCounterResult(activity, results, counter, 0);
-            graph->setLoopCounter(counter);
-        }
-        try
-        {
-            graph->executeChild(parentExtractSz, parentExtract, results, graphLoopResults);
-        }
-        catch (IException *e)
-        {
-            IThorException *te = QUERYINTERFACE(e, IThorException);
-            if (!te)
-            {
-                Owned<IThorException> e2 = MakeActivityException(&activity, e, "Exception running child graphs");
-                e->Release();
-                te = e2.getClear();
-            }
-            else if (!te->queryActivityId())
-                setExceptionActivityInfo(activity.queryContainer(), te);
-            try { graph->abort(te); }
-            catch (IException *abortE)
-            {
-                Owned<IThorException> e2 = MakeActivityException(&activity, abortE, "Exception whilst aborting graph");
-                abortE->Release();
-                EXCLOG(e2, NULL);
-            }
-            graph->queryJobChannel().fireException(te);
-            throw te;
-        }
     }
     virtual CGraphBase *queryGraph() { return graph; }
 };
@@ -2358,6 +2316,7 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                             GraphPrintLog(graph, e, "graphDone");
                             e->Release();
                         }
+                        graphInfo.clear(); // NB: at this point the graph will be destroyed
                         if (e)
                             throw e.getClear();
                         if (!nextGraphInfo)
@@ -2698,6 +2657,7 @@ void CJobBase::init()
     sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
     sharedMemoryMB = globalMemoryMB*sharedMemoryLimitPercentage/100;
     failOnLeaks = getOptBool("failOnLeaks");
+    maxLfnBlockTimeMins = getOptInt(THOROPT_MAXLFN_BLOCKTIME_MINS, DEFAULT_MAXLFN_BLOCKTIME_MINS);
 
     PROGLOG("Global memory size = %d MB, shared memory = %d%%, memory spill at = %d%%", globalMemoryMB, sharedMemoryLimitPercentage, memorySpillAtPercentage);
     StringBuffer tracing("maxActivityCores = ");

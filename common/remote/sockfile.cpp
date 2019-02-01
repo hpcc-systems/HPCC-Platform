@@ -4766,6 +4766,13 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             size32_t avail = (size32_t)socket->avail_read();
             if (avail)
                 touch();
+            else if (left)
+            {
+                WARNLOG("notifySelected: Closing mid packet, %d remaining", left);
+                msg.clear();
+                parent->notify(this, msg); // notifying of graceful close
+                return false;
+            }
             if (left==0)
             {
                 try
@@ -4829,12 +4836,6 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             }
             if (TF_TRACE_FULL)
                 PROGLOG("notifySelected %d,%d",toread,left);
-            if ((left!=0)&&(avail==0))
-            {
-                WARNLOG("notifySelected: Closing mid packet, %d remaining", left);
-                toread = left;
-                msg.clear();
-            }
             left -= toread;
             if (left==0)
             {

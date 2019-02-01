@@ -26,6 +26,7 @@
 #include "mpbase.hpp"
 #include "dautils.hpp"
 #include "digisign.hpp"
+#include "workunit.hpp"
 
 using namespace cryptohelper;
 
@@ -163,9 +164,11 @@ public:
 
                 CDateTime now;
                 now.setNow();
-                if (now.compare(reqUTCTimestamp) < 0)//timestamp from the future?
+                if (now.compare(reqUTCTimestamp, false) < 0)//timestamp from the future?
                 {
-                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Request digital signature timestamp %s from the future",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str());
+                    StringBuffer localDaliTimeUTC;
+                    now.getString(localDaliTimeUTC, false);//get UTC timestamp
+                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Request digital signature UTC timestamp %s from the future (Dali UTC time %s)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str());
                     return SecAccess_None;//deny
                 }
 
@@ -173,9 +176,11 @@ public:
                 expiry.set(now);
                 expiry.adjustTime(requestSignatureExpiryMinutes);//compute expiration timestamp
 
-                if (expiry.compare(reqUTCTimestamp) < 0)//timestamp too far in the past?
+                if (expiry.compare(reqUTCTimestamp, false) < 0)//timestamp too far in the past?
                 {
-                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Expired request digital signature timestamp %s",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str());
+                    StringBuffer localDaliTimeUTC;
+                    now.getString(localDaliTimeUTC, false);//get UTC timestamp
+                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Expired request digital signature UTC timestamp %s (Dali UTC time %s, configured expiry %d minutes)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str(), requestSignatureExpiryMinutes);
                     return SecAccess_None;//deny
                 }
 
@@ -193,10 +198,10 @@ public:
                 user->setAuthenticateStatus(AS_AUTHENTICATED);
             }
             else
-                ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s digital signature support not available",key?key:"NULL",obj?obj:"NULL",username.str());
+                ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Dali received signed request, however Dali is not configured to verify digital signatures",key?key:"NULL",obj?obj:"NULL",username.str());
         }
 
-        if (!isEmptyString(user->credentials().getPassword()))
+        if (!isEmptyString(user->credentials().getPassword()) && !isWorkunitDAToken(user->credentials().getPassword()))
         {
             if (!ldapsecurity->authenticateUser(*user, NULL))
             {

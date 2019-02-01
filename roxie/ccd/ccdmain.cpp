@@ -867,14 +867,14 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
 
+        // NB: these directories will have been setup by topology earlier
+        const char *primaryDirectory = queryBaseDirectory(grp_unknown, 0);
+        const char *secondaryDirectory = queryBaseDirectory(grp_unknown, 1);
+
         // MORE: Get parms from topology after it is populated from Hardware/computer types section in configenv
         //       Then if does not match and based on desired action in topolgy, either warn, or fatal exit or .... etc
-        //       Also get prim path and sec from topology
-#ifdef _WIN32
-        getHardwareInfo(hdwInfo, "C:", "D:");
-#else // linux
-        getHardwareInfo(hdwInfo, "/c$", "/d$");
-#endif
+        getHardwareInfo(hdwInfo, primaryDirectory, secondaryDirectory);
+
         if (traceLevel)
         {
             DBGLOG("Current Hardware Info: CPUs=%i, speed=%i MHz, Mem=%i MB , primDisk=%i GB, primFree=%i GB, secDisk=%i GB, secFree=%i GB, NIC=%i", 

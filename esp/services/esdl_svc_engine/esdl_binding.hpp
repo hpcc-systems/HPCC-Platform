@@ -173,7 +173,7 @@ public:
     virtual bool handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawresp, const char * finalresp, const char * logdata);
     void handleEchoTest(const char *mthName, IPropertyTree *req, StringBuffer &soapResp, ESPSerializationFormat format);
     void handlePingRequest(const char *mthName,StringBuffer &out,ESPSerializationFormat format);
-    virtual void handleFinalRequest(IEspContext &context, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy);
+    virtual void handleFinalRequest(IEspContext &context, IEsdlCustomTransform *srvCrt, IEsdlCustomTransform *mthCrt, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy);
     void getSoapBody(StringBuffer& out,StringBuffer& soapresp);
     void getSoapError(StringBuffer& out,StringBuffer& soapresp,const char *,const char *);
 
@@ -263,6 +263,11 @@ public:
     void getRequestContent(IEspContext &context, StringBuffer & req, CHttpRequest* request, const char * servicename, const char * methodname, const char *ns, unsigned flags);
     void setXslProcessor(IInterface *xslp){}
 
+    int getMethodProperty(IEspContext &context, const char *serv, const char *method, StringBuffer &page, const char *propname, const char *dfault);
+
+    virtual int getMethodDescription(IEspContext &context, const char *serv, const char *method, StringBuffer &page) override;
+    virtual int getMethodHelp(IEspContext &context, const char *serv, const char *method, StringBuffer &page) override;
+
     int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods);
 
     StringBuffer & getServiceName(StringBuffer & resp)
@@ -284,7 +289,7 @@ public:
 
     int onGetSampleXml(bool isRequest, IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     static void splitURLList(const char* urlList, StringBuffer& protocol,StringBuffer& UserName,StringBuffer& Password, StringBuffer& ipportlistbody, StringBuffer& path, StringBuffer& options);
-    static void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie );
+    static void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName = nullptr );
     static bool makeURL( StringBuffer& url, IPropertyTree& cfg );
 
     bool usesESDLDefinition(const char * name, int version);
@@ -303,6 +308,7 @@ public:
         CriticalBlock b(detachCritSec);
         if(m_isAttached)
             return true;
+        m_pCentralStore->attachToBackend();
         queryEsdlMonitor()->subscribe();
         m_isAttached = true;
         if(m_bindingId.length() != 0)
@@ -319,6 +325,7 @@ public:
         if(!m_isAttached)
             return true;
         m_isAttached = false;
+        m_pCentralStore->detachFromBackend();
         queryEsdlMonitor()->unsubscribe();
         return true;
     }

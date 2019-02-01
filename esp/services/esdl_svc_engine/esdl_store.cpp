@@ -42,6 +42,9 @@ extern bool trimXPathToParentSDSElement(const char *element, const char * xpath,
 
 class CEsdlSDSStore : implements IEsdlStore, public CInterface
 {
+private:
+    bool m_isAttached;
+    CriticalSection m_attachCrit;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -49,8 +52,38 @@ public:
     {
         ensureSDSPath(ESDL_DEFS_ROOT_PATH);
         ensureSDSPath(ESDL_BINDINGS_ROOT_PATH);
+        m_isAttached = true;
     }
     virtual ~CEsdlSDSStore() { }
+
+    virtual void detachFromBackend()
+    {
+        CriticalBlock cb(m_attachCrit);
+        m_isAttached = false;
+    }
+
+    virtual void attachToBackend()
+    {
+        CriticalBlock cb(m_attachCrit);
+        m_isAttached = true;
+    }
+
+    virtual bool isAttachedToBackend()
+    {
+        CriticalBlock cb(m_attachCrit);
+        return m_isAttached;
+    }
+
+    ISDSManager& checkQuerySDS()
+    {
+        {
+            CriticalBlock cb(m_attachCrit);
+            if (m_isAttached)
+                return querySDS();
+        }
+
+        throw MakeStringException(-1, "ESDS store is not attached to dali");
+    }
 
     virtual IPropertyTree* fetchDefinition(const char* definitionId) override
     {
@@ -59,7 +92,7 @@ public:
 
         if (!strchr (definitionId, '.')) //no name.ver delimiter, find latest version of name
         {
-            Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+            Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
             if (!conn)
                 throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -89,7 +122,7 @@ public:
         {
             //There shouldn't be multiple entries here, but if so, we'll use the first one
             VStringBuffer xpath("%s[@id='%s'][1]", ESDL_DEF_PATH, definitionId);
-            Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+            Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
             if (!conn)
              throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", xpath.str());
 
@@ -107,7 +140,7 @@ public:
 
         //There shouldn't be multiple entries here, but if so, we'll use the first one
         VStringBuffer xpath("%s[@id='%s'][1]/esxdl", ESDL_DEF_PATH, definitionId);
-        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", xpath.str());
 
@@ -121,7 +154,7 @@ public:
 
         DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali based on name: %s ", definitionName);
 
-        Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -152,7 +185,7 @@ public:
         VStringBuffer xpath("%s[@espprocess='%s'][@espbinding='%s'][1]", ESDL_BINDING_PATH, espProcess, espStaticBinding);
         try
         {
-            Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+            Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
             if (!conn)
             {
                 ESPLOG(LogMin, "Unable to connect to ESDL Service binding information in dali %s", xpath.str());
@@ -181,7 +214,7 @@ public:
         VStringBuffer xpath("%s[@id='%s'][1]", ESDL_BINDING_PATH, bindingId);
         try
         {
-            Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+            Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
             if (!conn)
             {
                 ESPLOG(LogMin, "Unable to connect to ESDL Service binding information in dali %s", xpath.str());
@@ -207,7 +240,7 @@ public:
 
     virtual bool addDefinition(const char* definitionName, IPropertyTree* definitionInfo, StringBuffer& newId, unsigned& newSeq, const char* userid, bool deleteprev, StringBuffer & message) override
     {
-        Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
         {
             message.setf("Unable to connect to ESDL definitions root path in dali %s", ESDL_DEFS_ROOT_PATH);
@@ -299,7 +332,7 @@ public:
         StringBuffer lcid (definitionId);
         lcid.toLowerCase();
         VStringBuffer xpath("%s[@id='%s']", ESDL_DEF_PATH, lcid.str());
-        Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> globalLock = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
 
         if (globalLock)
             return true;
@@ -315,7 +348,7 @@ public:
         StringBuffer lcdefid (definitionId);
         lcdefid.toLowerCase();
         VStringBuffer xpath("%s[@id='%s']/esxdl", ESDL_DEF_PATH, lcdefid.str());
-        Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> globalLock = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
 
         if (globalLock)
         {
@@ -363,7 +396,7 @@ public:
 
         try
         {
-            conn.setown(querySDS().connect(rxpath, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL));
+            conn.setown(checkQuerySDS().connect(rxpath, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL));
         }
         catch (ISDSException * e)
         {
@@ -432,6 +465,99 @@ public:
             return -1;
         else
             return configureMethod(bindingId, methodName, configTree, overwrite, message);
+    }
+
+    virtual int configureLogTransform(const char* bindingId, const char* logTransformName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) override
+    {
+        if (isEmptyString(bindingId))
+        {
+            message.set("Unable to configure method, binding id must be provided");
+            return -1;
+        }
+        if (!configTree)
+        {
+            message.setf("Unable to configure method '%s', configuration attributes must be provided", logTransformName);
+            return -1;
+        }
+
+        VStringBuffer rxpath("%sBinding[@id='%s']/Definition/LogTransforms[1]", ESDL_BINDINGS_ROOT_PATH, bindingId);
+        Owned<IRemoteConnection> conn;
+
+        try
+        {
+            conn.setown(checkQuerySDS().connect(rxpath, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL));
+        }
+        catch (ISDSException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            if (msg.isEmpty())
+                message.setf("Unable to operate on Dali path: %s", rxpath.str());
+            else
+                message.setf("Unable to operate on Dali path: %s. %s", rxpath.str(), msg.str());
+            e->Release();
+            return -1;
+        }
+
+        //Only lock the branch for the target we're interested in.
+        if (!conn)
+            throw MakeStringException(-1, "Unable to connect to %s", rxpath.str());
+
+        Owned<IPropertyTree> root = conn->getRoot();
+        if (!root.get())
+            throw MakeStringException(-1, "Unable to open %s", rxpath.str());
+
+        VStringBuffer xpath("LogTransform[@name='%s']", logTransformName);
+        Owned<IPropertyTree> oldEnvironment = root->getPropTree(xpath.str());
+        if (oldEnvironment.get())
+        {
+            if (overwrite)
+            {
+                message.set("Existing LogTransform configuration overwritten!");
+                root->removeTree(oldEnvironment);
+            }
+            else
+            {
+                message.set("LogTransform configuration exists will not overwrite!");
+                return -1;
+            }
+        }
+
+        root->addPropTree("LogTransform", configTree);
+        conn->commit();
+
+        VStringBuffer changestr("action=update;type=binding;targetId=%s", bindingId);
+        triggerSubscription(changestr.str());
+
+        message.appendf("\nSuccessfully configured Method '%s' for binding '%s'", logTransformName, bindingId);
+        return 0;
+    }
+
+    virtual int configureLogTransform(const char* espProcName, const char* espBindingName, const char* definitionId, const char* logTransformName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) override
+    {
+        if (isEmptyString(espProcName))
+        {
+            message.set("Unable to configure method, ESP Process Name not available");
+            return -1;
+        }
+        if (isEmptyString(espBindingName))
+        {
+            message.set("Unable to configure method, ESP Binding Name not available");
+            return -1;
+        }
+
+        if (isEmptyString(definitionId))
+        {
+            message.set("Unable to configure method, ESDL definition ID not available");
+            return -1;
+        }
+
+        StringBuffer bindingId;
+        getIdFromProcBindingDef(espProcName, espBindingName, definitionId, bindingId, message);
+        if (bindingId.isEmpty())
+            return -1;
+
+        return configureLogTransform(bindingId, logTransformName, configTree, overwrite, message);
     }
 
     virtual int bindService(const char* bindingName,
@@ -566,7 +692,7 @@ public:
                 }
             }
         }
-        Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
 
@@ -649,6 +775,7 @@ public:
         else
             esdldeftree->addPropTree("Methods");
 
+        esdldeftree->addPropTree("LogTransforms");
         bindingtree->addPropTree(ESDL_DEF_ENTRY, LINK(esdldeftree));
         bindings->addPropTree(ESDL_BINDING_ENTRY, LINK(bindingtree));
 
@@ -677,7 +804,7 @@ public:
         }
 
         VStringBuffer xpath("%s[@espprocess='%s'][@espbinding='%s']", ESDL_BINDING_PATH, espProcName, espBindingName);
-        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
         {
             msg.setf("Could not find binding for ESP proc: %s, and binding: %s", espProcName, espBindingName);
@@ -696,7 +823,7 @@ public:
         }
 
         VStringBuffer xpath("%s[@id='%s']", ESDL_BINDING_PATH, bindingId);
-        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
         {
             msg.setf("Could not find binding for %s", bindingId);
@@ -711,7 +838,7 @@ public:
         if (!definitionId || !*definitionId)
             return false;
         bool ret = false;
-        Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
             throw MakeStringException(-1, "Unable to connect to %s dali path", ESDL_DEFS_ROOT_PATH);
 
@@ -750,7 +877,7 @@ public:
         if (!bindingId || !*bindingId)
             return false;
         bool ret = false;
-        Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), 0, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), 0, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
             throw MakeStringException(-1, "Unable to connect to %s dali path", ESDL_BINDINGS_ROOT_PATH);
 
@@ -790,7 +917,7 @@ public:
 
     virtual IPropertyTree* getDefinitions() override
     {
-        Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -799,7 +926,7 @@ public:
 
     virtual IPropertyTree* getBindings() override
     {
-        Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -824,7 +951,7 @@ private:
         if (!esdldefid || !*esdldefid)
                return false;
 
-        Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            return false;
 
@@ -859,7 +986,7 @@ private:
 
         StringBuffer xpath("/Environment/Software");
         //This part of the environment is very constant so read lock is more than enough
-        Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> globalLock = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
 
         if (!globalLock)
             throw MakeStringException(-1, "Unable to connect to ESP configuration information in dali %s", xpath.str());
@@ -886,7 +1013,7 @@ private:
     void triggerSubscription(const char* changeStr)
     {
         VStringBuffer exceptmsg("Can't access ESDL subscription dali registry, please check if %s exists", ESDL_CHANGE_PATH);
-        Owned<IRemoteConnection> subsconn = querySDS().connect(ESDL_CHANGE_PATH, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> subsconn = checkQuerySDS().connect(ESDL_CHANGE_PATH, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
         if (!subsconn)
             throw MakeStringException(-1, "%s", exceptmsg.str());
         IPropertyTree* substree = subsconn->queryRoot();
@@ -899,7 +1026,7 @@ private:
         if (!espprocname || !*espprocname)
             return false;
         VStringBuffer xpath("/Environment/Software/EspProcess[@name='%s']", espprocname);
-        Owned<IRemoteConnection> software = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IRemoteConnection> software = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (software)
             return true;
         else
@@ -925,7 +1052,7 @@ private:
         Owned<IRemoteConnection> conn;
         try
         {
-            conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL));
+            conn.setown(checkQuerySDS().connect(xpath, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL));
         }
         catch (ISDSException * e)
         {

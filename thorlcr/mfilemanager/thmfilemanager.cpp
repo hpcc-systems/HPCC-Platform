@@ -341,7 +341,7 @@ public:
         if (fileMapping)
             return &fileMapping->get();
 
-        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), false);
+        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), false, job.queryMaxLfnBlockTimeMins() * 60000);
         if (file && 0 == file->numParts())
         {
             if (file->querySuperFile())
@@ -390,7 +390,7 @@ public:
                 throw MakeStringException(99, "Cannot publish %s, invalid logical name", logicalName);
             if (dlfn.isForeign())
                 throw MakeStringException(99, "Cannot publish to a foreign Dali: %s", logicalName);
-            efile.setown(timedLookup(job, dlfn, true));
+            efile.setown(timedLookup(job, dlfn, true, job.queryMaxLfnBlockTimeMins() * 60000));
             if (efile)
             {
                 if (!extend && !overwriteok)
@@ -420,7 +420,7 @@ public:
                 if (found)
                 {
                     workunit->releaseFile(logicalName);
-                    Owned<IDistributedFile> f = timedLookup(job, dlfn, false);
+                    Owned<IDistributedFile> f = timedLookup(job, dlfn, false, job.queryMaxLfnBlockTimeMins() * 60000);
                     if (f)
                     {
                         unsigned p, parts = f->numParts();
@@ -445,9 +445,9 @@ public:
                     efile->getClusterName(c, clusterName);
                     clusters.append(clusterName);
                 }
-                remove(job, *efile);
+                remove(job, *efile, job.queryMaxLfnBlockTimeMins() * 60000);
                 efile.clear();
-                efile.setown(timedLookup(job, dlfn, true));
+                efile.setown(timedLookup(job, dlfn, true, job.queryMaxLfnBlockTimeMins() * 60000));
                 if (!efile.get())
                 {
                     ForEachItemIn(c, clusters)

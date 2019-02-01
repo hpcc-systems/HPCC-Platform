@@ -143,7 +143,7 @@ define([
                     }
                 });
 
-                if (idleCreator) {
+                if (idleCreator && idleCreator.status === "firedIdle") {
                     context.idleFired = true;
                     context.unlockDialog.show();
                     domClass.add("SessionLock", "overlay");

@@ -378,6 +378,7 @@ static const char * eclReserved12[] = {//Attributes
     "notrim",
     "only",
     "opt",
+    "__option__",
     "out",
     "outer",
     "packed",

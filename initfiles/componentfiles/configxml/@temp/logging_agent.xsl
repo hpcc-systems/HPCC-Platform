@@ -20,6 +20,7 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"
 xmlns:set="http://exslt.org/sets">
+    <xsl:import href="esp_logging_agent_basic.xsl"/>
     <xsl:import href="esp_logging_transid.xsl"/>
 
     <xsl:template name="LogSourceMap">
@@ -90,38 +91,22 @@ xmlns:set="http://exslt.org/sets">
         </xsl:if>
     </xsl:template>
 
-    <xsl:template name="LogBasic">
-        <xsl:param name="agentNode"/>
-        <xsl:if test="string($agentNode/@FailSafe) != ''">
-            <FailSafe><xsl:value-of select="$agentNode/@FailSafe"/></FailSafe>
-        </xsl:if>
-        <xsl:if test="string($agentNode/@FailSafeLogsDir) != ''">
-            <FailSafeLogsDir><xsl:value-of select="$agentNode/@FailSafeLogsDir"/></FailSafeLogsDir>
-        </xsl:if>
-        <xsl:if test="string($agentNode/@MaxLogQueueLength) != ''">
-            <MaxLogQueueLength><xsl:value-of select="$agentNode/@MaxLogQueueLength"/></MaxLogQueueLength>
-        </xsl:if>
-        <xsl:if test="string($agentNode/@MaxTriesGTS) != ''">
-            <MaxTriesGTS><xsl:value-of select="$agentNode/@MaxTriesGTS"/></MaxTriesGTS>
-        </xsl:if>
-        <xsl:if test="string($agentNode/@MaxTriesRS) != ''">
-            <MaxTriesRS><xsl:value-of select="$agentNode/@MaxTriesRS"/></MaxTriesRS>
-        </xsl:if>
-        <xsl:if test="string($agentNode/@QueueSizeSignal) != ''">
-            <QueueSizeSignal><xsl:value-of select="$agentNode/@QueueSizeSignal"/></QueueSizeSignal>
-        </xsl:if>
-    </xsl:template>
-
     <xsl:template name="CassandraLoggingAgent">
         <xsl:param name="agentName"/>
         <xsl:param name="agentNode"/>
         <xsl:if test="string($agentNode/@serverIP) = ''">
             <xsl:message terminate="yes">Cassandra server network address is undefined for <xsl:value-of select="$agentName"/>!</xsl:message>
         </xsl:if>
-        <LogAgent name="{$agentName}" type="LogAgent" services="GetTransactionSeed,UpdateLog,GetTransactionID" plugin="cassandralogagent">
+        <xsl:variable name="Services">
+            <xsl:choose>
+                <xsl:when test="string($agentNode/@Services) != ''"><xsl:value-of select="$agentNode/@Services"/></xsl:when>
+                <xsl:otherwise>GetTransactionSeed,UpdateLog,GetTransactionID</xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+        <LogAgent name="{$agentName}" type="LogAgent" services="{$Services}" plugin="cassandralogagent">
             <Cassandra server="{$agentNode/@serverIP}" dbUser="{$agentNode/@userName}" dbPassWord="{$agentNode/@userPassword}" dbName="{$agentNode/@ksName}"/>
 
-            <xsl:call-template name="LogBasic">
+            <xsl:call-template name="EspLoggingAgentBasic">
                 <xsl:with-param name="agentNode" select="$agentNode"/>
             </xsl:call-template>
             <xsl:call-template name="TransactionSeed">
@@ -165,7 +150,13 @@ xmlns:set="http://exslt.org/sets">
         </xsl:if>
 
         <xsl:variable name="wsloggingUrl"><xsl:text>http://</xsl:text><xsl:value-of select="$espNetAddress"/><xsl:text>:</xsl:text><xsl:value-of select="$espPort"/></xsl:variable>
-        <LogAgent name="{$agentName}" type="LogAgent" services="GetTransactionSeed,UpdateLog,GetTransactionID" plugin="espserverloggingagent">
+        <xsl:variable name="Services">
+            <xsl:choose>
+                <xsl:when test="string($agentNode/@Services) != ''"><xsl:value-of select="$agentNode/@Services"/></xsl:when>
+                <xsl:otherwise>GetTransactionSeed,UpdateLog,GetTransactionID</xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+        <LogAgent name="{$agentName}" type="LogAgent" services="{$Services}" plugin="espserverloggingagent">
             <ESPServer url="{$wsloggingUrl}" user="{$agentNode/@User}" password="{$agentNode/@Password}"/>
             <xsl:if test="string($agentNode/@MaxServerWaitingSeconds) != ''">
                 <MaxServerWaitingSeconds><xsl:value-of select="$agentNode/@MaxServerWaitingSeconds"/></MaxServerWaitingSeconds>
@@ -175,7 +166,7 @@ xmlns:set="http://exslt.org/sets">
                 <xsl:with-param name="agentNode" select="$agentNode"/>
             </xsl:call-template>
 
-            <xsl:call-template name="LogBasic">
+            <xsl:call-template name="EspLoggingAgentBasic">
                 <xsl:with-param name="agentNode" select="$agentNode"/>
             </xsl:call-template>
             <xsl:call-template name="LogSourceMap">

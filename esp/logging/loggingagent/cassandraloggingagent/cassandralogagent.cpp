@@ -43,24 +43,35 @@ bool CCassandraLogAgent::init(const char* name, const char* type, IPropertyTree*
     if (!cfg)
         throw MakeStringException(-1, "Unable to find configuration for log agent %s:%s", name, type);
 
+    agentName.set(name);
+    const char* servicesConfig = cfg->queryProp("@services");
+    if (isEmptyString(servicesConfig))
+        throw MakeStringException(-1,"No Logging Service defined for %s", agentName.get());
+    setServices(servicesConfig);
+
     IPropertyTree* cassandra = cfg->queryBranch("Cassandra");
     if(!cassandra)
         throw MakeStringException(-1, "Unable to find Cassandra settings for log agent %s:%s", name, type);
 
     readDBCfg(cassandra, dbServer, dbUserID, dbPassword);
 
-    //Read information about data mapping for every log groups
-    readLogGroupCfg(cfg, defaultLogGroup, logGroups);
-    if (defaultLogGroup.isEmpty())
-        throw MakeStringException(-1,"LogGroup not defined");
+    if (hasService(LGSTUpdateLOG))
+    {
+        //Read information about data mapping for every log groups
+        readLogGroupCfg(cfg, defaultLogGroup, logGroups);
+        if (defaultLogGroup.isEmpty())
+            throw MakeStringException(-1,"LogGroup not defined");
 
-    //Read mapping between log sources and log groups
-    readLogSourceCfg(cfg, logSourceCount, logSourcePath, logSources);
+        //Read mapping between log sources and log groups
+        readLogSourceCfg(cfg, logSourceCount, logSourcePath, logSources);
+    }
 
     //Read transactions settings
-    readTransactionCfg(cfg);
-
-    maxTriesGTS = cfg->getPropInt("MaxTriesGTS", defaultMaxTriesGTS);
+    if (hasService(LGSTGetTransactionSeed))
+    {
+        readTransactionCfg(cfg);
+        maxTriesGTS = cfg->getPropInt("MaxTriesGTS", defaultMaxTriesGTS);
+    }
 
     //Setup Cassandra
     initKeySpace();

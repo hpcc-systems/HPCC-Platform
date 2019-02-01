@@ -57,9 +57,9 @@ if(USE_CASSANDRA)
   if (CMAKE_COMPILER_IS_GNUCXX)
   # From time to time need to add flags in here to disable warnings, if a new compiler picks up something new.
   # e.g.
-  # if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
-  #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0)
-  # endif ()
+  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.2.0)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess")
+  endif ()
   endif()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cpp-driver/cmake/modules/")
   set(CASS_ROOT_DIR "${PROJECT_SOURCE_DIR}/cpp-driver")

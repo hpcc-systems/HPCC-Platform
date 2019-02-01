@@ -1,0 +1,102 @@
+<OrganizationInfoResponse>
+  <OrgName>Technology For All</OrgName>
+  <Address>
+    <type>Business</type>
+    <Line1>101 Main St.</Line1>
+    <Line2>Suite 202</Line2>
+    <City>MainVille</City>
+    <State>ME</State>
+    <Zip>04109</Zip>
+  </Address>
+  <Members>
+    <Member>
+      <Name>
+        <First>Jane</First>
+        <Middle>m</Middle>
+        <Last>Doe</Last>
+        <Aliases>
+          <Alias>Janie</Alias>
+          <Alias>Jenny</Alias>
+        </Aliases>
+      </Name>
+      <Addresses>
+        <Address>
+          <type>Home</type>
+          <Line1>202 Main St.</Line1>
+          <Line2>Apt 12</Line2>
+          <City>MainVille</City>
+          <State>ME</State>
+          <Zip>04109</Zip>
+          <Zip4>1111</Zip4>
+        </Address>
+      </Addresses>
+    </Member>
+    <Member>
+      <Name>
+        <First>Joseph</First>
+        <Middle>m</Middle>
+        <Last>Lowe</Last>
+        <Aliases>
+          <Alias>Joe</Alias>
+          <Alias>Joey</Alias>
+        </Aliases>
+      </Name>
+      <Addresses>
+        <Address>
+          <type>Home</type>
+          <Line1>303 Main St.</Line1>
+          <Line2>Apt 23</Line2>
+          <City>MainVille</City>
+          <State>ME</State>
+          <Zip>04109</Zip>
+          <Zip4>1222</Zip4>
+        </Address>
+      </Addresses>
+    </Member>
+  </Members>
+  <Guests>
+    <Guest>
+      <Name>
+        <First>Jonas</First>
+        <Middle>m</Middle>
+        <Last>Smith</Last>
+        <Aliases>
+          <Alias>John</Alias>
+          <Alias>Jon</Alias>
+        </Aliases>
+      </Name>
+      <Addresses>
+        <Address>
+          <type>Home</type>
+          <Line1>545 Second Blvd</Line1>
+          <Line2></Line2>
+          <City>SmallVille</City>
+          <State>ME</State>
+          <Zip>04101</Zip>
+          <Zip4>2111</Zip4>
+        </Address>
+      </Addresses>
+    </Guest>
+    <Guest>
+      <Name>
+        <First>Jerry</First>
+        <Middle>m</Middle>
+        <Last>Llewyn</Last>
+        <Aliases>
+          <Alias>Jerold</Alias>
+        </Aliases>
+      </Name>
+      <Addresses>
+        <Address>
+          <type>Home</type>
+          <Line1>545 Second Blvd</Line1>
+          <Line2></Line2>
+          <City>SmallVille</City>
+          <State>ME</State>
+          <Zip>04302</Zip>
+          <Zip4>2222</Zip4>
+        </Address>
+      </Addresses>
+    </Guest>
+  </Guests>
+</OrganizationInfoResponse>

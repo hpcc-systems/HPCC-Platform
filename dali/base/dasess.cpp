@@ -937,7 +937,15 @@ public:
             PrintStackReport();
         }
 #endif
-        udesc->serialize(mb);
+
+        {
+            Owned<IUserDescriptor> tmpUDesc = createUserDescriptor();
+            StringBuffer user;
+            udesc->getUserName(user);
+            tmpUDesc->set(user.str(), nullptr);
+            tmpUDesc->serialize(mb);//serialize without password, since it is not checked
+        }
+
         mb.append(auditflags);
 
         //Serialize signature. If not provided, compute it
@@ -947,9 +955,11 @@ public:
             {
                 CDateTime now;
                 StringBuffer b64sig;
-                createDaliSignature(obj, udesc, now, b64sig);
-                mb.append(b64sig.str());
-                now.serialize(mb);
+                if (createDaliSignature(obj, udesc, now, b64sig))
+                {
+                    mb.append(b64sig.str());
+                    now.serialize(mb);
+                }
             }
             else
             {

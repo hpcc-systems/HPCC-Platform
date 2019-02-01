@@ -25,6 +25,11 @@
 #include "loggingcommon.hpp"
 #include "LogSerializer.hpp"
 
+const unsigned long DEFAULT_SAFE_ROLLOVER_REQ_THRESHOLD = 500000L;
+const char* const PropSafeRolloverThreshold = "SafeRolloverThreshold";
+const char* const PropFailSafeLogsDir = "FailSafeLogsDir";
+const char* const DefaultFailSafeLogsDir = "./FailSafeLogs";
+
 interface ILogFailSafe : IInterface
 {
     virtual void Add(const char*, const StringBuffer& strContents)=0;//
@@ -43,8 +48,8 @@ interface ILogFailSafe : IInterface
     virtual bool canRollCurrentLog() = 0;
 };
 
-extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(const char* logType="", const char* logsdir="./logs");
-extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(const char* pszService, const char* logType="", const char* logsdir="./logs");
+extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(IPropertyTree* cfg, const char* logType="");
+extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(IPropertyTree* cfg, const char* pszService, const char* logType="");
 
 class CLogFailSafe : implements ILogFailSafe, public CInterface
 {
@@ -58,8 +63,11 @@ class CLogFailSafe : implements ILogFailSafe, public CInterface
 
     CriticalSection m_critSec;//
     GuidMap m_PendingLogs;//
+    unsigned long safeRolloverReqThreshold = DEFAULT_SAFE_ROLLOVER_REQ_THRESHOLD;
+    unsigned long safeRolloverSizeThreshold = 0;
 
-private:
+    void readCfg(IPropertyTree* cfg);
+    void readSafeRolloverThresholdCfg(StringBuffer& safeRolloverThreshold);
     void createNew(const char* logType);
     void loadFailed(const char* logType);
     StringBuffer& getReceiveFileName(const char* sendFileName, StringBuffer& recieveName);
@@ -70,8 +78,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
     CLogFailSafe();
-    CLogFailSafe(const char* logType, const char* logsdir);
-    CLogFailSafe(const char* pszService, const char* logType, const char* logsdir);
+    CLogFailSafe(IPropertyTree* cfg, const char* logType);
+    CLogFailSafe(IPropertyTree* cfg, const char* pszService, const char* logType);
 
     virtual ~CLogFailSafe();
     StringBuffer& GenerateGUID(StringBuffer& GUID,const char* seed="");

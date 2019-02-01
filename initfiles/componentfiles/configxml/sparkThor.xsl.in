@@ -73,6 +73,10 @@
         <xsl:text>export SPARK_PID_DIR=@PID_PATH@&#xa;</xsl:text>
         <xsl:text>export SPARK_CONF_DIR=@RUNTIME_PATH@/</xsl:text><xsl:value-of select="@name"/><xsl:text>&#xa;</xsl:text>
         <xsl:text>export SPARK_WORKER_DIR=@RUNTIME_PATH@/</xsl:text><xsl:value-of select="@name"/><xsl:text>&#xa;</xsl:text>
+        <!-- Allow for user defined spark-env.sh variables under @CONFIG_DIR@ -->
+        <xsl:text>if [[ -f @CONFIG_DIR@/externals/spark-hadoop/spark-env.sh ]]; then</xsl:text><xsl:text>&#xa;</xsl:text>
+        <xsl:text>source @CONFIG_DIR@/externals/spark-hadoop/spark-env.sh</xsl:text><xsl:text>&#xa;</xsl:text>
+        <xsl:text>fi</xsl:text><xsl:text>&#xa;</xsl:text>
     </xsl:template>
 
     <!-- printVariable -->

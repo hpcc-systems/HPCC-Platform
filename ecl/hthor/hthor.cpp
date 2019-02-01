@@ -7503,7 +7503,7 @@ void CHThorWSCBaseActivity::init()
         userDesc->getUserName(uidpair);
         uidpair.append(":");
         userDesc->getPassword(uidpair);
-        JBASE64_Encode(uidpair.str(), uidpair.length(), authToken);
+        JBASE64_Encode(uidpair.str(), uidpair.length(), authToken, false);
     }
     soapTraceLevel = agent.queryWorkUnit()->getDebugValueInt("soapTraceLevel", 1);
 }
@@ -8024,6 +8024,8 @@ CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, un
     helper.setCallback(this);
     expectedDiskMeta = helper.queryDiskRecordSize();
     projectedDiskMeta = helper.queryProjectedDiskRecordSize();
+    actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
+
     if (_node)
     {
         const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
@@ -8054,6 +8056,30 @@ void CHThorDiskReadBaseActivity::ready()
     partNum = (unsigned)-1;
 
     resolve();
+
+    unsigned expectedCrc = helper.getDiskFormatCrc();
+    unsigned projectedCrc = helper.getProjectedFormatCrc();
+    unsigned actualCrc = expectedCrc;
+    IDistributedFile *dFile = nullptr;
+    if (ldFile)
+        dFile = ldFile->queryDistributedFile();  // Null for local file usage
+    if (dFile)
+    {
+        IPropertyTree &props = dFile->queryAttributes();
+        Owned<IOutputMetaData> publishedMeta = getDaliLayoutInfo(props);
+        if (publishedMeta)
+        {
+            actualDiskMeta.setown(publishedMeta.getClear());
+            actualCrc = props.getPropInt("@formatCrc");
+        }
+    }
+    translators.setown(::getTranslators("hthor-diskread", expectedCrc, expectedDiskMeta, actualCrc, actualDiskMeta, projectedCrc, projectedDiskMeta, getLayoutTranslationMode()));
+    if (translators)
+    {
+        translator = &translators->queryTranslator();
+        keyedTranslator = translators->queryKeyedTranslator();
+        actualDiskMeta.set(&translators->queryActualFormat());
+    }
 }
 
 void CHThorDiskReadBaseActivity::stop()
@@ -8150,7 +8176,6 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
         grouped = ((helper.getFlags() & TDXgrouped) != 0);
     }
 
-    actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
     calcFixedDiskRecordSize();
     if (fileDesc)
     {
@@ -8223,8 +8248,6 @@ bool CHThorDiskReadBaseActivity::openNext()
     localOffset = 0;
     saveOpenExc.clear();
     actualFilter.clear();
-    unsigned expectedCrc = helper.getDiskFormatCrc();
-    unsigned projectedCrc = helper.getProjectedFormatCrc();
 
     if (dfsParts||ldFile)
     {
@@ -8250,40 +8273,131 @@ bool CHThorDiskReadBaseActivity::openNext()
                 }
             }
 
-            unsigned actualCrc = 0;
-            if (dFile)
-            {
-                IPropertyTree &props = dFile->queryAttributes();
-                actualDiskMeta.setown(getDaliLayoutInfo(props));
-                actualCrc = props.getPropInt("@formatCrc");
-            }
-            if (!actualDiskMeta)
-                actualDiskMeta.set(expectedDiskMeta->querySerializedDiskMeta());
-            keyedTranslator.setown(createKeyTranslator(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true)));
             if (keyedTranslator && keyedTranslator->needsTranslate())
                 keyedTranslator->translate(actualFilter, fieldFilters);
             else
                 actualFilter.appendFilters(fieldFilters);
 
             bool canSerializeTypeInfo = actualDiskMeta->queryTypeInfo()->canSerialize() && projectedDiskMeta->queryTypeInfo()->canSerialize();
-            for (unsigned copy=0; copy < numCopies; copy++)
+
+            /* If part can potentially be remotely streamed, 1st check if any part is local,
+             * then try to remote stream, and otherwise failover to legacy remote access
+             */
+            unsigned localCopy = NotFound;
+            if (canSerializeTypeInfo && (rt_binary == readType))
             {
-                RemoteFilename rfilename;
-                if (curPart)
-                    curPart->getFilename(rfilename,copy);
-                else
-                    ldFile->getPartFilename(rfilename,partNum,copy);
-                rfilename.getPath(file.clear());
-                filelist.append('\n').append(file);
-                try
+                std::vector<unsigned> remoteCandidates;
+                // scan for local part 1st
+                for (unsigned copy=0; copy<numCopies; copy++)
                 {
-                    inputfile.setown(createIFile(rfilename));
-
-                    // NB: only binary handles can be remotely processed by dafilesrv at the moment
-
-                    StringBuffer path;
-                    if ((rt_binary != readType) || !canSerializeTypeInfo || !isRemoteReadCandidate(agent, rfilename, path))
+                    RemoteFilename rfn;
+                    curPart->getFilename(rfn, copy);
+                    StringBuffer localPath;
+                    if (!isRemoteReadCandidate(agent, rfn, localPath))
                     {
+                        Owned<IFile> iFile = createIFile(localPath.str());
+                        try
+                        {
+                            if (iFile->exists())
+                            {
+                                localCopy = copy;
+                                remoteCandidates.clear();
+                                break;
+                            }
+                        }
+                        catch (IException *e)
+                        {
+                            EXCLOG(e, "CHThorDiskReadBaseActivity::openNext()");
+                            e->Release();
+                        }
+                    }
+                    else
+                        remoteCandidates.push_back(copy);
+                }
+
+                for (unsigned &copy: remoteCandidates)
+                {
+                    RemoteFilename rfilename;
+                    if (curPart)
+                        curPart->getFilename(rfilename,copy);
+                    else
+                        ldFile->getPartFilename(rfilename,partNum,copy);
+                    rfilename.getPath(file.clear());
+                    filelist.append('\n').append(file);
+                    try
+                    {
+                        // NB: only binary handles can be remotely processed by dafilesrv at the moment
+
+                        // Open a stream from remote file, having passed actual, expected, projected, and filters to it
+                        SocketEndpoint ep(rfilename.queryEndpoint());
+                        setDafsEndpointPort(ep);
+
+                        StringBuffer localPath;
+                        rfilename.getLocalPath(localPath);
+                        Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, localPath, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
+                        if (remoteFileIO)
+                        {
+                            StringBuffer tmp;
+                            remoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFileName.str());
+                            remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
+                            remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
+
+                            try
+                            {
+                                remoteFileIO->ensureAvailable(); // force open now, because want to failover to other copies or legacy if fails
+                            }
+                            catch (IException *e)
+                            {
+                                EXCLOG(e, nullptr);
+                                e->Release();
+                                continue; // try next copy and ultimately failover to local when no more copies
+                            }
+
+                            Owned<IFile> iFile = createIFile(rfilename);
+
+                            // remote side does projection/translation/filtering
+                            actualDiskMeta.set(projectedDiskMeta);
+                            expectedDiskMeta = projectedDiskMeta;
+                            translators.clear();
+                            translator = nullptr;
+                            keyedTranslator = nullptr;
+
+                            actualFilter.clear();
+                            inputfileio.setown(remoteFileIO.getClear());
+                            if (inputfileio)
+                            {
+                                inputfile.setown(iFile.getClear());
+                                break;
+                            }
+                        }
+                    }
+                    catch (IException *E)
+                    {
+                        if (saveOpenExc.get())
+                            E->Release();
+                        else
+                            saveOpenExc.setown(E);
+                    }
+                    closepart();
+                }
+            }
+            if (!inputfile)
+            {
+                unsigned startCopy = (NotFound != localCopy) ? localCopy : 0;
+                unsigned copy = startCopy;
+                while (true)
+                {
+                    RemoteFilename rfilename;
+                    if (curPart)
+                        curPart->getFilename(rfilename,copy);
+                    else
+                        ldFile->getPartFilename(rfilename,partNum,copy);
+                    rfilename.getPath(file.clear());
+                    filelist.append('\n').append(file);
+                    try
+                    {
+                        inputfile.setown(createIFile(rfilename));
+
                         if (compressed)
                         {
                             Owned<IExpander> eexp;
@@ -8299,60 +8413,23 @@ bool CHThorDiskReadBaseActivity::openNext()
                         }
                         else
                             inputfileio.setown(inputfile->open(IFOread));
+                        if (inputfileio)
+                            break;
                     }
-                    else
+                    catch (IException *E)
                     {
-                        // Open a stream from remote file, having passed actual, expected, projected, and filters to it
-                        SocketEndpoint ep(rfilename.queryEndpoint());
-                        setDafsEndpointPort(ep);
-
-                        Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
-                        if (remoteFileIO)
-                        {
-                            StringBuffer tmp;
-                            remoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFileName.str());
-                            remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
-                            remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
-                            actualDiskMeta.set(projectedDiskMeta);
-                            expectedDiskMeta = projectedDiskMeta;
-                            actualFilter.clear();
-                            inputfileio.setown(remoteFileIO.getClear());
-                        }
+                        if (saveOpenExc.get())
+                            E->Release();
+                        else
+                            saveOpenExc.setown(E);
                     }
-                    if (inputfileio)
+                    if (++copy == numCopies) // wrap
+                        copy = 0;
+                    if (copy == startCopy) // reached starting copy, so scanned all and failed to open any.
                         break;
                 }
-                catch (IException *E)
-                {
-                    if (saveOpenExc.get())
-                        E->Release();
-                    else
-                        saveOpenExc.setown(E);
-                }
-                closepart();
             }
 
-            //Check if the file requires translation, but translation is disabled
-            if (actualCrc && expectedCrc && (actualCrc != expectedCrc) && (getLayoutTranslationMode()==RecordTranslationMode::None))
-            {
-                IOutputMetaData * expectedDiskMeta = helper.queryDiskRecordSize();
-                throwTranslationError(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true), logicalFileName.str());
-            }
-
-            //The projected format will often not match the expected format, and if it differs it must be translated
-            if (projectedCrc && actualCrc != projectedCrc)
-                translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
-
-            if (translator && translator->needsTranslate())
-            {
-                if (!translator->canTranslate())
-                    throw MakeStringException(0, "Untranslatable key layout mismatch reading file %s", logicalFileName.str());
-            }
-            else
-            {
-                translator.clear();
-                keyedTranslator.clear();
-            }
             calcFixedDiskRecordSize();
             if (dfsParts)
                 dfsParts->next();
@@ -8400,22 +8477,6 @@ bool CHThorDiskReadBaseActivity::openNext()
                 saveOpenExc.setown(E);
         }
 
-        //A spill file - actual will always equal expected, so keyed translator will never be used.
-        keyedTranslator.clear();
-
-        //The projected format will often not match the expected format, and if it differs it must be translated
-        translator.clear();
-        if (projectedCrc != expectedCrc)
-            translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
-
-        if (translator && translator->needsTranslate())
-        {
-            assertex(translator->canTranslate());
-        }
-        else
-        {
-            translator.clear();
-        }
         partNum++;
         if (checkOpenedFile(file.str(), NULL))
         {

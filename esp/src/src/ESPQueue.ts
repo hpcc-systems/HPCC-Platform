@@ -1,5 +1,6 @@
 ﻿import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
+import * as arrayUtil from "dojo/_base/array";
 import * as Memory from "dojo/store/Memory";
 
 import * as WsSMC from "./WsSMC";
@@ -57,7 +58,10 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         var context = this;
         return WsSMC.ClearQueue({
             request: {
-                QueueName: this.QueueName
+                QueueName: this.QueueName,
+                ServerType: this.ServerType,
+                NetworkAddress: this.NetworkAddress,
+                Port: this.Port
             }
         }).then(function (response) {
             context.clearChildren();
@@ -200,7 +204,7 @@ var TargetCluster = declare([Queue], {
     },
 
     getDisplayName: function () {
-        return this.ClusterName;
+        return this.ServerType + (this.ClusterName ? " - " + this.ClusterName : "");
     },
 
     isNormal: function () {
@@ -268,15 +272,20 @@ var ServerJobQueue = declare([Queue], {
                 NetworkAddress: this.NetworkAddress
             }
         }).then(function (response) {
-            if (lang.exists("GetStatusServerInfoResponse.StatusServerInfo.ServerInfo", response)) {
-                context.updateData(response.GetStatusServerInfoResponse.StatusServerInfo.ServerInfo);
+            if (lang.exists("GetStatusServerInfoResponse.StatusServerInfo.ServerInfo.Queues.ServerJobQueue", response)) {
+                arrayUtil.forEach(response.GetStatusServerInfoResponse.StatusServerInfo.ServerInfo.Queues.ServerJobQueue, function (queueItem) {
+                    if (queueItem.QueueName === context.QueueName) {
+                        context.updateData(response.GetStatusServerInfoResponse.StatusServerInfo.ServerInfo);
+                        context.updateData(queueItem);
+                    }
+                });
             }
             return response;
         });
     },
 
     getDisplayName: function () {
-        return this.ServerName;
+        return this.ServerName + (this.QueueName ? " - " + this.QueueName : "");
     },
 
     isNormal: function () {
@@ -340,22 +349,22 @@ export function isInstanceOfQueue(obj) {
     return obj && obj.isInstanceOf && obj.isInstanceOf(Queue);
 }
 
-export function GetTargetCluster(name) {
+export function GetTargetCluster(name, createIfMissing = false) {
     var store = GetGlobalQueueStore();
     var id = "TargetCluster::" + name;
     var retVal = store.get(id);
-    if (!retVal) {
+    if (!retVal && createIfMissing) {
         retVal = new TargetCluster(id);
         store.put(retVal);
     }
     return retVal;
 }
 
-export function GetServerJobQueue(name) {
+export function GetServerJobQueue(name, createIfMissing = false) {
     var store = GetGlobalQueueStore();
     var id = "ServerJobQueue::" + name;
     var retVal = store.get(id);
-    if (!retVal) {
+    if (!retVal && createIfMissing) {
         retVal = new ServerJobQueue(id);
         store.put(retVal);
     }

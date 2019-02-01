@@ -28,6 +28,8 @@
 
 #define LONGTIMEOUT (25*60*1000)
 #define MEDIUMTIMEOUT 30000
+#define DEFAULT_MAX_ACTINITWAITTIME_MINS (2*60) // 2hrs
+#define DEFAULT_MAXLFN_BLOCKTIME_MINS 25 // 25 mins
 
 #include "jlib.hpp"
 #include "jarray.hpp"
@@ -158,8 +160,6 @@ interface IThorBoundLoopGraph : extends IInterface
     virtual void prepareLoopResults(CActivityBase &activity, IThorGraphResults *results) = 0;
     virtual void prepareCounterResult(CActivityBase &activity, IThorGraphResults *results, unsigned loopCounter, unsigned pos) = 0;
     virtual void prepareLoopAgainResult(CActivityBase &activity, IThorGraphResults *results, unsigned pos) = 0;
-    virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *results, IRowWriterMultiReader *rowStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte * parentExtract) = 0;
-    virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults * graphLoopResults, size32_t parentExtractSz, const byte * parentExtract) = 0;
     virtual CGraphBase *queryGraph() = 0;
 };
 
@@ -827,6 +827,7 @@ protected:
     Owned<IThorAllocator> sharedAllocator;
     bool jobEnded = false;
     bool failOnLeaks = false;
+    unsigned maxLfnBlockTimeMins = DEFAULT_MAXLFN_BLOCKTIME_MINS;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -848,6 +849,7 @@ public:
     CJobBase(ILoadedDllEntry *querySo, const char *graphName);
     virtual void beforeDispose() override;
 
+    unsigned queryMaxLfnBlockTimeMins() const { return maxLfnBlockTimeMins; }
     virtual void addChannel(IMPServer *mpServer) = 0;
     CJobChannel &queryJobChannel(unsigned c) const;
     CActivityBase &queryChannelActivity(unsigned c, graph_id gid, activity_id id) const;

@@ -107,16 +107,15 @@ var LandingZonesFilterStore = declare([ESPRequest.Store], {
         }
     },
     preProcessRow: function (row) {
-        var fullPath = row.Path + "/" + row.name;
+        var fullPath = this.dropZone.machine.Directory + "/" + (row.Path === null ? "" : (row.Path + "/"));
         lang.mixin(row, {
-            DropZone: {
-                NetAddress: this.dropZone.machine.Netaddress
-            },
+            NetAddress: this.dropZone.machine.Netaddress,
+            Directory: this.dropZone.machine.Directory,
             calculatedID: this.dropZone.machine.Netaddress + fullPath,
-            fullPath: fullPath,
-            fullFolderPath: row.Path,
-            displayName: row.name,
-            type: row.isDir ? "folder" : "file"
+            OS: this.dropZone.machine.OS,
+            fullFolderPath: fullPath,
+            displayName: row.Path ? (row.Path + "/" + row.name) : row.name,
+            type: row.isDir ? "filteredFolder" : "file"
         });
     }
 });
@@ -136,7 +135,7 @@ var LandingZonesStore = declare([ESPRequest.Store], {
         if (!query.filter) {
             return inherited(query, options);
         }
-        var landingZonesFilterStore = new LandingZonesFilterStore({ dropZone: query.filter.__dropZone });
+        var landingZonesFilterStore = new LandingZonesFilterStore({ dropZone: query.filter.__dropZone, server: query.filter.Server });
         delete query.filter.__dropZone;
         return landingZonesFilterStore.query(query.filter, options);
     }),

@@ -25,22 +25,26 @@ var EventScheduleStore = declare([ESPRequest.Store], {
     }
 });
 
+//  From common/workunit/workunit.hpp
+//  (not actually used - just for reference)
 export const States = {
     0: "unknown",
     1: "compiled",
     2: "running",
     3: "completed",
-    4: "aborting",
-    5: "aborted",
-    6: "blocked",
-    7: "submitted",
-    8: "wait",
-    9: "failed",
-    10: "compiling",
-    11: "uploading_files",
-    12: "debugging",
-    13: "debug_running",
-    14: "paused",
+    4: "failed",
+    5: "archived",
+    6: "aborting",
+    7: "aborted",
+    8: "blocked",
+    9: "submitted",
+    10: "scheduled",
+    11: "compiling",
+    12: "wait",
+    13: "uploading_files",
+    14: "debug_paused",
+    15: "debug_running",
+    16: "paused",
     999: "not found"
 };
 

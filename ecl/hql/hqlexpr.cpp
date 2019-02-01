@@ -1071,7 +1071,7 @@ bool HqlParseContext::checkEndMeta()
     return wasGathering;
 }
 
-bool HqlParseContext::createCache(const char *simplifiedEcl, bool isMacro)
+bool HqlParseContext::createCache(const char * simplifiedEcl, bool isMacro)
 {
     StringBuffer fullName;
     StringBuffer baseFilename;
@@ -1088,7 +1088,8 @@ bool HqlParseContext::createCache(const char *simplifiedEcl, bool isMacro)
             return false;
     }
 
-    recursiveCreateDirectoryForFile(baseFilename);
+    if (!recursiveCreateDirectoryForFile(baseFilename))
+        return false;
     StringBuffer filename(baseFilename);
     filename.append(".cache");
     StringBuffer tmpfilename;
@@ -2375,6 +2376,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_assertgrouped:
     case no_assertdistributed:
     case no_extractresult:
+    case no_createdictionary:
         return childdataset_dataset;
     case no_alias_scope:
         if (expr->isDataset())
@@ -2685,6 +2687,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_owned_ds:
     case no_dataset_alias:
     case no_ensureresult:
+    case no_createdictionary:
         return 1;
     case no_executewhen:
     case no_setresult:
@@ -12773,8 +12776,10 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
             type = LINK(fieldType);
             break;
         }
-    case no_embedbody:
     case no_id2blob:
+        assertex(!recordRequiresLinkCount(&args.item(1)));
+        // fallthrough
+    case no_embedbody:
     case no_temprow:
     case no_projectrow:         // arg(1) is actually a transform
         {

@@ -26,12 +26,14 @@ CEsdlCustomTransformChoose::CEsdlCustomTransformChoose(IPropertyTree * choosewhe
 {
     if (choosewhen)
     {
-        IPropertyTree * whentree = choosewhen->queryPropTree("xsdl:when");
+        if (choosewhen->hasProp("@_crtTarget"))
+            crtTarget.set(choosewhen->queryProp("@_crtTarget"));
+        IPropertyTree * whentree = choosewhen->queryPropTree("xsdl:when"); //should support multiple when statements
         if (whentree)
         {
             StringBuffer testatt;
             testatt.set(whentree->queryProp("@test"));
-            m_compiledConditionalXpath.set(getCompiledXpath(testatt.str()));
+            m_compiledConditionalXpath.setown(compileXpath(testatt.str()));
 
             compileClauses(whentree, false);
             compileChildChoose(whentree, false);
@@ -110,20 +112,20 @@ void CEsdlCustomTransformChoose::processClauses(IEspContext * context, IProperty
     }
 }
 
-void CEsdlCustomTransformChoose::processChildClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext,  bool otherwise)
+void CEsdlCustomTransformChoose::processChildClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext,  bool otherwise, IPropertyTree *origTree)
 {
     if (!otherwise)
     {
         ForEachItemIn(currNestedConditionalIndex, m_childChooseClauses)
         {
-            m_childChooseClauses.item(currNestedConditionalIndex).process(context, request, xpathContext);
+            m_childChooseClauses.item(currNestedConditionalIndex).process(context, request, xpathContext, origTree, nullptr);
         }
     }
     else
     {
         ForEachItemIn(currNestedConditionalIndex, m_childOtherwiseClauses)
         {
-            m_childOtherwiseClauses.item(currNestedConditionalIndex).process(context, request, xpathContext);
+            m_childOtherwiseClauses.item(currNestedConditionalIndex).process(context, request, xpathContext, origTree, nullptr);
         }
     }
 }
@@ -134,7 +136,8 @@ void CEsdlCustomTransformChoose::compileChildChoose(IPropertyTree * nested, bool
     ForEach(*conditionalIterator)
     {
         auto xslchooseelement = &conditionalIterator->query();
-        addChildTransformClause(new CEsdlCustomTransformChoose(xslchooseelement), otherwise);
+        Owned<CEsdlCustomTransformChoose> esdlCustomTransformChoose = new CEsdlCustomTransformChoose(xslchooseelement);
+        addChildTransformClause(esdlCustomTransformChoose, otherwise);
     }
 }
 
@@ -168,14 +171,17 @@ void CEsdlCustomTransformChoose::compileClauses(IPropertyTreeIterator * rulesite
                 continue;
         }
 
-        addTransformClause(new CEsdlCustomTransformRule(ruleName, targetFieldPath, pathToValue, optional, typeIsSet ), otherwise);
+        Owned<CEsdlCustomTransformRule> esdlCustomTransformRule = new CEsdlCustomTransformRule(ruleName, targetFieldPath, pathToValue, optional, typeIsSet );
+        addTransformClause(esdlCustomTransformRule, otherwise);
     }
 }
 
 void CEsdlCustomTransformChoose::compileClauses(IPropertyTree * rules, bool otherwise)
 {
-    compileClauses(rules->getElements("xsdl:SetValue"), otherwise, true);
-    compileClauses(rules->getElements("xsdl:AppendValue"), otherwise, false);
+    Owned<IPropertyTreeIterator> setValueItr = rules->getElements("xsdl:SetValue");
+    Owned<IPropertyTreeIterator> appendValueItr = rules->getElements("xsdl:AppendValue");
+    compileClauses(setValueItr, otherwise, true);
+    compileClauses(appendValueItr, otherwise, false);
 }
 
 void CEsdlCustomTransformChoose::addTransformClause(CEsdlCustomTransformRule * fieldmapping, bool otherwise)
@@ -208,14 +214,37 @@ bool CEsdlCustomTransformChoose::evaluate(IXpathContext * xpathContext)
     return evalresp;
 }
 
-void CEsdlCustomTransformChoose::process(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext)
+void CEsdlCustomTransformChoose::process(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext, IPropertyTree *origTree, const char *defaultTarget)
 {
+    StringBuffer xpath;
+
+    if (crtTarget.length())
+        xpath.set(crtTarget.str());
+    else if (defaultTarget && *defaultTarget)
+        xpath.set(defaultTarget);
+
+    IPropertyTree *reqTarget = request;
+
+    if (xpath.length())
+    {
+        //we can use real xpath processing in the future, for now simple substitution is fine
+        StringBuffer variable;
+        xpath.replaceString("{$query}", xpathContext->getVariable("query", variable));
+        xpath.replaceString("{$method}", xpathContext->getVariable("method", variable.clear()));
+        xpath.replaceString("{$service}", xpathContext->getVariable("service", variable.clear()));
+        xpath.replaceString("{$request}", xpathContext->getVariable("request", variable.clear()));
+
+        reqTarget = origTree->queryPropTree(xpath.str());  //get pointer to the write-able area
+        if (!reqTarget)
+            throw MakeStringException(-1, "EsdlCustomTransformChoose::process error getting request target %s", xpath.str());
+    }
+
     bool result = false;
     try
     {
         bool result = evaluate(xpathContext);
-        processClauses(context, request, xpathContext, !result);
-        processChildClauses(context, request, xpathContext, !result);
+        processClauses(context, reqTarget, xpathContext, !result);
+        processChildClauses(context, reqTarget, xpathContext, !result, origTree);
     }
     catch (...)
     {
@@ -264,29 +293,11 @@ void CEsdlCustomTransformChoose::toDBGLog ()
 }
 #endif
 
-//
-// CEsdlCustomTransform methods
-//
-CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree &currentTransform)
+void processServiceAndMethodTransforms(std::initializer_list<IEsdlCustomTransform *> const &transforms, IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg)
 {
-    m_name.set(currentTransform.queryProp("@name"));
-    DBGLOG("Compiling custom ESDL Transform: '%s'", m_name.str());
+    if (!transforms.size())
+        return;
 
-    Owned<IPropertyTreeIterator> conditionalIterator = currentTransform.getElements("xsdl:choose");
-    ForEach(*conditionalIterator)
-    {
-        auto xslchooseelement = &conditionalIterator->query();
-        Owned<CEsdlCustomTransformChoose> currconditional = new CEsdlCustomTransformChoose(xslchooseelement);
-        m_customTransformClauses.append(*LINK(currconditional));
-    }
-
-#if defined(_DEBUG)
-    toDBGLog();
-#endif
-}
-
-void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer & request, IPropertyTree * bindingCfg)
-{
     if (request.length()!=0)
     {
         if (getEspLogLevel() >= LogMax)
@@ -302,10 +313,32 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
         VStringBuffer ver("%g", context->getClientVersion());
         if(!xpathContext->addVariable("clientversion", ver.str()))
             ERRLOG("Could not set custom transform variable: clientversion:'%s'", ver.str());
+        //in case transform wants to make use of these values:
+        xpathContext->addVariable("query", tgtcfg->queryProp("@queryname"));
+        xpathContext->addVariable("method", mthdef.queryMethodName());
+        xpathContext->addVariable("service", srvdef.queryName());
+        xpathContext->addVariable("request", mthdef.queryRequestType());
 
         auto user = context->queryUser();
         if (user)
         {
+            static const std::map<SecUserStatus, const char*> statusLabels =
+            {
+#define STATUS_LABEL_NODE(s) { s, #s }
+                STATUS_LABEL_NODE(SecUserStatus_Inhouse),
+                STATUS_LABEL_NODE(SecUserStatus_Active),
+                STATUS_LABEL_NODE(SecUserStatus_Exempt),
+                STATUS_LABEL_NODE(SecUserStatus_FreeTrial),
+                STATUS_LABEL_NODE(SecUserStatus_csdemo),
+                STATUS_LABEL_NODE(SecUserStatus_Rollover),
+                STATUS_LABEL_NODE(SecUserStatus_Suspended),
+                STATUS_LABEL_NODE(SecUserStatus_Terminated),
+                STATUS_LABEL_NODE(SecUserStatus_TrialExpired),
+                STATUS_LABEL_NODE(SecUserStatus_Status_Hold),
+                STATUS_LABEL_NODE(SecUserStatus_Unknown),
+#undef STATUS_LABEL_NODE
+            };
+
             Owned<IPropertyIterator> userPropIt = user->getPropertyIterator();
             ForEach(*userPropIt)
             {
@@ -313,6 +346,22 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
                 if (name && *name)
                     xpathContext->addVariable(name, user->getProperty(name));
             }
+
+            auto it = statusLabels.find(user->getStatus());
+
+            xpathContext->addVariable("espUserName", user->getName());
+            xpathContext->addVariable("espUserRealm", user->getRealm() ? user->getRealm() : "");
+            xpathContext->addVariable("espUserPeer", user->getPeer() ? user->getPeer() : "");
+            xpathContext->addVariable("espUserStatus", VStringBuffer("%d", int(user->getStatus())));
+            if (it != statusLabels.end())
+                xpathContext->addVariable("espUserStatusString", it->second);
+            else
+                throw MakeStringException(-1, "encountered unexpected secure user status (%d) while processing transform", int(user->getStatus()));
+        }
+        else
+        {
+            // enable transforms to distinguish secure versus insecure requests
+            xpathContext->addVariable("espUserName", "");
         }
 
         Owned<IPropertyTreeIterator> configParams = bindingCfg->getElements("Transform/Param");
@@ -324,13 +373,53 @@ void CEsdlCustomTransform::processTransform(IEspContext * context, StringBuffer 
             }
         }
 
-        Owned<IPropertyTree> thereq = createPTreeFromXMLString(request.str());
-        ForEachItemIn(currConditionalIndex, m_customTransformClauses)
-        {
-            m_customTransformClauses.item(currConditionalIndex).process(context, thereq, xpathContext);
-        }
-        toXML(thereq, request.clear());
+        Owned<IPropertyTree> theroot = createPTreeFromXMLString(request.str());
+        StringBuffer defaultTarget;
+            //This default gives us backward compatibility with only being able to write to the actual request
+        const char *tgtQueryName = tgtcfg->queryProp("@queryname");
+        defaultTarget.setf("soap:Body/%s/%s", tgtQueryName ? tgtQueryName : mthdef.queryMethodName(), mthdef.queryRequestType());
 
-        ESPLOG(LogMax,"MODIFIED REQUEST: %s", request.str());
+        for ( auto&& item : transforms)
+        {
+            if (item)
+                item->processTransform(context, theroot, xpathContext, defaultTarget);
+        }
+
+        toXML(theroot, request.clear());
+
+        ESPLOG(1,"MODIFIED REQUEST: %s", request.str());
     }
+}
+
+//
+// CEsdlCustomTransform methods
+//
+CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree &currentTransform)
+{
+    m_name.set(currentTransform.queryProp("@name"));
+    m_target.set(currentTransform.queryProp("@target"));
+    DBGLOG("Compiling custom ESDL Transform: '%s'", m_name.str());
+
+    Owned<IPropertyTreeIterator> conditionalIterator = currentTransform.getElements("xsdl:choose");
+    ForEach(*conditionalIterator)
+    {
+        auto xslchooseelement = &conditionalIterator->query();
+        Owned<CEsdlCustomTransformChoose> currconditional = new CEsdlCustomTransformChoose(xslchooseelement);
+        m_customTransformClauses.append(*LINK(currconditional));
+    }
+
+#if defined(_DEBUG)
+    toDBGLog();
+#endif
+}
+
+void CEsdlCustomTransform::processTransform(IEspContext * context, IPropertyTree *theroot, IXpathContext *xpathContext, const char *defaultTarget)
+{
+    ForEachItemIn(currConditionalIndex, m_customTransformClauses)
+        m_customTransformClauses.item(currConditionalIndex).process(context, theroot, xpathContext, theroot, defaultTarget);
+}
+
+void CEsdlCustomTransform::processTransform(IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg)
+{
+    processServiceAndMethodTransforms({static_cast<IEsdlCustomTransform*>(this)}, context, tgtcfg, tgtctx, srvdef, mthdef, request, bindingCfg);
 }

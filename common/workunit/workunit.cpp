@@ -4575,7 +4575,7 @@ IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *scope, 
     return ret;
 }
 
-bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser)
+bool CWorkUnitFactory::deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secmgr, ISecUser *secuser)
 {
     if (workUnitTraceLevel > 1)
         PrintLog("deleteWorkUnit %s", wuid);
@@ -4584,19 +4584,30 @@ bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, IS
     Owned<CLocalWorkUnit> cw = _updateWorkUnit(wuid, secmgr, secuser);
     if (!checkWuSecAccess(*cw.get(), secmgr, secuser, SecAccess_Full, "delete", true, true))
         return false;
-    try
-    {
+
+    if (throwException)
         cw->cleanupAndDelete(true, true);
-    }
-    catch (IException *E)
+    else
     {
-        StringBuffer s;
-        LOG(MCexception(E, MSGCLS_warning), E, s.append("Exception during deleteWorkUnit: ").append(wuid).str());
-        E->Release();
-        return false;
+        try
+        {
+            cw->cleanupAndDelete(true, true);
+        }
+        catch (IException *E)
+        {
+            StringBuffer s;
+            LOG(MCexception(E, MSGCLS_warning), E, s.append("Exception during deleteWorkUnit: ").append(wuid).str());
+            E->Release();
+            return false;
+        }
     }
     removeWorkUnitFromAllQueues(wuid); //known active workunits wouldn't make it this far
     return true;
+}
+
+bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    return deleteWorkUnitEx(wuid, false, secmgr, secuser);
 }
 
 IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
@@ -5733,6 +5744,12 @@ public:
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
         return baseFactory->deleteWorkUnit(wuid, secMgr, secUser);
+    }
+    virtual bool deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secMgr, ISecUser *secUser)
+    {
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->deleteWorkUnitEx(wuid, throwException, secMgr, secUser);
     }
     virtual IConstWorkUnit* openWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser)
     {
@@ -11568,7 +11585,7 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
         return str.append("Unrecognized workunit format");
 }
 
-extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool splitStats)
+extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool regressionTest)
 {
     const IExtendedWUInterface *ewu = queryExtendedWU(wu);
     if (ewu)
@@ -11576,19 +11593,36 @@ extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const
         Linked<IPropertyTree> p;
         if (unpack||includeProgress)
             p.setown(ewu->getUnpackedTree(includeProgress));
+        else if (regressionTest)
+            p.setown(createPTreeFromIPT(ewu->queryPTree()));
         else
             p.set(ewu->queryPTree());
         if (hidePasswords)
             return exportWorkUnitToXMLFileWithHiddenPasswords(p, filename, extraXmlFlags);
-        if (splitStats)
+
+        if (regressionTest)
         {
-            StringBuffer statsFilename;
-            statsFilename.append(filename).append(".stats");
+            //This removes any items from the xml that will vary from run to run, so they can be binary compared from run to run
+            //The following attributes change with the build.  Simpler to remove rather than needing to updated each build
+            p->removeProp("@buildVersion");
+            p->removeProp("@eclVersion");
+            p->removeProp("@hash");
+
+            //Remove statistics, and extract them to a separate file
             IPropertyTree * stats = p->queryPropTree("Statistics");
             if (stats)
             {
+                StringBuffer statsFilename;
+                statsFilename.append(filename).append(".stats");
                 saveXML(statsFilename, stats, 0, (XML_Format|XML_SortTags|extraXmlFlags) & ~XML_LineBreakAttributes);
                 p->removeProp("Statistics");
+            }
+            //Now remove timestamps from exceptions
+            Owned<IPropertyTreeIterator> elems = p->getElements("Exceptions/Exception", iptiter_sort);
+            ForEach(*elems)
+            {
+                IPropertyTree &elem = elems->query();
+                elem.removeProp("@time");
             }
         }
         saveXML(filename, p, 0, XML_Format|XML_SortTags|extraXmlFlags);

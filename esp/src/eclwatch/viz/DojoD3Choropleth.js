@@ -12,6 +12,9 @@ define([
 ], function (declare, lang, arrayUtil, Deferred,
     hpccMap,
     DojoD3, Mapping) {
+
+        hpccMap.topoJsonFolder("/esp/files/dist/TopoJSON");
+
         return declare([Mapping, DojoD3], {
             mapping: {
                 choropleth: {
@@ -42,23 +45,22 @@ define([
                         deferred.resolve(this.chart);
                         break;
                     case "STATE":
-                        this.chart = new hpccMap.ChoroplethStates()
+                        this.chart = new hpccMap.USStates()
                             .target(_target.domNodeID)
+                            .mapType("AlbersPR")
                             ;
                         deferred.resolve(this.chart);
                         break;
                     case "COUNTY":
-                        this.chart = new hpccMap.ChoroplethCounties()
+                        this.chart = new hpccMap.USCounties()
                             .target(_target.domNodeID)
+                            .mapType("AlbersPR")
                             ;
                         deferred.resolve(this.chart);
                         break;
                     default:
                         console.log("Invalid visualization:  " + this._chartType)
                         deferred.resolve(null);
-                }
-                if (this.chart) {
-                    this.chart._topoJsonFolder = require.toUrl("@hpcc-js/TopoJSON");
                 }
                 return deferred.promise;
             },

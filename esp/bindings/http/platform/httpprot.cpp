@@ -474,6 +474,7 @@ bool CHttpThread::onRequest()
     time_t t = time(NULL);  
     initThreadLocal(sizeof(t), &t);
 
+    httpserver->setIsSSL(m_is_ssl);
     httpserver->processRequest();
 
     if (m_persistentHandler == nullptr)
@@ -579,9 +580,10 @@ void CPooledHttpThread::threadmain()
 
     try
     {
-        if (!keepAlive && m_socket != nullptr)
+        if (m_socket != nullptr)
         {
-            m_socket->shutdown(SHUTDOWN_WRITE);
+            if (!keepAlive)
+                m_socket->shutdown(SHUTDOWN_WRITE);
             m_socket.clear();
         }
     }

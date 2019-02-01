@@ -422,6 +422,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         unsigned blocked = 0; // number of callers blocked due to exceeding max+leeway.
         Semaphore sem;
         CriticalSection crit;
+        bool enabled = true;
+
+        void unblock()
+        {
+            sem.signal(blocked);
+            blocked = 0;
+        }
     public:
         CLimiter()
         {
@@ -438,6 +445,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         {
             {
                 CriticalBlock b(crit);
+                if (!enabled)
+                    return false;
                 if (count++ < max+leeway)
                     return false;
                 ++blocked;
@@ -448,6 +457,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         {
             {
                 CriticalBlock b(crit);
+                if (!enabled)
+                    return false;
                 if (count < max+leeway)
                 {
                     ++count;
@@ -465,16 +476,30 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         void dec()
         {
             CriticalBlock b(crit);
+            if (!enabled)
+                return;
             --count;
             if (blocked && (count < max))
-            {
-                sem.signal(blocked);
-                blocked = 0;
-            }
+                unblock();
         }
         void block()
         {
             sem.wait();
+        }
+        void disable()
+        {
+            CriticalBlock b(crit);
+            enabled = false;
+            if (blocked)
+                unblock();
+        }
+        void reset()
+        {
+            CriticalBlock b(crit);
+            enabled = true;
+            if (blocked)
+                unblock();
+            count = 0;
         }
     };
     // There is 1 of these per part, but # running is limited
@@ -741,23 +766,26 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     {
         typedef CLookupHandler PARENT;
     protected:
-        Owned<const ITranslator> translator;
+        std::vector<Owned<const ITranslator>> translators;
 
-        void setupTranslation(unsigned partNo, IKeyManager &keyManager)
+        void setupTranslation(unsigned partNo, unsigned selected, IKeyManager &keyManager)
         {
-            IPartDescriptor &part = activity.allIndexParts.item(partNo);
-            IPropertyTree &props = part.queryOwner().queryProperties();
-            unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
-            Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-            unsigned expectedFormatCrc = helper->getIndexFormatCrc();
-            unsigned projectedFormatCrc = helper->getProjectedIndexFormatCrc();
-            IOutputMetaData *projectedFormat = helper->queryProjectedIndexRecordSize();
+            if (!translators[selected])
+            {
+                IPartDescriptor &part = activity.allIndexParts.item(partNo);
+                IPropertyTree &props = part.queryOwner().queryProperties();
+                unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
+                Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
+                unsigned expectedFormatCrc = helper->getIndexFormatCrc();
+                unsigned projectedFormatCrc = helper->getProjectedIndexFormatCrc();
+                IOutputMetaData *projectedFormat = helper->queryProjectedIndexRecordSize();
 
-            RecordTranslationMode translationMode = getTranslationMode(activity);
-            OwnedRoxieString fname = helper->getIndexFileName();
-            translator.setown(getTranslators(fname, expectedFormatCrc, helper->queryIndexRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode));
-            if (translator)
-                keyManager.setLayoutTranslator(&translator->queryTranslator());
+                RecordTranslationMode translationMode = getTranslationMode(activity);
+                OwnedRoxieString fname = helper->getIndexFileName();
+                translators[selected].setown(getTranslators(fname, expectedFormatCrc, helper->queryIndexRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode));
+            }
+            if (translators[selected])
+                keyManager.setLayoutTranslator(&translators[selected]->queryTranslator());
         }
     public:
         CKeyLookupLocalBase(CKeyedJoinSlave &_activity) : CLookupHandler(_activity, _activity.keyLookupRowWithJGRowIf)
@@ -847,6 +875,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         {
             PARENT::addPartNum(partNum);
             keyManagers.push_back(nullptr);
+            translators.push_back(nullptr);
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned selected) override
         {
@@ -858,7 +887,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             {
                 keyManager = activity.createPartKeyManager(partNo, copy);
                 // NB: potentially translation per part could be different if dealing with superkeys
-                setupTranslation(partNo, *keyManager);
+                setupTranslation(partNo, selected, *keyManager);
             }
             processRows(processing, partNo, keyManager);
         }
@@ -872,6 +901,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         CKeyLookupMergeHandler(CKeyedJoinSlave &_activity) : CKeyLookupLocalBase(_activity)
         {
             limiter = &activity.lookupThreadLimiter;
+            translators.push_back(nullptr);
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned __unused) override
         {
@@ -886,7 +916,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     partKeySet->addIndex(keyIndex.getClear());
                 }
                 keyManager.setown(createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, helper->hasNewSegmentMonitors()));
-                setupTranslation(0, *keyManager);
+                setupTranslation(0, 0, *keyManager);
             }
             processRows(processing, 0, keyManager);
         }
@@ -1982,10 +2012,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 }
                 lhsRow.setown(inputStream->nextRow());
                 if (!lhsRow)
-                {
-                    stopReadAhead();
                     break;
-                }
             }
             Linked<CJoinGroup> jg;
             if (helper->leftCanMatch(lhsRow))
@@ -2038,6 +2065,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             }
         }
         while (!endOfInput);
+        stopReadAhead();
     }
     const void *doDenormTransform(RtlDynamicRowBuilder &target, CJoinGroup &group)
     {
@@ -2479,6 +2507,8 @@ public:
         currentAdded = 0;
         eos = false;
         endOfInput = false;
+        lookupThreadLimiter.reset();
+        fetchThreadLimiter.reset();
         keyLookupHandlers.init();
         fetchLookupHandlers.init();
         readAheadThread.start();
@@ -2633,6 +2663,11 @@ public:
     virtual void stop() override
     {
         endOfInput = true; // signals to readAhead which is reading input, that is should stop asap.
+
+        // could be blocked in readAhead(), because CJoinGroup's are no longer being processed
+        pendingKeyLookupLimiter.disable();
+        doneListLimiter.disable();
+
         readAheadThread.join();
         keyLookupHandlers.stop();
         fetchLookupHandlers.stop();
@@ -2654,6 +2689,8 @@ public:
     // IJoinProcessor
     virtual void onComplete(CJoinGroup *joinGroup) override
     {
+        if (hasStopped())
+            return;
         bool doneListMaxHit = false;
         // moves complete CJoinGroup's from pending list to done list
         {

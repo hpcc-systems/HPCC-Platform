@@ -949,8 +949,18 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
 
     if (syncInitData())
     {
-        if (!graphCancelHandler.recv(queryJobChannel().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
-            throw MakeStringException(0, "Error receiving actinit data for graph: %" GIDPF "d", graphId);
+        CTimeMon timer;
+        while (!graphCancelHandler.recv(queryJobChannel().queryJobComm(), msg, 0, mpTag, NULL, MEDIUMTIMEOUT))
+        {
+            if (graphCancelHandler.isCancelled())
+                throw MakeStringException(0, "Aborted whilst waiting to receive actinit data for graph: %" GIDPF "d", graphId);
+            // put an upper limit on time Thor can be stalled here
+            unsigned mins = timer.elapsed()/60000;
+            if (mins >= jobS->queryActInitWaitTimeMins())
+                throw MakeStringException(0, "Timed out after %u minutes, waiting to receive actinit data for graph: %" GIDPF "u", mins, graphId);
+
+            GraphPrintLogEx(this, thorlog_null, MCwarning, "Waited %u minutes for activity initialization message (Master may be blocked on a file lock?).", mins);
+        }
         replyTag = msg.getReplyTag();
         msg.read(len);
     }
@@ -1659,6 +1669,15 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     getOpt("remoteCompressedOutput", remoteCompressedOutput);
     if (remoteCompressedOutput.length())
         setRemoteOutputCompressionDefault(remoteCompressedOutput);
+
+    actInitWaitTimeMins = getOptInt(THOROPT_ACTINIT_WAITTIME_MINS, DEFAULT_MAX_ACTINITWAITTIME_MINS);
+
+    /* Need to make sure that the activity initialization timeout is at least as long
+     * as the max LFN block time. i.e. so that the query doesn't spuriously abort with an
+     * activity initialization timeout before it hits the configured max LFN block time.
+     */
+    if (queryMaxLfnBlockTimeMins() >= actInitWaitTimeMins)
+        actInitWaitTimeMins = queryMaxLfnBlockTimeMins()+1;
 }
 
 void CJobSlave::addChannel(IMPServer *mpServer)

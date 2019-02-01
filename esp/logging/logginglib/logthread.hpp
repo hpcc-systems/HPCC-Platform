@@ -46,7 +46,6 @@ class CLogThread : public Thread , implements IUpdateLogThread
     unsigned maxLogRetries;   // Max. # of attempts to send log message
 
     Owned<IEspLogAgent> logAgent;
-    LOGServiceType services[MAXLOGSERVICES];
     QueueOf<IInterface, false> logQueue;
     CriticalSection logQueueCrit;
     Semaphore       m_sem;
@@ -72,21 +71,8 @@ public:
 
     bool hasService(LOGServiceType service)
     {
-        unsigned int i = 0;
-        while (services[i] != LGSTterm)
-        {
-            if (services[i] == service)
-                return true;
-            i++;
-        }
-        return false;
+        return logAgent->hasService(service);
     }
-    void addService(LOGServiceType service)
-    {
-        unsigned i=0;
-        while (services[i] != LGSTterm) i++;
-        services[i] = service;
-    };
 
     int run();
     void start();

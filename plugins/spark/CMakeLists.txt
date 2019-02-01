@@ -44,7 +44,7 @@ if(SPARK)
         endif (NOT HADOOP_VERSION)
 
         if (NOT SPARK_VERSION)
-            set(SPARK_VERSION 2.3.1)
+            set(SPARK_VERSION 2.3.2)
         endif (NOT SPARK_VERSION)
 
         if (NOT SPARK_URL_BASE)
@@ -91,7 +91,7 @@ if(SPARK)
     if(SHA512)
         set( SHA512STRING "${SHA512}" )
     else(SHA512)
-        set( SHA512STRING "DC3A97F3D99791D363E4F70A622B84D6E313BD852F6FDBC777D31EAB44CBC112CEEAA20F7BF835492FB654F48AE57E9969F93D3B0E6EC92076D1C5E1B40B4696" )
+        set( SHA512STRING "e61d9330125746a24d7784166a15b41514546cad874357c98dca0a2c39fa7303d8fa7c049ba6cdf5a24c172d4f47a2e5b6e1f658a57a9b2a30d46d9858cdb531" )
     endif(SHA512)
 
     string(TOLOWER "${SHA512STRING}" SHA512STRING)
@@ -156,15 +156,6 @@ if(SPARK)
         DESTINATION ${EXEC_DIR}
         COMPONENT Runtime)
     
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl @ONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/spark-defaults.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl @ONLY)
-    install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsd
-        ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
-        ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl
-        DESTINATION componentfiles/configxml
-        COMPONENT Runtime)
-        
     configure_file(sparkthor@instance.service.in sparkthor@.service @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sparkthor@.service DESTINATION etc/systemd/system COMPONENT Systemd)
 

@@ -44,6 +44,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="Services" type="xs:string" use="optional" default="GetTransactionSeed,UpdateLog,GetTransactionID">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>the names of logging services to be supported in this logging agent.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="description" type="xs:string" use="optional" default="ESP Logging Agent">
         <xs:annotation>
           <xs:appinfo>
@@ -97,6 +104,13 @@
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Log directory where Failsafe files are stored.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="SafeRolloverThreshold" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>The threshold at which a new tank file will be started: n for number of requests, nB, nMB, or nGB for file size.</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>

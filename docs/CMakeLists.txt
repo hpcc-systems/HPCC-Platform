@@ -38,6 +38,7 @@ set (PORTAL_GEN_XSL ${CMAKE_CURRENT_BINARY_DIR}/BuildTools/PortalGen.xsl)
 
 if ( "${HPCC_MATURITY}" STREQUAL "release" )
 	set (DOC_VERSION "${DOC_VERSION}-${HPCC_SEQUENCE}")
+	set (DOC_VERSION_ONLY "${DOC_VERSION}")
 else()
    if (DOCTAG)
 	set (DOC_VERSION "${majorver}-${minorver}-${DOCTAG}")

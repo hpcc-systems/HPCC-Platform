@@ -9655,6 +9655,12 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
             targetScope = activeScope.privateScope;
         }
     }
+    if (isParametered && expr->isFunction())
+    {
+        expr.setown(createNullExpr(expr->queryType()->queryChildType()));
+        reportError(HQLERR_CannotDefineFunctionFunction, idattr.pos, HQLERR_CannotDefineFunctionFunction_Text);
+    }
+
     OwnedHqlExpr normalized = normalizeFunctionExpression(defineid, expr, failure, isParametered, activeScope.activeParameters, activeScope.createDefaults(), modifiers);
     defineSymbolInScope(targetScope, defineid, normalized, idattr, assignPos, semiColonPos);
 
@@ -10182,6 +10188,9 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
             curBase->getSymbols(syms);
             syms.sort(compareSymbolsByName);
 
+            QuickExpressionReplacer virtualMapper;
+            if (baseVirtualAttr)
+                virtualMapper.setMapping(baseVirtualAttr, virtualSeqAttr);
             ForEachItemIn(iSym, syms)
             {
                 IIdAtom * id = syms.item(iSym).queryId();
@@ -10193,8 +10202,8 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
 
                 LinkedHqlExpr mapped = baseSym;
                 //Replace any references to the base module attribute with this new module.
-                if (baseVirtualAttr)
-                    mapped.setown(quickFullReplaceExpression(mapped, baseVirtualAttr, virtualSeqAttr));
+                if (baseVirtualAttr && (baseVirtualAttr != virtualSeqAttr))
+                    mapped.setown(virtualMapper.transform(mapped));
 
                 if (match)
                 {
@@ -11128,6 +11137,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ONLY: msg.append("ONLY"); break;
     case ONWARNING: msg.append("ONWARNING"); break;
     case OPT: msg.append("OPT"); break;
+    case __OPTION__: msg.append("__OPTION__"); break;
     case OR : msg.append("OR"); break;
     case ORDER: msg.append("ORDER"); break;
     case ORDERED: msg.append("ORDERED"); break;
@@ -12294,25 +12304,31 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
 // if ctx.checkSimpleDef() then simplified definitions are created and checked - even if there is no cache configured.
 void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * name, const char * fullName)
 {
-    bool alreadySimplified = false;
+    bool usingSimplifiedFromCache = false;
     bool cacheUptoDate = false;
     HqlLookupContext attrCtx(ctx);
     attrCtx.noteBeginAttribute(scope, contents, name);
 
-    // Check if cache is up to date and obtain simplified definition from cache
+    // Set cacheUptoDate to true if cache is upto date
+    // Set usingSimplified to true if cache is upto date and option to ignoreSimplified & ignoreCache are both false
+    // Use simplified expression from cache if usingSimplified is true & syntaxChecking
+    // * None of these are set of ctx.regenerateCache==true, as the simplified expression & cache will need to regenerated.
     if (ctx.hasCacheLocation() && !ctx.regenerateCache())
     {
         HqlParseContext & parseContext = ctx.queryParseContext();
         Owned<IEclCachedDefinition> cached = parseContext.cache->getDefinition(fullName);
         cacheUptoDate = cached->isUpToDate(parseContext.optionHash);
-        if (cacheUptoDate && ctx.syntaxChecking() && !ctx.ignoreSimplified() && !ctx.ignoreCache())
+        if (cacheUptoDate && !ctx.ignoreSimplified() && !ctx.ignoreCache())
         {
-            IFileContents * cachecontents = cached->querySimplifiedEcl();
-            if (cachecontents)
+            usingSimplifiedFromCache = true;
+            if (ctx.syntaxChecking())
             {
-                contents = cachecontents;
-                alreadySimplified = true;
-                ctx.incrementAttribsFromCache();
+                IFileContents * cachecontents = cached->querySimplifiedEcl();
+                if (cachecontents)
+                {
+                    contents = cachecontents;
+                    ctx.incrementAttribsFromCache();
+                }
             }
         }
     }
@@ -12338,32 +12354,50 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     OwnedHqlExpr parsed = scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
     ctx.incrementAttribsProcessed();
 
-    if (parsed && !alreadySimplified)
+    if (parsed && !usingSimplifiedFromCache)
     {
         //Forward scopes cannot be cached because the dependencies are not known as it is parsed
         const bool canCache = parsed->getOperator() != no_forwardscope;
         if (canCache)
         {
             const bool isMacro = parsed->isMacro();
-            bool updateCache = ctx.hasCacheLocation() && (!cacheUptoDate || ctx.regenerateCache());
-            bool useSimplified = ctx.syntaxChecking() && !ctx.ignoreSimplified();
+            const bool updateCache = ctx.hasCacheLocation() && (!cacheUptoDate || ctx.regenerateCache());
+            const bool useSimplified = ctx.syntaxChecking() && !ctx.ignoreSimplified();
 
             OwnedHqlExpr simplified;
             StringBuffer simplifiedEcl;
+            // Simplified expression will be generated when
+            // - Not a macro and ignoreSimplified == false
+            // - And simplifiedExpression is required because cache is no up to date, verify option is used or syntaxChecking
+            // - And attribute has not been specifically excluded with the neverSimplify option
             if (!isMacro && !ctx.ignoreSimplified() &&
                 (updateCache || ctx.checkSimpleDef() || useSimplified) && !ctx.neverSimplify(fullName))
                 simplified.setown(createSimplifiedDefinition(parsed));
 
-            // create plain text ecl representation of the simplified expression (if it will be needed later)
+            // If plain text ecl representation of the simplified expression is needed for some reason
+            // (i.e. to update cache or verify simplified expression)
+            // And the simplified expression is less complex than the original expression
+            // Then a plain text ecl representation of the simplified expression is produced here
             if (simplified && (updateCache||ctx.checkSimpleDef()))
             {
                 regenerateDefinition(simplified, simplifiedEcl);
-                if (ctx.checkSimpleDef())
+                // Ensure the simplified expression is less complex
+                if (simplifiedEcl.length()<contents->length())
                 {
-                    // Dump of simplified expression in an ecl comment for diagnostics
-                    simplifiedEcl.append("\n/* Simplified expression IR:\n");
-                    EclIR::getIRText(simplifiedEcl, 0, queryLocationIndependent(simplified));
-                    simplifiedEcl.append("*/\n");
+                    if (ctx.checkSimpleDef())
+                    {
+                        simplifiedEcl.append("\n/* Simplified expression expression tree:\n");
+                        EclIR::getIRText(simplifiedEcl, 0, queryLocationIndependent(simplified));
+                        simplifiedEcl.append("*/\n");
+                    }
+                }
+                else
+                {
+                    // Simplified expr is more complex, so blank out plain text ecl string
+                    // to ensure it's not written to cache or used for verifying
+                    simplifiedEcl.clear();
+                    simplified.clear();
+                    ctx.incrementSimplifiedTooComplex();
                 }
             }
             if (updateCache)

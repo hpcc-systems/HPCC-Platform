@@ -862,9 +862,9 @@ protected:
 
     virtual void onMissingAssignment(IHqlExpression * expr)
     {
-            StringBuffer s;
-            expr->toString(s);
-            throwError2(HQLERR_MissingTransformAssignXX, s.str(), expr);
+        StringBuffer s;
+        expr->toString(s);
+        throwError1(HQLERR_MissingTransformAssignX, s.str());
     }
 
     void pushCondition(IHqlExpression * cond)
@@ -11407,7 +11407,7 @@ void HqlCppTranslator::buildXmlSerialize(BuildCtx & subctx, IHqlExpression * exp
                     {
                         StringBuffer s;
                         expr->toString(s);
-                        throwError2(HQLERR_MissingTransformAssignXX, s.str(), expr);
+                        throwError1(HQLERR_MissingTransformAssignX, s.str());
                     }
 
                     selected.set(match->queryChild(0));

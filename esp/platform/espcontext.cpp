@@ -43,6 +43,7 @@ private:
     StringAttr      m_acceptLanguage;
     StringAttr      httpMethod;
     StringAttr      servMethod;
+    StringAttr      esdlBindingID;
 
     StringBuffer    m_servName;
     StringBuffer    m_servHost;
@@ -477,6 +478,15 @@ public:
         servMethod.set(method);
     }
 
+    virtual void setESDLBindingID(const char *id)
+    {
+        esdlBindingID.set(id);
+    }
+    virtual const char* queryESDLBindingID()
+    {
+        return esdlBindingID.get();
+    }
+
     virtual CTxSummary* queryTxSummary()
     {
         return m_txSummary.get();
@@ -680,9 +690,11 @@ void CEspContext::updateTraceSummaryHeader()
         }
         if (!reqSummary.isEmpty())
             m_txSummary->set("req", reqSummary.str());
-
         if (m_hasException)
-            m_txSummary->set(VStringBuffer("exception@%ums", m_exceptionTime), m_exceptionCode);
+        {
+            m_txSummary->set("excepttime", m_exceptionTime);
+            m_txSummary->set("exceptcode", m_exceptionCode);
+        }
     }
 }
 

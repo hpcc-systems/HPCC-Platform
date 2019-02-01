@@ -120,6 +120,7 @@ using std::string;
 #define eqHoleControlProcess    "HoleControlProcess"
 #define eqHoleCollatorProcess   "HoleCollatorProcess"
 #define eqHoleStandbyProcess    "HoleStandbyProcess"
+#define eqSparkThorProcess      "SparkThorProcess"
 
 #define SDS_LOCK_TIMEOUT 30000
 
@@ -135,6 +136,8 @@ private:
     void fetchInstances(const char* ServiceType, IPropertyTree& service, IArrayOf<IEspTpMachine>& tpMachines);
     bool checkGroupReplicateOutputs(const char* groupName, const char* kind);
     void appendTpDropZone(double clientVersion, IConstEnvironment* constEnv, IConstDropZoneInfo& dropZoneInfo, IArrayOf<IConstTpDropZone>& list);
+    void appendTpSparkThor(double clientVersion, IConstEnvironment* constEnv, IConstSparkThorInfo& sparkThorInfo, IArrayOf<IConstTpSparkThor>& list);
+    void appendTpMachine(double clientVersion, IConstEnvironment* constEnv, IConstInstanceInfo& instanceInfo, IArrayOf<IConstTpMachine>& machines);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -181,6 +184,7 @@ public:
     void getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list);
     void getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list);
     void getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list);
+    void getTpSparkThors(double clientVersion, const char* name, IArrayOf<IConstTpSparkThor>& list);
 
     void queryTargetClusters(double version, const char* clusterType, const char* clusterName, IArrayOf<IEspTpTargetCluster>& clusterList);
     void getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, const char* clusterType = NULL, const char* clusterName = NULL);

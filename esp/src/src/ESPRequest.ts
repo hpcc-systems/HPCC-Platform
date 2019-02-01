@@ -46,8 +46,37 @@ class RequestHelper {
         return this.serverIP ? true : false;
     }
 
+    isSessionCall(service, action) {
+        switch (service) {
+            case "esp":
+                switch (action) {
+                    // case "login":
+                    // case "logout":
+                    // case "lock":
+                    case "unlock":
+                        return true;
+                }
+                break;
+        }
+        return false;
+    }
+
+    hasServerSetCookie() {
+        return cookie("ESPSessionState") !== undefined;
+    }
+
+    hasAuthentication() {
+        const retVal = cookie("ESPSessionState");
+        return retVal === "true" || retVal === true;
+    }
+
+    isAuthenticated() {
+        const retVal = cookie("ESPAuthenticated");
+        return retVal === "true" || retVal === true;
+    }
+
     isLocked() {
-        return cookie("Status") !== "login_attempt" && cookie("Status") === "Locked";
+        return cookie("Status") === "Locked";
     }
 
     _send(service, action, _params) {
@@ -70,10 +99,6 @@ class RequestHelper {
             postfix = ".json";
         }
         // var method = params.method ? params.method : "get";
-
-        if (this.isLocked()) {
-            throw new Error("session locked");
-        }
 
         var retVal = null;
         if (this.isCrossSite()) {
@@ -105,6 +130,20 @@ class RequestHelper {
     }
 
     send(service, action, params?) {
+        if (!this.isSessionCall(service, action) && (!this.hasServerSetCookie() || (this.hasAuthentication() && !this.isAuthenticated()))) {
+            window.location.reload(true);
+            return new Promise((resolve, reject) => { });
+        }
+
+        if (this.isLocked()) {
+            topic.publish("hpcc/brToaster", {
+                Severity: "Error",
+                Source: service + "." + action,
+                Exceptions: [{ Message: "<h3>Session is Locked<h3>" }]
+            });
+            return Promise.resolve({});
+        }
+
         if (!params)
             params = {};
 
@@ -355,7 +394,7 @@ export const Store = declare(null, {
         lang.mixin(this.get(id), item);
     },
 
-    remove: function(id) {
+    remove: function (id) {
         var cachedArray = this.getCachedArray(false);
         if (cachedArray) {
             delete cachedArray[id];
@@ -421,9 +460,6 @@ export const Store = declare(null, {
                 deferredResults.total.resolve(items.length);
             } else {
                 deferredResults.total.resolve(0);
-            }
-            if (deferredResults.isResolved()) {
-                debugger;
             }
             deferredResults.resolve(items);
             return response;

@@ -61,6 +61,7 @@ void CLogSerializer::Init()
     m_ItemCount     = 0;
     m_fileio        = 0;
     m_file          = 0;
+    fileSize = 0;
 }
 
 CLogSerializer::~CLogSerializer()
@@ -84,6 +85,7 @@ void CLogSerializer::Append(const char* GUID, const char* Data)
     //optimize
     CriticalBlock b(crit);
     m_ItemCount++;
+    fileSize += toWrite.length();
     m_bytesWritten += m_fileio->write(m_bytesWritten, toWrite.length(), toWrite.str());
 }
 
@@ -146,6 +148,7 @@ void CLogSerializer::Close()
 
     m_bytesWritten  = 0;//
     m_ItemCount     = 0;//
+    fileSize        = 0;
 }
 
 void CLogSerializer::Rollover(const char* ClosedPrefix)
@@ -281,6 +284,7 @@ void CLogSerializer::loadAckedLogs(GuidSet& ackedLogs)//
 
             finger+=dataLen;
         }
+        fileSize = finger;
         DBGLOG("Total acks loaded %lu", m_ItemCount);
     }
     catch(IException* ex)

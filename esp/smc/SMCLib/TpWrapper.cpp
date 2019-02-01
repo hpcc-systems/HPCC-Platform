@@ -1737,6 +1737,84 @@ void CTpWrapper::appendTpDropZone(double clientVersion, IConstEnvironment* const
     list.append(*dropZone.getLink());
 }
 
+void CTpWrapper::getTpSparkThors(double clientVersion, const char* name, IArrayOf<IConstTpSparkThor>& list)
+{
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+    if (!isEmptyString(name))
+    {
+        Owned<IConstSparkThorInfo> sparkThorInfo = constEnv->getSparkThor(name);
+        if (sparkThorInfo)
+            appendTpSparkThor(clientVersion, constEnv, *sparkThorInfo, list);
+    }
+    else
+    {
+        Owned<IConstSparkThorInfoIterator> it = constEnv->getSparkThorIterator();
+        ForEach(*it)
+            appendTpSparkThor(clientVersion, constEnv, it->query(), list);
+    }
+}
+
+void CTpWrapper::appendTpSparkThor(double clientVersion, IConstEnvironment* constEnv, IConstSparkThorInfo& sparkThorInfo, IArrayOf<IConstTpSparkThor>& list)
+{
+    SCMStringBuffer name, build, thorClusterName;
+    sparkThorInfo.getName(name);
+    sparkThorInfo.getBuild(build);
+    sparkThorInfo.getThorClusterName(thorClusterName);
+
+    Owned<IEspTpSparkThor> sparkThor = createTpSparkThor();
+    if (name.length() > 0)
+        sparkThor->setName(name.str());
+    if (build.length() > 0)
+        sparkThor->setBuild(build.str());
+    if (thorClusterName.length() > 0)
+        sparkThor->setThorClusterName(thorClusterName.str());
+    sparkThor->setSparkExecutorCores(sparkThorInfo.getSparkExecutorCores());
+    sparkThor->setSparkExecutorMemory(sparkThorInfo.getSparkExecutorMemory());
+    sparkThor->setSparkMasterPort(sparkThorInfo.getSparkMasterPort());
+    sparkThor->setSparkMasterWebUIPort(sparkThorInfo.getSparkMasterWebUIPort());
+    sparkThor->setSparkWorkerCores(sparkThorInfo.getSparkWorkerCores());
+    sparkThor->setSparkWorkerMemory(sparkThorInfo.getSparkWorkerMemory());
+    sparkThor->setSparkWorkerPort(sparkThorInfo.getSparkWorkerPort());
+
+    //Create the Path used by the thor cluster.
+    StringBuffer tmpPath;
+    StringBuffer path("/Environment/Software");
+    setAttPath(path, eqThorCluster, "name", thorClusterName.str(), tmpPath);
+    sparkThor->setThorPath(tmpPath.str());
+
+    StringBuffer dirBuf;
+    Owned<IPropertyTree> root = &constEnv->getPTree();
+    if (getConfigurationDirectory(root->queryPropTree("Directories"), "log", "sparkthor", name.str(), dirBuf))
+        sparkThor->setLogDirectory(dirBuf.str());
+
+    IArrayOf<IConstTpMachine> machines;
+    Owned<IConstInstanceInfoIterator> instanceInfoItr = sparkThorInfo.getInstanceIterator();
+    ForEach(*instanceInfoItr)
+        appendTpMachine(clientVersion, constEnv, instanceInfoItr->query(), machines);
+    sparkThor->setTpMachines(machines);
+
+    list.append(*sparkThor.getLink());
+}
+
+void CTpWrapper::appendTpMachine(double clientVersion, IConstEnvironment* constEnv, IConstInstanceInfo& instanceInfo, IArrayOf<IConstTpMachine>& machines)
+{
+    SCMStringBuffer name, networkAddress, description, directory;
+    Owned<IConstMachineInfo> machineInfo = instanceInfo.getMachine();
+    machineInfo->getName(name);
+    machineInfo->getNetAddress(networkAddress);
+    instanceInfo.getDirectory(directory);
+
+    Owned<IEspTpMachine> machine = createTpMachine();
+    machine->setName(name.str());
+    machine->setNetaddress(networkAddress.str());
+    machine->setPort(instanceInfo.getPort());
+    machine->setOS(machineInfo->getOS());
+    machine->setDirectory(directory.str());
+    machine->setType(eqSparkThorProcess);
+    machines.append(*machine.getLink());
+}
+
 IEspTpMachine* CTpWrapper::createTpMachineEx(const char* name, const char* type, IConstMachineInfo* machineInfo)
 {
     if (!machineInfo)

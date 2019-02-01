@@ -17,6 +17,7 @@ define([
     "dijit/MenuItem",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
+    "dijit/form/TextBox",
     "dijit/form/ValidationTextBox",
 
     "dgrid/tree",
@@ -58,7 +59,7 @@ define([
 
     "hpcc/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, iframe, on, topic,
-    registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, ValidationTextBox,
+    registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, TextBox, ValidationTextBox,
     tree, editor, selector,
     _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget, FilterDropDownWidget, Utility,
     template) {
@@ -109,7 +110,8 @@ define([
                 this.fixedSprayReplicateCheckbox = registry.byId(this.id + "FixedSprayReplicate");
                 this.delimitedSprayReplicateCheckbox = registry.byId(this.id + "DelimitedSprayReplicate");
                 this.xmlSprayReplicateCheckbox = registry.byId(this.id + "XMLSprayReplicate");
-                this.sprayXMLButton = registry.byId(this.id + "SprayXMLButton");
+                this.sprayXMLButton = registry.byId(this.id + "SprayFixedButton");
+                this.sprayFixedButton = registry.byId(this.id + "SprayXMLButton");
                 this.jsonSprayReplicate = registry.byId(this.id + "JSONSprayReplicate");
                 this.variableSprayReplicateCheckbox = registry.byId(this.id + "VariableSprayReplicate");
                 this.blobSprayReplicateCheckbox = registry.byId(this.id + "BlobSprayReplicate");
@@ -178,6 +180,7 @@ define([
                 var context = this;
                 var targetRow;
                 if (!this.dropZoneTargetSelect.initalized) {
+                    this.dropZoneFolderSelect.set("disabled", true);
                     this.dropZoneTargetSelect.init({
                         DropZones: true,
                         callback: function (value, row) {
@@ -198,16 +201,21 @@ define([
                             var path = targetRow.machine.Directory.indexOf("\\");
                             targetRow.machine.Name = value
                             targetRow.machine.Netaddress = value
-                            if (context.dropZoneFolderSelect) {
-                                context.dropZoneFolderSelect._dropZoneTarget = targetRow;
-                                if (path > -1) {
-                                    context.dropZoneFolderSelect.defaultValue = "\\"
-                                    pathSepChar = "\\"
-                                } else {
-                                    context.dropZoneFolderSelect.defaultValue = "/"
-                                    pathSepChar = "/"
+                            if (!value) {
+                                context.dropZoneFolderSelect.set("disabled", true);
+                            } else {
+                                context.dropZoneFolderSelect.set("disabled", false);
+                                if (context.dropZoneFolderSelect) {
+                                    context.dropZoneFolderSelect._dropZoneTarget = targetRow;
+                                    if (path > -1) {
+                                        context.dropZoneFolderSelect.defaultValue = "\\"
+                                        pathSepChar = "\\"
+                                    } else {
+                                        context.dropZoneFolderSelect.defaultValue = "/"
+                                        pathSepChar = "/"
+                                    }
+                                    context.dropZoneFolderSelect.loadDropZoneFolders(pathSepChar);
                                 }
-                                context.dropZoneFolderSelect.loadDropZoneFolders(pathSepChar);
                             }
                         }
                     });
@@ -298,6 +306,7 @@ define([
 
             _onUploadCancel: function (event) {
                 this.fileListDialog.hide();
+                this.uploader.reset();
             },
 
             _onDownload: function (event) {
@@ -326,7 +335,7 @@ define([
                                     NetAddress: item.NetAddress,
                                     Path: item.fullFolderPath,
                                     OS: item.OS,
-                                    Names: item.displayName
+                                    Names: item.name
                                 },
                                 load: function (response) {
                                     context.refreshGrid(true);
@@ -381,7 +390,7 @@ define([
                         var request = domForm.toObject(this.id + formID);
                         var item = selections[0];
                         lang.mixin(request, {
-                            sourceIP: selections[0].DropZone.NetAddress,
+                            sourceIP: item.NetAddress,
                             nosplit: true
                         });
                         var sourcePath = "";
@@ -535,6 +544,7 @@ define([
                     context.refreshGrid();
                 });
                 this.filter.on("apply", function (evt) {
+                    context.landingZonesGrid.clearSelection();
                     context.refreshHRef();
                     context.refreshGrid();
                 });
@@ -735,16 +745,22 @@ define([
                     columns: {
                         targetName: editor({
                             label: this.i18n.TargetName,
-                            width: 144,
                             autoSave: true,
-                            editor: "text"
-                        }),
+                            editor: "text",
+                            editorArgs: {
+                                style: "width: 100%;"
+                            }
+                        }, TextBox),
                         targetRecordLength: editor({
+                            editorArgs: {
+                                required: true,
+                                placeholder: this.i18n.RequiredForXML,
+                                promptMessage: this.i18n.RequiredForXML,
+                                style: "width: 100%;"
+                            },
                             label: this.i18n.RecordLength,
-                            width: 72,
                             autoSave: true,
-                            editor: "text"
-                        })
+                        }, ValidationTextBox)
                     }
                 });
 
@@ -772,24 +788,7 @@ define([
                         targetRowTag: editor({
                             label: this.i18n.RowTag,
                             width: 100,
-                            autoSave: true,
-                            editor: "dijit.form.ValidationTextBox",
-                            editorArgs: {
-                                required: true,
-                                placeholder: this.i18n.RequiredForXML,
-                                promptMessage: this.i18n.RequiredForXML,
-                                validator: function (value, constraints) {
-                                    var valid = true;
-                                    if (value !== null && value !== undefined && value !== "") {
-                                        valid = true;
-                                        context.sprayXMLButton.set("disabled", false);
-                                    } else {
-                                        context.sprayXMLButton.set("disabled", true);
-                                        valid = false;
-                                    }
-                                    return valid;
-                                }
-                            }
+                            autoSave: true
                         })
                     }
                 });

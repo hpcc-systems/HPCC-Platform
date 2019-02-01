@@ -26,7 +26,6 @@ const char* const PropMaxLogQueueLength = "MaxLogQueueLength";
 const char* const PropQueueSizeSignal = "QueueSizeSignal";
 const char* const PropMaxTriesRS = "MaxTriesRS";
 const char* const PropFailSafe = "FailSafe";
-const char* const PropFailSafeLogsDir = "FailSafeLogsDir";
 
 #define     MaxLogQueueLength   500000 //Write a warning into log when queue length is greater than 500000
 #define     QueueSizeSignal     10000 //Write a warning into log when queue length is increased by 10000
@@ -58,26 +57,6 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
     if(!_logAgent)
         throw MakeStringException(-1,"No Logging agent interface for %s", _agentName);
 
-    const char* servicesConfig = _cfg->queryProp("@services");
-    if (!servicesConfig || !*servicesConfig)
-        throw MakeStringException(-1,"No Logging Service defined for %s", _agentName);
-
-    StringArray serviceArray;
-    serviceArray.appendListUniq(servicesConfig, ",");
-
-    unsigned i=0;
-    ForEachItemIn(s, serviceArray)
-    {
-        const char* service = serviceArray.item(s);
-        if (service && strieq(service, "UpdateLOG"))
-            services[i++] = LGSTUpdateLOG;
-        else if (service && strieq(service, "GetTransactionSeed"))
-            services[i++] = LGSTGetTransactionSeed;
-        else if (service && strieq(service, "GetTransactionID"))
-            services[i++] = LGSTGetTransactionID;
-    }
-    services[i] = LGSTterm;
-
     logAgent.setown(_logAgent);
 
     maxLogQueueLength = _cfg->getPropInt(PropMaxLogQueueLength, MaxLogQueueLength);
@@ -85,13 +64,8 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
     maxLogRetries = _cfg->getPropInt(PropMaxTriesRS, DefaultMaxTriesRS);
     ensureFailSafe = _cfg->getPropBool(PropFailSafe);
     if(ensureFailSafe)
-    {
-        const char * logsDir = _cfg->queryProp(PropFailSafeLogsDir);
-        if (!logsDir || !*logsDir)
-            logsDir = "./FailSafeLogs";
+        logFailSafe.setown(createFailSafeLogger(_cfg, _service, _agentName));
 
-        logFailSafe.setown(createFailSafeLogger(_service, _agentName, logsDir));
-    }
     time_t tNow;
     time(&tNow);
     localtime_r(&tNow, &m_startTime);
@@ -158,9 +132,9 @@ bool CLogThread::queueLog(IEspUpdateLogRequest* logRequest)
 bool CLogThread::queueLog(IEspUpdateLogRequestWrap* logRequest)
 {
     unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
-    logAgent->filterLogContent(logRequest);
+    Owned<IEspUpdateLogRequestWrap> logRequestFiltered = logAgent->filterLogContent(logRequest);
     ESPLOG(LogNormal, "LThread:filterLog: %dms\n", msTick() -  startTime);
-    return enqueue(logRequest);
+    return enqueue(logRequestFiltered);
 }
 
 bool CLogThread::enqueue(IEspUpdateLogRequestWrap* logRequest)

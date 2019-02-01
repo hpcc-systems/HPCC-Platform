@@ -143,7 +143,7 @@ void CLogContentFilter::filterLogContentTree(StringArray& filters, IPropertyTree
     }
 }
 
-void CLogContentFilter::filterLogContent(IEspUpdateLogRequestWrap* req)
+IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogRequestWrap* req)
 {
     const char* logContent = req->getUpdateLogRequest();
     Owned<IPropertyTree> logRequestTree = req->getLogRequestTree();
@@ -294,8 +294,8 @@ void CLogContentFilter::filterLogContent(IEspUpdateLogRequestWrap* req)
     StringBuffer updateLogRequestXML;
     toXML(updateLogRequestTree, updateLogRequestXML);
     ESPLOG(LogMax, "filtered content and option: <%s>", updateLogRequestXML.str());
-    req->clearOriginalContent();
-    req->setUpdateLogRequest(updateLogRequestXML.str());
+
+    return new CUpdateLogRequestWrap(req->getGUID(), req->getOption(), updateLogRequestXML.str());
 }
 
 void CDBLogAgentBase::readDBCfg(IPropertyTree* cfg, StringBuffer& server, StringBuffer& dbUser, StringBuffer& dbPassword)
@@ -321,6 +321,9 @@ void CDBLogAgentBase::readTransactionCfg(IPropertyTree* cfg)
 
 bool CDBLogAgentBase::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp)
 {
+    if (!hasService(LGSTGetTransactionSeed))
+        throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "%s: no getTransactionSeed service configured", agentName.get());
+
     bool bRet = false;
     StringBuffer appName = req.getApplication();
     appName.trim();
@@ -366,6 +369,9 @@ bool CDBLogAgentBase::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
 
 bool CDBLogAgentBase::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp)
 {
+    if (!hasService(LGSTUpdateLOG))
+        throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "%s: no updateLog service configured", agentName.get());
+
     unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
     bool ret = false;
     try
@@ -550,7 +556,8 @@ void CDBLogAgentBase::getTransactionID(StringAttrMapping* transFields, StringBuf
     //Not implemented
 }
 
-void CDBLogAgentBase::filterLogContent(IEspUpdateLogRequestWrap* req)
+IEspUpdateLogRequestWrap* CDBLogAgentBase::filterLogContent(IEspUpdateLogRequestWrap* req)
 {
     //No filter in CDBSQLLogAgent
+    return req;
 }

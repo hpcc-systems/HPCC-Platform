@@ -1854,7 +1854,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
         CDfsLogicalFileName lfn;
         if (!lfn.setValidate(destname))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid destination filename");
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename:'%s'", destname);
         destname = lfn.get();
         PROGLOG("SprayFixed: DestLogicalName %s, DestGroup %s", destname, destNodeGroup);
 
@@ -2029,7 +2029,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
         CDfsLogicalFileName lfn;
         if (!lfn.setValidate(destname))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename");
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename:'%s'", destname);
+
         destname = lfn.get();
         PROGLOG("SprayVariable: DestLogicalName %s, DestGroup %s", destname, destNodeGroup);
 
@@ -2458,7 +2459,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         if (!bRoxie)
         {
             if (!lfn.setValidate(dstname))
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename");
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename:'%s'", dstname);
             dstname = lfn.get();
         }
 
@@ -2875,7 +2876,7 @@ void CFileSprayEx::searchDropZoneFiles(IEspContext& context, IpAddress& ip, cons
     if(!f->isDirectory())
         throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", dir);
 
-    const char pathSep = getPathSepChar(dir); 
+    const char pathSep = getPathSepChar(dir);
     Owned<IDirectoryIterator> di = f->directoryFiles(nameFilter, true, true);
     ForEach(*di)
     {

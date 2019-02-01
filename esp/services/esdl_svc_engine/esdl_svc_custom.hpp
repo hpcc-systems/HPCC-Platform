@@ -30,9 +30,12 @@
 #include "jlog.hpp"
 #include "esp.hpp"
 
+#include "esdl_def.hpp"
+
 #include <map>
 #include <mutex>
 #include <thread>
+#include <initializer_list>
 
 #include "tokenserialization.hpp"
 #include "xpathprocessor.hpp"
@@ -53,7 +56,7 @@ public:
     CEsdlCustomTransformRule(const char * transferName, const char * targetfield, const char * xpathToValue, bool optional, bool attemptToSet)
     :  m_ruleName(transferName), m_targetField(targetfield), m_xpathToValue(xpathToValue), m_optional(optional), m_attemptToSet(attemptToSet)
     {
-        m_compiledValueXpath.set(getCompiledXpath(xpathToValue));
+        m_compiledValueXpath.setown(compileXpath(xpathToValue));
     }
 
 #if defined(_DEBUG)
@@ -97,6 +100,7 @@ private:
     CIArrayOf<CEsdlCustomTransformRule> m_otherwiseClauses;
     CIArrayOf<CEsdlCustomTransformChoose> m_childChooseClauses;
     CIArrayOf<CEsdlCustomTransformChoose> m_childOtherwiseClauses;
+    StringAttr crtTarget;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -108,7 +112,7 @@ public:
         DBGLOG("CEsdlCustomTransformClause released!");
 #endif
     }
-    void process(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext);
+    void process(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext, IPropertyTree *origTree, const char *defTarget);
 #if defined(_DEBUG)
     void toDBGLog();
 #endif
@@ -122,12 +126,14 @@ private:
     bool evaluate(IXpathContext * xpathContext);
     void processClauses(IPropertyTree *request, IXpathContext * xpathContext, CIArrayOf<CEsdlCustomTransformRule> & m_fieldTransforms);
     void processClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext, bool otherwise);
-    void processChildClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext,  bool otherwise);
+    void processChildClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext,  bool otherwise, IPropertyTree *origTree);
 };
 
 interface IEsdlCustomTransform : extends IInterface
 {
-       virtual void processTransform(IEspContext * context,  StringBuffer & request, IPropertyTree * bindingCfg)=0;
+       virtual void processTransform(IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg)=0;
+       virtual void processTransform(IEspContext * context, IPropertyTree *theroot, IXpathContext *xpathContext, const char *defaultTarget)=0;
+
 };
 
 class CEsdlCustomTransform : implements IEsdlCustomTransform, public CInterface
@@ -135,6 +141,7 @@ class CEsdlCustomTransform : implements IEsdlCustomTransform, public CInterface
 private:
     CIArrayOf<CEsdlCustomTransformChoose> m_customTransformClauses;
     StringAttr m_name;
+    StringAttr m_target;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -161,7 +168,11 @@ public:
 #endif
     }
 
-    void processTransform(IEspContext * context,  StringBuffer & request, IPropertyTree * bindingCfg);
+    void processTransform(IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg) override;
+    void processTransform(IEspContext * context, IPropertyTree *theroot, IXpathContext *xpathContext, const char *defaultTarget) override;
+
 };
+
+void processServiceAndMethodTransforms(std::initializer_list<IEsdlCustomTransform *> const &transforms, IEspContext * context, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer & request, IPropertyTree * bindingCfg);
 
 #endif /* ESDL_SVC_CUSTOM_HPP_ */

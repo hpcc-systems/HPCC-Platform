@@ -1896,32 +1896,12 @@ bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udes
         return false;
     }
 
-    StringBuffer username;
-    StringBuffer password;
-    udesc->getUserName(username);
-    if (username.length() < 1)
-    {
-        DBGLOG("User Name not defined\n");
-        return false;
-    }
-
-    udesc->getPassword(password);
-    Owned<ISecUser> user = secmgr->createUser(username);
-    if (!user)
-    {
-        DBGLOG("User %s not found\n", username.str());
-        return false;
-    }
-
-    if (password.length() > 0)
-        user->credentials().setPassword(password);
-
     CDfsLogicalFileName dlfn;
     dlfn.set(logicalName);
 
     //Start from the SecAccess_Full. Decrease the permission whenever a component has a lower permission.
     permission = SecAccess_Full;
-    getFilePermission(dlfn, *user, udesc, secmgr, permission);
+    getFilePermission(dlfn, *context.queryUser(), udesc, secmgr, permission);
 
     return true;
 }
@@ -2225,6 +2205,9 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
         if (bloomList.ordinality())
             FileDetails.setBlooms(bloomList);
     }
+
+    if ((version >= 1.40) && df->queryAttributes().hasProp("@expireDays"))
+        FileDetails.setExpireDays(df->queryAttributes().getPropInt("@expireDays"));
 
     //#14280
     IDistributedSuperFile *sf = df->querySuperFile();
@@ -6120,6 +6103,12 @@ void CWsDfuEx::getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAc
     accessInfo.setExpiryTime(expiryTime);
     accessInfo.setFileAccessPort(port);
     accessInfo.setFileAccessSSL(secure);
+
+    StringBuffer userName;
+    if (udesc)
+        udesc->getUserName(userName);
+    LOG(daliAuditLogCat,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", req.getCluster(),
+        userName.str(), fileName.str(), req.getJobId(), req.getExpirySeconds());
 }
 
 
@@ -6455,7 +6444,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
             newFile->queryAttributes().setPropInt64("@size", req.getFileSize());
         newFile->attach(newFileName.str(), userDesc);
 
-        LOG(daliAuditLogCat,",FileAccess,,CREATED,%s,%s,%s", groupName, userId.str(), newFileName.str());
+        LOG(daliAuditLogCat,",FileAccess,EspProcess,CREATED,%s,%s,%s", groupName, userId.str(), newFileName.str());
     }
     catch (IException *e)
     {

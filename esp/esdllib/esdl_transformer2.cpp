@@ -1468,9 +1468,24 @@ void Esdl2Transformer::addMethod(Esdl2Base *item)
     }
 }
 
+void Esdl2Transformer::setMethodInfo(const char *name, Esdl2Method *method)
+{
+    if (name && *name && method)
+    {
+        WriteLockBlock block(rwMethodLock);
+        meth_map.setValue(name, method);
+    }
+}
+
+Esdl2Method **Esdl2Transformer::readMethodInfo(const char *method)
+{
+    ReadLockBlock block(rwMethodLock);
+    return meth_map.getValue(method);
+}
+
 IEsdlMethodInfo* Esdl2Transformer::queryMethodInfo(const char* service,const char *method)
 {
-    Esdl2Method **mt = meth_map.getValue(method);
+    Esdl2Method **mt = readMethodInfo(method);
     if (mt && *mt)
         return dynamic_cast<IEsdlMethodInfo *>(*mt);
 
@@ -1480,20 +1495,27 @@ IEsdlMethodInfo* Esdl2Transformer::queryMethodInfo(const char* service,const cha
     IEsdlDefMethod* mth = svc->queryMethodByName(method);
 
     Esdl2Method* m = new Esdl2Method(this,mth);
-    meth_map.setValue(method,m);
+    setMethodInfo(method, m);
     return m;
 }
 
 void Esdl2Transformer::addType(Esdl2Base* type)
 {
+    WriteLockBlock block(rwTypeLock);
     types.append(*type);
     type_map.setValue(type->queryName(), type);
+}
+
+Esdl2Base **Esdl2Transformer::readType(const char *name)
+{
+    ReadLockBlock block(rwTypeLock);
+    return type_map.getValue(name);
 }
 
 Esdl2Base* Esdl2Transformer::queryType(const char* name)
 {
     ESDL_DBG("queryType(%s)", name);
-    Esdl2Base** typ = type_map.getValue(name);
+    Esdl2Base** typ = readType(name);
     if (typ && *typ)
         return *typ;
 
@@ -1832,6 +1854,8 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
             else if (strnicmp(dataset, "LOG_", 4)==0)
                 xppToXmlString(*xpp, stag, logdata);
             else if (strieq(dataset, "royaltyset"))
+                xppToXmlString(*xpp, stag, logdata);
+            else if (strieq(dataset, "desdlsoaprequestecho"))
                 xppToXmlString(*xpp, stag, logdata);
             else
             {

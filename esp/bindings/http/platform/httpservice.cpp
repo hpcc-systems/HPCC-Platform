@@ -935,9 +935,9 @@ EspAuthState CEspHttpServer::checkUserAuth()
 
     AuthType domainAuthType = authReq.authBinding->getDomainAuthType();
     authReq.ctx->setDomainAuthType(domainAuthType);
-    if (authorizationHeader.isEmpty() && domainAuthType != AuthPerRequestOnly)
+    if (domainAuthType != AuthPerRequestOnly)
     {//Try session based authentication now.
-        EspAuthState authState = checkUserAuthPerSession(authReq);
+        EspAuthState authState = checkUserAuthPerSession(authReq, authorizationHeader);
         if (authState != authUnknown)
             return authState;
     }
@@ -1176,7 +1176,7 @@ bool CEspHttpServer::isAuthRequiredForBinding(EspAuthRequest& authReq)
     return true;
 }
 
-EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
+EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq, StringBuffer& authorizationHeader)
 {
     ESPLOG(LogMax, "checkUserAuthPerSession");
 
@@ -1184,8 +1184,12 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
     if (sessionID > 0)
         return authExistingSession(authReq, sessionID);//Check session based authentication using this session ID.
 
-    if ((authReq.authBinding->getDomainAuthType() != AuthPerRequestOnly) && authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
+    if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
         return authSucceeded;//Give the permission to send out some pages used for login or logout.
+
+    if (!authorizationHeader.isEmpty() && !isServiceMethodReq(authReq, "esp", "login")
+        && !isServiceMethodReq(authReq, "esp", "unlock"))
+        return authUnknown;
 
     StringBuffer urlCookie;
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
@@ -1526,6 +1530,97 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
     }
 }
 
+void CEspHttpServer::sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest& authReq, const char* errMsg)
+{
+    StringBuffer espURL, ip;
+    short port = 0;
+    ctx->getServAddress(ip, port);
+    if (isSSL)
+        espURL.set("https://");
+    else
+        espURL.set("http://");
+    espURL.append(ip).append(":").append(port);
+
+    StringBuffer content(
+        "<!DOCTYPE html>"
+            "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
+            "<head>"
+            "<meta charset=utf-8\"/>"
+            "<title class=\"loginStr\"></title>"
+            "<style type=\"text/css\">"
+                "body {"
+                    "font-family: Lucida Sans, Lucida Grande, Arial !important;"
+                    "font-size: 15px !important;"
+                    "background-color: #1A9BD7;"
+                "}"
+
+                ".container {"
+                    "width: 99%;"
+                    "position: absolute;"
+                    "top: 50%;"
+                    "transform: translateY(-50%);"
+                "}"
+
+                ".container a {"
+                    "color: #1A9BD7;"
+                "}"
+
+                ".container a:visited, .container a:link {"
+                    "color: #1A9BD7;"
+                "}"
+
+                ".formContainer {"
+                    "width: 500px;"
+                    "padding: 20px 0 20px 0;"
+                    "border-radius: 5px;"
+                    "background-color: #fff;"
+                    "margin: auto;"
+                "}"
+
+                ".login {"
+                    "width: 400px;"
+                    "margin: auto;"
+                "}"
+
+                ".login input {"
+                    "margin-bottom: 20px;"
+                    "width: 300px;"
+                    "padding: 8px;"
+                    "border: 1px solid #bfbfbf;"
+                "}"
+
+                ".login form {"
+                    "margin: auto;"
+                    "width: 300px;"
+                "}"
+
+                "img {"
+                    "display: block;"
+                    "margin: auto;"
+                "}"
+
+                "p {"
+                    "text-align: center"
+                "}"
+            "</style>"
+            "</head>"
+            "<body>"
+                "<div id=\"container\" class=\"container\">"
+                    "<div class=\"formContainer\">");
+        content.appendf("<img id=\"logo\" src=\"%s%s\" />", espURL.str(), authReq.authBinding->queryLoginLogoURL());
+         content.append("<div class=\"login\">");
+            content.appendf("<p class=\"loginStr\">%s <a href=\"%s\" class=\"loginStr\">Please click here to reload page</a></p>", errMsg, espURL.str());
+         content.append("</div>"
+                    "</div>"
+                 "</div>"
+            "</body>"
+       "</html>");
+    m_response->setContent(content.length(), content.str());
+    m_response->setContentType("text/html");
+    m_response->setStatus(HTTP_STATUS_OK);
+    m_response->send();
+}
+
 EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsigned sessionID)
 {
     ESPLOG(LogMax, "authExistingSession: %s<%u>", PropSessionID, sessionID);
@@ -1573,7 +1668,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        sendException(authReq, 401, "Authentication failed: invalid session ID.");
+        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: invalid session. Please relogin.");
         ESPLOG(LogMin, "Authentication failed: invalid session ID '%u'. clearSessionCookies() called for the session.", sessionID);
         return authFailed;
     }
@@ -1584,7 +1679,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        sendException(authReq, 401, "Authentication failed: network address for ESP session changed.");
+        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: network address for ESP session changed. Please relogin.");
         ESPLOG(LogMin, "Authentication failed: session ID %u from IP %s. ", sessionID, peer.str());
         return authFailed;
     }
@@ -1614,33 +1709,34 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     }
 
     if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "logout"))
-        logoutSession(authReq, sessionID, espSessions, false);
-    else
     {
-        //The "ECLWatchAutoRefresh" returns a flag: '1' means that the request is generated by a UI auto refresh action and '0' means not.
-        StringBuffer autoRefresh;
-        m_request->getParameter("ECLWatchAutoRefresh", autoRefresh);
-
-        CDateTime now;
-        now.setNow();
-        time_t createTime = now.getSimple();
-        sessionTree->setPropInt64(PropSessionLastAccessed, createTime);
-        if (!sessionTree->getPropBool(PropSessionTimeoutByAdmin, false) && (autoRefresh.isEmpty() || strieq(autoRefresh.str(), "0")))
-        {
-            time_t timeoutAt = createTime + authReq.authBinding->getServerSessionTimeoutSeconds();
-            sessionTree->setPropInt64(PropSessionTimeoutAt, timeoutAt);
-            ESPLOG(LogMin, "Updated %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
-                authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), timeoutAt);
-        }
-        ///authReq.ctx->setAuthorized(true);
-        VStringBuffer sessionIDStr("%u", sessionID);
-        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0, true);
-        addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
-        if (getLoginPage)
-            m_response->redirect(*m_request, "/");
-        if (!authReq.authBinding->canRedirectAfterAuth(authReq.httpPath.str()))
-            m_response->redirect(*m_request, "/");
+        logoutSession(authReq, sessionID, espSessions, false);
+        return authTaskDone;
     }
+
+    //The "ECLWatchAutoRefresh" returns a flag: '1' means that the request is generated by a UI auto refresh action and '0' means not.
+    StringBuffer autoRefresh;
+    m_request->getParameter("ECLWatchAutoRefresh", autoRefresh);
+
+    CDateTime now;
+    now.setNow();
+    time_t createTime = now.getSimple();
+    sessionTree->setPropInt64(PropSessionLastAccessed, createTime);
+    if (!sessionTree->getPropBool(PropSessionTimeoutByAdmin, false) && (autoRefresh.isEmpty() || strieq(autoRefresh.str(), "0")))
+    {
+        time_t timeoutAt = createTime + authReq.authBinding->getServerSessionTimeoutSeconds();
+        sessionTree->setPropInt64(PropSessionTimeoutAt, timeoutAt);
+        ESPLOG(LogMin, "Updated %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
+            authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), timeoutAt);
+    }
+    ///authReq.ctx->setAuthorized(true);
+    VStringBuffer sessionIDStr("%u", sessionID);
+    addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0, true);
+    addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
+    if (getLoginPage)
+        m_response->redirect(*m_request, "/");
+    if (!authReq.authBinding->canRedirectAfterAuth(authReq.httpPath.str()))
+        m_response->redirect(*m_request, "/");
 
     return authSucceeded;
 }
@@ -1687,13 +1783,16 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
     clearCookie(authReq.authBinding->querySessionIDCookieName());
     clearCookie(SESSION_AUTH_OK_COOKIE);
     clearCookie(SESSION_TIMEOUT_COOKIE);
-    const char* logoutURL = authReq.authBinding->queryLogoutURL();
-    if (!isEmptyString(logoutURL) && !lock)
-        m_response->redirect(*m_request, authReq.authBinding->queryLogoutURL());
-    else if (lock)
+    if (lock)
+    {
         sendLockResponse(true, false, "Locked");
+        return;
+    }
+    const char* logoutURL = authReq.authBinding->queryLogoutURL();
+    if (!isEmptyString(logoutURL))
+        m_response->redirect(*m_request, logoutURL);
     else
-        sendMessage(nullptr, "text/html; charset=UTF-8");
+        sendMessage("Successfully logged out.", "text/html; charset=UTF-8");
 }
 
 EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock, const char* msg)
@@ -1893,6 +1992,15 @@ const char* CEspHttpServer::readCookie(const char* cookieName, StringBuffer& coo
     if (sessionIDCookie)
         cookieValue.append(sessionIDCookie->getValue());
     return cookieValue.str();
+}
+
+bool CEspHttpServer::isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName)
+{
+    if (authReq.serviceName.isEmpty() || !strieq(authReq.serviceName.str(), serviceName))
+        return false;
+    if (authReq.methodName.isEmpty() || !strieq(authReq.methodName.str(), methodName))
+        return false;
+    return true;
 }
 
 bool CEspHttpServer::persistentEligible()

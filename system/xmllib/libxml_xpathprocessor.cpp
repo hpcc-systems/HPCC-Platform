@@ -105,11 +105,16 @@ public:
         return false;
     }
 
-    virtual const char * getVariable(const char * name) override
+    virtual const char * getVariable(const char * name, StringBuffer & variable) override
     {
         ReadLockBlock rblock(m_rwlock);
         if (m_xpathContext)
-            return (const char *)xmlXPathCastToString(xmlXPathVariableLookup(m_xpathContext, (const xmlChar *)name));
+        {
+            xmlXPathObjectPtr ptr = xmlXPathVariableLookup(m_xpathContext, (const xmlChar *)name);
+            variable.append((const char *) ptr->stringval);
+            xmlXPathFreeObject(ptr);
+            return variable;
+        }
         else
             return nullptr;
     }
@@ -291,7 +296,7 @@ private:
     }
 };
 
-extern ICompiledXpath* getCompiledXpath(const char * xpath)
+extern ICompiledXpath* compileXpath(const char * xpath)
 {
     return new CLibCompiledXpath(xpath);
 }

@@ -2,7 +2,6 @@ import * as lang from "dojo/_base/lang";
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
-import * as arrayUtil from "dojo/_base/array";
 
 import * as ESPRequest from "./ESPRequest";
 
@@ -108,35 +107,14 @@ export function validatePackage(params) {
     });
 }
 
-export function activatePackageMap(packageMaps) {
-    return ESPRequest.send("WsPackageProcess", "ActivatePackage", {
-        request: {
-            Target: packageMaps[0].Target,
-            Process: packageMaps[0].Process,
-            PackageMap: packageMaps[0].Id
-        }
-    });
+export function activatePackageMap(params) {
+    return ESPRequest.send("WsPackageProcess", "ActivatePackage", params);
 }
-export function deactivatePackageMap(packageMaps) {
-    return ESPRequest.send("WsPackageProcess", "DeActivatePackage", {
-        request: {
-            Target: packageMaps[0].Target,
-            Process: packageMaps[0].Process,
-            PackageMap: packageMaps[0].Id
-        }
-    });
+
+export function deactivatePackageMap(params) {
+    return ESPRequest.send("WsPackageProcess", "DeActivatePackage", params);
 }
-export function deletePackageMap(packageMaps) {
-    var request = {};
-    arrayUtil.forEach(packageMaps, function (item, idx) {
-        request["PackageMaps.PackageMapEntry." + idx + ".Id"] = item.Id;
-        request["PackageMaps.PackageMapEntry." + idx + ".Target"] = item.Target;
-        request["PackageMaps.PackageMapEntry." + idx + ".Process"] = item.Process;
-    });
-    lang.mixin(request, {
-        "PackageMaps.PackageMapEntry.itemcount": packageMaps.length
-    });
-    return ESPRequest.send("WsPackageProcess", "DeletePackage", {
-        request: request
-    });
+
+export function deletePackageMap(params) {
+    return ESPRequest.send("WsPackageProcess", "DeletePackage", params);
 }

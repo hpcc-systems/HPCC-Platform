@@ -248,7 +248,8 @@ public:
                 if (sync(loopCounter))
                     break;
 
-                boundGraph->execute(*this, condLoopCounter, ownedResults, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
+                boundGraph->queryGraph()->executeChild(extractBuilder.size(), extractBuilder.getbytes(), ownedResults, NULL);
+
                 ++loopCounter;
                 if (barrier) // barrier passed once all slave graphs have completed
                 {
@@ -320,9 +321,17 @@ public:
         unsigned loopCounter = 1;
         for (;;)
         {
+            Owned<IThorGraphResults> results = queryGraph().createThorGraphResults(1);
+            unsigned condLoopCounter = (helper->getFlags() & IHThorGraphLoopArg::GLFcounter) ? loopCounter : 0;
+            IThorBoundLoopGraph *boundGraph = queryContainer().queryLoopGraph();
+            if (condLoopCounter)
+                boundGraph->prepareCounterResult(*this, results, condLoopCounter, 0);
+
             if (sync(loopCounter))
                 break;
-            queryContainer().queryLoopGraph()->execute(*this, (helper->getFlags() & IHThorGraphLoopArg::GLFcounter)?loopCounter:0, loopResults.get(), extractBuilder.size(), extractBuilder.getbytes());
+
+            boundGraph->queryGraph()->executeChild(extractBuilder.size(), extractBuilder.getbytes(), results, loopResults);
+
             ++loopCounter;
         }
     }

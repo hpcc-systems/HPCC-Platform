@@ -133,7 +133,6 @@ protected:
         return EclCachedDefinition::calcUpToDate(optionHash);
     }
 
-
     const char * queryName() const { return cacheTree ? cacheTree->queryProp("@name") : nullptr; }
 
 private:
@@ -430,7 +429,7 @@ static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr)
     case no_macro:
         return nullptr;
     }
-    ITypeInfo * type = getFullyUnqualifiedType(expr->queryType());
+    Owned<ITypeInfo> type = getFullyUnqualifiedType(expr->queryType());
     if (!type)
         return nullptr;
 

@@ -473,26 +473,29 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                     else
                     {
                         ptree->getProp("@type", bcfg->type);
-                        ptree->getProp("@plugin", bcfg->plugin);
-                        fixPlugin(bcfg->plugin);
-                        bcfg->isDefault = ptree->getPropBool("@defaultBinding", false);
-
-                        StringBuffer addr;
-                        ptree->getProp("@netAddress", addr);
-                        if (strcmp(addr.str(), ".") == 0)
+                        if (!streq(bcfg->type.str(), "EsdlBinding"))
                         {
-                            // Here we interpret '.' as binding to all interfaces, so convert it to "0.0.0.0"
-                            bcfg->address.append("0.0.0.0");
-                        }
-                        else
-                        {
-                            bcfg->address.append(addr.str());
-                        }
+                            ptree->getProp("@plugin", bcfg->plugin);
+                            fixPlugin(bcfg->plugin);
+                            bcfg->isDefault = ptree->getPropBool("@defaultBinding", false);
 
-                        ptree->getProp("@service", bcfg->service_name);
-                        ptree->getProp("@protocol", bcfg->protocol_name);
+                            StringBuffer addr;
+                            ptree->getProp("@netAddress", addr);
+                            if (strcmp(addr.str(), ".") == 0)
+                            {
+                                // Here we interpret '.' as binding to all interfaces, so convert it to "0.0.0.0"
+                                bcfg->address.append("0.0.0.0");
+                            }
+                            else
+                            {
+                                bcfg->address.append(addr.str());
+                            }
 
-                        m_bindings.push_back(bcfg.getClear());
+                            ptree->getProp("@service", bcfg->service_name);
+                            ptree->getProp("@protocol", bcfg->protocol_name);
+
+                            m_bindings.push_back(bcfg.getClear());
+                        }
                     }
                 }
 

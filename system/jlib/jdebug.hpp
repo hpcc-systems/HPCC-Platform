@@ -333,6 +333,7 @@ unsigned jlib_decl setAllocHook(bool on);  // bwd compat returns unsigned
  #define USE_JLIB_ALLOC_HOOK
 #endif
 
+enum class HugePageMode { Always, Madvise, Never, Unknown };
 extern jlib_decl void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath = NULL, const char *secDiskPath = NULL);
 extern jlib_decl void getProcessTime(UserSystemTime_t & time);
 extern jlib_decl memsize_t getMapInfo(const char *type);
@@ -345,7 +346,8 @@ extern jlib_decl void clearAffinityCache(); // should be called whenever the pro
 extern jlib_decl void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffer *lnout, MemoryBuffer *mb, bool useprintf);
 extern jlib_decl void PrintMemoryReport(bool full=true);
 extern jlib_decl void printAllocationSummary();
-extern jlib_decl bool areTransparentHugePagesEnabled();
+extern jlib_decl bool areTransparentHugePagesEnabled(HugePageMode mode);
+extern jlib_decl HugePageMode queryTransparentHugePagesMode();
 extern jlib_decl memsize_t getHugePageSize();
 
 #endif

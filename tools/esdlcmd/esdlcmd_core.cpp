@@ -835,6 +835,10 @@ IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
         return new EsdlListESDLDefCmd();
     if (strieq(cmdname, "LIST-BINDINGS"))
         return new EsdlListESDLBindingsCmd();
+    if (strieq(cmdname, "BIND-LOG-TRANSFORM"))
+        return new EsdlBindLogTransformCmd();
+    if (strieq(cmdname, "UNBIND-LOG-TRANSFORM"))
+        return new EsdlUnBindLogTransformCmd();
     if (strieq(cmdname, "MONITOR"))
         return createEsdlMonitorCommand(cmdname);
     if (strieq(cmdname, "MONITOR-TEMPLATE"))

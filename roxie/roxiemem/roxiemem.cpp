@@ -292,8 +292,19 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     if (!heapBase)
     {
         const memsize_t hugePageSize = getHugePageSize();
-        bool useTransparentHugePages = allowTransparentHugePages && areTransparentHugePagesEnabled();
+        HugePageMode mode = queryTransparentHugePagesMode();
+        bool hasTransparenHugePages = areTransparentHugePagesEnabled(mode);
+        bool useTransparentHugePages = allowTransparentHugePages && hasTransparenHugePages;
         memsize_t heapAlignment = useTransparentHugePages ? hugePageSize : HEAP_ALIGNMENT_SIZE;
+        if (mode == HugePageMode::Always)
+        {
+            //Always return memory in multiples of the huge page size - even if it is not being used
+            heapAlignment = hugePageSize;
+            OERRLOG("WARNING: The OS is configured to always use transparent huge pages.  This may cause unexplained pauses "
+                    "while transparent huge pages are coalesced. The recommended setting for "
+                    "/sys/kernel/mm/transparent_hugepage/enabled is madvise");
+        }
+
         if (heapAlignment < HEAP_ALIGNMENT_SIZE)
             heapAlignment = HEAP_ALIGNMENT_SIZE;
 
@@ -305,18 +316,18 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         	case EINVAL:
         		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
         				"(EINVAL The alignment argument was not a power of two, or was not a multiple of sizeof(void *)!)",
-        		                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
+        		                    (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
         		break;
 
         	case ENOMEM:
         		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
         				"(ENOMEM There was insufficient memory to fulfill the allocation request.)",
-        		        		                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
+        		        		                    (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
         		break;
 
         	default:
         		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d",
-        		                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
+        		                    (unsigned __int64) heapAlignment, (unsigned __int64) memsize, ret);
         		break;
 
         	}
@@ -335,12 +346,8 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
                 {
                     //If we notify heapBlockSize items at a time it will always be a multiple of hugePageSize so shouldn't trigger defragmentation
                     heapNotifyUnusedEachBlock = !retainMemory;
-                    DBGLOG("Transparent huge pages used for roxiemem heap");
                 }
-                else
-                {
-                    DBGLOG("Transparent huge pages used for roxiemem heap");
-                }
+                DBGLOG("Transparent huge pages used for roxiemem heap");
             }
         }
         else
@@ -4966,7 +4973,7 @@ public:
 
     virtual void throwHeapExhausted(unsigned allocatorId, unsigned pages)
     {
-        VStringBuffer msg("Pool memory exhausted: pool id %u exhausted, requested %u heap(%u/%u) global(%u/%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), heapAllocated, heapTotalPages);
+        VStringBuffer msg("Pool memory exhausted: pool id %u exhausted, requested %u heap(%u/%u) global(%u/%u) WM(%u..%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), heapAllocated, heapTotalPages, heapLWM, heapHWM);
         DBGLOG("%s", msg.str());
         throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
     }
@@ -5528,7 +5535,7 @@ public:
 
     void throwHeapExhausted(unsigned allocatorId, unsigned pages)
     {
-        VStringBuffer msg("Shared global memory exhausted: pool id %u exhausted, requested %u heap(%u/%u/%u/%u)) global(%u/%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), globalPageLimit, maxPageLimit, heapAllocated, heapTotalPages);
+        VStringBuffer msg("Shared global memory exhausted: pool id %u exhausted, requested %u heap(%u/%u/%u/%u)) global(%u/%u) WM(%u..%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), globalPageLimit, maxPageLimit, heapAllocated, heapTotalPages, heapLWM, heapHWM);
         DBGLOG("%s", msg.str());
         throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
     }
