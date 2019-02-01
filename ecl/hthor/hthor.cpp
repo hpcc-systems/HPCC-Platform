@@ -8024,6 +8024,8 @@ CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, un
     helper.setCallback(this);
     expectedDiskMeta = helper.queryDiskRecordSize();
     projectedDiskMeta = helper.queryProjectedDiskRecordSize();
+    actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
+
     if (_node)
     {
         const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
@@ -8054,6 +8056,30 @@ void CHThorDiskReadBaseActivity::ready()
     partNum = (unsigned)-1;
 
     resolve();
+
+    unsigned expectedCrc = helper.getDiskFormatCrc();
+    unsigned projectedCrc = helper.getProjectedFormatCrc();
+    unsigned actualCrc = expectedCrc;
+    IDistributedFile *dFile = nullptr;
+    if (ldFile)
+        dFile = ldFile->queryDistributedFile();  // Null for local file usage
+    if (dFile)
+    {
+        IPropertyTree &props = dFile->queryAttributes();
+        Owned<IOutputMetaData> publishedMeta = getDaliLayoutInfo(props);
+        if (publishedMeta)
+        {
+            actualDiskMeta.setown(publishedMeta.getClear());
+            actualCrc = props.getPropInt("@formatCrc");
+        }
+    }
+    translators.setown(::getTranslators("hthor-diskread", expectedCrc, expectedDiskMeta, actualCrc, actualDiskMeta, projectedCrc, projectedDiskMeta, getLayoutTranslationMode()));
+    if (translators)
+    {
+        translator = &translators->queryTranslator();
+        keyedTranslator = translators->queryKeyedTranslator();
+        actualDiskMeta.set(&translators->queryActualFormat());
+    }
 }
 
 void CHThorDiskReadBaseActivity::stop()
@@ -8150,7 +8176,6 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
         grouped = ((helper.getFlags() & TDXgrouped) != 0);
     }
 
-    actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
     calcFixedDiskRecordSize();
     if (fileDesc)
     {
@@ -8223,8 +8248,6 @@ bool CHThorDiskReadBaseActivity::openNext()
     localOffset = 0;
     saveOpenExc.clear();
     actualFilter.clear();
-    unsigned expectedCrc = helper.getDiskFormatCrc();
-    unsigned projectedCrc = helper.getProjectedFormatCrc();
 
     if (dfsParts||ldFile)
     {
@@ -8250,16 +8273,6 @@ bool CHThorDiskReadBaseActivity::openNext()
                 }
             }
 
-            unsigned actualCrc = 0;
-            if (dFile)
-            {
-                IPropertyTree &props = dFile->queryAttributes();
-                actualDiskMeta.setown(getDaliLayoutInfo(props));
-                actualCrc = props.getPropInt("@formatCrc");
-            }
-            if (!actualDiskMeta)
-                actualDiskMeta.set(expectedDiskMeta->querySerializedDiskMeta());
-            keyedTranslator.setown(createKeyTranslator(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true)));
             if (keyedTranslator && keyedTranslator->needsTranslate())
                 keyedTranslator->translate(actualFilter, fieldFilters);
             else
@@ -8342,8 +8355,13 @@ bool CHThorDiskReadBaseActivity::openNext()
 
                             Owned<IFile> iFile = createIFile(rfilename);
 
+                            // remote side does projection/translation/filtering
                             actualDiskMeta.set(projectedDiskMeta);
                             expectedDiskMeta = projectedDiskMeta;
+                            translators.clear();
+                            translator = nullptr;
+                            keyedTranslator = nullptr;
+
                             actualFilter.clear();
                             inputfileio.setown(remoteFileIO.getClear());
                             if (inputfileio)
@@ -8412,27 +8430,6 @@ bool CHThorDiskReadBaseActivity::openNext()
                 }
             }
 
-            //Check if the file requires translation, but translation is disabled
-            if (actualCrc && expectedCrc && (actualCrc != expectedCrc) && (getLayoutTranslationMode()==RecordTranslationMode::None))
-            {
-                IOutputMetaData * expectedDiskMeta = helper.queryDiskRecordSize();
-                throwTranslationError(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true), logicalFileName.str());
-            }
-
-            //The projected format will often not match the expected format, and if it differs it must be translated
-            if (projectedCrc && actualCrc != projectedCrc)
-                translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
-
-            if (translator && translator->needsTranslate())
-            {
-                if (!translator->canTranslate())
-                    throw MakeStringException(0, "Untranslatable key layout mismatch reading file %s", logicalFileName.str());
-            }
-            else
-            {
-                translator.clear();
-                keyedTranslator.clear();
-            }
             calcFixedDiskRecordSize();
             if (dfsParts)
                 dfsParts->next();
@@ -8480,22 +8477,6 @@ bool CHThorDiskReadBaseActivity::openNext()
                 saveOpenExc.setown(E);
         }
 
-        //A spill file - actual will always equal expected, so keyed translator will never be used.
-        keyedTranslator.clear();
-
-        //The projected format will often not match the expected format, and if it differs it must be translated
-        translator.clear();
-        if (projectedCrc != expectedCrc)
-            translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
-
-        if (translator && translator->needsTranslate())
-        {
-            assertex(translator->canTranslate());
-        }
-        else
-        {
-            translator.clear();
-        }
         partNum++;
         if (checkOpenedFile(file.str(), NULL))
         {
