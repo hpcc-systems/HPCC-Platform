@@ -33,9 +33,40 @@ void CWsFileIOEx::init(IPropertyTree *cfg, const char *process, const char *serv
 {
 }
 
-bool CWsFileIOEx::CheckServerAccess(const char* server, const char* relPath, StringBuffer& netAddr, StringBuffer& absPath)
+bool matchTargetDZ(const char * targetDZNameOrAddress, const char * thisDZName, const char * thisDZAddr, StringBuffer & resolvedAddress)
 {
-    if (!server || (server[0] == 0) || !relPath || (relPath[0] == 0))
+    bool dropzoneFound = false;
+    if (targetDZNameOrAddress && *targetDZNameOrAddress)
+    {
+        StringBuffer sNetAddr;
+        if (strcmp(thisDZAddr, ".")) // if not "." use addr
+        {
+            sNetAddr.append(thisDZAddr);
+        }
+        else //if "." map it to this host's IP
+        {
+            StringBuffer ipStr;
+            IpAddress ipaddr = queryHostIP();
+            ipaddr.getIpText(ipStr);
+            if (ipStr.length() > 0)
+            {
+                sNetAddr.append(ipStr.str());
+            }
+        }
+
+        if (!stricmp(thisDZName, targetDZNameOrAddress))
+            dropzoneFound = true;
+        else if (!stricmp(sNetAddr.str(), targetDZNameOrAddress))
+            dropzoneFound = true;
+        resolvedAddress.set(sNetAddr.str());
+
+    }
+    return dropzoneFound;
+}
+
+bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const char* relPath, StringBuffer& netAddr, StringBuffer& absPath)
+{
+    if (!targetDZNameOrAddress || (targetDZNameOrAddress[0] == 0) || !relPath || (relPath[0] == 0))
         return false;
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
@@ -46,82 +77,66 @@ bool CWsFileIOEx::CheckServerAccess(const char* server, const char* relPath, Str
     IPropertyTree* pSoftware = pRoot->addPropTree("Software", createPTree("Software"));
     if (pEnvSoftware && pSoftware)
     {
+        char ch = '\\';
         Owned<IPropertyTreeIterator> it = pEnvSoftware->getElements("DropZone");
         ForEach(*it)
         {
-            const char *zonename = it->query().queryProp("@computer");
-            if (!strcmp(zonename, "."))
-                zonename = "localhost";
+            bool foundDZ = false;
+            IPropertyTree * dz = &it->query();
 
-            if (zonename && *zonename)
+            const char *zonename = nullptr;
+            const char *addr = nullptr;
+            if (dz->hasProp("@computer")) //legacy (pre6.4) structure
             {
-                StringBuffer xpath;
-                xpath.appendf("Hardware/Computer[@name='%s']/@netAddress", zonename);
-                char* addr = (char*) pEnvRoot->queryProp(xpath.str());
-                if (addr && *addr)
-                {           
-                    StringBuffer sNetAddr;
-                    if (strcmp(addr, "."))
-                    {       
-                        sNetAddr.append(addr);
+                zonename = dz->queryProp("@computer");
+                if (!strcmp(zonename, "."))
+                    zonename = "localhost";
+
+                if (zonename && *zonename)
+                {
+                    StringBuffer xpath;
+                    xpath.appendf("Hardware/Computer[@name='%s']/@netAddress", zonename);
+                    addr = (char*) pEnvRoot->queryProp(xpath.str());
+                    if (matchTargetDZ(targetDZNameOrAddress, zonename, addr, netAddr))
+                        foundDZ = true;
+                }
+            }
+            else
+            {
+                zonename = dz->queryProp("@name");
+                Owned<IPropertyTreeIterator> serverListsIterator = dz->getElements("ServerList");
+                ForEach(*serverListsIterator)
+                {
+                    addr = serverListsIterator->query().queryProp("@server");
+                    if (matchTargetDZ(targetDZNameOrAddress, zonename, addr, netAddr))
+                    {
+                        foundDZ = true;
+                        break;
+                    }
+                }
+            }
+
+            if (foundDZ)
+            {
+                Owned<IConstMachineInfo> machine = env->getMachineByAddress(addr);
+                if (machine && (machine->getOS() == MachineOsLinux || machine->getOS() == MachineOsSolaris))
+                    ch = '/';
+
+                const char * dir = dz->queryProp("@directory");
+                if (dir && *dir)
+                {
+                    if (relPath[0] != ch)
+                    {
+                        absPath.appendf("%s%c%s", dir, ch, relPath);
                     }
                     else
                     {
-                        StringBuffer ipStr;
-                        IpAddress ipaddr = queryHostIP();
-                        ipaddr.getIpText(ipStr);
-                        if (ipStr.length() > 0)
-                        {
-//#define MACHINE_IP "10.239.219.9"
-#ifdef MACHINE_IP
-                            sNetAddr.append(MACHINE_IP);
-#else
-                            sNetAddr.append(ipStr.str());
-#endif
-                        }
+                        absPath.appendf("%s%s", dir, relPath);
                     }
-                    bool dropzoneFound = false;
-                    if (!stricmp(zonename, server))
-                    {
-                        dropzoneFound = true;
-                    }
-                    else if (!stricmp(sNetAddr.str(), server))
-                    {
-                        dropzoneFound = true;
-                    }
-                    
-                    if (!dropzoneFound)
-                    {
-                        continue;
-                    }
-
-                    char ch = '\\';
-                    Owned<IConstMachineInfo> machine = env->getMachineByAddress(addr);
-                    //Owned<IConstEnvironment> env = factory->openEnvironment();
-                    //Owned<IConstMachineInfo> machine = getMachineByAddress(pEnvRoot, env, addr);
-
-                    if (machine && (machine->getOS() == MachineOsLinux || machine->getOS() == MachineOsSolaris))
-                    {
-                        ch = '/';
-                    }
-                    
-                    StringBuffer dir;
-                    IPropertyTree* pDropZone = pSoftware->addPropTree("DropZone", &it->get());
-                    pDropZone->getProp("@directory", dir);
-                    if (dir.length() > 0)
-                    {
-                        if (relPath[0] != ch)
-                        {
-                            absPath.appendf("%s%c%s", dir.str(), ch, relPath);
-                        }
-                        else
-                        {
-                            absPath.appendf("%s%s", dir.str(), relPath);
-                        }
-                        netAddr = sNetAddr;
-                        return true;
-                    }
+                    return true;
                 }
+                else
+                    ESPLOG(LogMin, "Found LZ '%s' without a directory attribute!", zonename);
             }
         }
     }
