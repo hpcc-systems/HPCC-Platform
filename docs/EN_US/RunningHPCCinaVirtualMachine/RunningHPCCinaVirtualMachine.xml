@@ -39,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -533,7 +533,18 @@
         <listitem>
           <para>Install the ECL IDE, following the prompts in the installation
           program. Once the ECL IDE is installed successfully, you can
-          proceed.</para>
+          proceed. </para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>The ECL IDE only runs on Windows operating
+                systems.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
         </listitem>
       </orderedlist></para>
 

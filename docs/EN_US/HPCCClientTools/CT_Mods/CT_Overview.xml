@@ -121,6 +121,17 @@
 
           <para>Download the appropriate Client Tools for your Operating
           System. (available for CentOS, Ubuntu, Mac OSX, or Windows)</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>The ECL IDE only runs on Windows operating
+                systems.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
         </listitem>
 
         <listitem>
@@ -172,23 +183,23 @@
 
       <para>The HPCC Client tools are designed to allow you to have more than
       one version installed. For that reason, the choice to add the folder of
-      executable files to your system path is optional during installation.
-      </para>
+      executable files to your system path is optional during
+      installation.</para>
 
       <para>If you plan to use only one version, it may be easier to add the
       folder to your system or user path. If you want multiple versions
-      installed, you probably want to manage the path yourself. </para>
+      installed, you probably want to manage the path yourself.</para>
 
       <para>To make this easier, the installer creates a Start menu shortcut
       for an ECL Command Prompt. This command prompt adds the executable
-      folder to the path for the session of that command window. </para>
+      folder to the path for the session of that command window.</para>
 
       <para>Some command line tool functions may require elevated permissions.
       You can <emphasis role="bold">right-click</emphasis> &gt; <emphasis
       role="bold">Run As Administrator</emphasis> for the ECL Command Prompt
       for this purpose.</para>
 
-      <para> <graphic align="left"
+      <para><graphic align="left"
       fileref="../../images/ECLCmdPrompt.jpg" /></para>
     </sect2>
   </sect1>
