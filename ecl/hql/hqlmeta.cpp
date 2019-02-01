@@ -3087,11 +3087,13 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
         type.setown(parms.item(0).getType());
         assertex(parms.ordinality()>1 || hasStreamedModifier(type));     // should have a count or a length
         break;
+    case no_id2blob:
+        assertex(!recordRequiresLinkCount(&parms.item(1)));
+        // fallthrough
     case no_inlinetable:
     case no_dataset_from_transform:
     case no_xmlproject:
     case no_temptable:
-    case no_id2blob:
     case no_embedbody:
         newRecordType.setown(createRecordType(&parms.item(1)));
         linkCounted = hasAttribute(_linkCounted_Atom, parms);

@@ -70,3 +70,5 @@ output((real)small != -1000.5,named('truex_5'));
 output(-1000.5 = (real)small ,named('falsex_5'));
 output((real)small != +1000.5,named('truex_6'));
 output(+1000.5 = (real)small ,named('falsex_6'));
+
+output((string)(decimal)(nofold('010.') + nofold('80')) = '10.8',named('decimal'));
