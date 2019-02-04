@@ -6,9 +6,9 @@
 
 IMPORT lib_stringlib.StringLib;
 IMPORT lib_timelib.TimeLib;
-IMPORT Std.System.Util;
 
 EXPORT Date := MODULE
+
 
 // A record structure with the different date elements separated out.
 EXPORT Date_rec := RECORD
@@ -687,11 +687,8 @@ EXPORT Time_t FromStringToTime(STRING time_text, VARSTRING format) :=
     StringLib.StringToTimeOfDay(time_text, format);
 
 
-#IF(Util.PlatformVersionCheck('7.2.0'))
 /**
  * Converts a string to a Seconds_t using the relevant string format.
- *
- * Note: This function first appeared in HPCC Systems v7.2.0.
  *
  * @param datetime_text The string to be converted.
  * @param format        The format of the input string.
@@ -723,7 +720,6 @@ EXPORT Time_t FromStringToTime(STRING time_text, VARSTRING format) :=
 
 EXPORT Seconds_t FromStringToSeconds(STRING datetime_text, VARSTRING format, BOOLEAN is_local_time = FALSE) :=
     TimeLib.StringToSeconds(datetime_text, format, is_local_time);
-#END
 
 
 /**
@@ -1125,7 +1121,7 @@ END;
  * @param date          A Date_t value.
  * @return              A number 1-7 representing the day of the week, where 1 = Monday.
  */
-EXPORT ISODayOfWeekFromDate(Date_t d) := ((DayOfWeek(d) + 5) % 7) + 1;
+EXPORT ISODayOfWeekFromDate(Date_t d) := ((DayOfWeek(d) + 5) % 7) + 1;		
 
 /**
  * Helper function to figure out the number of weeks for a given year.
@@ -1166,12 +1162,12 @@ EXPORT ISORawWeekNumForDate(Date_t d) := TRUNCATE((DayOfYear(d) - ISODayOfWeekFr
  * This is an ISO-8601 implementation of computing week numbers ("week dates").
  *
  * @param date          A Date_t value.
- * @return              A number 1-53 representing the week number in a year,
+ * @return              A number 1-53 representing the week number in a year, 
  *                      and year 1600+ representing the year of that week number
  *                      (could be previous year from given date).
  */
 EXPORT ISOWeekNumWeekDayAndYearFromDate(Date_t d) := FUNCTION
-    givenYear := Year(d);
+    givenYear := Year(d); 
     lastDayPreviousYear := DateFromParts(givenYear - 1, 12, 31);
     lastWeekPreviousYear := ISOWeeksFromDate(lastDayPreviousYear);
     lastDayGivenYear := DateFromParts(givenYear, 12, 31);
@@ -1189,12 +1185,12 @@ EXPORT ISOWeekNumWeekDayAndYearFromDate(Date_t d) := FUNCTION
 END;
 
 /**
- * Returns the ISO-8601 week date in extended (e.g. 2018-W23-7) or
+ * Returns the ISO-8601 week date in extended (e.g. 2018-W23-7) or 
  * compact (e.g. 2018W237) form.
  * This is an ISO-8601 implementation of computing week numbers ("week dates").
  *
  * @param date          A Date_t value.
- * @return              A number 1-53 representing the week number in a year,
+ * @return              A number 1-53 representing the week number in a year, 
  *                      and year 1600+ representing the year of that week number
  *                      (could be previous year from given date).
  */
