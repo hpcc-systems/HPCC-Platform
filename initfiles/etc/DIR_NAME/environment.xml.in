@@ -496,6 +496,7 @@
                resourcesBasedn="ou=DynamicESDL,ou=EspServices,ou=ecl"
                service="DESDLServiceTemplate"
                type=""
+               workunitsBasedn="ou=workunits,ou=ecl"
                wsdlServiceAddress="">
     <Authenticate access="Read"
                description="Root access to DynamicESDL service"
