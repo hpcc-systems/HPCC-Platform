@@ -15,7 +15,7 @@
 #    limitations under the License.
 ##############################################################################
 
-project ( cfgsupport_addrequiredinstances )
+project ( cfghpcc_addrequiredinstances )
 
 SET(  SRCS
         AddRequiredInstancesSupport.cpp
@@ -33,8 +33,8 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_BINARY_DIR}/oss
 )
 
-ADD_DEFINITIONS( -D_USRDLL -DCFGSUPPORT_DAFILESRV_LIB)
-HPCC_ADD_LIBRARY( cfgsupport_addrequiredinstances SHARED ${SRCS} )
-TARGET_LINK_LIBRARIES( cfgsupport_addrequiredinstances configmgr jlib )
+ADD_DEFINITIONS( -D_USRDLL )
+HPCC_ADD_LIBRARY( cfghpcc_addrequiredinstances SHARED ${SRCS} )
+TARGET_LINK_LIBRARIES( cfghpcc_addrequiredinstances configmgr jlib )
 
-INSTALL ( TARGETS cfgsupport_addrequiredinstances RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+INSTALL ( TARGETS cfghpcc_addrequiredinstances RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

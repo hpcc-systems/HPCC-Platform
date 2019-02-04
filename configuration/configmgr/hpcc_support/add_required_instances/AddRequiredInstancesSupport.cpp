@@ -19,7 +19,7 @@
 #include "AddRequiredInstancesSupport.hpp"
 
 
-extern "C" HPCCConfigSupport* getInstance(EnvironmentMgr *pEnvMgr)
+extern "C" HPCCConfigSupport* getCfgMgrSupportInstance(EnvironmentMgr *pEnvMgr)
 {
     HPCCConfigSupport *pInstance = new AddRequiredInstancesSupport(pEnvMgr);
     return pInstance;
