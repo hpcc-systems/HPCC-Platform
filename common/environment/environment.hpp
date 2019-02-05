@@ -180,7 +180,7 @@ interface IConstEnvironment : extends IConstEnvBase
     virtual IConstDropZoneInfo * getDropZoneByAddressPath(const char * netaddress, const char *targetPath) const = 0;
     virtual IConstDropZoneInfoIterator * getDropZoneIterator() const = 0;
     virtual bool isDropZoneRestrictionEnabled() const = 0;
-    virtual const char *getClusterKeyPairName(const char *cluster) const = 0;
+    virtual const char *getClusterGroupKeyPairName(const char *cluster) const = 0;
     virtual const char *getPublicKeyPath(const char *keyPairName) const = 0;
     virtual const char *getPrivateKeyPath(const char *keyPairName) const = 0;
     virtual const char *getFileAccessUrl() const = 0;
@@ -216,6 +216,7 @@ extern "C" ENVIRONMENT_API void closeEnvironment();
 
 extern ENVIRONMENT_API unsigned long readSizeSetting(const char * sizeStr, const unsigned long defaultSize);
 
+extern ENVIRONMENT_API unsigned getAccessibleServiceURLList(const char *serviceType, std::vector<std::string> &list);
 
 #endif // _ENVIRONMENT_INCL
 //end

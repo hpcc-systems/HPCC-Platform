@@ -901,7 +901,9 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
         parseSoapFault(httpresponse->getContent(content),errmsg);
 
         response.set_err(errmsg.str());
+#ifdef _DEBUG // JCSMORE - check with AF
         DBGLOG("SOAP_SERVER_ERROR: %s", errmsg.str());
+#endif
 
         return HttpClientErrCode::Error;
     }

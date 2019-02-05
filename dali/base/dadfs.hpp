@@ -687,6 +687,9 @@ interface IDistributedFileDirectory: extends IInterface
 
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value
+
+    // useful to clearup after temporary unpublished file.
+    virtual bool removePhysicalPartFiles(const char *logicalName, IFileDescriptor *fileDesc, IMultiException *mexcept, unsigned numParallelDeletes=0) = 0;
 };
 
 
