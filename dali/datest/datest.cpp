@@ -33,7 +33,14 @@
 #include "dasess.hpp"
 #include "mplog.hpp"
 
+#include "rtlformat.hpp"
+
 #include "jptree.hpp"
+#include "wsdfuaccess.hpp"
+
+using namespace wsdfuaccess;
+using namespace dafsstream;
+
 
 #define DEFAULT_TEST "RANDTEST"
 static const char *whichTest = DEFAULT_TEST;
@@ -2229,6 +2236,285 @@ void TestSDS1()
 #endif
 }
 
+void testDfuStreamRead(const char *fname)
+{
+    configureRemoteCreateFileDescriptorCB(queryFileDescriptorFactory());
+
+    // reads a DFS file
+    try
+    {
+        Owned<IUserDescriptor> userDesc = createUserDescriptor();
+        userDesc->set("jsmith","password");
+
+        Owned<IDFUFileAccess> srcFile = lookupDFUFile(fname, "testDfuStreamRead", 300, userDesc);
+        if (!srcFile)
+        {
+            WARNLOG("File '%s' not found!", fname);
+            return;
+        }
+
+        IOutputMetaData *meta = srcFile->queryEngineInterface()->queryMeta();
+        CommonXmlWriter xmlWriter(0);
+
+        unsigned sourceN = srcFile->queryNumParts();
+        for (unsigned p=0; p<sourceN; p++)
+        {
+            Owned<IDFUFilePartReader> reader = srcFile->createFilePartReader(p, 0, nullptr, true);
+
+            reader->start();
+
+            while (true)
+            {
+                size32_t sz;
+                const void *row = reader->nextRow(sz);
+                if (!row)
+                {
+                    if (!srcFile->queryIsGrouped())
+                        break;
+                    row = reader->nextRow(sz);
+                    if (!row)
+                        break;
+                }
+                meta->toXML((const byte *)row, xmlWriter.clear());
+                PROGLOG("Row: %s", xmlWriter.str());
+            }
+        }
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, nullptr);
+        e->Release();
+    }
+}
+
+void testDfuStreamWrite(const char *fname)
+{
+    configureRemoteCreateFileDescriptorCB(queryFileDescriptorFactory());
+
+    // reads a DFS file and writes it to <filename>_copy
+    try
+    {
+        Owned<IUserDescriptor> userDesc = createUserDescriptor();
+        userDesc->set("jsmith","password");
+
+        const char *newFileName = "dfsstream::newfile1";
+        if (!isEmptyString(fname))
+            newFileName = fname;
+        const char *newEclRecDef = "{ string10 fname; string10 sname; unsigned4 age; };";
+        Owned<IDFUFileAccess> tgtFile = createDFUFile(newFileName, "mythor", dft_flat, newEclRecDef, "datest-write-newfile1", 300, true, userDesc); // NB: compressed file
+
+// NB: must match record definition
+        struct Row
+        {
+            std::string fname;
+            std::string sname;
+            unsigned age;
+        };
+        const std::array<Row, 6> rows = { { { "John      ", "Smith     ", 59 },
+                                            { "Samuel    ", "Peeps     ", 39 },
+                                            { "Bob       ", "Marks     ", 12 },
+                                            { "Jake      ", "Smith     ", 12 },
+                                            { "Paul      ", "Smith     ", 12 },
+                                            { "Sarah     ", "Potters   ", 28 }
+                                          }
+                                        };
+
+        offset_t fileSize = 0;
+        unsigned numRecs = 0;
+        unsigned targetN = tgtFile->queryNumParts();
+        for (unsigned p=0; p<targetN; p++)
+        {
+            Owned<IDFUFilePartWriter> writer = tgtFile->createFilePartWriter(p);
+            writer->start();
+            unsigned numPartRecs = 0;
+            offset_t partSize = 0;
+            for (auto &row: rows)
+            {
+                char rowMem[24];
+                memcpy(rowMem, row.fname.c_str(), 10);
+                memcpy(rowMem+10, row.sname.c_str(), 10);
+                memcpy(rowMem+20, &row.age, sizeof(row.age));
+                writer->write(sizeof(rowMem), rowMem);
+                partSize += sizeof(rowMem);
+                ++numPartRecs;
+            }
+            tgtFile->setPartPropertyInt(p, "@recordCount", numPartRecs); // JCSMORE
+            tgtFile->setPartPropertyInt(p, "@size", partSize);
+            numRecs += numPartRecs;
+            fileSize += partSize;
+        }
+        tgtFile->setFilePropertyInt("@recordCount", numRecs);
+        tgtFile->setFilePropertyInt("@size", fileSize);
+        publishDFUFile(tgtFile, true, userDesc);
+        tgtFile.clear();
+
+
+        // Read the file back
+
+
+        Owned<IDFUFileAccess> srcFile = lookupDFUFile(newFileName, "datest-read-newfile1", 300, userDesc);
+        if (!srcFile)
+        {
+            WARNLOG("File '%s' not found!", newFileName);
+            return;
+        }
+
+        unsigned sourceN = srcFile->queryNumParts();
+        for (unsigned p=0; p<sourceN; p++)
+        {
+            Owned<IDFUFilePartReader> reader = srcFile->createFilePartReader(p);
+
+            // filter by Smith and project to new format
+            reader->addFieldFilter("sname=['Smith']");
+            reader->setOutputRecordFormat("{ string5 age; string20 fname; };");
+
+            reader->start();
+
+            while (true)
+            {
+                size32_t sz;
+                const byte *row = (const byte *)reader->nextRow(sz);
+                if (!row)
+                {
+                    if (!srcFile->queryIsGrouped())
+                        break;
+                    row = (const byte *)reader->nextRow(sz);
+                    if (!row)
+                        break;
+                }
+                PROGLOG("Row: age=%.*s, fname=%.*s", 5, row, 20, row+5);
+            }
+        }
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, nullptr);
+        e->Release();
+    }
+}
+
+void testDfuStreamCopy(const char *srcFileName)
+{
+    configureRemoteCreateFileDescriptorCB(queryFileDescriptorFactory());
+
+    // reads a DFS file and writes it to <filename>_copy
+    try
+    {
+        if (isEmptyString(srcFileName))
+            throw makeStringException(0, "no source logical filename supplied");
+
+        Owned<IUserDescriptor> userDesc = createUserDescriptor();
+        userDesc->set("jsmith","password");
+
+        Owned<IDFUFileAccess> srcFile = lookupDFUFile(srcFileName, "datest", 60, userDesc);
+        if (!srcFile)
+        {
+            WARNLOG("File '%s' not found", srcFileName);
+            return;
+        }
+        IDFUFileAccessExt *srcFileEx = srcFile->queryEngineInterface();
+
+        const char *eclRecDef = srcFileEx->queryProperties().queryProp("ECL");
+        if (!eclRecDef)
+            throw makeStringExceptionV(0, "File '%s' has no record definition", srcFileName);
+        IOutputMetaData *srcMeta = srcFileEx->queryMeta();
+
+        const char *srcGroup = srcFile->queryClusterGroupName();
+        const char *clusterName = startsWith(srcGroup, "hthor__") ? "myeclagent" : "mythor";
+        StringBuffer tgtFileName(srcFileName);
+        tgtFileName.append("_copy");
+        Owned<IDFUFileAccess> tgtFile = createDFUFile(tgtFileName, clusterName, dft_flat, eclRecDef, "myRequestId", 300, false, userDesc);
+        IDFUFileAccessExt *tgtFileEx = srcFile->queryEngineInterface();
+
+
+        unsigned tgtFileParts = tgtFile->queryNumParts();
+        unsigned currentWriterPart = 0;
+        Owned<IDFUFilePartWriter> writer;
+
+        unsigned numRecs = 0;
+        unsigned srcFileParts = srcFile->queryNumParts();
+        unsigned tally = srcFileParts;
+        for (unsigned p=0; p<srcFileParts; p++)
+        {
+            Owned<IDFUFilePartReader> reader = srcFile->createFilePartReader(p);
+            reader->start();
+
+            if (tally >= srcFileParts)
+            {
+                tally -= srcFileParts;
+                writer.setown(tgtFile->createFilePartWriter(currentWriterPart++));
+                writer->start();
+            }
+            tally += tgtFileParts;
+
+            while (true)
+            {
+                size32_t sz;
+                const void *row = reader->nextRow(sz);
+                if (!row)
+                {
+                    if (!srcFile->queryIsGrouped())
+                        break;
+                    row = reader->nextRow(sz);
+                    if (!row)
+                        break;
+                }
+                ++numRecs;
+                CommonXmlWriter xmlwrite(0);
+                srcMeta->toXML((const byte *)row, xmlwrite);
+                PROGLOG("row: %s", xmlwrite.str());
+
+                writer->write(sz, row);
+            }
+
+        }
+        writer.clear();
+
+        // write some blank parts, if src # parts less than target # parts
+        while (currentWriterPart<tgtFileParts)
+        {
+            writer.setown(tgtFile->createFilePartWriter(currentWriterPart++));
+            writer->start();
+            writer.clear();
+        }
+        PROGLOG("numRecs writtern = %u", numRecs);
+        tgtFileEx->queryProperties().setPropInt64("@recordCount", numRecs);
+        //tgtFileEx->queryProperties().setPropInt64("@size", fileSize);
+        publishDFUFile(tgtFile, true, userDesc);
+
+        // read it back for good measure
+        Owned<IDFUFileAccess> newSrcFile = lookupDFUFile(tgtFileName, "datest", 60, userDesc);
+        if (!newSrcFile)
+        {
+            WARNLOG("File '%s' not found", tgtFileName.str());
+            return;
+        }
+        IOutputMetaData *tgtMeta = tgtFileEx->queryMeta();
+        CommonXmlWriter xmlWriter(0);
+        for (unsigned p=0; p<tgtFileParts; p++)
+        {
+            Owned<IDFUFilePartReader> reader = newSrcFile->createFilePartReader(p);
+            reader->start();
+
+            while (true)
+            {
+                size32_t sz;
+                const void *row = reader->nextRow(sz);
+                if (!row)
+                    break;
+                ++numRecs;
+                tgtMeta->toXML((const byte *)row, xmlWriter);
+                PROGLOG("new file row: %s", xmlWriter.str());
+            }
+        }
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, nullptr);
+        e->Release();
+    }
+}
+
 
 class CClientTestSDS : public Thread
 {
@@ -3038,7 +3324,7 @@ void usage(const char *error=NULL)
 {
     if (error) printf("%s\n", error);
     printf("usage: DATEST <server_ip:port>* [/test <name> [<test params...>] [/NITER <iterations>]\n");
-    printf("where name = RANDTEST | DFS | QTEST | QTEST2 | SESSION | LOCKS | SDS1 | SDS2 | XPATHS| STRESS | STRESS2 | SHUTDOWN | EXTERNAL | SUBLOCKS | SUBSCRIPTION | CONNECTIONSUBS | MULTIFILE | NODESUBS\n");
+    printf("where name = RANDTEST | DFS | QTEST | QTEST2 | SESSION | LOCKS | SDS1 | SDS2 | XPATHS| STRESS | STRESS2 | SHUTDOWN | EXTERNAL | SUBLOCKS | SUBSCRIPTION | CONNECTIONSUBS | MULTIFILE | NODESUBS | DFUSTREAMREAD | DFUSTREAMWRITE | DFUSTREAMCOPY\n");
     printf("eg:  datest . /test QTEST put          -- one coven server running locally, running qtest with param \"put\"\n");
     printf("     datest eq0001016 eq0001017        -- two coven servers, use default test %s\n", DEFAULT_TEST);
 }
@@ -3241,6 +3527,12 @@ int main(int argc, char* argv[])
                 Test_PartIter();
             else if (TEST("MULTICONNECT"))
                 testMultiConnect();
+            else if (TEST("DFUSTREAMREAD"))
+                testDfuStreamRead(testParams.item(0));
+            else if (TEST("DFUSTREAMWRITE"))
+                testDfuStreamWrite(testParams.ordinality() ? testParams.item(0) : nullptr);
+            else if (TEST("DFUSTREAMCOPY"))
+                testDfuStreamCopy(testParams.ordinality() ? testParams.item(0) : nullptr);
 //          else if (TEST("DALILOG"))
 //              testDaliLog(testParams.ordinality()&&0!=atoi(testParams.item(0)));
             else

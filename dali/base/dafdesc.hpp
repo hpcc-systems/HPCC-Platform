@@ -371,5 +371,8 @@ inline DFD_OS SepCharBaseOs(char c)
 
 extern da_decl void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file);
 
+typedef IFileDescriptor *(*FileDescriptorFactoryType)(IPropertyTree *);
+extern da_decl FileDescriptorFactoryType queryFileDescriptorFactory();
+
 
 #endif

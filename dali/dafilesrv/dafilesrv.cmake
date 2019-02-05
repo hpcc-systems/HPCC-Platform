@@ -28,15 +28,15 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../system/hrpc 
-         ./../../common/remote 
-         ./../../system/include 
-         ./../../system/jhtree
-         ./../../system/jlib 
-         ./../../rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/system/hrpc 
+         ${HPCC_SOURCE_DIR}/common/remote 
+         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/jhtree
+         ${HPCC_SOURCE_DIR}/system/jlib 
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/system/security/shared
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ./../../system/security/shared
     )
 
 if (WIN32)
@@ -49,5 +49,6 @@ install ( TARGETS dafilesrv RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( dafilesrv
          jlib
          remote
+         dalibase
     )
 

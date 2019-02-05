@@ -28,13 +28,14 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../common/remote 
-         ./../server 
-         ./../../system/mp 
-         . 
-         ./../../system/include 
-         ./../../system/jlib
-         ./../../system/security/shared
+         ${HPCC_SOURCE_DIR}/dali/server 
+         ${HPCC_SOURCE_DIR}/system/mp 
+         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/esp/clients/wsdfuaccess
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
 HPCC_ADD_EXECUTABLE ( datest ${SRCS} )
@@ -43,9 +44,11 @@ target_link_libraries ( datest
          jlib
          mp 
          hrpc 
-         remote 
+         remote
+         eclrtl
+         wsdfuaccess 
          dalibase 
-                 ${CPPUNIT_LIBRARIES}
+         ${CPPUNIT_LIBRARIES}
     )
 
 
