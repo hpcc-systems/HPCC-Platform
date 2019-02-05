@@ -61,7 +61,7 @@ class CFGMGRLIB_API Status
         bool isError() const { return m_highestMsgLevel >= statusMsg::error; }
         std::string getStatusTypeString(enum statusMsg::msgLevel status) const;
         enum statusMsg::msgLevel getMsgLevelFromString(const std::string &status) const;
-        std::vector<statusMsg> getMessages() const;
+        std::vector<statusMsg> getMessages(enum statusMsg::msgLevel level = statusMsg::fatal) const;
         void add(const std::vector<statusMsg> msgs);
 
 

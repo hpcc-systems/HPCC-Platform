@@ -17,11 +17,23 @@
 
 #include "SchemaTypeStringLimits.hpp"
 #include "EnvironmentValue.hpp"
-#include "jregexp.hpp"
+#include <regex>
+
+#if __cplusplus >= 201103L &&                             \
+    (!defined(__GLIBCXX__) || (__cplusplus >= 201402L) || \
+        (defined(_GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT) || \
+         defined(_GLIBCXX_REGEX_STATE_LIMIT)           || \
+             (defined(_GLIBCXX_RELEASE)                && \
+             _GLIBCXX_RELEASE > 4)))
+#define HAVE_WORKING_REGEX 1
+#else
+#define HAVE_WORKING_REGEX 0
+#endif
+
 
 std::string SchemaTypeStringLimits::getLimitString() const
 {
-    return "String limit info";
+    return "";
 }
 
 
@@ -32,10 +44,12 @@ bool SchemaTypeStringLimits::doValueTest(const std::string &testValue) const
     isValid = len >= m_minLength && len <= m_maxLength;
 
     // test patterns
+#if HAVE_WORKING_REGEX
     for (auto pattern = m_patterns.begin(); isValid && pattern != m_patterns.end(); ++pattern)
     {
-        RegExpr expr(pattern->c_str());
-        isValid = expr.find(testValue.c_str()) != nullptr;
+        std::regex r(pattern->c_str());
+        isValid = std::regex_match(testValue.c_str(), r);
     }
+#endif
     return isValid;
 }

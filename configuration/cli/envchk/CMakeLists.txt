@@ -14,5 +14,21 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (envmod)
-HPCC_ADD_SUBDIRECTORY (envchk)
+project ( envmod )
+
+SET (SRC_FILES
+        envchk.cpp
+        )
+
+INCLUDE_DIRECTORIES(
+        ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/oss
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/configuration/configmgr/configmgrlib
+)
+
+HPCC_ADD_EXECUTABLE ( envchk ${SRC_FILES} )
+
+INSTALL ( TARGETS envchk RUNTIME DESTINATION ${EXEC_DIR} )
+
+TARGET_LINK_LIBRARIES(envchk configmgr)
