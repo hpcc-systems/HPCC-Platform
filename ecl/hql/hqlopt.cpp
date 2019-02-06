@@ -488,7 +488,7 @@ IHqlExpression * CTreeOptimizer::moveFilterOverSelect(IHqlExpression * expr)
 }
 
 
-IHqlExpression * CTreeOptimizer::optimizeAggregateUnsharedDataset(IHqlExpression * expr, bool isSimpleCount)
+IHqlExpression * CTreeOptimizer::optimizeAggregateUnsharedDataset(IHqlExpression * expr, bool isSimpleCount, bool isLocal)
 {
     if (isShared(expr) || (getNumChildTables(expr) != 1))
         return LINK(expr);
@@ -503,9 +503,12 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateUnsharedDataset(IHqlExpression
     case no_aggregate:
         childIsSimpleCount = false;
         break;
-    case no_hqlproject:
     case no_newusertable:
     case no_newaggregate:
+        if (isAggregateDataset(expr))
+            return LINK(expr);
+        //fall through
+    case no_hqlproject:
     case no_sort:
     case no_subsort:
     case no_distribute:
@@ -539,7 +542,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateUnsharedDataset(IHqlExpression
         return LINK(expr);
     }
 
-    OwnedHqlExpr optimizedDs = optimizeAggregateUnsharedDataset(ds, childIsSimpleCount);
+    OwnedHqlExpr optimizedDs = optimizeAggregateUnsharedDataset(ds, childIsSimpleCount, isLocal);
 
     //Remove items that are really inefficient and unnecessary, but don't for the moment remove projects or anything that changes the
     //record structure.
@@ -549,8 +552,12 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateUnsharedDataset(IHqlExpression
     case no_subsort:
     case no_distribute:
     case no_keyeddistribute:
-        noteUnused(expr);
-        return optimizedDs.getClear();
+        if (!isLocal)
+        {
+            noteUnused(expr);
+            return optimizedDs.getClear();
+        }
+        break;
     case no_topn:
         {
             assertex(isSimpleCount);
@@ -589,6 +596,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
     unwindChildren(children, transformed);
 
     IHqlExpression * root = &children.item(0);
+    bool isLocal = isLocalActivity(transformed);
     HqlExprAttr ds = root;
     IHqlExpression * wrapper = NULL;
     node_operator aggOp = transformed->getOperator();
@@ -660,7 +668,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
         case no_keyeddistribute:
         case no_preservemeta:
         case no_unordered:
-            if (isScalarAggregate || !isGrouped(ds->queryChild(0)))
+            if ((isScalarAggregate || !isGrouped(ds->queryChild(0))) && !isLocal)
                 next = ds->queryChild(0);
             break;
         case no_preload:
@@ -687,7 +695,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
     //Not completely sure about usageCounting being maintained correctly
     if (!insideShared)
     {
-        OwnedHqlExpr newDs = (aggOp != no_aggregate) ? optimizeAggregateUnsharedDataset(ds, isSimpleCount) : LINK(ds);
+        OwnedHqlExpr newDs = (aggOp != no_aggregate) ? optimizeAggregateUnsharedDataset(ds, isSimpleCount, isLocal) : LINK(ds);
         if (newDs != ds)
         {
             HqlMapTransformer mapper;
