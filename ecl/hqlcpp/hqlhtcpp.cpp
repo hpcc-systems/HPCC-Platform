@@ -11658,7 +11658,7 @@ void HqlCppTranslator::doBuildStmtOutput(BuildCtx & ctx, IHqlExpression * expr)
     Owned<IWUResult> result = createDatasetResultSchema(seq, name, dataset->queryRecord(), xmlnsAttrs, true, false, 0);
 
     CHqlBoundExpr bound;
-    buildDataset(ctx, dataset, bound, FormatNatural);
+    buildDataset(ctx, dataset, bound, FormatBlockedDataset);
     OwnedHqlExpr count = getBoundCount(bound);
 
     HqlExprArray args;
