@@ -28,7 +28,7 @@ class IterateSlaveActivityBase : public CSlaveActivity
 
     OwnedConstThorRow first;
 protected:
-    Owned<IThorRowInterfaces> inrowif;
+    IThorRowInterfaces *inrowif = nullptr;
     bool global;
     bool eof, nextPut;
     rowcount_t count;
@@ -77,7 +77,7 @@ public:
             if (prev)
             {
                 CMemoryRowSerializer msz(msg);
-                ::queryRowSerializer(input)->serialize(msz, (const byte *)prev);
+                inrowif->queryRowSerializer()->serialize(msz, (const byte *)prev);
             }
             if (!queryJobChannel().queryJobComm().send(msg, queryJobChannel().queryMyRank()+1, mpTag)) // to next
                 return;
@@ -89,7 +89,6 @@ public:
         PARENT::start();
         count = 0;
         eof = nextPut = false;
-        inrowif.set(::queryRowInterfaces(queryInput(0)));
     }
     virtual void stop() override
     {
@@ -114,6 +113,7 @@ public:
         : IterateSlaveActivityBase(_container,_global)
     {
         helper = static_cast <IHThorIterateArg *> (queryHelper());
+        inrowif = this;
     }
     virtual void start() override
     {
@@ -187,14 +187,18 @@ class CProcessSlaveActivity : public IterateSlaveActivityBase
     OwnedConstThorRow left;
     OwnedConstThorRow right;
     OwnedConstThorRow nextright;
-    Owned<IEngineRowAllocator> rightRowAllocator;
+    Owned<IThorRowInterfaces> rightOutputRowIf;
+    IEngineRowAllocator *rightRowAllocator = nullptr;
+
 public:
 
     CProcessSlaveActivity(CGraphElementBase *_container, bool _global) 
         : IterateSlaveActivityBase(_container,_global)
     {
         helper = static_cast <IHThorProcessArg *> (queryHelper());
-        rightRowAllocator.setown(getRowAllocator(helper->queryRightRecordSize()));
+        rightOutputRowIf.setown(createRowInterfaces(helper->queryRightRecordSize()));
+        inrowif = rightOutputRowIf;
+        rightRowAllocator = rightOutputRowIf->queryRowAllocator();
     }
     CATCH_NEXTROW()
     {
