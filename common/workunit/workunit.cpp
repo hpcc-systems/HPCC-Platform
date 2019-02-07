@@ -6949,6 +6949,7 @@ wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
     case WUStateBlocked:
     case WUStateAborting:
     case WUStateUploadingFiles:
+    case WUStateSubmitted://eclserver
 #ifdef _DEBUG
         DBGLOG("verifyWorkunitDAToken : Workunit token validated for %s %s, state is '%s'", cw->queryWuid(), cw->queryUser(), getWorkunitStateStr(cw->getState()));
 #endif
