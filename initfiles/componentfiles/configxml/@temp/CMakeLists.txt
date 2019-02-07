@@ -28,6 +28,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/logging_agent.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wslogserviceespagent.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wssql.xsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsstore.xsl
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configxml/@temp COMPONENT Runtime )
 ENDFOREACH ( iFILES )

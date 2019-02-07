@@ -28,6 +28,7 @@ set ( ESPSCM_SRCS
       ws_fileio.ecm
       ws_account.ecm
       ws_sql.ecm
+      ws_store.ecm
       ##### LIST FOR ESPECL
       WsDeploy.ecm
     )

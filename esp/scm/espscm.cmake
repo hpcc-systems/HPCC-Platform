@@ -42,6 +42,7 @@ set ( ESPSCM_SRCS
       ws_espcontrol.ecm
       ws_configmgr.ecm
       ws_elk.ecm
+      ws_store.ecm
     )
 
 foreach ( loop_var ${ESPSCM_SRCS} )
