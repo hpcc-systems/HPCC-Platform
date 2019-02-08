@@ -26,7 +26,6 @@
 #endif
 #include "exception_util.hpp"
 
-///#define FILE_DESPRAY_URL "FileDesprayAccess"
 #define FILE_IO_URL     "FileIOAccess"
 
 void CWsFileIOEx::init(IPropertyTree *cfg, const char *process, const char *service)
@@ -38,6 +37,7 @@ bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const cha
     if (!targetDZNameOrAddress || (targetDZNameOrAddress[0] == 0) || !relPath || (relPath[0] == 0))
         return false;
 
+    netAddr.clear();
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
     Owned<IConstDropZoneInfo> dropZoneInfo = env->getDropZone(targetDZNameOrAddress);
@@ -49,46 +49,51 @@ bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const cha
         Owned<IConstDropZoneInfoIterator> dropZoneItr = env->getDropZoneIteratorByAddress(targetDZNameOrAddress);
         ForEach(*dropZoneItr)
         {
-            dropZoneInfo.set(&dropZoneItr->query());
-            break;
+            IConstDropZoneInfo & dz = dropZoneItr->query();
+            if (dz.isECLWatchVisible())
+            {
+                dropZoneInfo.set(&dropZoneItr->query());
+                netAddr.set(targetDZNameOrAddress);
+                break;
+            }
         }
     }
 
     if (dropZoneInfo)
     {
-        char ch = '\\';
-        SCMStringBuffer dropZoneName, directory, computerName, computerAddress;
-        dropZoneInfo->getName(dropZoneName);
-        dropZoneInfo->getComputerName(computerName); //legacy structure
-        if(computerName.length() != 0)
+        SCMStringBuffer directory, computerName, computerAddress;
+        if (netAddr.isEmpty())
         {
-            Owned<IConstMachineInfo> machine = env->getMachine(computerName.str());
-            if (machine)
+            dropZoneInfo->getComputerName(computerName); //legacy structure
+            if(computerName.length() != 0)
             {
-                if (machine->getOS() == MachineOsLinux || machine->getOS() == MachineOsSolaris)
-                   ch = '/';
-                machine->getNetAddress(computerAddress);
-                if (computerAddress.length() != 0)
+                Owned<IConstMachineInfo> machine = env->getMachine(computerName.str());
+                if (machine)
                 {
-                    netAddr.set(computerAddress.str());
+                    machine->getNetAddress(computerAddress);
+                    if (computerAddress.length() != 0)
+                    {
+                        netAddr.set(computerAddress.str());
+                    }
                 }
             }
-        }
-        else
-        {
-            Owned<IConstDropZoneServerInfoIterator> serverIter = dropZoneInfo->getServers();
-            ForEach(*serverIter)
+            else
             {
-                IConstDropZoneServerInfo &serverElem = serverIter->query();
-                serverElem.getServer(netAddr.clear());
-                if (!netAddr.isEmpty())
-                    break;
+                Owned<IConstDropZoneServerInfoIterator> serverIter = dropZoneInfo->getServers();
+                ForEach(*serverIter)
+                {
+                    IConstDropZoneServerInfo &serverElem = serverIter->query();
+                    serverElem.getServer(netAddr.clear());
+                    if (!netAddr.isEmpty())
+                        break;
+                }
             }
         }
 
         dropZoneInfo->getDirectory(directory);
         if (directory.length() != 0)
         {
+            const char ch = getPathSepChar(directory.str());
             if (relPath[0] != ch)
             {
                 absPath.appendf("%s%c%s", directory.str(), ch, relPath);
@@ -100,7 +105,11 @@ bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const cha
             return true;
         }
         else
-            ESPLOG(LogMin, "Found LZ '%s' without a directory attribute!", dropZoneName.str());
+        {
+            SCMStringBuffer dropZoneName;
+            ESPLOG(LogMin, "Found LZ '%s' without a directory attribute!", dropZoneInfo->getName(dropZoneName).str());
+        }
+
     }
 
     return false;
