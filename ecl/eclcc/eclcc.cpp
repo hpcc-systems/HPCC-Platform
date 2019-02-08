@@ -1155,6 +1155,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     size32_t prevErrs = errorProcessor.errCount();
     cycle_t startCycles = get_cycles_now();
+    CpuInfo systemStartTime(false, true);
+    CpuInfo processStartTime(true, false);
+
     addTimeStamp(instance.wu, SSTcompilestage, "compile", StWhenStarted);
     const char * sourcePathname = queryContents ? str(queryContents->querySourcePath()) : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
@@ -1437,8 +1440,22 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     }
 
     unsigned __int64 totalTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
+    CpuInfo systemFinishTime(false, true);
+    CpuInfo processFinishTime(true, false);
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
     updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
+
+    if (systemFinishTime.getTotal())
+    {
+        CpuInfo systemElapsed = systemFinishTime - systemStartTime;
+        CpuInfo processElapsed = processFinishTime - processStartTime;
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StNumSysContextSwitches, NULL, systemElapsed.getNumContextSwitches());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeOsUser, NULL, systemElapsed.getUserNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeOsSystem, NULL, systemElapsed.getSystemNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeOsTotal, NULL, systemElapsed.getTotalNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeUser, NULL, processElapsed.getUserNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeSystem, NULL, processElapsed.getSystemNs());
+    }
 }
 
 void EclCC::processDefinitions(EclRepositoryArray & repositories)

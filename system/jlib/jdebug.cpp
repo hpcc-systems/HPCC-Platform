@@ -31,6 +31,8 @@
 #ifdef _WIN32
 #define DPSAPI_VERSION 1
 #include <psapi.h>
+#include <processthreadsapi.h>
+#include <sysinfoapi.h>
 #endif
 
 #ifdef __linux__
@@ -69,13 +71,6 @@ static __int64 totalMem = 0;
 static __int64 hwmTotalMem = 0;
 #ifdef __linux__
 static unsigned memArea[32];
-#endif
-#endif
-
-// FIXME: Make sure this is still relevant, and if not, delete
-#ifndef _WIN32
-#ifndef __64BIT__
-#define USE_OLD_PU
 #endif
 #endif
 
@@ -648,21 +643,9 @@ MODULE_EXIT()
 }
 
 
-
-
 //===========================================================================
 
-// Performance Monitor
-
 #ifdef _WIN32
-
-#define SystemBasicInformation       0
-#define SystemPerformanceInformation 2
-#define SystemTimeInformation        3
-#define SystemProcessList            5
-
-
-
 
 typedef enum _PROCESSINFOCLASS {
     ProcessBasicInformation,
@@ -693,55 +676,10 @@ typedef enum _PROCESSINFOCLASS {
     ProcessForegroundInformation,
     ProcessWow64Information,
     MaxProcessInfoClass
-    } PROCESSINFOCLASS;
+} PROCESSINFOCLASS;
 
 typedef LONG NTSTATUS;
 
-#define Li2Double(x) ((double)((x).HighPart) * 4.294967296E9 + (double)((x).LowPart))
-
-typedef struct
-{
-    DWORD   dwUnknown1;
-    ULONG   uKeMaximumIncrement;
-    ULONG   uPageSize;
-    ULONG   uMmNumberOfPhysicalPages;
-    ULONG   uMmLowestPhysicalPage;
-    ULONG   uMmHighestPhysicalPage;
-    ULONG   uAllocationGranularity;
-    PVOID   pLowestUserAddress;
-    PVOID   pMmHighestUserAddress;
-    ULONG   uKeActiveProcessors;
-    BYTE    bKeNumberProcessors;
-    BYTE    bUnknown2;
-    WORD    wUnknown3;
-} SYSTEM_BASIC_INFORMATION;
-
-typedef struct
-{
-    LARGE_INTEGER   liIdleTime;
-    DWORD           dwSpare[76];
-} SYSTEM_PERFORMANCE_INFORMATION;
-
-typedef struct
-{
-    LARGE_INTEGER liKeBootTime;
-    LARGE_INTEGER liKeSystemTime;
-    LARGE_INTEGER liExpTimeZoneBias;
-    ULONG         uCurrentTimeZoneId;
-    DWORD         dwReserved;
-} SYSTEM_TIME_INFORMATION;
-
-
-struct PROCESS_BASIC_INFORMATION {
-    long            ExitStatus;
-    void *          PebBaseAddress;
-    unsigned long  AffinityMask;
-    long           BasePriority;
-    unsigned long  UniqueProcessId;
-    unsigned long  InheritedFromUniqueProcessId;
-};
-
-// QUOTA_LIMITS
 
 struct __IO_COUNTERS {                  // defined in SDK
     ULONGLONG  ReadOperationCount;
@@ -766,7 +704,7 @@ struct VM_COUNTERS {
     unsigned long PagefileUsage;
     unsigned long PeakPagefileUsage;
 };
- 
+
 struct POOLED_USAGE_AND_LIMITS {
     unsigned long PeakPagedPoolUsage;
     unsigned long PagedPoolUsage;
@@ -788,23 +726,6 @@ struct KERNEL_USER_TIMES {
 
 
 
-// ntdll!NtQuerySystemInformation (NT specific!)
-//
-// The function copies the system information of the
-// specified type into a buffer
-//
-// NTSYSAPI
-// NTSTATUS
-// NTAPI
-// NtQuerySystemInformation(
-//    IN UINT SystemInformationClass,    // information type
-//    OUT PVOID SystemInformation,       // pointer to buffer
-//    IN ULONG SystemInformationLength,  // buffer size in bytes
-//    OUT PULONG ReturnLength OPTIONAL   // pointer to a 32-bit
-//                                       // variable that receives
-//                                       // the number of bytes
-//                                       // written to the buffer 
-// );
 //
 //NTSYSCALLAPI
 //NTSTATUS
@@ -818,9 +739,208 @@ struct KERNEL_USER_TIMES {
 //    );
 
 
-typedef LONG (WINAPI *PROCNTQSI)(UINT,PVOID,ULONG,PULONG);
-typedef LONG (WINAPI *PROCNTQIP)(HANDLE,UINT,PVOID,ULONG,PULONG);
-typedef LONG (WINAPI *PROCNTGST)(LARGE_INTEGER*, LARGE_INTEGER*, LARGE_INTEGER*);
+typedef LONG(WINAPI *PROCNTQIP)(HANDLE, UINT, PVOID, ULONG, PULONG);
+
+static struct CNtKernelInformation
+{
+    CNtKernelInformation()
+    {
+        NtQueryInformationProcess = (PROCNTQIP)GetProcAddress(
+            GetModuleHandle("ntdll"),
+            "NtQueryInformationProcess"
+        );
+        GetSystemInfo(&SysBaseInfo);
+}
+
+    PROCNTQIP NtQueryInformationProcess;
+
+    SYSTEM_INFO       SysBaseInfo;
+
+} NtKernelFunctions;
+#endif
+
+
+//===========================================================================
+
+#ifdef _WIN32
+static __uint64 ticksToNs = I64C(100);  // FILETIME is in 100ns increments
+#else
+static __uint64 ticksToNs = I64C(1000000000) / sysconf(_SC_CLK_TCK);
+#endif
+
+
+#ifdef _WIN32
+inline unsigned __int64 extractFILETIME(const FILETIME & value)
+{
+    return ((__uint64)value.dwHighDateTime << (sizeof(value.dwLowDateTime) * 8) | value.dwLowDateTime);
+}
+#endif
+
+CpuInfo::CpuInfo(bool processTime, bool systemTime) : CpuInfo()
+{
+    if (processTime)
+        getProcessTimes();
+    else if (systemTime)
+        getSystemTimes();
+}
+
+void CpuInfo::clear()
+{
+    user = 0;
+    system = 0;
+    idle = 0;
+    iowait = 0;
+}
+
+CpuInfo CpuInfo::operator - (const CpuInfo & rhs) const
+{
+    CpuInfo result;
+    result.user = user - rhs.user;
+    result.system = system - rhs.system;
+    result.idle = idle - rhs.idle;
+    result.iowait = iowait - rhs.iowait;
+    result.ctx = ctx - rhs.ctx;
+    return result;
+}
+
+bool CpuInfo::getProcessTimes()
+{
+#ifdef _WIN32
+    FILETIME kernelTime, userTime;
+    GetProcessTimes(GetCurrentProcess(), nullptr, nullptr, &kernelTime, &userTime);
+
+    user = extractFILETIME(userTime);
+    system = extractFILETIME(kernelTime);
+    return true;
+#else
+    VStringBuffer fname("/proc/%u/stat", getpid());
+    //NOTE: This file needs to be reopened each time - seeking to the start and rereading does not refresh it
+    clear();
+    FILE* cpufp = fopen(fname.str(), "r");
+    if (!cpufp) {
+        return false;
+    }
+    char ln[2560];
+    if (fgets(ln, sizeof(ln), cpufp))
+    {
+        long int majorFaults = 0;
+        long unsigned userTime = 0;
+        long unsigned systemTime = 0;
+        long unsigned childUserTime = 0;
+        long unsigned childSystemTime = 0;
+        int matched = sscanf(ln, "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %lu %*u %lu %lu %lu %lu", &majorFaults, &userTime, &systemTime, &childUserTime, &childSystemTime);
+        if (matched >= 3)
+        {
+            user = userTime + childUserTime;
+            system = systemTime + childSystemTime;
+        }
+    }
+    fclose(cpufp);
+    return true;
+#endif
+}
+
+bool CpuInfo::getSystemTimes()
+{
+#ifdef _WIN32
+    FILETIME idleTime, kernelTime, userTime;
+    GetSystemTimes(&idleTime, &kernelTime, &userTime);
+    // note - kernel time seems to include idle time
+
+    idle = extractFILETIME(idleTime);
+    user = extractFILETIME(userTime);
+    system = extractFILETIME(kernelTime) - idle;
+    return true;
+#else
+    //NOTE: This file needs to be reopened each time - seeking to the start and rereading does not refresh it
+    FILE* cpufp = fopen("/proc/stat", "r");
+    if (!cpufp) {
+        clear();
+        return false;
+    }
+    char ln[256];
+    while (fgets(ln, sizeof(ln), cpufp))
+    {
+        if (strncmp(ln, "cpu ", 4) == 0)
+        {
+            int items;
+            __uint64 nice, irq, softirq;
+
+            items = sscanf(ln,
+                "cpu %llu %llu %llu %llu %llu %llu %llu",
+                &user, &nice,
+                &system,
+                &idle,
+                &iowait,
+                &irq, &softirq);
+
+            user += nice;
+            if (items == 4)
+                iowait = 0;
+            if (items == 7)
+                system += irq + softirq;
+        }
+        else if (strncmp(ln, "ctxt ", 5) == 0)
+        {
+            (void)sscanf(ln, "ctxt %llu", &ctx);
+        }
+    }
+    fclose(cpufp);
+    return true;
+#endif
+}
+
+unsigned CpuInfo::getPercentCpu() const
+{
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    unsigned percent = (unsigned)(((total - idle) * 100) / idle);
+    if (percent > 100)
+        percent = 100;
+    return percent;
+}
+
+__uint64 CpuInfo::getSystemNs() const
+{
+    return system * ticksToNs;
+}
+
+__uint64 CpuInfo::getUserNs() const
+{
+    return user * ticksToNs;
+}
+
+__uint64 CpuInfo::getTotalNs() const
+{
+    return getTotal() * ticksToNs;
+}
+
+unsigned CpuInfo::getIdlePercent() const
+{
+    return (unsigned)((idle * 100) / getTotal());
+}
+
+unsigned CpuInfo::getIoWaitPercent() const
+{
+    return (unsigned)((iowait * 100) / getTotal());
+}
+
+unsigned CpuInfo::getSystemPercent() const
+{
+    return (unsigned)((system * 100) / getTotal());
+}
+
+unsigned CpuInfo::getUserPercent() const
+{
+    return (unsigned)((user * 100) / getTotal());
+}
+
+//===========================================================================
+
+// Performance Monitor
+
+#ifdef _WIN32
 
 memsize_t getMapInfo(const char *type)
 {
@@ -1584,6 +1704,8 @@ public:
 
 // nvme disk major is often 259 (blkext) but others are also
 
+//---------------------------------------------------------------------------
+
 class CExtendedStats  // Disk network and cpu stats
 {
 
@@ -1633,10 +1755,10 @@ class CExtendedStats  // Disk network and cpu stats
     unsigned nparts;
     blkio_info *newblkio;
     blkio_info *oldblkio;
-    cpu_info newcpu;
+    CpuInfo newcpu;
     unsigned numcpu;
-    cpu_info oldcpu;
-    cpu_info cpu;
+    CpuInfo oldcpu;
+    CpuInfo cpu;
     net_info oldnet;
     net_info newnet;
     unsigned ncpu;
@@ -1675,48 +1797,26 @@ class CExtendedStats  // Disk network and cpu stats
 
     bool getNextCPU()
     {
-        oldcpu = newcpu;
         if (!ncpu) {
             unsigned speed;
             getCpuInfo(ncpu, speed);
             if (!ncpu)
                 ncpu = 1;
         }
-        FILE* cpufp = fopen("/proc/stat", "r");
-        if (!cpufp) {
-            memset(&cpu,0,sizeof(cpu));
+
+        oldcpu = newcpu;
+        if (newcpu.getSystemTimes())
+        {
+            cpu = newcpu - oldcpu;
+            totalcpu = cpu.getTotal();
+            return true;
+        }
+        else
+        {
+            cpu.clear();
             totalcpu = 0;
             return false;
         }
-        char ln[256];
-        while (fgets(ln, sizeof(ln), cpufp)) {
-            if (strncmp(ln, "cpu ", 4)==0) {
-                int items;
-                __uint64 nice, irq, softirq;
-
-                items = sscanf(ln,
-                         "cpu %llu %llu %llu %llu %llu %llu %llu",
-                           &newcpu.user, &nice,
-                           &newcpu.system,
-                           &newcpu.idle,
-                           &newcpu.iowait,
-                           &irq, &softirq);
-
-                newcpu.user += nice;
-                if (items == 4)
-                    newcpu.iowait = 0;
-                if (items == 7)
-                    newcpu.system += irq + softirq;
-                break;
-            }
-        }
-        fclose(cpufp);
-        cpu.user = newcpu.user - oldcpu.user;
-        cpu.system = newcpu.system - oldcpu.system;
-        cpu.idle = newcpu.idle - oldcpu.idle;
-        cpu.iowait = newcpu.iowait - oldcpu.iowait;
-        totalcpu = (cpu.user + cpu.system + cpu.idle + cpu.iowait);
-        return true;
     }
 
     bool getDiskInfo()
@@ -1945,12 +2045,7 @@ public:
     {
         if (!getNextCPU())
             return (unsigned)-1;
-        if (totalcpu==0)
-            return 0;
-        unsigned ret = (unsigned)((totalcpu-cpu.idle)*100/totalcpu);
-        if (ret>100)
-            ret = 100;
-        return ret;
+        return cpu.getPercentCpu();
     }
 
 
@@ -2043,10 +2138,6 @@ public:
         oldblkio = newblkio;
         newblkio = t;
         oldnet = newnet;
-#ifdef USE_OLD_PU
-        if (!getNextCPU())
-            return false;       // required
-#endif
         bool gotdisk = getDiskInfo()&&nparts;
         bool gotnet = getNetInfo();
         if (first)
@@ -2108,7 +2199,7 @@ public:
         {
             if (out.length()&&(out.charAt(out.length()-1)!=' '))
                 out.append(' ');
-            out.appendf("CPU: usr=%d sys=%d iow=%d idle=%d", (unsigned)(cpu.user*100/totalcpu), (unsigned)(cpu.system*100/totalcpu), (unsigned)(cpu.iowait*100/totalcpu), (unsigned)(cpu.idle*100/totalcpu));
+            out.appendf("CPU: usr=%d sys=%d iow=%d idle=%d", cpu.getUserPercent(), cpu.getSystemPercent(), cpu.getIoWaitPercent(), cpu.getIdlePercent());
         }
         return true;
     }
@@ -2167,36 +2258,6 @@ public:
 };
 
 
-#endif
-
-#ifdef _WIN32
-static struct CNtKernelInformation
-{
-    CNtKernelInformation()
-    {
-        NtQuerySystemInformation = (PROCNTQSI)GetProcAddress(
-                                          GetModuleHandle("ntdll"),
-                                         "NtQuerySystemInformation"
-                                         );
-        NtQueryInformationProcess = (PROCNTQIP)GetProcAddress(
-                                          GetModuleHandle("ntdll"),
-                                         "NtQueryInformationProcess"
-                                         );
-        // GetSystemTimes not available on earlier versions of Windows - NtQuerySystemInformation not consistent on later ones. So use GetSystemTimes if available
-        pGetSystemTimes = (PROCNTGST)GetProcAddress(
-                                          GetModuleHandle("kernel32"),
-                                         "GetSystemTimes"
-                                         );
-        NtQuerySystemInformation(SystemBasicInformation,&SysBaseInfo,sizeof(SysBaseInfo),NULL);
-    }
-
-    PROCNTQSI NtQuerySystemInformation;
-    PROCNTQIP NtQueryInformationProcess;
-              
-    PROCNTGST pGetSystemTimes;
-    SYSTEM_BASIC_INFORMATION       SysBaseInfo;
-
-} NtKernelFunctions;
 #endif
 
 struct PortStats
@@ -2389,17 +2450,11 @@ static class CMemoryUsageReporter: public Thread
     PerfMonMode traceMode;
     Linked<IPerfMonHook> hook;
     unsigned latestCPU;
-#if defined(USE_OLD_PU) || defined(_WIN32)
-    double                         dbIdleTime;
-    double                         dbSystemTime;
-#endif
 #ifdef _WIN32
     LONG                           status;
-    LARGE_INTEGER                  liOldIdleTime;
-    LARGE_INTEGER                  liOldSystemTime;
+    CpuInfo                        prevTime;
+    CpuInfo                        deltaTime;
 #else
-    double                         OldIdleTime;
-    double                         OldSystemTime;
     CProcessMonitor                procmon;
     CExtendedStats                 extstats;
 #endif
@@ -2426,23 +2481,8 @@ public:
         if (queryEnvironmentConf().getPropBool("udp_stats", true))
             traceMode |= PerfMonUDP;
 #ifdef _WIN32
-        memset(&liOldIdleTime,0,sizeof(liOldIdleTime));
-        memset(&liOldSystemTime,0,sizeof(liOldSystemTime));
-        dbIdleTime = 0;
         primaryfs.append("C:");
 #else
-        FILE* procfp;
-        procfp = fopen("/proc/uptime", "r");
-        int matched = 0;
-        if (procfp) {
-            matched = fscanf(procfp, "%lf %lf\n", &OldSystemTime, &OldIdleTime);
-            fclose(procfp);
-        }
-        if (!procfp || matched != 2)
-        {
-            OldSystemTime = 0;
-            OldIdleTime = 0;
-        }
         primaryfs.append("/");
 #endif
     }
@@ -2467,40 +2507,14 @@ public:
     {
         CriticalBlock block(sect);
 #ifdef _WIN32
-        if (NtKernelFunctions.pGetSystemTimes) {
-            LARGE_INTEGER idle, kernel, user;
-            NtKernelFunctions.pGetSystemTimes(&idle, &kernel, &user);
-            // note - kernel time seems to include idle time
-
-            if(liOldIdleTime.QuadPart != 0) {
-                // CurrentValue = NewValue - OldValue
-                dbIdleTime = Li2Double(idle) - Li2Double(liOldIdleTime);
-                dbSystemTime = (Li2Double(kernel) + Li2Double(user)) - Li2Double(liOldSystemTime);
-                // CurrentCpuIdle = IdleTime / SystemTime
-                dbIdleTime = dbIdleTime / dbSystemTime;
-                // CurrentCpuUsage% = 100 - (CurrentCpuIdle * 100) / NumberOfProcessors
-                latestCPU = (unsigned) (100.0 - dbIdleTime * 100.0  + 0.5);
-            }
-            liOldIdleTime = idle;
-            liOldSystemTime.QuadPart = user.QuadPart + kernel.QuadPart;
-        } else {
-            SYSTEM_PERFORMANCE_INFORMATION SysPerfInfo;
-            SYSTEM_TIME_INFORMATION        SysTimeInfo;
-            NtKernelFunctions.NtQuerySystemInformation(SystemTimeInformation,&SysTimeInfo,sizeof(SysTimeInfo),0);
-            NtKernelFunctions.NtQuerySystemInformation(SystemPerformanceInformation,&SysPerfInfo,sizeof(SysPerfInfo),NULL);
-
-            if(liOldIdleTime.QuadPart != 0) {
-                // CurrentValue = NewValue - OldValue
-                dbIdleTime = Li2Double(SysPerfInfo.liIdleTime) - Li2Double(liOldIdleTime);
-                dbSystemTime = Li2Double(SysTimeInfo.liKeSystemTime) - Li2Double(liOldSystemTime);
-                // CurrentCpuIdle = IdleTime / SystemTime
-                dbIdleTime = dbIdleTime / dbSystemTime;
-                // CurrentCpuUsage% = 100 - (CurrentCpuIdle * 100) / NumberOfProcessors
-                latestCPU = (unsigned) (100.0 - dbIdleTime * 100.0 / (double)NtKernelFunctions.SysBaseInfo.bKeNumberProcessors + 0.5);
-            }
-            liOldIdleTime = SysPerfInfo.liIdleTime;
-            liOldSystemTime = SysTimeInfo.liKeSystemTime;
+        CpuInfo current;
+        current.getSystemTimes();
+        if (prevTime.getTotal())
+        {
+            deltaTime = current - prevTime;
+            latestCPU = 100 - deltaTime.getIdlePercent();
         }
+        prevTime = current;
 
         MEMORYSTATUSEX memstatus;
         memstatus.dwLength = sizeof(memstatus);
@@ -2543,12 +2557,6 @@ public:
         if(mode & PerfMonProcMem)
         {
             str.appendf("PU=%3d%%",latestCPU);
-#if 0
-            VM_COUNTERS vmc;
-            DWORD dwSize = 0;
-            NtKernelFunctions.NtQueryInformationProcess(GetCurrentProcess(), ProcessVmCounters, &vmc, sizeof(vmc), &dwSize);
-            str.appendf(" MU=%3u%%",(unsigned)((__int64)vmc.WorkingSetSize*100/(__int64)vmTotal));
-#else
             str.appendf(" MU=%3u%%",(unsigned)((__int64)vmInUse*100/(__int64)vmTotal));
             str.appendf(" PY=%3u%%",(unsigned)((__int64)physInUse*100/(__int64)physTotal));
             if (hook)
@@ -2556,8 +2564,6 @@ public:
 #ifdef _USE_MALLOC_HOOK
             if (totalMem)
                 str.appendf(" TM=%" I64F "d",totalMem);
-#endif
-
 #endif
         }
         if(mode & PerfMonPackets)
@@ -2611,28 +2617,11 @@ public:
 
 #else
         bool outofhandles = false;
-#ifdef USE_OLD_PU
-        FILE* procfp = fopen("/proc/uptime", "r");
-        int matched = 0;
-        OldSystemTime = 0;
-        if (procfp) {
-            matched = fscanf(procfp, "%lf %lf\n", &dbSystemTime, &dbIdleTime);
-            fclose(procfp);
-            outofhandles = false;
-        }
-        latestCPU = unsigned(100.0 - (dbIdleTime - OldIdleTime)*100.0/(dbSystemTime - OldSystemTime) + 0.5);
-        if (procfp && matched == 2)
-        {
-            OldSystemTime = dbSystemTime;
-            OldIdleTime = dbIdleTime;
-        }
-#else
         latestCPU = extstats.getCPU();
         if (latestCPU==(unsigned)-1) {
             outofhandles = true;
             latestCPU = 0;
         }
-#endif
 
 
         unsigned __int64 primaryfsTotal = 0;

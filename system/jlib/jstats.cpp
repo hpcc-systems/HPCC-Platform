@@ -854,6 +854,20 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(SmartJoinDegradedToLocal) },
     { NUMSTAT(SmartJoinSlavesDegradedToStd) },
     { NUMSTAT(AttribsSimplifiedTooComplex) },
+    { NUMSTAT(SysContextSwitches) },
+    { TIMESTAT(OsUser) },
+    { TIMESTAT(OsSystem) },
+    { TIMESTAT(OsTotal) },
+    { CYCLESTAT(OsUser) },
+    { CYCLESTAT(OsSystem) },
+    { CYCLESTAT(OsTotal) },
+    { NUMSTAT(ContextSwitches) },
+    { TIMESTAT(User) },
+    { TIMESTAT(System) },
+    { TIMESTAT(Total) },
+    { CYCLESTAT(User) },
+    { CYCLESTAT(System) },
+    { CYCLESTAT(Total) },
 };
 
 
