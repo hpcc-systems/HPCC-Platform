@@ -174,7 +174,7 @@ public:
         lockQuery.appendf("<control:childlock thisEndpoint='%d' parent='%d'/>", activeIdxes.item(idx), myEndpoint);
         doChildQuery(idx, lockQuery.str(), lockReply);
         Owned<IPropertyTree> lockResult = createPTreeFromXMLString(lockReply.str(), ipt_caseInsensitive|ipt_fast);
-        int lockCount = lockResult->getPropInt("Lock", 0);
+        int lockCount = lockResult ? lockResult->getPropInt("Lock", 0) : 0;
         if (lockCount)
         {
             return lockCount;
@@ -1467,6 +1467,15 @@ public:
         if (logctx)
             logctx->outputXML(out);
     }
+    virtual void writeLogXML(IXmlWriter &writer)
+    {
+        if (logctx)
+        {
+            writer.outputBeginNested("Tracing", true);
+            logctx->writeXML(writer);
+            writer.outputEndNested("Tracing");
+        }
+    }
 
     virtual unsigned getQueryPriority()
     {
@@ -1654,6 +1663,12 @@ public:
         if (!(flags & HPCC_PROTOCOL_NATIVE))
         {
             ctx->process();
+            if (msgctx->getIntercept())
+            {
+                Owned<IXmlWriter> logwriter = protocol->writeAppendContent(nullptr);
+                msgctx->writeLogXML(*logwriter);
+            }
+
             protocol->finalize(idx);
             memused += ctx->getMemoryUsage();
             slavesReplyLen += ctx->getSlavesReplyLen();

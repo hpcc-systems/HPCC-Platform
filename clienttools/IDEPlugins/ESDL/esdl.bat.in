@@ -32,11 +32,8 @@ echo New Input file:  %newinput% >> %TMP%\log.txt
 echo New Ouput file:  %newoutput% >> %TMP%\log.txt
 copy /Y %3 %newinput%
 
-set "clienttoolsdir=@ORIG_PREFIX@\@DIR_NAME@\@version@\clienttools"
-set "clienttoolsbindir=%clienttoolsdir%\bin"
-set "clienttoolscompdir=%clienttoolsdir%\componentfiles"
-
-echo clienttoolsdir: %clienttoolsdir% >> %TMP%\log.txt
+set "clienttoolsbindir=..\..\bin"
+set "clienttoolscompdir=..\..\componentfiles"
 
 :begin
 if %action%==CalcIncludes goto eof
@@ -60,8 +57,8 @@ for /f "tokens=1,2,3 delims=/:" %%a in ("%8") do set http=%%a&set server=%%b&set
 echo.server: %server% >> %TMP%\log.txt
 echo.port  : %port% >> %TMP%\log.txt
 
-echo "%clienttoolsbindir%\esdl.exe publish %newinput% %2 --server %server%  --port %port% --version 1.0 --username %6 --password %9 -v" >>%TMP%\log.txt
-"%clienttoolsbindir%"\esdl.exe publish %newinput% %2 --server %server%  --port %port% --version 1.0 --username %6 --password %9 -v 2>%5 >>%TMP%\log.txt
+echo "%clienttoolsbindir%\esdl.exe publish %newinput% %2 --server %server% --port %port% --username %6 --password %9 -v" >>%TMP%\log.txt
+"%clienttoolsbindir%"\esdl.exe publish %newinput% %2 --server %server% --port %port% --username %6 --password %9 -v 2>%5 >>%TMP%\log.txt
 goto end
 
 :genecl
@@ -71,19 +68,29 @@ goto end
 
 :end
 
+find /i "syntax error" "%TMP%\log.txt" >>%5
+if %errorlevel%==0 goto nomod
+
 rem =====================================
 rem  MAKE FILE INTO MOD FILE FORMAT
 rem =====================================
-set "newoutputUnique=%2Gen"
-echo //IMPORT:%1.%newoutputUnique% >> %TMP%\modfile.tmp
+echo //IMPORT:%1.%2 >> %TMP%\modfile.tmp
 type %newoutput% >> %TMP%\modfile.tmp
 del %newoutput%
 copy /Y %TMP%\modfile.tmp %newoutput%
 del %TMP%\modfile.tmp
 
 copy /Y %3 %TMP%\in.txt
-copy /Y %newoutput% %TMP%\%newoutputUnique%.ecl
-copy /Y %TMP%\%newoutputUnique%.ecl %4
+copy /Y %newoutput% %TMP%\%2.ecl
+copy /Y %TMP%\%2.ecl %4
+copy /Y %4 %TMP%\out.txt
+del %newoutput%
+copy /Y %5 %TMP%\err.txt
+goto eof
+
+:nomod
+
+copy /Y %3 %TMP%\in.txt
 copy /Y %4 %TMP%\out.txt
 del %newoutput%
 copy /Y %5 %TMP%\err.txt

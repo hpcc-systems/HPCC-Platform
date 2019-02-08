@@ -566,8 +566,8 @@ The format of the output is the same as 'run', except there is a log, result and
 |         End.
 
 
-6. Tags used in testcases:
---------------------------
+6. Tags used in test cases:
+---------------------------
 
     To exclude testcase from cluster or clusters, the tag is:
 //no<cluster_name>
@@ -688,10 +688,13 @@ So if you have a new test case and it works well on all clusters (or some of the
 
         "roxieTestSocket": ":9876",                     - Roxie test socket address (not used)
         "espIp": "127.0.0.1",                           - ESP server IP
-        "espSocket": ":8010",                           - ESP service address
+        "espSocket": "8010",                            - ESP service address
+        "useSsl" : "False",                             - Control SSL encryption in communication with ESP server
+                                                          If it is set to 'True' then espSocket, username and password 
+                                                          should be updated accordingly
         "username": "regress",                          - Regression Suite dedicated username and pasword
         "password": "regress",
-        "suiteDir": "",                                 - default suite directory location - ""-> current directory
+        "suiteDir": "",                                 - Default suite directory location - ""-> current directory
         "eclDir": "ecl",                                - ECL test cases directory source
         "setupDir": "ecl/setup",                        - ECL setup source directory
         "keyDir": "ecl/key",                            - XML key files directory to check testcases result

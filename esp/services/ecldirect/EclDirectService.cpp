@@ -314,7 +314,7 @@ bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, I
     {
         StringBuffer results;
         CRunEclExFormat outputFormat = req.getFormat();
-        Owned<IWuWebView> web = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true, nullptr);
         if (!web)
             results.appendf("<Exception><Source>ESP</Source><Message>Failed loading result workunit %s</Message></Exception>", wuid.str());
         else if (outputFormat == CRunEclExFormat_Table)

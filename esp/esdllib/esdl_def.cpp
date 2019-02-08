@@ -269,16 +269,23 @@ public:
         // must provide a parameter on the URL '?internal' to see those elements
         // in the WSDL or web form.
 
-        if( opts && defOptional )
+        if (opts && defOptional)
         {
-            if( opts->hasProp(defOptional) )
+            if (*defOptional == '!')
             {
-                return true;
-            } else {
-                return false;
+                if (!opts->hasProp(defOptional+1))
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                if (opts->hasProp(defOptional))
+                    return true;
+                else
+                    return false;
             }
         }
-
         return true;
     }
 };
@@ -952,7 +959,68 @@ void EsdlDefStruct::load(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &str
     }
 }
 
+static SecAccessFlags translateAuthLevel(const char* flag)
+{
+    if (!flag || !*flag)
+        return SecAccess_Full;
+    if (!stricmp(flag,"None") || !stricmp(flag,"Deferred"))
+        return SecAccess_None;
+    if (!stricmp(flag,"Access"))
+        return SecAccess_Access;
+    if (!stricmp(flag,"Read"))
+        return SecAccess_Read;
+    if (!stricmp(flag,"Write"))
+        return SecAccess_Write;
+    if (!stricmp(flag,"Full"))
+        return SecAccess_Full;
 
+    DBGLOG("Unknown access level: %s", flag);
+    return SecAccess_Full;
+}
+
+static void parseAccessList(const char * rawServiceAccessList, MapStringTo<SecAccessFlags> & accessmap, const char * defaultaccessname)
+{
+    if (rawServiceAccessList && *rawServiceAccessList)
+    {
+        StringBuffer currAccessName;
+        StringBuffer currAccessLevel;
+
+        StringArray accessList;
+        accessList.appendList(rawServiceAccessList, ",");
+        ForEachItemIn(idx, accessList)
+        {
+            currAccessName.clear();
+            currAccessLevel.clear();
+            const char * accessEntry = accessList.item(idx);
+            int entrylen = strlen(accessEntry);
+            int currIndex = 0;
+
+            for (;currIndex <= entrylen && accessEntry[currIndex] != ':'; currIndex++ )
+            {
+                if (!isspace(accessEntry[currIndex]))
+                    currAccessName.append(accessEntry[currIndex]);
+            }
+
+            if (accessEntry[currIndex] == ':')
+            {
+                currIndex++;
+                if (currAccessName.isEmpty())
+                    currAccessName.setf("%sAccess",  defaultaccessname);
+            }
+
+            for (;currIndex <= entrylen; currIndex++ )
+            {
+                if (!isspace(accessEntry[currIndex]))
+                    currAccessLevel.append(accessEntry[currIndex]);
+            }
+
+            if (strieq(currAccessName, "NONE") || strieq(currAccessName, "DEFERRED"))
+                continue;
+
+            accessmap.setValue(currAccessName.str(), translateAuthLevel(currAccessLevel.str()));
+        }
+    }
+}
 
 class EsdlDefMethod : public EsdlDefObject, implements IEsdlDefMethod
 {
@@ -960,8 +1028,10 @@ public:
     IMPLEMENT_IINTERFACE;
     IMPLEMENT_ESDL_DEFOBJ;
 
+    MapStringTo<SecAccessFlags> m_accessmap;
+    const MapStringTo<SecAccessFlags> & queryAccessMap(){return m_accessmap;}
 
-    EsdlDefMethod(StartTag &tag, EsdlDefinition *esdl) : EsdlDefObject(tag, esdl)
+    EsdlDefMethod(StartTag &tag, EsdlDefinition *esdl, IEsdlDefService * parentservice = nullptr) : EsdlDefObject(tag, esdl)
     {
         const char *product = queryProp("productAssociation");
         if (product && *product)
@@ -979,7 +1049,18 @@ public:
                 props->setProp("product_", product);
         }
 
+        StringBuffer allfeatures;
+        if (parentservice)
+        {
+            allfeatures.set(parentservice->queryProp("auth_feature"));
+            if (!allfeatures.isEmpty())
+                allfeatures.append(',');
+        }
+
+        allfeatures.append(queryMetaData("auth_feature"));
+        parseAccessList(allfeatures.str(), m_accessmap, parentservice ? parentservice->queryName() :  queryProp("name"));
     }
+
     virtual EsdlDefTypeId getEsdlType(){return EsdlTypeMethod;}
 
     void load(XmlPullParser *xpp, StartTag &struct_tag)
@@ -1043,6 +1124,7 @@ public:
     EsdlDefObjectArray children;
     AddedObjs methodsByName;
     AddedObjs methodsByReqname;
+    StringBuffer m_nameSpace;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1063,13 +1145,18 @@ public:
         }
     }
 
+    const char * queryStaticNamespace()
+    {
+        return props->queryProp("staticnamespace");
+    }
+
     virtual EsdlDefTypeId getEsdlType(){return EsdlTypeService;}
 
     void load(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &struct_tag);
 
     void loadMethod(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &tag)
     {
-        EsdlDefMethod *mt = new EsdlDefMethod(tag, esdl);
+        EsdlDefMethod *mt = new EsdlDefMethod(tag, esdl, this);
         children.append(*dynamic_cast<IEsdlDefObject*>(mt));
         mt->load(xpp, tag);
 
@@ -1662,7 +1749,7 @@ void EsdlDefinition::walkDefinitionDepthFirst( AddedObjs& foundByName, EsdlDefOb
     // ancestors- they've already been added.
     // Checking up front here will also allow us to detect cycles in the strcuture
     // graph -such as we have with BpsReportRelative- and avoid an infinite loop
-    if( found || esdlObj->checkOptional(opts) == false || esdlObj->checkVersion(requestedVer) == false )
+    if (found || esdlObj->checkOptional(opts) == false || (requestedVer != 0.0 && esdlObj->checkVersion(requestedVer) == false))
     {
         //DBGLOG("%s</%s><Skipped/>", indent.str(), esdlObj->queryName());
         return;

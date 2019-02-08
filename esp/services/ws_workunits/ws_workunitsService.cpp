@@ -557,9 +557,15 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
 
         ForEachItemIn(di, req.getDebugValues())
         {
-            IConstDebugValue& item = req.getDebugValues().item(di);
-            if (notEmpty(item.getName()))
-                wu->setDebugValue(item.getName(), item.getValue(), true);
+            IConstDebugValue& item=req.getDebugValues().item(di);
+            const char *debugName = item.getName();
+            if (notEmpty(debugName))
+            {
+                StringBuffer expanded;
+                if (*debugName=='-')
+                    debugName=expanded.append("eclcc").append(debugName).str();
+                wu->setDebugValue(debugName, item.getValue(), true);
+            }
         }
 
         ForEachItemIn(ai, req.getApplicationValues())
@@ -1175,8 +1181,14 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         ForEachItemIn(di, req.getDebugValues())
         {
             IConstDebugValue& item=req.getDebugValues().item(di);
-            if(notEmpty(item.getName()))
-                wu->setDebugValue(item.getName(), item.getValue(), true);
+            const char *debugName = item.getName();
+            if (notEmpty(debugName))
+            {
+                StringBuffer expanded;
+                if (*debugName=='-')
+                    debugName=expanded.append("eclcc").append(debugName).str();
+                wu->setDebugValue(debugName, item.getValue(), true);
+            }
         }
 
         wu.setQueryText(req.getECL());
@@ -1605,7 +1617,7 @@ bool CWsWorkunitsEx::onWUResultView(IEspContext &context, IEspWUResultViewReques
     ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
     PROGLOG("WUResultView: %s", wuid.str());
 
-    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true);
+    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true, nullptr);
     StringBuffer html;
     wv->renderSingleResult(req.getViewName(), req.getResultName(), html);
     resp.setResult(html.str());
@@ -1653,7 +1665,10 @@ bool addWUQueryFilter(WUSortField *filters, unsigned short &count, MemoryBuffer 
     if (isEmpty(name))
         return false;
     filters[count++] = value;
-    buff.append(name);
+    if ((value & WUSFwild) != 0 && !containsWildcard(name))
+        buff.append("*").append(name).append("*");
+    else
+        buff.append(name);
     return true;
 }
 
@@ -4244,7 +4259,13 @@ inline StringBuffer &buildFullDllPath(StringBuffer &dllpath, StringBuffer &dllna
     return addPathSepChar(dllpath.set(dir)).append(sharedObjectFileName(dllname, name, ext, copy));
 }
 
-void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char *dir, StringBuffer &dllpath, StringBuffer &dllname, unsigned crc)
+void writeTempSharedObject(const MemoryBuffer &obj, const char *dir, StringBuffer &filename)
+{
+    OwnedIFileIO io = createUniqueFile(dir, "query_copy_dll_", NULL, filename);
+    io->write(0, obj.length(), obj.toByteArray());
+}
+
+void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char *dir, StringBuffer &dllpath, StringBuffer &dllname)
 {
     StringBuffer name, ext;
     if (srcpath && *srcpath)
@@ -4252,18 +4273,40 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
 
     unsigned copy=0;
     buildFullDllPath(dllpath.clear(), dllname.clear(), dir, name.str(), ext.str(), copy);
-    while (checkFileExists(dllpath.str()))
+
+    unsigned crc=0;
+    StringBuffer tempDllName;
+    const unsigned attempts = 3; // max attempts
+    for (unsigned i=0; i<attempts; i++)
     {
-        if (crc && crc == crc_file(dllpath.str()))
+        while (checkFileExists(dllpath.str()))
         {
-            DBGLOG("Workunit dll already exists: %s", dllpath.str());
+            if (crc==0)
+                crc = crc32(obj.toByteArray(), obj.length(), 0);
+            if (crc == crc_file(dllpath.str()))
+            {
+                DBGLOG("Workunit dll already exists: %s", dllpath.str());
+                if (tempDllName.length())
+                    removeFileTraceIfFail(tempDllName);
+                return;
+            }
+            buildFullDllPath(dllpath.clear(), dllname.clear(), dir, name.str(), ext.str(), ++copy);
+        }
+        if (!tempDllName.length())
+            writeTempSharedObject(obj, dir, tempDllName);
+        try
+        {
+            renameFile(dllpath, tempDllName, false);
             return;
         }
-        buildFullDllPath(dllpath.clear(), dllname.clear(), dir, name.str(), ext.str(), ++copy);
+        catch (IException *e)
+        {
+            EXCLOG(e, "writeSharedObject"); //pretty small window for another copy of this dll to sneak by
+            e->Release();
+        }
     }
-    Owned<IFile> f = createIFile(dllpath.str());
-    Owned<IFileIO> io = f->open(IFOcreate);
-    io->write(0, obj.length(), obj.toByteArray());
+
+    throw MakeStringException(ECLWATCH_CANNOT_COPY_DLL, "Failed copying shared object %s", srcpath);
 }
 
 void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml)
@@ -4299,7 +4342,7 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
 
     if (!srcname.length())
         srcname.append(name).append(SharedObjectExtension);
-    writeSharedObject(srcname.str(), obj, dir, dllpath, dllname, crc);
+    writeSharedObject(srcname.str(), obj, dir, dllpath, dllname);
 
     NewWsWorkunit wu(context, wuid); //duplicate wuid made unique
 

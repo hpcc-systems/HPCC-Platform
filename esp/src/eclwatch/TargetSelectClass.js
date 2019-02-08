@@ -33,10 +33,11 @@ define([
     "hpcc/FileSpray",
     "hpcc/ws_access",
     "hpcc/WsESDLConfig",
-    "hpcc/WsPackageMaps"
+    "hpcc/WsPackageMaps",
+    "hpcc/Utility"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory, on,
     registry,
-    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps) {
+    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
 
     return {
         i18n: nlsHPCC,
@@ -276,37 +277,38 @@ define([
 
         loadDropZones: function () {
             var context = this;
+            this.set("disabled", true);
             WsTopology.TpDropZoneQuery({
-                load: function (response) {
-                    if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
-                        var targetData = response.TpDropZoneQueryResponse.TpDropZones.TpDropZone;
-                        for (var i = 0; i < targetData.length; ++i) {
+            }).then(function (response) {
+                context.set("disabled", false);
+                if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
+                    var targetData = response.TpDropZoneQueryResponse.TpDropZones.TpDropZone;
+                    for (var i = 0; i < targetData.length; ++i) {
+                        if (lang.exists("TpMachines.TpMachine", targetData[i])) {
                             context.options.push({
                                 label: targetData[i].Name,
                                 value: targetData[i].Name,
                                 machine: targetData[i].TpMachines.TpMachine[0]
                             });
                         }
-                        context._postLoad();
                     }
+                    context._postLoad();
                 }
             });
         },
 
         loadDropZoneMachines: function (Name) {
             var context = this;
+            this.set("disabled", true);
             if (Name) {
                 WsTopology.TpDropZoneQuery({
                     request: {
                         Name: Name
                     }
                 }).then(function (response) {
+                    context.set("disabled", false);
                     if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
                         context.set("options", []);
-                        context.options.push({
-                            label: "&nbsp;",
-                            value: ""
-                        });
                         arrayUtil.forEach(response.TpDropZoneQueryResponse.TpDropZones.TpDropZone, function(item, idx) {
                             var targetData = item.TpMachines.TpMachine;
                             for (var i = 0; i < targetData.length; ++i) {
@@ -571,6 +573,7 @@ define([
                 load: function (response) {
                     if (lang.exists("ListESDLDefinitionsResponse.Definitions.Definition", response)) {
                         var targetData = response.ListESDLDefinitionsResponse.Definitions.Definition;
+                        Utility.alphanumSort(targetData, "Id");
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
                                 label: targetData[i].Id,

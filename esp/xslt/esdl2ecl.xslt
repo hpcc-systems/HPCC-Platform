@@ -229,6 +229,7 @@ end;
 		<xsl:when test="$basic_type='int'"><xsl:text disable-output-escaping="yes">integer</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
 		<xsl:when test="$basic_type='long'"><xsl:text disable-output-escaping="yes">integer4</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
 		<xsl:when test="$basic_type='short'"><xsl:text disable-output-escaping="yes">integer2</xsl:text></xsl:when>
+		<xsl:when test="$basic_type='int64'"><xsl:text disable-output-escaping="yes">integer8</xsl:text></xsl:when>
 		<xsl:when test="$basic_type='bool'"><xsl:text disable-output-escaping="yes">boolean</xsl:text></xsl:when>
 		<xsl:when test="$basic_type='string'"><xsl:text disable-output-escaping="yes">string</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
 		<xsl:when test="$basic_type='double'"><xsl:text disable-output-escaping="yes">real8</xsl:text></xsl:when>

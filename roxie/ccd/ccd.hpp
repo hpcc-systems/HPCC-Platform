@@ -27,6 +27,7 @@
 #include "thorxmlwrite.hpp"
 #include "jlog.hpp"
 #include "jstats.h"
+#include "jset.hpp"
 #include "roxie.hpp"
 #include "roxiedebug.ipp"
 #include "eclrtl.hpp"
@@ -96,6 +97,8 @@ extern unsigned myNodeIndex;
 
 #define SUBCHANNEL_MASK 3
 #define SUBCHANNEL_BITS 2    // allows for up to 7-way redundancy in a 16-bit short retries flag, high bits used for indicators/flags
+#define MAX_SUBCHANNEL  7    // (16-2) / SUBCHANNEL_BITS
+
 //#define TIME_PACKETS
 
 #define ROXIE_FASTLANE      0x8000u         // mask in retries indicating slave reply goes on the fast queue
@@ -190,6 +193,13 @@ public:
     {
         unsigned subChannel = subChannels[channel] - 1;
         return SUBCHANNEL_MASK << (SUBCHANNEL_BITS * subChannel);
+    }
+
+    unsigned getRespondingSubChannel() const // NOTE - 0 based
+    {
+        dbgassertex(retries);
+        unsigned bitpos = countTrailingUnsetBits((unsigned) retries);
+        return bitpos / SUBCHANNEL_BITS;
     }
 
     inline unsigned getSequenceId() const
@@ -521,31 +531,28 @@ public:
         }
     }
 
-    void toXML(StringBuffer &out)
-    {
-        out.append("<Log><Category>").append(getCategoryString(category)).append("</Category>");
-        out.append("<Channel>").append(channel).append("</Channel>");
-        out.append("<Time>").append(time/1000).append('.').appendf("%03d", time % 1000).append("</Time>");
-        if (prefix)
-        {
-            out.append("<Prefix>");
-            encodeXML(prefix, out);
-            out.append("</Prefix>");
-        }
-        if (text)
-        {
-            out.append("<Text>");
-            encodeXML(text, out);
-            out.append("</Text>");
-        }
-        out.append("</Log>\n");
-    }
-
     void outputXML(IXmlStreamFlusher &out)
     {
         StringBuffer b;
-        toXML(b);
+        Owned<IXmlWriterExt> writer = createIXmlWriterExt(0, 0, NULL, WTStandard);
+        writeXML(*writer);
+        b.append(writer->str()); //flush can detach pointer
         out.flushXML(b, true);
+    }
+
+    void writeXML(IXmlWriter &writer)
+    {
+        writer.outputBeginNested("Log", true);
+        writer.outputCString(getCategoryString(category), "Category");
+        writer.outputUInt(channel, sizeof(channel), "Channel");
+        StringBuffer s;
+        s.append(time/1000).append('.').appendf("%03d", time % 1000);
+        writer.outputCString(s, "Time");
+        if (prefix)
+            writer.outputCString(prefix, "Prefix");
+        if (text)
+            writer.outputCString(text, "Text");
+        writer.outputEndNested("Log");
     }
 
 };
@@ -590,6 +597,17 @@ public:
         {
             log.item(idx).outputXML(out);
         }
+    };
+
+    void writeXML(IXmlWriter &writer)
+    {
+        CriticalBlock b(crit);
+        writer.outputBeginArray("Log");
+        ForEachItemIn(idx, log)
+        {
+            log.item(idx).writeXML(writer);
+        }
+        writer.outputEndArray("Log");
     };
 
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const

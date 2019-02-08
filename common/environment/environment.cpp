@@ -922,7 +922,10 @@ class CConstDropZoneInfo : public CConstEnvBase, implements IConstDropZoneInfo
 public:
     IMPLEMENT_IINTERFACE;
     IMPLEMENT_ICONSTENVBASE;
-    CConstDropZoneInfo(CLocalEnvironment *env, IPropertyTree *root) : CConstEnvBase(env, root) {}
+    CConstDropZoneInfo(CLocalEnvironment *env, IPropertyTree *root) : CConstEnvBase(env, root)
+    {
+        getStandardPosixPath(posixPath, root->queryProp("@directory"));
+    }
 
     virtual IStringVal&     getComputerName(IStringVal &str) const
     {
@@ -936,7 +939,7 @@ public:
     }
     virtual IStringVal&     getDirectory(IStringVal &str) const
     {
-        str.set(root->queryProp("@directory"));
+        str.set(posixPath.str());
         return str;
     }
     virtual IStringVal&     getUMask(IStringVal &str) const
@@ -953,6 +956,8 @@ public:
     {
         return new CConstDropZoneServerInfoIterator(this);
     }
+private:
+    StringBuffer posixPath;
 };
 
 #if 0

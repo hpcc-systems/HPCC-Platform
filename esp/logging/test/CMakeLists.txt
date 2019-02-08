@@ -58,6 +58,11 @@ HPCC_ADD_EXECUTABLE ( logging_test ${SRCS} )
 
 target_link_libraries ( logging_test
          jlib
-         securesocket
          loggingmanager
     )
+    
+IF (USE_OPENSSL)
+    target_link_libraries ( logging_test 
+        securesocket
+    )
+ENDIF()

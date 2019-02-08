@@ -184,7 +184,10 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         if (islocal)
+        {
             iLoaderL.setown(createThorRowLoader(*this, ::queryRowInterfaces(queryInput(0)), leftCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN));
+            iLoaderL->setTracingPrefix("Join left");
+        }
         else
         {
             mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
@@ -205,7 +208,15 @@ public:
         {
             secondaryInputIndex = index;
             secondaryInputStream = queryInputStream(secondaryInputIndex);
-            if (!isFastThrough(_input.itdl))
+            if (isFastThrough(_input.itdl))
+            {
+                if (queryInput(index)->isGrouped())
+                {
+                    secondaryInputStream = createUngroupStream(secondaryInputStream);
+                    Owned<IEngineRowStream> old = replaceInputStream(secondaryInputIndex, secondaryInputStream);
+                }
+            }
+            else
             {
                 IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, secondaryInputStream, queryRowInterfaces(_input.itdl), JOIN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(_input.itdl->queryFromActivity()),
                                                             false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
@@ -463,6 +474,7 @@ public:
         else
         {
             Owned<IThorRowLoader> iLoaderR = createThorRowLoader(*this, ::queryRowInterfaces(rightInput), rightCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
+            iLoaderR->setTracingPrefix("Join right");
             rightStream.setown(iLoaderR->load(rightInputStream, abortSoon));
             stopRightInput();
             mergeStats(spillStats, iLoaderR);

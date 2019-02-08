@@ -210,7 +210,6 @@ private:
 
         virtual ~CESDLBindingSubscription()
         {
-            unsubscribe();
         }
 
         void unsubscribe()
@@ -263,7 +262,6 @@ private:
 
         virtual ~CESDLDefinitionSubscription()
         {
-            unsubscribe();
         }
 
         void unsubscribe()
@@ -303,6 +301,8 @@ private:
     Owned<CESDLDefinitionSubscription>      m_pDefinitionSubscription;
     CriticalSection                         configurationLoadCritSec;
     StringBuffer                            m_esdlStateFilesLocation;
+    MapStringTo<SecAccessFlags>             m_accessmap;
+    StringBuffer                            m_staticNamespace;
 
     virtual void clearDESDLState()
     {
@@ -323,8 +323,7 @@ public:
 
     EsdlBindingImpl();
     EsdlBindingImpl(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
-
-    virtual ~EsdlBindingImpl(){}
+    virtual ~EsdlBindingImpl();
 
     virtual int onGet(CHttpRequest* request, CHttpResponse* response);
 
@@ -375,6 +374,7 @@ public:
 
     bool usesESDLDefinition(const char * name, int version);
     bool usesESDLDefinition(const char * id);
+    virtual bool isDynamicBinding() const override { return true; }
 
 private:
     int onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);

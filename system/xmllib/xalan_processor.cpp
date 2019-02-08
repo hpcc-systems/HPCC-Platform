@@ -269,7 +269,7 @@ CXslProcessor::~CXslProcessor()
 {
 }
 
-IXslTransform *CXslProcessor::createXslTransform()
+IXslTransform *CXslProcessor::createXslTransform(IPropertyTree *cfg)
 {
     return new CXslTransform(inch.get());
 }

@@ -3578,6 +3578,7 @@ public:
             lhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this, "LHS"));
         Owned<IRowStream> reader = lhsDistributor->connect(queryRowInterfaces(inL), leftInputStream, ihashL, icompareL);
         Owned<IThorRowLoader> loaderL = createThorRowLoader(*this, ::queryRowInterfaces(inL), icompareL, stableSort_earlyAlloc, rc_allDisk, SPILL_PRIORITY_HASHJOIN);
+        loaderL->setTracingPrefix("Join left");
         strmL.setown(loaderL->load(reader, abortSoon));
         loaderL.clear();
         reader.clear();
@@ -3589,6 +3590,7 @@ public:
             rhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), mptag2, false, this, "RHS"));
         reader.setown(rhsDistributor->connect(queryRowInterfaces(inR), rightInputStream, ihashR, icompareR));
         Owned<IThorRowLoader> loaderR = createThorRowLoader(*this, ::queryRowInterfaces(inR), icompareR, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_HASHJOIN);;
+        loaderL->setTracingPrefix("Join right");
         strmR.setown(loaderR->load(reader, abortSoon));
         loaderR.clear();
         reader.clear();
@@ -4132,7 +4134,11 @@ public:
         ActPrintLog("HASHAGGREGATE: stopping");
         if (localAggTable)
             localAggTable->reset();
-        aggregateStream.clear();
+        if (aggregateStream)
+        {
+            aggregateStream->stop();
+            aggregateStream.clear();
+        }
         PARENT::stop();
     }
     virtual void abort() override

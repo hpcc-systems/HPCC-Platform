@@ -4009,7 +4009,7 @@ protected:
             c++;
         }
     }
-    void error(const char *msg=NULL, bool giveContext=true, PTreeReadExcptCode code=PTreeRead_syntax)
+    void error(const char *msg=NULL, bool giveContext=true, PTreeReadExcptCode code=PTreeRead_syntax)  __attribute__((noreturn))
     {
         StringBuffer context;
         if (giveContext)
@@ -7312,6 +7312,13 @@ static void ensureHttpParameter(IPropertyTree *pt, StringBuffer &tag, const char
         idx = (unsigned) atoi(pos.str())+1;
     }
 
+    if ('@'==*tag)
+    {
+        if (path && *path)
+            throw MakeStringException(-1, "'@' not allowed in parent node of parameter path: %s", fullpath);
+        pt->setProp(tag, value);
+        return;
+    }
     if (tag.charAt(tag.length()-1)=='$')
     {
         if (path && *path)

@@ -408,7 +408,7 @@ protected:
 
 };
 
-enum class AdaptiveRoot {NamedArray, RootArray, FirstRow};
+enum class AdaptiveRoot {NamedArray, RootArray, ExtendArray, FirstRow};
 
 class AdaptiveRESTJsonWriter : public CommonJsonWriter
 {
@@ -432,7 +432,7 @@ public:
     {
         arrays.pop();
         checkFormat(false, true, -1);
-        if (arrays.length() || model != AdaptiveRoot::FirstRow)
+        if (arrays.length() || (model != AdaptiveRoot::FirstRow && model != AdaptiveRoot::ExtendArray))
             out.append(']');
         const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
         while (sep)
@@ -543,7 +543,7 @@ public:
     inline void setTagName(const char *tag){tagName.set(tag);}
     inline void setOnlyUseFirstRow(){onlyUseFirstRow = true;}
     inline void setResultFilter(const char *_resultFilter){resultFilter.set(_resultFilter);}
-    virtual FlushingStringBuffer *queryResult(unsigned sequence)
+    virtual FlushingStringBuffer *queryResult(unsigned sequence, bool extend=false)
     {
         CriticalBlock procedure(resultsCrit);
         while (!resultMap.isItem(sequence))
@@ -552,7 +552,7 @@ public:
         if (!result)
         {
             if (mlFmt==MarkupFmt_JSON)
-                result = new FlushingJsonBuffer(client, isBlocked, isHTTP, logctx);
+                result = new FlushingJsonBuffer(client, isBlocked, isHTTP, logctx, extend);
             else
                 result = new FlushingStringBuffer(client, isBlocked, mlFmt, isRaw, isHTTP, logctx);
             result->isSoap = isHTTP;
@@ -576,7 +576,7 @@ public:
     }
     virtual IXmlWriter *addDataset(const char *name, unsigned sequence, const char *elementName, bool &appendRawData, unsigned writeFlags, bool _extend, const IProperties *xmlns)
     {
-        FlushingStringBuffer *response = queryResult(sequence);
+        FlushingStringBuffer *response = queryResult(sequence, _extend);
         if (response)
         {
             appendRawData = response->isRaw;
@@ -592,7 +592,7 @@ public:
             {
                 if (response->mlFmt==MarkupFmt_JSON)
                     writeFlags |= XWFnoindent;
-                AdaptiveRoot rootType = AdaptiveRoot::NamedArray;
+                AdaptiveRoot rootType = AdaptiveRoot::ExtendArray;
                 if (adaptive)
                 {
                     if (onlyUseFirstRow)
@@ -831,9 +831,8 @@ public:
                 result->flush(true);
         }
     }
-    virtual void finalize(unsigned seqNo, const char *delim, const char *filter)
+    virtual void finalize(unsigned seqNo, const char *delim, const char *filter, bool *needDelimiter)
     {
-        bool needDelimiter = false;
         ForEachItemIn(seq, resultMap)
         {
             FlushingStringBuffer *result = resultMap.item(seq);
@@ -846,17 +845,17 @@ public:
                     void *payload = result->getPayload(length);
                     if (!length)
                         break;
-                    if (needDelimiter)
+                    if (needDelimiter && *needDelimiter)
                     {
                         StringAttr s(delim); //write() will take ownership of buffer
                         size32_t len = s.length();
                         client->write((void *)s.detach(), len, true);
-                        needDelimiter=false;
+                        *needDelimiter=false;
                     }
                     client->write(payload, length, true);
                 }
-                if (delim)
-                    needDelimiter=true;
+                if (delim && needDelimiter)
+                    *needDelimiter=true;
             }
         }
     }
@@ -1126,6 +1125,8 @@ public:
 
 class CHpccJsonResponse : public CHpccNativeProtocolResponse
 {
+private:
+    bool needDelimiter = false;
 public:
     CHpccJsonResponse(const char *queryname, SafeSocket *_client, unsigned flags, bool _isHttp, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_resultFilter, const char *_rootTag) :
         CHpccNativeProtocolResponse(queryname, _client, MarkupFmt_JSON, flags, _isHttp, _logctx, _xmlReadFlags, _resultFilter, _rootTag)
@@ -1172,7 +1173,6 @@ public:
     }
     void outputContent()
     {
-        bool needDelimiter = false;
         ForEachItemIn(seq, contentsMap)
         {
             FlushingStringBuffer *content = contentsMap.item(seq);
@@ -1222,10 +1222,10 @@ public:
             unsigned len = responseHead.length();
             client->write(responseHead.detach(), len, true);
         }
+        if (results)
+            results->finalize(seqNo, ",", resultFilter.ordinality() ? resultFilter.item(0) : NULL, &needDelimiter);
         if (!resultFilter.ordinality())
             outputContent();
-        if (results)
-            results->finalize(seqNo, ",", resultFilter.ordinality() ? resultFilter.item(0) : NULL);
         if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
             responseTail.append("}}");
@@ -1288,7 +1288,6 @@ public:
     }
     void outputContent()
     {
-        bool needDelimiter = false;
         ForEachItemIn(seq, contentsMap)
         {
             FlushingStringBuffer *content = contentsMap.item(seq);
@@ -1328,10 +1327,10 @@ public:
             client->write(responseHead.detach(), len, true);
         }
 
+        if (results)
+            results->finalize(seqNo, NULL, resultFilter.ordinality() ? resultFilter.item(0) : NULL, nullptr);
         if (!resultFilter.ordinality())
             outputContent();
-        if (results)
-            results->finalize(seqNo, NULL, resultFilter.ordinality() ? resultFilter.item(0) : NULL);
 
         if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
@@ -1935,6 +1934,9 @@ readAnother:
                                 fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
                             }
                             requestArray.append(*fixedreq);
+
+                            msgctx->setIntercept(queryPT->getPropBool("@log", false));
+                            msgctx->setTraceLevel(queryPT->getPropInt("@traceLevel", logctx.queryTraceLevel()));
                         }
                         if (httpHelper.getTrim())
                             protocolFlags |= HPCC_PROTOCOL_TRIM;

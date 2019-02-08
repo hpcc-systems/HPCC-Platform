@@ -30,8 +30,8 @@ class CFirstNSlaveBase : public CSlaveActivity
     typedef CSlaveActivity PARENT;
 
 protected:
-    rowcount_t limit, skipCount;
-    bool stopped;
+    rowcount_t limit = RCUNBOUND, skipCount = 0;
+    bool stopped = true;
     IHThorFirstNArg *helper;
 
 public:
@@ -40,6 +40,11 @@ public:
         stopped = true;
         helper = (IHThorFirstNArg *)container.queryHelper();
         appendOutputLinked(this);
+    }
+    void doStopInput()
+    {
+        stopInput(0);
+        abortSoon = true;
     }
     virtual void start() override
     {
@@ -69,8 +74,8 @@ class CFirstNSlaveLocal : public CFirstNSlaveBase
 {
     typedef CFirstNSlaveBase PARENT;
 
-    bool firstget;
-    rowcount_t skipped;
+    bool firstget = true;
+    rowcount_t skipped = 0;
 public:
     CFirstNSlaveLocal(CGraphElementBase *_container) : CFirstNSlaveBase(_container)
     {
@@ -100,7 +105,7 @@ public:
                     OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                     {
-                        stopInput(0);
+                        doStopInput();
                         return NULL;
                     }
                     skipped++;
@@ -115,7 +120,7 @@ public:
                     return row.getClear();
                 }
             }
-            stopInput(0); // NB: really whatever is pulling, should stop asap.
+            doStopInput(); // NB: really whatever is pulling, should stop asap.
         }
         return NULL;
     }
@@ -125,7 +130,7 @@ class CFirstNSlaveGrouped : public CFirstNSlaveBase
 {
     typedef CFirstNSlaveBase PARENT;
 
-    unsigned countThisGroup;
+    unsigned countThisGroup = 0;
 public:
     CFirstNSlaveGrouped(CGraphElementBase *_container) : CFirstNSlaveBase(_container)
     {
@@ -160,7 +165,7 @@ public:
                         {
                             if (0 == skipped)
                             {
-                                stopInput(0);
+                                doStopInput();
                                 return NULL;
                             }
                             skipped = 0; // reset, skip group
@@ -179,7 +184,7 @@ public:
                     }
                     else if (0 == countThisGroup && 0==skipCount)
                     {
-                        stopInput(0);
+                        doStopInput();
                         return NULL;
                     }
                 }
@@ -207,11 +212,31 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
 
     Semaphore limitgot;
     CriticalSection crit;
-    rowcount_t maxres, skipped, totallimit;
-    bool firstget;
+    rowcount_t maxres = RCUNBOUND, skipped = 0, totallimit = RCUNBOUND;
+    bool firstget = true;
     ThorDataLinkMetaInfo inputMeta;
     Owned<IEngineRowStream> originalInputStream;
 
+    void sendOnce(rowcount_t count)
+    {
+        {
+            CriticalBlock b(crit);
+            if (RCUNBOUND != maxres) // already set and sent
+                return;
+            maxres = count;
+        }
+        sendCount();
+    }
+    void ensureSendCount()
+    {
+        if (hasStarted() && isFastThrough(input)) // i.e. if fast through there is no readahead
+            sendOnce(getDataLinkCount() + skipped);
+    }
+    void doStopInput()
+    {
+        ensureSendCount();
+        PARENT::doStopInput();
+    }
 public:
     CFirstNSlaveGlobal(CGraphElementBase *container) : CFirstNSlaveBase(container)
     {
@@ -243,6 +268,7 @@ public:
     }
     virtual void stop() override
     {
+        ensureSendCount();
         PARENT::stop();
         if (originalInputStream)
         {
@@ -272,14 +298,7 @@ public:
             if (limit+skipCount<r)
                 r = limit+skipCount;
             // sneaky short circuit
-            {
-                CriticalBlock b(crit);
-                if (RCUNBOUND == maxres)
-                {
-                    maxres = r;
-                    sendCount();
-                }
-            }
+            sendOnce(r);
         }
         ActPrintLog("FIRSTN: Record limit is %" RCPF "d %" RCPF "d", limit, skipCount); 
         return true;
@@ -333,7 +352,7 @@ public:
                     OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                     {
-                        stopInput(0);
+                        doStopInput();
                         return NULL;
                     }
                     skipped++;
@@ -348,7 +367,7 @@ public:
                     return row.getClear();
                 }
             }
-            stopInput(0); // NB: really whatever is pulling, should stop asap.
+            doStopInput(); // NB: really whatever is pulling, should stop asap.
         }
         return NULL;
     }
@@ -362,13 +381,7 @@ public:
 // ILookAheadStopNotify
     virtual void onInputFinished(rowcount_t count) override // count is the total read from input (including skipped)
     {
-        // sneaky short circuit
-        {
-            CriticalBlock b(crit);
-            if (RCUNBOUND != maxres) return;
-            maxres = count;
-            sendCount();
-        }
+        sendOnce(count);
         ActPrintLog("FIRSTN: maximum row count %" RCPF "d", count);
     }
 };

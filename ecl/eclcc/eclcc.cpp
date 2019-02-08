@@ -1203,9 +1203,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             else
             {
                 Owned<IHqlScope> scope = createPrivateScope();
-                if (instance.legacyImport)
-                    importRootModulesToScope(scope, ctx);
-
                 instance.query.setown(parseQuery(scope, queryContents, ctx, NULL, NULL, true, true));
 
                 if (instance.archive)
@@ -1704,7 +1701,7 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                 if (optCheckDirty)
                 {
                     Owned<IPipeProcess> pipe = createPipeProcess();
-                    if (!pipe->run("git", "git describe --tags --dirty --long", ".", false, true, false, 0, false))
+                    if (!pipe->run("git", "git describe --always --tags --dirty --long", ".", false, true, false, 0, false))
                     {
                         WARNLOG("Failed to run git describe");
                     }
@@ -1863,7 +1860,7 @@ static void checkForOverlappingPaths(const char * path)
         if (hasPrefix(next, prev, filenamesAreCaseSensitive))
         {
             if (!streq(next, prev))
-                throw MakeStringException(99, "Include paths -I '%s' and '%s' overlap", prev, next);
+                fprintf(stderr, "Warning: Include paths -I '%s' and '%s' overlap\n", prev, next);
         }
     }
 }

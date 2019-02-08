@@ -240,6 +240,7 @@
 #define ERR_STRING_UNENDED          2195  /* Unended string constant: string must end in one line */
 #define ERR_STRING_ILLDELIMITER     2196  /* " is illegal string delimiter: use ' instead */
 #define ERR_IFBLOCK_EMPTYDEF        2197  /* Empty ifblock definition */
+#define ERR_CONCRETE_RECORD         2198  /* Requires a real record definition */
 
 /* hash commands */
 #define ERR_TMPLT_EOFINFOR          2200 /* EOF encountered inside #FOR */

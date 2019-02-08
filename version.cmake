@@ -1,11 +1,10 @@
 ###
-## Version Information
+##  Version Information
 ###
 set ( HPCC_PROJECT "community" )
 set ( HPCC_MAJOR 6 )
-
 set ( HPCC_MINOR 4 )
-set ( HPCC_POINT 1 )
-set ( HPCC_MATURITY "documentation" )
-set ( HPCC_SEQUENCE 0 )
+set ( HPCC_POINT 34 )
+set ( HPCC_MATURITY "rc" )
+set ( HPCC_SEQUENCE 1 )
 ###

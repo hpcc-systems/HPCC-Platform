@@ -71,7 +71,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
 void initMetaInfo(ThorDataLinkMetaInfo &info);
 void calcMetaInfoSize(ThorDataLinkMetaInfo &info, IThorDataLink *link);
 void calcMetaInfoSize(ThorDataLinkMetaInfo &info, CThorInputArray &inputs);
-void calcMetaInfoSize(ThorDataLinkMetaInfo &info, ThorDataLinkMetaInfo *infos, unsigned num);
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, const ThorDataLinkMetaInfo *infos, unsigned num);
 
 interface ILookAheadStopNotify
 {

@@ -128,7 +128,17 @@ IPropertyTree * fetchESDLBindingFromDali(const char *process, const char *bindin
         //There shouldn't be multiple entries here, but if so, we'll use the first one
         VStringBuffer xpath("%s[@id='%s.%s'][1]", ESDL_BINDING_ENTRY, process, bindingName);
 
-        return esdlBindings->getPropTree(xpath);
+        if (conn->queryRoot()->hasProp(xpath))
+            return createPTreeFromIPT(conn->queryRoot()->queryPropTree(xpath));
+        else
+            return nullptr;
+
+    }
+    catch (IException *E)
+    {
+        VStringBuffer message("ESDL Binding: Error fetching ESDL Binding %s[@EspProcess='%s'][@EspBinding='%s'][1] from Dali.", ESDL_BINDING_ENTRY, process, bindingName);
+        EXCLOG(E, message);
+        E->Release();
     }
     catch(...)
     {
@@ -432,10 +442,22 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
     entry.setProp("@prot", protocol);
     entry.setProp("@path", path);
 
-    Owned<ISmartSocketFactory> sf = createSmartSocketFactory(iplist, true);
+    try
+    {
+        Owned<ISmartSocketFactory> sf = createSmartSocketFactory(iplist, true);
 
-    connMap.remove(method);
-    connMap.setValue(method, sf.getClear());
+        connMap.remove(method);
+        connMap.setValue(method, sf.getClear());
+    }
+    catch(IException* ie)
+    {
+        ESPLOG(LogMin,"DESDL: Error while setting up connection for method \"%s\" verify its configuration.", method);
+        StringBuffer msg;
+        ie->errorMessage(msg);
+        ESPLOG(LogMin,"%s",msg.str());
+        connMap.remove(method);
+        ie->Release();
+    }
 }
 
 void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
@@ -528,6 +550,25 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 {
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue(LogMin, "method", mthName);
+
+    MapStringTo<SecAccessFlags>&  methaccessmap = const_cast<MapStringTo<SecAccessFlags>&>(mthdef.queryAccessMap());
+    if (methaccessmap.ordinality() > 0)
+    {
+        if (!context.validateFeaturesAccess(methaccessmap, false))
+        {
+            StringBuffer features;
+            HashIterator iter(methaccessmap);
+            int index = 0;
+            ForEach(iter)
+            {
+                IMapping &cur = iter.query();
+                const char * key = (const char *)cur.getKey();
+                features.appendf("%s%s:%s", (index++ == 0 ? "" : ", "), key, getSecAccessFlagName(*methaccessmap.getValue(key)));
+            }
+            const char * user = context.queryUserId();
+            throw MakeStringException(-1, "%s::%s access denied for user '%s' - Method requires: '%s'.", srvdef.queryName(), mthName, (user && *user) ? user : "Anonymous", features.str());
+        }
+    }
 
     StringBuffer trxid;
     if (!m_bGenerateLocalTrxId)
@@ -1118,6 +1159,14 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
     }
 }
 
+EsdlBindingImpl::~EsdlBindingImpl()
+{
+    if(m_pBindingSubscription != nullptr)
+        m_pBindingSubscription->unsubscribe();
+    if(m_pDefinitionSubscription != nullptr)
+        m_pDefinitionSubscription->unsubscribe();
+}
+
 void EsdlBindingImpl::saveDESDLState()
 {
     try
@@ -1293,6 +1342,8 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
             m_defaultSvcVersion.set(verstr);
     }
 
+    m_staticNamespace.set(srvdef.queryStaticNamespace());
+
     //superclass binding sets up wsdladdress
     //setWsdlAddress(bndcfg->queryProp("@wsdlServiceAddress"));
 
@@ -1390,6 +1441,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
 
                     StringBuffer ns, schemaLocation;
                     generateNamespace(context, request, srvdef->queryName(), mthdef->queryName(), ns);
+
                     getSchemaLocation(context, request, schemaLocation);
                     m_pESDLService->handleServiceRequest(context, *srvdef, *mthdef, tgtcfg, tgtctx, ns.str(), schemaLocation.str(), req_pt.get(), out, logdata, 0);
 
@@ -1696,6 +1748,9 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
 
 StringBuffer & EsdlBindingImpl::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char * method, StringBuffer & ns)
 {
+    if (!m_staticNamespace.isEmpty())
+        return ns.set(m_staticNamespace);
+
     if (m_pESDLService->m_serviceNameSpaceBase.length()>0)
     {
         ns.appendf("%s%c%s", m_pESDLService->m_serviceNameSpaceBase.str(), m_pESDLService->m_usesURLNameSpace ? '/' : ':', serv);
@@ -2190,11 +2245,6 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
 
     try
     {
-        //RODRIGO... is there any feature level check to be done here?
-        //maybe a dynamic feature level string based on servicename?
-        //if (!ctx->validateFeatureAccess("WSECL_ACCESS", SecAccess_Full, false))
-        //    throw MakeStringException(-1, "WsEcl access permission denied.");
-
         const char * methodName = request->queryServiceMethod();
         const char * serviceName = request->queryServiceName();
 

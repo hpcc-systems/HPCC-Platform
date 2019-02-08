@@ -1087,6 +1087,13 @@ public:
             tags = p->next;
             delete p;
         }
+
+        if (name_)
+           free(name_);
+        if (request_)
+           free(request_);
+        if (response_)
+           free(response_);
     }
 
     const char *getName(){return name_;}
@@ -1164,6 +1171,13 @@ public:
         tags=NULL;
         next=NULL;
     }
+    ~EspMountInfo()
+    {
+       if (name_)
+          free(name_);
+       if (localPath_)
+          free(localPath_);
+    }
 
     const char *getName(){return name_;}
     void setName(const char *name)
@@ -1217,6 +1231,12 @@ public:
         name_ =strdup(name);
         tags=NULL;
         next=NULL;
+    }
+
+    ~EspStructInfo()
+    {
+       if (name_)
+          free(name_);
     }
 
     const char *getName(){return name_;}
@@ -1340,7 +1360,7 @@ public:
 class esdlcomp_decl ESDLcompiler
 {
 public:
-    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes, bool includedEsdl);
+    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes, bool includedEsdl, const char* includePath);
     ~ESDLcompiler();
 
     void Process();
@@ -1370,6 +1390,8 @@ private:
     char* packagename;
     StringBuffer srcDir;
     StringBuffer esxdlcontent;
+    StringArray includeDirs;
+    bool locateIncludedFile(StringBuffer& filepath, const char* prot, const char* srcDir, const char* fname, const char* ext);
 
 public:
     static CriticalSection m_critSect;

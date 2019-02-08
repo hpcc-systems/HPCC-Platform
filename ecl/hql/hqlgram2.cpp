@@ -900,6 +900,16 @@ IHqlExpression * HqlGram::convertToOutOfLineFunction(const ECLlocation & errpos,
     return LINK(expr);
 }
 
+IHqlExpression * HqlGram::convertToInlineFunction(const ECLlocation & errpos, IHqlExpression  * expr)
+{
+    if (expr->getOperator() != no_inline)
+    {
+        if (queryParametered())
+            return createWrapper(no_inline, LINK(expr));
+    }
+    return LINK(expr);
+}
+
 IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpression * embedText, IHqlExpression * language, IHqlExpression *attribs)
 {
     HqlExprArray args;
@@ -1748,7 +1758,8 @@ IHqlExpression * HqlGram::forceEnsureExprType(IHqlExpression * expr, ITypeInfo *
 {
     //Ensure the no_outofline remains the top most node.  I suspect this casting should occur much earlier
     //or the out of line node should be added much later.
-    if (expr->getOperator() == no_outofline)
+    node_operator op = expr->getOperator();
+    if ((op == no_outofline) || (op == no_inline))
     {
         HqlExprArray args;
         args.append(*forceEnsureExprType(expr->queryChild(0), type));
@@ -3513,6 +3524,13 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
 #endif
     if (expectedUnknownId)
         return NULL;
+
+    if (globalImportPending)
+    {
+        if (lexObject->hasLegacyImportSemantics())
+            importRootModulesToScope(globalScope, lookupCtx);
+        globalImportPending = false;
+    }
 
     //Check periodically if parsing a referenced identifier has caused the compile to abort.
     checkAborting();//NOTE: checkAborting() checks whether the parseContext is aborting and implicitly propagates this state, thus consistently triggering the parser to abort.
@@ -6824,7 +6842,7 @@ void HqlGram::addActiveParameterOwn(const attribute & errpos, IHqlExpression * p
     {
         IHqlExpression & cur = activeScope.activeParameters.item(idx);
         if (cur.queryName() == param->queryName())
-            reportError(ERR_PARAM_NOTUNIQUE, errpos, "Parameter name '%s' is not unique", str(param->queryName()));
+            reportWarning(CategoryMistake, ERR_PARAM_NOTUNIQUE, errpos.pos, "Parameter name '%s' is not unique", str(param->queryName()));
     }
     activeScope.activeParameters.append(*param);
     activeScope.activeDefaults.append(*ensureNormalizedDefaultValue(defaultValue));
@@ -7581,6 +7599,21 @@ static void unwindExtraFields(HqlExprArray & fields, IHqlExpression * expr)
     }
 }
 
+
+void HqlGram::checkConcreteRecord(attribute & cur)
+{
+    IHqlExpression * record = cur.queryExpr();
+    if (record->getOperator() != no_record)
+    {
+        OwnedHqlExpr bad = cur.getExpr();
+        if (!bad->isFullyBound())
+            reportError(ERR_CONCRETE_RECORD, cur, "Record cannot contain unresolved function calls");
+        else
+            reportError(ERR_CONCRETE_RECORD, cur, "Expected a concrete record");
+
+        cur.setExpr(LINK(bad->queryRecord()));
+    }
+}
 
 IHqlExpression * HqlGram::createRecordUnion(IHqlExpression * left, IHqlExpression * right, const attribute & errpos)
 {
@@ -10567,7 +10600,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     const char * parentName = str(parent->queryId());
     if (name == _container_Atom)
     {
-        const char * containerName = str(parent->queryFullContainerId());
+        const char * containerName = str(parent->queryBody()->queryFullContainerId());
         //This is a bit ugly - remove the last qualified module, and resolve the name again.  A more "correct" method
         //saving container pointers hit problems because remote scopes within CHqlMergedScope containers have a remote
         //scope as the parent, rather than the merged scope...
@@ -12057,6 +12090,9 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
             ctx.noteBeginQuery(scope, contents);
 
         HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
+        if (isRoot)
+            parser.setPendingGlobalImport(true);
+
         parser.setQuery(true);
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);

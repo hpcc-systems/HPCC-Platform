@@ -49,6 +49,8 @@ void usage()
         "--udpLocalWriteSocketSize nn\n"
         "--udpRetryBusySenders nn\n"
         "--maxPacketsPerSender nn\n"
+        "--udpQueueSize nn\n"
+        "--udpRTSTimeout nn\n"
         "--udpSnifferEnabled 0|1\n"     
         "--udpTraceCategories nn\n"
         "--udpTraceLevel nn\n"
@@ -257,11 +259,6 @@ public:
                     received[i] = 0;
                 }
                 receivedTotal = 0;
-                unsigned retried = atomic_read(&packetsRetried);
-                atomic_set(&packetsRetried, 0);
-                unsigned abandoned = atomic_read(&packetsAbandoned);
-                atomic_set(&packetsAbandoned, 0);
-                DBGLOG("%u packets resent %u packets abandoned", retried, abandoned);
             }
         }
         {
@@ -280,7 +277,7 @@ void testNxN()
 {
     if (maxPacketsPerSender > udpQueueSize)
         maxPacketsPerSender = udpQueueSize;
-    Owned <ISendManager> sendMgr = createSendManager(7000, 7001, 7002, 7003, multicastIP, 100, udpNumQs, maxPacketsPerSender, NULL, myIndex);
+    Owned <ISendManager> sendMgr = createSendManager(7000, 7001, 7002, 7003, multicastIP, 100, udpNumQs, NULL, myIndex);
     Receiver receiver;
 
     IMessagePacker **packers = new IMessagePacker *[numNodes];
@@ -621,6 +618,7 @@ int main(int argc, char * argv[] )
     DBGLOG("%s",cmdline.str());
 //  queryLogMsgManager()->enterQueueingMode();
 //  queryLogMsgManager()->setQueueDroppingLimit(512, 32);
+    udpRequestToSendTimeout = 5000;
     for (c = 1; c < argc; c++)
     {
         const char *ip = argv[c];
@@ -633,6 +631,13 @@ int main(int argc, char * argv[] )
                 if (c==argc || !isdigit(*argv[c]))
                     usage();
                 udpQueueSize = atoi(argv[c]);
+            }
+            if (strcmp(ip, "--udpRTSTimeout")==0)
+            {
+                c++;
+                if (c==argc || !isdigit(*argv[c]))
+                    usage();
+                udpRequestToSendTimeout = atoi(argv[c]);
             }
             else if (strcmp(ip, "--jumboFrames")==0)
             {

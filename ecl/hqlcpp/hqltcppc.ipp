@@ -119,6 +119,7 @@ protected:
     void doBuildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IHqlExpression * boundSize);
     void doBuildSkipInput(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper, size32_t size);
     void checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * newLength, unsigned fixedExtra);
+    void checkConditionalAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, size32_t fixedSize);
     void defaultSetColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
     void ensureTargetAvailable(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, size32_t thisSize);
     IHqlExpression * createSelfPeekDeserializer(HqlCppTranslator & translator, IHqlExpression * helper);
@@ -242,6 +243,7 @@ public:
 
 //AColumnInfo
     virtual void buildAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target);
+    virtual void buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, int direction);
     virtual void buildExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
     virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);

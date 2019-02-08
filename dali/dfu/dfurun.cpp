@@ -1028,6 +1028,8 @@ public:
              foreignuserdesc.setown(createUserDescriptor());
              foreignuserdesc->set(fu.str(),fp.str());
         }
+        else
+            foreignuserdesc.set(userdesc);
         StringBuffer srcname;
         source->getLogicalName(srcname);
         if (!srcname.length())
@@ -1211,6 +1213,8 @@ public:
                                  foreignuserdesc.setown(createUserDescriptor());
                                  foreignuserdesc->set(fu.str(),fp.str());
                             }
+                            else
+                                foreignuserdesc.set(userdesc);
                         }
                     }
                     if (foreigncopy) {
@@ -1602,8 +1606,9 @@ public:
                         if (needrep)
                             feedback.repmode=cProgressReporter::REPbefore;
                         fsys.import(fdesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
-                        if (!abortnotify.abortRequested()) {
-                            if (needrep)
+                        if (!abortnotify.abortRequested())
+                        {
+                            if (needrep && !recovery->getPropBool("@noFileMatch"))
                                 replicating = true;
                             else
                                 dstFile->attach(dstName.get(), userdesc);

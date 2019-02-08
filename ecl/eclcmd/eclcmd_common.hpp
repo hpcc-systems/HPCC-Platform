@@ -170,6 +170,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_CHECKDIRTY "-checkDirty"
 #define ECLOPT_DEBUG "--debug"
 #define ECLOPT_DEBUG_DASH "-g"
+#define ECLOPT_FAST_SYNTAX "--fastsyntax"
+#define ECLOPT_NO_STD_INC "--nostdinc"
 
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
@@ -184,7 +186,7 @@ bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char 
 bool extractEclCmdOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval);
 bool extractEclCmdOption(unsigned & option, IProperties * globals, const char * envName, const char * propertyName, unsigned defval);
 
-bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
+bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values, bool expandEclccOptions);
 void addNamedValue(const char * name, const char * value, IArrayOf<IEspNamedValue> &values);
 
 enum eclObjParameterType
@@ -278,7 +280,9 @@ public:
             "   --snapshot,-sn=<label> Snapshot label to use from legacy ECL repository\n"
             "   --ecl-only             Send ECL query to HPCC as text rather than as a generated archive\n"
             "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
-            "   -f<option>[=value]     Set an ECL option (equivalent to #option)\n"
+            "   -f<option>[=value]     Set an ECL language option (equivalent to #option)\n"
+            "   -f-<option>[=value]    Set an eclcc command line option (single '-')\n"
+            "   -f--<option>[=value]   Set an eclcc command line option (double '-')\n"
             "   -Dname=value           Override the definition of a global attribute 'name'\n"
             " eclcc options (everything following):\n"
         );
@@ -323,6 +327,8 @@ public:
     bool optLegacy;
     bool optDebug;
     bool optCheckDirty;
+    bool optFastSyntax = false;
+    bool optNoStdInc = false;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon

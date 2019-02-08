@@ -374,7 +374,7 @@ void calcMetaInfoSize(ThorDataLinkMetaInfo &info, CThorInputArray &inputs)
         info.totalRowsMin = 0; // a good bet
 }
 
-void calcMetaInfoSize(ThorDataLinkMetaInfo &info, ThorDataLinkMetaInfo *infos, unsigned num)
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, const ThorDataLinkMetaInfo *infos, unsigned num)
 {
     if (!infos||(num<=1))
     {
@@ -386,24 +386,29 @@ void calcMetaInfoSize(ThorDataLinkMetaInfo &info, ThorDataLinkMetaInfo *infos, u
     {
         __int64 min=0;
         __int64 max=0;
-        for (unsigned i=0;i<num;i++ )
+        for (unsigned i=0; i<num; i++)
         {
-            ThorDataLinkMetaInfo &prev = infos[i];
+            const ThorDataLinkMetaInfo &currentInfo = infos[i];
             if (min>=0)
             {
-                if (prev.totalRowsMin>=0)
-                    min += prev.totalRowsMin;
+                if (currentInfo.totalRowsMin>=0)
+                    min += currentInfo.totalRowsMin;
                 else
                     min = -1;
             }
             if (max>=0)
             {
-                if (prev.totalRowsMax>=0)
-                    max += prev.totalRowsMax;
+                if (currentInfo.totalRowsMax>=0)
+                    max += currentInfo.totalRowsMax;
                 else
                     max = -1;
             }
+            if (0 == i)
+                info.fastThrough = currentInfo.fastThrough;
+            else if (info.fastThrough && !currentInfo.fastThrough) // i.e. if was true and this one is false, set return fastThrough to false
+                info.fastThrough = false;
         }
+
         if (info.totalRowsMin<=0)
         {
             if (!info.canReduceNumRows)

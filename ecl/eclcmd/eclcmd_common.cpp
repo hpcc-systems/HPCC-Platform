@@ -441,11 +441,15 @@ public:
 
     void appendOptPath(StringBuffer &cmdLine, const char opt, const char *path)
     {
-        if (!path || !*path)
+        if (!path)
             return;
-        if (*path==';')
+        while (*path==ENVSEPCHAR)
             path++;
-        cmdLine.append(" -").append(opt).append(path);
+        if (!*path)
+            return;
+        cmdLine.append(" \"-").append(opt); //quote perfore opt, pipeprocess will build full argv without quotes
+        cmdLine.append(path);
+        cmdLine.append('"');
     }
 
     void buildCmd(StringBuffer &cmdLine)
@@ -456,6 +460,10 @@ public:
             cmdLine.append(" -legacy");
         if (cmd.optCheckDirty)
             cmdLine.append(" -checkDirty");
+        if (cmd.optFastSyntax)
+            cmdLine.append(" --fastsyntax");
+        if (cmd.optNoStdInc)
+            cmdLine.append(" --nostdinc");
         if (cmd.optDebug)
             cmdLine.append(" -g");
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
@@ -484,7 +492,10 @@ public:
                 const char *name = item.getName();
                 const char *value = item.getValue();
                 cmdLine.append(' ');
-                if (!name || name[0]!='-')
+
+                if (name && 0==strncmp(name, "eclcc", 5))
+                    name+=5;
+                else
                     cmdLine.append("-f");
                 cmdLine.append(name);
                 if (value)
@@ -619,12 +630,18 @@ void addNamedValue(const char * arg, IArrayOf<IEspNamedValue> &values)
     }
 }
 
-bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values)
+bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values, bool expandEclccOptions)
 {
     const char *arg = iter.query();
     if (*arg++!='-' || *arg++!=prefix || !*arg)
         return false;
-    addNamedValue(arg, values);
+    if (expandEclccOptions && *arg=='-')
+    {
+        VStringBuffer expanded("eclcc%s", arg);
+        addNamedValue(expanded, values);
+    }
+    else
+        addNamedValue(arg, values);
     return true;
 }
 
@@ -669,9 +686,9 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
             return EclCmdOptionCompletion;
         return EclCmdOptionMatch;
     }
-    if (matchVariableOption(iter, 'f', debugValues))
+    if (matchVariableOption(iter, 'f', debugValues, true))
         return EclCmdOptionMatch;
-    if (matchVariableOption(iter, 'D', definitions))
+    if (matchVariableOption(iter, 'D', definitions, false))
         return EclCmdOptionMatch;
     if (iter.matchPathFlag(optLibPath, ECLOPT_LIB_PATH_S))
         return EclCmdOptionMatch;
@@ -688,6 +705,10 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     if (iter.matchFlag(optLegacy, ECLOPT_LEGACY) || iter.matchFlag(optLegacy, ECLOPT_LEGACY_DASH))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optCheckDirty, ECLOPT_CHECKDIRTY))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optFastSyntax, ECLOPT_FAST_SYNTAX))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optNoStdInc, ECLOPT_NO_STD_INC))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optDebug, ECLOPT_DEBUG) || iter.matchFlag(optDebug, ECLOPT_DEBUG_DASH))
         return EclCmdOptionMatch;

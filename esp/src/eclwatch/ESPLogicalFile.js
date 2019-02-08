@@ -221,7 +221,8 @@ define([
                         arrayUtil.forEach(DFUFilePartsOnCluster.DFUFileParts.DFUPart, function (DFUPart, idx) {
                             DFUFileParts.DFUPart.push(lang.mixin({
                                 __hpcc_id: DFUPart.Id + "--" + DFUPart.Copy,
-                                Cluster: DFUFilePartsOnCluster.Cluster
+                                Cluster: DFUFilePartsOnCluster.Cluster,
+                                PartsizeInt: parseInt(DFUPart.Partsize.split(",").join(""))
                             }, DFUPart));
                         }, this);
                     }

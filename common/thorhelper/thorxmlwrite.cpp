@@ -645,7 +645,6 @@ void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildre
     if (!*fieldname && !checkUnamedArrayItem(true))
         return;
 
-    flush(false);
     checkFormat(true, false, 1);
     fieldname = checkItemNameBeginNested(fieldname);
     if (fieldname && *fieldname)
@@ -672,7 +671,6 @@ void CommonJsonWriter::outputEndNested(const char *fieldname)
     if (!*fieldname && !checkUnamedArrayItem(false))
         return;
 
-    flush(false);
     checkFormat(false, true, -1);
     fieldname = checkItemNameEndNested(fieldname);
     if (fieldname && *fieldname)
@@ -691,7 +689,6 @@ void CommonJsonWriter::outputEndNested(const char *fieldname)
 
 void CommonJsonWriter::outputSetAll()
 {
-    flush(false);
     checkDelimit();
     appendJSONValue(out, "All", true);
 }

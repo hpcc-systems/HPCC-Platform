@@ -34,12 +34,12 @@ public:
     SimplePartFilter(IDFPartFilter * _nextFilter)   { nextFilter.set(_nextFilter); }
     IMPLEMENT_IINTERFACE
 
-    virtual bool includePart(unsigned part)     
-    { 
+    virtual bool includePart(unsigned part)
+    {
         if (nextFilter && !nextFilter->includePart(part))
             return false;
-        if (include.isItem(part)) 
-            return include.item(part); 
+        if (include.isItem(part))
+            return include.item(part);
         return false;
      }
 
@@ -64,7 +64,7 @@ public:
 
     virtual int run();
     virtual bool abortRequested() { return isAborting(); }
-    
+
 protected:
     bool catchReadBuffer(ISocket * socket, MemoryBuffer & msg, unsigned timeout);
 
@@ -154,9 +154,9 @@ public:
     FileSizeThread(FilePartInfoArray & _queue, CriticalSection & _cs, bool _isCompressed, bool _errorIfMissing);
 
     virtual int run();
-            bool wait(unsigned timems);
+    bool wait(unsigned timems);
 
-            void queryThrowError()  { if (error) throw error.getLink(); }
+    void queryThrowError()  { if (error) throw error.getLink(); }
 
 protected:
     Semaphore                   sem;
@@ -271,11 +271,13 @@ protected:
     void storeCsvRecordStructure(IFormatPartitioner &partitioner);
     void examineCsvStructure();
     IFormatPartitioner * createPartitioner(aindex_t index, bool calcOutput, unsigned numParts);
-    
+
 private:
     bool calcUsePull();
     // Get and store Remote File Name parts into the History record
-    void splitAndStoreFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName, aindex_t idx = 0, bool isDistributedSource = true);
+    void splitAndCollectFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
+                                 bool isDistributedSource = true);
+
 
 protected:
     CIArrayOf<FilePartInfo> sources;

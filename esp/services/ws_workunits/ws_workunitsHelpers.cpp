@@ -1812,7 +1812,7 @@ bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsign
         return true;
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
         if (wv)
         {
             if (flags & WUINFO_IncludeResultsViewNames)
@@ -1836,7 +1836,7 @@ unsigned WsWuInfo::getResourceURLCount()
 {
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
         if (wv)
             return wv->getResourceURLCount();
     }
@@ -2007,25 +2007,27 @@ void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf)
     }
 }
 
-void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char *ipAddress, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload)
+void WsWuInfo::getWorkunitThorSlaveLog(const char *instanceName, const char *ipAddress, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload)
 {
     if (isEmpty(logDir))
-      throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log path not specified.");
+        throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log path not specified.");
     if (isEmpty(logDate))
         throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log date not specified.");
 
     StringBuffer slaveIPAddress, logName;
     if (slaveNum > 0)
     {
-        if (isEmpty(groupName))
-          throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor group not specified.");
+        if (isEmpty(instanceName))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor instance not specified.");
 
-        Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName);
+        StringBuffer groupName;
+        getClusterThorGroupName(groupName, instanceName);
+        if (groupName.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", instanceName);
+
+        Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName.str());
         if (!nodeGroup || (nodeGroup->ordinality() == 0))
-        {
-            WARNLOG("Node group %s not found", groupName);
-            return;
-        }
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Node group %s not found", groupName.str());
 
         nodeGroup->queryNode(slaveNum-1).endpoint().getIpText(slaveIPAddress);
         if (slaveIPAddress.length() < 1)
@@ -2125,7 +2127,7 @@ void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
 
 IConstWUQuery* WsWuInfo::getEmbeddedQuery()
 {
-    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
     if (wv)
         return wv->getEmbeddedQuery();
 
@@ -3120,6 +3122,9 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
             const char *value = item.getValue();
             if (!name || !*name)
                 continue;
+            StringBuffer expanded;
+            if (*name=='-')
+                name=expanded.append("eclcc").append(name).str();
             if (!value)
             {
                 size_t len = strlen(name);

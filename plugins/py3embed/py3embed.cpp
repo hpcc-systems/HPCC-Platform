@@ -252,6 +252,8 @@ static void releaseContext()
 
 // Use a global object to ensure that the Python interpreter is initialized on main thread
 
+static HINSTANCE keepLoadedHandle;
+
 static class Python3xGlobalState
 {
 public:
@@ -268,6 +270,16 @@ public:
             return;
         }
 #endif
+#ifndef _WIN32
+        // We need to ensure all symbols in the python3.x so are loaded - due to bugs in some distro's python installations
+        // However this will likely break python2.
+        // Therefore on systems where both are present, do NOT do this - people using centos systems that suffer from issue
+        // https://bugs.centos.org/view.php?id=6063 will need to choose which version of python plugin to install but not both
+
+        StringBuffer modname, py2modname;
+        if  (findLoadedModule(modname, "libpython3.") && !findLoadedModule(py2modname, "libpython2."))
+            pythonLibrary = dlopen(modname.str(), RTLD_NOW|RTLD_GLOBAL);
+#endif
         // Initialize the Python Interpreter
         Py_Initialize();
         const wchar_t *argv[] = { nullptr };
@@ -279,6 +291,9 @@ public:
     }
     ~Python3xGlobalState()
     {
+        if (keepLoadedHandle)
+            FreeSharedObject(keepLoadedHandle);  // Must be process termination - ok to free now (and helps stop lockups at closedown in some Python libraries eg Tensorflow).
+
         if (threadContext)
             delete threadContext;   // The one on the main thread won't get picked up by the thread hook mechanism
         threadContext = NULL;
@@ -483,7 +498,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
                     if (tail)
                     {
                         tail[strlen(SharedObjectExtension)] = 0;
-                        HINSTANCE h = LoadSharedObject(fullName, false, false);
+                        keepLoadedHandle = LoadSharedObject(fullName, false, false);
                         break;
                     }
                 }
@@ -552,82 +567,87 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
     VStringBuffer msg("pyembed: type mismatch - %s expected", expected);
     if (field)
         msg.appendf(" for field %s", str(field->name));
+    else
+        msg.appendf(" for return value");
     rtlFail(0, msg.str());
 }
 
 static bool getBooleanResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    if (!PyBool_Check(obj))
-        typeError("boolean", field);
-    return obj == Py_True;
+    if (obj && obj != Py_None)
+    {
+        if (PyBool_Check(obj))
+            return obj == Py_True;
+    }
+    typeError("boolean", field);
 }
 
 static void getDataResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, void * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (!PyByteArray_Check(obj))
+    if (obj && obj != Py_None && PyByteArray_Check(obj))
+        rtlStrToDataX(chars, result, PyByteArray_Size(obj), PyByteArray_AsString(obj));
+    else
         typeError("bytearray", field);
-    rtlStrToDataX(chars, result, PyByteArray_Size(obj), PyByteArray_AsString(obj));
 }
 
 static double getRealResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    if (!PyFloat_Check(obj))
-        typeError("real", field);
-    return PyFloat_AsDouble(obj);
+    if (obj && obj != Py_None)
+    {
+        if (PyFloat_Check(obj))
+            return PyFloat_AsDouble(obj);
+    }
+    typeError("real", field);
 }
 
 static __int64 getSignedResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    __int64 ret;
-    if (PyLong_Check(obj))
-        ret = (__int64) PyLong_AsLongLong(obj);
-    else
-        typeError("integer", field);
-    return ret;
+    if (obj && obj != Py_None)
+    {
+        if (PyLong_Check(obj))
+            return (__int64) PyLong_AsLongLong(obj);
+    }
+    typeError("integer", field);
 }
 
 static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    unsigned __int64 ret;
-    if (PyLong_Check(obj))
-        ret =  (unsigned __int64) PyLong_AsUnsignedLongLong(obj);
-    else
-        typeError("integer", field);
-    return ret;
+    if (obj && obj != Py_None)
+    {
+        if (PyLong_Check(obj))
+            return (unsigned __int64) PyLong_AsUnsignedLongLong(obj);
+    }
+    typeError("integer", field);
 }
 
 static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, char * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (PyUnicode_Check(obj))
+    if (obj && obj != Py_None)
     {
-        OwnedPyObject temp_bytes = PyUnicode_AsEncodedString(obj, ASCII_LIKE_CODEPAGE, "ignore");
-        checkPythonError();
-        const char * text =  PyBytes_AsString(temp_bytes);
-        checkPythonError();
-        size_t lenBytes = PyBytes_Size(temp_bytes);
-        rtlStrToStrX(chars, result, lenBytes, text);
+        if (PyUnicode_Check(obj))
+        {
+            OwnedPyObject temp_bytes = PyUnicode_AsEncodedString(obj, ASCII_LIKE_CODEPAGE, "ignore");
+            checkPythonError();
+            const char * text =  PyBytes_AsString(temp_bytes);
+            checkPythonError();
+            size_t lenBytes = PyBytes_Size(temp_bytes);
+            rtlStrToStrX(chars, result, lenBytes, text);
+        }
+        else if (PyBytes_Check(obj))
+        {
+            const char * text = PyBytes_AsString(obj);
+            checkPythonError();
+            size_t lenBytes = PyBytes_Size(obj);
+            rtlStrToStrX(chars, result, lenBytes, text);
+        }
+        return;
     }
-    else if (PyBytes_Check(obj))
-    {
-        const char * text = PyBytes_AsString(obj);
-        checkPythonError();
-        size_t lenBytes = PyBytes_Size(obj);
-        rtlStrToStrX(chars, result, lenBytes, text);
-    }
-    else
-        typeError("string", field);
+    typeError("string", field);
 }
 
 static void getUTF8Result(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, char * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (PyUnicode_Check(obj))
+    if (obj && obj != Py_None && PyUnicode_Check(obj))
     {
         Py_ssize_t lenBytes;
         const char *text = PyUnicode_AsUTF8AndSize(obj, &lenBytes);
@@ -642,8 +662,7 @@ static void getUTF8Result(const RtlFieldInfo *field, PyObject *obj, size32_t &ch
 static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultBytes, void * & result, int elemType, size32_t elemSize)
 {
     // MORE - should probably recode to use the getResultDataset mechanism
-    assertex(obj && obj != Py_None);
-    if (!PyList_Check(obj) && !PySet_Check(obj))
+    if (!obj || obj == Py_None || (!PyList_Check(obj) && !PySet_Check(obj)))
         rtlFail(0, "pyembed: type mismatch - list or set expected");
     rtlRowBuilder out;
     size32_t outBytes = 0;
@@ -784,8 +803,7 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
 
 static void getUnicodeResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, UChar * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (PyUnicode_Check(obj))
+    if (obj && obj != Py_None && PyUnicode_Check(obj))
     {
         Py_ssize_t lenBytes;
         const char *text = PyUnicode_AsUTF8AndSize(obj, &lenBytes);
@@ -858,8 +876,7 @@ public:
     {
         nextField(field);
         isAll = false;  // No concept of an 'all' set in Python
-        assertex(elem && elem != Py_None);
-        if (!PyList_Check(elem) && !PySet_Check(elem))
+        if (!elem || elem == Py_None || (!PyList_Check(elem) && !PySet_Check(elem)))
             typeError("list or set", field);
         push();
     }

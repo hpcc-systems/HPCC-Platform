@@ -512,6 +512,7 @@ public:
     bool isSingleValuedExpressionList(const attribute & attr);
     bool convertAllToAttribute(attribute &atr);
     IHqlExpression * convertToOutOfLineFunction(const ECLlocation & errpos, IHqlExpression  * expr);
+    IHqlExpression * convertToInlineFunction(const ECLlocation & errpos, IHqlExpression  * expr);
 
     void ensureBoolean(attribute &a);
     void ensureDataset(attribute & attr);
@@ -733,6 +734,7 @@ public:
     IHqlExpression* clearFieldMap(IHqlExpression* expr);
     void setExpectedAttribute(IIdAtom * _expectedAttribute)             { expectedAttribute = _expectedAttribute; current_id = _expectedAttribute; }
     void setCurrentToExpected()             { current_id = expectedAttribute; }
+    void setPendingGlobalImport(bool _globalImportPending) { globalImportPending = _globalImportPending; }
     IHqlScope * queryPrimaryScope(bool isPrivate);
     unsigned nextParameterIndex()               { return 0; } // not commoned up at moment{ return activeParameters.length()+savedParameters.length(); }
     void addActiveParameterOwn(const attribute & errpos, IHqlExpression * expr, IHqlExpression * defaultValue);
@@ -805,6 +807,7 @@ protected:
     void normalizeStoredNameExpression(attribute & a);
     void checkPatternFailure(attribute & attr);
     void checkDistributer(const ECLlocation & errPos, HqlExprArray & args);
+    void checkConcreteRecord(attribute & cur);
     IHqlExpression * createScopedSequenceExpr();
     IHqlExpression * createPatternOr(HqlExprArray & args, const attribute & errpos);
     IHqlExpression * mapAlienArg(IHqlSimpleScope * scope, IHqlExpression * expr);
@@ -902,6 +905,7 @@ protected:
     bool parseConstantText;
     bool expandingMacroPosition;
     bool inSignedModule;
+    bool globalImportPending = false;
     OwnedHqlExpr gpgSignature;
 
     IErrorArray pendingWarnings;

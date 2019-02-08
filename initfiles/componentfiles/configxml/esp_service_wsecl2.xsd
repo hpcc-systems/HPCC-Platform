@@ -157,6 +157,20 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="xsltMaxDepth" type="xs:unsignedInt" use="optional" default="100000">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum libxslt stylesheet template depth (affects size and complexity of dataset that can be rendered)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="xsltMaxVars" type="xs:unsignedInt" use="optional" default="1000000">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum libxslt stylesheet template variables (affects size and complexity of dataset that can be rendered)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

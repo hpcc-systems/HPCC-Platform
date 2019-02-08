@@ -465,29 +465,32 @@ FileSizeThread::FileSizeThread(FilePartInfoArray & _queue, CriticalSection & _cs
 
 bool FileSizeThread::wait(unsigned timems)
 {
-    while (!sem.wait(timems))   { // report every time
-        if (!cur.get())
-            continue;       // window here?
-        cur->Link();
-        RemoteFilename *rfn=NULL;
-        if (copy) {
-            if (!cur->mirrorFilename.isNull())
-                rfn = &cur->mirrorFilename;
+    while (!sem.wait(timems))
+    { // report every time
+        StringBuffer rfn;
+        {
+            CriticalBlock lock(cs);
+            if (cur.get())
+            {
+                if (copy)
+                {
+                    if (!cur->mirrorFilename.isNull())
+                        cur->mirrorFilename.getRemotePath(rfn);
+                }
+                else
+                {
+                    cur->filename.getRemotePath(rfn);
+                }
+            }
         }
-        else {
-            rfn = &cur->filename;
-        }
-        if (rfn) {
-            StringBuffer url;
-            WARNLOG("Waiting for file: %s",rfn->getRemotePath(url).str());
-            cur->Release();
+        if (!rfn.isEmpty())
+        {
+            WARNLOG("Waiting for file: %s",rfn.str());
             return false;
         }
-        cur->Release();
     }
     sem.signal(); // if called again
     return true;
-
 }
 
 int FileSizeThread::run()
@@ -497,17 +500,20 @@ int FileSizeThread::run()
         RemoteFilename remoteFilename;
         for (;;)
         {
-            cur.clear();
-            cs.enter();
-            if (queue.ordinality())
-                cur.setown(&queue.popGet());
-            cs.leave();
+            {
+                CriticalBlock lock(cs);
+                cur.clear();
+                if (queue.ordinality())
+                    cur.setown(&queue.popGet());
+            }
 
             if (!cur.get())
                 break;
             copy=0;
-            for (copy = 0;copy<2;copy++) {
-                if (copy) {
+            for (copy = 0;copy<2;copy++)
+            {
+                if (copy)
+                {
                     if (cur->mirrorFilename.isNull())
                         continue;  // not break
                     remoteFilename.set(cur->mirrorFilename);
@@ -516,8 +522,10 @@ int FileSizeThread::run()
                     remoteFilename.set(cur->filename);
                 OwnedIFile thisFile = createIFile(remoteFilename);
                 offset_t thisSize = thisFile->size();
-                if (thisSize == -1) {
-                    if (errorIfMissing) {
+                if (thisSize == -1)
+                {
+                    if (errorIfMissing)
+                    {
                         StringBuffer s;
                         throwError1(DFTERR_CouldNotOpenFile, remoteFilename.getRemotePath(s).str());
                     }
@@ -527,7 +535,8 @@ int FileSizeThread::run()
                 if (isCompressed)
                 {
                     Owned<IFileIO> io = createCompressedFileReader(thisFile); //check succeeded?
-                    if (!io) {
+                    if (!io)
+                    {
                         StringBuffer s;
                         throwError1(DFTERR_CouldNotOpenCompressedFile, remoteFilename.getRemotePath(s).str());
                     }
@@ -536,11 +545,12 @@ int FileSizeThread::run()
                 cur->size = thisSize;
                 break;
             }
-            if (copy==1) { // need to set primary
+            if (copy==1)
+            { // need to set primary
+                CriticalBlock lock(cs);
                 cur->mirrorFilename.set(cur->filename);
                 cur->filename.set(remoteFilename);
             }
-            cur.clear();
         }
     }
     catch (IException * e)
@@ -1253,7 +1263,7 @@ IFormatPartitioner * FileSprayer::createPartitioner(aindex_t index, bool calcOut
 
 void FileSprayer::examineCsvStructure()
 {
-    if (srcAttr->hasProp("ECL"))
+    if (srcAttr && srcAttr->hasProp("ECL"))
         // Already has, keep it.
         return;
 
@@ -2868,8 +2878,13 @@ void FileSprayer::spray()
     aindex_t sourceSize = sources.ordinality();
     bool failIfNoSourceFile = options->getPropBool("@failIfNoSourceFile");
 
-    if ((sourceSize == 0) && failIfNoSourceFile)
-        throwError(DFTERR_NoFilesMatchWildcard);
+    if (sourceSize == 0)
+    {
+       if (failIfNoSourceFile)
+           throwError(DFTERR_NoFilesMatchWildcard);
+       else
+           progressTree->setPropBool("@noFileMatch", true);
+    }
 
     LOG(MCdebugInfo, job, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
 
@@ -3016,6 +3031,7 @@ bool FileSprayer::isSameSizeHeaderFooter()
 
 void FileSprayer::updateTargetProperties()
 {
+    TimeSection timer("FileSprayer::updateTargetProperties() time");
     Owned<IException> error;
     if (distributedTarget)
     {
@@ -3027,6 +3043,9 @@ void FileSprayer::updateTargetProperties()
         offset_t totalCompressedSize = 0;
         unsigned whichHeaderInput = 0;
         bool sameSizeHeaderFooter = isSameSizeHeaderFooter();
+        bool sameSizeSourceTarget = (sources.ordinality() == distributedTarget->numParts());
+        offset_t partCompressedLength = 0;
+
         ForEachItemIn(idx, partition)
         {
             PartitionPoint & cur = partition.item(idx);
@@ -3035,7 +3054,7 @@ void FileSprayer::updateTargetProperties()
             partCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
             totalCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
 
-            if (copyCompressed) {
+            if (copyCompressed && sameSizeSourceTarget) {
                 FilePartInfo & curSource = sources.item(cur.whichInput);
                 partLength = curSource.size;
                 totalLength += partLength;
@@ -3044,6 +3063,9 @@ void FileSprayer::updateTargetProperties()
                 partLength += curProgress.outputLength;  // AFAICS this might as well be =
                 totalLength += curProgress.outputLength;
             }
+
+            if (compressOutput)
+                partCompressedLength += curProgress.compressedPartSize;
 
             if (idx+1 == partition.ordinality() || partition.item(idx+1).whichOutput != cur.whichOutput)
             {
@@ -3093,8 +3115,8 @@ void FileSprayer::updateTargetProperties()
 
                 if (compressOutput)
                 {
-                    curProps.setPropInt64(FAcompressedSize, curProgress.compressedPartSize);
-                    totalCompressedSize += curProgress.compressedPartSize;
+                    curProps.setPropInt64(FAcompressedSize, partCompressedLength);
+                    totalCompressedSize += partCompressedLength;
                 } else if (copyCompressed)
                 {
                     curProps.setPropInt64(FAcompressedSize, curProgress.outputLength);
@@ -3135,6 +3157,7 @@ void FileSprayer::updateTargetProperties()
                 curPart->unlockProperties();
                 partCRC.clear();
                 partLength = 0;
+                partCompressedLength = 0;
             }
         }
 
@@ -3233,17 +3256,13 @@ void FileSprayer::updateTargetProperties()
                 // add original file name from a single distributed source (like Copy)
                 RemoteFilename remoteFile;
                 distributedSource->queryPart(0).getFilename(remoteFile, 0);
-                splitAndStoreFileInfo(newRecord, remoteFile);
+                splitAndCollectFileInfo(newRecord, remoteFile);
             }
-            else
+            else if (sources.ordinality())
             {
-                // add original file names from multiple sources (like Spray)
-                ForEachItemIn(idx, sources)
-                {
-                    FilePartInfo & curSource = sources.item(idx);
-                    RemoteFilename &remoteFile = curSource.filename;
-                    splitAndStoreFileInfo(newRecord, remoteFile, idx, false);
-                }
+                FilePartInfo & firstSource = sources.item((aindex_t)0);
+                RemoteFilename &remoteFile = firstSource.filename;
+                splitAndCollectFileInfo(newRecord, remoteFile, false);
             }
             curHistory->addPropTree("Origin",newRecord.getClear());
         }
@@ -3252,40 +3271,34 @@ void FileSprayer::updateTargetProperties()
         throw error.getClear();
 }
 
-void FileSprayer::splitAndStoreFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
-                                        aindex_t idx, bool isDistributedSource)
+
+void FileSprayer::splitAndCollectFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
+                                          bool isDistributedSource)
 {
     StringBuffer drive;
     StringBuffer path;
-    StringBuffer fileName;
+    StringBuffer tail;
     StringBuffer ext;
-    remoteFileName.split(&drive, &path, &fileName, &ext);
-    if (idx == 0)
-    {
-        if (drive.isEmpty())
-        {
-            remoteFileName.queryIP().getIpText(drive.clear());
-            newRecord->setProp("@ip", drive.str());
-        }
-        else
-            newRecord->setProp("@drive", drive.str());
+    remoteFileName.split(&drive, &path, &tail, &ext);
 
-        newRecord->setProp("@path", path.str());
+    if (drive.isEmpty())
+    {
+        remoteFileName.queryIP().getIpText(drive.clear());
+        newRecord->setProp("@ip", drive.str());
     }
+    else
+        newRecord->setProp("@drive", drive.str());
+
+    newRecord->setProp("@path", path.str());
+
     // We don't want to store distributed file parts name extension
     if (!isDistributedSource && ext.length())
-        fileName.append(ext);
+        tail.append(ext);
 
-    // In spray multiple source files case keep all original filenames
-    if (newRecord->hasProp("@name"))
-    {
-        StringBuffer currentName;
-        newRecord->getProp("@name", currentName);
-        currentName.append(",").append(fileName);
-        fileName = currentName;
-    }
-
-    newRecord->setProp("@name", fileName.str());
+    if (sources.ordinality()>1)
+        newRecord->setProp("@name", "[MULTI]");
+    else
+        newRecord->setProp("@name", tail.str());
 }
 
 void FileSprayer::setOperation(dfu_operation op)

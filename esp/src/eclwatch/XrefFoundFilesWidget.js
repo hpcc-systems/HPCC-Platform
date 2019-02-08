@@ -121,7 +121,7 @@ define([
             var selections = this.grid.getSelected();
             var list = this.arrayToList(selections, "Name");
             if (confirm(this.i18n.AddTheseFilesToDali + "\n" + list)) {
-                WsDFUXref.DFUXRefArrayAction(selections, this.i18n.Attach, context.params.Name, "Attach").then(function (response) {
+                WsDFUXref.DFUXRefArrayAction(selections, "Attach", context.params.Name, "Found").then(function (response) {
                     context.refreshGrid();
                 });
             }

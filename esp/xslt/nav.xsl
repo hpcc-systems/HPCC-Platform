@@ -112,7 +112,8 @@
                  </xsl:if>      
             </td>
         </tr>
-        <xsl:if test="*">
+        <xsl:choose>
+        <xsl:when test="*">
             <tr>
                 <td>
                     <table border="0" cellspacing="0" cellpadding="0">
@@ -130,7 +131,23 @@
                     </table>
                 </td>
             </tr>
-        </xsl:if>
+        </xsl:when>
+        <xsl:when test="@isDynamicBinding=1">
+            <tr>
+                <td>
+                    <table border="0" cellspacing="0" cellpadding="0">
+                        <xsl:attribute name="id"><xsl:value-of select="@name"/></xsl:attribute>
+                        <tr>
+                        <td colspan="2">
+                            <xsl:text disable-output-escaping="yes">&amp;nbsp;&amp;nbsp;</xsl:text>
+                            <font size="-2" color="gray">Unbound DESDL Service</font>
+                        </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </xsl:when>
+        </xsl:choose>
     </xsl:template>
         
     <xsl:template match="Link">

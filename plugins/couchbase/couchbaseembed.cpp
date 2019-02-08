@@ -26,6 +26,10 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 
+#include <map>
+#include <mutex>
+#include <thread>
+
 static const char *g_moduleName = "couchbase";
 static const char *g_moduleDescription = "Couchbase Embed Helper";
 static const char *g_version = "Couchbase Embed Helper 1.0.0";
@@ -45,7 +49,7 @@ extern "C" COUCHBASEEMBED_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefini
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = g_version;
     pb->moduleName = g_moduleName;
-    pb->ECL = NULL;
+    pb->ECL = nullptr;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = g_moduleDescription;
     return true;
@@ -53,6 +57,9 @@ extern "C" COUCHBASEEMBED_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefini
 
 namespace couchbaseembed
 {
+    const time_t OBJECT_EXPIRE_TIMEOUT_SECONDS = 60 * 2; // Two minutes
+    static std::once_flag connectionCacheInitFlag;
+
     //--------------------------------------------------------------------------
     // Plugin Classes
     //--------------------------------------------------------------------------
@@ -80,37 +87,36 @@ namespace couchbaseembed
     }
 
     CouchbaseRowStream::CouchbaseRowStream(IEngineRowAllocator* resultAllocator, Couchbase::Query * cbaseQuery)
-       :   m_CouchBaseQuery(cbaseQuery),
-           m_resultAllocator(resultAllocator)
+       :   m_resultAllocator(resultAllocator)
     {
         m_currentRow = 0;
         m_shouldRead = true;
 
         //iterating over result rows and copying them to stringarray
         //is there a way to independently step through original result rows?
-        for (auto cbrow : *m_CouchBaseQuery)
+        for (auto cbrow : *cbaseQuery)
             m_Rows.append(cbrow.json().to_string().c_str());
 
-        reportIfQueryFailure(m_CouchBaseQuery);
+        reportIfQueryFailure(cbaseQuery);
     }
 
     CouchbaseRowStream::~CouchbaseRowStream() {}
 
     const void * CouchbaseRowStream::nextRow()
     {
-        const void * result = NULL;
+        const void * result = nullptr;
         if (m_shouldRead && m_currentRow < m_Rows.length())
         {
             auto json = m_Rows.item(m_currentRow++);
             Owned<IPropertyTree> contentTree = createPTreeFromJSONString(json,ipt_caseInsensitive);
             if (contentTree)
             {
-                CouchbaseRowBuilder * cbRowBuilder = new CouchbaseRowBuilder(contentTree);
+                CouchbaseRowBuilder cbRowBuilder(contentTree);
                 RtlDynamicRowBuilder rowBuilder(m_resultAllocator);
                 const RtlTypeInfo *typeInfo = m_resultAllocator->queryOutputMeta()->queryTypeInfo();
                 assertex(typeInfo);
                 RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-                size32_t len = typeInfo->build(rowBuilder, 0, &dummyField, *cbRowBuilder);
+                size32_t len = typeInfo->build(rowBuilder, 0, &dummyField, cbRowBuilder);
                 return rowBuilder.finalizeRowClear(len);
             }
             else
@@ -128,7 +134,7 @@ namespace couchbaseembed
    Couchbase::Query * CouchbaseConnection::query(Couchbase::QueryCommand * qcommand)
    {
        Couchbase::Status queryStatus;
-       Couchbase::Query * pQuery = new Couchbase::Query(*m_pCouchbaseClient, *qcommand, queryStatus);
+       Couchbase::Query * pQuery = new Couchbase::Query(*m_pCouchbaseClient, *qcommand, queryStatus); // will be owned by method caller
 
        if (!queryStatus)
            failx("Couldn't issue query: %s", queryStatus.description());
@@ -137,7 +143,7 @@ namespace couchbaseembed
            failx("Couldn't execute query, reason: %s\nBody is: ", pQuery->meta().body().data());
 
        if (pQuery->meta().status().errcode() != LCB_SUCCESS )//rows.length() == 0)
-           failx("Query execution error: %s", m_pQuery->meta().body().data());
+           failx("Query execution error: %s", pQuery->meta().body().data());
 
        return pQuery;
    }
@@ -361,11 +367,323 @@ namespace couchbaseembed
        return thisParam++;
     }
 
+    static class ConnectionCacheObj
+    {
+        private:
+
+            typedef std::vector<CouchbaseConnection*> ConnectionList;
+            typedef std::map<hash64_t, ConnectionList> ObjMap;
+
+        public:
+
+            ConnectionCacheObj(int _traceLevel)
+                :   traceLevel(_traceLevel)
+            {
+
+            }
+
+            ~ConnectionCacheObj()
+            {
+                deleteAll();
+            }
+
+            void deleteAll()
+            {
+                CriticalBlock block(cacheLock);
+
+                // Delete all idle connection objects
+                for (ObjMap::iterator keyIter = idleConnections.begin(); keyIter != idleConnections.end(); keyIter++)
+                {
+                    for (ConnectionList::iterator connectionIter = keyIter->second.begin(); connectionIter != keyIter->second.end(); connectionIter++)
+                    {
+                        if (*connectionIter)
+                        {
+                            delete(*connectionIter);
+                        }
+                    }
+                }
+
+                idleConnections.clear();
+
+                // Delete all active connection objects
+                for (ObjMap::iterator keyIter = activeConnections.begin(); keyIter != activeConnections.end(); keyIter++)
+                {
+                    for (ConnectionList::iterator connectionIter = keyIter->second.begin(); connectionIter != keyIter->second.end(); connectionIter++)
+                    {
+                        if (*connectionIter)
+                        {
+                            delete(*connectionIter);
+                        }
+                    }
+                }
+
+                activeConnections.clear();
+            }
+
+            void releaseActive(CouchbaseConnection* connectionPtr)
+            {
+                CriticalBlock block(cacheLock);
+
+                // Find given connection in our active list and move it to our
+                // idle list
+                for (ObjMap::iterator keyIter = activeConnections.begin(); keyIter != activeConnections.end(); keyIter++)
+                {
+                    for (ConnectionList::iterator connectionIter = keyIter->second.begin(); connectionIter != keyIter->second.end(); connectionIter++)
+                    {
+                        if (*connectionIter == connectionPtr)
+                        {
+                            connectionPtr->updateTimeTouched();
+                            keyIter->second.erase(connectionIter);
+                            idleConnections[keyIter->first].push_back(connectionPtr);
+
+                            if (traceLevel > 4)
+                            {
+                                DBGLOG("Couchbase: Released connection object %p", connectionPtr);
+                            }
+
+                            return;
+                        }
+                    }
+                }
+            }
+
+            void expire()
+            {
+                if (!idleConnections.empty())
+                {
+                    CriticalBlock block(cacheLock);
+
+                    time_t oldestAllowedTime = time(NULL) - OBJECT_EXPIRE_TIMEOUT_SECONDS;
+                    __int32 expireCount = 0;
+
+                    for (ObjMap::iterator keyIter = idleConnections.begin(); keyIter != idleConnections.end(); keyIter++)
+                    {
+                        ConnectionList::iterator connectionIter = keyIter->second.begin();
+
+                        while (connectionIter != keyIter->second.end())
+                        {
+                            if (*connectionIter)
+                            {
+                                if ((*connectionIter)->getTimeTouched() < oldestAllowedTime)
+                                {
+                                    delete(*connectionIter);
+                                    connectionIter =  keyIter->second.erase(connectionIter);
+                                    ++expireCount;
+                                }
+                                else
+                                {
+                                    ++connectionIter;
+                                }
+                            }
+                            else
+                            {
+                                connectionIter =  keyIter->second.erase(connectionIter);
+                            }
+                        }
+                    }
+
+                    if (traceLevel > 4 && expireCount > 0)
+                    {
+                        DBGLOG("Couchbase: Expired %d cached connection%s", expireCount, (expireCount == 1 ? "" : "s"));
+                    }
+                }
+            }
+
+            CouchbaseConnection* getConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * password, const char * connOptions, unsigned int maxConnections)
+            {
+                CouchbaseConnection* connectionObjPtr = nullptr;
+                StringBuffer connectionString;
+
+                CouchbaseConnection::makeConnectionString(useSSL, host, port, bucketname, connOptions, connectionString);
+
+                // Use a hash of the connection string as the key to finding
+                // any idle connection objects
+                hash64_t key = rtlHash64VStr(connectionString.str(), 0);
+
+                while (true)
+                {
+                    {
+                        CriticalBlock block(cacheLock);
+                        ConnectionList& idleConnectionList = idleConnections[key];
+
+                        if (!idleConnectionList.empty())
+                        {
+                            // We have at least one idle connection; use that
+                            connectionObjPtr = idleConnectionList.back();
+                            idleConnectionList.pop_back();
+
+                            connectionObjPtr->updateTimeTouched();
+
+                            // Push the connection object onto our active list
+                            activeConnections[key].push_back(connectionObjPtr);
+
+                            if (traceLevel > 4)
+                            {
+                                DBGLOG("Couchbase: Using cached connection object %p: %s", connectionObjPtr, connectionString.str());
+                            }
+
+                            break;
+                        }
+                        else if (maxConnections == 0 || activeConnections[key].size() < maxConnections)
+                        {
+                            // No idle connections but we don't have to wait for
+                            // one; exit the loop and create a new connection
+                            break;
+                        }
+                    }
+
+                    // We can't exit the loop and allow a new connection to
+                    // be created because there are too many active
+                    // connections already; wait for a short while
+                    // and try again
+                    std::this_thread::sleep_for(std::chrono::microseconds(10));
+                }
+
+                if (!connectionObjPtr)
+                {
+                    // An idle connection for that particular combination of
+                    // options does not exist so we need to create one;
+                    // use a small loop to retry connections if necessary
+                    unsigned int connectAttempt = 0;
+                    unsigned int MAX_ATTEMPTS = 10;
+                    // coverity[DC.WEAK_CRYPTO]
+                    useconds_t SLEEP_TIME = 100 + (rand() % 200); // Add jitter to sleep time
+
+                    while (true)
+                    {
+                        connectionObjPtr = new CouchbaseConnection(connectionString, password);
+                        connectionObjPtr->connect();
+
+                        if (connectionObjPtr->getConnectionStatus().success())
+                        {
+                            {
+                                // Push new connection object onto our active list
+                                CriticalBlock block(cacheLock);
+
+                                connectionObjPtr->updateTimeTouched();
+                                ConnectionList& activeConnectionList = activeConnections[key];
+                                activeConnectionList.push_back(connectionObjPtr);
+                            }
+
+                            if (traceLevel > 4)
+                            {
+                                DBGLOG("Couchbase: Created and cached new connection object %p: %s", connectionObjPtr, connectionString.str());
+                            }
+
+                            break;
+                        }
+                        else if (connectionObjPtr->getConnectionStatus().isTemporary())
+                        {
+                            ++connectAttempt;
+                            if (connectAttempt < MAX_ATTEMPTS)
+                            {
+                                // According to libcouchbase-cxx, we need
+                                // to destroy the connection object if
+                                // there has been a failure of any kind
+                                delete(connectionObjPtr);
+                                connectionObjPtr = nullptr;
+                                std::this_thread::sleep_for(std::chrono::microseconds(SLEEP_TIME));
+                            }
+                            else
+                            {
+                                // Capture the final failure reason and
+                                // destroy the connection object before
+                                // throwing an error
+                                std::string     reason = connectionObjPtr->getConnectionStatus().description();
+
+                                delete(connectionObjPtr);
+                                connectionObjPtr = nullptr;
+
+                                failx("Failed to connect to couchbase instance: %s Reason: '%s'", connectionString.str(), reason.c_str());
+                            }
+                        }
+                        else
+                        {
+                            // Capture the final failure reason and
+                            // destroy the connection object before
+                            // throwing an error
+                            std::string     reason = connectionObjPtr->getConnectionStatus().description();
+
+                            delete(connectionObjPtr);
+                            connectionObjPtr = nullptr;
+
+                            failx("Failed to connect to couchbase instance: %s Reason: '%s'", connectionString.str(), reason.c_str());
+                        }
+                    }
+                }
+
+                return connectionObjPtr;
+            }
+
+        private:
+
+            ObjMap          idleConnections;    //!< std::map of created CouchbaseConnection object pointers
+            ObjMap          activeConnections;  //!< std::map of created CouchbaseConnection object pointers
+            CriticalSection cacheLock;          //!< Mutex guarding modifications to connection pools
+            int             traceLevel;         //!< The current logging level
+    } *connectionCache;
+
+    static class ConnectionCacheExpirerObj : public Thread
+    {
+        public:
+
+            ConnectionCacheExpirerObj()
+                :   Thread("Couchbase::ConnectionCacheExpirer"),
+                    shouldRun(false)
+            {
+
+            }
+
+            virtual void start()
+            {
+                if (!isAlive())
+                {
+                    shouldRun = true;
+                    Thread::start();
+                }
+            }
+
+            virtual void stop()
+            {
+                if (isAlive())
+                {
+                    shouldRun = false;
+                    join();
+                }
+            }
+
+            virtual int run()
+            {
+                // Periodically delete connections that have been idle too long
+                while (shouldRun)
+                {
+                    if (connectionCache)
+                    {
+                        connectionCache->expire();
+                    }
+
+                    std::this_thread::sleep_for(std::chrono::microseconds(1000));
+                }
+
+                return 0;
+            }
+
+        private:
+
+            std::atomic_bool    shouldRun;      //!< If true, we should execute our thread's main event loop
+    } *connectionCacheExpirer;
+
+    static void setupConnectionCache(int traceLevel)
+    {
+        couchbaseembed::connectionCache = new couchbaseembed::ConnectionCacheObj(traceLevel);
+
+        couchbaseembed::connectionCacheExpirer = new couchbaseembed::ConnectionCacheExpirerObj;
+        couchbaseembed::connectionCacheExpirer->start();
+    }
+
     CouchbaseEmbedFunctionContext::CouchbaseEmbedFunctionContext(const IContextLogger &_logctx, const char *options, unsigned _flags)
     : logctx(_logctx), m_NextRow(), m_nextParam(0), m_numParams(0), m_scriptFlags(_flags)
     {
-        cbQueryIterator = NULL;
-        m_pCouchbaseClient = nullptr;
         m_pQuery = nullptr;
         m_pQcmd = nullptr;
 
@@ -376,6 +694,7 @@ namespace couchbaseembed
         unsigned port = 8091;
         bool useSSL = false;
         StringBuffer connectionOptions;
+        unsigned int maxConnections = 0;
 
         StringArray inputOptions;
         inputOptions.appendList(options, ",");
@@ -392,28 +711,54 @@ namespace couchbaseembed
                 else if (stricmp(optName, "port")==0)
                     port = atoi(val);
                 else if (stricmp(optName, "user")==0)
-                    user = val;
+                    user = val;     // This is not used but retained for backwards-compatibility
                 else if (stricmp(optName, "password")==0)
                     password = val;
                 else if (stricmp(optName, "bucket")==0)
                     bucketname = val;
                 else if (stricmp(optName, "useSSL")==0)
                     useSSL = clipStrToBool(val);
+                else if (stricmp(optName, "max_connections")==0)
+                    maxConnections = atoi(val);
 
                 //Connection String options
                 else if (stricmp(optName,   "detailed_errcodes")==0
                         || stricmp(optName, "operation_timeout")==0
                         || stricmp(optName, "config_total_timeout")==0
-                        || stricmp(optName, "http_poolsize")==0
-                        || stricmp(optName, "detailed_errcodes")==0)
+                        || stricmp(optName, "http_poolsize")==0)
                     connectionOptions.appendf("%s%s=%s", connectionOptions.length() == 0 ? "?" : "&", optName.str(), val);
                 else
                     failx("Unknown option %s", optName.str());
             }
         }
 
-        m_oCBConnection.setown(new CouchbaseConnection(useSSL, server, port, bucketname, user, password, connectionOptions.str()));
-        m_oCBConnection->connect();
+        std::call_once(connectionCacheInitFlag, setupConnectionCache, logctx.queryTraceLevel());
+
+        // Get a cached idle connection or create a new one
+        m_oCBConnection = connectionCache->getConnection(useSSL, server, port, bucketname, password, connectionOptions.str(), maxConnections);
+    }
+
+    CouchbaseEmbedFunctionContext::~CouchbaseEmbedFunctionContext()
+    {
+        if (m_pQcmd)
+        {
+            delete m_pQcmd;
+            m_pQcmd = nullptr;
+        }
+
+        if (m_pQuery)
+        {
+            delete m_pQuery;
+            m_pQuery = nullptr;
+        }
+
+        if (m_oCBConnection)
+        {
+            // When the context is deleted we should return any connection
+            // object back to idle status
+            connectionCache->releaseActive(m_oCBConnection);
+            m_oCBConnection = nullptr;
+        }
     }
 
     IPropertyTree * CouchbaseEmbedFunctionContext::nextResultRowTree()
@@ -449,15 +794,16 @@ namespace couchbaseembed
 
     const char * CouchbaseEmbedFunctionContext::nextResultScalar()
     {
-        auto resultrow = nextResultRowIterator();
-        if (resultrow)
+        m_resultrow.setown(nextResultRowIterator());
+
+        if (m_resultrow)
         {
-            resultrow->first();
-            if(resultrow->isValid() == true)
+            m_resultrow->first();
+            if(m_resultrow->isValid() == true)
             {
-                if (resultrow->query().hasChildren())
+                if (m_resultrow->query().hasChildren())
                     typeError("scalar", "");
-                return resultrow->query().queryProp("");
+                return m_resultrow->query().queryProp("");
             }
             else
                 failx("Could not fetch next result column.");
@@ -562,14 +908,14 @@ namespace couchbaseembed
     IRowStream * CouchbaseEmbedFunctionContext::getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
         Owned<CouchbaseRowStream> cbaseRowStream;
-        cbaseRowStream.set(new CouchbaseRowStream(_resultAllocator, m_pQuery));
+        cbaseRowStream.setown(new CouchbaseRowStream(_resultAllocator, m_pQuery));
         return cbaseRowStream.getLink();
     }
 
     byte * CouchbaseEmbedFunctionContext::getRowResult(IEngineRowAllocator * _resultAllocator)
     {
         Owned<CouchbaseRowStream> cbaseRowStream;
-        cbaseRowStream.set(new CouchbaseRowStream(_resultAllocator, m_pQuery));
+        cbaseRowStream.setown(new CouchbaseRowStream(_resultAllocator, m_pQuery));
         return (byte *)cbaseRowStream->nextRow();
     }
 
@@ -733,12 +1079,28 @@ namespace couchbaseembed
     {
         if (script && *script)
         {
-            m_pQcmd = new Couchbase::QueryCommand(script);
+            // Incoming script is not necessarily null terminated. Note that the chars refers to utf8 characters and not bytes.
 
-            if ((m_scriptFlags & EFnoparams) == 0)
-                m_numParams = countParameterPlaceholders(script);
+            size32_t len = rtlUtf8Size(chars, script);
+
+            if (len > 0)
+            {
+                StringAttr queryScript;
+                queryScript.set(script, len);
+                const char * terminatedScript = queryScript.get(); // Now null terminated
+
+                if (m_pQcmd)
+                    delete m_pQcmd;
+
+                m_pQcmd = new Couchbase::QueryCommand(terminatedScript);
+
+                if ((m_scriptFlags & EFnoparams) == 0)
+                    m_numParams = countParameterPlaceholders(terminatedScript);
+                else
+                    m_numParams = 0;
+            }
             else
-                m_numParams = 0;
+                failx("Empty N1QL query detected");
         }
         else
             failx("Empty N1QL query detected");
@@ -755,6 +1117,9 @@ namespace couchbaseembed
             m_oInputStream->executeAll(m_oCBConnection);
         else
         {
+            if (m_pQuery)
+                delete m_pQuery;
+
             m_pQuery = m_oCBConnection->query(m_pQcmd);
 
             reportIfQueryFailure(m_pQuery);
@@ -901,14 +1266,15 @@ namespace couchbaseembed
     {
         isAll = false; // ALL not supported
 
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
             PathTracker     newPathNode(xpath, CPNTSet);
             StringBuffer    newXPath;
 
-            constructNewXPath(newXPath, xpath);
+            constructNewXPath(newXPath, xpath.str());
 
             newPathNode.childCount = m_oResultRow->getCount(newXPath);
             m_pathStack.push_back(newPathNode);
@@ -926,14 +1292,15 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processBeginDataset(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
             PathTracker     newPathNode(xpath, CPNTDataset);
             StringBuffer    newXPath;
 
-            constructNewXPath(newXPath, xpath);
+            constructNewXPath(newXPath, xpath.str());
 
             newPathNode.childCount = m_oResultRow->getCount(newXPath);
             m_pathStack.push_back(newPathNode);
@@ -946,11 +1313,12 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processBeginRow(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
-            if (strncmp(xpath, "<nested row>", 12) == 0)
+            if (strncmp(xpath.str(), "<nested row>", 12) == 0)
             {
                 // Row within child dataset
                 if (m_pathStack.back().nodeType == CPNTDataset)
@@ -980,9 +1348,10 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processEndSet(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath && !m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+        if (!xpath.isEmpty() && !m_pathStack.empty() && strcmp(xpath.str(), m_pathStack.back().nodeName.str()) == 0)
         {
             m_pathStack.pop_back();
         }
@@ -990,11 +1359,12 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processEndDataset(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
-            if (!m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+            if (!m_pathStack.empty() && strcmp(xpath.str(), m_pathStack.back().nodeName.str()) == 0)
             {
                 m_pathStack.pop_back();
             }
@@ -1007,9 +1377,10 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processEndRow(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
             if (!m_pathStack.empty())
             {
@@ -1017,7 +1388,7 @@ namespace couchbaseembed
                 {
                     m_pathStack.back().childrenProcessed++;
                 }
-                else if (strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+                else if (strcmp(xpath.str(), m_pathStack.back().nodeName.str()) == 0)
                 {
                     m_pathStack.pop_back();
                 }
@@ -1031,16 +1402,17 @@ namespace couchbaseembed
 
     const char * CouchbaseRowBuilder::nextField(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (!xpath || !*xpath)
+        if (xpath.isEmpty())
         {
             failx("nextField: Field name or xpath missing");
         }
 
         StringBuffer fullXPath;
 
-        if (!m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet && strncmp(xpath, "<set element>", 13) == 0)
+        if (!m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet && strncmp(xpath.str(), "<set element>", 13) == 0)
         {
             m_pathStack.back().currentChildIndex++;
             constructNewXPath(fullXPath, NULL);
@@ -1048,49 +1420,64 @@ namespace couchbaseembed
         }
         else
         {
-            constructNewXPath(fullXPath, xpath);
+            constructNewXPath(fullXPath, xpath.str());
         }
 
         return m_oResultRow->queryProp(fullXPath.str());
     }
 
-    const char * CouchbaseRowBuilder::xpathOrName(const RtlFieldInfo * field) const
+    void CouchbaseRowBuilder::xpathOrName(StringBuffer & outXPath, const RtlFieldInfo * field) const
     {
-        const char * xpath = NULL;
+        outXPath.clear();
 
         if (field->xpath)
         {
             if (field->xpath[0] == xpathCompoundSeparatorChar)
             {
-                xpath = field->xpath + 1;
+                outXPath.append(field->xpath + 1);
             }
             else
             {
-                xpath = field->xpath;
+                const char * sep = strchr(field->xpath, xpathCompoundSeparatorChar);
+
+                if (!sep)
+                {
+                    outXPath.append(field->xpath);
+                }
+                else
+                {
+                    outXPath.append(field->xpath, 0, static_cast<size32_t>(sep - field->xpath));
+                }
             }
         }
         else
         {
-            xpath = str(field->name);
+            outXPath.append(str(field->name));
         }
-
-        return xpath;
     }
 
     void CouchbaseRowBuilder::constructNewXPath(StringBuffer& outXPath, const char * nextNode) const
     {
-        for (std::vector<PathTracker>::const_iterator iter = m_pathStack.begin(); iter != m_pathStack.end(); iter++)
+        bool nextNodeIsFromRoot = (nextNode && *nextNode == '/');
+
+        outXPath.clear();
+
+        if (!nextNodeIsFromRoot)
         {
-            if (strncmp(iter->nodeName, "<row>", 5) != 0)
+            // Build up full parent xpath using our previous components
+            for (std::vector<PathTracker>::const_iterator iter = m_pathStack.begin(); iter != m_pathStack.end(); iter++)
             {
-                if (!outXPath.isEmpty())
+                if (strncmp(iter->nodeName, "<row>", 5) != 0)
                 {
-                    outXPath.append("/");
-                }
-                outXPath.append(iter->nodeName);
-                if (iter->nodeType == CPNTDataset || iter->nodeType == CPNTSet)
-                {
-                    outXPath.appendf("[%d]", iter->currentChildIndex);
+                    if (!outXPath.isEmpty())
+                    {
+                        outXPath.append("/");
+                    }
+                    outXPath.append(iter->nodeName);
+                    if (iter->nodeType == CPNTDataset || iter->nodeType == CPNTSet)
+                    {
+                        outXPath.appendf("[%d]", iter->currentChildIndex);
+                    }
                 }
             }
         }
@@ -1142,3 +1529,30 @@ namespace couchbaseembed
         return true; // TO-DO
     }
 } // namespace
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    couchbaseembed::connectionCache = nullptr;
+    couchbaseembed::connectionCacheExpirer = nullptr;
+
+    return true;
+}
+
+MODULE_EXIT()
+{
+    // Delete the background thread expiring items from the CouchbaseConnection
+    // cache before deleting the connection cache
+    if (couchbaseembed::connectionCacheExpirer)
+    {
+        couchbaseembed::connectionCacheExpirer->stop();
+        delete(couchbaseembed::connectionCacheExpirer);
+        couchbaseembed::connectionCacheExpirer = nullptr;
+    }
+
+     if (couchbaseembed::connectionCache)
+    {
+        couchbaseembed::connectionCache->deleteAll();
+        delete(couchbaseembed::connectionCache);
+        couchbaseembed::connectionCache = nullptr;
+    }
+}

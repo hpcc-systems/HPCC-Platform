@@ -335,10 +335,11 @@ static unsigned short getDafsPort(const SocketEndpoint &ep,unsigned &numfails,Cr
     }
     else if (numfails>5)
         return 0;
-    if (testDaliServixPresent(ep)) 
-        return ep.port?ep.port:getDaliServixPort();
+    unsigned short nPort = getActiveDaliServixPort(ep);
+    if (nPort)
+        return nPort;
     StringBuffer err("Failed to connect to DaFileSrv on ");
-    ep.getUrlStr(err);
+    ep.getIpText(err);
 #ifdef _WIN32
     ERRLOG("%s",err.str());
     if (sect) {

@@ -25,10 +25,9 @@ import thread
 import threading
 import inspect
 
-from ..common.config import Config
 from ..common.error import Error
 from ..common.logger import Logger
-from ..common.report import Report, Tee
+from ..common.report import Report
 from ..regression.suite import Suite
 from ..util.ecl.cc import ECLCC
 from ..util.ecl.command import ECLcmd
@@ -555,7 +554,11 @@ class Regression:
             wuid="N/A"
 
         if wuid and wuid.startswith("W"):
-            url = "http://" + self.config.espIp+self.config.espSocket
+            if self.config.useSsl.lower() == 'true':
+                url = "https://"
+            else:
+                url = "http://"
+            url += self.config.espIp + ":" + self.config.espSocket
             url += "/?Widget=WUDetailsWidget&Wuid="
             url += wuid
         elif query.testFail():

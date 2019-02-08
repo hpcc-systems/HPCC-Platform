@@ -21,6 +21,7 @@
 #include "jargv.hpp"
 #include "junicode.hpp"
 #include "build-config.h"
+#include "esdlcmdutils.hpp"
 
 #include "esdlcmd_common.hpp"
 
@@ -132,7 +133,7 @@ bool EsdlConvertCmd::parseCommandLineOptions(ArgvIterator &iter)
     for (; !iter.done(); iter.next())
     {
         if (parseCommandLineOption(iter))
-            return true;
+            continue;
 
         if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
             return false;
@@ -147,7 +148,14 @@ bool EsdlConvertCmd::parseCommandLineOption(ArgvIterator &iter)
         return true;
     if (iter.matchOption(optOutDirPath, ESDL_CONVERT_OUTDIR))
         return true;
-
+    StringAttr oneOption;
+    if (iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH) || iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH_S))
+    {
+        if(optIncludePath.length() > 0)
+            optIncludePath.append(ENVSEPSTR);
+        optIncludePath.append(oneOption.get());
+        return true;
+    }
     return false;
 }
 
@@ -163,6 +171,8 @@ esdlCmdOptionMatchIndicator EsdlConvertCmd::matchCommandLineOption(ArgvIterator 
 
 bool EsdlConvertCmd::finalizeOptions(IProperties *globals)
 {
+    extractEsdlCmdOption(optIncludePath, globals, ESDLOPT_INCLUDE_PATH_ENV, ESDLOPT_INCLUDE_PATH_INI, NULL, NULL);
+
     if (optSource.isEmpty())
     {
         fprintf(stderr, "\nError: Source esdl parameter required\n");

@@ -27,6 +27,7 @@
 #include "esdl2ecl.cpp"
 #include "esdl-publish.cpp"
 #include "xsdparser.hpp"
+#include "esdlcmdutils.hpp"
 
 bool isUTF16Bom(const char *check)
 {
@@ -136,6 +137,8 @@ public:
 
     virtual bool finalizeOptions(IProperties *globals)
     {
+        extractEsdlCmdOption(optIncludePath, globals, ESDLOPT_INCLUDE_PATH_ENV, ESDLOPT_INCLUDE_PATH_INI, NULL, NULL);
+
         if (optSource.isEmpty())
         {
             usage();
@@ -279,12 +282,13 @@ public:
         puts("  <serviceName>    Name of the ESDL Service to generate the template for." );
         puts("  <methodName>     Name of the ESDL method to generate the template for." );
 
+        puts(ESDLOPT_INCLUDE_PATH_USAGE);
         EsdlConvertCmd::usage();
     }
 
     virtual void loadServiceDef()
     {
-        cmdHelper.loadDefinition(optSource, optService, 0);
+        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath);
     }
 
 public:
@@ -345,6 +349,8 @@ public:
 
     virtual bool finalizeOptions(IProperties *globals)
     {
+        extractEsdlCmdOption(optIncludePath, globals, ESDLOPT_INCLUDE_PATH_ENV, ESDLOPT_INCLUDE_PATH_INI, NULL, NULL);
+
         if (optSource.isEmpty())
         {
             usage();
@@ -950,7 +956,7 @@ public:
 
     virtual int processCMD()
     {
-        cmdHelper.loadDefinition(optSource, optService, 0);
+        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath);
 
         Owned<IEsdlDefObjectIterator> responseEsdl = cmdHelper.esdlDef->getDependencies(optService, optMethod, 0, nullptr, DEPFLAG_INCLUDE_RESPONSE | DEPFLAG_INCLUDE_METHOD | DEPFLAG_ECL_ONLY);
         Owned<IEsdlDefObjectIterator> requestEsdl = cmdHelper.esdlDef->getDependencies(optService, optMethod, 0, nullptr, DEPFLAG_INCLUDE_REQUEST | DEPFLAG_ECL_ONLY);
@@ -1124,6 +1130,7 @@ public:
         puts("  <diffTemplate>   The template that specifies the differencing and monitoring rules usedto generate the result");
         puts("                   differencing and monitoring ECL code for the given service method.\n" );
 
+        puts(ESDLOPT_INCLUDE_PATH_USAGE);
         EsdlConvertCmd::usage();
     }
 

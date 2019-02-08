@@ -335,6 +335,7 @@ bool NewProjectMapper2::ensureMapping()
     case no_none:
     case no_externalcall:
     case no_outofline:
+    case no_inline:
     case no_attr:
         return false;              // avoid internal error when values not provided for a record structure
     default:

@@ -19,6 +19,7 @@
     <xsl:param name="formOptionsAccess" select="1"/>
     <xsl:param name="noDefaultValue" select="0"/>
     <xsl:param name="includeSoapTest" select="1"/>
+    <xsl:param name="includeRoxieOptions" select="1"/>
     <xsl:param name="schemaRoot" select="/FormInfo/xsd:schema"/>
     <xsl:param name="esdl_links" select="0"/>
     <xsl:param name="useTextareaForStringArray" select="0"/>
@@ -302,7 +303,16 @@ function switchInputForm()
                      </span>
               </td>
             </tr>
-
+            <xsl:if test="$includeRoxieOptions=1">
+            <tr>
+               <td class='input' align='left'>
+                  <span>
+                     <hr/>
+                     <input type='checkbox' name='@log'/> Capture Log Info.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Trace Level: <input type='text' name='@traceLevel' size='10'/><br/>
+                  </span>
+               </td>
+            </tr>
+            </xsl:if>
             <tr><td bgcolor="#030303" height="1"></td></tr>
                 <tr><td height="6"></td></tr>
 

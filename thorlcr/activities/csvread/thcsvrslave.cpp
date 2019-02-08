@@ -59,11 +59,38 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         bool readFinished;
         offset_t localOffset;
         size32_t maxRowSize;
+        bool processHeaderLines = false;
 
         unsigned splitLine()
         {
             if (inputStream->eos())
                 return 0;
+            if (processHeaderLines)
+            {
+                processHeaderLines = false;
+                unsigned subFile = 0;
+                unsigned pnum = partDesc->queryPartIndex();
+                if (activity.superFDesc)
+                {
+                    unsigned lnum;
+                    if (!activity.superFDesc->mapSubPart(pnum, subFile, lnum))
+                        throwUnexpected(); // was validated earlier
+                    pnum = lnum;
+                }
+                unsigned &headerLinesRemaining = activity.getHeaderLines(subFile);
+                if (headerLinesRemaining)
+                {
+                    do
+                    {
+                        unsigned lineLength = splitLine();
+                        if (0 == lineLength)
+                            break;
+                        inputStream->skip(lineLength);
+                    }
+                    while (--headerLinesRemaining);
+                }
+                activity.sendHeaderLines(subFile, pnum);
+            }
             size32_t minRequired = 4096; // MORE - make configurable
             size32_t thisLineLength;
             for (;;)
@@ -119,33 +146,9 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 CriticalBlock block(statsCs);
                 iFileIO.setown(partFileIO.getClear());
             }
-
             inputStream.setown(createFileSerialStream(iFileIO));
             if (activity.headerLines)
-            {
-                unsigned subFile = 0;
-                unsigned pnum = partDesc->queryPartIndex();
-                if (activity.superFDesc)
-                {
-                    unsigned lnum;
-                    if (!activity.superFDesc->mapSubPart(pnum, subFile, lnum))
-                        throwUnexpected(); // was validated earlier
-                    pnum = lnum;
-                }
-                unsigned &headerLinesRemaining = activity.getHeaderLines(subFile);
-                if (headerLinesRemaining)
-                {
-                    do
-                    {
-                        unsigned lineLength = splitLine();
-                        if (0 == lineLength)
-                            break;
-                        inputStream->skip(lineLength);
-                    }
-                    while (--headerLinesRemaining);
-                }
-                activity.sendHeaderLines(subFile, pnum);
-            }
+                processHeaderLines = true;
         }
         virtual void close(CRC32 &fileCRC)
         {
@@ -284,6 +287,16 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         CMessageBuffer msgMb;
         msgMb.append(subFile);
         msgMb.append(headerLinesRemaining[subFile]);
+        // inform next slave about all subfiles I'm not dealing with.
+        for (unsigned s=0; s<subFiles; s++)
+        {
+            if (NotFound == localLastPart[s])
+            {
+                sentHeaderLines->testSet(s);
+                msgMb.append(s);
+                msgMb.append(headerLinesRemaining[s]);
+            }
+        }
         queryJobChannel().queryJobComm().send(msgMb, queryJobChannel().queryMyRank()+1, mpTag);
     }
     void sendRemainingHeaderLines()
@@ -347,7 +360,9 @@ public:
             mpTag = container.queryJobChannel().deserializeMPTag(data);
             data.read(subFiles);
             superFDesc = partDescs.ordinality() ? partDescs.item(0).queryOwner().querySuperFileDescriptor() : NULL;
-            localLastPart.allocateN(subFiles, true);
+            localLastPart.allocateN(subFiles);
+            for (unsigned llp=0; llp<subFiles; llp++)
+                localLastPart[llp] = NotFound;
             ForEachItemIn(p, partDescs)
             {
                 IPartDescriptor &partDesc = partDescs.item(p);
@@ -360,7 +375,7 @@ public:
                         throw MakeActivityException(this, 0, "mapSubPart failed, file=%s, partnum=%d", logicalFilename.get(), pnum);
                     pnum = lnum;
                 }
-                if (pnum > localLastPart[subFile]) // don't think they can really be out of order
+                if ((NotFound == localLastPart[subFile]) || (pnum > localLastPart[subFile])) // don't think they can really be out of order
                     localLastPart[subFile] = pnum;
             }
             headerLinesRemaining.allocateN(subFiles);
@@ -385,28 +400,31 @@ public:
             cachedMetaInfo.isSource = true;
             getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), partDescs.getArray(), partHandler);
             cachedMetaInfo.unknownRowsOutput = true; // at least I don't think we know
-            cachedMetaInfo.fastThrough = true;
+            cachedMetaInfo.fastThrough = (0 == headerLines);
         }
         info = cachedMetaInfo;
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        OwnedConstThorRow row = out->nextRow();
-        if (row)
+        if (out)
         {
-            rowcount_t c = getDataLinkCount();
-            if (0 == stopAfter || (c < stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
+            OwnedConstThorRow row = out->nextRow();
+            if (row)
             {
-                if (c < limit) // NB: only slave limiter, global performed in chained limit activity
+                rowcount_t c = getDataLinkCount();
+                if (0 == stopAfter || (c < stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
                 {
-                    dataLinkIncrement();
-                    return row.getClear();
+                    if (c < limit) // NB: only slave limiter, global performed in chained limit activity
+                    {
+                        dataLinkIncrement();
+                        return row.getClear();
+                    }
+                    helper->onLimitExceeded();
                 }
-                helper->onLimitExceeded();
             }
+            sendRemainingHeaderLines();
         }
-        sendRemainingHeaderLines();
         return NULL;
     }
     virtual void start()

@@ -4265,6 +4265,19 @@ bool castPreservesValueAndOrder(IHqlExpression * expr)
     IHqlExpression * uncast = expr->queryChild(0);
     ITypeInfo * castType = expr->queryType();
     ITypeInfo * uncastType = uncast->queryType();
+    if (!preservesValue(castType, uncastType))
+        return false;
+    if (!preservesOrder(castType, uncastType))
+        return false;
+    return true;
+}
+
+bool castPreservesInformationAndOrder(IHqlExpression * expr)
+{
+    assertex(isCast(expr));
+    IHqlExpression * uncast = expr->queryChild(0);
+    ITypeInfo * castType = expr->queryType();
+    ITypeInfo * uncastType = uncast->queryType();
     if (castLosesInformation(castType, uncastType))
         return false;
     if (!preservesOrder(castType, uncastType))
@@ -4926,7 +4939,7 @@ void getStoredDescription(StringBuffer & text, IHqlExpression * sequence, IHqlEx
             break;
         case ResultSequenceInternal:
             text.append("Internal");
-            if (includeInternalName)
+            if (includeInternalName && name)
                 name->toString(text.append("(")).append(")");
             break;
         default:
@@ -9078,15 +9091,13 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
     //with implicitly importing myModule.
     Owned<IFileContents> mappedContents = createFileContentsFromText(macroText.length(), macroText.str(), macroContents->querySourcePath(), false, NULL);
     Owned<IHqlScope> scope = createPrivateScope();
-    if (queryLegacyImportSemantics())
-        importRootModulesToScope(scope, ctx);
     return parseQuery(scope, mappedContents, ctx, NULL, macroParms, true, true);
 }
 
 static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx, bool syntaxCheck)
 {
     if (expr->isMacro())
-        return expandMacroDefinition(expr, ctx, true);
+        return expandMacroDefinition(expr, ctx, !syntaxCheck);
 
     if (expr->isFunction())
     {

@@ -123,7 +123,13 @@ public:
     virtual bool checkMinVer(double minVer) {  return m_clientVer<0 || m_clientVer >= minVer; }
     virtual bool checkMaxVer(double maxVer) {  return m_clientVer<0 || m_clientVer <= maxVer; }
     virtual bool checkMinMaxVer(double minVer, double maxVer) {  return m_clientVer<0 || m_clientVer>= minVer || m_clientVer <= maxVer; }
-    virtual bool checkOptional(const char* option) { return m_queryparams.get() && m_queryparams->hasProp(option); }
+    virtual bool checkOptional(const char* option)
+    {
+        if (option && *option == '!')
+            return !m_queryparams.get() || !m_queryparams->hasProp(option+1);
+        else
+            return m_queryparams.get() && m_queryparams->hasProp(option);
+    }
     virtual bool isMethodAllowed(double version, const char* optional, const char* security, double maxver, double minver);
 
     virtual IMapInfo& queryMapInfo() 

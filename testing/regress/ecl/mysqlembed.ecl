@@ -52,13 +52,37 @@ END;
 init := DATASET([{'name1', 0x4161, 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße'},
                  {'name2', 66, 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là', '2015-12-25 01:23:45' }], childrec);
 
-drop() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+drop1() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   DROP TABLE IF EXISTS tbl1;
 ENDEMBED;
 
-create() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+drop2() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  DROP PROCEDURE IF EXISTS testSP;
+ENDEMBED;
+
+drop3() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  DROP FUNCTION IF EXISTS hello;
+ENDEMBED;
+
+drop() := SEQUENTIAL(drop1(), drop2(), drop3());
+
+create1() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   CREATE TABLE tbl1 ( name VARCHAR(20), bval BIT(15), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10), dt DATETIME );
 ENDEMBED;
+
+create2() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  CREATE FUNCTION hello(s CHAR(255)) RETURNS char(255) DETERMINISTIC
+     RETURN CONCAT('Hello, ',s,'!') 
+ENDEMBED;
+
+create3() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  CREATE PROCEDURE testSP(IN in_name VARCHAR(255))
+  BEGIN
+     SELECT * FROM tbl1 where name=in_name;
+  END
+ENDEMBED;
+
+create() := SEQUENTIAL(create1(), create2(), create3());
 
 initialize(dataset(childrec) values) := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -108,6 +132,14 @@ ENDEMBED;
 
 string testMySQLString() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   SELECT max(name) from tbl1;
+ENDEMBED;
+
+string testMySQLStoredProcedure() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  select Hello('World');
+ENDEMBED;
+
+streamed dataset(childrec) testMySQLStoredProcedure2(STRING lid) := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  CALL testSP(?);
 ENDEMBED;
 
 dataset(childrec) testMySQLStringParam(string filter) := EMBED(mysql : server(myServer),user(myUser),database(myDB))
@@ -163,22 +195,25 @@ sequential (
   initializeNulls(),
   initializeUtf8(),
   PARALLEL (
-  OUTPUT(testMySQLDS()),
-  COUNT(testMySQLDS2()),
-  OUTPUT(testMySQLDS3(), {name}),
-  OUTPUT(testMySQLRow().name),
-  OUTPUT(testMySQLParms('name1', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße')),
-  OUTPUT(testMySQLString()),
-  OUTPUT(testMySQLStringParam(testMySqlString())),
-  OUTPUT(testMySQLDSParam(PROJECT(init, extractName(LEFT)))),
-    OUTPUT(testMySQLInt()+testMySQLInt()),
-  OUTPUT(testMySQLBool()),
-  OUTPUT(testMySQLReal8()),
-  OUTPUT(testMySQLReal4()),
-  OUTPUT(testMySQLData()),
-  OUTPUT(testMySQLUtf8()),
-  OUTPUT(testMySQLUnicode()),
-  OUTPUT(testMySQLDateTime()),
-  OUTPUT(testMySQLTransform())
+      OUTPUT(testMySQLDS()),
+      COUNT(testMySQLDS2()),
+
+      OUTPUT(testMySQLDS3(), {name}),
+      OUTPUT(testMySQLRow().name),
+      OUTPUT(testMySQLParms('name1', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße')),
+      OUTPUT(testMySQLString()),
+      OUTPUT(testMySQLStringParam(testMySqlString())),
+      OUTPUT(testMySQLDSParam(PROJECT(init, extractName(LEFT)))),
+      OUTPUT(testMySQLInt()+testMySQLInt()),
+      OUTPUT(testMySQLBool()),
+      OUTPUT(testMySQLReal8()),
+      OUTPUT(testMySQLReal4()),
+      OUTPUT(testMySQLData()),
+      OUTPUT(testMySQLUtf8()),
+      OUTPUT(testMySQLUnicode()),
+      OUTPUT(testMySQLDateTime()),
+      OUTPUT(testMySQLTransform()),
+      OUTPUT(testMySQLStoredProcedure()),
+      OUTPUT(testMySQLStoredProcedure2('name1'))
   )
 );

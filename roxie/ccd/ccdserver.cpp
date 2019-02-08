@@ -4653,7 +4653,7 @@ public:
                         // MORE - ROXIE_ALIVE perhaps should go here too
                         default:
                             if (ctxTraceLevel > 3)
-                                activity.queryLogCtx().CTXLOG("Discarding packet %p - original %p is NULL or has result already", mr.get(), original);
+                                activity.queryLogCtx().CTXLOG("Discarding packet %p %x - original %p is NULL or has result already", mr.get(), header.activityId, original);
                             mr->discard();
                             break;
                     }
@@ -11625,9 +11625,14 @@ public:
     {
         IConstWorkUnit *workUnit = ctx->queryWorkUnit();
         if (workUnit)
-            return workUnit->queryUserDescriptor();
+            return workUnit->queryUserDescriptor();//ad-hoc mode
         else
-            return NULL;
+        {
+            Owned<IRoxieDaliHelper> daliHelper = connectToDali(false);
+            if (daliHelper)
+                return daliHelper->queryUserDescriptor();//predeployed query mode
+        }
+        return NULL;
     }
 
     virtual bool isOutputTransformed() const { return false; }
@@ -12168,9 +12173,14 @@ public:
     {
         IConstWorkUnit *workUnit = ctx->queryWorkUnit();
         if (workUnit)
-            return workUnit->queryUserDescriptor();
+            return workUnit->queryUserDescriptor();//ad-hoc mode
         else
-            return NULL;
+        {
+            Owned<IRoxieDaliHelper> daliHelper = connectToDali(false);
+            if (daliHelper)
+                return daliHelper->queryUserDescriptor();//predeployed query mode
+        }
+        return NULL;
     }
 };
 
@@ -19701,11 +19711,13 @@ public:
         }
         catch (IException *E)
         {
+            ensureCreated();
             onException(E);
             started = true;
         }
         catch (...)
         {
+            ensureCreated();
             onException(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught"));
             started = true;
         }

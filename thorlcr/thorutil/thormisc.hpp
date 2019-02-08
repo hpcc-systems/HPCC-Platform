@@ -477,7 +477,8 @@ interface IRowServer : extends IInterface
 extern graph_decl IRowStream *createRowStreamFromNode(CActivityBase &activity, unsigned node, ICommunicator &comm, mptag_t mpTag, const bool &abortSoon);
 extern graph_decl IRowServer *createRowServer(CActivityBase *activity, IRowStream *seq, ICommunicator &comm, mptag_t mpTag);
 
-extern graph_decl IRowStream *createUngroupStream(IRowStream *input);
+interface IEngineRowStream;
+extern graph_decl IEngineRowStream *createUngroupStream(IRowStream *input);
 
 interface IThorRowInterfaces;
 extern graph_decl void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IThorRowInterfaces *rowIf);

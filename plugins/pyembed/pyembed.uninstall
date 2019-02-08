@@ -1,0 +1,1 @@
+removeSymlink "$path/versioned/python2/libpyembed.so"

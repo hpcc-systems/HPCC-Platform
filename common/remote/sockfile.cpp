@@ -60,7 +60,7 @@
 #define DUMMY_TIMEOUT_MAX (1000*10)
 
 static bool errorSimulationOn = true;
-static ISocket *timeoutreadsock = NULL; // used to trigger 
+static ISocket *timeoutreadsock = NULL; // used to trigger
 
 
 struct dummyReadWrite
@@ -97,9 +97,9 @@ struct dummyReadWrite
         {
             return str.append("timeout expired");
         }
-        MessageAudience errorAudience() const 
-        { 
-            return MSGAUD_user; 
+        MessageAudience errorAudience() const
+        {
+            return MSGAUD_user;
         }
     };
 
@@ -144,7 +144,7 @@ struct dummyReadWrite
             PrintStackReport();
             PROGLOG("** Simulate Packet loss (size %d)",size);
             timeoutreadsock=sock;
-            return size; 
+            return size;
         }
         return sock->write(buf,size);
     }
@@ -194,26 +194,30 @@ public:
 
 
 static CriticalSection              secureContextCrit;
-static Owned<ISecureSocketContext>  secureContext;
+static Owned<ISecureSocketContext>  secureContextServer;
+static Owned<ISecureSocketContext>  secureContextClient;
 
 #ifdef _USE_OPENSSL
-static ISecureSocket *createSecureSocket(ISocket *sock,SecureSocketType type)
+static ISecureSocket *createSecureSocket(ISocket *sock, SecureSocketType type)
 {
     {
         CriticalBlock b(secureContextCrit);
-        if (!secureContext)
+        if (type == ServerSocket)
         {
-            if (securitySettings.certificate)
-                secureContext.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, type));
-            else
-                secureContext.setown(createSecureSocketContext(type));
+            if (!secureContextServer)
+                secureContextServer.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, type));
         }
+        else if (!secureContextClient)
+            secureContextClient.setown(createSecureSocketContext(type));
     }
+    int loglevel = SSLogNormal;
 #ifdef _DEBUG
-    return secureContext->createSecureSocket(sock, SSLogMax);
-#else
-    return secureContext->createSecureSocket(sock);
+    loglevel = SSLogMax;
 #endif
+    if (type == ServerSocket)
+        return secureContextServer->createSecureSocket(sock, loglevel);
+    else
+        return secureContextClient->createSecureSocket(sock, loglevel);
 }
 #endif
 
@@ -224,7 +228,7 @@ void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime)
 }
 
 
-struct sRFTM        
+struct sRFTM
 {
     CTimeMon *timemon;
     sRFTM(unsigned limit) {  timemon = limit ? new CTimeMon(limit) : NULL; }
@@ -305,7 +309,7 @@ enum {
     RFCsettrace,
     RFCgetinfo,
     RFCfirewall,    // not used currently          // 30
-    RFCunlock,  
+    RFCunlock,
     RFCunlockreply,
     RFCinvalid,
     RFCcopysection,
@@ -466,6 +470,38 @@ static const char *getRFSERRText(unsigned err)
     return "RFSERR_Unknown";
 }
 
+unsigned mapDafilesrvixCodes(unsigned err)
+{
+    // old Solaris dali/remote/daliservix.cpp uses
+    // different values for these error codes.
+    switch (err)
+    {
+        case 8200:
+            return RFSERR_InvalidCommand;
+        case 8201:
+            return RFSERR_NullFileIOHandle;
+        case 8202:
+            return RFSERR_InvalidFileIOHandle;
+        case 8203:
+            return RFSERR_TimeoutFileIOHandle;
+        case 8204:
+            return RFSERR_OpenFailed;
+        case 8205:
+            return RFSERR_ReadFailed;
+        case 8206:
+            return RFSERR_WriteFailed;
+        case 8207:
+            return RFSERR_RenameFailed;
+        case 8208:
+            return RFSERR_SetReadOnlyFailed;
+        case 8209:
+            return RFSERR_GetDirFailed;
+        case 8210:
+            return RFSERR_MoveFailed;
+    }
+    return err;
+}
+
 #define ThrottleText(throttleClass) #throttleClass
 const char *ThrottleStrings[] =
 {
@@ -512,23 +548,23 @@ class DECL_EXCEPTION CDafsException: public IDAFS_Exception, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDafsException(int code,const char *_msg) 
+    CDafsException(int code,const char *_msg)
         : errcode(code), msg(_msg)
     {
     };
 
-    int errorCode() const 
-    { 
-        return errcode; 
+    int errorCode() const
+    {
+        return errcode;
     }
 
     StringBuffer &  errorMessage(StringBuffer &str) const
-    { 
+    {
         return str.append(msg);
     }
-    MessageAudience errorAudience() const 
-    { 
-        return MSGAUD_user; 
+    MessageAudience errorAudience() const
+    {
+        return MSGAUD_user;
     }
 };
 
@@ -721,7 +757,7 @@ void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *m
         if (dir==NULL) { // remove all matching mount
             if (!mountdir)
                 return;
-            if (strcmp(mount.local,mountdir)==0) 
+            if (strcmp(mount.local,mountdir)==0)
                 localMounts.remove(i);
         }
         else if (mount.ip.ipequals(ip)&&(strcmp(mount.dir,dir)==0)) {
@@ -774,13 +810,13 @@ static class CConnectionTable: public SuperHashTableOf<CConnectionRec,SocketEndp
 
     void onRemove(void *e)
     {
-        CConnectionRec *r=(CConnectionRec *)e;      
+        CConnectionRec *r=(CConnectionRec *)e;
         delete r;
     }
 
     unsigned getHashFromElement(const void *e) const
     {
-        const CConnectionRec &elem=*(const CConnectionRec *)e;      
+        const CConnectionRec &elem=*(const CConnectionRec *)e;
         return elem.ep.hash(0);
     }
 
@@ -791,7 +827,7 @@ static class CConnectionTable: public SuperHashTableOf<CConnectionRec,SocketEndp
 
     const void * getFindParam(const void *p) const
     {
-        const CConnectionRec &elem=*(const CConnectionRec *)p;      
+        const CConnectionRec &elem=*(const CConnectionRec *)p;
         return (void *)&elem.ep;
     }
 
@@ -807,11 +843,11 @@ static class CConnectionTable: public SuperHashTableOf<CConnectionRec,SocketEndp
 public:
     static CriticalSection crit;
 
-    CConnectionTable() 
+    CConnectionTable()
     {
         numsockets = 0;
     }
-    ~CConnectionTable() { 
+    ~CConnectionTable() {
         _releaseAll();
     }
 
@@ -836,7 +872,7 @@ public:
     {
         // always called from crit block
         while (numsockets>=SOCKET_CACHE_MAX) {
-            // find oldest 
+            // find oldest
             CConnectionRec *c = NULL;
             unsigned oldest = 0;
             CConnectionRec *old = NULL;
@@ -879,12 +915,12 @@ public:
     {
         // always called from crit block
         CConnectionRec *r = SuperHashTableOf<CConnectionRec,SocketEndpoint>::find(&ep);
-        if (r) 
+        if (r)
             if (r->socks.zap(*sock)&&numsockets)
                 numsockets--;
 
     }
-    
+
 
 } *ConnectionTable = NULL;
 
@@ -917,7 +953,7 @@ struct CTreeCopyItem: public CInterface
     offset_t sz;                // original size
     CDateTime dt;               // original date
     RemoteFilenameArray loc;    // locations for file - 0 is original
-    Owned<IBitSet> busy;    
+    Owned<IBitSet> busy;
     unsigned lastused;
 
     CTreeCopyItem(RemoteFilename &orig, const char *_net, const char *_mask, offset_t _sz, CDateTime &_dt)
@@ -929,7 +965,7 @@ struct CTreeCopyItem: public CInterface
         busy.setown(createThreadSafeBitSet());
         lastused = msTick();
     }
-    bool equals(const RemoteFilename &orig, const char *_net, const char *_mask, offset_t _sz, CDateTime &_dt) 
+    bool equals(const RemoteFilename &orig, const char *_net, const char *_mask, offset_t _sz, CDateTime &_dt)
     {
         if (!orig.equals(loc.item(0)))
             return false;
@@ -946,7 +982,7 @@ struct CTreeCopyItem: public CInterface
 static CIArrayOf<CTreeCopyItem>  treeCopyArray;
 static CriticalSection           treeCopyCrit;
 static unsigned                  treeCopyWaiting=0;
-static Semaphore                 treeCopySem;   
+static Semaphore                 treeCopySem;
 
 #define DEBUGSAMEIP false
 
@@ -1038,7 +1074,7 @@ class CRemoteBase: public CInterface
                         ssock.setown(createSecureSocket(socket.getClear(), ClientSocket));
                         int status = ssock->secure_connect();
                         if (status < 0)
-                            throw MakeStringException(-1, "Failure to establish secure connection");
+                            throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection");
                         socket.setown(ssock.getLink());
                     }
                     catch (IException *e)
@@ -1241,7 +1277,9 @@ protected: friend class CRemoteFileIO;
         unsigned errCode;
         reply.read(errCode);
         if (errCode) {
-
+            // old Solaris daliservix.cpp error code conversion
+            if ( (errCode >= 8200) && (errCode <= 8210) )
+                errCode = mapDafilesrvixCodes(errCode);
             StringBuffer msg;
             if (filename.get())
                 msg.append(filename);
@@ -1265,8 +1303,9 @@ protected: friend class CRemoteFileIO;
                         msg.appendf(" %2x",(int)rest[i]);
                 }
             }
-            else if(errCode == 8209)
-                msg.append("Failed to open directory.");
+            // NB: could append getRFSERRText for all error codes
+            else if (errCode == RFSERR_GetDirFailed)
+                msg.append(RFSERR_GetDirFailed_Text);
             else
                 msg.append("ERROR #").append(errCode);
 #ifdef _DEBUG
@@ -1467,7 +1506,7 @@ public:
         //  True if there are valid directory entry follows this flag
         //  False if there are no more valid entry in this block aka end of block
         // If there is more data in the stream, the end of block flag should be removed
-        if (rest&&(rb[rest-1]!=0)) 
+        if (rest&&(rb[rest-1]!=0))
         {
             rest--; // remove stream live flag
             if(rest && (0 == rb[rest-1]))
@@ -1505,7 +1544,7 @@ public:
             byte isValidEntry;
             buf.read(isValidEntry);
             curvalid = isValidEntry!=0;
-            if (!curvalid) 
+            if (!curvalid)
                 return false;
             buf.read(curisdir);
             buf.read(cursize);
@@ -1523,12 +1562,12 @@ public:
         return true;
     }
 
-    bool isValid() 
-    { 
-        return curvalid; 
+    bool isValid()
+    {
+        return curvalid;
     }
-    IFile & query() 
-    { 
+    IFile & query()
+    {
         if (!cur) {
             StringBuffer full(dir);
             addPathSepChar(full).append(curname);
@@ -1540,15 +1579,15 @@ public:
                 cur.setown(createIFile(rfn));
             }
         }
-        return *cur; 
+        return *cur;
     }
     StringBuffer &getName(StringBuffer &buf)
     {
         return buf.append(curname);
     }
-    bool isDir() 
-    { 
-        return curisdir; 
+    bool isDir()
+    {
+        return curisdir;
     }
 
     __int64 getFileSize()
@@ -1569,7 +1608,7 @@ public:
     {
         mask = _mask;
     }
-    
+
     virtual unsigned getFlags()
     {
         if (flags&&(curidx<numflags))
@@ -1600,9 +1639,9 @@ public:
                 if (!iter->next())
                     break;
             }
-        }               
+        }
         b = 0;
-        mb.append(b);   
+        mb.append(b);
         return ret;
     }
 
@@ -1610,7 +1649,7 @@ public:
     {
         // bit slow
         MemoryBuffer flags;
-        ForEach(*iter) 
+        ForEach(*iter)
             flags.append((byte)iter->getFlags());
         if (flags.length()) {
             byte b = 2;
@@ -1702,6 +1741,11 @@ public:
         : CRemoteBase(_ep, _filename)
     {
         flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
+        if (filename.length()>2 && isPathSepChar(filename[0]) && isShareChar(filename[2]))
+        {
+            VStringBuffer winDriveFilename("%c:%s", filename[1], filename+3);
+            filename.set(winDriveFilename);
+        }
     }
 
     bool exists()
@@ -1711,7 +1755,7 @@ public:
         MemoryBuffer replyBuffer;
         sendBuffer.append((RemoteFileCommandType)RFCexists).append(filename);
         sendRemoteCommand(sendBuffer, replyBuffer);
-        
+
         bool ok;
         replyBuffer.read(ok);
         return ok;
@@ -1731,7 +1775,7 @@ public:
         MemoryBuffer replyBuffer;
         sendBuffer.append((RemoteFileCommandType)RFCgettime).append(filename);
         sendRemoteCommand(sendBuffer, replyBuffer);
-        
+
         bool ok;
         replyBuffer.read(ok);
         if (ok) {
@@ -1767,7 +1811,7 @@ public:
         else
             sendBuffer.append((bool)false);
         sendRemoteCommand(sendBuffer, replyBuffer);
-        
+
         bool ok;
         replyBuffer.read(ok);
         return ok;
@@ -1780,7 +1824,7 @@ public:
         MemoryBuffer replyBuffer;
         sendBuffer.append((RemoteFileCommandType)RFCisdirectory).append(filename);
         sendRemoteCommand(sendBuffer, replyBuffer);
-        
+
         unsigned ret;
         replyBuffer.read(ret);
         return (fileBool)ret;
@@ -1794,7 +1838,7 @@ public:
         MemoryBuffer replyBuffer;
         sendBuffer.append((RemoteFileCommandType)RFCisfile).append(filename);
         sendRemoteCommand(sendBuffer, replyBuffer);
-        
+
         unsigned ret;
         replyBuffer.read(ret);
         return (fileBool)ret;
@@ -1807,7 +1851,7 @@ public:
         MemoryBuffer replyBuffer;
         sendBuffer.append((RemoteFileCommandType)RFCisreadonly).append(filename);
         sendRemoteCommand(sendBuffer, replyBuffer);
-        
+
         unsigned ret;
         replyBuffer.read(ret);
         return (fileBool)ret;
@@ -1855,7 +1899,7 @@ public:
         splitDirTail(filename,path);
         StringBuffer newdir;
         path.append(splitDirTail(newname,newdir));
-        if (newdir.length()&&(strcmp(newdir.str(),path.str())!=0)) 
+        if (newdir.length()&&(strcmp(newdir.str(),path.str())!=0))
             WARNLOG("CRemoteFile::rename passed full path '%s' that may not to match original directory '%s'",newname,path.str());
         MemoryBuffer sendBuffer;
         initSendBuffer(sendBuffer);
@@ -1897,7 +1941,7 @@ public:
             newname = path;
             sendBuffer.append((RemoteFileCommandType)RFCrename);    // use rename if we can (supported on older dafilesrv)
         }
-        else 
+        else
             sendBuffer.append((RemoteFileCommandType)RFCmove);
         sendBuffer.append(filename).append(newname);
         sendRemoteCommand(sendBuffer, replyBuffer);
@@ -1955,7 +1999,20 @@ public:
             Owned<CEndpointCS> crit = dirCSTable->getCrit(ep); // NB dirCSTable doesn't own, last reference will remove from table
             CriticalBlock block(*crit);
             sendBuffer.append((RemoteFileCommandType)RFCgetdir).append(dir).append(tail).append(includedirs).append(sub);
-            sendRemoteCommand(sendBuffer, replyBuffer);
+            try
+            {
+                sendRemoteCommand(sendBuffer, replyBuffer);
+            }
+            catch (IDAFS_Exception * e)
+            {
+                if (e->errorCode() == RFSERR_GetDirFailed)
+                {
+                    e->Release();
+                    return (offset_t)-1;
+                }
+                else
+                    throw e;
+            }
         }
         // now should be 0 or 1 files returned
         Owned<CRemoteDirectoryIterator> iter = new CRemoteDirectoryIterator(ep, dir.str());
@@ -1967,7 +2024,7 @@ public:
         IFileIO * io = open(IFOread);
         offset_t length = (offset_t)-1;
         if (io)
-        {   
+        {
             length = io->size();
             io->Release();
         }
@@ -1994,7 +2051,7 @@ public:
             return createDirectoryIterator("",""); // NULL iterator
 
         CRemoteDirectoryIterator *ret = new CRemoteDirectoryIterator(ep, filename);
-        byte stream=1;
+        byte stream = (sub || !mask || containsFileWildcard(mask)) ? 1 : 0; // no point in streaming if mask without wildcards or sub, as will only be <= 1 match.
 
         Owned<CEndpointCS> crit = dirCSTable->getCrit(ep); // NB dirCSTable doesn't own, last reference will remove from table
         CriticalBlock block(*crit);
@@ -2006,7 +2063,7 @@ public:
             sendRemoteCommand(sendBuffer, replyBuffer);
             if (ret->appendBuf(replyBuffer))
                 break;
-            stream = 2;
+            stream = 2; // NB: will never get here if streaming was (if stream==0 above)
         }
         return ret;
     }
@@ -2030,7 +2087,7 @@ public:
         sendBuffer.append(cancelid);
         byte isprev=(prev!=NULL)?1:0;
         sendBuffer.append(isprev);
-        if (prev) 
+        if (prev)
             CRemoteDirectoryIterator::serialize(sendBuffer,prev,0,true);
         sendRemoteCommand(sendBuffer, replyBuffer);
         byte status;
@@ -2104,7 +2161,7 @@ public:
         MemoryBuffer replyBuffer;
         sendBuffer.append((RemoteFileCommandType)RFCgetcrc).append(filename);
         sendRemoteCommand(sendBuffer, replyBuffer, true, true);
-        
+
         unsigned crc;
         replyBuffer.read(crc);
         return crc;
@@ -2187,7 +2244,7 @@ public:
 
 void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket)
 {
-    CriticalBlock block(CConnectionTable::crit); 
+    CriticalBlock block(CConnectionTable::crit);
     if (ConnectionTable)
         ConnectionTable->addLink(ep,socket);
 }
@@ -2212,7 +2269,7 @@ void clientDisconnectRemoteFile(IFile *file)
 bool clientResetFilename(IFile *file, const char *newname) // returns false if not remote
 {
     CRemoteFile *cfile = QUERYINTERFACE(file,CRemoteFile);
-    if (!cfile) 
+    if (!cfile)
         return false;
     cfile->resetLocalFilename(newname);
     return true;
@@ -2352,7 +2409,7 @@ public:
         return true;
     }
 
-    bool reopen() 
+    bool reopen()
     {
         StringBuffer s;
         PROGLOG("Attempting reopen of %s on %s",parent->queryLocalName(),parent->queryEp().getUrlStr(s).str());
@@ -2370,7 +2427,7 @@ public:
         initSendBuffer(sendBuffer);
         MemoryBuffer replyBuffer;
         sendBuffer.append((RemoteFileCommandType)RFCsize).append(handle);
-        parent->sendRemoteCommand(sendBuffer, replyBuffer, false);                      
+        parent->sendRemoteCommand(sendBuffer, replyBuffer, false);
         // Retry using reopen TBD
 
         offset_t ret;
@@ -2441,7 +2498,7 @@ public:
                 replyBuffer.clear();
                 sendBuffer.append((RemoteFileCommandType)RFCread).append(handle).append(pos).append(len);
                 parent->sendRemoteCommand(sendBuffer, replyBuffer,false);
-                // kludge dafilesrv versions <= 1.5e don't return error correctly 
+                // kludge dafilesrv versions <= 1.5e don't return error correctly
                 if (replyBuffer.length()>len+sizeof(size32_t)+sizeof(unsigned)) {
                     size32_t save = replyBuffer.getPos();
                     replyBuffer.reset(len+sizeof(size32_t)+sizeof(unsigned));
@@ -2546,7 +2603,7 @@ public:
         const char * fname = file->queryFilename();
         sendBuffer.append((RemoteFileCommandType)RFCappend).append(handle).append(fname).append(pos).append(len);
         parent->sendRemoteCommand(sendBuffer, replyBuffer, false, true); // retry not safe
-        
+
         offset_t ret;
         replyBuffer.read(ret);
 
@@ -2556,8 +2613,8 @@ public:
     }
 
 
-    void setSize(offset_t size) 
-    { 
+    void setSize(offset_t size)
+    {
         MemoryBuffer sendBuffer;
         initSendBuffer(sendBuffer);
         MemoryBuffer replyBuffer;
@@ -2669,7 +2726,7 @@ void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *pr
             size32_t got;
             CRemoteFileIO *srcio = QUERYINTERFACE(from,CRemoteFileIO);
             const void *dst;
-            if (srcio) 
+            if (srcio)
                 dst = srcio->doRead(ofs,sz,mb.clear(),got,buf);
             else {
                 // shouldn't ever get here if source remote
@@ -2697,13 +2754,26 @@ ISocket *checkSocketSecure(ISocket *socket)
 
     if ( (pport == securitySettings.daFileSrvSSLPort) && (!socket->isSecure()) )
     {
-        Owned<ISecureSocket> ssock;
 #ifdef _USE_OPENSSL
-        ssock.setown(createSecureSocket(LINK(socket), ClientSocket));
-        int status = ssock->secure_connect();
-        if (status < 0)
-            throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
-        return ssock.getClear();
+        Owned<ISecureSocket> ssock;
+        try
+        {
+            ssock.setown(createSecureSocket(LINK(socket), ClientSocket));
+            int status = ssock->secure_connect();
+            if (status < 0)
+                throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection");
+            return ssock.getClear();
+        }
+        catch (IException *e)
+        {
+            cleanupSocket(ssock);
+            ssock.clear();
+            cleanupSocket(socket);
+            StringBuffer eMsg;
+            e->errorMessage(eMsg);
+            e->Release();
+            throw createDafsException(DAFSERR_connection_failed, eMsg.str());
+        }
 #else
         throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
 #endif
@@ -2719,42 +2789,74 @@ ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms)
     if ( (securitySettings.connectMethod == SSLNone) || (securitySettings.connectMethod == SSLOnly) )
     {
         socket.setown(ISocket::connect_timeout(ep, timeoutms));
-        return socket.getClear();
+        return checkSocketSecure(socket);
     }
+
+    // SSLFirst or UnsecureFirst ...
 
     unsigned newtimeout = timeoutms;
     if (newtimeout > 5000)
         newtimeout = 5000;
 
-    bool tryAgain = false;
-    try
+    int conAttempts = 2;
+    while (conAttempts > 0)
     {
-        socket.setown(ISocket::connect_timeout(ep, newtimeout));
-    }
-    catch (IJSOCK_Exception *e)
-    {
-        if (e->errorCode() == JSOCKERR_connection_failed)
+        conAttempts--;
+        bool connected = false;
+        try
         {
-            unsigned prevPort = ep.port;
-            if (prevPort == securitySettings.daFileSrvSSLPort)
-                ep.port = securitySettings.daFileSrvPort;
-            else
-                ep.port = securitySettings.daFileSrvSSLPort;
-            WARNLOG("Connect failed on port %d, retrying on port %d", prevPort, ep.port);
-            tryAgain = true;
-            e->Release();
+            socket.setown(ISocket::connect_timeout(ep, newtimeout));
+            connected = true;
+            newtimeout = timeoutms;
         }
-        else
-            throw e;
+        catch (IJSOCK_Exception *e)
+        {
+            if (e->errorCode() == JSOCKERR_connection_failed)
+            {
+                e->Release();
+                if (ep.port == securitySettings.daFileSrvSSLPort)
+                    ep.port = securitySettings.daFileSrvPort;
+                else
+                    ep.port = securitySettings.daFileSrvSSLPort;
+                if (!conAttempts)
+                    throw;
+            }
+            else
+                throw;
+        }
+
+        if (connected)
+        {
+            if (ep.port == securitySettings.daFileSrvSSLPort)
+            {
+                try
+                {
+                    return checkSocketSecure(socket);
+                }
+                catch (IDAFS_Exception *e)
+                {
+                    connected = false;
+                    if (e->errorCode() == DAFSERR_connection_failed)
+                    {
+                        // worth logging to help identify any ssl config issues ...
+                        StringBuffer errmsg;
+                        e->errorMessage(errmsg);
+                        WARNLOG("%s", errmsg.str());
+                        e->Release();
+                        ep.port = securitySettings.daFileSrvPort;
+                        if (!conAttempts)
+                            throw;
+                    }
+                    else
+                        throw;
+                }
+            }
+            else
+                return socket.getClear();
+        }
     }
 
-    if (tryAgain)
-        socket.setown(ISocket::connect_timeout(ep, timeoutms));
-
-    if (socket)
-        return checkSocketSecure(socket);
-    else
-        return nullptr;
+    throw createDafsException(DAFSERR_connection_failed, "Failed to establish connection with DaFileSrv");
 }
 
 unsigned getRemoteVersion(CRemoteFileIO &remoteFileIO, StringBuffer &ver)
@@ -3255,8 +3357,8 @@ extern unsigned stopRemoteServer(ISocket * socket)
         receiveBuffer(socket, replybuf, NORMAL_RETRIES, 1024);
         replybuf.read(errCode);
     }
-    catch (IJSOCK_Exception *e) { 
-        if ((e->errorCode()!=JSOCKERR_broken_pipe)&&(e->errorCode()!=JSOCKERR_graceful_close)) 
+    catch (IJSOCK_Exception *e) {
+        if ((e->errorCode()!=JSOCKERR_broken_pipe)&&(e->errorCode()!=JSOCKERR_graceful_close))
             EXCLOG(e);
         else
             errCode = 0;
@@ -3461,10 +3563,10 @@ class CAsyncCommandManager
         }
         AsyncCommandStatus poll(offset_t &_done, offset_t &_total,unsigned timeout)
         {
-            if (timeout&&finished.wait(timeout)) 
+            if (timeout&&finished.wait(timeout))
                 finished.signal();      // may need to call again
             CriticalBlock block(sect);
-            if (exc) 
+            if (exc)
                 throw exc.getClear();
             _done = done;
             _total = total;
@@ -3496,7 +3598,7 @@ class CAsyncCommandManager
         }
         void setException(IException *e)
         {
-            EXCLOG(e,"CAsyncCommandManager::CAsyncJob"); 
+            EXCLOG(e,"CAsyncCommandManager::CAsyncJob");
             CriticalBlock block(sect);
             if (exc.get())
                 e->Release();
@@ -3557,7 +3659,7 @@ public:
             if (cjob) {
                 job = QUERYINTERFACE(cjob.get(),CAsyncCopySection);
                 if (!job) {
-                    throw MakeStringException(-1,"Async job ID mismatch");  
+                    throw MakeStringException(-1,"Async job ID mismatch");
                 }
             }
             else {
@@ -4718,7 +4820,7 @@ public:
         return true;
     }
 
-    void onCloseSocket(CRemoteClientHandler *client, int which) 
+    void onCloseSocket(CRemoteClientHandler *client, int which)
     {
         if (!client)
             return;
@@ -4758,7 +4860,7 @@ public:
         Owned<StringAttrItem> name = new StringAttrItem;
         byte mode;
         byte share;
-        msg.read(name->text).read(mode).read(share);  
+        msg.read(name->text).read(mode).read(share);
         // also try to recv extra byte
         byte extra = 0;
         unsigned short sMode = IFUnone;
@@ -5188,13 +5290,13 @@ public:
         CDateTime accessedTime;
         msg.read(name);
         msg.read(creategot);
-        if (creategot) 
+        if (creategot)
             createTime.deserialize(msg);
         msg.read(modifiedgot);
-        if (modifiedgot) 
+        if (modifiedgot)
             modifiedTime.deserialize(msg);
         msg.read(accessedgot);
-        if (accessedgot) 
+        if (accessedgot)
             accessedTime.deserialize(msg);
 
         if (TF_TRACE)
@@ -5228,36 +5330,70 @@ public:
         bool sub;
         byte stream = 0;
         msg.read(name).read(mask).read(includedir).read(sub);
-        if (msg.remaining()>=sizeof(byte)) {
+        if (msg.remaining()>=sizeof(byte))
+        {
             msg.read(stream);
             if (stream==1)
                 client.opendir.clear();
         }
-
         if (TF_TRACE)
-            PROGLOG("GetDir,  '%s', '%s'",name.get(),mask.get());
-        Owned<IFile> dir=createIFile(name);
+            PROGLOG("GetDir,  '%s', '%s', stream='%u'",name.get(),mask.get(),stream);
+        if (!stream && !containsFileWildcard(mask))
+        {
+            // if no streaming, and mask contains no wildcard, it is much more efficient to get the info without a directory iterator!
+            StringBuffer fullFilename(name);
+            addPathSepChar(fullFilename).append(mask);
+            Owned<IFile> iFile = createIFile(fullFilename);
 
-        Owned<IDirectoryIterator> iter;
-        if (stream>1)
-            iter.set(client.opendir);
-        else {
-            iter.setown(dir->directoryFiles(mask.length()?mask.get():NULL,sub,includedir));
-            if (stream != 0)
-                client.opendir.set(iter);
+            // NB: This must preserve same serialization format as CRemoteDirectoryIterator::serialize produces for <=1 file.
+            reply.append((unsigned)RFEnoerror);
+            if (!iFile->exists())
+                reply.append((byte)0);
+            else
+            {
+                byte b=1;
+                reply.append(b);
+                bool isDir = foundYes == iFile->isDirectory();
+                reply.append(isDir);
+                reply.append(isDir ? 0 : iFile->size());
+                CDateTime dt;
+                iFile->getTime(nullptr, &dt, nullptr);
+                dt.serialize(reply);
+                reply.append(mask);
+                b = 0;
+                reply.append(b);
+            }
+            return true;
         }
-        if (!iter) {
-            reply.append((unsigned)RFSERR_GetDirFailed);
-            return false;
-        }
-        reply.append((unsigned)RFEnoerror);
-        if (CRemoteDirectoryIterator::serialize(reply,iter,stream?0x100000:0,stream<2)) {
-            if (stream != 0)
-                client.opendir.clear();
-        }
-        else {
-            bool cont=true;
-            reply.append(cont);
+        else
+        {
+            Owned<IFile> dir=createIFile(name);
+
+            Owned<IDirectoryIterator> iter;
+            if (stream>1)
+                iter.set(client.opendir);
+            else
+            {
+                iter.setown(dir->directoryFiles(mask.length()?mask.get():NULL,sub,includedir));
+                if (stream != 0)
+                    client.opendir.set(iter);
+            }
+            if (!iter)
+            {
+                reply.append((unsigned)RFSERR_GetDirFailed);
+                return false;
+            }
+            reply.append((unsigned)RFEnoerror);
+            if (CRemoteDirectoryIterator::serialize(reply,iter,stream?0x100000:0,stream<2))
+            {
+                if (stream != 0)
+                    client.opendir.clear();
+            }
+            else
+            {
+                bool cont=true;
+                reply.append(cont);
+            }
         }
         return true;
     }
@@ -5494,7 +5630,7 @@ public:
     {
         PROGLOG("Abort request received");
         stopping = true;
-        if (acceptsock) 
+        if (acceptsock)
             acceptsock->cancel_accept();
         if (securesock)
             securesock->cancel_accept();
@@ -6286,6 +6422,7 @@ static Owned<CSimpleInterface> serverThread;
 class RemoteFileTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(RemoteFileTest);
+        CPPUNIT_TEST(testRemoteFilename);
         CPPUNIT_TEST(testStartServer);
         CPPUNIT_TEST(testBasicFunctionality);
         CPPUNIT_TEST(testCopy);
@@ -6298,6 +6435,37 @@ class RemoteFileTest : public CppUnit::TestFixture
     size32_t testLen = 1024;
 
 protected:
+    void testRemoteFilename()
+    {
+        const char *rfns = "//1.2.3.4/dir1/file1|//1.2.3.4:7100/dir1/file1,"
+                           "//1.2.3.4:7100/dir1/file1|//1.2.3.4:7100/dir1/file1,"
+                           "//1.2.3.4/c$/dir1/file1|//1.2.3.4:7100/c$/dir1/file1,"
+                           "//1.2.3.4:7100/c$/dir1/file1|//1.2.3.4:7100/c$/dir1/file1,"
+                           "//1.2.3.4:7100/d$/dir1/file1|//1.2.3.4:7100/d$/dir1/file1";
+        StringArray tests;
+        tests.appendList(rfns, ",");
+
+        ForEachItemIn(i, tests)
+        {
+            StringArray inOut;
+            const char *pair = tests.item(i);
+            inOut.appendList(pair, "|");
+            const char *rfn = inOut.item(0);
+            const char *expected = inOut.item(1);
+            Owned<IFile> iFile = createIFile(rfn);
+            const char *res = iFile->queryFilename();
+            if (!streq(expected, res))
+            {
+                StringBuffer errMsg("testRemoteFilename MISMATCH");
+                errMsg.newline().append("Expected: ").append(expected);
+                errMsg.newline().append("Got: ").append(res);
+                PROGLOG("%s", errMsg.str());
+                CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
+            }
+            else
+                PROGLOG("MATCH: %s", res);
+        }
+    }
     void testStartServer()
     {
         Owned<ISocket> socket;
@@ -6467,6 +6635,27 @@ protected:
         iFile2->remove();
         iFile->move(subDirFilePath);
 
+        // open sub-directory file2 explicitly
+        RemoteFilename rfn;
+        rfn.setRemotePath(subDirPath.str());
+        Owned<IFile> dir = createIFile(rfn);
+        Owned<IDirectoryIterator> diriter = dir->directoryFiles("file2");
+        if (!diriter->first())
+        {
+            CPPUNIT_ASSERT_MESSAGE("Error, file2 diriter->first() is null", 0);
+        }
+
+        Linked<IFile> iFile3 = &diriter->query();
+        diriter.clear();
+        dir.clear();
+
+        OwnedIFileIO iFile3IO = iFile3->openShared(IFOread, IFSHfull);
+        if (!iFile3IO)
+        {
+            CPPUNIT_ASSERT_MESSAGE("Error, file2 openShared() failed", 0);
+        }
+        iFile3IO->close();
+
         // count sub-directory files with a wildcard
         unsigned count=0;
         Owned<IDirectoryIterator> iter = subDirIFile->directoryFiles("*2");
@@ -6491,9 +6680,15 @@ protected:
         CPPUNIT_ASSERT(subDirIFile->getTime(&createTime, &modifiedTime, &accessedTime));
         CPPUNIT_ASSERT(modifiedTime == newModifiedTime);
 
-
         // test set file permissions
-        iFile2->setFilePermissions(0777);
+        try
+        {
+            iFile2->setFilePermissions(0777);
+        }
+        catch (...)
+        {
+            CPPUNIT_ASSERT_MESSAGE("iFile2->setFilePermissions() exception", 0);
+        }
     }
     void testConfiguration()
     {

@@ -157,10 +157,44 @@ bool isESDLDefinitionBound(const char * esdldefname, int version)
     return isESDLDefinitionBound(id);
 }
 
+
+void fetchESDLDefinitionFromDaliByNameOnly(const char * name, StringBuffer & def)
+{
+    if (!name || !*name)
+        throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, definition name is not available");
+
+    DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali based on name: %s ", name);
+
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+    if (!conn)
+       throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
+
+    IPropertyTree * esdlDefinitions = conn->queryRoot();
+
+    VStringBuffer xpath("%s[@name='%s']", ESDL_DEF_ENTRY, name);
+    Owned<IPropertyTreeIterator> iter = esdlDefinitions->getElements(xpath.str());
+
+    unsigned latestSeq = 1;
+    ForEach(*iter)
+    {
+        IPropertyTree &item = iter->query();
+        unsigned thisSeq = item.getPropInt("@seq");
+        if (thisSeq > latestSeq)
+            latestSeq = thisSeq;
+    }
+
+    xpath.setf("%s[@id='%s.%d'][1]/esxdl", ESDL_DEF_ENTRY, name, latestSeq);
+    IPropertyTree * deftree = esdlDefinitions->getPropTree(xpath);
+    if(deftree)
+        toXML(deftree, def, 0,0);
+    else
+        throw MakeStringException(-1, "Unable to fetch ESDL Service definition from dali: '%s'", name);
+}
+
 void fetchESDLDefinitionFromDaliById(const char *id, StringBuffer & def)
 {
     if (!id || !*id)
-        throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, service id is not available");
+        throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, definition id is not available");
 
     DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", id);
 
@@ -214,7 +248,7 @@ IPropertyTree * CWsESDLConfigEx::getESDLDefinitionRegistry(const char * wsEclId,
     return (conn) ? conn->getRoot() : NULL;
 }
 
-void CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const char * name, IPropertyTree *definitionInfo, StringBuffer &newId, unsigned &newSeq, const char *userid, bool deleteprev)
+bool CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const char * name, IPropertyTree *definitionInfo, StringBuffer &newId, unsigned &newSeq, const char *userid, bool deleteprev, StringBuffer & message)
 {
     StringBuffer lcName(name);
     lcName.toLowerCase();
@@ -232,26 +266,64 @@ void CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const cha
             newSeq = thisSeq + 1;
     }
 
+    StringBuffer origTimestamp;
+    StringBuffer origOwner;
+
     if (deleteprev && newSeq > 1)
     {
         if (!isESDLDefinitionBound(lcName, newSeq -1))
         {
             newSeq--;
-            queryRegistry->removeTree(queryRegistry->queryPropTree(xpath.appendf("[@seq='%d']", newSeq)));
+            xpath.appendf("[@seq='%d']", newSeq);
+
+            IPropertyTree * definition = queryRegistry->queryPropTree(xpath);
+            if (definition)
+            {
+                origTimestamp.set(definition->queryProp("@created"));
+                origOwner.set(definition->queryProp("@publishedBy"));
+                queryRegistry->removeTree(definition);
+            }
+            else
+            {
+                message.setf("Could not overwrite Definition: '%s.%d'", name, newSeq);
+                ESPLOG(LogMin, "%s", message.str());
+                return false;
+            }
         }
         else
         {
-            DBGLOG("Will not delete previous ESDL definition version because it is referenced in an ESDL binding.");
+            message.setf("Will not delete previous ESDL definition version because it is referenced in an ESDL binding.");
+            ESPLOG(LogMin, "%s", message.str());
+            return false;
         }
     }
+
+    CDateTime dt;
+    dt.setNow();
+    StringBuffer str;
 
     newId.set(lcName).append(".").append(newSeq);
     definitionInfo->setProp("@name", lcName);
     definitionInfo->setProp("@id", newId);
     definitionInfo->setPropInt("@seq", newSeq);
-    if (userid && *userid)
-        definitionInfo->setProp("@publishedBy", userid);
+    if (origOwner.length())
+    {
+        definitionInfo->setProp("@lastEditedBy", (userid && *userid) ? userid : "Anonymous") ;
+        definitionInfo->setProp("@publishedBy", origOwner.str()) ;
+    }
+    else
+        definitionInfo->setProp("@publishedBy", (userid && *userid) ? userid : "Anonymous") ;
+
+    if (origTimestamp.length())
+    {
+        definitionInfo->setProp("@created", origTimestamp.str());
+        definitionInfo->setProp("@lastEdit",dt.getString(str).str());
+    }
+    else
+        definitionInfo->setProp("@created",dt.getString(str).str());
+
     queryRegistry->addPropTree(ESDL_DEF_ENTRY, LINK(definitionInfo));
+    return true;
 }
 
 bool CWsESDLConfigEx::existsESDLDefinition(const char * servicename, unsigned ver)
@@ -308,7 +380,7 @@ bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsig
                 IPropertyTree* pCurrService = &it->query();
                 if ((servicesCount == 1 && !esdlServiceName.length()) || stricmp(pCurrService->queryProp("@name"), esdlServiceName.str())==0)
                 {
-                    Owned<IPropertyTreeIterator> it2 = esxdl->getElements("EsdlMethod");
+                    Owned<IPropertyTreeIterator> it2 = pCurrService->getElements("EsdlMethod");
                     ForEach(*it2)
                     {
                         IPropertyTree* pChildNode = &it2->query();
@@ -431,9 +503,17 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
 
             if (queryRegistry != NULL)
             {
-                addESDLDefinition(queryRegistry, service.get(), serviceXMLTree.get(), newqueryid, newseq, user, deletePrevious);
-                if (newseq)
-                    resp.setEsdlVersion(newseq);
+                if (addESDLDefinition(queryRegistry, service.get(), serviceXMLTree.get(), newqueryid, newseq, user, deletePrevious, msg))
+                {
+                    if (newseq)
+                        resp.setEsdlVersion(newseq);
+                }
+                else
+                {
+                    resp.updateStatus().setCode(-1);
+                    resp.updateStatus().setDescription(msg.str());
+                    return false;
+                }
             }
             else
             {
@@ -445,6 +525,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         }
 
         msg.appendf("Successfully published %s", newqueryid.str());
+        ESPLOG(LogMin, "ESDL Definition '%s' published by user='%s'", newqueryid.str(), (user && *user) ? user : "Anonymous");
 
         double ver = context.getClientVersion();
         if (ver >= 1.2)
@@ -472,7 +553,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
                         {
                             try
                             {
-                                Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlMethod");
+                                Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlService/EsdlMethod");
                                 IArrayOf<IEspMethodConfig> list;
                                 ForEach(*iter)
                                 {
@@ -548,7 +629,8 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
                                          int esdlDefinitionVersion,
                                          const char * esdlServiceName,
                                          StringBuffer & message,
-                                         bool overwrite)
+                                         bool overwrite,
+                                         const char * user)
 {
     if (!esdlDefinitionName || !*esdlDefinitionName)
     {
@@ -582,10 +664,27 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
 
     bool duplicateBindings = bindings->hasProp(xpath.str());
 
+    StringBuffer origTimestamp;
+    StringBuffer origOwner;
+
     if (duplicateBindings)
     {
         if(overwrite)
-           bindings->removeTree(bindings->queryPropTree(xpath));
+        {
+            IPropertyTree * binding = bindings->queryPropTree(xpath);
+            if (binding)
+            {
+                origTimestamp.set(binding->queryProp("@created"));
+                origOwner.set(binding->queryProp("@publishedBy"));
+                bindings->removeTree(binding);
+            }
+            else
+            {
+                message.setf("Could not overwrite binding '%s.%s'!", espProcName, bindingName);
+                conn->close(false);
+                return -1;
+            }
+        }
         else
         {
            message.setf("Could not configure Service '%s' because this service has already been configured for binding '%s' on ESP Process '%s'", esdlServiceName, bindingName, espProcName);
@@ -600,6 +699,26 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
     bindingtree->setProp("@espbinding", bindingName);
     bindingtree->setProp("@id", qbindingid.str());
 
+    CDateTime dt;
+    dt.setNow();
+    StringBuffer str;
+
+    if (origTimestamp.length())
+    {
+        bindingtree->setProp("@created", origTimestamp.str());
+        bindingtree->setProp("@lastEdit", dt.getString(str).str());
+    }
+    else
+        bindingtree->setProp("@created",  dt.getString(str).str());
+
+    if (origOwner.length())
+    {
+        bindingtree->setProp("@publisheBy", origOwner.str()) ;
+        bindingtree->setProp("@lastEditedBy", (user && *user) ? user : "Anonymous");
+    }
+    else
+        bindingtree->setProp("@publishedBy", (user && *user) ? user : "Anonymous") ;
+
     if (esdlDefinitionVersion <= 0)
         esdlDefinitionVersion = 1;
 
@@ -607,11 +726,14 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
     newId.set(lcName).append(".").append(esdlDefinitionVersion);
 
     Owned<IPropertyTree> esdldeftree  = createPTree();
+
     esdldeftree->setProp("@name", lcName);
     esdldeftree->setProp("@id", newId);
     esdldeftree->setProp("@esdlservice", esdlServiceName);
 
-    esdldeftree->addPropTree("Methods", LINK(methodsConfig));
+
+    if (methodsConfig)
+      esdldeftree->addPropTree("Methods", LINK(methodsConfig));
 
     bindingtree->addPropTree(ESDL_DEF_ENTRY, LINK(esdldeftree));
     bindings->addPropTree(ESDL_BINDING_ENTRY, LINK(bindingtree));
@@ -619,6 +741,8 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
     conn->commit();
     conn->close(false);
     message.setf("Successfully configured Service '%s', associated with ESDL definition '%s', on ESP '%s' and binding '%s'", esdlServiceName, newId.str(), espProcName, bindingName);
+
+    ESPLOG(LogMin, "ESDL Binding '%s' published by user='%s' overwrite flag: %s", newId.str(), (user && *user) ? user : "Anonymous", overwrite ? "TRUE" : "FALSE");
     return 0;
 }
 
@@ -648,7 +772,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
 
         Owned<IPropertyTree> methodstree;
 
-        if (config.length() > 0)
+        if (config.length() != 0)
             methodstree.setown(fetchConfigInfo(config.str(), espProcName, espBindingName, esdlDefIdSTR, esdlServiceName));
         else
         {
@@ -699,7 +823,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
                 throw MakeStringException(-1, "Invalid ESDL Definition version detected: %d", esdlver);
         }
 
-        if (!methodstree || methodstree->getCount("Method") <= 0)
+        if (!methodstree || methodstree->getCount("Method") == 0)
             ESPLOG(LogMin, "Publishing ESDL Binding with no METHODS configured!");
 
         if (espProcName.length() == 0)
@@ -729,27 +853,30 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
 
         if (existsESDLDefinition(esdlDefinitionName.str(), esdlver))
         {
-            IPropertyTreeIterator * iter = methodstree->getElements("Method");
-            StringBuffer methodxpath;
-            ForEach(*iter)
+            if (methodstree)
             {
-               IPropertyTree &item = iter->query();
-               const char * methodName = item.queryProp("@name");
-               methodxpath.setf("Method[@name='%s']", methodName);
-               if (methodstree->getCount(methodxpath) > 1)
-                   throw MakeStringException(-1, "Detected non-unique configuration entry: Method name='%s'", methodName);
+                IPropertyTreeIterator * iter = methodstree->getElements("Method");
+                StringBuffer methodxpath;
+                ForEach(*iter)
+                {
+                    IPropertyTree &item = iter->query();
+                    const char * methodName = item.queryProp("@name");
+                    methodxpath.setf("Method[@name='%s']", methodName);
+                    if (methodstree->getCount(methodxpath) > 1)
+                        throw MakeStringException(-1, "Detected non-unique configuration entry: Method name='%s'", methodName);
 
-               if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName, methodName))
-               {
-                   StringBuffer msg;
-                   if (!esdlServiceName.length())
-                       msg.setf("Could not publish ESDL Binding: Please provide target ESDL Service name, and verify method provided is valid: '%s'", methodName);
-                   else
-                       msg.setf("Could not publish ESDL Binding: Invalid Method name detected: '%s'. Does not exist in ESDL Service Definition: '%s' version '%d'", methodName, esdlServiceName.str(), esdlver);
-                   resp.updateStatus().setCode(-1);
-                   resp.updateStatus().setDescription(msg.str());
-                   return false;
-               }
+                    if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName, methodName))
+                    {
+                        StringBuffer msg;
+                        if (!esdlServiceName.length())
+                            msg.setf("Could not publish ESDL Binding: Please provide target ESDL Service name, and verify method provided is valid: '%s'", methodName);
+                        else
+                            msg.setf("Could not publish ESDL Binding: Invalid Method name detected: '%s'. Does not exist in ESDL Service Definition: '%s' version '%d'", methodName, esdlServiceName.str(), esdlver);
+                        resp.updateStatus().setCode(-1);
+                        resp.updateStatus().setDescription(msg.str());
+                        return false;
+                    }
+                }
             }
 
             StringBuffer msg;
@@ -761,8 +888,10 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
                                                            esdlver,
                                                            esdlServiceName.str(),
                                                            msg,
-                                                           overwrite
+                                                           overwrite,
+                                                           username.str()
                                                            ));
+
 
             if (ver >= 1.2)
             {
@@ -800,7 +929,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
                                 try
                                 {
                                     Owned<IPropertyTree> definitionTree = createPTreeFromXMLString(definition.str(), ipt_caseInsensitive);
-                                    Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlMethod");
+                                    Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlService/EsdlMethod");
                                     StringBuffer xpath;
                                     ForEach(*iter)
                                     {
@@ -1085,7 +1214,8 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
             ForEach(*iter)
             {
                 IPropertyTree &item = iter->query();
-                const char * methodName = item.queryProp("@name");
+                StringBuffer methodNameBuf(item.queryProp("@name"));
+                const char * methodName = methodNameBuf.str();
                 if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName, methodName))
                 {
                     StringBuffer msg;
@@ -1105,6 +1235,8 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                     if (success == 0)
                     {
                         double ver = context.getClientVersion();
+
+                        ESPLOG(LogMin, "ESDL Binding '%s.%d' configured method '%s' by user='%s' overwrite flag: %s", esdlDefinitionName.str(), esdlver, username.isEmpty() ? "Anonymous" : username.str(), methodName, override ? "TRUE" : "FALSE");
 
                         if (ver >= 1.2)
                         {
@@ -1139,7 +1271,7 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                                         try
                                         {
                                             Owned<IPropertyTree> definitionTree = createPTreeFromXMLString(definition.str(), ipt_caseInsensitive);
-                                            Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlMethod");
+                                            Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlService/EsdlMethod");
                                             StringBuffer xpath;
                                             ForEach(*iter)
                                             {
@@ -1381,7 +1513,7 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                             try
                             {
                                 Owned<IPropertyTree> definitionTree = createPTreeFromXMLString(definition.str(), ipt_caseInsensitive);
-                                Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlMethod");
+                                Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlService/EsdlMethod");
                                 StringBuffer xpath;
                                 ForEach(*iter)
                                 {
@@ -1530,7 +1662,10 @@ bool CWsESDLConfigEx::onDeleteESDLDefinition(IEspContext &context, IEspDeleteESD
     {
         StringBuffer thexml;
         toXML(oldEnvironment.get(), thexml,0,0);
-        fprintf(stderr, "DELETING: \n%s\n", thexml.str());
+
+        StringBuffer username;
+        context.getUserID(username);
+        ESPLOG(LogMin, "ESDL Definition '%s' Deleted by user='%s'", esdlDefinitionId.str(), username.isEmpty() ? "Anonymous" : username.str());
         resp.setDeletedTree(thexml.str());
         resp.updateStatus().setCode(0);
         resp.updateStatus().setDescription("Deleted ESDL Definition");
@@ -1580,7 +1715,10 @@ bool CWsESDLConfigEx::onDeleteESDLBinding(IEspContext &context, IEspDeleteESDLBi
     {
         StringBuffer thexml;
         toXML(oldEnvironment.get(), thexml,0,0);
-        fprintf(stderr, "DELETING: \n%s\n", thexml.str());
+        StringBuffer username;
+        context.getUserID(username);
+        ESPLOG(LogMin, "ESDL Definition '%s' Deleted by user='%s'", espBindingId.str(), username.isEmpty() ? "Anonymous" : username.str());
+
         resp.setDeletedTree(thexml.str());
         resp.updateStatus().setCode(0);
         root->removeTree(oldEnvironment);
@@ -1602,15 +1740,33 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
 
     StringBuffer id = req.getId();
     StringBuffer definition;
-    resp.setId(id.str());
-    StringBuffer message;
-    int respcode = 0;
 
     double ver = context.getClientVersion();
 
+    StringBuffer message;
+    int respcode = 0;
+
     try
     {
-        fetchESDLDefinitionFromDaliById(id.toLowerCase(), definition);
+        if (ver >= 1.3)
+        {
+            if (!id.length())
+            {
+                id.set(req.getName());
+                if(id.length() > 0)
+                {
+                    if (!req.getSeq_isNull())
+                        id.append(".").append(req.getSeq());
+                }
+            }
+        }
+        resp.setId(id.str());
+
+        if (strchr (id.str(), '.'))
+            fetchESDLDefinitionFromDaliById(id.toLowerCase(), definition);
+        else
+            fetchESDLDefinitionFromDaliByNameOnly(id.toLowerCase(), definition);
+
         message.setf("Successfully fetched ESDL Defintion: %s from Dali.", id.str());
         if (definition.length() == 0 )
         {
@@ -1646,7 +1802,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
                 {
                     try
                     {
-                        Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlMethod");
+                        Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlService/EsdlMethod");
                         IArrayOf<IEspMethodConfig> list;
                         ForEach(*iter)
                         {

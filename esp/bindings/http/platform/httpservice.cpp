@@ -214,7 +214,10 @@ void checkSetCORSAllowOrigin(CHttpRequest *req, CHttpResponse *resp)
     StringBuffer origin;
     req->getHeader("Origin", origin);
     if (origin.length())
-        resp->setHeader("Access-Control-Allow-Origin", "*");
+    {
+        resp->setHeader("Access-Control-Allow-Origin", origin);
+        resp->setHeader("Access-Control-Allow-Credentials", "true");
+    }
 }
 
 int CEspHttpServer::processRequest()
@@ -264,6 +267,9 @@ int CEspHttpServer::processRequest()
         ctx->setServiceName(serviceName.str());
         ctx->setHTTPMethod(method.str());
         ctx->setServiceMethod(methodName.str());
+
+        if(strieq(method.str(), OPTIONS_METHOD))
+            return onOptions();
 
         bool isSoapPost=(stricmp(method.str(), POST_METHOD) == 0 && m_request->isSoapMessage());
         if (!isSoapPost)
@@ -442,10 +448,6 @@ int CEspHttpServer::processRequest()
             // authenticate optional groups
             if (authenticateOptionalFailed(*ctx,thebinding))
                 throw createEspHttpException(401,"Unauthorized Access","Unauthorized Access");
-
-
-            if(strieq(method.str(), OPTIONS_METHOD))
-                return onOptions();
 
             checkSetCORSAllowOrigin(m_request, m_response);
 
@@ -882,7 +884,12 @@ int CEspHttpServer::onOptions()
     m_request->getHeader("Access-Control-Request-Headers", allowHeaders);
     if (allowHeaders.length())
         m_response->setHeader("Access-Control-Allow-Headers", allowHeaders);
-    m_response->setHeader("Access-Control-Allow-Origin", "*");
+
+    StringBuffer origin;
+    m_request->getHeader("Origin", origin);
+
+    m_response->setHeader("Access-Control-Allow-Origin", origin.length() ? origin.str() : "*");
+    m_response->setHeader("Access-Control-Allow-Credentials", "true");
     m_response->setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
     m_response->setHeader("Access-Control-Max-Age", "86400"); //arbitrary 24 hours
     m_response->setContentType("text/plain");

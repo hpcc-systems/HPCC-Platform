@@ -9,7 +9,7 @@ derived1 := {
   unsigned4 doc_id;
 };
 
-inline := dataset([
+inlineDs := dataset([
    {1,u'one',3,u'three',3}
   ,{2,u'two',4,u'four',4}
   ,{3,u'three',5,u'five',5}
@@ -48,7 +48,7 @@ getStuff(dataset(derived1) ds1) := function
   return ret;
 end;
 
-example := getStuff(inline);
+example := getStuff(inlineDs);
 
 // example.debugger;  // works if not commented
 output(example.finalout,all);

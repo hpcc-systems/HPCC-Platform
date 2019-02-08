@@ -414,6 +414,7 @@ protected:
     CriticalSection crit;
     PointerArray queued;
     UnsignedArray lengths;
+    bool first = true;
 
     bool needsFlush(bool closing);
 public:
@@ -440,7 +441,11 @@ public:
     virtual void appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
     virtual void encodeString(const char *x, unsigned len, bool utf8=false);
     virtual void encodeData(const void *data, unsigned len);
-    virtual void flushXML(StringBuffer &current, bool isClosing);
+    virtual void flushXML(StringBuffer &current, bool isClosing)
+    {
+        flushXML(current, isClosing, nullptr);
+    }
+    void flushXML(StringBuffer &current, bool isClosing, const char *delim);
     virtual void flush(bool closing) ;
     virtual void addPayload(StringBuffer &s, unsigned int reserve=0);
     virtual void *getPayload(size32_t &length);
@@ -456,9 +461,12 @@ public:
 
 class THORHELPER_API FlushingJsonBuffer : public FlushingStringBuffer
 {
+protected:
+    bool extend;
+
 public:
-    FlushingJsonBuffer(SafeSocket *_sock, bool _isBlocked, bool _isHttp, const IContextLogger &_logctx) :
-        FlushingStringBuffer(_sock, _isBlocked, MarkupFmt_JSON, false, _isHttp, _logctx)
+    FlushingJsonBuffer(SafeSocket *_sock, bool _isBlocked, bool _isHttp, const IContextLogger &_logctx, bool _extend = false) :
+        FlushingStringBuffer(_sock, _isBlocked, MarkupFmt_JSON, false, _isHttp, _logctx), extend(_extend)
     {
     }
 
@@ -469,6 +477,10 @@ public:
     void startScalar(const char *resultName, unsigned sequence, bool simpleTag, const char *simplename=nullptr);
     virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size, bool simpleTag = false, const char *simplename=nullptr);
     virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size, bool simpleTag = false, const char *simplename=nullptr);
+    virtual void flushXML(StringBuffer &current, bool isClosing)
+    {
+        FlushingStringBuffer::flushXML(current, isClosing, (extend) ? "," : nullptr);
+    }
 };
 
 inline const char *getFormatName(TextMarkupFormat fmt)

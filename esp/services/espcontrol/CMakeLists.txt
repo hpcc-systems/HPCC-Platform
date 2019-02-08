@@ -55,5 +55,12 @@ target_link_libraries ( ws_espcontrol
          jlib
          xmllib
          esphttp
-         securesocket
     )
+    
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_espcontrol 
+        securesocket
+    )
+ENDIF()
+
+    

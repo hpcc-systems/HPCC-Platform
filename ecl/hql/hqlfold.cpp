@@ -6690,6 +6690,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_executewhen:
     case no_callsideeffect:
     case no_outofline:
+    case no_inline:
     case no_owned_ds:
     case no_dataset_alias:
     case no_createdictionary:
