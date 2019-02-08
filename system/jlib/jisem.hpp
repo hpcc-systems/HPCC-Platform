@@ -31,7 +31,7 @@ public:
     IMPLEMENT_IINTERFACE;
     virtual int             errorCode() const { return 0; }
     virtual StringBuffer &  errorMessage(StringBuffer &msg) const { return msg.append("Semaphore interrupted"); }
-    virtual MessageAudience errorAudience() const { return MSGAUD_unknown; }
+    virtual MessageAudience errorAudience() const { return MSGAUD_programmer; }
 };
 
 class jlib_decl InterruptableSemaphore : public Semaphore

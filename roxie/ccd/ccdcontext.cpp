@@ -1071,7 +1071,7 @@ public:
             E->errorMessage(text);
             int errCode = E->errorCode();
             E->Release();
-            IException *ee = MakeStringException(MSGAUD_internal, errCode, "%s", text.str());
+            IException *ee = MakeStringException(MSGAUD_programmer, errCode, "%s", text.str());
             logctx.logOperatorException(ee, __FILE__, __LINE__, "Exception caught in RawDataReader::nextBlock");
             throw ee;
         }
