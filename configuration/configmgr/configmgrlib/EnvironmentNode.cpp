@@ -233,26 +233,6 @@ void EnvironmentNode::validate(Status &status) const
         attrIt.second->validate(status, m_id);
 
         //
-        // If this value must be unique, make sure it is
-        if (attrIt.second->getSchemaValue()->isUniqueValue())
-        {
-            bool found = false;
-            std::vector<std::string> allValues;
-            attrIt.second->getAllValuesForSiblings(allValues);
-            std::set<std::string> unquieValues;
-            for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
-            {
-                auto ret = unquieValues.insert(*it);
-                found = !ret.second;
-            }
-
-            if (found)
-            {
-                status.addUniqueMsg(statusMsg::error, m_id, attrIt.second->getName(), "Attribute value must be unique");
-            }
-        }
-
-        //
         // Does this value need to be from another set of values?
         if (attrIt.second->getSchemaValue()->isFromUniqueValueSet())
         {
@@ -474,6 +454,17 @@ void EnvironmentNode::doFetchNodes(ConfigPath &configPath, std::vector<std::shar
                 nodes.insert(nodes.end(), childNodes.begin(), childNodes.end());
             }
         }
+    }
+}
+
+
+void EnvironmentNode::getPath(std::string &path) const
+{
+    path = m_name + path;
+    path = "/" + path;
+    if (!m_pParent.expired())
+    {
+        m_pParent.lock()->getPath(path);
     }
 }
 

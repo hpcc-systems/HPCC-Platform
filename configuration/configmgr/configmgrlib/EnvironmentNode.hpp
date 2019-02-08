@@ -69,6 +69,7 @@ class CFGMGRLIB_API EnvironmentNode : public std::enable_shared_from_this<Enviro
         void getInsertableItems(std::vector<InsertableItem> &items) const;
         void initialize();
         void fetchNodes(const std::string &path, std::vector<std::shared_ptr<EnvironmentNode>> &nodes) const;
+        void getPath(std::string &path) const;
         std::shared_ptr<EnvironmentNode> getRoot() const;
         void addEnvironmentInsertData(const std::string &envData) { m_insertData = envData; }
         const std::string &getEnvironmentInsertData() const { return m_insertData; }

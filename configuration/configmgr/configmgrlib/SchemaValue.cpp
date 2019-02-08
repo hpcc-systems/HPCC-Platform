@@ -210,7 +210,11 @@ void SchemaValue::getAllEnvironmentValues(std::vector<std::shared_ptr<Environmen
 {
     for (auto it = m_envValues.begin(); it != m_envValues.end(); ++it)
     {
-        envValues.push_back(it->lock());
+        std::shared_ptr<EnvironmentValue> pEnvValue = it->lock();
+        if (pEnvValue)
+        {
+            envValues.push_back(pEnvValue);
+        }
     }
 }
 
