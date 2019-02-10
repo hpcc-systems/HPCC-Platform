@@ -65,11 +65,13 @@ public:
 #ifdef _TESTING
         owner.ActPrintLog("ITDL starting for output %d", outputId);
 #endif
-#ifdef _TESTING
-        bool started = hasStarted();
-        bool stopped = hasStopped();
-        assertex(!hasStarted() || hasStopped());      // ITDL started twice
-#endif
+        if (hasStarted())
+        {
+            if (!hasStopped())
+                throw MakeActivityException(&owner, 0, "Starting without being stopped 1st");
+            else
+                throw MakeActivityException(&owner, 0, "Started and stopped states both set");
+        }
         icount = 0;
         count = (count & THORDATALINK_COUNT_MASK) | THORDATALINK_STARTED;
     }

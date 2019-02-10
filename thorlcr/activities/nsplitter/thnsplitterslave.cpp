@@ -346,7 +346,6 @@ public:
             {
                 writer.stop();
                 PARENT::stop();
-                inputPrepared = false;
             }
         }
     }
@@ -462,6 +461,8 @@ void CSplitterOutput::start()
 // IEngineRowStream
 void CSplitterOutput::stop()
 { 
+    if (stopped)
+        return;
     stopped = true;
     activity.inputStopped(outIdx);
     dataLinkStop();
