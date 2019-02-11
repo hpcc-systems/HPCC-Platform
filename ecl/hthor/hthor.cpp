@@ -8839,7 +8839,7 @@ const void *CHThorDiskNormalizeActivity::nextRow()
             localOffset += lastSizeRead;
             prefetchBuffer.finishedRow();
 
-            if (inputstream->eos())
+            if (prefetchBuffer.eos())
             {
                 lastSizeRead = 0;
                 break;
@@ -8936,7 +8936,7 @@ const void *CHThorDiskAggregateActivity::nextRow()
         helper.clearAggregate(outBuilder);
         while (!eofseen)
         {
-            while (!inputstream->eos())
+            while (!prefetchBuffer.eos())
             {
                 queryUpdateProgress();
 
@@ -9016,7 +9016,7 @@ const void *CHThorDiskCountActivity::nextRow()
         {
             if (eofseen) 
                 break;
-            while (!inputstream->eos())
+            while (!prefetchBuffer.eos())
             {
                 queryUpdateProgress();
 
@@ -9098,7 +9098,7 @@ const void *CHThorDiskGroupAggregateActivity::nextRow()
             if (!opened) open();
             while (!eofseen)
             {
-                while (!inputstream->eos())
+                while (!prefetchBuffer.eos())
                 {
                     queryUpdateProgress();
 
