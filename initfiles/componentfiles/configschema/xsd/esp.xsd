@@ -292,7 +292,7 @@
                     </xs:element>
 
                     <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded" hpcc:class="elementSet"
-                                hpcc:requiredInstanceComponents="/Evnironment/Software/[#itemType='dafilesrv']">
+                                hpcc:requiredInstanceComponents="/Evnironment/Software/[#itemType='dafilesrv'],/Evnironment/Software/[#itemType='ftslave']">
                         <xs:complexType>
                             <xs:sequence>
                                 <xs:element name="Certificate" type="xs:string" minOccurs="0"

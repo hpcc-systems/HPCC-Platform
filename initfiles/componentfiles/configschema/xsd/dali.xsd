@@ -125,7 +125,7 @@
                 <xs:sequence>
                     <xs:element name="Instance" hpcc:itemType="hwinstance" minOccurs="1" maxOccurs="1"
                                 hpcc:class="elementSet"
-                                hpcc:requiredInstanceComponents="/Evnironment/Software/[#itemType='dafilesrv']">
+                                hpcc:requiredInstanceComponents="/Evnironment/Software/[#itemType='dafilesrv'],/Evnironment/Software/[#itemType='ftslave']">
                         <xs:complexType>
                             <xs:attributeGroup ref="computerNodeReference"/>
                             <xs:attribute name="directory" type="absolutePath" hpcc:hidden="true"/>
