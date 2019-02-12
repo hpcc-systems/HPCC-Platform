@@ -252,14 +252,14 @@ public:
 
                 // local key handling
 
-                Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, part);
+                Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, logicalFilename, part);
 
                 RemoteFilename rfn;
                 part.getFilename(0, rfn);
                 StringBuffer path;
                 rfn.getPath(path); // NB: use for tracing only, IDelayedFile uses IPartDescriptor and any copy
 
-                Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lfile, false, false);
+                Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, false, false);
                 Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors());
                 if (localMerge)
                 {
