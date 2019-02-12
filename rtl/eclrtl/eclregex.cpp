@@ -404,7 +404,11 @@ public:
         UErrorCode uerr = U_ZERO_ERROR;
         UnicodeString uStrSearch;
 
+#if U_ICU_VERSION_MAJOR_NUM>=58
+        uStrSearch.setTo((const char16_t *) _search, _srcLen);
+#else
         uStrSearch.setTo(_search, _srcLen);
+#endif
         matcher->reset(uStrSearch);
         while (matcher->find())
         {
