@@ -240,7 +240,7 @@
         </xsl:element>
         <xsl:if test="string(@ldapServer) != ''">
           <xsl:element name="ldapSecurity">
-            <xsl:copy-of select="@ldapProtocol | @authMethod | @maxConnections | @workunitsBasedn | @filesDefaultUser | @filesDefaultPassword | @reqSignatureExpiry"/>
+            <xsl:copy-of select="@ldapProtocol | @authMethod | @maxConnections | @workunitsBasedn | @filesDefaultUser | @filesDefaultPassword | @reqSignatureExpiry | @allowedClockVariance"/>
             <xsl:variable name="ldapServerName" select="@ldapServer"/>
             <xsl:attribute name="filesBasedn">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@filesBasedn"/>
