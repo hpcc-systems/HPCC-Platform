@@ -1059,7 +1059,7 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
                         sendMessage(errMsg.str(), "text/html; charset=UTF-8");
                         return authTaskDone;
                     }
-                    else if (strieq(method, "get_session_timeout") || strieq(method, "reset_session_timeout"))
+                    else if (strieq(method, "verify") || strieq(method, "get_session_timeout") || strieq(method, "reset_session_timeout"))
                     {
                         VStringBuffer errMsg("Action not supported: %s", method);
                         ESPSerializationFormat respFormat = m_request->queryContext()->getResponseFormat();
@@ -1080,10 +1080,15 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
         return authSucceeded;
 
     if (!authReq.httpMethod.isEmpty() && !authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty()
-        && strieq(authReq.httpMethod.str(), GET_METHOD) && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "getauthtype"))
+        && strieq(authReq.httpMethod.str(), GET_METHOD) && strieq(authReq.serviceName.str(), "esp"))
     {
-        sendGetAuthTypeResponse(authReq, nullptr);
-        return authTaskDone;
+        if (strieq(authReq.methodName.str(), "getauthtype"))
+        {
+            sendGetAuthTypeResponse(authReq, nullptr);
+            return authTaskDone;
+        }
+        if (strieq(authReq.methodName.str(), "verify"))
+            return verifyCookies(authReq);
     }
 #ifdef _USE_OPENLDAP
     if (!authReq.httpMethod.isEmpty() && !authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp"))
@@ -1118,6 +1123,203 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
 #endif
 
     return authUnknown;
+}
+
+EspAuthState CEspHttpServer::verifyCookies(EspAuthRequest& authReq)
+{
+    CIArrayOf<CESPCookieVerification> cookies;
+    //Check whether the ESP request has specified which cookie to be verified or not.
+    IProperties* parms = m_request->queryParameters();
+    if (parms)
+    {
+        Owned<IPropertyIterator> iter = parms->getIterator();
+        ForEach(*iter)
+        {
+            const char* name = iter->getPropKey();
+            if (strieq(name, "__querystring"))
+                continue; //skip the property created by ESP.
+
+            cookies.append(*(new CESPCookieVerification(name, "")));
+        }
+    }
+
+    //If the ESP request has not specified which cookie to be verified,
+    //we will verify the cookies in HTTP Cookie header.
+    if (cookies.ordinality() == 0)
+    {
+        IArrayOf<CEspCookie>& cookiesUsed = m_request->queryCookies();
+        ForEachItemIn(i, cookiesUsed)
+        {
+            CEspCookie& r = cookiesUsed.item(i);
+            cookies.append(*(new CESPCookieVerification(r.getName(), r.getValue())));
+        }
+    }
+
+    ForEachItemIn(ii, cookies)
+        verifyCookie(authReq, cookies.item(ii));
+
+    sendVerifyCookieResponse(authReq, cookies);
+    return authTaskDone;
+}
+
+void CEspHttpServer::verifyCookie(EspAuthRequest& authReq, CESPCookieVerification& cookie)
+{
+    const char* name = cookie.cookieName.get();
+    if (strieq(name, "ESPSessionID") || strieq(name, authReq.authBinding->querySessionIDCookieName()))
+    {
+        if (verifyESPSessionIDCookie(authReq))
+            cookie.valid.set("true");
+    }
+    else if (strieq(name, SESSION_AUTH_OK_COOKIE))
+        verifyESPAuthenticatedCookie(authReq, cookie);
+    else if (strieq(name, USER_NAME_COOKIE))
+        verifyESPUserNameCookie(authReq, cookie);
+    else if (strieq(name, SESSION_TIMEOUT_COOKIE) || strieq(name, SESSION_AUTH_MSG_COOKIE))
+    {
+        //SESSION_TIMEOUT_COOKIE: used to pass timeout settings to a client.
+        //SESSION_AUTH_MSG_COOKIE: used to pass authentication message to a client.
+        //A client should clean it as soon as received. ESP always returns invalid if it is asked.
+        cookie.verificationDetails.set("ESP cannot verify this cookie. It is one-time use only.");
+    }
+    else if (strieq(name, SESSION_START_URL_COOKIE))
+    {   
+        //SESSION_START_URL_COOKIE: created as soon as a login process is started and used to redirect at the end of the login process.
+        //After the login process, ESP should remove this cookie if possible. This verify function is designed to verify cookies before 
+        //a login process is started. At that time, any SESSION_START_URL_COOKIE should be invalid.
+        cookie.verificationDetails.set("ESP cannot verify this cookie. This cookie is only valid within a login process.");
+    }
+    else if (strieq(name, SESSION_ID_TEMP_COOKIE))
+    {   
+        //SESSION_ID_TEMP_COOKIE: used for remembering UserID when a user is in AS_PASSWORD_VALID_BUT_EXPIRED state and updating password.
+        //It is created before the updatepasswordinput is started. After the update process, ESP should remove this cookie if possible.
+        //This verify function is designed to verify cookies before a login process is started. At that time, any SESSION_ID_TEMP_COOKIE
+        //should be invalid.
+        cookie.verificationDetails.set("ESP cannot verify this cookie. This cookie is only valid when updating an expired password.");
+    }
+    else
+        cookie.verificationDetails.set("ESP does not know this cookie");
+}
+
+void CEspHttpServer::verifyESPUserNameCookie(EspAuthRequest& authReq, CESPCookieVerification& cookie)
+{
+    //USER_NAME_COOKIE: used in UserNameOnlyMode for remembering the user name. Right now it is
+    //always valid if ESP is in the UserNameOnlyMode.
+    if (authReq.authBinding->getDomainAuthType() != AuthUserNameOnly)
+        return;
+
+    if (!cookie.cookieValue.get())
+        cookie.cookieValue.set(m_request->queryCookie(USER_NAME_COOKIE));
+    if (cookie.cookieValue.get())
+        cookie.valid.set("true");
+}
+
+bool CEspHttpServer::verifyESPSessionIDCookie(EspAuthRequest& authReq)
+{
+    unsigned sessionID = readCookie(authReq.authBinding->querySessionIDCookieName());
+    if (sessionID == 0) //No valid SessionIDCookie found
+        return false;
+
+    //Timeout old sessions.
+    Owned<IRemoteConnection> conn = getSDSConnection(authReq.authBinding->queryESPSessionSDSPath(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    IPropertyTree* espSessions = conn->queryRoot();
+    if (authReq.authBinding->getServerSessionTimeoutSeconds() >= 0)
+    {
+        CDateTime now;
+        now.setNow();
+        time_t timeNow = now.getSimple();
+        if ((timeNow - lastSessionCleanUpTime) >= authReq.authBinding->getCheckSessionTimeoutSeconds())
+        {
+            lastSessionCleanUpTime = timeNow;
+            timeoutESPSessions(authReq.authBinding, espSessions);
+        }
+    }
+
+    //Now, check whether the session ID is valid or not.
+    VStringBuffer xpath("%s[@port=\"%d\"]/%s%u", PathSessionApplication, authReq.authBinding->getPort(),
+        PathSessionSession, sessionID);
+    IPropertyTree* sessionTree = espSessions->queryBranch(xpath.str());
+    if (!sessionTree)
+        return false;
+
+    StringBuffer peer;
+    return streq(m_request->getPeer(peer).str(), sessionTree->queryProp(PropSessionNetworkAddress));
+}
+
+void CEspHttpServer::verifyESPAuthenticatedCookie(EspAuthRequest& authReq, CESPCookieVerification& cookie)
+{
+    if (!cookie.cookieValue.get())
+        cookie.cookieValue.set(m_request->queryCookie(SESSION_AUTH_OK_COOKIE));
+    if (!cookie.cookieValue.get())
+    {
+        cookie.verificationDetails.set("Cookie value not found.");
+        return;
+    }
+
+    bool checkValid = strieq(cookie.cookieValue.get(), "true") ? true : false;
+    if (authReq.authBinding->getDomainAuthType() == AuthUserNameOnly)
+    {//For AuthUserNameOnly, a user is 'authenticated' if there is a USER_NAME_COOKIE (which contains a user name).
+        if (checkValid && m_request->queryCookie(USER_NAME_COOKIE))
+            cookie.valid.set("true");
+        if (!checkValid && !m_request->queryCookie(USER_NAME_COOKIE))
+            cookie.valid.set("true");
+        return;
+    }
+
+    bool isSessionIDCookieValid = verifyESPSessionIDCookie(authReq);
+    if (checkValid && isSessionIDCookieValid)
+        cookie.valid.set("true");
+    else if (!checkValid && !isSessionIDCookieValid)
+        cookie.valid.set("true");
+}
+
+void CEspHttpServer::sendVerifyCookieResponse(EspAuthRequest& authReq, CIArrayOf<CESPCookieVerification>& cookies)
+{
+    StringBuffer resp;
+    ESPSerializationFormat format = m_request->queryContext()->getResponseFormat();
+    if (format == ESPSerializationJSON)
+    {
+        resp.set("{ ");
+        resp.append(" \"VerifyResponse\": { ");
+        ForEachItemIn(i, cookies)
+        {
+            CESPCookieVerification& cookie = cookies.item(i);
+            const char* name = cookie.cookieName.get();
+            if (i > 0)
+                resp.append(",");
+            resp.appendf(" \"%s\": { ", name);
+            if (strieq(name, "ESPSessionID") || strieq(name, authReq.authBinding->querySessionIDCookieName()))
+                resp.append(" \"Value\": \"(hidden)\"");
+            else if (cookie.cookieValue.get())
+                resp.appendf(" \"Value\": \"%s\"", cookie.cookieValue.get());
+            resp.appendf(", \"Valid\": %s", cookie.valid.get());
+
+            if (cookie.verificationDetails.get())
+                resp.appendf(", \"Details\": \"%s\"", cookie.verificationDetails.get());
+            resp.append(" }");
+        }
+        resp.append(" }");
+        resp.append(" }");
+    }
+    else
+    {
+        resp.set("<VerifyResponse>");
+        ForEachItemIn(i, cookies)
+        {
+            CESPCookieVerification& cookie = cookies.item(i);
+            const char* name = cookie.cookieName.get();
+            resp.append("<").append(name).append(">");
+            if (strieq(name, "ESPSessionID") || strieq(name, authReq.authBinding->querySessionIDCookieName()))
+                resp.append("<Value>(hidden)</Value>");
+            else if (cookie.cookieValue.get())
+                resp.append("<Value>").append(cookie.cookieValue.get()).append("</Value>");
+            resp.append("<Valid>").append(cookie.valid.get()).append("</Valid>");
+            if (cookie.verificationDetails.get())
+                resp.append("<Details>").append(cookie.verificationDetails.get()).append("</Details>");
+            resp.append("</").append(name).append(">");
+        }
+        resp.append("</VerifyResponse>");
+    }
+    sendMessage(resp.str(), (format == ESPSerializationJSON) ? "application/json" : "text/xml");
 }
 
 EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
