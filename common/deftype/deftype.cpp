@@ -3327,6 +3327,13 @@ ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild)
     case type_rule:
         newType.setown(makeRuleType(LINK(newChild)));
         break;
+    case type_function:
+    {
+        IFunctionTypeExtra * extra = dynamic_cast<IFunctionTypeExtra *>(type);
+        assertex(extra);
+        newType.setown(makeFunctionType(LINK(newChild), LINK(extra->queryParameters()), LINK(extra->queryDefaults()), LINK(extra->queryAttributes())));
+        break;
+    }
     default:
         throwUnexpected();
     }

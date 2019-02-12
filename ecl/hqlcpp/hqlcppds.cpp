@@ -2760,7 +2760,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     case no_translated:
         {
             bool sourceOutOfLine = isArrayRowset(exprType);
-            if (sourceOutOfLine != targetOutOfLine && !hasStreamedModifier(exprType))
+            if (sourceOutOfLine != targetOutOfLine && !hasStreamedModifier(exprType) && !hasStreamedModifier(to))
             {
                 IAtom * serializeFormat = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
                 OwnedITypeInfo serializedSourceType = getSerializedForm(exprType, serializeFormat);
@@ -2810,7 +2810,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
                 IIdAtom * func = NULL;
                 if (!isArrayRowset(to))
                 {
-                    if (!isArrayRowset(exprType))
+                    if (!isArrayRowset(exprType) && !hasStreamedModifier(to))
                         func = dataset2DatasetXId;
                 }
                 else if (hasLinkCountedModifier(to))
@@ -2847,9 +2847,17 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
 
                 if (func)
                 {
+                    OwnedHqlExpr function = needFunction(func);
+                    ITypeInfo * funcType = function->queryType();
+                    ITypeInfo * funcDsType = funcType->queryChildType();
+                    ITypeInfo * funcRowType = funcDsType->queryChildType();
+                    ITypeInfo * toRecordType = to->queryChildType()->queryChildType();
+
+                    Owned<ITypeInfo> newRowType = replaceChildType(funcRowType, toRecordType);
+                    Owned<ITypeInfo> newType = replaceChildType(funcDsType, newRowType);
                     HqlExprArray args;
                     args.append(*LINK(expr));
-                    OwnedHqlExpr call = bindFunctionCall(func, args);
+                    OwnedHqlExpr call = bindFunctionCall(func, args, newType);
                     buildExprAssign(ctx, target, call);
                     return;
                 }

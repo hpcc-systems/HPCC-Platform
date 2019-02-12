@@ -6118,7 +6118,8 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             }
             const CHqlBoundTarget * curTarget;
             if (tgt && !tgt->isFixedSize() && 
-                (hasLinkCountedModifier(targetType) == hasLinkCountedModifier(retType)))
+                (hasLinkCountedModifier(targetType) == hasLinkCountedModifier(retType)) &&
+                !hasStreamedModifier(targetType))
             {
                 doneAssign = true;
                 curTarget = tgt;
