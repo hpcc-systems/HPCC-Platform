@@ -54,6 +54,7 @@ class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
     StringAttr              filesdefaultpassword;
     unsigned                ldapflags;
     unsigned                requestSignatureExpiryMinutes;//Age at which a dali permissions request signature becomes invalid
+    unsigned                requestSignatureAllowedClockVarianceSeconds;//Number of seconds that timestamps can vary between nodes
     IDigitalSignatureManager * pDSM = nullptr;
 
     void createDefaultScopes()
@@ -86,6 +87,7 @@ public:
         ldapflags = 0;
         if (ldapprops) {
             requestSignatureExpiryMinutes = ldapprops->getPropInt("@reqSignatureExpiry", 10);
+            requestSignatureAllowedClockVarianceSeconds = ldapprops->getPropInt("@allowedClockVariance", 5);
             if (ldapprops->getPropBool("@checkScopeScans",true))
                 ldapflags |= DLF_SCOPESCANS;
             if (ldapprops->getPropBool("@safeLookup",true))
@@ -164,23 +166,28 @@ public:
 
                 CDateTime now;
                 now.setNow();
-                if (now.compare(reqUTCTimestamp, false) < 0)//timestamp from the future?
+                CDateTime daliTime(now);
+                if (requestSignatureAllowedClockVarianceSeconds)//allow for clock variance between machines
+                    daliTime.adjustTimeSecs(requestSignatureAllowedClockVarianceSeconds);
+
+                if (daliTime.compare(reqUTCTimestamp, false) < 0)//timestamp from the future?
                 {
                     StringBuffer localDaliTimeUTC;
                     now.getString(localDaliTimeUTC, false);//get UTC timestamp
-                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Request digital signature UTC timestamp %s from the future (Dali UTC time %s)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str());
+                    ERRLOG("getPermissions(%s) scope=%s user=%s Request digital signature UTC timestamp %s from the future (Dali UTC time %s). Check configured allowedClockVariance (%d sec)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str(), requestSignatureAllowedClockVarianceSeconds);
                     return SecAccess_None;//deny
                 }
 
-                CDateTime expiry;
-                expiry.set(now);
-                expiry.adjustTime(requestSignatureExpiryMinutes);//compute expiration timestamp
+                CDateTime expiry(now);
+                expiry.adjustTime(-1 * requestSignatureExpiryMinutes);//compute expiration timestamp
+                if (requestSignatureAllowedClockVarianceSeconds)//allow for clock variance between machines
+                    expiry.adjustTimeSecs(-1 * requestSignatureAllowedClockVarianceSeconds);
 
-                if (expiry.compare(reqUTCTimestamp, false) < 0)//timestamp too far in the past?
+                if (reqUTCTimestamp.compare(expiry, false) < 0)//timestamp too far in the past?
                 {
                     StringBuffer localDaliTimeUTC;
                     now.getString(localDaliTimeUTC, false);//get UTC timestamp
-                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Expired request digital signature UTC timestamp %s (Dali UTC time %s, configured expiry %d minutes)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str(), requestSignatureExpiryMinutes);
+                    ERRLOG("getPermissions(%s) scope=%s user=%s Expired request digital signature UTC timestamp %s (Dali UTC time %s, configured expiry %d minutes. Check configured allowedClockVariance (%d sec))",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str(), requestSignatureExpiryMinutes, requestSignatureAllowedClockVarianceSeconds);
                     return SecAccess_None;//deny
                 }
 
