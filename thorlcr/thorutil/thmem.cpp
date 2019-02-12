@@ -2577,6 +2577,7 @@ public:
     virtual size32_t getRecordSize(const void *) { return extraSz + sizeof(const void *); }
     virtual size32_t getMinRecordSize() const { return extraSz + sizeof(const void *); }
     virtual size32_t getFixedSize() const { return extraSz + sizeof(const void *); }
+    virtual const RtlTypeInfo * queryTypeInfo() const { return nullptr; }
     virtual void toXML(const byte * self, IXmlWriter & out) 
     { 
          // ignoring xml'ing extra
@@ -2622,6 +2623,7 @@ public:
             internalDeserializer.setown(new CDeserializer(childMeta->createInternalDeserializer(ctx, activityId), childAllocator, extraSz));
         return LINK(internalDeserializer);
     }
+    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) 
     {
         //GH: I think this is what it should do, please check

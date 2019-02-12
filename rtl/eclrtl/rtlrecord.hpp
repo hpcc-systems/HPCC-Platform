@@ -379,6 +379,7 @@ public:
     }
     virtual unsigned getVersion() const override                     { return OUTPUTMETADATA_VERSION; }
     virtual unsigned getMetaFlags() override                         { return MDFhasserialize|MDFhasxml; }
+    virtual const RtlTypeInfo * queryTypeInfo() const override { return nullptr; }
 
     virtual void destruct(byte * self) override                      {}
     virtual IOutputMetaData * querySerializedDiskMeta() override    { return this; }
@@ -394,7 +395,8 @@ public:
     {
         return createDiskDeserializer(ctx, activityId);
     }
-    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) override{ }
+    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) override {}
+    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) override { }
     virtual IOutputMetaData * queryChildMeta(unsigned i) override { return NULL; }
 
     virtual const RtlRecord &queryRecordAccessor(bool expand) const override final;

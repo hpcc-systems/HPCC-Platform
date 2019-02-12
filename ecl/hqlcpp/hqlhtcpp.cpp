@@ -10836,7 +10836,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         if (csvAttr)
             instance->addBaseClass("IHThorCsvWriteExtra", true);
         else if (xmlAttr)
-            instance->addBaseClass("IHThorXmlWriteExtra", true);
+            instance->addBaseClass("CHThorXmlWriteExtra", true); // CHThor... contains default implementations
     }
     instance->generateMetaFromInput = true;
 
@@ -11759,7 +11759,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
     if (csvToPipe)
         instance->addBaseClass("IHThorCsvWriteExtra", true);
     else if (xmlToPipe)
-        instance->addBaseClass("IHThorXmlWriteExtra", true);
+        instance->addBaseClass("CHThorXmlWriteExtra", true); // CHThor... contains default implementations
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
