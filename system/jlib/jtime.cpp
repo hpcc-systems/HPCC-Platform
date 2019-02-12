@@ -365,6 +365,13 @@ void CDateTime::adjustTime(int deltaMins)
     set(simple);
 }
 
+void CDateTime::adjustTimeSecs(int deltaSecs)
+{
+    time_t simple = getSimple();
+    simple += deltaSecs;
+    set(simple);
+}
+
 void CDateTime::getDate(unsigned & year, unsigned & month, unsigned & day, bool local) const
 {
     if(local)
