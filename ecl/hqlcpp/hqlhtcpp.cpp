@@ -15521,7 +15521,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
 
     {
         MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left) override");
-        func.ctx.addQuotedLiteral("const unsigned char * left = (const byte *) left;");
+        func.ctx.addQuotedLiteral("const unsigned char * left = (const byte *) _left;");
 
         // Bind left to "left" and right to RIGHT
         bindTableCursor(func.ctx, dataset, "left");
