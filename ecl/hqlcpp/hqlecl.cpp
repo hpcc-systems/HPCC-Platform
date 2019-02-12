@@ -91,8 +91,8 @@ public:
     virtual bool generateExe(ICppCompiler * compiler);
     virtual bool generatePackage(const char * packageName);
     virtual void setMaxCompileThreads(unsigned value) { defaultMaxCompileThreads = value; }
-    virtual void addManifest(const char *filename) { code->addManifest(filename); }
-    virtual void addManifestsFromArchive(IPropertyTree *archive) { code->addManifestsFromArchive(archive); }
+    virtual void addManifest(const char *filename) { code->addManifest(filename, ctxCallback); }
+    virtual void addManifestsFromArchive(IPropertyTree *archive) { code->addManifestsFromArchive(archive, ctxCallback); }
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){ code->addWebServiceInfo(wsinfo); }
 
     virtual double getECLcomplexity(IHqlExpression * exprs);
@@ -125,7 +125,10 @@ protected:
     ClusterType targetClusterType;
     Linked<ICodegenContextCallback> ctxCallback;
     unsigned defaultMaxCompileThreads;
+    StringArray temporaryDirectories;
     StringArray sourceFiles;
+    StringArray sourceFlags;
+    BoolArray sourceIsTemp;
     StringArray libraries;
     StringArray objects;
     offset_t totalGeneratedSize;
@@ -186,6 +189,18 @@ void HqlDllGenerator::addLibrariesToCompiler()
             break;
         PrintLog("Adding source file: %s", src);
         sourceFiles.append(src);
+        sourceFlags.append(code->querySourceFlags(idx));
+        sourceIsTemp.append(code->querySourceIsTemp(idx));
+        idx++;
+    }
+    idx=0;
+    for (;;)
+    {
+        const char * dir = code->queryTempDirectory(idx);
+        if (!dir)
+            break;
+        PrintLog("Adding temporary directory: %s", dir);
+        temporaryDirectories.append(dir);
         idx++;
     }
 }
@@ -527,6 +542,8 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
     StringBuffer fullname;
     expandCode(fullname, MAIN_MODULE_TEMPLATE, false, code, isMultiFile, 0, targetCompiler);
     sourceFiles.append(fullname);
+    sourceFlags.append(nullptr);
+    sourceIsTemp.append(true);
     if (isMultiFile)
     {
         expandCode(fullname, HEADER_TEMPLATE, true, code, true, 0, targetCompiler);
@@ -534,6 +551,8 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
         {
             expandCode(fullname, CHILD_MODULE_TEMPLATE, false, code, true, i+1, targetCompiler);
             sourceFiles.append(fullname);
+            sourceFlags.append(nullptr);
+            sourceIsTemp.append(true);
         }
     }
 
@@ -550,7 +569,7 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     cycle_t startCycles = get_cycles_now();
     addTimeStamp(wu, SSTcompilestage, "compile:compile c++", StWhenStarted);
     ForEachItemIn(i, sourceFiles)
-        compiler->addSourceFile(sourceFiles.item(i));
+        compiler->addSourceFile(sourceFiles.item(i), sourceFlags.item(i));
 
     unsigned maxThreads = wu->getDebugValueInt("maxCompileThreads", defaultMaxCompileThreads);
     compiler->setMaxCompileThreads(maxThreads);
@@ -618,8 +637,15 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
         removeFileTraceIfFail(temp.clear().append(wuname).append(".hpp").str());
         ForEachItemIn(i, sourceFiles)
         {
-            removeFileTraceIfFail(sourceFiles.item(i));
+            if (sourceIsTemp.item(i))
+                removeFileTraceIfFail(sourceFiles.item(i));
         }
+    }
+    ForEachItemIn(j, temporaryDirectories)
+    {
+        Owned<IFile> tempDir = createIFile(temporaryDirectories.item(j));
+        if (tempDir)
+            recursiveRemoveDirectory(tempDir);
     }
     return ok;
 }

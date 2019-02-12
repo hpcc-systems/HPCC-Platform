@@ -16,6 +16,7 @@
 ############################################################################## */
 #include "jliball.hpp"
 #include "hql.hpp"
+#include "hqlutil.hpp"
 #include "hqlmanifest.hpp"
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -29,12 +30,28 @@ public:
     {
         try
         {
-            manifest.setown(createPTreeFromXMLFile(filename));
+            fileContents.loadFile(filename, false);
+            const char *xml = fileContents.str();
+            StringBuffer body;
+            // Check for signature
+            if (startsWith(fileContents, "-----BEGIN PGP SIGNED MESSAGE-----"))
+            {
+                // Note - we do not check the signature here - we are creating an archive, and typically that means we
+                // are on the client machine, while the signature can only be checked on the server where the keys are installed.
+                stripSignature(body, fileContents);
+                xml = body.str();
+                isSigned = true;
+            }
+            manifest.setown(createPTreeFromXMLString(xml));
         }
-        catch (IException * e)
+        catch (IException * E)
         {
-            e->Release();
-            throw makeStringExceptionV(0, "Invalid manifest file '%s'", filename);
+            StringBuffer msg;
+            E->errorMessage(msg);
+            auto code = E->errorCode();
+            auto aud = E->errorAudience();
+            E->Release();
+            throw makeStringExceptionV(aud, code, "While loading manifest file %s: %s", filename, msg.str());
         }
         makeAbsolutePath(filename, absFilename);
         splitDirTail(absFilename, dir);
@@ -52,8 +69,10 @@ private:
 
 public:
     Owned<IPropertyTree> manifest;
+    StringBuffer fileContents;
     StringBuffer absFilename;
     StringBuffer dir;
+    bool isSigned = false;
 };
 
 void updateResourcePaths(IPropertyTree &resource, const char *dir)
@@ -181,7 +200,7 @@ void ResourceManifest::addToArchive(IPropertyTree *archive)
 {
     IPropertyTree *additionalFiles = ensurePTree(archive, "AdditionalFiles");
 
-    //xsi namespace required for proper representaion after PTree::setPropBin()
+    //xsi namespace required for proper representation after PTree::setPropBin()
     if (!additionalFiles->hasProp("@xmlns:xsi"))
         additionalFiles->setProp("@xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
@@ -189,29 +208,60 @@ void ResourceManifest::addToArchive(IPropertyTree *archive)
     ForEach(*resources)
     {
         IPropertyTree &item = resources->query();
-        const char *respath = item.queryProp("@resourcePath");
-
-        VStringBuffer xpath("Resource[@resourcePath='%s']", respath);
-        if (!additionalFiles->hasProp(xpath.str()))
+        const char *md5 = item.queryProp("@md5");
+        const char *filename = item.queryProp("@filename");
+        MemoryBuffer content;
+        if (isSigned)
         {
-            IPropertyTree *resTree = additionalFiles->addPropTree("Resource", createPTree("Resource"));
-
-            const char *filepath = item.queryProp("@originalFilename");
-            resTree->setProp("@originalFilename", filepath);
-            resTree->setProp("@resourcePath", respath);
-
-            MemoryBuffer content;
-            loadResource(filepath, content);
-            resTree->setPropBin(NULL, content.length(), content.toByteArray());
+            if (md5)
+            {
+                VStringBuffer xpath("Resource[@filename='%s'][@md5='%s']", filename, md5);
+                if (!additionalFiles->hasProp(xpath.str()))
+                {
+                    IPropertyTree *resTree = additionalFiles->addPropTree("Resource", createPTree("Resource"));
+                    resTree->setProp("@filename", filename);
+                    resTree->setProp("@md5", md5);
+                    loadResource(filename, content);
+                    resTree->setPropBin(NULL, content.length(), content.toByteArray());
+                }
+            }
+            else
+                throw makeStringExceptionV(0, "Signed manifest %s must provide MD5 values for referenced resource %s", absFilename.str(), filename);
+        }
+        else
+        {
+            const char *respath = item.queryProp("@resourcePath");
+            VStringBuffer xpath("Resource[@resourcePath='%s']", respath);
+            if (!additionalFiles->hasProp(xpath.str()))
+            {
+                IPropertyTree *resTree = additionalFiles->addPropTree("Resource", createPTree("Resource"));
+                const char *filepath = item.queryProp("@originalFilename");
+                resTree->setProp("@originalFilename", filepath);
+                resTree->setProp("@resourcePath", respath);
+                loadResource(filepath, content);
+                resTree->setPropBin(NULL, content.length(), content.toByteArray());
+            }
+        }
+        if (md5)
+        {
+            StringBuffer calculated;
+            md5_data(content, calculated);
+            if (!strieq(calculated, md5))
+                throw makeStringExceptionV(0, "MD5 mismatch on file %s in manifest %s", filename, absFilename.str());
         }
     }
 
-    StringBuffer xml;
-    toXML(manifest, xml);
-
-    IPropertyTree *manifest = additionalFiles->addPropTree("Manifest", createPTree("Manifest", ipt_none));
-    manifest->setProp("@originalFilename", absFilename.str());
-    manifest->setProp(NULL, xml.str());
+    IPropertyTree *manifestWrapper = additionalFiles->addPropTree("Manifest", createPTree("Manifest", ipt_none));
+    manifestWrapper->setProp("@originalFilename", absFilename.str());
+    manifestWrapper->setPropBool("@isSigned", isSigned);
+    if (isSigned)
+        manifestWrapper->setProp(NULL, fileContents.str());
+    else
+    {
+        StringBuffer xml;
+        toXML(manifest, xml);
+        manifestWrapper->setProp(NULL, xml.str());
+    }
 }
 
 void addManifestResourcesToArchive(IPropertyTree *archive, const char *filename)

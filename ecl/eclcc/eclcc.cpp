@@ -1936,7 +1936,7 @@ bool EclCC::generatePrecompiledHeader()
     }
     Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, NULL);
     compiler->setDebug(true);  // a precompiled header with debug can be used for no-debug, but not vice versa
-    compiler->addSourceFile("eclinclude4.hpp");
+    compiler->addSourceFile("eclinclude4.hpp", nullptr);
     compiler->setPrecompileHeader(true);
     if (compiler->compile())
     {
