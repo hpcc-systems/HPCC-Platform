@@ -2112,7 +2112,7 @@ public:
     IMPLEMENT_IINTERFACE;
     virtual int             errorCode() const { return code; }
     virtual StringBuffer &  errorMessage(StringBuffer &msg) const { return msg.append("LimitSkipException"); }
-    virtual MessageAudience errorAudience() const { return MSGAUD_internal; }
+    virtual MessageAudience errorAudience() const { return MSGAUD_programmer; }
 };
 
 IException *makeLimitSkipException(bool isKeyed)
