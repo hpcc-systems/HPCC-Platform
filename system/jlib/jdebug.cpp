@@ -895,6 +895,8 @@ unsigned CpuInfo::getPercentCpu() const
     __uint64 total = getTotal();
     if (total == 0)
         return 0;
+    if (idle == 0)
+        return 100;
     unsigned percent = (unsigned)(((total - idle) * 100) / idle);
     if (percent > 100)
         percent = 100;
