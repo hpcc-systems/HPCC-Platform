@@ -19,7 +19,7 @@
 
 ESPrequest CreateFileRequest
 {
-    string DestDropZone;        //name or IP address; 
+    string DestDropZone;        //name or IP address
     string DestRelativePath;    //file name and/or path; related to the predefined directory of the dropzone
     bool   Overwrite(false);
 };
