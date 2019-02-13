@@ -685,39 +685,110 @@ WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __len
 }
 
 
-//This function is deprecated and no longer supported - I'm not sure it ever worked
-WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities, const char * filterText)
-{
-    return createNullRowStream();
-}
 
-class WsStreamedStatistics : public CInterfaceOf<IRowStream>
+class WsStreamedStatistics : public CInterfaceOf<IRowStream>, public IWuScopeVisitor
 {
 public:
     WsStreamedStatistics(IConstWorkUnit * _wu, IEngineRowAllocator * _resultAllocator, const char * _filter)
-    : wu(_wu), resultAllocator(_resultAllocator), filter(_filter)
+    : wu(_wu), resultAllocator(_resultAllocator)
     {
+        filter.addOutputProperties(PTstatistics);
+        filter.addFilter(_filter);
+        filter.finishedFilter();
         iter.setown(&wu->getScopeIterator(filter));
+        if (iter->first())
+            gatherStats();
+    }
+    ~WsStreamedStatistics()
+    {
+        releaseRows();
     }
 
     virtual const void *nextRow()
     {
-        return NULL;
+        for (;;)
+        {
+            if (!iter->isValid())
+                return nullptr;
+            if (rows.isItem(curRow))
+                return rows.item(curRow++);
+            if (iter->next())
+                gatherStats();
+        }
     }
     virtual void stop()
     {
         iter.clear();
+        releaseRows();
     }
 
+//interface IWuScopeVisitor
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra)
+    {
+        SCMStringBuffer creator;
+        SCMStringBuffer description;
+        unsigned __int64 count = extra.getCount();
+        unsigned __int64 max = extra.getMax();
+        StatisticCreatorType creatorType = extra.getCreatorType();
+        extra.getCreator(creator);
+        StatisticScopeType scopeType = extra.getScopeType();
+        const char * scope = extra.queryScope();
+        extra.getDescription(description, true);
+        StatisticMeasure measure = extra.getMeasure();
 
+        MemoryBuffer mb;
+        mb.append(sizeof(value),&value);
+        mb.append(sizeof(count),&count);
+        mb.append(sizeof(max),&max);
+        varAppend(mb, queryCreatorTypeName(creatorType));
+        varAppend(mb, creator.str());
+        varAppend(mb, queryScopeTypeName(scopeType));
+        varAppend(mb, scope);
+        varAppend(mb, queryStatisticName(kind));
+        varAppend(mb, description.str());
+        varAppend(mb, queryMeasureName(measure));
+
+        size32_t len = mb.length();
+        size32_t newSize;
+        void * row = resultAllocator->createRow(len, newSize);
+        memcpy(row, mb.bufferBase(), len);
+        rows.append(row);
+    }
+
+    virtual void noteAttribute(WuAttr attr, const char * value) {}
+    virtual void noteHint(const char * kind, const char * value) {}
+
+protected:
+    bool gatherStats()
+    {
+        rows.clear();
+        curRow = 0;
+        for (;;)
+        {
+            iter->playProperties(*this, PTstatistics);
+            if (rows.ordinality())
+                return true;
+            if (!iter->next())
+                return false;
+        }
+    }
+
+    void releaseRows()
+    {
+        while (rows.isItem(curRow))
+            resultAllocator->releaseRow(rows.item(curRow++));
+    }
 protected:
     Linked<IConstWorkUnit> wu;
     Linked<IEngineRowAllocator> resultAllocator;
     WuScopeFilter filter;
     Linked<IConstWUScopeIterator> iter;
+    ConstPointerArray rows;
+    unsigned curRow = 0;
 };
 
-WORKUNITSERVICES_API IRowStream * wsNewWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, const char * filterText)
+//This function is deprecated and no longer supported - I'm not sure it ever worked
+WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities, const char * filterText)
 {
     Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
     if (!wu)

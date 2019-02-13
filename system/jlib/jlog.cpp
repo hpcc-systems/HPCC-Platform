@@ -2185,16 +2185,16 @@ void attachManyLogMsgMonitorsFromPTree(IPropertyTree * tree)
 const LogMsgCategory MCdisaster(MSGAUD_all, MSGCLS_disaster);
 const LogMsgCategory MCuserError(MSGAUD_user, MSGCLS_error);
 const LogMsgCategory MCoperatorError(MSGAUD_operator, MSGCLS_error);
-const LogMsgCategory MCinternalError((LogMsgAudience)(MSGAUD_internal & MSGAUD_programmer), MSGCLS_error, 1);
+const LogMsgCategory MCinternalError(MSGAUD_programmer, MSGCLS_error, 1);
 const LogMsgCategory MCuserWarning(MSGAUD_user, MSGCLS_warning);
 const LogMsgCategory MCoperatorWarning(MSGAUD_operator, MSGCLS_warning);
-const LogMsgCategory MCinternalWarning((LogMsgAudience)(MSGAUD_internal & MSGAUD_programmer), MSGCLS_warning, 1);
+const LogMsgCategory MCinternalWarning(MSGAUD_programmer, MSGCLS_warning, 1);
 const LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress);
 const LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress);
 const LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress);
 const LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information);
-const LogMsgCategory MCstats(MSGAUD_performance, MSGCLS_information);
-const LogMsgCategory MCevent(MSGAUD_monitor, MSGCLS_event);
+const LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress);
+const LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information);
 const LogMsgCategory MClegacy(MSGAUD_legacy, MSGCLS_legacy, DefaultDetail);
 
 const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
@@ -2664,7 +2664,7 @@ extern jlib_decl void UseSysLogForOperatorMessages(bool use)
         return;
     if (use) {
         msgHandler = getSysLogMsgHandler();
-        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator|MSGAUD_monitor, MSGCLS_all, DefaultDetail, true);  
+        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator, MSGCLS_all, DefaultDetail, true);  
         queryLogMsgManager()->addMonitorOwn(msgHandler, operatorFilter);
     }
     else {

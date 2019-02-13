@@ -54,12 +54,6 @@ inline const char * LogMsgAudienceToVarString(LogMsgAudience audience)
         return("Operator");
     case MSGAUD_user:
         return("User");
-    case MSGAUD_monitor:
-        return("Monitor");
-    case MSGAUD_performance:
-        return("Performance");
-    case MSGAUD_internal:
-        return("Internal");
     case MSGAUD_programmer:
         return("Programmer");
     case MSGAUD_legacy:
@@ -79,12 +73,6 @@ inline const char * LogMsgAudienceToFixString(LogMsgAudience audience)
         return("Operator ");
     case MSGAUD_user:
         return("User     ");
-    case MSGAUD_monitor:
-        return("Monitor  ");
-    case MSGAUD_performance:
-        return("Perf.    ");
-    case MSGAUD_internal:
-        return("Internal ");
     case MSGAUD_programmer:
         return("Prog.    ");
     case MSGAUD_legacy:
@@ -100,15 +88,13 @@ inline const char * LogMsgAudienceToFixString(LogMsgAudience audience)
 
 typedef enum
 {
-    MSGCLS_unknown     = 0x00,
-    MSGCLS_disaster    = 0x01,
-    MSGCLS_error       = 0x02,
-    MSGCLS_warning     = 0x04,
-    MSGCLS_information = 0x08,
-    MSGCLS_progress    = 0x10,
-    MSGCLS_legacy      = 0x20,
-    MSGCLS_event       = 0x40,
-    MSGCLS_all         = 0xFF
+    MSGCLS_disaster    = 0x01, /* Any unrecoverable or critical system errors */
+    MSGCLS_error       = 0x02, /* Recoverable/not critical Errors */
+    MSGCLS_warning     = 0x04, /* Warnings */
+    MSGCLS_information = 0x08, /* Config, environmental and internal status  info */
+    MSGCLS_progress    = 0x10, /* Progress of workunits. Status of file operations*/
+    MSGCLS_legacy      = 0x20, /* TODO: to be removed */
+    MSGCLS_all         = 0xFF  /* Use as a filter to select all messages */
 } LogMsgClass;
 
 #define MSGCLSNUM 7
@@ -129,8 +115,6 @@ inline const char * LogMsgClassToVarString(LogMsgClass msgClass)
         return("Progress");
     case MSGCLS_legacy:
         return("Legacy");
-    case MSGCLS_event:
-        return("Event");
     default:
         return("UNKNOWN");
     }
@@ -150,10 +134,6 @@ inline const char * LogMsgClassToFixString(LogMsgClass msgClass)
         return("Inform.  ");
     case MSGCLS_progress:
         return("Progress ");
-    case MSGCLS_legacy:
-        return("Legacy   ");
-    case MSGCLS_event:
-        return("Event    ");
     default:
         return("UNKNOWN  ");
     }
@@ -365,7 +345,7 @@ inline char const * msgPrefix(LogMsgClass msgClass)
 class jlib_decl LogMsgCategory
 {
 public:
-    LogMsgCategory(LogMsgAudience _audience = MSGAUD_unknown, LogMsgClass _class = MSGCLS_unknown, LogMsgDetail _detail = DefaultDetail) : audience(_audience), msgClass(_class), detail(_detail) {}
+    LogMsgCategory(LogMsgAudience _audience = MSGAUD_programmer, LogMsgClass _class = MSGCLS_information, LogMsgDetail _detail = DefaultDetail) : audience(_audience), msgClass(_class), detail(_detail) {}
     inline LogMsgAudience     queryAudience() const { return audience; }
     inline LogMsgClass        queryClass() const { return msgClass; }
     inline LogMsgDetail       queryDetail() const { return detail; }
@@ -703,7 +683,7 @@ extern jlib_decl const LogMsgCategory MCoperatorProgress;
 extern jlib_decl const LogMsgCategory MCdebugProgress;
 extern jlib_decl const LogMsgCategory MCdebugInfo;
 extern jlib_decl const LogMsgCategory MCstats;
-extern jlib_decl const LogMsgCategory MCevent;
+extern jlib_decl const LogMsgCategory MCoperatorInfo;
 extern jlib_decl const LogMsgCategory MClegacy;
 
 extern jlib_decl const LogMsgJobInfo unknownJob;
@@ -804,7 +784,6 @@ inline void VALOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgC
 #define CHRLOG(category, job, expr) LOGMSGREPORTER->report(category, job, #expr"=%c", expr)
 #define STRLOG(category, job, expr) LOGMSGREPORTER->report(category, job, #expr"='%s'", expr)
 #define TOSTRLOG(category, job, prefix, func) { if (!REJECTLOG(category)) { StringBuffer buff; func(buff); LOGMSGREPORTER->report(category, job, prefix"'%s'", buff.str()); } }
-#define EVENTLOG(code, extra) LOGMSGREPORTER->report(MCevent, unknownJob, code, extra)
 
 inline void DBGLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void DBGLOG(char const * format, ...)

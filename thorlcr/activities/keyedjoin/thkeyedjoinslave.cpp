@@ -912,7 +912,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 {
                     unsigned partNo = partCopy & partMask;
                     unsigned copy = partCopy >> 24;
-                    Owned<IKeyIndex> keyIndex = activity.createPartKeyIndex(partNo, copy);
+                    Owned<IKeyIndex> keyIndex = activity.createPartKeyIndex(partNo, copy, false);
                     partKeySet->addIndex(keyIndex.getClear());
                 }
                 keyManager.setown(createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, helper->hasNewSegmentMonitors()));
@@ -1797,7 +1797,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         }
         return tlkKeyIndexes.ordinality();
     }
-    IKeyIndex *createPartKeyIndex(unsigned partNo, unsigned copy)
+    IKeyIndex *createPartKeyIndex(unsigned partNo, unsigned copy, bool delayed)
     {
         IPartDescriptor &filePart = allIndexParts.item(partNo);
         unsigned crc=0;
@@ -1807,13 +1807,25 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         StringBuffer filename;
         rfn.getPath(filename);
 
-        Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, indexName, filePart);
-
-        return createKeyIndex(filename, crc, *lfile, false, false);
+        if (delayed)
+        {
+            Owned<IFileIO> lazyFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart);
+            Owned<IDelayedFile> delayedFile = createDelayedFile(lazyFileIO);
+            return createKeyIndex(filename, crc, *delayedFile, false, false);
+        }
+        else
+        {
+            /* NB: createKeyIndex here, will load the key immediately
+             * But that's okay, because we are only here on demand.
+             * The underlying IFileIO can later be closed by fhe file caching mechanism.
+             */
+            Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart);
+            return createKeyIndex(filename, crc, *lazyIFileIO, false, false);
+        }
     }
     IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy)
     {
-        Owned<IKeyIndex> keyIndex = createPartKeyIndex(partNo, copy);
+        Owned<IKeyIndex> keyIndex = createPartKeyIndex(partNo, copy, false);
         return createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors());
     }
     const void *preparePendingLookupRow(void *row, size32_t maxSz, const void *lhsRow, size32_t keySz)

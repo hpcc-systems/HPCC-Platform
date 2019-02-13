@@ -2112,7 +2112,7 @@ public:
     IMPLEMENT_IINTERFACE;
     virtual int             errorCode() const { return code; }
     virtual StringBuffer &  errorMessage(StringBuffer &msg) const { return msg.append("LimitSkipException"); }
-    virtual MessageAudience errorAudience() const { return MSGAUD_internal; }
+    virtual MessageAudience errorAudience() const { return MSGAUD_programmer; }
 };
 
 IException *makeLimitSkipException(bool isKeyed)
@@ -15713,6 +15713,7 @@ public:
     virtual void toXML(const byte * self, IXmlWriter & out) { }
     virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
     virtual unsigned getMetaFlags()                         { return 0; }
+    virtual const RtlTypeInfo * queryTypeInfo() const { return nullptr; }
     virtual void destruct(byte * self)  {}
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
@@ -15720,6 +15721,7 @@ public:
     virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
     virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); } // could provide a static implementation if needed
@@ -28028,6 +28030,7 @@ public:
     virtual void toXML(const byte * self, IXmlWriter & out) {}
     virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
     virtual unsigned getMetaFlags()                         { return 0; }
+    virtual const RtlTypeInfo * queryTypeInfo() const { return nullptr; }
     virtual void destruct(byte * self)  {}
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
@@ -28035,6 +28038,7 @@ public:
     virtual IOutputMetaData * querySerializedDiskMeta() { return NULL; }
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
     virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); }

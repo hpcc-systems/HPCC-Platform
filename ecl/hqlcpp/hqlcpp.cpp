@@ -1114,7 +1114,7 @@ void insertUniqueString(StringAttrArray & array, const char * text)
     array.append(* new StringAttrItem(text));
 }
 
-HqlCppInstance::HqlCppInstance(IWorkUnit *_wu, const char * _wupathname)
+HqlCppInstance::HqlCppInstance(IWorkUnit *_wu, const char * _wupathname) : resources(*this)
 {
     workunit.set(_wu);
     wupathname.set(_wupathname);
@@ -1162,6 +1162,27 @@ const char * HqlCppInstance::querySourceFile(unsigned idx)
 {
     if (sourceFiles.isItem(idx))
         return sourceFiles.item(idx).text;
+    return NULL;
+}
+
+const char * HqlCppInstance::querySourceFlags(unsigned idx)
+{
+    if (sourceFlags.isItem(idx))
+        return sourceFlags.item(idx).text;
+    return NULL;
+}
+
+bool HqlCppInstance::querySourceIsTemp(unsigned idx)
+{
+    if (sourceIsTemp.isItem(idx))
+        return sourceIsTemp.item(idx);
+    return false;
+}
+
+const char * HqlCppInstance::queryTempDirectory(unsigned idx)
+{
+    if (tempDirs.isItem(idx))
+        return tempDirs.item(idx).text;
     return NULL;
 }
 
@@ -1272,7 +1293,7 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
     if (include.length())
         useInclude(include.str());
     if (source.length())
-        useSourceFile(source);
+        useSourceFile(source, nullptr, false);
     return true;
 }
 
@@ -1292,9 +1313,26 @@ void HqlCppInstance::useObjectFile(const char * objname)
     insertUniqueString(objectFiles, objname);
 }
 
-void HqlCppInstance::useSourceFile(const char * srcname)
+void HqlCppInstance::useSourceFile(const char * srcname, const char *flags, bool isTemp)
 {
-    insertUniqueString(sourceFiles, srcname);
+    ForEachItemIn(idx, sourceFiles)
+    {
+        StringAttrItem & cur = sourceFiles.item(idx);
+        if (strcmp(cur.text, srcname) == 0)
+        {
+            assertex(!flags);
+            assertex(sourceIsTemp.item(idx)==isTemp);
+            return;
+        }
+    }
+    sourceFiles.append(* new StringAttrItem(srcname));
+    sourceFlags.append(* new StringAttrItem(flags));
+    sourceIsTemp.append(isTemp);
+}
+
+void HqlCppInstance::addTemporaryDir(const char * path)
+{
+    insertUniqueString(tempDirs, path);
 }
 
 void HqlCppInstance::addHint(const char * hintXml, ICodegenContextCallback * ctxCallback)
@@ -1381,7 +1419,7 @@ void HqlCppInstance::flushResources(const char *filename, ICodegenContextCallbac
         if (isObjectFile)
             useObjectFile(resname);
         else
-            useSourceFile(resname);
+            useSourceFile(resname, nullptr, true);
     }
 }
 
@@ -7687,7 +7725,7 @@ void HqlCppTranslator::processCppBodyDirectives(IHqlExpression * expr)
                 StringBuffer sourceName;
                 getStringValue(sourceName, cur->queryChild(0));
                 if (sourceName.length())
-                    code->useSourceFile(sourceName.str());
+                    code->useSourceFile(sourceName.str(), nullptr, false);
             }
         }
     }

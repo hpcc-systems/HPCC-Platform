@@ -19,6 +19,7 @@
 
 #include "jlib.hpp"
 #include "hqlres.hpp"
+#include "hqlcpp.ipp"
 #include "jmisc.hpp"
 #include "jexcept.hpp"
 #include "hqlcerrors.hpp"
@@ -40,7 +41,7 @@ public:
 };
 
 
-ResourceManager::ResourceManager()
+ResourceManager::ResourceManager(IHqlCppInstance &_cppInstance) : cppInstance(_cppInstance)
 {
     nextmfid = MANIFEST_BASE + 1;
     nextbsid = BIGSTRING_BASE;
@@ -165,9 +166,33 @@ void expandManifestDirectory(IPropertyTree *manifestSrc, IPropertyTree &res, Str
 }
 
 
-void ResourceManager::addManifestFile(const char *filename)
+void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallback *ctxCallback)
 {
-    Owned<IPropertyTree> manifestSrc = createPTreeFromXMLFile(filename);
+    StringBuffer fileContents;
+    StringBuffer strippedFileContents;
+    fileContents.loadFile(filename, false);
+    bool isSigned = false;
+    const char *useContents = fileContents;
+    // Check for signature
+    if (startsWith(fileContents, "-----BEGIN PGP SIGNED MESSAGE-----"))
+    {
+        try
+        {
+            OwnedHqlExpr sig = checkSignature(fileContents.length(), fileContents.str());
+            useContents = stripSignature(strippedFileContents, fileContents).str();
+            isSigned = true;
+        }
+        catch (IException *E)
+        {
+            StringBuffer msg;
+            E->errorMessage(msg);
+            auto code = E->errorCode();
+            auto aud = E->errorAudience();
+            E->Release();
+            throw makeStringExceptionV(aud, code, "While loading manifest file %s: %s", filename, msg.str());
+        }
+    }
+    Owned<IPropertyTree> manifestSrc = createPTreeFromXMLString(useContents);
 
     StringBuffer dir; 
     splitDirTail(filename, dir);
@@ -181,7 +206,7 @@ void ResourceManager::addManifestFile(const char *filename)
     {
         IPropertyTree &item = iter->query();
         if (streq(item.queryName(), "Include") && item.hasProp("@filename"))
-            addManifestInclude(item, dir.str());
+            addManifestInclude(item, dir.str(), ctxCallback);
         else if (streq(item.queryName(), "Resource") && item.hasProp("@filename"))
         {
             StringBuffer filepath;
@@ -209,6 +234,17 @@ void ResourceManager::addManifestFile(const char *filename)
     ForEach(*resources)
     {
         IPropertyTree &item = resources->query();
+        const char *resourceFilename = item.queryProp("@originalFilename");
+        const char *md5 = item.queryProp("@md5");
+        if (md5)
+        {
+            StringBuffer calculated;
+            md5_filesum(resourceFilename, calculated);
+            if (!strieq(calculated, md5))
+                throw makeStringExceptionV(0, "MD5 mismatch on file %s in manifest %s", item.queryProp("@filename"), filename);
+        }
+        else if (isSigned)
+            throw makeStringExceptionV(0, "MD5 must be supplied for file %s in signed manifest %s", item.queryProp("@filename"), filename);
 
         if (!item.hasProp("@type"))
             item.setProp("@type", "UNKNOWN");
@@ -220,23 +256,35 @@ void ResourceManager::addManifestFile(const char *filename)
         }
         else
         {
-            MemoryBuffer content;
-            loadResource(item.queryProp("@originalFilename"), content);
-            addCompress(item.queryProp("@type"), content.length(), content.toByteArray(), &item);
+            const char *type = item.queryProp("@type");
+            if (strieq(type, "CPP") || strieq(type, "C"))
+            {
+                if (!ctxCallback->allowAccess("cpp", isSigned))
+                    throw makeStringExceptionV(0, "Embedded code via manifest file not allowed");
+                cppInstance.useSourceFile(resourceFilename, item.queryProp("@compileFlags"), false);
+            }
+            else
+            {
+                if (strieq(type, "jar") && !ctxCallback->allowAccess(type, isSigned))
+                    throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
+                MemoryBuffer content;
+                loadResource(resourceFilename, content);
+                addCompress(type, content.length(), content.toByteArray(), &item);
+            }
         }
     }
 }
 
-void ResourceManager::addManifest(const char *filename)
+void ResourceManager::addManifest(const char *filename, ICodegenContextCallback *ctxCallback)
 {
     StringBuffer path;
     Owned<IPropertyTree> t = createPTree();
     t->setProp("@originalFilename", makeAbsolutePath(filename, path).str());
     ensureManifestInfo()->addPropTree("Include", t.getClear());
-    addManifestFile(filename);
+    addManifestFile(filename, ctxCallback);
 }
 
-void ResourceManager::addManifestInclude(IPropertyTree &include, const char *dir)
+void ResourceManager::addManifestInclude(IPropertyTree &include, const char *dir, ICodegenContextCallback *ctxCallback)
 {
     StringBuffer includePath;
     makeAbsolutePath(include.queryProp("@filename"), dir, includePath);
@@ -245,10 +293,10 @@ void ResourceManager::addManifestInclude(IPropertyTree &include, const char *dir
         return;
     include.setProp("@originalFilename", includePath.str());
     manifest->addPropTree("Include", LINK(&include));
-    addManifestFile(includePath.str());
+    addManifestFile(includePath.str(), ctxCallback);
 }
 
-void ResourceManager::addManifestsFromArchive(IPropertyTree *archive)
+void ResourceManager::addManifestsFromArchive(IPropertyTree *archive, ICodegenContextCallback *ctxCallback)
 {
     if (!archive)
         return;
@@ -258,7 +306,31 @@ void ResourceManager::addManifestsFromArchive(IPropertyTree *archive)
     Owned<IPropertyTreeIterator> manifests = archive->getElements("AdditionalFiles/Manifest");
     ForEach(*manifests)
     {
-        const char *xml = manifests->query().queryProp(NULL);
+        StringBuffer tempDir;
+        StringBuffer manifestContents;
+        StringBuffer strippedManifestContents;
+        manifests->query().getProp(nullptr, manifestContents);
+        const char *xml = manifestContents;
+        bool isSigned = false;
+        // Check for signature
+        if (startsWith(xml, "-----BEGIN PGP SIGNED MESSAGE-----"))
+        {
+            try
+            {
+                OwnedHqlExpr sig = checkSignature(manifestContents.length(), manifestContents.str());
+                xml = stripSignature(strippedManifestContents, manifestContents).str();
+                isSigned = true;
+            }
+            catch (IException *E)
+            {
+                StringBuffer msg;
+                E->errorMessage(msg);
+                auto code = E->errorCode();
+                auto aud = E->errorAudience();
+                E->Release();
+                throw makeStringExceptionV(aud, code, "While loading manifest %s: %s", manifests->query().queryProp("@originalFileName"), msg.str());
+            }
+        }
         Owned<IPropertyTree> manifestSrc = createPTreeFromXMLString(xml);
         Owned<IAttributeIterator> aiter = manifestSrc->getAttributes();
         ForEach (*aiter)
@@ -288,10 +360,54 @@ void ResourceManager::addManifestsFromArchive(IPropertyTree *archive)
                 }
                 else
                 {
-                    VStringBuffer xpath("AdditionalFiles/Resource[@originalFilename=\"%s\"]", filename);
                     MemoryBuffer content;
+                    VStringBuffer xpath("AdditionalFiles/Resource[@originalFilename=\"%s\"]", filename);
+                    const char *md5=item.queryProp("@md5");
+                    if (!archive->hasProp(xpath.str()))
+                    {
+                        if (md5)
+                            xpath.clear().appendf("AdditionalFiles/Resource[@filename='%s'][@md5='%s']", filename, md5);
+                        else
+                            xpath.clear().appendf("AdditionalFiles/Resource[@originalFilename=\"%s\"]", filename);
+                        if (!archive->hasProp(xpath.str()))
+                            throw makeStringExceptionV(0, "Failed to locate resource for %s in archive", filename);
+                    }
                     archive->getPropBin(xpath.str(), content);
-                    addCompress(item.queryProp("@type"), content.length(), content.toByteArray(), &item);
+                    if (md5)
+                    {
+                        StringBuffer calculated;
+                        md5_data(content, calculated);
+                        if (!strieq(calculated, md5))
+                            throw makeStringExceptionV(0, "MD5 mismatch %s in archive", filename);
+                    }
+                    const char *type = item.queryProp("@type");
+                    if (strieq(type, "CPP") || strieq(type, "C"))
+                    {
+                        if (!ctxCallback->allowAccess("cpp", isSigned))
+                            throw makeStringExceptionV(0, "Embedded code via manifest file not allowed");
+                        if (!tempDir.length())
+                        {
+                            getTempFilePath(tempDir, "eclcc", nullptr);
+                            tempDir.append(PATHSEPCHAR).append("tmp.XXXXXX"); // Note - we share same temp dir for all from this manifest
+                            if (!mkdtemp((char *) tempDir.str()))
+                                throw makeStringExceptionV(0, "Failed to create temporary directory %s (error %d)", tempDir.str(), errno);
+                            cppInstance.addTemporaryDir(tempDir.str());
+                        }
+                        StringBuffer tempFileName;
+                        tempFileName.append(tempDir).append(PATHSEPCHAR).append(item.queryProp("@filename"));
+                        if (!recursiveCreateDirectoryForFile(tempFileName))
+                            throw makeStringExceptionV(0, "Failed to create temporary file %s (error %d)", tempFileName.str(), errno);
+                        FILE *source = fopen(tempFileName.str(), "wt");
+                        fwrite(content.toByteArray(), content.length(), 1, source);
+                        fclose(source);
+                        cppInstance.useSourceFile(tempFileName, item.queryProp("@compileFlags"), true);
+                    }
+                    else
+                    {
+                        if (strieq(type, "jar") && !ctxCallback->allowAccess(type, isSigned))
+                            throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
+                        addCompress(type, content.length(), content.toByteArray(), &item);
+                    }
                 }
             }
             else

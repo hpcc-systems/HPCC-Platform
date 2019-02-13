@@ -854,6 +854,20 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(SmartJoinDegradedToLocal) },
     { NUMSTAT(SmartJoinSlavesDegradedToStd) },
     { NUMSTAT(AttribsSimplifiedTooComplex) },
+    { NUMSTAT(SysContextSwitches) },
+    { TIMESTAT(OsUser) },
+    { TIMESTAT(OsSystem) },
+    { TIMESTAT(OsTotal) },
+    { CYCLESTAT(OsUser) },
+    { CYCLESTAT(OsSystem) },
+    { CYCLESTAT(OsTotal) },
+    { NUMSTAT(ContextSwitches) },
+    { TIMESTAT(User) },
+    { TIMESTAT(System) },
+    { TIMESTAT(Total) },
+    { CYCLESTAT(User) },
+    { CYCLESTAT(System) },
+    { CYCLESTAT(Total) },
 };
 
 
@@ -1441,20 +1455,21 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
         if (MATCHES_CONST_PREFIX(text, FunctionScopePrefix))
         {
             setFunctionId(text+ strlen(FunctionScopePrefix));
+            *_next = text + strlen(text);
             return true;
         }
         break;
     case WorkflowScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix) && isdigit(text[strlen(WorkflowScopePrefix)]))
         {
-            setWorkflowId(atoi(text+ strlen(WorkflowScopePrefix)));
+            setWorkflowId(strtoul(text+ strlen(WorkflowScopePrefix), next, 10));
             return true;
         }
         break;
     case ChildGraphScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, ChildGraphScopePrefix))
         {
-            setChildGraphId(atoi(text+ strlen(ChildGraphScopePrefix)));
+            setChildGraphId(strtoul(text+ strlen(ChildGraphScopePrefix), next, 10));
             return true;
         }
         break;

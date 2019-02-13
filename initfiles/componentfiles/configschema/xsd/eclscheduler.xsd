@@ -24,8 +24,9 @@
                     minOccurs="0" maxOccurs="unbounded" hpcc:docId="ecl.sched" hpcc:class="component">
             <xs:complexType>
                 <xs:sequence>
-                    <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded" hpcc:class="elementSet"
-                                hpcc:displayName="Instances">
+                    <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded"
+                                hpcc:class="elementSet" hpcc:displayName="Instances"
+                                hpcc:requiredInstanceComponents="/Evnironment/Software/[#itemType='dafilesrv'],/Evnironment/Software/[#itemType='ftslave']">
                         <xs:complexType>
                             <xs:attributeGroup ref="computerNodeReference"/>
                             <xs:attribute name="directory" type="xs:string" hpcc:presetValue="c$\eclscheduler" hpcc:hidden="true"/>

@@ -43,10 +43,11 @@
 
 struct FPosTableEntryIFileIO : public FPosTableEntry
 {
-    FPosTableEntryIFileIO() { file = NULL; }
-    ~FPosTableEntryIFileIO() { ::Release(file); }
-    unsigned location;
-    IDelayedFile *file;
+    ~FPosTableEntryIFileIO()
+    {
+        ::Release(file);
+    }
+    IFileIO *file = nullptr;
 };
 
 class CFetchStream : public IRowStream, implements IStopInput, implements IFetchStream, public CSimpleInterface
@@ -57,7 +58,6 @@ class CFetchStream : public IRowStream, implements IStopInput, implements IFetch
     Linked<IExpander> eexp;
 
     FPosTableEntryIFileIO *fPosMultiPartTable;
-    unsigned tableSize;
     unsigned files, offsetCount;
     CriticalSection stopsect;
     CPartDescriptorArray parts;
@@ -157,9 +157,7 @@ public:
                 e->base = part.queryProperties().getPropInt64("@offset");
                 e->top = e->base + part.queryProperties().getPropInt64("@size");
                 e->index = f;
-
-                Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(owner, logicalFilename, part);
-                e->file = lfile.getClear();
+                e->file = queryThor().queryFileCache().lookupIFileIO(owner, logicalFilename, part); // NB: freed by FPosTableEntryIFileIO dtor
             }
         }
     }
@@ -181,8 +179,8 @@ public:
         keyOutStream.setown(distributor->connect(keyRowIf, keyIn, fposHash, NULL, NULL));
     }
     virtual IRowStream *queryOutput() override { return this; }
-    virtual IFileIO *getPartIO(unsigned part) override { assertex(part<files); return fPosMultiPartTable[part].file->getFileIO(); }
-    virtual StringBuffer &getPartName(unsigned part, StringBuffer &out) override { return getPartFilename(parts.item(part), fPosMultiPartTable[part].location, out, true); }
+    virtual IFileIO *getPartIO(unsigned part) override { assertex(part<files); return LINK(fPosMultiPartTable[part].file); }
+    virtual StringBuffer &getPartName(unsigned part, StringBuffer &out) override { return getPartFilename(parts.item(part), 0, out, true); }
     virtual void abort() override
     {
         if (distributor)

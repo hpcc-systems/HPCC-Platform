@@ -271,6 +271,37 @@ void jlib_decl enableMemLeakChecking(bool enable);
 
 // Hook to be called by the performance monitor, takes stats for processor, virtual memory, disk, and thread usage
 
+class jlib_decl CpuInfo
+{
+public:
+    CpuInfo() = default;
+    CpuInfo(bool processTime, bool systemTime);
+
+    void clear();
+    bool getProcessTimes();
+    bool getSystemTimes();
+    CpuInfo operator - (const CpuInfo & rhs) const;
+    __uint64 getNumContextSwitches() const { return ctx; }
+    unsigned getPercentCpu() const;
+    __uint64 getSystemNs() const;
+    __uint64 getUserNs() const;
+    __uint64 getTotalNs() const;
+
+    unsigned getIdlePercent() const;
+    unsigned getIoWaitPercent() const;
+    unsigned getSystemPercent() const;
+    unsigned getUserPercent() const;
+
+    __uint64 getTotal() const { return user + system + idle + iowait; }
+protected:
+    __uint64 user = 0;      // user time in jiffies (~`1/100s)
+    __uint64 system = 0;
+    __uint64 idle = 0;
+    __uint64 iowait =0;
+    __uint64 ctx =0;
+};
+
+
 interface IPerfMonHook : extends IInterface
 {
 public:

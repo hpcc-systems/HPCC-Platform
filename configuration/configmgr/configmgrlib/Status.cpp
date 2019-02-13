@@ -56,12 +56,17 @@ void Status::addUniqueMsg(enum statusMsg::msgLevel level, const std::string &nod
         addMsg(level, nodeId, name, msg);
 }
 
-std::vector<statusMsg> Status::getMessages() const
+
+std::vector<statusMsg> Status::getMessages(enum statusMsg::msgLevel level) const
 {
     std::vector<statusMsg> msgs;
-    for (auto it = m_messages.begin(); it != m_messages.end(); ++it)
+    for (int curLvl = level; curLvl >= statusMsg::info; --curLvl)
     {
-        msgs.push_back(it->second);
+        auto msgRange = m_messages.equal_range(static_cast<enum statusMsg::msgLevel>(curLvl));
+        for (auto msgIt = msgRange.first; msgIt != msgRange.second; ++msgIt)
+        {
+            msgs.emplace_back(msgIt->second);
+        }
     }
     return msgs;
 }

@@ -125,9 +125,11 @@ extern jhtree_decl bool isIndexFile(IFile *file)
     try
     {
         offset_t size = file->size();
-        if (size <= sizeof(KeyHdr))
+        if (((offset_t)-1 == size) || (size <= sizeof(KeyHdr)))
             return false;
         Owned<IFileIO> io = file->open(IFOread);
+        if (!io)
+            return false;
         KeyHdr hdr;
         if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
             return false;

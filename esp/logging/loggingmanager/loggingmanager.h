@@ -34,6 +34,7 @@ interface IEspLogEntry  : implements IInterface
     virtual void setOwnExtraLog(IInterface* extra) = 0;
     virtual void setOption(const char* ptr) = 0;
     virtual void setLogContent(const char* ptr) = 0;
+    virtual void setBackEndReq(const char* ptr) = 0;
     virtual void setBackEndResp(const char* ptr) = 0;
     virtual void setUserResp(const char* ptr) = 0;
     virtual void setLogDatasets(const char* ptr) = 0;
@@ -45,6 +46,7 @@ interface IEspLogEntry  : implements IInterface
     virtual IInterface* getExtraLog() = 0;
     virtual const char* getOption() = 0;
     virtual const char* getLogContent() = 0;
+    virtual const char* getBackEndReq() = 0;
     virtual const char* getBackEndResp() = 0;
     virtual const char* getUserResp() = 0;
     virtual const char* getLogDatasets() = 0;

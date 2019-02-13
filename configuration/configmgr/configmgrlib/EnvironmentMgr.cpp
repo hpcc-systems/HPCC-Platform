@@ -20,9 +20,13 @@
 #include "XMLEnvironmentMgr.hpp"
 #include "InsertableItem.hpp"
 #include "Utils.hpp"
+#include "jfile.hpp"
+#include "build-config.h"
+
 #ifndef WIN32
 #include <dlfcn.h>
 #endif
+
 std::atomic_int EnvironmentMgr::m_key(1);
 
 EnvironmentMgr *getEnvironmentMgrInstance(const EnvironmentType envType)
@@ -68,28 +72,25 @@ bool EnvironmentMgr::loadSchema(const std::string &configPath, const std::string
         }
 
         //
-        // Load any support libs that are environment specific
-        auto findIt = cfgParms.find("support_libs");
-        if (findIt != cfgParms.end())
+        // Load support libs based on the schema type which is read from the itemType property of the schema root node.
+        std::string envType = m_pSchema->getItemType();
+        std::string libPath = LIB_DIR;
+        std::string libMask = "libcfg" + envType + "_*";
+        Owned<IFile> pDir = createIFile(libPath.c_str());
+        if (pDir->exists())
         {
-            std::vector<std::string> supportLibNames = splitString(findIt->second, ",");
-            for (auto &libName: supportLibNames)
+            Owned<IDirectoryIterator> it = pDir->directoryFiles(libMask.c_str(), false, false);
+            ForEach(*it)
             {
-                std::string fullName = libName + ".so";
-
-                try
+                StringBuffer fname;
+                std::string filename = it->getName(fname).str();
+                std::shared_ptr<EnvSupportLib> pLib = std::make_shared<EnvSupportLib>(filename, this);
+                if (pLib->isValid())
                 {
-                    std::shared_ptr<EnvSupportLib> pLib = std::make_shared<EnvSupportLib>(fullName, this);
                     m_supportLibs.push_back(pLib);
-                }
-                catch (ParseException &pe)
-                {
-                    m_message = pe.what();
-                    rc = false;
                 }
             }
         }
-
     }
     return rc;
 }

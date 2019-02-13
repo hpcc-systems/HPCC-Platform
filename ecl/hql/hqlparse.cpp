@@ -606,57 +606,16 @@ void HqlLex::checkSignature(const attribute & dummyToken)
 {
     if (yyParser->lookupCtx.queryParseContext().ignoreSignatures)
         return;
-    Owned<IPipeProcess> pipe = createPipeProcess();
-    if (!pipe->run("gpg", "gpg --verify -", ".", true, false, true, 0, false))
-    {
-        reportWarning(CategorySecurity, dummyToken, WRN_SECURITY_SIGNERROR, "Signature could not be checked because gpg was not found");
-        return;
-    }
     try
     {
-        pipe->write(text->length(), text->getText());
-        pipe->closeInput();
-        unsigned retcode = pipe->wait();
-
-        StringBuffer buf;
-        Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
-        readSimpleStream(buf, *pipeReader);
-        DBGLOG("GPG %d %s", retcode, buf.str());
-        if (retcode)
-        {
-            StringArray allErrs;
-            allErrs.appendList(buf, "\n");
-            ForEachItemIn(idx, allErrs)
-            {
-                if (strlen(allErrs.item(idx)))
-                    reportWarning(CategorySecurity, dummyToken, WRN_SECURITY_SIGNERROR, "gpg error: %s", allErrs.item(idx));
-            }
-        }
-        else
-        {
-            yyParser->inSignedModule = true;
-            yyParser->gpgSignature.clear();
-            const char * sigprefix = "Good signature from \"";
-            const char * const s = buf.str();
-            const char * match = strstr(s, sigprefix);
-            if (match)
-            {
-                match += strlen(sigprefix);
-                const char * const end = strchr(match, '\"');
-                if (end)
-                {
-                    buf.setLength(end-s);
-                    const char * sig = buf.str() + (match-s);
-                    yyParser->gpgSignature.setown(createExprAttribute(_signed_Atom,createConstant(sig)) );
-                }
-            }
-        }
+        yyParser->gpgSignature.setown(::checkSignature(text->length(), text->getText()));
+        yyParser->inSignedModule = true;
     }
     catch (IException *e)
     {
         StringBuffer msg;
         e->errorMessage(msg);
-        reportWarning(CategorySecurity, dummyToken, WRN_SECURITY_SIGNERROR, "Failed to execute gpg: %d %s. Module will be treated as unsigned", e->errorCode(), msg.str());
+        reportWarning(CategorySecurity, dummyToken, WRN_SECURITY_SIGNERROR, "%s", msg.str());
         e->Release();
     }
 }

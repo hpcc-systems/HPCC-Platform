@@ -62,7 +62,7 @@ public:
     IMPLEMENT_IINTERFACE;
     virtual int             errorCode() const { return 0; }
     virtual StringBuffer &  errorMessage(StringBuffer &msg) const { return msg.append("not yet open"); }
-    virtual MessageAudience errorAudience() const { return MSGAUD_internal; }
+    virtual MessageAudience errorAudience() const { return MSGAUD_programmer; }
 };
 
 class CFailingFileIO : implements IFileIO, public CInterface

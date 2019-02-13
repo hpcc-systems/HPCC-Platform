@@ -18,6 +18,8 @@
 #define _HQLRES_INCL
 #include "jarray.hpp"
 
+interface IHqlCppInstance;
+
 class ResourceManager
 {
     unsigned nextmfid;
@@ -25,14 +27,15 @@ class ResourceManager
     unsigned totalbytes;
     CIArray resources;
     Owned<IPropertyTree> manifest;
+    IHqlCppInstance &cppInstance;
     bool finalized;
 public:
-    ResourceManager();
+    ResourceManager(IHqlCppInstance &);
     unsigned addString(unsigned len, const char *data);
     void addNamed(const char * type, unsigned len, const void *data, IPropertyTree *entry=NULL, unsigned id=(unsigned)-1, bool addToManifest=true, bool compressed=false);
     bool addCompress(const char * type, unsigned len, const void *data, IPropertyTree *entry=NULL, unsigned id=(unsigned)-1, bool addToManifest=true);
-    void addManifest(const char *filename);
-    void addManifestsFromArchive(IPropertyTree *archive);
+    void addManifest(const char *filename, ICodegenContextCallback *ctxCallback);
+    void addManifestsFromArchive(IPropertyTree *archive, ICodegenContextCallback *ctxCallback);
     void addWebServiceInfo(IPropertyTree *wsinfo);
     IPropertyTree *ensureManifestInfo(){if (!manifest) manifest.setown(createPTree("Manifest")); return manifest;}
     bool getDuplicateResourceId(const char *srctype, const char *respath, const char *filename, int &id);
@@ -44,8 +47,8 @@ public:
     bool queryWriteText(StringBuffer & resTextName, const char * filename);
 private:
     void putbytes(int h, const void *b, unsigned len);
-    void addManifestFile(const char *filename);
-    void addManifestInclude(IPropertyTree &include, const char *dir);
+    void addManifestFile(const char *filename, ICodegenContextCallback *ctxCallback);
+    void addManifestInclude(IPropertyTree &include, const char *dir, ICodegenContextCallback *ctxCallback);
 };
 
 #endif

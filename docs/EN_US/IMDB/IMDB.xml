@@ -491,7 +491,7 @@ Blankline</programlisting></para>
 
           <listitem>
             <para>Click on the <emphasis role="bold">Logical Files</emphasis>
-            link</para>
+            tab along the top left.</para>
 
             <para>The files display in the Logical Files list:</para>
 
@@ -1156,8 +1156,8 @@ IMDB.KevinBaconNumberSets.doCounts;</programlisting></para>
     in conjunction with the examples you have already worked through in this
     tutorial:</para>
 
-    <para>KeysKevinBacon -- Builds an index of actors/actresses and the
-    movies they have starred in.</para>
+    <para>KeysKevinBacon -- Builds an index of actors/actresses and the movies
+    they have starred in.</para>
 
     <para>You must build this index before you can run queries to find the
     degree of separation between Kevin Bacon and an actor of your

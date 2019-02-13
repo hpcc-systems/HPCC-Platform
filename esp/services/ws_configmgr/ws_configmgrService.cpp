@@ -73,8 +73,6 @@ bool Cws_configMgrEx::onOpenSession(IEspContext &context, IEspOpenSessionRequest
     std::map<std::string, std::string> cfgParms;
     cfgParms["buildset"] = "buildset.xml";  // Note that this is hardcoded for now, when other types suppored, must be passed in
 
-    std::string inputSupportLibs = req.getSupportLibs();
-    cfgParms["support_libs"] = inputSupportLibs.empty() ? "libcfgsupport_addrequiredinstances" : inputSupportLibs;
     std::string pluginsPath = req.getPluginPaths();
     cfgParms["plugin_paths"] = !pluginsPath.empty() ? pluginsPath : CFGMGR_PLUGINS_DIR;
 

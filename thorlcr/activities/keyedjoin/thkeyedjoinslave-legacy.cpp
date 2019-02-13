@@ -1641,8 +1641,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
             IPropertyTree const &props = filePart.queryOwner().queryProperties();
             unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
-            Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, indexName, filePart);
-            Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *lfile, false, false);
+            Owned<IFileIO> lazyFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart);
+            Owned<IDelayedFile> delayedFile = createDelayedFile(lazyFileIO);
+            Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
             keyIndexes.append(*keyIndex.getClear());
         }
     }
@@ -2044,8 +2045,9 @@ public:
                 unsigned i=0;
                 for(; i<dataParts.ordinality(); i++)
                 {
-                    Owned<IDelayedFile> dFile = queryThor().queryFileCache().lookup(*this, indexName, dataParts.item(i), eexp);
-                    fetchFiles.append(*dFile.getClear());
+                    Owned<IFileIO> lazyFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, dataParts.item(i), eexp);
+                    Owned<IDelayedFile> delayedFile = createDelayedFile(lazyFileIO);
+                    fetchFiles.append(*delayedFile.getClear());
                 }
             }
         }
