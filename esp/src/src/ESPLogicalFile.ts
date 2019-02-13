@@ -237,7 +237,7 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
         }
         this.logicalFile = this;
     },
-    save: function (description, args) {
+    save: function (request, args) {
         //WsDfu/DFUInfo?FileName=progguide%3A%3Aexampledata%3A%3Akeys%3A%3Apeople.lastname.firstname&UpdateDescription=true&FileDesc=%C2%A0123&Save+Description=Save+Description
         var context = this;
         WsDfu.DFUInfo({
@@ -245,7 +245,8 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
                 Name: this.Name,
                 Cluster: this.Cluster,
                 UpdateDescription: true,
-                FileDesc: description
+                FileDesc: request.Description,
+                Protect: request.isProtected === true ? 1 : 2
             }
         }).then(function (response) {
             if (lang.exists("DFUInfoResponse.FileDetail", response)) {
@@ -393,7 +394,7 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
         return Utility.getImageHTML(this.getStateImageName());
     },
     getProtectedImage: function () {
-        if (this.IsProtected) {
+        if (this.ProtectList.DFUFileProtect.length > 0) {
             return Utility.getImageURL("locked.png");
         }
         return Utility.getImageURL("unlocked.png");
@@ -402,7 +403,7 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
         if (this.IsCompressed) {
             return Utility.getImageURL("compressed.png");
         }
-        return Utility.getImageURL("");
+        return "";
     },
     isDeleted: function () {
         return this.StateID === 999;

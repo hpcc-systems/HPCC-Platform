@@ -77,7 +77,11 @@ define([
 
             _onSave: function (event) {
                 var context = this;
-                this.logicalFile.save(dom.byId(context.id + "Description").value);
+                var protectedCheckbox = registry.byId(this.id + "isProtected");
+                this.logicalFile.save({
+                    Description: dom.byId(context.id + "Description").value,
+                    isProtected: protectedCheckbox.get("checked")
+                }, null);
             },
             _onDelete: function (event) {
                 if (confirm(this.i18n.DeleteSuperfile)) {
@@ -295,6 +299,10 @@ define([
                     this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
                     domClass.remove(this.id + "StateIdImage");
                     domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
+                } else if (name === "ProtectList") {
+                    dom.byId(this.id + "ProtectedImage").src = this.logicalFile.getProtectedImage();
+                } else if (name === "IsProtected") {
+                    this.updateInput("isProtected", oldValue, newValue);
                 } else if (name === "IsCompressed") {
                     dom.byId(this.id + "CompressedImage").src = this.logicalFile.getCompressedImage();
                 }

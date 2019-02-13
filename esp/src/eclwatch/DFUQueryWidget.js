@@ -490,6 +490,7 @@ define([
                 var currSel = this.getSelectedChild();
                 if (currSel && !currSel.initalized) {
                     if (currSel.id === this.workunitsTab.id) {
+                        this.refreshGrid();
                     } else {
                         if (!currSel.initalized) {
                             currSel.init(currSel._hpccParams);
