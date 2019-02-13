@@ -409,6 +409,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="allowedClockVariance" use="optional" type="xs:string" default="5">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Maximum number of seconds that client clocks can vary from Dali clock, used when checking permissions request digital signature.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="checkScopeScans" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
