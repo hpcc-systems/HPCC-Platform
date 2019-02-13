@@ -46,9 +46,8 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
-
-     </legalnotice>
+      <para></para>
+    </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
@@ -166,8 +165,8 @@
               </listitem>
 
               <listitem>
-                <para><emphasis>Linux workstation with the ECL IDE or VS
-                Code </emphasis></para>
+                <para><emphasis>Linux workstation with the ECL IDE or VS Code
+                </emphasis></para>
               </listitem>
 
               <listitem>
@@ -657,7 +656,18 @@
         <title>Install the ECL IDE and HPCC Client Tools</title>
 
         <para>You only need to install the ECL IDE once. If you have already
-        installed it, you can skip this section. .</para>
+        installed it, you can skip this section.</para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>The ECL IDE only runs on Windows operating
+                systems.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
 
         <para><orderedlist>
             <listitem>

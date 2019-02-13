@@ -52,7 +52,7 @@
     <File name="backupnode_vars.xsl" method="xslt" destName="backupnode.conf"/>
   </Component>
   <Component name="sparkthor" processName="SparkThor" schema="sparkThor.xsd">
-    <File name="sparkThor.xsl" method="xslt" destName="spark-env.sh"/>
+    <File name="sparkThor.xsl" method="xslt" destName="spark-hpcc-env.sh"/>
     <File name="spark-defaults.xsl" method="xslt" destName="spark-defaults.conf"/>
   </Component>
   <Component name="ldapServer" processName="LDAPServerProcess">

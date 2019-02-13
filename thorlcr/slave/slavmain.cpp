@@ -1151,6 +1151,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         cachedFetchContexts.clear();
         activityContextsHT.clear();
         keyLookupContextsHT.clear();
+        cachedKMsMRU.kill();
+        cachedFCsMRU.kill();
         currentJob = nullptr;
         numKMCached = 0;
         numFCCached = 0;
@@ -1182,7 +1184,7 @@ public:
             auto it = cachedKMs.find(oldest.queryCtx().queryKey());
             assertex(it != cachedKMs.end());
             CKMKeyEntry *kme = it->second;
-            verifyex(kme->remove(kmc));
+            verifyex(kme->remove(&oldest));
             if (0 == kme->count())
                 cachedKMs.erase(it);
             cachedKMsMRU.remove(0);

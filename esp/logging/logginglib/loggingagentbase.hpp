@@ -34,12 +34,13 @@ enum ESPLogContentGroup
     ESPLCGUserReq = 2,
     ESPLCGUserResp = 3,
     ESPLCGLogDatasets = 4,
+    ESPLCGBackEndReq = 5,
     ESPLCGBackEndResp = 5,
     ESPLCGAll = 6
 };
 
 static const char * const espLogContentGroupNames[] = { "ESPContext", "UserContext", "UserRequest", "UserResponse",
-    "LogDatasets", "BackEndResponse", "", NULL };
+    "LogDatasets", "BackEndRequest", "BackEndResponse", "", NULL };
 
 #define UPDATELOGTHREADWAITINGTIME 3000
 
@@ -137,6 +138,7 @@ interface IEspUpdateLogRequestWrap : extends IInterface
     virtual IPropertyTree* getUserRequest()=0;
     virtual IPropertyTree* getLogRequestTree()=0;
     virtual IInterface* getExtraLog()=0;
+    virtual const char* getBackEndRequest()=0;
     virtual const char* getBackEndResponse()=0;
     virtual const char* getUserResponse()=0;
     virtual const char* getLogDatasets()=0;
@@ -149,6 +151,7 @@ interface IEspUpdateLogRequestWrap : extends IInterface
     virtual void setUserRequest(IPropertyTree* val)=0;
     virtual void setLogRequestTree(IPropertyTree* val)=0;
     virtual void setExtraLog(IInterface* val)=0;
+    virtual void setBackEndRequest(const char* val)=0;
     virtual void setBackEndResponse(const char* val)=0;
     virtual void setUserResponse(const char* val)=0;
     virtual void setLogDatasets(const char* val)=0;
@@ -167,7 +170,7 @@ class CUpdateLogRequestWrap : implements IEspUpdateLogRequestWrap, public CInter
     Owned<IPropertyTree> userRequest;
     Owned<IPropertyTree> logRequestTree;
     Owned<IInterface> extraLog;
-    StringAttr  backEndResponse;
+    StringAttr  backEndRequest, backEndResponse;
     StringAttr  userResponse;
     StringAttr  logDatasets;
     unsigned    retryCount;
@@ -179,10 +182,10 @@ public:
     CUpdateLogRequestWrap(const char* _GUID, const char* _option, const char* _updateLogRequest)
         : GUID(_GUID), option(_option), updateLogRequest(_updateLogRequest), retryCount(0) {};
     CUpdateLogRequestWrap(const char* _GUID, const char* _option, IPropertyTree* _espContext,
-        IPropertyTree*_userContext, IPropertyTree*_userRequest, const char *_backEndResponse, const char *_userResponse,
-        const char *_logDatasets)
-        : GUID(_GUID), option(_option), backEndResponse(_backEndResponse), userResponse(_userResponse),
-        logDatasets(_logDatasets), retryCount(0)
+        IPropertyTree*_userContext, IPropertyTree*_userRequest, const char *_backEndRequest,
+        const char *_backEndResponse, const char *_userResponse, const char *_logDatasets)
+        : GUID(_GUID), option(_option), backEndRequest(_backEndRequest), backEndResponse(_backEndResponse),
+        userResponse(_userResponse), logDatasets(_logDatasets), retryCount(0)
     {
         userContext.setown(_userContext);
         espContext.setown(_espContext);
@@ -202,6 +205,7 @@ public:
         userContext.clear();
         userResponse.clear();
         logDatasets.clear();
+        backEndRequest.clear();
         backEndResponse.clear();
         updateLogRequest.clear();
         logRequestTree.clear();
@@ -216,6 +220,7 @@ public:
     IPropertyTree* getUserRequest() {return userRequest.getLink();};
     IPropertyTree* getLogRequestTree() {return logRequestTree.getLink();};
     IInterface* getExtraLog() {return extraLog.getLink();};
+    const char* getBackEndRequest() {return backEndRequest.get();};
     const char* getBackEndResponse() {return backEndResponse.get();};
     const char* getUserResponse() {return userResponse.get();};
     const char* getLogDatasets() {return logDatasets.get();};
@@ -228,6 +233,7 @@ public:
     void setUserRequest(IPropertyTree* val) {userRequest.setown(val);};
     void setLogRequestTree(IPropertyTree* val) {logRequestTree.setown(val);};
     void setExtraLog(IInterface* val) {extraLog.setown(val);};
+    void setBackEndRequest(const char* val) {backEndRequest.set(val);};
     void setBackEndResponse(const char* val) {backEndResponse.set(val);};
     void setUserResponse(const char* val) {userResponse.set(val);};
     void setLogDatasets(const char* val) {logDatasets.set(val);};
@@ -267,7 +273,8 @@ public:
 
 class LOGGINGCOMMON_API CLogContentFilter : public CInterface
 {
-    bool            logBackEndResp;
+    bool            logBackEndReq = true;
+    bool            logBackEndResp = true;
     StringArray     logContentFilters;
     CIArrayOf<CESPLogContentGroupFilters> groupFilters;
 

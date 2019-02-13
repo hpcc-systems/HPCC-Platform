@@ -1277,7 +1277,7 @@ DECIMAL             {
                         if (!lookup)
                             return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 
-                      returnToken.setType(makeDecimalType(UNKNOWN_LENGTH,UNKNOWN_LENGTH, true));
+                      returnToken.setType(makeDecimalType(MAX_DECIMAL_DIGITS,MAX_DECIMAL_PRECISION, true));
                       return(SIMPLE_TYPE); 
                     }
 UDECIMAL             {
@@ -1285,7 +1285,7 @@ UDECIMAL             {
                         if (!lookup)
                             return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 
-                      returnToken.setType(makeDecimalType(UNKNOWN_LENGTH,UNKNOWN_LENGTH, true));
+                      returnToken.setType(makeDecimalType(MAX_DECIMAL_DIGITS,MAX_DECIMAL_PRECISION, true));
                       return(SIMPLE_TYPE); 
                     }
 (U|u)?DECIMAL{digit}+(_{digit}+)? {

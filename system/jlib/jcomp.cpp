@@ -837,7 +837,8 @@ void CppCompiler::setTargetBitLength(unsigned bitlength)
     case Vs6CppCompiler:
         switch (bitlength)
         {
-        case 32: break; // 64-bit windows TBD at present....
+        case 32: break; // option is passed with --arch to VsDevCmd, cannot control from the command line
+        case 64: break; // you will get a link error if it has not been set compatibility
         default:
             throwUnexpected();
         }

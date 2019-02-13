@@ -1213,6 +1213,17 @@ private:
                     }
                     throw MakeStringException(-1, "ldap_search_ext_s failed with 0x%x (%s)",err, ldap_err2string( err ));
                 }
+                if (!m_pPageBlock)
+                {
+                    if (m_pCookie)
+                    {
+                        ber_bvfree(m_pCookie);
+                        m_pCookie = NULL;
+                    }
+                    m_morePages = false;
+                    DBGLOG("CPagedLDAPSearch::requestNextPage: ldap_search_ext_s() returns SUCCESS with no result.");
+                    return false;
+                }
             }
 
             unsigned long l_errcode;

@@ -11661,7 +11661,7 @@ void HqlCppTranslator::doBuildStmtOutput(BuildCtx & ctx, IHqlExpression * expr)
     Owned<IWUResult> result = createDatasetResultSchema(seq, name, dataset->queryRecord(), xmlnsAttrs, true, false, 0);
 
     CHqlBoundExpr bound;
-    buildDataset(ctx, dataset, bound, FormatNatural);
+    buildDataset(ctx, dataset, bound, FormatBlockedDataset);
     OwnedHqlExpr count = getBoundCount(bound);
 
     HqlExprArray args;
@@ -15578,7 +15578,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
 
     {
         MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left) override");
-        func.ctx.addQuotedLiteral("const unsigned char * left = (const byte *) left;");
+        func.ctx.addQuotedLiteral("const unsigned char * left = (const byte *) _left;");
 
         // Bind left to "left" and right to RIGHT
         bindTableCursor(func.ctx, dataset, "left");
