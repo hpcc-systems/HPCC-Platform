@@ -35,8 +35,8 @@ enum ESPLogContentGroup
     ESPLCGUserResp = 3,
     ESPLCGLogDatasets = 4,
     ESPLCGBackEndReq = 5,
-    ESPLCGBackEndResp = 5,
-    ESPLCGAll = 6
+    ESPLCGBackEndResp = 6,
+    ESPLCGAll = 7
 };
 
 static const char * const espLogContentGroupNames[] = { "ESPContext", "UserContext", "UserRequest", "UserResponse",
