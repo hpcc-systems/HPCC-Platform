@@ -33,7 +33,15 @@ void CLogContentFilter::readAllLogFilters(IPropertyTree* cfg)
         groupFilterRead = true;
     }
 
-    for (unsigned i = 0; i < ESPLCGBackEndResp; i++)
+    xpath.setf("Filters/Filter[@type='%s']", espLogContentGroupNames[ESPLCGBackEndReq]);
+    filter = cfg->queryBranch(xpath.str());
+    if (filter && filter->hasProp("@value"))
+    {
+        logBackEndReq = filter->getPropBool("@value");
+        groupFilterRead = true;
+    }
+
+    for (unsigned i = 0; i < ESPLCGBackEndReq; i++)
     {
         if (readLogFilters(cfg, i))
             groupFilterRead = true;
@@ -169,6 +177,7 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
             Owned<IPropertyTree> userRequest = req->getUserRequest();
             const char* userResp = req->getUserResponse();
             const char* logDatasets = req->getLogDatasets();
+            const char* backEndReq = req->getBackEndRequest();
             const char* backEndResp = req->getBackEndResponse();
             if (!espContext && !userContext && !userRequest && (!userResp || !*userResp) && (!backEndResp || !*backEndResp))
                 throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "Failed to read log content");
@@ -190,19 +199,21 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
                 IPropertyTree* pTree = ensurePTree(logContentTree, espLogContentGroupNames[ESPLCGUserReq]);
                 pTree->addPropTree(userRequest->queryName(), LINK(userRequest));
             }
-            if (userResp && *userResp)
+            if (!isEmptyString(userResp))
             {
                 IPropertyTree* pTree = ensurePTree(logContentTree, espLogContentGroupNames[ESPLCGUserResp]);
                 Owned<IPropertyTree> userRespTree = createPTreeFromXMLString(userResp);
                 pTree->addPropTree(userRespTree->queryName(), LINK(userRespTree));
             }
-            if (logDatasets && *logDatasets)
+            if (!isEmptyString(logDatasets))
             {
                 IPropertyTree* pTree = ensurePTree(logContentTree, espLogContentGroupNames[ESPLCGLogDatasets]);
                 Owned<IPropertyTree> logDatasetTree = createPTreeFromXMLString(logDatasets);
                 pTree->addPropTree(logDatasetTree->queryName(), LINK(logDatasetTree));
             }
-            if (backEndResp && *backEndResp)
+            if (!isEmptyString(backEndReq))
+                logContentTree->addProp(espLogContentGroupNames[ESPLCGBackEndReq], backEndReq);
+            if (!isEmptyString(backEndResp))
                 logContentTree->addProp(espLogContentGroupNames[ESPLCGBackEndResp], backEndResp);
         }
     }
@@ -268,6 +279,15 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
                 if (!hasFilters)
                 {
                     newContentTree->addPropTree(originalContentTree->queryName(), LINK(originalContentTree));
+                    logContentEmpty = false;
+                }
+            }
+            if (logBackEndReq)
+            {
+                const char* request = req->getBackEndRequest();
+                if (!isEmptyString(request))
+                {
+                    logContentTree->addProp(espLogContentGroupNames[ESPLCGBackEndReq], request);
                     logContentEmpty = false;
                 }
             }

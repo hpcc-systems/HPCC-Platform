@@ -34,7 +34,7 @@
 class CEspLogEntry : implements IEspLogEntry, public CInterface
 {
     Owned<IEspContext> espContext;
-    StringAttr option, logContent, backEndResp, userResp, logDatasets;
+    StringAttr option, logContent, backEndReq, backEndResp, userResp, logDatasets;
     Owned<IPropertyTree> userContextTree;
     Owned<IPropertyTree> userRequestTree;
     Owned<IPropertyTree> logInfoTree;
@@ -52,6 +52,7 @@ public:
     void setOwnExtraLog(IInterface* extra) { extraLog.setown(extra); };
     void setOption(const char* ptr) { option.set(ptr); };
     void setLogContent(const char* ptr) { logContent.set(ptr); };
+    void setBackEndReq(const char* ptr) { backEndReq.set(ptr); };
     void setBackEndResp(const char* ptr) { backEndResp.set(ptr); };
     void setUserResp(const char* ptr) { userResp.set(ptr); };
     void setLogDatasets(const char* ptr) { logDatasets.set(ptr); };
@@ -63,6 +64,7 @@ public:
     IInterface* getExtraLog() { return extraLog; };
     const char* getOption() { return option.get(); };
     const char* getLogContent() { return logContent.get(); };
+    const char* getBackEndReq() { return backEndReq.get(); };
     const char* getBackEndResp() { return backEndResp.get(); };
     const char* getUserResp() { return userResp.get(); };
     const char* getLogDatasets() { return logDatasets.get(); };
@@ -80,7 +82,7 @@ class CLoggingManager : implements ILoggingManager, public CInterface
 
     bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp, StringBuffer& status);
     bool updateLog(IEspContext* espContext, const char* option, IPropertyTree* userContext, IPropertyTree* userRequest,
-        const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status);
+        const char* backEndReq, const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status);
     bool updateLog(IEspContext* espContext, const char* option, const char* logContent, StringBuffer& status);
     bool updateLog(IEspContext* espContext, const char* option, IPropertyTree* logInfo, IInterface* extraLog, StringBuffer& status);
 
