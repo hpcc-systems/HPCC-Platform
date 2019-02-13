@@ -424,6 +424,8 @@
       <para>Now you can start your HPCC System cluster and verify that
       Sparkthor is alive.</para>
 
+      <?hard-pagebreak ?>
+
       <para>To start your HPCC System.</para>
 
       <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
@@ -438,6 +440,55 @@
       your Integrated Spark Master node's IP address.</para>
 
       <programlisting>https://192.168.56.101:8080</programlisting>
+
+      <sect2 id="Addl_Spark_Config">
+        <title>Integrated Spark Cluster Configuration Options</title>
+
+        <para>In addition to the configuration options available through the
+        HPCC Systems configuration manager, there are configuration options
+        meant for edge cases and more advanced setups. To customize your
+        Integrated Spark cluster environment to utilize these additional
+        options use the provided <emphasis role="bold">spark-env.sh</emphasis>
+        script. </para>
+
+        <programlisting>/etc/HPCCSystems/externals/spark-hadoop/spark-env.sh</programlisting>
+
+        <para>For more information about Spark Cluster options, see the
+        following pages.</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><ulink
+            url="https://spark.apache.org/docs/latest/spark-standalone.html#cluster-launch-scripts ">https://spark.apache.org/docs/latest/spark-standalone.html#cluster-launch-scripts</ulink></para>
+          </listitem>
+
+          <listitem>
+            <para><ulink
+            url="https://spark.apache.org/docs/latest/configuration.html#environment-variables ">https://spark.apache.org/docs/latest/configuration.html#environment-variables</ulink></para>
+          </listitem>
+        </itemizedlist>
+
+        <sect3 id="ExampleUseCases">
+          <title>Example Uses Cases</title>
+
+          <itemizedlist>
+            <listitem>
+              <para>Spark currently requires Java 8 to run. On a system where
+              the default Java installation is not Java 8. The JAVA_HOME
+              environment variable can be used to set the Spark Java version
+              to Java 8.</para>
+            </listitem>
+
+            <listitem>
+              <para>Typically when a job is run on a Spark cluster, it will
+              take ownership of all worker nodes. In a shared cluster
+              environment this may not be ideal. Using the SPARK_MASTER_OPTS
+              attribute it is possible to set a limit to the number of worker
+              nodes one job can utilize.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+      </sect2>
     </sect1>
   </chapter>
 
