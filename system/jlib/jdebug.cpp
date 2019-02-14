@@ -806,8 +806,9 @@ CpuInfo CpuInfo::operator - (const CpuInfo & rhs) const
 bool CpuInfo::getProcessTimes()
 {
 #ifdef _WIN32
+    FILETIME creationTime, exitTime;
     FILETIME kernelTime, userTime;
-    GetProcessTimes(GetCurrentProcess(), nullptr, nullptr, &kernelTime, &userTime);
+    GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime);
 
     user = extractFILETIME(userTime);
     system = extractFILETIME(kernelTime);
