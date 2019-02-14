@@ -810,6 +810,14 @@ inline bool isFileKey(IPropertyTree &pt) { const char *kind = pt.queryProp("@kin
 inline bool isFileKey(IDistributedFile *f) { return isFileKey(f->queryAttributes()); }
 inline bool isFileKey(IFileDescriptor *f) { return isFileKey(f->queryProperties()); }
 
+inline bool isFilePartitionKey(IPropertyTree &pt) { return pt.hasProp("@partitionFieldMask"); }
+inline bool isFilePartitionKey(IDistributedFile *f) { return isFilePartitionKey(f->queryAttributes()); }
+inline bool isFilePartitionKey(IFileDescriptor *f) { return isFilePartitionKey(f->queryProperties()); }
+
+inline bool isFileLocalKey(IPropertyTree &pt) { return pt.getPropBool("@local"); }
+inline bool isFileLocalKey(IDistributedFile *f) { return isFileLocalKey(f->queryAttributes()); }
+inline bool isFileLocalKey(IFileDescriptor *f) { return isFileLocalKey(f->queryProperties()); }
+
 inline bool isPartTLK(IPropertyTree &pt) { const char *kind = pt.queryProp("@kind"); return kind&&strieq(kind,"topLevelKey"); }
 inline bool isPartTLK(IDistributedFilePart *p) { return isPartTLK(p->queryAttributes()); }
 inline bool isPartTLK(IPartDescriptor *p) { return isPartTLK(p->queryProperties()); }

@@ -2139,6 +2139,16 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             }
             else if (isKeyFile)
                 FileDetails.setCompressedFileSize(size);
+
+            if (isKeyFile && (version >= 1.41))
+            {
+                if (isFilePartitionKey(df))
+                    FileDetails.setKeyType("Partitioned");
+                else if (isFileLocalKey(df))
+                    FileDetails.setKeyType("Local");
+                else
+                    FileDetails.setKeyType("Distributed");
+            }
         }
     }
 
@@ -3635,6 +3645,17 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
                     lFile->setIsKeyFile(isKeyFile);
             }
         }
+
+        if (isKeyFile && (version >= 1.41))
+        {
+            if (isFilePartitionKey(file))
+                lFile->setKeyType("Partitioned");
+            else if (isFileLocalKey(file))
+                lFile->setKeyType("Local");
+            else
+                lFile->setKeyType("Distributed");
+        }
+
         bool isFileCompressed = file.getPropBool(getDFUQResultFieldName(DFUQRFiscompressed));
         if (isFileCompressed)
         {
