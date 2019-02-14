@@ -4,17 +4,59 @@
 #include "junicode.hpp"
 #include "rtlcommon.hpp"
 
-CThorContiguousRowBuffer::CThorContiguousRowBuffer(ISerialStream * _in) : in(_in)
+CContiguousRowBuffer::CContiguousRowBuffer(ISerialStream * _in) : in(_in)
 {
-    buffer = NULL;
-    maxOffset = 0;
+    clearBuffer();
+}
+
+void CContiguousRowBuffer::setStream(ISerialStream *_in)
+{
+    in = _in;
+    clearBuffer();
+}
+
+bool CContiguousRowBuffer::checkInputEos()
+{
+    assertex(!available);
+    peekBytesDirect(0);
+    return in->eos();
+}
+
+
+const byte * CContiguousRowBuffer::peekBytes(size32_t maxSize)
+{
+    if (maxSize < maxAvailable())
+        peekBytesDirect(maxSize);
+    return cur;
+}
+
+const byte * CContiguousRowBuffer::peekFirstByte()
+{
+    if (maxAvailable() == 0)
+        peekBytesDirect(0);
+    return cur;
+}
+
+void CContiguousRowBuffer::peekBytesDirect(unsigned maxSize)
+{
+    size_t toSkip = cur - buffer;
+    if (toSkip)
+        in->skip(toSkip);
+    buffer = static_cast<const byte *>(in->peek(maxSize, available));
+    cur = buffer;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+CThorContiguousRowBuffer::CThorContiguousRowBuffer(ISerialStream * _in) : CContiguousRowBuffer(_in)
+{
     readOffset = 0;
 }
 
 void CThorContiguousRowBuffer::doRead(size32_t len, void * ptr)
 {
     ensureAccessible(readOffset + len);
-    memcpy(ptr, buffer+readOffset, len);
+    memcpy(ptr, cur+readOffset, len);
     readOffset += len;
 }
 
@@ -70,7 +112,7 @@ size32_t CThorContiguousRowBuffer::readVUni(ARowBuilder & target, size32_t offse
 size32_t CThorContiguousRowBuffer::sizePackedInt()
 {
     ensureAccessible(readOffset+1);
-    return rtlGetPackedSizeFromFirst(buffer[readOffset]);
+    return rtlGetPackedSizeFromFirst(cur[readOffset]);
 }
 
 size32_t CThorContiguousRowBuffer::sizeUtf8(size32_t len)
@@ -83,10 +125,11 @@ size32_t CThorContiguousRowBuffer::sizeUtf8(size32_t len)
     while (len)
     {
         ensureAccessible(nextOffset+1);
+        size32_t maxOffset = maxAvailable();
 
         for (;nextOffset < maxOffset;)
         {
-            nextOffset += readUtf8Size(buffer+nextOffset);  // This function only accesses the first byte
+            nextOffset += readUtf8Size(cur+nextOffset);  // This function only accesses the first byte
             if (--len == 0)
                 break;
         }
@@ -100,10 +143,11 @@ size32_t CThorContiguousRowBuffer::sizeVStr()
     for (;;)
     {
         ensureAccessible(nextOffset+1);
+        size32_t maxOffset = maxAvailable();
 
         for (; nextOffset < maxOffset; nextOffset++)
         {
-            if (buffer[nextOffset] == 0)
+            if (cur[nextOffset] == 0)
                 return (nextOffset + 1) - readOffset;
         }
     }
@@ -116,10 +160,11 @@ size32_t CThorContiguousRowBuffer::sizeVUni()
     for (;;)
     {
         ensureAccessible(nextOffset+sizeOfUChar);
+        size32_t maxOffset = maxAvailable();
 
         for (; nextOffset+1 < maxOffset; nextOffset += sizeOfUChar)
         {
-            if (buffer[nextOffset] == 0 && buffer[nextOffset+1] == 0)
+            if (cur[nextOffset] == 0 && cur[nextOffset+1] == 0)
                 return (nextOffset + sizeOfUChar) - readOffset;
         }
     }
@@ -134,9 +179,10 @@ void CThorContiguousRowBuffer::reportReadFail()
 
 const byte * CThorContiguousRowBuffer::peek(size32_t maxSize)
 {
-    if (maxSize+readOffset > maxOffset)
-        doPeek(maxSize+readOffset);
-    return buffer + readOffset;
+    size32_t required = readOffset+maxSize;
+    if (unlikely(required > maxAvailable()))
+        peekBytesDirect(required);
+    return cur + readOffset;
 }
 
 offset_t CThorContiguousRowBuffer::beginNested()
@@ -190,11 +236,11 @@ void CThorContiguousRowBuffer::skipVUni()
 
 const byte * CThorContiguousRowBuffer::querySelf()
 {
-    if (maxOffset == 0)
-        doPeek(0);
+    if (maxAvailable() == 0)
+        peekBytesDirect(0);
     if (childStartOffsets.ordinality())
-        return buffer + childStartOffsets.tos();
-    return buffer;
+        return cur + childStartOffsets.tos();
+    return cur;
 }
 
 void CThorContiguousRowBuffer::noteStartChild()
