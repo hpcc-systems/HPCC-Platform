@@ -53,7 +53,7 @@ bool XMLEnvironmentMgr::serialize(std::ostream &out, const std::shared_ptr<Envir
     serializeTree(envTree, pStartNode);
     topTree.add_child(pStartNode->getName(), envTree);
 
-#if BOOST_VERSION >= 105800
+#if BOOST_VERSION >= 105700
     pt::write_xml(out, topTree, pt::xml_parser::xml_writer_make_settings<std::string>(' ', 4));
 #else
     const char * myIndent = " ";
