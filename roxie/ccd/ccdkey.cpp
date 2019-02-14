@@ -491,7 +491,7 @@ public:
 
     virtual void serializeCursorPos(MemoryBuffer &mb) const override
     {
-        mb.append(tell());
+        mb.append(deserializeSource.tell());
     }
 
     virtual const byte *nextRow() override
@@ -830,12 +830,7 @@ public:
     {
         // MORE - could do with being faster than this!
         assertex(curStream != NULL);
-        unsigned __int64 pos = curStream->tell();
-        if (_ptr != buf.toByteArray())
-        {
-            size32_t dummy;
-            pos +=  (const char *)_ptr - (const char *)curStream->peek(1, dummy);
-        }
+        unsigned __int64 pos = deserializeSource.tell();
         return pos + thisFileStartPos;
     }
 
@@ -843,12 +838,7 @@ public:
     {
         // MORE - could do with being faster than this!
         assertex(curStream != NULL);
-        unsigned __int64 pos = curStream->tell();
-        if (_ptr != buf.toByteArray())
-        {
-            size32_t dummy;
-            pos +=  (const char *)_ptr - (const char *)curStream->peek(1, dummy);
-        }
+        unsigned __int64 pos = deserializeSource.tell();
         return makeLocalFposOffset(thisPartIdx-1, pos);
     }
 

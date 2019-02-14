@@ -5299,6 +5299,28 @@ protected:
         }
     }
 
+    void addPropIfCommon(IPropertyTree &target, const char *prop, const char *value)
+    {
+        bool ok = true;
+        // add attributes that are common
+        for (unsigned i=1; i<subfiles.ordinality(); i++)
+        {
+            IDistributedFile &file = subfiles.item(i);
+            IDistributedSuperFile *sFile = file.querySuperFile();
+            if (!sFile || sFile->numSubFiles(true)) // skip empty super files
+            {
+                const char *otherValue = file.queryAttributes().queryProp(prop);
+                if (!otherValue || !streq(otherValue, value))
+                {
+                    ok = false;
+                    break;
+                }
+            }
+        }
+        if (ok)
+            target.setProp(prop, value);
+    }
+
 public:
 
     virtual void checkFormatAttr(IDistributedFile *sub, const char* exprefix="") override
@@ -5427,26 +5449,17 @@ public:
                         const char *v = ait->queryValue();
                         if (!v)
                             continue;
-                        bool ok = true;
-                        // add attributes that are common
-                        for (unsigned i=1;i<subfiles.ordinality();i++)
-                        {
-                            IDistributedFile &file = subfiles.item(i);
-                            IDistributedSuperFile *sFile = file.querySuperFile();
-                            if (!sFile || sFile->numSubFiles(true)) // skip empty super files
-                            {
-                                const char *p = file.queryAttributes().queryProp(name);
-                                if (!p||(strcmp(p,v)!=0))
-                                {
-                                    ok = false;
-                                    break;
-                                }
-                            }
-                        }
-                        if (ok)
-                            at->setProp(name,v);
+                        addPropIfCommon(*at, name, v);
                     }
                 }
+                MemoryBuffer mb;
+                if (getRecordLayout(mb, "_record_layout"))
+                    at->setPropBin("_record_layout", mb.length(), mb.bufferBase());
+                if (getRecordLayout(mb, "_rtlType"))
+                    at->setPropBin("_rtlType", mb.length(), mb.bufferBase());
+                const char *ecl = file.queryAttributes().queryProp("ECL");
+                if (!isEmptyString(ecl))
+                    addPropIfCommon(*at, "ECL", ecl);
             }
             unsigned np = file.numParts();
             if (0 == width)

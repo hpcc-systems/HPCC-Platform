@@ -806,8 +806,9 @@ CpuInfo CpuInfo::operator - (const CpuInfo & rhs) const
 bool CpuInfo::getProcessTimes()
 {
 #ifdef _WIN32
+    FILETIME creationTime, exitTime;
     FILETIME kernelTime, userTime;
-    GetProcessTimes(GetCurrentProcess(), nullptr, nullptr, &kernelTime, &userTime);
+    GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime);
 
     user = extractFILETIME(userTime);
     system = extractFILETIME(kernelTime);
@@ -895,7 +896,7 @@ unsigned CpuInfo::getPercentCpu() const
     __uint64 total = getTotal();
     if (total == 0)
         return 0;
-    unsigned percent = (unsigned)(((total - idle) * 100) / idle);
+    unsigned percent = (unsigned)(((total - idle) * 100) / total);
     if (percent > 100)
         percent = 100;
     return percent;
@@ -918,22 +919,34 @@ __uint64 CpuInfo::getTotalNs() const
 
 unsigned CpuInfo::getIdlePercent() const
 {
-    return (unsigned)((idle * 100) / getTotal());
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    return (unsigned)((idle * 100) / total);
 }
 
 unsigned CpuInfo::getIoWaitPercent() const
 {
-    return (unsigned)((iowait * 100) / getTotal());
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    return (unsigned)((iowait * 100) / total);
 }
 
 unsigned CpuInfo::getSystemPercent() const
 {
-    return (unsigned)((system * 100) / getTotal());
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    return (unsigned)((system * 100) / total);
 }
 
 unsigned CpuInfo::getUserPercent() const
 {
-    return (unsigned)((user * 100) / getTotal());
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    return (unsigned)((user * 100) / total);
 }
 
 //===========================================================================
