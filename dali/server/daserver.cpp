@@ -342,7 +342,7 @@ int main(int argc, char* argv[])
             PROGLOG("Checking for existing daserver instances");
             if (!globalNamedMutex.lockWait(0))
             {
-                PrintLog("Another DASERVER process is currently running");
+                OWARNLOG("Another DASERVER process is currently running");
                 return 0;
             }
         }
@@ -432,7 +432,7 @@ int main(int argc, char* argv[])
             stopPerformanceMonitor();
             throw;
         }
-        PrintLog("DASERVER[%d] starting - listening to port %d",myrank,queryMyNode()->endpoint().port);
+        DBGLOG("DASERVER[%d] starting - listening to port %d",myrank,queryMyNode()->endpoint().port);
         startMPServer(myport,false);
         bool ok = true;
         ForEachItemIn(i2,servers)

@@ -2214,7 +2214,7 @@ bool ResourceGraphLink::isRedundantLink()
 void ResourceGraphLink::trace(const char * name)
 {
 #ifdef TRACE_RESOURCING
-    PrintLog("%s: %lx source(%lx,%lx) sink(%lx,%lx) %s", name, this, sourceGraph.get(), sourceNode->queryBody(), sinkGraph.get(), sinkNode ? sinkNode->queryBody() : NULL,
+    IERRLOG("%s: %lx source(%lx,%lx) sink(%lx,%lx) %s", name, this, sourceGraph.get(), sourceNode->queryBody(), sinkGraph.get(), sinkNode ? sinkNode->queryBody() : NULL,
              linkKind == SequenceLink ? "sequence" : "");
 #endif
 }
@@ -2544,7 +2544,7 @@ void ResourceGraphInfo::mergeGraph(ResourceGraphInfo & other, bool mergeConditio
     DBGLOG("Merging%s source into%s sink", other.isUnconditional ? "" : " conditional", isUnconditional ? "" : " conditional");
     other.display();
     display();
-    PrintLog("Merge %p into %p", &other, this);
+    DBGLOG("Merge %p into %p", &other, this);
 #endif
 
     if (other.hasConditionSource)
@@ -3621,7 +3621,7 @@ ResourceGraphInfo * EclResourcer::createGraph()
 {
     ResourceGraphInfo * graph = new ResourceGraphInfo(&options);
     graphs.append(*LINK(graph));
-    //PrintLog("Create graph %p", graph);
+    //DBGLOG("Create graph %p", graph);
     return graph;
 }
 

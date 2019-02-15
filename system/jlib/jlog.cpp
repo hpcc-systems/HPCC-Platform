@@ -2192,6 +2192,7 @@ const LogMsgCategory MCinternalWarning(MSGAUD_programmer, MSGCLS_warning, 1);
 const LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress);
 const LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress);
 const LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress);
+const LogMsgCategory MCuserInfo(MSGAUD_user, MSGCLS_information);
 const LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information);
 const LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress);
 const LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information);

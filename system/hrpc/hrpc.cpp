@@ -585,7 +585,7 @@ void HRPCserver::Listen(IHRPCtransport * trans)
 
 #ifdef _DEBUG_MEM
             _CrtMemState start, end, diff;  
-            PrintLog("\n====================== Memory leak check point starts ======================");
+            IERRLOG("\n====================== Memory leak check point starts ======================");
             _CrtMemCheckpoint(&start);
 #endif
 
@@ -596,10 +596,10 @@ void HRPCserver::Listen(IHRPCtransport * trans)
             if (_CrtMemDifference(&diff,&start,&end))
             {
                 fprintf(stderr,"\n*********** Memory leak detected! **********");
-                PrintLog("Memory leak detected!");
+                IERRLOG("Memory leak detected!");
                 _CrtMemDumpStatistics(&diff);
             }
-            PrintLog("\n====================== Memory leak check point ends ========================");
+            IERRLOG("\n====================== Memory leak check point ends ========================");
 #endif
 
             if (state!=server_closed) {
@@ -755,7 +755,7 @@ void HRPCserver::Stop()
             state = server_closed;
     }
     catch (...) {
-        PrintLog("HRPCserver::Stop Fault");
+        IERRLOG("HRPCserver::Stop Fault");
     }
     ::Release(trans);
 }

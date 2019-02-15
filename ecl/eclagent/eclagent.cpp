@@ -1646,7 +1646,7 @@ IHThorGraphResults * EclAgent::createGraphLoopResults()
 
 void addException(IWorkUnit *w, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError)
 {
-    PrintLog("%s", text);
+    UERRLOG("%s", text);
     if ((severity == SeverityError) && (w->getState()!=WUStateAborting) && failOnError)
         w->setState(WUStateFailed);
     addExceptionToWorkunit(w, severity, source, code, text, filename, lineno, column, 0);
@@ -1818,7 +1818,7 @@ void EclAgent::setRetcode(int code)
 void EclAgent::doProcess()
 {
 #ifdef _DEBUG
-    PrintLog ("Entering doProcess ()");
+    DBGLOG("Entering doProcess ()");
 #endif
     bool failed = true;
     CCycleTimer elapsedTimer;
@@ -1868,7 +1868,7 @@ void EclAgent::doProcess()
             if (checkVersion && (process->getActivityVersion() != eclccCodeVersion))
                 failv(0, "Inconsistent interface versions.  Workunit was created using eclcc for version %u, but the c++ compiler used version %u", eclccCodeVersion, process->getActivityVersion());
 
-            PrintLog("Starting process");
+            DBGLOG("Starting process");
             runProcess(process);
             failed = false;
         }
@@ -1904,7 +1904,7 @@ void EclAgent::doProcess()
         logException((IException *) NULL);
     }
 
-    PrintLog("Process complete");
+    DBGLOG("Process complete");
     // Add some timing stats
     bool deleteJobTemps = true;
     try
@@ -2045,7 +2045,7 @@ void EclAgent::doProcess()
         }
         e->Release();
     }
-    PrintLog("Workunit written complete");
+    DBGLOG("Workunit written complete");
 }
 
 void EclAgent::runProcess(IEclProcess *process)
@@ -2443,20 +2443,20 @@ void EclAgent::addException(ErrorSeverity severity, const char * source, unsigne
     {
         StringBuffer m;
         E->errorMessage(m);
-        PrintLog("Unable to record exception in workunit: %s", m.str());
+        IERRLOG("Unable to record exception in workunit: %s", m.str());
         E->Release();
     }
     catch (std::bad_alloc &)
     {
-        PrintLog("Unable to record exception in workunit: out of memory (std::bad_alloc)");
+        IERRLOG("Unable to record exception in workunit: out of memory (std::bad_alloc)");
     }
     catch (std::exception & e)
     {
-        PrintLog("Unable to record exception in workunit: standard library exception (std::exception %s)", e.what());
+        IERRLOG("Unable to record exception in workunit: standard library exception (std::exception %s)", e.what());
     }
     catch (...)
     {
-        PrintLog("Unable to record exception in workunit: unknown exception");
+        IERRLOG("Unable to record exception in workunit: unknown exception");
     }
 }
 
@@ -2527,13 +2527,13 @@ static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __i
     CDateTime dt;
     file->getModificationTime(dt);
     unsigned __int64 modifiedTime = dt.getSimple();
-    PrintLog("getDatasetHash adding crc %" I64F "u for file %s", modifiedTime, filename);
+    IERRLOG("getDatasetHash adding crc %" I64F "u for file %s", modifiedTime, filename);
     return rtlHash64Data(sizeof(modifiedTime), &modifiedTime, crc);
 }
 
 unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __int64 crc)
 {
-    PrintLog("getDatasetHash initial crc %" I64F "x", crc);
+    IERRLOG("getDatasetHash initial crc %" I64F "x", crc);
 
     StringBuffer fullname;
     expandLogicalName(fullname, logicalName);
@@ -2571,9 +2571,9 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
             crc = crcLogicalFileTime(file, crc, fullname.str());
     }
     else
-        PrintLog("getDatasetHash did not find file %s", fullname.str());
+        IERRLOG("getDatasetHash did not find file %s", fullname.str());
 
-    PrintLog("getDatasetHash final crc %" I64F "x", crc);
+    IERRLOG("getDatasetHash final crc %" I64F "x", crc);
     return crc;
 }
 
@@ -3094,7 +3094,7 @@ void EclAgent::reportProgress(const char *progress, unsigned flags)
     if (progress)
     {
         // MORE - think about how to best do this
-        PrintLog("%s", progress);
+        LOG(MCoperatorProgress, unknownJob,"%s", progress);
 //      WorkunitUpdate wu = updateWorkUnit();
 //      wu->reportProgress(progress, flags);
     }
@@ -3250,14 +3250,14 @@ void printStart(int argc, const char *argv[])
             cmd.append(' ');
         cmd.append('"').append(argv[argno]).append('"');
     }
-    PrintLog("Starting %s", cmd.str());
+    LOG(MCoperatorInfo,"Starting %s", cmd.str());
 }
 
 //--------------------------------------------------------------
 
 bool ControlHandler()
 {
-    LOG(MCoperatorInfo,"ControlHandler Stop signalled");
+    DBGLOG("ControlHandler Stop signalled");
     return true;
 }
 
@@ -3459,7 +3459,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 MTIME_SECTION(queryActiveTimer(), "Environment_Initialize");
                 setPasswordsFromSDS();
             }
-            PrintLog("ECLAGENT build %s", BUILD_TAG);
+            LOG(MCoperatorInfo, "ECLAGENT build %s", BUILD_TAG);
             startLogMsgParentReceiver();    
             connectLogMsgManagerToDali();
 
@@ -3620,7 +3620,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     roxiemem::releaseRoxieHeap();
     ::closedownClientProcess(); // dali client closedown
     if (traceLevel)
-        PrintLog("exiting");
+        DBGLOG("exiting");
 
     return retcode;
 }

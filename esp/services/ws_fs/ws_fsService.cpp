@@ -156,10 +156,10 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
 
     StringBuffer prop;
     prop.appendf("queueLabel=%s", m_QueueLabel.str());
-    PrintLog(prop.str());
+    DBGLOG("%s", prop.str());
     prop.clear();
     prop.appendf("monitorQueueLabel=%s", m_MonitorQueueLabel.str());
-    PrintLog(prop.str());
+    DBGLOG("%s", prop.str());
 
     if (!daliClientActive())
     {

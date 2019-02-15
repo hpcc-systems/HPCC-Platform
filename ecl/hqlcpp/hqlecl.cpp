@@ -167,7 +167,7 @@ void HqlDllGenerator::addLibrariesToCompiler()
         const char * lib = code->queryLibrary(idx);
         if (!lib)
             break;
-        PrintLog("Adding library: %s", lib);
+        LOG(MCuserInfo,"Adding library: %s", lib);
         addLibrary(lib);
         idx++;
     }
@@ -177,7 +177,7 @@ void HqlDllGenerator::addLibrariesToCompiler()
         const char * obj = code->queryObjectFile(idx);
         if (!obj)
             break;
-        PrintLog("Adding object file: %s", obj);
+        LOG(MCuserInfo,"Adding object file: %s", obj);
         objects.append(obj);
         idx++;
     }
@@ -187,7 +187,7 @@ void HqlDllGenerator::addLibrariesToCompiler()
         const char * src = code->querySourceFile(idx);
         if (!src)
             break;
-        PrintLog("Adding source file: %s", src);
+        LOG(MCuserInfo,"Adding source file: %s", src);
         sourceFiles.append(src);
         sourceFlags.append(code->querySourceFlags(idx));
         sourceIsTemp.append(code->querySourceIsTemp(idx));
@@ -199,7 +199,7 @@ void HqlDllGenerator::addLibrariesToCompiler()
         const char * dir = code->queryTempDirectory(idx);
         if (!dir)
             break;
-        PrintLog("Adding temporary directory: %s", dir);
+        LOG(MCuserInfo,"Adding temporary directory: %s", dir);
         temporaryDirectories.append(dir);
         idx++;
     }
@@ -610,12 +610,12 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     if (okToAbort)
         compiler->setAbortChecker(this);
 
-    PrintLog("Compiling %s", wuname);
+    LOG(MCuserInfo,"Compiling %s", wuname);
     bool ok = compiler->compile();
     if(ok)
-        PrintLog("Compiled %s", wuname);
+        LOG(MCuserInfo,"Compiled %s", wuname);
     else
-        PrintLog("Failed to compile %s", wuname);
+        UERRLOG("Failed to compile %s", wuname);
 
     bool reportCppWarnings = wu->getDebugValueBool("reportCppWarnings", false);
     IArrayOf<IError> errors;

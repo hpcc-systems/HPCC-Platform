@@ -3428,7 +3428,7 @@ public:
             catch (IException *E)
             {
                 StringBuffer s;
-                PrintLog("Failed to release write lock on workunit: %s", E->errorMessage(s).str());
+                IERRLOG("Failed to release write lock on workunit: %s", E->errorMessage(s).str());
                 throw;
             }
         }
@@ -3518,7 +3518,7 @@ public:
     ~CLockedWorkUnit()
     {
         if (workUnitTraceLevel > 1)
-            PrintLog("Releasing locked workunit %s", queryWuid());
+            DBGLOG("Releasing locked workunit %s", queryWuid());
         if (c)
             c->unlockRemote();
     }
@@ -4567,10 +4567,10 @@ IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *scope, 
     strftime(result, sizeof(result), "%Y%m%d-%H%M%S", today);
     wuid.append(result);
     if (workUnitTraceLevel > 1)
-        PrintLog("createWorkUnit created %s", wuid.str());
+        DBGLOG("createWorkUnit created %s", wuid.str());
     IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, scope, secmgr, secuser);
     if (workUnitTraceLevel > 1)
-        PrintLog("createWorkUnit created %s", ret->queryWuid());
+        DBGLOG("createWorkUnit created %s", ret->queryWuid());
     addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
     return ret;
 }
@@ -4578,7 +4578,7 @@ IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *scope, 
 bool CWorkUnitFactory::deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secmgr, ISecUser *secuser)
 {
     if (workUnitTraceLevel > 1)
-        PrintLog("deleteWorkUnit %s", wuid);
+        DBGLOG("deleteWorkUnit %s", wuid);
     StringBuffer wuRoot;
     getXPath(wuRoot, wuid);
     Owned<CLocalWorkUnit> cw = _updateWorkUnit(wuid, secmgr, secuser);
@@ -4620,13 +4620,13 @@ IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, ISecManager *se
     if (!wuidStr.length() || ('W' != wuidStr.charAt(0)))
     {
         if (workUnitTraceLevel > 1)
-            PrintLog("openWorkUnit %s invalid WUID", nullText(wuidStr.str()));
+            OWARNLOG("openWorkUnit %s invalid WUID", nullText(wuidStr.str()));
 
         return NULL;
     }
 
     if (workUnitTraceLevel > 1)
-        PrintLog("openWorkUnit %s", wuidStr.str());
+        DBGLOG("openWorkUnit %s", wuidStr.str());
     Owned<IConstWorkUnit> wu = _openWorkUnit(wuid, secmgr, secuser);
     if (wu)
     {
@@ -4637,7 +4637,7 @@ IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, ISecManager *se
     else
     {
         if (workUnitTraceLevel > 0)
-            PrintLog("openWorkUnit %s not found", wuidStr.str());
+            OWARNLOG("openWorkUnit %s not found", wuidStr.str());
         return NULL;
     }
 }
@@ -4645,7 +4645,7 @@ IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, ISecManager *se
 IWorkUnit* CWorkUnitFactory::updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
 {
     if (workUnitTraceLevel > 1)
-        PrintLog("updateWorkUnit %s", wuid);
+        DBGLOG("updateWorkUnit %s", wuid);
     Owned<CLocalWorkUnit> wu = _updateWorkUnit(wuid, secmgr, secuser);
     if (wu)
     {
@@ -4656,7 +4656,7 @@ IWorkUnit* CWorkUnitFactory::updateWorkUnit(const char *wuid, ISecManager *secmg
     else
     {
         if (workUnitTraceLevel > 0)
-            PrintLog("updateWorkUnit %s not found", wuid);
+            OWARNLOG("updateWorkUnit %s not found", wuid);
         return NULL;
     }
 }
@@ -4763,7 +4763,7 @@ bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid, bool 
 int CWorkUnitFactory::setTracingLevel(int newLevel)
 {
     if (newLevel)
-        PrintLog("Setting workunit trace level to %d", newLevel);
+        DBGLOG("Setting workunit trace level to %d", newLevel);
     int level = workUnitTraceLevel;
     workUnitTraceLevel = newLevel;
     return level;
@@ -6293,7 +6293,7 @@ IWorkUnit &CLocalWorkUnit::lockRemote(bool commit)
         catch (IException *E)
         {
             StringBuffer s;
-            PrintLog("Failed to get write lock on workunit: %s", E->errorMessage(s).str());
+            IERRLOG("Failed to get write lock on workunit: %s", E->errorMessage(s).str());
             locked.unlock();
             throw;
         }
@@ -6854,7 +6854,7 @@ bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffe
 {
     if (!isWorkunitDAToken(distributedAccessToken))
     {
-        DBGLOG("Not a valid workunit distributed access token");
+        OWARNLOG("Not a valid workunit distributed access token");
         return false;
     }
 
@@ -7409,7 +7409,7 @@ extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *pr
     {
         StringBuffer msg;
         E->errorMessage(msg);
-        DBGLOG("Exception validating cluster %s/%s: %s", remoteDali, xpath.str(), msg.str());
+        IERRLOG("Exception validating cluster %s/%s: %s", remoteDali, xpath.str(), msg.str());
         E->Release();
     }
     return true;
@@ -12296,7 +12296,7 @@ void updateSuppliedXmlParams(IWorkUnit * w)
             }
         }
         else
-            DBGLOG("WARNING: no matching variable in workunit for input parameter %s", name);
+            OERRLOG("WARNING: no matching variable in workunit for input parameter %s", name);
     }
 }
 

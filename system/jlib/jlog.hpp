@@ -735,6 +735,7 @@ extern jlib_decl const LogMsgCategory MCuserProgress;
 extern jlib_decl const LogMsgCategory MCoperatorProgress;
 extern jlib_decl const LogMsgCategory MCdebugProgress;
 extern jlib_decl const LogMsgCategory MCdebugInfo;
+extern jlib_decl const LogMsgCategory MCuserInfo;
 extern jlib_decl const LogMsgCategory MCstats;
 extern jlib_decl const LogMsgCategory MCoperatorInfo;
 extern jlib_decl const LogMsgCategory MClegacy;

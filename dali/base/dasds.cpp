@@ -8790,7 +8790,7 @@ public:
             IMPLEMENT_IINTERFACE;
              virtual void removed(IPropertyTree &tree)
              {
-                 PrintLog("Hello, tree(%s) handler(%s), being deleted", tree.queryName(), queryNotifyHandlerName(&tree));
+                 DBGLOG("Hello, tree(%s) handler(%s), being deleted", tree.queryName(), queryNotifyHandlerName(&tree));
              }
         };
         Owned<ISDSNotifyHandler> myHan = new CTestHan();

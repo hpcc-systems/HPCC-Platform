@@ -6342,7 +6342,7 @@ void PrintExtract(StringBuffer & s, const char * tag)
     size32_t outLen;
     char * out = NULL;
     rtlExceptionExtract(outLen, out, s.str(), tag);
-    PrintLog("%s = %.*s", tag, outLen, out);
+    DBGLOG("%s = %.*s", tag, outLen, out);
     rtlFree(out);
 }
 
@@ -6364,7 +6364,7 @@ void testStructuredExceptions()
     PrintExtract(s, "is");
     PrintExtract(s, "location");
     PrintExtract(s, "author");
-    PrintLog("%s", s.str());
+    DBGLOG("%s", s.str());
 }
 
 static void testPackedUnsigned()

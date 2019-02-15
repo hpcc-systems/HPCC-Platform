@@ -803,7 +803,7 @@ ElevatorScanner::ElevatorScanner(int _file, size32_t _recordSize) : Thread("Elev
 
 ElevatorScanner::~ElevatorScanner()
 {
-    PrintLog("Elevator scanner statistics: %" I64F "d reads (%" I64F "d bytes), %d scans", reads, reads*recordSize, scans);
+    IERRLOG("Elevator scanner statistics: %" I64F "d reads (%" I64F "d bytes), %d scans", reads, reads*recordSize, scans);
 }
 
 void ElevatorScanner::beforeDispose()
@@ -858,7 +858,7 @@ void ElevatorScanner::doFetch(PendingFetch &next)
 
 void ElevatorScanner::scan()
 {
-    PrintLog("Starting elevator scan of %d items", nextSlot);
+    DBGLOG("Starting elevator scan of %d items", nextSlot);
     scans++;
     qsort(pending, nextSlot, sizeof(pending[0]), PendingFetch::compare);
     for (unsigned i = 0; i < nextSlot; i++)
@@ -870,7 +870,7 @@ void ElevatorScanner::scan()
         synchronized block(isRoom);
         isRoom.notify();
     }
-    PrintLog("Finished elevator scan");
+    DBGLOG("Finished elevator scan");
 }
 
 void ElevatorScanner::flush(IRecordFetchChannel *)

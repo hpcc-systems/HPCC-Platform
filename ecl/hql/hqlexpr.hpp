@@ -1529,7 +1529,7 @@ extern HQL_API IHqlExpression * queryJoinRhs(IHqlExpression * expr);
 
 extern HQL_API void lockTransformMutex();
 extern HQL_API void unlockTransformMutex();
-extern HQL_API void PrintLogExprTree(IHqlExpression *expr, const char *caption = NULL, bool full = false);
+extern HQL_API void PrintLogExprTree(IHqlExpression *expr, const char *caption = NULL);
 
 extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquery, unsigned limit);
 //extern HQL_API void loadImplicitScopes(IEclRepository &dataServer, HqlScopeArray &defualtScopes, int suppress, IIdAtom * suppressName);

@@ -348,7 +348,7 @@ void HqlLex::pushText(const char *s)
     inmacro->set_yyColumn(yyColumn);
 
 #if defined (TRACE_MACRO)
-    PrintLog("MACRO>> inmacro %p created for \"%s\" for macro parameters.\n",inmacro,s);
+    DBGLOG("MACRO>> inmacro %p created for \"%s\" for macro parameters.\n",inmacro,s);
 #endif
 }
 
@@ -415,7 +415,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
                 }
             }
         }
-        //PrintLog("Set macro parm: %s", curParam.str());
+        //DBGLOG("Set macro parm: %s", curParam.str());
 //      if (macroParms->queryProp(formal->queryName()))
 //          reportError(errpos, ERR_NAMED_ALREADY_HAS_VALUE, "Parameter %s already has a value supplied", argumentName->str());
 //      else
@@ -550,7 +550,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
                         reportError(nextToken, ERR_PARAM_NODEFVALUE, "%s", msg.str());
                     }
                     macroParms->setProp(str(formal->queryName()), curParam.str());
-                    //PrintLog("Set macro parm: %s", curParam.str());
+                    //DBGLOG("Set macro parm: %s", curParam.str());
                     curParam.clear();
                 }
                 else
@@ -591,8 +591,8 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         inmacro->setLegacyWhen(useLegacyWhen);
 
 #if defined(TRACE_MACRO)
-        PrintLog("MACRO>> inmacro %p created for \"%s\" at %d:%d\n",inmacro, s.str(),macroBodyExpr->getStartLine(),macroBodyExpr->getStartColumn());
-//      PrintLog("MACRO>> macro called at %d:%d\n", expr->getStartLine(),expr->getStartColumn());
+        DBGLOG("MACRO>> inmacro %p created for \"%s\" at %d:%d\n",inmacro, s.str(),macroBodyExpr->getStartLine(),macroBodyExpr->getStartColumn());
+//      DBGLOG("MACRO>> macro called at %d:%d\n", expr->getStartLine(),expr->getStartColumn());
 #endif
         /* set the lineno and column in the original source as the starting point */
         inmacro->yyLineNo = macroBodyExpr->getStartLine();
@@ -1179,7 +1179,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         catch (...)
         {
             setXmlSymbol(returnToken, str(exportname), "", false);
-            PrintLog("Unexpected exception in doExport()");
+            IERRLOG("Unexpected exception in doExport()");
         }
         if (!more)
             break;
@@ -1487,7 +1487,7 @@ static bool isInModule(HqlLookupContext & ctx, const char* moduleName, const cha
     }
     catch (...)
     {
-        PrintLog("Unexpected exception in doInModule()");
+        IERRLOG("Unexpected exception in doInModule()");
     }
 
     return false;
@@ -1566,7 +1566,7 @@ void HqlLex::declareUniqueName(const char *name, const char * pattern)
     if (!added)
         uniqueName.append(++gUniqueId);
 
-    //PrintLog("Declaring unique name: %s",uniqueName.str());
+    //DBGLOG("Declaring unique name: %s",uniqueName.str());
     top->setValue(name,uniqueName.str());
 }
 
@@ -1607,7 +1607,7 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
     catch (...)
     {
         pushText("false");
-        PrintLog("Unexpected exception in doIsValid()");
+        IERRLOG("Unexpected exception in doIsValid()");
     }
 
     ::Release(expr);
@@ -2007,7 +2007,7 @@ static StringBuffer& mangle(IErrorReceiver* errReceiver,const char* src, StringB
                 if (de)
                 {
                     //errReceiver->reportError(returnToken, ERR_EXPECTED_CONST, "Bad parameter to #DEMANGLE", "CppTemplate");
-                    PrintLog("Bad parameter to #DEMANGLE");
+                    IERRLOG("Bad parameter to #DEMANGLE");
                     break;
                 }
                 else
@@ -2021,7 +2021,7 @@ static StringBuffer& mangle(IErrorReceiver* errReceiver,const char* src, StringB
             if (c != '_')
             {
                 //errReceiver->reportError(returnToken, ERR_EXPECTED_CONST, "Bad parameter to #DEMANGLE");
-                PrintLog("Bad parameter to #DEMANGLE");
+                IERRLOG("Bad parameter to #DEMANGLE");
                 break;
             }
             c = hexchar(finger[1])*16 + hexchar(finger[2]);
@@ -2433,7 +2433,7 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
             }
 
 #if defined(TRACE_MACRO)
-            PrintLog("MACRO>> inmacro %p deleted\n", inmacro);
+            DBGLOG("MACRO>> inmacro %p deleted\n", inmacro);
 #endif
 
             delete inmacro;

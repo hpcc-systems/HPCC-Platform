@@ -219,28 +219,6 @@ jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, unsi
     resolvedFS.set(lf->queryLogFileSpec());
 }
 
-jlib_decl void PrintLogDirect(const char *msg)
-{
-    LOG(MClegacy, unknownJob, "%s", msg);
-}
-
-jlib_decl int PrintLog(const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    VALOG(MClegacy, unknownJob, fmt, args);
-    va_end(args);
-    return 0;
-}
-
-jlib_decl void SPrintLog(const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    VALOG(MClegacy, unknownJob, fmt, args);
-    va_end(args);
-}
-
 StringBuffer &addFileTimestamp(StringBuffer &fname, bool daily)
 {
     time_t tNow;
@@ -266,7 +244,7 @@ jlib_decl void PrintMemoryStatusLog()
 #ifdef _WIN32
     MEMORYSTATUS mS;
     GlobalMemoryStatus(&mS);
-    LOG(MCdebugInfo, unknownJob, "Available Physical Memory = %dK", (unsigned)(mS.dwAvailPhys/1024));
+    DBGLOG("Available Physical Memory = %dK", (unsigned)(mS.dwAvailPhys/1024));
 #ifdef FRAGMENTATION_CHECK
     // see if fragmented
     size32_t sz = MAX_TRY_SIZE;
@@ -282,7 +260,7 @@ jlib_decl void PrintMemoryStatusLog()
     }
     sz *= 2;
     if ((sz<MAX_TRY_SIZE)&&(sz<mS.dwAvailPhys/4)) {
-        LOG(MCdebugInfo, unknownJob, "WARNING: Could not allocate block size %d", sz);
+        DBGLOG("WARNING: Could not allocate block size %d", sz);
        _HEAPINFO hinfo;
        int heapstatus;
        hinfo._pentry = NULL;
@@ -295,8 +273,8 @@ jlib_decl void PrintMemoryStatusLog()
                 fragments++;
            }
        }
-       LOG(MCdebugInfo, unknownJob, "Largest unused fragment = %d", max);
-       LOG(MCdebugInfo, unknownJob, "Number of fragments = %d", fragments);
+       DBGLOG("Largest unused fragment = %d", max);
+       DBGLOG("Number of fragments = %d", fragments);
     }
 #endif
 #endif

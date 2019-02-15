@@ -791,7 +791,7 @@ static void ModuleWalk()
     if (!getModuleInformation) 
         return;
     DWORD processID = GetCurrentProcessId();
-    PrintLog( "Process ID: %u", processID );
+    LOG(MCoperatorInfo, "Process ID: %u", processID );
     
     // Get a list of all the modules in this process.
     
@@ -813,7 +813,7 @@ static void ModuleWalk()
             memset(&modinfo,0,sizeof(modinfo));
             getModuleInformation(hProcess, hMods[i], &modinfo, sizeof(modinfo));
             GetModuleFileName( hMods[i], szModName, sizeof(szModName));
-            PrintLog("%8X %8X %8X  %s",(unsigned)modinfo.lpBaseOfDll,(unsigned)modinfo.SizeOfImage,(unsigned)modinfo.EntryPoint,szModName);
+            IERRLOG("%8X %8X %8X  %s",(unsigned)modinfo.lpBaseOfDll,(unsigned)modinfo.SizeOfImage,(unsigned)modinfo.EntryPoint,szModName);
         }
     }
     
@@ -824,9 +824,9 @@ static void ModuleWalk()
 
 static void StackWalk( size_t pc, size_t bp )
 {
-    PrintLog( "Call stack:" );
+    IERRLOG( "Call stack:" );
     
-    PrintLog( "Address   Frame     Logical addr  Module" );
+    IERRLOG( "Address   Frame     Logical addr  Module" );
     
     size_t * pFrame;
     size_t * pPrevFrame=NULL;
@@ -843,7 +843,7 @@ static void StackWalk( size_t pc, size_t bp )
         else
             strcpy(szModule,"NULL");
         
-        PrintLog( "%08X  %08X  %04X:%08X %s",
+        IERRLOG( "%08X  %08X  %04X:%08X %s",
             pc, pFrame, section, offset, szModule );
         
         if ( (size_t)pFrame & 0x80000003 )    
@@ -877,7 +877,7 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
             mov _bp,eax
         }
 #else
-        PrintLog("inline assembler is only supported for x86_32; StackReport incomplete bp tend to not be used");
+        IERRLOG("inline assembler is only supported for x86_32; StackReport incomplete bp tend to not be used");
 #endif
     }
     
@@ -899,14 +899,14 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
             s.appendf(" %08X",v);
 #endif
         }
-        PrintLog( "%s",s.str());
+        IERRLOG( "%s",s.str());
     }
     
     
     StackWalk( ip , _bp);
     ModuleWalk();
     StringBuffer threadlist;
-    PrintLog( "ThreadList:\n%s",getThreadList(threadlist).str());
+    IERRLOG( "ThreadList:\n%s",getThreadList(threadlist).str());
     
 }
 
@@ -914,17 +914,17 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
 
 static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
 {
-    PrintLog("=====================================================");
+    IERRLOG("=====================================================");
     
     
     PrintMemoryStatusLog();
     PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
     
-    PrintLog(   "Exception code: %08X %s",
+    IERRLOG(   "Exception code: %08X %s",
         pExceptionRecord->ExceptionCode,
         GetExceptionString(pExceptionRecord->ExceptionCode) );
     
-    PrintLog( "Fault address:  %08X", pExceptionRecord->ExceptionAddress);
+    IERRLOG( "Fault address:  %08X", pExceptionRecord->ExceptionAddress);
     
     TCHAR szFaultingModule[MAX_PATH];
     DWORD section, offset;
@@ -933,45 +933,45 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
         sizeof( szFaultingModule ),
         section, offset );
     
-    PrintLog("Fault module:  %02X:%08X %s", section, offset, szFaultingModule);
+    IERRLOG("Fault module:  %02X:%08X %s", section, offset, szFaultingModule);
     
     PCONTEXT pCtx = pExceptionInfo->ContextRecord;
     
-    PrintLog( "\nRegisters:" );
+    IERRLOG( "\nRegisters:" );
     
 #ifdef _ARCH_X86_64_
-    PrintLog("RAX:%016" I64F "X  RBX:%016" I64F "X  RCX:%016" I64F "X  RDX:%016" I64F "X  RSI:%016" I64F "X  RDI:%016" I64F "X",
+    IERRLOG("RAX:%016" I64F "X  RBX:%016" I64F "X  RCX:%016" I64F "X  RDX:%016" I64F "X  RSI:%016" I64F "X  RDI:%016" I64F "X",
         pCtx->Rax, pCtx->Rbx, pCtx->Rcx, pCtx->Rdx, pCtx->Rsi, pCtx->Rdi );
-    PrintLog("R8: %016" I64F "X  R9: %016" I64F "X  R10:%016" I64F "X  R11:%016" I64F "X  R12:%016" I64F "X  R13:%016" I64F "X",
+    IERRLOG("R8: %016" I64F "X  R9: %016" I64F "X  R10:%016" I64F "X  R11:%016" I64F "X  R12:%016" I64F "X  R13:%016" I64F "X",
         pCtx->R8, pCtx->R9, pCtx->R10, pCtx->R11, pCtx->R12, pCtx->R13);
-    PrintLog("R14:%016" I64F "X  R15:%016" I64F "X",
+    IERRLOG("R14:%016" I64F "X  R15:%016" I64F "X",
         pCtx->R14, pCtx->R15);
 
-    PrintLog( "CS:RIP:%04X:%016" I64F "X", pCtx->SegCs, pCtx->Rip );
-    PrintLog( "SS:PSP:%04X:%016" I64F "X  PBP:%016" I64F "X",
+    IERRLOG( "CS:RIP:%04X:%016" I64F "X", pCtx->SegCs, pCtx->Rip );
+    IERRLOG( "SS:PSP:%04X:%016" I64F "X  PBP:%016" I64F "X",
         pCtx->SegSs, pCtx->Rsp, pCtx->Rbp );
 #elif defined(_ARCH_X86_)
-    PrintLog("EAX:%08X  EBX:%08X  ECX:%08X  EDX:%08X  ESI:%08X  EDI:%08X",
+    IERRLOG("EAX:%08X  EBX:%08X  ECX:%08X  EDX:%08X  ESI:%08X  EDI:%08X",
         pCtx->Eax, pCtx->Ebx, pCtx->Ecx, pCtx->Edx, pCtx->Esi, pCtx->Edi );
     
-    PrintLog( "CS:EIP:%04X:%08X", pCtx->SegCs, pCtx->Eip );
-    PrintLog( "SS:ESP:%04X:%08X  EBP:%08X",
+    IERRLOG( "CS:EIP:%04X:%08X", pCtx->SegCs, pCtx->Eip );
+    IERRLOG( "SS:ESP:%04X:%08X  EBP:%08X",
         pCtx->SegSs, pCtx->Esp, pCtx->Ebp );
 #else
     // ARMFIX: Implement register bank dump for ARM on _WIN32.
-    PrintLog("Register bank not implemented for your platform");
+    IERRLOG("Register bank not implemented for your platform");
 #endif
     
-    PrintLog( "DS:%04X  ES:%04X  FS:%04X  GS:%04X",
+    IERRLOG( "DS:%04X  ES:%04X  FS:%04X  GS:%04X",
         pCtx->SegDs, pCtx->SegEs, pCtx->SegFs, pCtx->SegGs );
-    PrintLog( "Flags:%08X", pCtx->EFlags );
+    IERRLOG( "Flags:%08X", pCtx->EFlags );
 #ifdef _ARCH_X86_64_
     doPrintStackReport(pCtx->Rip, pCtx->Rbp,pCtx->Rsp);
 #elif defined(_ARCH_X86_)
     doPrintStackReport(pCtx->Eip, pCtx->Ebp,pCtx->Esp);
 #else
     // ARMFIX: Implement stack dump for ARM on _WIN32.
-    PrintLog("Stack report not implemented for your platform");
+    IERRLOG("Stack report not implemented for your platform");
 #endif
     if (SEHtermOnSystemDLLs || SEHtermAlways) {
         char *s = szFaultingModule;

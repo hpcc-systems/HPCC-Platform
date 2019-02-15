@@ -1361,7 +1361,7 @@ struct TimedBlock
     {
         unsigned elapsed=msTick()-start;
         if (elapsed>limit)
-            PrintLog("TIME: %s took %dms - line(%d)",msg,elapsed,ln);
+            DBGLOG("TIME: %s took %dms - line(%d)",msg,elapsed,ln);
         free(msg);
     }
 };

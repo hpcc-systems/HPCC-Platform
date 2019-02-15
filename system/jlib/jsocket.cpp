@@ -1362,7 +1362,7 @@ void CSocket::connect_wait(unsigned timems)
                 unsigned sleeptime = getRandom() % 1000;
                 StringBuffer s;
                 ep.getIpText(s);
-                PrintLog("Connection to central node %s - sleeping %d milliseconds", s.str(), sleeptime);
+                DBGLOG("Connection to central node %s - sleeping %d milliseconds", s.str(), sleeptime);
                 Sleep(sleeptime);           
                 break;
             }

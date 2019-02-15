@@ -449,7 +449,7 @@ void CHThorDiskWriteActivity::resolve()
                 if(extend)
                     agent.logFileAccess(f->queryDistributedFile(), "HThor", "EXTENDED");
                 else if(overwrite) {
-                    PrintLog("Removing %s from DFS", lfn.str());
+                    LOG(MCoperatorInfo, "Removing %s from DFS", lfn.str());
                     agent.logFileAccess(f->queryDistributedFile(), "HThor", "DELETED");
                     if (!agent.queryResolveFilesLocally())
                         f->queryDistributedFile()->detach();
@@ -1048,7 +1048,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
         {
             if (TIWoverwrite & helper.getFlags()) 
             {
-                PrintLog("Removing %s from DFS", lfn.str());
+                LOG(MCuserInfo, "Removing %s from DFS", lfn.str());
                 agent.logFileAccess(f, "HThor", "DELETED");
                 f->detach();
             }

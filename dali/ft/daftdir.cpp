@@ -280,16 +280,16 @@ bool DirectoryBuilder::walkDirectory(const char * path, IPropertyTree * director
         switch (glret)
         {
         case GLOB_NOSPACE:
-            PrintLog("glob error for %s : running out of memory space", search.str());
+            IERRLOG("glob error for %s : running out of memory space", search.str());
             break;
         case GLOB_ABORTED:
-            PrintLog("glob error for %s : read error", search.str());
+            IERRLOG("glob error for %s : read error", search.str());
             break;
         case GLOB_NOMATCH:
-            PrintLog("no match found for %s", search.str());
+            IERRLOG("no match found for %s", search.str());
             break;
         default:
-            PrintLog("glob error for %s : %s", strerror(errno));
+            IERRLOG("glob error for %s : %s", search.str(), strerror(errno));
         }
     }
     else

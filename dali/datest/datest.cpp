@@ -949,7 +949,7 @@ void TestRemoteFile(unsigned part,unsigned of)
 
 void QTest(bool testput)
 {
-    PrintLog("starting QTest %s",testput?"put":"get");
+    DBGLOG("starting QTest %s",testput?"put":"get");
     Owned<INamedQueueConnection> conn = createNamedQueueConnection(0);
     Owned<IQueueChannel> channel = conn->open("testq");
     unsigned i;
@@ -965,7 +965,7 @@ void QTest(bool testput)
     unsigned qn = 0;
     unsigned n;
     for (n=1;n<=128;n++) {
-        PrintLog("start %d",n);
+        DBGLOG("start %d",n);
         unsigned t1 = msTick();
         for (i=0;i<1000;i++) {
             qn++;
@@ -980,8 +980,8 @@ void QTest(bool testput)
                 channel->put(mb);
 #if 1
                 if (i%100==99) {
-                    PrintLog("Put %i - %d on queue",i,channel->probe());
-                    PrintLog("time taken = %d",msTick()-t1);
+                    DBGLOG("Put %i - %d on queue",i,channel->probe());
+                    DBGLOG("time taken = %d",msTick()-t1);
                     t1 = msTick();
                 }
 #endif
@@ -1005,22 +1005,22 @@ void QTest(bool testput)
                 if (sz) {
                     mb.read(sz,buf);
                     if ((buf[0]!=255-buf[sz-1])||(buf[0]!=qn%256)) {
-                        PrintLog("%d: sz=%d, buf[0]=%d, buf[sz-1]=%d  %d %d",qn,sz,(int)buf[0],(int)buf[sz-1],mb.length(),mb.getPos());
+                        DBGLOG("%d: sz=%d, buf[0]=%d, buf[sz-1]=%d  %d %d",qn,sz,(int)buf[0],(int)buf[sz-1],mb.length(),mb.getPos());
                         return;
                     }
                     assertex(buf[0]==255-buf[sz-1]);
 #if 1
                     StringBuffer eps;
                     if (i%100==99) {
-                        PrintLog("Got %s - %d from %s",str.get(),n,node->endpoint().getUrlStr(eps).str());
-                        PrintLog("time taken = %d",msTick()-t1);
+                        DBGLOG("Got %s - %d from %s",str.get(),n,node->endpoint().getUrlStr(eps).str());
+                        DBGLOG("time taken = %d",msTick()-t1);
                         t1 = msTick();
                     }
 #endif
                 }
             }
         }
-        PrintLog("average message of %dK took %dms  ",n,msTick()-t1);
+        DBGLOG("average message of %dK took %dms  ",n,msTick()-t1);
     }
     free(buf);
 }
@@ -1032,12 +1032,12 @@ public:
     Semaphore sem;
     void closed(SessionId id)
     {
-        PrintLog("Session closed %" I64F "d",id);
+        DBGLOG("Session closed %" I64F "d",id);
         sem.signal();
     }
     void aborted(SessionId id)
     {
-        PrintLog("Session aborted %" I64F "d",id);
+        DBGLOG("Session aborted %" I64F "d",id);
         sem.signal();
     }
 };
@@ -1046,7 +1046,7 @@ void Test_Session(const char *eps) // test for sessions
 {
     if (!eps||!*eps) {
         for (unsigned i=0;i<100;i++) {
-            PrintLog("Tick %d",i);
+            DBGLOG("Tick %d",i);
             Sleep(1000);
         }
         return;
@@ -1059,7 +1059,7 @@ void Test_Session(const char *eps) // test for sessions
     for (;;) {
         id = querySessionManager().lookupProcessSession(node);
         if (id) {
-            PrintLog("Session looked up %" I64F "d",id);
+            DBGLOG("Session looked up %" I64F "d",id);
             break;
         }
         Sleep(1000);
@@ -1076,21 +1076,21 @@ void QTest2(bool testput)
     CMessageBuffer mb;
     if (testput) {
         SessionId session = querySessionManager().startSession(0);
-        PrintLog("session started = %" I64F "d",session);
+        DBGLOG("session started = %" I64F "d",session);
         mb.append(session);
         channel->put(mb);
         while (!querySessionManager().sessionStopped(session,1000*5))
-            PrintLog("Still going!");
+            DBGLOG("Still going!");
     }
     else {
         channel->get(mb);
         SessionId session;
         mb.read(session);
-        PrintLog("Started");
+        DBGLOG("Started");
         Sleep(1000*6);
-        PrintLog("stopping session %" I64F "d",session);
+        DBGLOG("stopping session %" I64F "d",session);
         querySessionManager().stopSession(session,false);
-        PrintLog("Stopped");
+        DBGLOG("Stopped");
     }
 }
 
@@ -1105,12 +1105,12 @@ public:
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         static int nno = 0;
-        PrintLog("%d: Notification(%" I64F "d) of %s - flags = %d", nno++, (__int64) id, xpath, flags);
+        DBGLOG("%d: Notification(%" I64F "d) of %s - flags = %d", nno++, (__int64) id, xpath, flags);
         if (valueData)
         {
             StringBuffer data;
             appendURL(&data, (const char *)valueData, valueLen, 0);
-            PrintLog("ValueData = %s", data.str());
+            DBGLOG("ValueData = %s", data.str());
         }
     }
 };
@@ -1132,7 +1132,7 @@ public:
         try
         {
             Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_LOCK_SUB, 1000000);
-            PrintLog("connecting to %s", path.get());
+            DBGLOG("connecting to %s", path.get());
             if (!conn)
                 throw MakeStringException(-1, "Failed to connect to path %s", path.get());
             IPropertyTree *root = conn->queryRoot();
@@ -1205,12 +1205,12 @@ void testSubscription(bool subscriber, int subs, int comms)
         IMPLEMENT_IINTERFACE;
         virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
         {
-            PrintLog("Notification(%" I64F "x) of %s - flags = %d",(__int64) id, xpath, flags);
+            DBGLOG("Notification(%" I64F "x) of %s - flags = %d",(__int64) id, xpath, flags);
             if (valueData)
             {
                 StringBuffer data;
                 appendURL(&data, (const char *)valueData, valueLen, 0);
-                PrintLog("ValueData = %s", data.str());
+                DBGLOG("ValueData = %s", data.str());
             }
         }
     };
@@ -1224,18 +1224,18 @@ void testSubscription(bool subscriber, int subs, int comms)
             SubscriptionId *ids = (SubscriptionId *) alloca(sizeof(SubscriptionId)*subscriptions);
             for (i=0; i<subscriptions; i++){
                     subs[i] = new TestSubscription;
-                    PrintLog("Subscribe %d",i);
+                    DBGLOG("Subscribe %d",i);
                     StringBuffer key;
                     key.append("/TESTS/TEST").append(i);
                     ids[i] = querySDS().subscribe(key.str(), *subs[i], true);
             }
-            PrintLog("paused 1");
+            DBGLOG("paused 1");
             getchar();
             for (i=0; i<subscriptions; i++)  {
                     querySDS().unsubscribe(ids[i]);
                     subs[i]->Release();
             }
-            PrintLog("paused");
+            DBGLOG("paused");
             getchar();
     }
     else {
@@ -1253,7 +1253,7 @@ myProcessSession(), RTM_CREATE_QUERY, 1000000);
             }
             conn->commit();
 
-            PrintLog("paused 1");
+            DBGLOG("paused 1");
 
             getchar();
             for (_i=0; _i<commits; _i++) {
@@ -1261,10 +1261,10 @@ myProcessSession(), RTM_CREATE_QUERY, 1000000);
                     StringBuffer key;
                     key.append("TEST").append(i).append("/index");
                     root->setPropInt(key.str(), i);
-                    PrintLog("Commit %d", i);
+                    DBGLOG("Commit %d", i);
                     conn->commit();
             }
-            PrintLog("paused 2");
+            DBGLOG("paused 2");
             getchar();
             for (_i=0; _i<commits; _i++) {
                 i = _i%subscriptions;
@@ -1273,7 +1273,7 @@ myProcessSession(), RTM_CREATE_QUERY, 1000000);
                     root->setPropInt(key.str(), subscriptions-i);            
                     conn->commit();
             }
-            PrintLog("paused 3");
+            DBGLOG("paused 3");
             getchar();
             for (_i=0; _i<commits; _i++) {
                 i = _i%subscriptions;
@@ -1294,7 +1294,7 @@ public:
     CCSub(const char *_conn) : conn(_conn) { }
     virtual void notify()
     {
-        PrintLog("Connection %s changed", conn.get());
+        DBGLOG("Connection %s changed", conn.get());
     }
 };
 
@@ -1375,7 +1375,7 @@ void TestStress()
 
 //
     Owned<IRemoteConnection> conn = querySDS().connect("/Stress", myProcessSession(), RTM_CREATE_QUERY|RTM_LOCK_WRITE, 1000000);
-    PrintLog("connected to /Stress");
+    DBGLOG("connected to /Stress");
 
     IPropertyTree *root = conn->queryRoot();
     unsigned b;
@@ -1408,7 +1408,7 @@ void TestStress()
         ForEach (*rIter) c++;
         if (c>=maxRunning)
         {
-            PrintLog("Pause");
+            DBGLOG("Pause");
             Sleep(pauseWhenBusyDelay);
         }
         else
@@ -1422,19 +1422,19 @@ void TestStress()
         }
     }
 
-    PrintLog("Joining all TSDSThread running threads");
+    DBGLOG("Joining all TSDSThread running threads");
     pool->joinAll();
     pool.clear();
 
     if (queues)
     {
-        PrintLog("Joining putTest");
+        DBGLOG("Joining putTest");
         putTest->join();
-        PrintLog("Joining gettTest");
+        DBGLOG("Joining gettTest");
         getTest->join();
     }
 
-    PrintLog("Finished");
+    DBGLOG("Finished");
 
     return;
 }
@@ -1752,16 +1752,16 @@ void TestExternal()
             free(mem);
         }
 
-        PrintLog("Writing binary to SDS, size=%d", sz);
+        DBGLOG("Writing binary to SDS, size=%d", sz);
         conn->commit();
-        PrintLog("Written binary to SDS, size=%d", sz);
+        DBGLOG("Written binary to SDS, size=%d", sz);
         conn.clear();
 #endif
         conn.setown(querySDS().connect("/Tests", myProcessSession(), RTM_LOCK_READ, 2000*MDELAY));
         root = conn->queryRoot();
 
         MemoryBuffer mb;
-        PrintLog("Reading binary to SDS");
+        DBGLOG("Reading binary to SDS");
         verifyex(root->getPropBin(extPropName.str(), mb));
 
         {
@@ -1772,16 +1772,16 @@ void TestExternal()
             sz = mb.length();
             fileIO->write(0, mb.length(), mb.toByteArray());
         }
-        PrintLog("Read back binary, size=%d", sz);
+        DBGLOG("Read back binary, size=%d", sz);
 
-        PrintLog("Writing large string");
+        DBGLOG("Writing large string");
         char *str = (char *)test;
         str[32000] = '\0';
         root->setProp("largeString", str);
 
         const char *b = root->queryProp("@sds:ext");
         conn->commit();
-        PrintLog("Written large string");
+        DBGLOG("Written large string");
 
         conn.clear();
     }
@@ -1790,19 +1790,19 @@ void TestExternal()
     root = conn->queryRoot();
 
     root->setPropBin(extPropName.str(), UNDERTHRESHOLD, test);
-    PrintLog("setting binary to small, size=%d", UNDERTHRESHOLD);
+    DBGLOG("setting binary to small, size=%d", UNDERTHRESHOLD);
     conn->commit();
-    PrintLog("set binary to small, size=%d", UNDERTHRESHOLD);
+    DBGLOG("set binary to small, size=%d", UNDERTHRESHOLD);
     root->setPropBin(extPropName.str(), 1024, test);
-    PrintLog("setting binary to big, size=%d", OVERTHRESHOLD);
+    DBGLOG("setting binary to big, size=%d", OVERTHRESHOLD);
     conn->commit();
-    PrintLog("set binary to big, size=%d", OVERTHRESHOLD);
+    DBGLOG("set binary to big, size=%d", OVERTHRESHOLD);
 
 #ifdef REMOVEEXT
     root->removeProp(extPropName.str());
-    PrintLog("removing binary to small, size=%d", UNDERTHRESHOLD);
+    DBGLOG("removing binary to small, size=%d", UNDERTHRESHOLD);
     conn->commit();
-    PrintLog("removed prop");
+    DBGLOG("removed prop");
 #endif
 }
 
@@ -1889,13 +1889,13 @@ void TestSubLocks()
         CSubTest * t = new CSubTest(paths.item(fastRand()%paths.ordinality()));
         threads.append(* t);
     }
-    PrintLog("joining");
+    DBGLOG("joining");
     for (i=0; i<num; i++)
     {
         threads.item(i).join();
     }
 
-    PrintLog("SubLocks test done");
+    DBGLOG("SubLocks test done");
 }
 
 void TestSDS1()
@@ -1961,7 +1961,7 @@ void TestSDS1()
     while (diter->first())
     {
         IPropertyTree &child = diter->query();
-        PrintLog("child = %s", child.queryName());
+        DBGLOG("child = %s", child.queryName());
         root->removeTree(&child);
     }
 
@@ -2163,7 +2163,7 @@ void TestSDS1()
 
     toXML(root, xml.clear());
 
-    PrintLog("previously committed file : %s", xml.str());
+    DBGLOG("previously committed file : %s", xml.str());
 
     conn->Release();
 #endif
@@ -2223,7 +2223,7 @@ void TestSDS1()
     sub = root->queryPropTree("sub1");
 
     toXML(sub, xml.clear());
-    PrintLog("hello = %s", xml.str());
+    DBGLOG("hello = %s", xml.str());
 
     conn->Release();
 #endif
@@ -2397,7 +2397,7 @@ void TestSDS3(IGroup *group)
     {
         pool->start(&params, NULL, 50000); // keep starting them as they become available
     }
-    PrintLog("Joining all TSDSThread running threads");
+    DBGLOG("Joining all TSDSThread running threads");
     pool->joinAll();
     pool.clear();
 }
@@ -2519,7 +2519,7 @@ void TestNodeSubs()
         pool->start(NULL);
     }
 
-    PrintLog("Joining all TSDSThread running threads");
+    DBGLOG("Joining all TSDSThread running threads");
     pool->joinAll();
     pool.clear();
 
@@ -2760,12 +2760,12 @@ void TestLocks()
     for (unsigned i=0;i<100;i++) {
         Sleep(getRandom()%3000);
         bool excl = (getRandom()%3)==0;
-        PrintLog("getting %s lock",excl?"exclusive":"non-exclusive");
+        DBGLOG("getting %s lock",excl?"exclusive":"non-exclusive");
         dl->lock(excl);
-        PrintLog("got %s lock",excl?"exclusive":"non-exclusive");
+        DBGLOG("got %s lock",excl?"exclusive":"non-exclusive");
         Sleep(getRandom()%5000);
         dl->unlock();
-        PrintLog("release %s lock",excl?"exclusive":"non-exclusive");
+        DBGLOG("release %s lock",excl?"exclusive":"non-exclusive");
     }
     dl->Release();
     comm->Release();
@@ -2828,11 +2828,11 @@ public:
             for (;;) {
                 Sleep(getRandom()%1000);
                 unsigned i = getRandom()%NCCS;
-                PrintLog("%s locking %d",name,i);
+                DBGLOG("%s locking %d",name,i);
                 CCS[i]->enter();
                 Sleep(getRandom()%1000);
                 unsigned j = getRandom()%NCCS;
-                PrintLog("%s locking %d",name,j);
+                DBGLOG("%s locking %d",name,j);
                 CCS[j]->enter();
                 if (getRandom()%2==0) {
                     unsigned t = i;
@@ -2840,10 +2840,10 @@ public:
                     j = t;
                 }
                 Sleep(getRandom()%1000);
-                PrintLog("%s unlocking %d",name,j);
+                DBGLOG("%s unlocking %d",name,j);
                 CCS[j]->leave();
                 Sleep(getRandom()%1000);
-                PrintLog("%s unlocking %d",name,i);
+                DBGLOG("%s unlocking %d",name,i);
                 CCS[i]->leave();
             }
         }

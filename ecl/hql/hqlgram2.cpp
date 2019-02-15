@@ -3739,7 +3739,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                 IHqlExpression * match = cur.queryParameter(searchName);
                 if (match)
                 {
-    //                  PrintLog("Lookup %s got parameter %s", searchName->getAtomNamePtr(), searchName->getAtomNamePtr());
+    //              DBGLOG("Lookup %s got parameter %s", searchName->getAtomNamePtr(), searchName->getAtomNamePtr());
                     return LINK(match);
                 }
             }
@@ -9655,7 +9655,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
                 lookupCtx.notePrivateSymbols(activeScope.privateScope);
 
             //static int i = 0;
-            //PrintLog("Kill private scope: %d at %s:%d because of %s", ++i, filename->str(), idattr.lineno, current_id->str());
+            //IERRLOG("Kill private scope: %d at %s:%d because of %s", ++i, filename->str(), idattr.lineno, current_id->str());
             activeScope.newPrivateScope();
             targetScope = activeScope.localScope;
             lastpos = semiColonPos+1;
@@ -11534,7 +11534,7 @@ static void getTokenText(StringBuffer & msg, int token)
         {
             /* if fail, use "hqltest -internal" to find out why. */
             msg.appendf("???");
-            //PrintLog("Internal error: Error handler unknown token %d", expected[i]);
+            //IERRLOG("Internal error: Error handler unknown token %d", expected[i]);
             assertex(!"Token not mapped to text");
         }
     }
@@ -12758,7 +12758,7 @@ IHqlExpression *HqlGram::yyParse(bool _parsingTemplateAttribute, bool catchAbort
     }
     catch (RELEASE_CATCH_ALL)
     {
-        PrintLog("Unexpected exception caught");
+        IERRLOG("Unexpected exception caught");
         return NULL;
     }
 }

@@ -523,14 +523,14 @@ public:
     }
     void abort()
     {
-        PrintLog("CDaliSubscriptionManagerStub aborting");
+        DBGLOG("CDaliSubscriptionManagerStub aborting");
         CriticalBlock block(subscriptionsect);
         ForEachItemIn(i,subscriptions) {
             subscriptions.item(i).abort();
         }
         subscriptions.kill();
         ids.kill();
-        PrintLog("CDaliSubscriptionManagerStub aborted");
+        DBGLOG("CDaliSubscriptionManagerStub aborted");
     }
 };
 

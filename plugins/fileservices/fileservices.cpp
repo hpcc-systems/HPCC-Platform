@@ -412,7 +412,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer uname;
-    PrintLog("Deleting NS logical file %s for user %s", lfn.str(),udesc?udesc->getUserName(uname).str():"");
+    LOG(MCoperatorInfo, "Deleting NS logical file %s for user %s", lfn.str(),udesc?udesc->getUserName(uname).str():"");
     if (queryDistributedFileDirectory().removeEntry(lfn.str(),udesc,transaction, INFINITE, true))
     {
         StringBuffer s("DeleteLogicalFile ('");
@@ -732,7 +732,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
 FILESERVICES_API char * FILESERVICES_CALL implementSprayFixed(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int recordSize, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile, int expireDays)
 {
-    PrintLog("Spray:  %s", destinationLogicalName);
+    LOG(MCoperatorInfo, "Spray:  %s", destinationLogicalName);
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
@@ -807,7 +807,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayFixed_v2(ICodeContext *ctx, co
 
 static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * sourceCsvEscape, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile, bool recordStructurePresent, bool quotedTerminator, const char * encoding, int expireDays)
 {
-    PrintLog("Spray:  %s", destinationLogicalName);
+    LOG(MCoperatorInfo, "Spray:  %s", destinationLogicalName);
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
@@ -932,7 +932,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayVariable_v6(ICodeContext *ctx,
 
 FILESERVICES_API char * FILESERVICES_CALL implementSprayXml(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char *sourceRowTag, const char *sourceEncoding, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile, int expireDays)
 {
-    PrintLog("Spray:  %s", destinationLogicalName);
+    LOG(MCoperatorInfo, "Spray:  %s", destinationLogicalName);
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
@@ -1020,7 +1020,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDespray(ICodeContext *ctx, const char 
 
 FILESERVICES_API char * FILESERVICES_CALL fsfDespray(ICodeContext *ctx, const char * sourceLogicalName, const char * destinationIP, const char * destinationPath, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite)
 {
-    PrintLog("Despray:  %s", sourceLogicalName);
+    LOG(MCoperatorInfo, "Despray:  %s", sourceLogicalName);
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
@@ -1065,7 +1065,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfDespray(ICodeContext *ctx, const ch
 
 FILESERVICES_API char * FILESERVICES_CALL implementCopy(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize, bool preserveCompression)
 {
-    PrintLog("Copy:  %s%s", sourceLogicalName,asSuperfile?" as superfile":"");
+    LOG(MCoperatorInfo, "Copy:  %s%s", sourceLogicalName,asSuperfile?" as superfile":"");
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
@@ -1151,7 +1151,7 @@ FILESERVICES_API void FILESERVICES_CALL fsReplicate(ICodeContext *ctx, const cha
 
 FILESERVICES_API char * FILESERVICES_CALL fsfReplicate(ICodeContext *ctx, const char * sourceLogicalName, int timeOut, const char * espServerIpPort)
 {
-    PrintLog("REPLICATE:  %s", sourceLogicalName);
+    LOG(MCoperatorInfo, "REPLICATE:  %s", sourceLogicalName);
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
@@ -2021,7 +2021,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull(ICodeContext *ctx,
                                                      bool wrap,
                                                      bool compress)
 {
-    PrintLog("RemotePull(%s):  %s%s", remoteEspFsURL,sourceLogicalName,asSuperfile?" as superfile":"");
+    LOG(MCoperatorInfo, "RemotePull(%s):  %s%s", remoteEspFsURL,sourceLogicalName,asSuperfile?" as superfile":"");
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);

@@ -1051,7 +1051,7 @@ macro
                             Owned<IFileContents> contents = $1.getContents();
                             IHqlExpression* expr = createUnknown(no_macro, makeBoolType(), macroAtom, LINK(contents));
 #if defined(TRACE_MACRO)
-                            PrintLog("MACRO>> verify: macro definition at %d:%d\n",yylval.startLine, yylval.startColumn);
+                            DBGLOG("MACRO>> verify: macro definition at %d:%d\n",yylval.startLine, yylval.startColumn);
 #endif
 
                             //Use a named symbol to associate a line number/column
@@ -1067,7 +1067,7 @@ macro
                             IHqlExpression* expr = createUnknown(no_macro, makeVoidType(), macroAtom, LINK(contents));
 
 #if defined(TRACE_MACRO)
-                            PrintLog("MACRO>> verify: macro definition at %d:%d\n",yylval.startLine, yylval.startColumn);
+                            DBGLOG("MACRO>> verify: macro definition at %d:%d\n",yylval.startLine, yylval.startColumn);
 #endif
 
                             //Use a named symbol to associate a line number/column

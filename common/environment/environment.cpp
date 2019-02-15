@@ -378,7 +378,7 @@ public:
             if (conn == nullptr)
             {
                 if (environmentTraceLevel > 0)
-                    PrintLog("Failed to create locked environment %s", newName.str());
+                    OERRLOG("Failed to create locked environment %s", newName.str());
 
                 throw MakeStringException(-1, "Failed to get a lock on environment /%s", newName.str());
             }
@@ -393,7 +393,7 @@ public:
             if (conn2 == nullptr)
             {
                 if (environmentTraceLevel > 0)
-                    PrintLog("Failed to lock environment %s", constEnv->getPath());
+                    OERRLOG("Failed to lock environment %s", constEnv->getPath());
 
                 throw MakeStringException(-1, "Failed to get a lock on environment /%s", constEnv->getPath());
             }
@@ -484,7 +484,7 @@ void CLockedEnvironment::commit()
         if (conn2 == nullptr)
         {
             if (environmentTraceLevel > 0)
-                PrintLog("Failed to lock environment %s", constEnv->getPath());
+                OERRLOG("Failed to lock environment %s", constEnv->getPath());
 
             throw MakeStringException(-1, "Failed to get a lock on environment /%s", constEnv->getPath());
         }
@@ -521,7 +521,7 @@ void CLockedEnvironment::rollback()
         if (conn2 == nullptr)
         {
             if (environmentTraceLevel > 0)
-                PrintLog("Failed to lock environment %s", constEnv->getPath());
+                OERRLOG("Failed to lock environment %s", constEnv->getPath());
 
             throw MakeStringException(-1, "Failed to get a lock on environment /%s", constEnv->getPath());
         }
@@ -1702,7 +1702,7 @@ bool CLocalEnvironment::getRunInfo(IStringVal & path, IStringVal & dir, const ch
 {
     try
     {
-        // PrintLog("getExecutablePath %s %s %s", tag, version, machineaddr);
+        // IERRLOG("getExecutablePath %s %s %s", tag, version, machineaddr);
 
         // first see if local machine with deployed on
         SocketEndpoint ep(machineaddr);

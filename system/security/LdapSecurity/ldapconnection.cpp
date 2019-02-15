@@ -919,7 +919,7 @@ public:
             CLdapConnection* curcon = (CLdapConnection*)&(m_connections.item(x));
             if(curcon != NULL && !curcon->IsShared())
             {
-                //PrintLog("Reusing an LDAP connection");
+                //DBGLOG("Reusing an LDAP connection");
                 if(curcon->validate())
                     return LINK(curcon);
                 else
@@ -927,7 +927,7 @@ public:
             }
         }
 
-        //PrintLog("Creating new connection");
+        //DBGLOG("Creating new connection");
         CLdapConnection* newcon = new CLdapConnection(m_ldapconfig.get());
         if(newcon != NULL)
         {

@@ -561,7 +561,7 @@ void SetLogName(const char *prefix, const char *logdir, const char *thorname, bo
     {
         if (!recursiveCreateDirectory(logdir))
         {
-            PrintLog("Failed to use %s as log directory, using current working directory", logdir); // default working directory should be open already
+            DBGLOG("Failed to use %s as log directory, using current working directory", logdir); // default working directory should be open already
             return;
         }
         logname.append(logdir);
@@ -594,8 +594,8 @@ void SetLogName(const char *prefix, const char *logdir, const char *thorname, bo
     logname.append(".log");
     StringBuffer lf;
     openLogFile(lf, logname.str());
-    PrintLog("Opened log file %s", lf.str());
-    PrintLog("Build %s", BUILD_TAG);
+    DBGLOG("Opened log file %s", lf.str());
+    DBGLOG("Build %s", BUILD_TAG);
 }
 #endif
 
