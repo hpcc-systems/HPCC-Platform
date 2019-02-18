@@ -542,7 +542,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
     virtual void prepareManager(IKeyManager *manager) override
     {
         PARENT::prepareManager(manager);
-        if (choosenLimit && !helper->transformMayFilter())
+        if (choosenLimit && !helper->transformMayFilter() && !helper->hasMatchFilter())
             manager->setChooseNLimit(choosenLimit);
     }
     const void *nextKeyGE(const void *seek, unsigned numFields)
@@ -740,11 +740,14 @@ public:
             steppingMeta.setExtra(steppedExtra);
 
         // NB: setup remoteLimit before base start() call which if parts remote, will use remoteLimit
-        if (choosenLimit)
+        if (!helper->transformMayFilter() && !helper->hasMatchFilter())
         {
-            remoteLimit = choosenLimit;
-            if (!helper->transformMayFilter() && (RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
-                remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
+            if (choosenLimit)
+            {
+                remoteLimit = choosenLimit;
+                if ((RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
+                    remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
+            }
         }
 
         if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
