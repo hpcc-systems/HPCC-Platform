@@ -240,7 +240,7 @@ public:
     {
         CriticalBlock block(store.lockingsect);
         if (locked) {
-            LOG(MCerror, unknownJob, "Warning: transaction previously locked (lockRead)");
+            LOG(MCuserError, unknownJob, "Warning: transaction previously locked (lockRead)");
             dounlock();
         }
         int count = (int)transaction.ordinality();
@@ -273,7 +273,7 @@ public:
     {
         CriticalBlock block(store.lockingsect);
         if (locked) {
-            LOG(MCerror, unknownJob, "Warning: transaction previously locked (lockWrite)");
+            LOG(MCuserError, unknownJob, "Warning: transaction previously locked (lockWrite)");
             dounlock();
         }
         int count = (int)transaction.ordinality();
@@ -416,7 +416,7 @@ public:
         CriticalBlock block(sect);
         if (doremove(sender,transactionid)) {
             StringBuffer s;
-            LOG(MCerror, unknownJob, "Warning: duplicate transaction detected from %s", sender.getUrlStr(s).str());
+            LOG(MCuserError, unknownJob, "Warning: duplicate transaction detected from %s", sender.getUrlStr(s).str());
             exit(0);
         }
         p->setTransactionId(sender,transactionid);
@@ -524,7 +524,7 @@ public:
                         mb.clear();
                         if (!transaction->lockRead(timeout)) {
                             // locally lock packet items
-                            LOG(MCerror, unknownJob, "CPacketStoreServer: lockRead Timeout");
+                            LOG(MCuserError, unknownJob, "CPacketStoreServer: lockRead Timeout");
                             ret = PSRET_LOCK_TIMEOUT;
                             mb.append(ret);
                         }
@@ -555,7 +555,7 @@ public:
                             if (numservers>1) { // start chain;
                                 mb.reset();
                                 if (!comm->send(mb,(myrank+1)%numservers,MPTAG_PACKET_STORE_REQUEST,SECONDARY_SEND_TIMEOUT)) {
-                                    LOG(MCerror, unknownJob, "CPacketStoreServer: Timeout sending secondary put header (1)");
+                                    LOG(MCuserError, unknownJob, "CPacketStoreServer: Timeout sending secondary put header (1)");
                                     *retp = PSRET_SEND_FAIL;
                                     // error recovery TBD
                                 }
@@ -565,14 +565,14 @@ public:
                         }
                         if (*retp==PSRET_OK) {
                             if (!transaction->lockWrite(timeout)) {
-                                LOG(MCerror, unknownJob, "CPacketStoreServer: lockWrite Timeout"); // better tracing TBD
+                                LOG(MCuserError, unknownJob, "CPacketStoreServer: lockWrite Timeout"); // better tracing TBD
                                 *retp = PSRET_LOCK_TIMEOUT;
                             }
                         }
                         if (*term!=myrank) {            
                             mb.reset();
                             if (!comm->send(mb,(myrank+1)%numservers,MPTAG_PACKET_STORE_REQUEST,SECONDARY_SEND_TIMEOUT)) {
-                                LOG(MCerror, unknownJob, "CPacketStoreServer: Timeout sending secondary put header");
+                                LOG(MCuserError, unknownJob, "CPacketStoreServer: Timeout sending secondary put header");
                                 *retp = PSRET_SEND_FAIL;
                                 // error recovery TBD
                             }
@@ -594,7 +594,7 @@ public:
                         CDataPacketTransaction *p=putinprogress.dequeue(sender,transactionid,PUT_DEQUEUE_TIMEOUT);
                         if (!p) {
                             ret = PSRET_LOCK_TIMEOUT;
-                            LOG(MCerror, unknownJob, "CPacketStoreServer: Timeout dequeuing transaction");
+                            LOG(MCuserError, unknownJob, "CPacketStoreServer: Timeout dequeuing transaction");
                             // error handling TBD
                             mb.clear().append(ret);
                             break;
@@ -623,7 +623,7 @@ public:
                         if (*term!=next) { // chain
                             mb.reset();
                             if (!comm->send(mb,next,MPTAG_PACKET_STORE_REQUEST,SECONDARY_SEND_TIMEOUT)) {
-                                LOG(MCerror, unknownJob, "CPacketStoreServer: Timeout sending secondary put header");
+                                LOG(MCuserError, unknownJob, "CPacketStoreServer: Timeout sending secondary put header");
                                 // error recovery TBD
                             }
                         }                           

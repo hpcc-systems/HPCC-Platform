@@ -183,8 +183,8 @@ class StringBuffer;
 
 typedef enum
 {
-    // Target audience: sysadmins
-    // Purpose: Information useful for administering the platform, diagnosing errors and 
+    // Target audience: system admins
+    // Purpose: Information useful for administering the platform, diagnosing errors and
     //          resolving system issues
     MSGAUD_operator    = 0x01,
     // Target audience: ECL developers
@@ -194,11 +194,11 @@ typedef enum
     // Target audience: HPCC Platform developers
     // Purpose: Information related to errors relating to potential bugs or any unexpected errors that
     //          would not be resolvable by sysadmin or ECL developers. Additional information that may
-    //          be useful for improving the platform. 
+    //          be useful for improving the platform.
     MSGAUD_programmer  = 0x20,
     // TODO: to be removed
     MSGAUD_legacy      = 0x40,
-    // Target audience: persons involved in accounting and security audits 
+    // Target audience: persons involved in accounting and security audits
     MSGAUD_audit       = 0x80,
     // MSGAUD_all is to be used for filtering or specifying which messages are to be logged
     // (A message itself should not be logged as MSGAUD_all)

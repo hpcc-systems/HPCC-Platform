@@ -1298,7 +1298,7 @@ class MultiPacketHandler // TAG_SYS_MULTI
                 otherMhdr->getDetails(errorMsg).newline();
             }
             msg.getDetails(errorMsg);
-            LOG(MCerror, unknownJob, "MultiPacketHandler: protocol error (%d) %s", code, errorMsg.str());
+            LOG(MCuserError, unknownJob, "MultiPacketHandler: protocol error (%d) %s", code, errorMsg.str());
         }
         lastErrMs = ms;
     }

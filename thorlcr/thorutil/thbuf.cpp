@@ -321,7 +321,7 @@ public:
 #ifdef _DEBUG
         if (waiting)
         {
-            ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowBuffer::stop while nextRow waiting");
+            ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCuserWarning, "CSmartRowBuffer::stop while nextRow waiting");
             PrintStackReport();
         }
 #endif
@@ -416,7 +416,7 @@ public:
             waitflush = true;
             SpinUnblock unblock(lock);
             while (!waitflushsem.wait(1000*60))
-                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowBuffer::flush stalled");
+                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCuserWarning, "CSmartRowBuffer::flush stalled");
         }
     }
 
@@ -561,7 +561,7 @@ public:
         SpinBlock block(lock);
 #ifdef _DEBUG
         if (waitingout) {
-            ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowInMemoryBuffer::stop while nextRow waiting");
+            ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCuserWarning, "CSmartRowInMemoryBuffer::stop while nextRow waiting");
             PrintStackReport();
         }
 #endif
@@ -599,7 +599,7 @@ public:
             waitingin = true;
             SpinUnblock unblock(lock);
             while (!waitinsem.wait(1000*60))
-                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowInMemoryBuffer::flush stalled");
+                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCuserWarning, "CSmartRowInMemoryBuffer::flush stalled");
         }
     }
 

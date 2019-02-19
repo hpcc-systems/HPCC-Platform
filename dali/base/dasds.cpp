@@ -607,7 +607,7 @@ public:
 
     void closed(SessionId id)
     {
-        LOG(MCwarning, unknownJob, "Connection (%" I64F "x) was leaked by exiting client (%" I64F "x) path=%s", connectionId, id, queryXPath());
+        LOG(MCuserWarning, unknownJob, "Connection (%" I64F "x) was leaked by exiting client (%" I64F "x) path=%s", connectionId, id, queryXPath());
         aborted(id);
         subsid=0;
     }
@@ -3866,12 +3866,12 @@ int CSDSTransactionServer::run()
                     try { coven.reply(mb); }
                     catch (IJSOCK_Exception *e)
                     {
-                        LOG(MCwarning, unknownJob, e, "Failed to reply to client (CSDSTransactionServer thread)");
+                        LOG(MCuserWarning, unknownJob, e, "Failed to reply to client (CSDSTransactionServer thread)");
                         e->Release();
                     }
                     catch (IMP_Exception *e)
                     {
-                        LOG(MCwarning, unknownJob, e, "Failed to reply to client (CSDSTransactionServer thread)");
+                        LOG(MCuserWarning, unknownJob, e, "Failed to reply to client (CSDSTransactionServer thread)");
                         e->Release();
                     }
                 }
@@ -3883,7 +3883,7 @@ int CSDSTransactionServer::run()
         {
             StringBuffer s("Failure receiving message from client ");
             mb.getSender().getUrlStr(s);
-            LOG(MCwarning, unknownJob, e, s.str());
+            LOG(MCuserWarning, unknownJob, e, s.str());
             e->Release();
         }
     }
@@ -4199,7 +4199,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 {
                     StringBuffer s("Failed to establish locks to multiple paths: ");
                     getMConnectString(mConnect, s);
-                    LOG(MCwarning, unknownJob, e, s.str());
+                    LOG(MCuserWarning, unknownJob, e, s.str());
                     throw;
                 }
                 catch (DALI_CATCHALL)
@@ -4603,7 +4603,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
     }
     catch (IMP_Exception *e)
     {
-        LOG(MCwarning, unknownJob, e, "Failed to reply to client (processMessage)");
+        LOG(MCuserWarning, unknownJob, e, "Failed to reply to client (processMessage)");
         e->Release();
     }
     catch (IException *e)
@@ -4625,7 +4625,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         }
         catch (IException *e)
         {
-            LOG(MCwarning, unknownJob, e, "Failed to reply and failed to send reply error to client");
+            LOG(MCuserWarning, unknownJob, e, "Failed to reply and failed to send reply error to client");
             e->Release();
         }
     }
@@ -7163,19 +7163,19 @@ void CCovenSDSManager::stop()
 
 void CCovenSDSManager::restart(IException * e)
 {
-    LOG(MCwarning, unknownJob, "-------: stopping SDS server");
+    LOG(MCuserWarning, unknownJob, "-------: stopping SDS server");
     StringBuffer msg;
     msg.append("Unhandled exception, restarting: ").append(e->errorCode()).append(": ");
     e->errorMessage(msg);
     stop();
     connections.kill();
-    LOG(MCwarning, unknownJob, "-------: stopped");
-    LOG(MCwarning, unknownJob, "-------: saving current store . . . . . .");
+    LOG(MCuserWarning, unknownJob, "-------: stopped");
+    LOG(MCuserWarning, unknownJob, "-------: saving current store . . . . . .");
     saveStore();
-    LOG(MCwarning, unknownJob, "-------: store saved.");
-    LOG(MCwarning, unknownJob, "-------: restarting SDS server restart");
+    LOG(MCuserWarning, unknownJob, "-------: store saved.");
+    LOG(MCuserWarning, unknownJob, "-------: restarting SDS server restart");
     start();
-    LOG(MCwarning, unknownJob, "-------: restarted");
+    LOG(MCuserWarning, unknownJob, "-------: restarted");
 }
 
 CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *root, SessionId sessionId, unsigned mode, unsigned timeout, const char *xpath, CRemoteTreeBase *&tree, ConnectionId _connectionId, StringAttr *deltaPath, Owned<IPropertyTree> &deltaChange, Owned<CBranchChange> &branchChange, unsigned &additions)
@@ -8160,7 +8160,7 @@ void CCovenSDSManager::handleNodeNotify(notifications n, CServerRemoteTree &tree
     CSDSNotifyHandlerMapping *m = nodeNotifyHandlers.find(handlerKey);
     if (!m)
     {
-        LOG(MCwarning, unknownJob, "Unknown notify handler name \"%s\", handing event %s", handlerKey, notificationStr(n));
+        LOG(MCuserWarning, unknownJob, "Unknown notify handler name \"%s\", handing event %s", handlerKey, notificationStr(n));
         return;
     }
     switch (n)
@@ -8176,7 +8176,7 @@ void CCovenSDSManager::handleNodeNotify(notifications n, CServerRemoteTree &tree
             }
             break;
         default:
-            LOG(MCerror, unknownJob, "Unknown notification type (%d)", n);
+            LOG(MCuserError, unknownJob, "Unknown notification type (%d)", n);
             break;
     }
 }

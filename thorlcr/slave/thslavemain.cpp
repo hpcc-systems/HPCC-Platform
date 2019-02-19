@@ -208,7 +208,7 @@ bool UnregisterSelf(IException *e)
         serializeException(e, msg); // NB: allows exception to be NULL
         if (!queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION, 60*1000))
         {
-            LOG(MCerror, thorJob, "Failed to unregister slave : %s", slfStr.str());
+            LOG(MCuserError, thorJob, "Failed to unregister slave : %s", slfStr.str());
             return false;
         }
         LOG(MCdebugProgress, thorJob, "Unregistered slave : %s", slfStr.str());

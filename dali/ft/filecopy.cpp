@@ -232,7 +232,7 @@ void FileTransferThread::logIfRunning(StringBuffer &list)
     {
         StringBuffer url;
         ep.getUrlStr(url);
-        LOG(MCwarning, unknownJob, "Still waiting for slave %s", url.str());
+        LOG(MCuserWarning, unknownJob, "Still waiting for slave %s", url.str());
         if (list.length())
             list.append(',');
         list.append(url);
@@ -1915,7 +1915,7 @@ void FileSprayer::gatherMissingSourceTarget(IFileDescriptor * source)
                 }
                 else if (secondarySize != -1)
                 {
-                    LOG(MCwarning, unknownJob, "Replicate - primary and secondary copies have different sizes (%" I64F "d v %" I64F "d) for part %u", primarySize, secondarySize, idx);
+                    LOG(MCuserWarning, unknownJob, "Replicate - primary and secondary copies have different sizes (%" I64F "d v %" I64F "d) for part %u", primarySize, secondarySize, idx);
                     continue; // ignore copy
                 }
             }
@@ -1923,7 +1923,7 @@ void FileSprayer::gatherMissingSourceTarget(IFileDescriptor * source)
             {
                 if (primarySize == -1)
                 {
-                    LOG(MCwarning, unknownJob, "Replicate - neither primary or secondary copies exist for part %u", idx);
+                    LOG(MCuserWarning, unknownJob, "Replicate - neither primary or secondary copies exist for part %u", idx);
                     primarySize = 0;        // to stop later failure to gather the file size
                 }
                 continue; // ignore copy
@@ -2424,7 +2424,7 @@ void FileSprayer::pushParts()
 
 void FileSprayer::removeSource()
 {
-    LOG(MCwarning, job, "Source file removal not yet implemented");
+    LOG(MCuserWarning, job, "Source file removal not yet implemented");
 }
 
 bool FileSprayer::restorePartition()
@@ -2762,7 +2762,7 @@ void FileSprayer::waitForTransferSem(Semaphore & sem)
         unsigned timeSinceProgress = msTick() - lastProgressTick;
         if (timeSinceProgress > EXPECTED_RESPONSE_TIME)
         {
-            LOG(MCwarning, unknownJob, "No response from any slaves in last %d seconds.", timeSinceProgress/1000);
+            LOG(MCuserWarning, unknownJob, "No response from any slaves in last %d seconds.", timeSinceProgress/1000);
 
             CriticalBlock block(soFarCrit);
             StringBuffer list;

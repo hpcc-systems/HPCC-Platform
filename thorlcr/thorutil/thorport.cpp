@@ -82,7 +82,7 @@ unsigned short getExternalFixedPort(unsigned short masterBase, unsigned short ma
     case TPORT_debug:
         return machineBase+DEBUGPORT;
     }
-    LOG(MCerror,unknownJob,"getFixedPort: Unknown Port Kind!");
+    LOG(MCuserError,unknownJob,"getFixedPort: Unknown Port Kind!");
     return 0;
 }
 

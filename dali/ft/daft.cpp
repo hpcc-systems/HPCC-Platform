@@ -298,7 +298,7 @@ bool CDistributedFileSystem::compress(IDistributedFilePart * part)
         OwnedIFile file = getIFile(part, copy);
         if (!file->setCompression(true))
         {
-            LOG(MCerror, unknownJob, "Failed to compress file part %s", file->queryFilename());
+            LOG(MCuserError, unknownJob, "Failed to compress file part %s", file->queryFilename());
             ok = false;
         }
     }

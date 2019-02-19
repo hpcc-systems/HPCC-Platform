@@ -765,7 +765,7 @@ bool TransferServer::pull()
             unsigned __int64 progressOffset = curOutputOffset + curProgress.outputLength;
             if (progressOffset > size)
             {
-                LOG(MCwarning, unknownJob, "Recovery information seems to be invalid (%" I64F "d %" I64F "d) start copying from the beginning",
+                LOG(MCuserWarning, unknownJob, "Recovery information seems to be invalid (%" I64F "d %" I64F "d) start copying from the beginning",
                          size, progressOffset);
                 //reset any remaining partitions...
                 for (i = start; i < numPartitions; i++)

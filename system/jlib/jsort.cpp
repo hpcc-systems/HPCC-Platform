@@ -491,7 +491,7 @@ void parqsortvec(void **a, size32_t n, const ICompare & compare, unsigned numcpu
 #ifdef TESTPARSORT
     for (unsigned i=1;i<n;i++)
         if (compare.docompare(a[i-1],a[i])>0)
-            ERRLOG("parqsortvec failed %d",i);
+            IERRLOG("parqsortvec failed %d",i);
 #endif
 
 }

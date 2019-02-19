@@ -3380,12 +3380,12 @@ protected:
                     {
                         unsigned start = msTick();
                         if (!partfile->remove()&&(copy==0)&&!islazy) // only warn about missing primary files
-                            LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                            LOG(MCuserWarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
                         else
                         {
                             unsigned t = msTick()-start;
                             if (t>5*1000)
-                                LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                                LOG(MCuserWarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
                         }
                     }
                     catch (IException *e)
@@ -10876,10 +10876,10 @@ bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsigned short port,C
                         PROGLOG("Removed '%s'",partfile->queryFilename());
                         unsigned t = msTick()-start;
                         if (t>5*1000)
-                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            LOG(MCuserWarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
                     }
                     else
-                        LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                        LOG(MCuserWarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
 #else
                     if (partfile->exists())
                         PROGLOG("Would remove '%s'",partfile->queryFilename());

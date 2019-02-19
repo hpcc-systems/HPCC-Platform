@@ -101,13 +101,13 @@ static void stopServer()
     ForEachItemInRev(h,servers)
     {
         IDaliServer &server=servers.item(h);
-        LOG(MCprogress, unknownJob, "Suspending %d",h);
+        LOG(MCuserProgress, unknownJob, "Suspending %d",h);
         server.suspend();
     }
     ForEachItemInRev(i,servers)
     {
         IDaliServer &server=servers.item(i);
-        LOG(MCprogress, unknownJob, "Stopping %d",i);
+        LOG(MCuserProgress, unknownJob, "Stopping %d",i);
         server.stop();
     }
     closeCoven();

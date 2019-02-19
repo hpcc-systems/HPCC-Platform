@@ -35,6 +35,78 @@
 #include "jptree.hpp"
 #include "jsocket.hpp"
 
+/****************************************************************************************/
+/* LOG MESSAGE AUDIENCES:                                                               *
+ * MSGAUD_operator - This should be used when the message may be normally monitored by, *
+ *                   acted on, or resolved by sys admins. E.g. out of memory alerts,    *
+ *                   configuration issues, possible hardware/network related issues,    *
+ * MSGAUD_user     - Messages targetted at the end-users of HPCC (including ecl coders  *
+ *                   E.g. ECL code issues, workunit issues, data file related issues,   *
+ *                   authentication issues                                              *
+ * MSGAUD_programmer - Messages targetted at platform developers. E.g. debugging        *
+ *                   and tracing messages, internal errors that would not normally be   *
+ *                   resolved by sys admins or users, unexpected internal error         *
+ * MSGAUD_audit    - Audit messages related to file access and authentication           *
+ * ------------------------------------------------------------------------------------ *
+ * LOG MESSAGE CLASS:                                                                   */
+typedef enum
+{
+    MSGCLS_disaster    = 0x01, // Any unrecoverable or critical system errors
+    MSGCLS_error       = 0x02, // Recoverable/not critical Errors
+    MSGCLS_warning     = 0x04, // Warnings
+    MSGCLS_information = 0x08, // Config, environmental and internal status  info
+    MSGCLS_progress    = 0x10, // Progress of workunits. Status of file operations
+    MSGCLS_legacy      = 0x20, // Depreciated, TODO: remove
+    MSGCLS_all         = 0xFF  // Use as a filter to select all messages
+} LogMsgClass;
+/* ------------------------------------------------------------------------------------ *
+ * NOTES:                                                                               *
+ * Every message will have an audience and message class. The job number is optional    *
+ *                                                                                      *
+ * Standard categories of Audience + Message class are defined with LogMsgCategory.     *
+ *                                                                                      *
+ * The following are common logging functions (for common audience+message class)       *
+ * 1) For temporary logs whilst debugging (may be disabled for releases ):              *
+ *    DBGLOG([LogMsgCode,] format,..)          - uses MCdebugInfo                       *
+ *                                                                                      *
+ * 2) For fatal errors or unrecoverable errors:                                         *
+ *    DISLOG([LogMsgCode,] format,..)          - uses MCdisaster                        *
+ *                                                                                      *
+ * 3) For warning messages:                                                             *
+ *    (i) Messages for End-users (including ECL coders) should use:                     *
+ *        UWARNLOG([LogMsgCode,] format,..)    - uses MCuserWarning                     *
+ *                                                                                      *
+ *    (ii) Messages for SysAdmins:                                                      *
+ *        OWARNLOG([LogMsgCode,] format,..)    - uses MCoperatorWarning                 *
+ *                                                                                      *
+ *    (iii) Messages for platform developers:                                           *
+ *        IWARNLOG([LogMsgCode,] format,..)    - uses MCinternalWarning                 *
+ *                                                                                      *
+ * 4) For error messages:                                                               *
+ *    (i) Messages for End-users (including ECL coders) should use:                     *
+ *        UERRLOG([LogMsgCode,] format,..)     - uses MCuserError                       *
+ *                                                                                      *
+ *    (ii) Messages for SysAdmins:                                                      *
+ *        OERRLOG([LogMsgCode,] format,..)     - uses MCoperatorError                   *
+ *                                                                                      *
+ *    (iii) Messages for platform developers:                                           *
+ *        IERRLOG([LogMsgCode,] format,..)     - uses MCinternalError                   *
+ *                                                                                      *
+ * 5) For progress messages:                                                            *
+ *    PROGLOG([LogMsgCode,] format,..)         - uses MCuserProgress                    *
+ *                                                                                      *
+ * More general logging functions include:                                              *
+ * 1) Full control over the log message:                                                *
+ *   LOG(LogMsgCategory, [job,] [code,] format, ...)                                    *
+ * 2) Takes code, message, & audience from an exception, class is error                 *
+ *    EXCLOG(exception, prefix)                                                         *
+ * 3) More control over logging exceptions:                                             *
+ *    LOG(LogMsgCategory, [job,] exception [, prefix])                                  *
+ *                                                                                      *
+ * LogMsgCategory detail level may be modified from the default with a numeric paramter *
+ * For example as MCdebugInfo(50).                                                      *
+ ****************************************************************************************/
+
 
 // ENUMS, TYPEDEFS, CONSTS ETC.
 
@@ -43,8 +115,6 @@
 // When changing this enum, be sure to update (a) the string functions, and (b) NUM value
 
 typedef MessageAudience LogMsgAudience;
-
-#define MSGAUDNUM 8
 
 inline const char * LogMsgAudienceToVarString(LogMsgAudience audience)
 {
@@ -83,21 +153,6 @@ inline const char * LogMsgAudienceToFixString(LogMsgAudience audience)
         return("UNKNOWN  ");
     }
 }
-
-// When changing this enum, be sure to update (a) the string functions, and (b) NUM value
-
-typedef enum
-{
-    MSGCLS_disaster    = 0x01, /* Any unrecoverable or critical system errors */
-    MSGCLS_error       = 0x02, /* Recoverable/not critical Errors */
-    MSGCLS_warning     = 0x04, /* Warnings */
-    MSGCLS_information = 0x08, /* Config, environmental and internal status  info */
-    MSGCLS_progress    = 0x10, /* Progress of workunits. Status of file operations*/
-    MSGCLS_legacy      = 0x20, /* TODO: to be removed */
-    MSGCLS_all         = 0xFF  /* Use as a filter to select all messages */
-} LogMsgClass;
-
-#define MSGCLSNUM 7
 
 inline const char * LogMsgClassToVarString(LogMsgClass msgClass)
 {
@@ -243,7 +298,7 @@ inline const char * LogMsgFieldToString(LogMsgField field)
     }
 }
 
-inline unsigned LogMsgFieldFromAbbrev(char const * abbrev)
+inline unsigned LogMsgFieldFromAbbrev(const char * abbrev)
 {
     if(strnicmp(abbrev, "AUD", 3)==0)
         return MSGFIELD_audience;
@@ -292,7 +347,7 @@ inline unsigned LogMsgFieldFromAbbrev(char const * abbrev)
 
 // This function parses strings such as "AUD+CLS+DET+COD" and "STD+MIT-PID", and is used for fields attribute in XML handler descriptions
 
-inline unsigned LogMsgFieldsFromAbbrevs(char const * abbrevs)
+inline unsigned LogMsgFieldsFromAbbrevs(const char * abbrevs)
 {
     unsigned fields = 0;
     bool negate = false;
@@ -325,7 +380,7 @@ inline unsigned LogMsgFieldsFromAbbrevs(char const * abbrevs)
     return fields;
 }
 
-inline char const * msgPrefix(LogMsgClass msgClass)
+inline const char * msgPrefix(LogMsgClass msgClass)
 {
     switch(msgClass)
     {
@@ -606,7 +661,8 @@ private:
     LogMsgComponentReporter * reporter;
     char const *              file;
     unsigned                  line;
-};
+};// Extern standard categories and unknown jobInfo
+
 
 // FUNCTIONS, DATA, AND MACROS
 
@@ -668,17 +724,14 @@ extern jlib_decl void attachManyLogMsgMonitorsFromPTree(IPropertyTree * tree);  
 
 extern jlib_decl const LogMsgCategory MCdisaster;
 extern jlib_decl const LogMsgCategory MCuserError;
-#define MCerror MCuserError
 extern jlib_decl const LogMsgCategory MCoperatorError;
 extern jlib_decl const LogMsgCategory MCinternalError;
 extern jlib_decl const LogMsgCategory MCuserWarning;
-#define MCwarning MCuserWarning
 extern jlib_decl const LogMsgCategory MCoperatorWarning;
 extern jlib_decl const LogMsgCategory MCinternalWarning;
 // MCexception(e, cls) is now a convenient function to get a message category with its audience taken from an exception
 inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error) { return LogMsgCategory((e)->errorAudience(),cls); }
 extern jlib_decl const LogMsgCategory MCuserProgress;
-#define MCprogress MCuserProgress
 extern jlib_decl const LogMsgCategory MCoperatorProgress;
 extern jlib_decl const LogMsgCategory MCdebugProgress;
 extern jlib_decl const LogMsgCategory MCdebugInfo;
@@ -785,8 +838,8 @@ inline void VALOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgC
 #define STRLOG(category, job, expr) LOGMSGREPORTER->report(category, job, #expr"='%s'", expr)
 #define TOSTRLOG(category, job, prefix, func) { if (!REJECTLOG(category)) { StringBuffer buff; func(buff); LOGMSGREPORTER->report(category, job, prefix"'%s'", buff.str()); } }
 
-inline void DBGLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
-inline void DBGLOG(char const * format, ...)
+inline void DBGLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
+inline void DBGLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -794,8 +847,8 @@ inline void DBGLOG(char const * format, ...)
     va_end(args);
 }
 
-inline void DISLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
-inline void DISLOG(char const * format, ...)
+inline void DISLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
+inline void DISLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -803,8 +856,8 @@ inline void DISLOG(char const * format, ...)
     va_end(args);
 }
 
-inline void ERRLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
-inline void ERRLOG(char const * format, ...) 
+inline void UERRLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
+inline void UERRLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -812,8 +865,11 @@ inline void ERRLOG(char const * format, ...)
     va_end(args);
 }
 
-inline void OERRLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
-inline void OERRLOG(char const * format, ...)
+// TODO: Remove the following #define once all ERRLOG has been removed from code
+#define ERRLOG UERRLOG
+
+inline void OERRLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
+inline void OERRLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -821,8 +877,8 @@ inline void OERRLOG(char const * format, ...)
     va_end(args);
 }
 
-inline void IERRLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
-inline void IERRLOG(char const * format, ...)
+inline void IERRLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
+inline void IERRLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -830,8 +886,8 @@ inline void IERRLOG(char const * format, ...)
     va_end(args);
 }
 
-inline void WARNLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
-inline void WARNLOG(char const * format, ...)
+inline void UWARNLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
+inline void UWARNLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -839,17 +895,29 @@ inline void WARNLOG(char const * format, ...)
     va_end(args);
 }
 
-inline void PROGLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
-inline void PROGLOG(char const * format, ...)
+// TODO: Remove the following #define once all WARNLOG has been removed from code
+#define WARNLOG UWARNLOG
+
+inline void OWARNLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
+inline void OWARNLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCprogress, unknownJob, format, args);
+    VALOG(MCoperatorWarning, unknownJob, format, args);
     va_end(args);
 }
 
-inline void DBGLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
-inline void DBGLOG(LogMsgCode code, char const * format, ...)
+inline void PROGLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
+inline void PROGLOG(const char * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    VALOG(MCuserProgress, unknownJob, format, args);
+    va_end(args);
+}
+
+inline void DBGLOG(LogMsgCode code, const char * format, ...) __attribute__((format(printf, 2, 3)));
+inline void DBGLOG(LogMsgCode code, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -857,8 +925,8 @@ inline void DBGLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
-inline void DISLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
-inline void DISLOG(LogMsgCode code, char const * format, ...)
+inline void DISLOG(LogMsgCode code, const char * format, ...) __attribute__((format(printf, 2, 3)));
+inline void DISLOG(LogMsgCode code, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -866,8 +934,8 @@ inline void DISLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
-inline void ERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
-inline void ERRLOG(LogMsgCode code, char const * format, ...)
+inline void UERRLOG(LogMsgCode code, const char * format, ...) __attribute__((format(printf, 2, 3)));
+inline void UERRLOG(LogMsgCode code, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -875,8 +943,21 @@ inline void ERRLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
-inline void IERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
-inline void IERRLOG(LogMsgCode code, char const * format, ...)
+// Remove the following #define once all ERRLOG has been removed from code
+#define ERRLOG UERRLOG 
+
+inline void OERRLOG(LogMsgCode code, const char * format, ...) __attribute__((format(printf, 2, 3)));
+inline void OERRLOG(LogMsgCode code, const char * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    VALOG(MCoperatorError, unknownJob, code, format, args);
+    va_end(args);
+}
+
+
+inline void IERRLOG(LogMsgCode code, const char * format, ...) __attribute__((format(printf, 2, 3)));
+inline void IERRLOG(LogMsgCode code, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -884,8 +965,8 @@ inline void IERRLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
-inline void WARNLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
-inline void WARNLOG(LogMsgCode code, char const * format, ...)
+inline void UWARNLOG(LogMsgCode code, const char * format, ...) __attribute__((format(printf, 2, 3)));
+inline void UWARNLOG(LogMsgCode code, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -893,18 +974,30 @@ inline void WARNLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
-inline void PROGLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
-inline void PROGLOG(LogMsgCode code, char const * format, ...)
+inline void PROGLOG(LogMsgCode code, const char * format, ...) __attribute__((format(printf, 2, 3)));
+inline void PROGLOG(LogMsgCode code, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCprogress, unknownJob, code, format, args);
+    VALOG(MCuserProgress, unknownJob, code, format, args);
     va_end(args);
 }
 
 inline IException *DBGLOG(IException *except, const char *prefix=NULL)
 {
     LOG(MCdebugInfo, except, prefix);
+    return except;
+}
+
+inline IException *UERRLOG(IException *except, const char *prefix=NULL)
+{
+    LOG(MCuserError, except, prefix);
+    return except;
+}
+
+inline IException *OERRLOG(IException *except, const char *prefix=NULL)
+{
+    LOG(MCoperatorError, except, prefix);
     return except;
 }
 
@@ -948,39 +1041,7 @@ extern jlib_decl void UseSysLogForOperatorMessages(bool use=true);
 
 extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char const * msg,...) __attribute__((format(printf, 3, 4)));
 
-/***************************************************************************/
-/* The simplest logging commands are:                                      */
-/*   DBGLOG(format, ...) [for temporary logs while debugging, MCdebugInfo] */
-/*   DISLOG(format, ...) [for disasters, MCdisaster]                       */
-/*   ERRLOG(format, ...) [for errors reported to user, MCuserError]        */
-/*   OERRLOG(format, ...) [for errors reported to operator]                */
-/*   IERRLOG(format, ...) [for errors reported to internal & programmer]   */
-/*   WARNLOG(format, ...) [for warnings reported to user, MCuserWarning]   */
-/*   PROGLOG(format, ...) [for progress logs to user, MCprogress]          */
-/* There are equivalent commands which take a LogMsgCode:                  */
-/*   DBGLOG(code, format, ...)                                             */
-/*   DISLOG(code, format, ...)                                             */
-/*   ERRLOG(code, format, ...)                                             */
-/*   OERRLOG(code, format, ...)                                            */
-/*   IERRLOG(code, format, ...)                                            */
-/*   WARNLOG(code, format, ...)                                            */
-/*   PROGLOG(code, format, ...)                                            */
-/* This takes code, message, & audience from an exception, class is error  */
-/*   EXCLOG(exception, prefix)                                             */
-/* The more general logging command has the following forms:               */
-/*   LOG(category, format, ...)                                            */
-/*   LOG(category, code, format, ...)                                      */
-/*   LOG(category, job, format, ...)                                       */
-/*   LOG(category, job, code, format, ...)                                 */
-/* In the first and second cases, the common unknownJob is used.           */
-/* There are also forms to log exceptions:                                 */
-/*   LOG(category, exception)                                              */
-/*   LOG(category, exception, prefix)                                      */
-/*   LOG(category, job, exception)                                         */
-/*   LOG(category, job, exception, prefix)                                 */
-/* The off-the-shelf categories, MCdebugInfo et al, are listed above.      */
-/* Their detail level can be modified from the default as MCdebugInfo(50). */
-/***************************************************************************/
+
 
 interface jlib_decl IContextLogger : extends IInterface
 {

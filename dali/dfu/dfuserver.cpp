@@ -251,7 +251,7 @@ int main(int argc, const char *argv[])
             engine->joinListeners();
             if (replserver.get())
                 replserver->stopServer();
-            LOG(MCprogress, unknownJob, "Exiting");
+            LOG(MCuserProgress, unknownJob, "Exiting");
         }
 
     }

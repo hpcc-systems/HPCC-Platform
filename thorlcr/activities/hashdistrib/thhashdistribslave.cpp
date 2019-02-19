@@ -2274,7 +2274,7 @@ public:
             GetTempName(tempname,"hdprop",true); // use alt temp dir
             tempfile.setown(createIFile(tempname.str()));
             {
-                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "REDISTRIBUTE size unknown, spilling to disk");
+                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCuserWarning, "REDISTRIBUTE size unknown, spilling to disk");
                 MemoryAttr ma;
                 if (activity->getOptBool(THOROPT_COMPRESS_SPILLS, true))
                 {

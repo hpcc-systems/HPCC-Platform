@@ -328,7 +328,7 @@ public:
             {
                 if (e->errorCode()!=MPERR_link_closed) 
                     throw;
-                ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "WARNING: MPERR_link_closed in SortDone");
+                ActPrintLogEx(&queryContainer(), thorlog_null, MCuserWarning, "WARNING: MPERR_link_closed in SortDone");
                 e->Release();
             }
             ::Release(imaster);

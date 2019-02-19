@@ -529,7 +529,7 @@ int main( int argc, char *argv[]  )
     StringBuffer daliServer;
     if (!globals->getProp("@DALISERVERS", daliServer)) 
     {
-        LOG(MCerror, thorJob, "No Dali server list specified in THOR.XML (DALISERVERS=iport,iport...)\n");
+        LOG(MCuserError, thorJob, "No Dali server list specified in THOR.XML (DALISERVERS=iport,iport...)\n");
         return 0; // no recycle
     }
 

@@ -565,7 +565,7 @@ static bool setShareLock(int fd,IFSHmode share)
             return true;
     } while (errno==EINTR);
     if ((errno!=EAGAIN)&&(errno!=EACCES))
-        ERRLOG("setShareLock failure %d, mode %d", errno,(int)share);
+        OERRLOG("setShareLock failure %d, mode %d", errno,(int)share);
     return (share==IFSHfull); // always return true for full
 }
 
@@ -1270,7 +1270,7 @@ static bool connectToExternalDrive(const char * const filename)
                 err = WNetAddConnection2(&res, password.str(), username.str(), 0);
             }
             if (err) 
-                ERRLOG("WNetAddConnection2(%d): connecting to %s, User: %s",err,res.lpRemoteName,username.str());
+                IERRLOG("WNetAddConnection2(%d): connecting to %s, User: %s",err,res.lpRemoteName,username.str());
         }
         if (err==0)
             return true;
@@ -1717,7 +1717,7 @@ public:
         if (ret==(size32_t)-1)
         {
             PrintStackReport();
-            ERRLOG("errno(%d): %" I64F "d %u",errno,pos,len);
+            IERRLOG("errno(%d): %" I64F "d %u",errno,pos,len);
             throw makeErrnoException(errno, "CFileIO::write");
         }
         if (ret<len)
@@ -3191,7 +3191,7 @@ StringBuffer &createUNCFilename(const char * filename, StringBuffer &UNC, bool u
         if (*filename != '/')
         {
             if (!GetCurrentDirectory(sizeof(buf), buf)) {
-                ERRLOG("createUNCFilename: Current directory path too big, bailing out");
+                OERRLOG("createUNCFilename: Current directory path too big, bailing out");
                 throwUnexpected();
             }
             UNC.append(buf).append("/");
@@ -4577,7 +4577,7 @@ void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
         if (isLocal()&&!isAbsolutePath(filename)) {
             char dir[_MAX_PATH];
             if (!GetCurrentDirectory(sizeof(dir), dir)) {
-                ERRLOG("RemoteFilename::setPath: Current directory path too big, bailing out");
+                OERRLOG("RemoteFilename::setPath: Current directory path too big, bailing out");
                 throwUnexpected();
             }
             if (*filename==PATHSEPCHAR) {
@@ -5754,7 +5754,7 @@ private:
                 if (rd!=tord) {
                     eoinput = true;
                     PrintStackReport();
-                    ERRLOG("CFileSerialStream::get read past end of stream.1 (%u,%u) %s",rd,tord,eoinput?"eoinput":"");
+                    OERRLOG("CFileSerialStream::get read past end of stream.1 (%u,%u) %s",rd,tord,eoinput?"eoinput":"");
                     throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
                 }
                 len -= rd;
@@ -5770,7 +5770,7 @@ private:
             }
         }
         PrintStackReport();
-        ERRLOG("CFileSerialStream::get read past end of stream.2 (%u,%u) %s",len,rd,eoinput?"eoinput":"");
+        OERRLOG("CFileSerialStream::get read past end of stream.2 (%u,%u) %s",len,rd,eoinput?"eoinput":"");
         throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
     }
 
@@ -6080,7 +6080,7 @@ public:
         memsize_t left = mmsize-mmofs;
         if (len>left) {
             PrintStackReport();
-            ERRLOG("CFileSerialStream::get read past end of stream.3 (%u,%u)",(unsigned)len,(unsigned)left);
+            OERRLOG("CFileSerialStream::get read past end of stream.3 (%u,%u)",(unsigned)len,(unsigned)left);
             throw MakeStringException(-1,"CMemoryMappedSerialStream::get read past end of stream (%u,%u)",(unsigned)len,(unsigned)left);
         }
         if (tally)
@@ -6142,7 +6142,7 @@ public:
     virtual void get(size32_t len, void * ptr) override
     {
         if (len>buffer.remaining()) {
-            ERRLOG("CMemoryBufferSerialStream::get read past end of stream.4(%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
+            OERRLOG("CMemoryBufferSerialStream::get read past end of stream.4(%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
             throw MakeStringException(-1,"CMemoryBufferSerialStream::get read past end of stream (%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
         }
         const void * data = buffer.readDirect(len);
@@ -6788,7 +6788,7 @@ jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blan
 void removeFileTraceIfFail(const char * filename)
 {
     if (remove(filename) != 0)
-        DBGLOG("Could not remove file '%s'", filename);
+        OWARNLOG("Could not remove file '%s'", filename);
 }
 
 timestamp_type getTimeStamp(IFile * file)

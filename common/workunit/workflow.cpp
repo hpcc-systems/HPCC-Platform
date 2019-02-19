@@ -604,7 +604,7 @@ private:
 //-------------------------------------------------------------------------------------------------
 
 #ifdef TRACE_WORKFLOW
-const LogMsgCategory MCworkflow = MCprogress(50);       // Category used to inform enqueue/start/finish of workflow item
+const LogMsgCategory MCworkflow = MCuserProgress(50);       // Category used to inform enqueue/start/finish of workflow item
 #endif
 
 WorkflowMachine::WorkflowMachine()

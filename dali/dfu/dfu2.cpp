@@ -74,7 +74,7 @@ void cmdServer(int argc, const char *argv[])
 
 bool actionOnAbort()
 {
-    LOG(MCprogress, unknownJob, "Exiting");
+    LOG(MCuserProgress, unknownJob, "Exiting");
     closeEnvironment();
     closedownClientProcess();
     releaseAtoms();

@@ -156,7 +156,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             }
             else if (strncmp(command,"quit", 4) == 0)
             {
-                LOG(MCwarning, thorJob, "ABORT detected from user during debug session");
+                LOG(MCuserWarning, thorJob, "ABORT detected from user during debug session");
                 Owned<IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort during debug session");
                 job->fireException(e);
                 response.appendf("<quit state='quit'/>");
@@ -758,7 +758,7 @@ void CJobManager::setWuid(const char *wuid, const char *cluster)
     }
     catch (CATCHALL)
     {
-        FLLOG(MCerror, thorJob, "WARNING: Failed to set wuid in SDS: Unknown error");
+        FLLOG(MCuserError, thorJob, "WARNING: Failed to set wuid in SDS: Unknown error");
     }
 }
 

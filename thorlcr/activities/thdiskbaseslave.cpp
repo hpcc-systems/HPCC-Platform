@@ -403,8 +403,8 @@ void CDiskWriteSlaveActivityBase::removeFiles()
         return;
     Owned<IFile> primary = createIFile(fName);
     try { primary->remove(); }
-    catch (IException *e) { ActPrintLogEx(&queryContainer(), e, thorlog_null, MCwarning, "Failed to remove file: %s", fName.get()); }
-    catch (CATCHALL) { ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "Failed to remove: %s", fName.get()); }
+    catch (IException *e) { ActPrintLogEx(&queryContainer(), e, thorlog_null, MCuserWarning, "Failed to remove file: %s", fName.get()); }
+    catch (CATCHALL) { ActPrintLogEx(&queryContainer(), thorlog_null, MCuserWarning, "Failed to remove: %s", fName.get()); }
 }
 
 void CDiskWriteSlaveActivityBase::close()
@@ -448,7 +448,7 @@ void CDiskWriteSlaveActivityBase::close()
     }
     catch (IException *e)
     { 
-        ActPrintLogEx(&queryContainer(), e, thorlog_null, MCwarning, "Error closing file: %s", fName.get());
+        ActPrintLogEx(&queryContainer(), e, thorlog_null, MCuserWarning, "Error closing file: %s", fName.get());
         abortSoon = true;
         removeFiles();
         throw e;

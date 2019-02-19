@@ -46,7 +46,7 @@ static CriticalSection SDScrit;
 #define CHECK_CONNECTED(XSTR)                                                                                        \
     if (!connected)                                                                                                   \
     {                                                                                                               \
-        LOG(MCerror, unknownJob, XSTR": Closed connection (xpath=%s, sessionId=%" I64F "d)", xpath.get(), sessionId);       \
+        LOG(MCuserError, unknownJob, XSTR": Closed connection (xpath=%s, sessionId=%" I64F "d)", xpath.get(), sessionId);       \
         return;                                                                                                     \
     }
 

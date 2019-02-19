@@ -959,7 +959,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             if (mins >= jobS->queryActInitWaitTimeMins())
                 throw MakeStringException(0, "Timed out after %u minutes, waiting to receive actinit data for graph: %" GIDPF "u", mins, graphId);
 
-            GraphPrintLogEx(this, thorlog_null, MCwarning, "Waited %u minutes for activity initialization message (Master may be blocked on a file lock?).", mins);
+            GraphPrintLogEx(this, thorlog_null, MCuserWarning, "Waited %u minutes for activity initialization message (Master may be blocked on a file lock?).", mins);
         }
         replyTag = msg.getReplyTag();
         msg.read(len);

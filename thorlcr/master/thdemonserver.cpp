@@ -70,7 +70,7 @@ private:
         catch (IException *e)
         {
             StringBuffer s;
-            LOG(MCwarning, unknownJob, "Failed to update progress information: %s", e->errorMessage(s).str());
+            LOG(MCuserWarning, unknownJob, "Failed to update progress information: %s", e->errorMessage(s).str());
             e->Release();
         }
     }
@@ -137,7 +137,7 @@ private:
             catch (IException *E)
             {
                 StringBuffer s;
-                LOG(MCwarning, unknownJob, "Failed to update progress information: %s", E->errorMessage(s).str());
+                LOG(MCuserWarning, unknownJob, "Failed to update progress information: %s", E->errorMessage(s).str());
                 E->Release();
             }
         }
@@ -169,7 +169,7 @@ private:
         catch (IException *e)
         {
             StringBuffer s;
-            LOG(MCwarning, unknownJob, "Failed to update progress information: %s", e->errorMessage(s).str());
+            LOG(MCuserWarning, unknownJob, "Failed to update progress information: %s", e->errorMessage(s).str());
             e->Release();
         }
     }

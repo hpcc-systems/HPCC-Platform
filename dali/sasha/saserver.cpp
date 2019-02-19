@@ -79,7 +79,7 @@ static void stopServer()
     ForEachItemInRev(i,servers)
     {
         ISashaServer &server=servers.item(i);
-        LOG(MCprogress, unknownJob, "Stopping %d",i);
+        LOG(MCuserProgress, unknownJob, "Stopping %d",i);
         server.stop();
     }
     ForEachItemInRev(j,servers)
@@ -91,10 +91,10 @@ static void stopServer()
 
 static bool actionOnAbort()
 {
-    LOG(MCprogress, unknownJob, "Stop signalled");
+    LOG(MCuserProgress, unknownJob, "Stop signalled");
     if (stopped)
     {
-        LOG(MCprogress, unknownJob, "Previously marked stopped. Killing process..");
+        LOG(MCuserProgress, unknownJob, "Previously marked stopped. Killing process..");
         queryLogMsgManager()->flushQueue(10*1000);
 #ifdef _WIN32
         TerminateProcess(GetCurrentProcess(), 1);
@@ -114,7 +114,7 @@ void requestStop(IException *e)
 {
     if (e)
         LOG(MCoperatorError, unknownJob, e, "SASERVER: Unexpected exception, saserver terminating");
-    LOG(MCprogress, unknownJob, "Stop requested");
+    LOG(MCuserProgress, unknownJob, "Stop requested");
     stopSem.signal();
 }
 

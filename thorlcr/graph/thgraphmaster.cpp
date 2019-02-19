@@ -1689,7 +1689,7 @@ bool CJobMaster::go()
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 if (factory->isAborting(wu.queryWuid()))
                 {
-                    LOG(MCwarning, thorJob, "ABORT detected from user");
+                    LOG(MCuserWarning, thorJob, "ABORT detected from user");
 
                     unsigned code = TE_WorkUnitAborting; // default
                     if (job.getOptBool("dumpInfoOnUserAbort", false))
@@ -1926,7 +1926,7 @@ bool CJobMaster::fireException(IException *e)
     {
         case tea_warning:
         {
-            LOG(MCwarning, thorJob, e);
+            LOG(MCuserWarning, thorJob, e);
             ErrorSeverity mappedSeverity = workunit->getWarningSeverity(e->errorCode(), SeverityWarning);
             if (mappedSeverity != SeverityIgnore)
                 reportExceptionToWorkunit(*workunit, e);
@@ -1934,7 +1934,7 @@ bool CJobMaster::fireException(IException *e)
         }
         default:
         {
-            LOG(MCerror, thorJob, e);
+            LOG(MCuserError, thorJob, e);
             queryJobManager().replyException(*this, e); 
             fatalHandler->inform(LINK(e));
             try { abort(e); }
@@ -2176,7 +2176,7 @@ bool CMasterGraph::fireException(IException *e)
     {
         case tea_warning:
         {
-            LOG(MCwarning, thorJob, e);
+            LOG(MCuserWarning, thorJob, e);
             ErrorSeverity mappedSeverity = job.queryWorkUnit().getWarningSeverity(e->errorCode(), SeverityWarning);
             if (mappedSeverity != SeverityIgnore)
                 reportExceptionToWorkunit(job.queryWorkUnit(), e);
@@ -2184,7 +2184,7 @@ bool CMasterGraph::fireException(IException *e)
         }
         default:
         {
-            LOG(MCerror, thorJob, e);
+            LOG(MCuserError, thorJob, e);
             if (NULL != fatalHandler)
                 fatalHandler->inform(LINK(e));
             if (owner)

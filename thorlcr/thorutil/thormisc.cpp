@@ -673,7 +673,7 @@ public:
                     catch (IException *e)
                     {
                         if (log)
-                            FLLOG(MCwarning, thorJob, e);
+                            FLLOG(MCuserWarning, thorJob, e);
                         e->Release();
                     }
                 }
@@ -774,7 +774,7 @@ void ensureDirectoryForFile(const char *fName)
 // Not recommended to be used from slaves as tend to be one or more trying at same time.
 void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity)
 {
-    LOG(MCwarning, thorJob, e, "Reporting exception to WU");
+    LOG(MCuserWarning, thorJob, e, "Reporting exception to WU");
     Owned<IWorkUnit> wu = &workunit.lock();
     if (wu)
     {

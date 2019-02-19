@@ -190,7 +190,7 @@ public:
         else
             m_address.getIpText(strIP);
 
-        LOG(MCprogress, "binding %s, on %s:%d", name, strIP.str(), port);
+        LOG(MCuserProgress, "binding %s, on %s:%d", name, strIP.str(), port);
 
         CriticalBlock cb(m_BindingCritSect);
         ISocket **socketp = m_srvSockets.getValue(port);
@@ -215,11 +215,11 @@ public:
             }
             m_socketCleanup.append(*socket);
 
-            LOG(MCprogress, "  created server socket(%d)", socket->OShandle());
+            LOG(MCuserProgress, "  created server socket(%d)", socket->OShandle());
 
             m_srvSockets.setValue(port, socket);
             add(socket, SELECTMODE_READ | SELECTMODE_WRITE, dynamic_cast<ISocketSelectNotify*>(&protocol));
-            LOG(MCprogress, "  Socket(%d) listening.", socket->OShandle());
+            LOG(MCuserProgress, "  Socket(%d) listening.", socket->OShandle());
         }
 
         if (socket)
@@ -350,7 +350,7 @@ public:
 //IAbortHandler
     bool onAbort()
     {
-        LOG(MCprogress, "ESP Abort Handler...");
+        LOG(MCuserProgress, "ESP Abort Handler...");
         m_srv->exitESP();
         return false;
     }

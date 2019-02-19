@@ -105,14 +105,14 @@ class CThorBackupHandler : public CSimpleInterface, implements IBackup, implemen
             {
                 StringBuffer errMsg;
                 if (!currentAbort)
-                    LOG(MCwarning, thorJob, "%s", errMsg.append("Backup inconsistency detected, backup aborted: ").append(item->dst).str());
+                    LOG(MCuserWarning, thorJob, "%s", errMsg.append("Backup inconsistency detected, backup aborted: ").append(item->dst).str());
                 backupIFile->remove();
             }
         }
         catch (IException *e)
         {
             StringBuffer errMsg("copying: ");
-            LOG(MCwarning, thorJob, e, errMsg.append(item->src));
+            LOG(MCuserWarning, thorJob, e, errMsg.append(item->src));
             try { backupIFile->remove(); } catch (IException *e) { EXCLOG(e); e->Release(); }
             if (!ignoreError)
                 throw;

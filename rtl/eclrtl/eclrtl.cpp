@@ -4155,7 +4155,7 @@ ECLRTL_API unsigned rtlSleep(unsigned delay)
 
 ECLRTL_API unsigned rtlDisplay(unsigned len, const char * src)
 {
-    LOG(MCprogress, unknownJob, "%.*s", len, src);
+    LOG(MCuserProgress, unknownJob, "%.*s", len, src);
     return 0;
 }
 

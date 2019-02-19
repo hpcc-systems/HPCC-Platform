@@ -81,10 +81,10 @@ static const char XMLHEADER[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 typedef IEclProcess* (* EclProcessFactory)();
 
-const LogMsgCategory MCsetresult = MCprogress(100);     // Category used to inform when setting result
-const LogMsgCategory MCgetresult = MCprogress(200);     // Category used to inform when getting result
-const LogMsgCategory MCresolve = MCprogress(100);       // Category used to inform during name resolution
-const LogMsgCategory MCrunlock = MCprogress(100);      // Category used to inform about run lock progress
+const LogMsgCategory MCsetresult = MCuserProgress(100);     // Category used to inform when setting result
+const LogMsgCategory MCgetresult = MCuserProgress(200);     // Category used to inform when getting result
+const LogMsgCategory MCresolve = MCuserProgress(100);       // Category used to inform during name resolution
+const LogMsgCategory MCrunlock = MCuserProgress(100);      // Category used to inform about run lock progress
 
 Owned<IPropertyTree> agentTopology;
 
@@ -3582,7 +3582,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             }
             else
             {
-                LOG(MCerror, "Unknown workunit %s", wuid.str());
+                LOG(MCuserError, "Unknown workunit %s", wuid.str());
                 try
                 {
                     descheduleNonexistentWorkUnit(wuid.str());

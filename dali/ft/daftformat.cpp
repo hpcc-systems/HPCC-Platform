@@ -80,7 +80,7 @@ void CPartitioner::commonCalcPartitions()
 {
     if (thisSize == 0)
     {
-        LOG(MCwarning, unknownJob, "Unexpected: Part %s has zero length!", fullPath.get());
+        LOG(MCuserWarning, unknownJob, "Unexpected: Part %s has zero length!", fullPath.get());
         return;
     }
 

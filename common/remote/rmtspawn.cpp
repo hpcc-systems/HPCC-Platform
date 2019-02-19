@@ -456,7 +456,7 @@ void CRemoteSlave::run(int argc, char * argv[])
                     }
                     catch (RELEASE_CATCH_ALL)
                     {
-                        LOG(MCwarning, unknownJob, "Server seems to have crashed - close done gracefully");
+                        LOG(MCuserWarning, unknownJob, "Server seems to have crashed - close done gracefully");
                         error.setown(MakeStringException(999, "Server seems to have crashed - close done gracefully"));
                     }
 

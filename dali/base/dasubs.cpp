@@ -313,7 +313,7 @@ public:
                 coven.reply(mb);
                 unsigned telapsed=msTick()-tstart;
                 if (telapsed>1000)
-                    LOG(MCerror, unknownJob, "MSR_REMOVE_SUBSCRIPTION_PRIMARY.1 took %dms",telapsed);
+                    LOG(MCuserError, unknownJob, "MSR_REMOVE_SUBSCRIPTION_PRIMARY.1 took %dms",telapsed);
             }
             break;
         }
@@ -352,7 +352,7 @@ public:
         }
         unsigned telapsed=msTick()-tstart;
         if (telapsed>1000)
-            LOG(MCerror, unknownJob, "CDaliPublisherServer::unlink took %dms",telapsed);
+            LOG(MCuserError, unknownJob, "CDaliPublisherServer::unlink took %dms",telapsed);
     }
     
     void onClose(SocketEndpoint &ep)
@@ -370,7 +370,7 @@ public:
             }
             unsigned telapsed=msTick()-tstart;
             if (telapsed>1000)
-                LOG(MCerror, unknownJob, "CDaliPublisherServer::onClose took %dms",telapsed);
+                LOG(MCuserError, unknownJob, "CDaliPublisherServer::onClose took %dms",telapsed);
         }
     }
 
@@ -411,7 +411,7 @@ public:
         }
         unsigned telapsed=msTick()-tstart;
         if (telapsed>1000)
-            LOG(MCerror, unknownJob, "CDaliPublisherServer::getSubscriptionList took %dms",telapsed);
+            LOG(MCuserError, unknownJob, "CDaliPublisherServer::getSubscriptionList took %dms",telapsed);
         return buf;
     }
 

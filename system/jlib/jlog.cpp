@@ -851,7 +851,7 @@ FileLogMsgHandler::FileLogMsgHandler(const char * _filename, const char * _heade
         handle = getNullHandle();
         StringBuffer err;
         err.appendf("LOGGING: could not open file '%s' for output",filename.get());
-        ERRLOG("%s",err.str()); // make sure doesn't get lost!
+        OERRLOG("%s",err.str()); // make sure doesn't get lost!
         throw MakeStringException(3000,"%s",err.str()); // 3000: internal error
     }
     if(headerText) fprintf(handle, "--- %s ---\n", (const char *)headerText);
@@ -1024,7 +1024,7 @@ void RollingFileLogMsgHandler::doRollover(bool daily, const char *forceName) con
     if(!handle) 
     {
         handle = getNullHandle();
-        DBGLOG("RollingFileLogMsgHandler::doRollover : could not open log file %s for output", filename.str());
+        OWARNLOG("RollingFileLogMsgHandler::doRollover : could not open log file %s for output", filename.str());
         // actually this is pretty fatal
     }
 }
@@ -2355,7 +2355,7 @@ bool CSysLogEventLogger::win32Report(unsigned eventtype, unsigned category, unsi
         }
         hEventLog = RegisterEventSource(NULL,"Seisint");
         if (!hEventLog) {
-            ERRLOG("reportEventLog: Could not register Seisint event source");
+            OERRLOG("reportEventLog: Could not register Seisint event source");
             hEventLog=(HANDLE)-1;
             return false;
         }
@@ -2798,7 +2798,7 @@ public:
             if (!logDir.length())
             {
                 appendCurrentDirectory(logDir,false).append(PATHSEPSTR).append("logs");
-                WARNLOG("No logfile directory specified - logs will be written locally to %s", logDir.str());
+                OWARNLOG("No logfile directory specified - logs will be written locally to %s", logDir.str());
             }
 
             makeAbsolutePath(logDir);

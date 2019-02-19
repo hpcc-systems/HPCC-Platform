@@ -235,7 +235,7 @@ static void calibrate_timing()
                 return;
             }
         }
-        ERRLOG("calibrate_timing failed using RDTSC");
+        IERRLOG("calibrate_timing failed using RDTSC");
         useRDTSC = false;
     }
 
@@ -348,7 +348,7 @@ void calibrate_timing()
                 return;
             }
         }
-        ERRLOG("calibrate_timing failed using RDTSC");
+        IERRLOG("calibrate_timing failed using RDTSC");
         useRDTSC = false;
     }
 #endif
@@ -1983,7 +1983,7 @@ class CExtendedStats  // Disk network and cpu stats
             {
                 if (kbadcnt < 5)
                 {
-                    ERRLOG("klogctl SYSLOG_ACTION_READ_ALL error %d", errno);
+                    IERRLOG("klogctl SYSLOG_ACTION_READ_ALL error %d", errno);
                     kbadcnt++;
                 }
                 else
@@ -3075,7 +3075,7 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
                 else if (strcmp(perms,"r--p")==0)
                         t = segtype_const;
                 else {
-                    ERRLOG("%s - unknown perms",perms);
+                    OERRLOG("%s - unknown perms",perms);
                     continue;
                 }
                 recs[t].n++;
