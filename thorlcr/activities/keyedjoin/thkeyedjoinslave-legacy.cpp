@@ -1255,7 +1255,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         CKeyLocalLookup(CKeyedJoinSlave &_owner, const RtlRecord &_keyRecInfo) : owner(_owner), keyRecInfo(_keyRecInfo), indexReadFieldsRow(_owner.indexInputAllocator)
         {
-            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(keyRecInfo, nullptr, nullptr, owner.helper->hasNewSegmentMonitors()) : nullptr);
+            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(keyRecInfo, nullptr, nullptr, owner.helper->hasNewSegmentMonitors(), false) : nullptr);
             reset();
             owner.getKeyIndexes(partKeyIndexes);
             RecordTranslationMode translationMode = getTranslationMode(owner);
@@ -1267,7 +1267,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 Owned<IKeyIndexSet> partKeySet = createKeyIndexSet();
                 ForEachItemIn(i, partKeyIndexes)
                     partKeySet->addIndex(LINK(&partKeyIndexes.item(i)));
-                partManager.setown(createKeyMerger(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, owner.helper->hasNewSegmentMonitors()));
+                partManager.setown(createKeyMerger(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, owner.helper->hasNewSegmentMonitors(), false));
                 Owned<const ITranslator> translator = getLayoutTranslation(owner.helper->getFileName(), owner.indexParts.item(0), translationMode, expectedFormatCrc, owner.helper->queryIndexRecordSize(), projectedFormatCrc, projectedFormat);
                 if (translator)
                     partManager->setLayoutTranslator(&translator->queryTranslator());
@@ -1275,7 +1275,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
             else
             {
-                partManager.setown(createLocalKeyManager(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), nullptr, nullptr, owner.helper->hasNewSegmentMonitors()));
+                partManager.setown(createLocalKeyManager(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), nullptr, nullptr, owner.helper->hasNewSegmentMonitors(), false));
                 getLayoutTranslations(translators, owner.helper->getFileName(), owner.indexParts, translationMode, expectedFormatCrc, owner.helper->queryIndexRecordSize(), projectedFormatCrc, projectedFormat);
             }
         }
