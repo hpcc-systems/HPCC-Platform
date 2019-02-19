@@ -524,28 +524,38 @@ protected:
     void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg)
     {
         StringBuffer recstr;
+        StringBuffer segstr;
         unsigned i;
-        for (i = 0; i < keySize; i++)
-        {
-            unsigned char c = ((unsigned char *) keyBuffer)[i];
-            recstr.appendf("%c", isprint(c) ? c : '.');
-        }
-        recstr.append ("\n");
-        for (i = 0; i < keySize; i++)
-        {
-            recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
-        }
-        recstr.append ("\nusing segmonitors:\n");
         for (i=0; i <= lastSeg; i++)
         {
             unsigned size = segs.segMonitors.item(i).getSize();
             while (size--)
-                recstr.append( segs.segMonitors.item(i).isWild() ? '?' : '#');
+                segstr.append( segs.segMonitors.item(i).isWild() ? '?' : '#');
+        }
+        bool printHex = false;
+        for (i = 0; i < segstr.length(); i++)
+        {
+            unsigned char c = ((unsigned char *) keyBuffer)[i];
+            if (isprint(c))
+                recstr.append(c);
+            else
+            {
+                recstr.append('.');
+                printHex = true;
+            }
+        }
+        if (printHex)
+        {
+            recstr.append ("\n");
+            for (i = 0; i < segstr.length(); i++)
+            {
+                recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
+            }
         }
         if (ctx)
-            ctx->CTXLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), keyName.get());
+            ctx->CTXLOG("%d seeks to lookup record \n%s\nusing segmonitors:\n%s\n in key %s", numSeeks, recstr.str(), segstr.str(), keyName.get());
         else
-            DBGLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), keyName.get());
+            DBGLOG("%d seeks to lookup record \n%s\nusing segmonitors:\n%s\n in key %s", numSeeks, recstr.str(), segstr.str(), keyName.get());
     }
 
 public:
