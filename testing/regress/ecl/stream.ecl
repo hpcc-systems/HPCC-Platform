@@ -86,7 +86,7 @@ public:
     }
     RTLIMPLEMENT_IINTERFACE
 
-    virtual const void *nextRow()
+    virtual const void *nextRow() override
     {
         const char * const names[] = {"Gavin","John","Bart"};
         if (count >= numElements(names))
@@ -103,7 +103,7 @@ public:
         memcpy(row+sizeof(size32_t)+lenPrefix, name, lenName);
         return rowBuilder.finalizeRowClear(len);
     }
-    virtual void stop()
+    virtual void stop() override
     {
         count = (unsigned)-1;
     }
