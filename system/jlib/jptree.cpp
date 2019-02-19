@@ -2870,7 +2870,7 @@ bool PTree::checkPattern(const char *&xxpath) const
                     if (legacynumeric)
                     {
                         if (isdigit(*rhs))
-                            WARNLOG("Possible deprecated use of quoted numeric comparison operation: %s", xxpath);
+                            IWARNLOG("Possible deprecated use of quoted numeric comparison operation: %s", xxpath);
                     }
 #endif
                 }
