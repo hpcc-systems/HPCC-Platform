@@ -137,7 +137,7 @@ struct ReplicatePartItem: extends CInterface
             ReplicatePartCopyItem &dstcopy = copies.item(dst.item(i2));
             if (i3>=src.ordinality()) {
                 if (i3==0) {
-                    ERRLOG(LOGPFX "Cannot find copy for %s",dstcopy.file->queryFilename());
+                    OERRLOG(LOGPFX "Cannot find copy for %s",dstcopy.file->queryFilename());
                     dstcopy.state = RPCS_failed;
                 }
                 else
@@ -251,11 +251,11 @@ struct ReplicateFileItem: extends CInterface
         StringBuffer tmp;
         const char *lfn = dlfn.get();
         if (dlfn.isExternal()) {
-            ERRLOG(LOGPFX "Cannot replicate external file %s",lfn);
+            OERRLOG(LOGPFX "Cannot replicate external file %s",lfn);
             return;
         }
         if (dlfn.isForeign()) {
-            ERRLOG(LOGPFX "Cannot replicate foreign file %s",lfn);
+            OERRLOG(LOGPFX "Cannot replicate foreign file %s",lfn);
             return;
         }
         Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(dlfn,userdesc);
@@ -273,7 +273,7 @@ struct ReplicateFileItem: extends CInterface
         // see if already replicating
         Owned<IRemoteConnection> pconn = querySDS().connect("DFU/Replicating", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY,  SDS_TIMEOUT);
         if (!pconn.get()) {
-            ERRLOG(LOGPFX "Connect to DFU/Replicating %s failed",lfn);
+            OERRLOG(LOGPFX "Connect to DFU/Replicating %s failed",lfn);
             return;
         }
         StringBuffer xpath;
@@ -293,7 +293,7 @@ struct ReplicateFileItem: extends CInterface
         // now as long as SDS doesn't lock children this should be OK
         conn.setown(querySDS().connect("DFU/Replicating/File", myProcessSession(), RTM_CREATE_ADD | RTM_LOCK_READ, 5*60*1000));
         if (!conn.get()) {
-            ERRLOG(LOGPFX "Create of DFU/Replicating/File %s failed",lfn);
+            OERRLOG(LOGPFX "Create of DFU/Replicating/File %s failed",lfn);
             return;
         }
         genUUID(tmp.clear(),true);  // true for windows

@@ -415,7 +415,7 @@ protected:
             stop();
             break;
         default:
-            ERRLOG("Unknown coven command request"); //MORE: I think this should be a user error?
+            UERRLOG("Unknown coven command request"); //MORE: I think this should be a user error?
             mb.clear();
             coven.reply(mb);
             break;
@@ -601,7 +601,7 @@ public:
                 next++;
                 if (!next) {
                     next++;
-                    ERRLOG("Unique ID overflow!!"); //unlikely to happen in my lifetime
+                    IERRLOG("Unique ID overflow!!"); //unlikely to happen in my lifetime
                 }
                 store->setPropInt("UIDbase",(int)next);
                 updateDataStore();

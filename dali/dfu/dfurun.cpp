@@ -281,7 +281,7 @@ class CDFUengine: public CInterface, implements IDFUengine
                                 onCycle();
                             break;
                         default:
-                            ERRLOG("DFURUN Unknown mode");
+                            OERRLOG("DFURUN Unknown mode");
                             break;
                         }
                     }
@@ -707,7 +707,7 @@ public:
             StringBuffer dir;
             RemoteFilename rfn;
             if (fdesc->numParts()!=1) {
-                ERRLOG("MONITOR: monitor file incorrectly specified");
+                OERRLOG("MONITOR: monitor file incorrectly specified");
                 if (raiseexception)
                     throw MakeStringException(-1,"MONITOR: monitor file incorrectly specified");
                 return true;
@@ -719,7 +719,7 @@ public:
             dirfn.setPath(rfn.queryEndpoint(),dir.str());
             Owned<IFile> dirf = createIFile(dirfn);
             if (!dirf||(dirf->isDirectory()!=foundYes)) {
-                ERRLOG("MONITOR: %s is not a directory in DFU WUID %s",dir.str(),wu->queryId());
+                OERRLOG("MONITOR: %s is not a directory in DFU WUID %s",dir.str(),wu->queryId());
                 if (raiseexception)
                     throw MakeStringException(-1,"MONITOR: %s is not a directory in DFU WUID %s",dir.str(),wu->queryId());
                 return true;

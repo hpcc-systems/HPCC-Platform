@@ -89,7 +89,7 @@ static void appendNodeEndpoint(IPropertyTree& node,SocketEndpointArray &eps)
     const char *computer = node.queryProp("@computer");
     CMachineEntryPtr *m = machinemap.getValue(computer);
     if (!m) {
-        ERRLOG("Computer name %s not found",computer);
+        OERRLOG("Computer name %s not found",computer);
         return;
     }
     SocketEndpoint ep = (*m)->ep;
@@ -394,7 +394,7 @@ public:
             stopsem.signal();
         }
         if (!join(1000*60*3))
-            ERRLOG("CSashaVerifierServer aborted");
+            IERRLOG("CSashaVerifierServer aborted");
     }
 
 
@@ -491,7 +491,7 @@ public:
             stopsem.signal();
         }
         if (!join(1000*60*3))
-            ERRLOG("CSashaDaFSMonitorServer aborted");
+            IERRLOG("CSashaDaFSMonitorServer aborted");
     }
 
     void checkCluster(SocketEndpointArray &eps,const char *clustername)
@@ -562,7 +562,7 @@ public:
         loadMachineMap();
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (!conn) {
-            ERRLOG("Could not connect to /Environment/Software");
+            OERRLOG("Could not connect to /Environment/Software");
             return;
         }
         StringArray list;

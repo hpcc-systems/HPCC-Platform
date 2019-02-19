@@ -367,7 +367,7 @@ void nodeInfo::sendError(const char *errstr1,const char *errstr2)
     StringBuffer err(errstr1);
     if (errstr2)
         err.append(" ").append(errstr2);
-    ERRLOG("%s",err.str());
+    OERRLOG("%s",err.str());
     MemoryBuffer mb;
     mb.append(FLOODTEST_ERROR).append(myrank).append(err.str());
     schannel->put(mb);
@@ -415,12 +415,12 @@ void floodtestClient(const char *grpname,unsigned ngb)
             PROGLOG("Started");
         }
         else {
-            ERRLOG("Failed to find node in group");
+            OERRLOG("Failed to find node in group");
             mb.append(FLOODTEST_ERROR).append(myrank).append("Failed to find node in group");
         }
     }
     else {
-        ERRLOG("Failed to find node in group");
+        OERRLOG("Failed to find node in group");
         mb.append(FLOODTEST_ERROR).append(myrank).append("Failed to find group");
     }
     IRand->seed(myrank);
@@ -663,7 +663,7 @@ bool runSlaves(IGroup *grp,const char *progname,const char *daliserver,const cha
                 else {
                     StringBuffer ips;
                     ip.getText(ips);
-                    ERRLOG("Failed to run slave on %d (%s)",idx+1,ips.str());
+                    OERRLOG("Failed to run slave on %d (%s)",idx+1,ips.str());
                     error = true;
                 }
             }
@@ -793,7 +793,7 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
     bool loopback = (ngb==0);
     Owned<IGroup> group = queryNamedGroupStore().lookup(grpname);
     if (!group) {
-        ERRLOG("Cannot find group %s",grpname);
+        OERRLOG("Cannot find group %s",grpname);
         return;
     }
     Owned<CLoopbackServer> lbserver;
@@ -845,7 +845,7 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
             StringAttr msg;
             mb.read(msg);
             StringBuffer url;
-            ERRLOG("%3d (%s): %s\n",r+1,group->queryNode(r).endpoint().getUrlStr(url).str(),msg.get());
+            IERRLOG("%3d (%s): %s\n",r+1,group->queryNode(r).endpoint().getUrlStr(url).str(),msg.get());
         }
         else if (fn==FLOODTEST_CONNECTED) {
             if (setState(group,"Connected",r,connected)) {

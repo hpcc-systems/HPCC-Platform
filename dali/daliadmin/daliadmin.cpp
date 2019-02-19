@@ -244,7 +244,7 @@ static void _export_(const char *path,const char *dst,bool safe=false)
     StringBuffer xpath;
     Owned<IRemoteConnection> conn = connectXPathOrFile(path,safe,xpath);
     if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+        UERRLOG("Could not connect to %s",path);
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -264,7 +264,7 @@ static void import(const char *path,const char *src,bool add)
     Owned<IFileIO> iFileIO = iFile->open(IFOread);
     if (!iFileIO)
     {
-        ERRLOG("Could not open to %s",src);
+        OERRLOG("Could not open to %s",src);
         return;
     }
     size32_t sz = (size32_t)iFile->size();
@@ -287,7 +287,7 @@ static void import(const char *path,const char *src,bool add)
     }
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),0, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+        OERRLOG("Could not connect to %s",path);
         return;
     }
     StringAttr newtail; // must be declared outside the following if
@@ -333,13 +333,13 @@ static void _delete_(const char *path,bool backup)
     const char *tail=splitpath(path,head,tmp);
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+        OERRLOG("Could not connect to %s",path);
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
     Owned<IPropertyTree> child = root->getPropTree(tail);
     if (!child) {
-        ERRLOG("Couldn't find %s/%s",head.str(),tail);
+        OERRLOG("Couldn't find %s/%s",head.str(),tail);
         return;
     }
     if (backup) {
@@ -365,7 +365,7 @@ static void set(const char *path,const char *val)
     const char *tail=splitpath(path,head,tmp);
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+        OERRLOG("Could not connect to %s",path);
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -388,7 +388,7 @@ static void get(const char *path)
     const char *tail=splitpath(path,head,tmp);
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+        OERRLOG("Could not connect to %s",path);
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -408,7 +408,7 @@ static void bget(const char *path,const char *outfn)
     const char *tail=splitpath(path,head,tmp);
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+        OERRLOG("Could not connect to %s",path);
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -428,7 +428,7 @@ static void xget(const char *path)
         return;
     Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to /");
+        OERRLOG("Could not connect to /");
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -475,7 +475,7 @@ static void wget(const char *path)
     const char *tail=splitpath(path,head,tmp);
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+        OERRLOG("Could not connect to %s",path);
         return;
     }
     Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(tail);
@@ -499,7 +499,7 @@ static void add(const char *path, const char *val)
     Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, daliConnectTimeoutMs);
     if (!conn)
     {
-        ERRLOG("Could not connect to %s", path);
+        OERRLOG("Could not connect to %s", path);
         return;
     }
     VStringBuffer msg("Added %s", path);
@@ -520,7 +520,7 @@ static void delv(const char *path)
     const char *tail=splitpath(path,head,tmp);
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+        OERRLOG("Could not connect to %s",path);
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -551,7 +551,7 @@ static void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *
         if (partslist)
             filterParts(tree,*partslist);
         if (!tree) {
-            ERRLOG("%s not found",lname);
+            OERRLOG("%s not found",lname);
             return;
         }
         toXML(tree, str);
@@ -726,7 +726,7 @@ void dfsCheck()
     Owned<IRemoteConnection> conn = querySDS().connect("Files",myProcessSession(),0, daliConnectTimeoutMs);
     if (!conn)
     {
-        ERRLOG("Could not connect to %s","/Files");
+        OERRLOG("Could not connect to %s","/Files");
         return;
     }
 
@@ -740,7 +740,7 @@ static void dfsGroup(const char *name, const char *outputFilename)
     Owned<IGroup> group = queryNamedGroupStore().lookup(name);
     if (!group)
     {
-        ERRLOG("cannot find group %s",name);
+        OERRLOG("cannot find group %s",name);
         return;
     }
     writeGroup(group, name, outputFilename);
@@ -764,7 +764,7 @@ static int clusterGroup(const char *name, const char *outputFilename)
         e->errorMessage(errStr);
         e->Release();
     }
-    ERRLOG("%s", errStr.str());
+    OERRLOG("%s", errStr.str());
     return 1;
 }
 
@@ -775,7 +775,7 @@ static IPropertyTree * selectLevel(IPropertyTree * root, const char * name)
     Owned<IPropertyTree> match = root->getPropTree(xpath);
     if (match)
         return match.getClear();
-    ERRLOG("Path %s not found", name);
+    OERRLOG("Path %s not found", name);
     return nullptr;
 }
 
@@ -854,7 +854,7 @@ static void dfsLs(const char *name, const char *options, bool safe = false)
     Owned<IRemoteConnection> conn = querySDS().connect("Files",myProcessSession(),0, daliConnectTimeoutMs);
     if (!conn)
     {
-        ERRLOG("Could not connect to %s","/Files");
+        OERRLOG("Could not connect to %s","/Files");
         return;
     }
 
@@ -871,7 +871,7 @@ static void dfsmap(const char *lname, IUserDescriptor *user)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user);
     if (!file) {
-        ERRLOG("File %s not found",lname);
+        OERRLOG("File %s not found",lname);
         return;
     }
     Owned<IDistributedFilePartIterator> pi = file->getIterator();
@@ -919,7 +919,7 @@ static void dfsunlink(const char *lname, IUserDescriptor *user)
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true);
         if (!file)
         {
-            ERRLOG("File '%s' not found", lname);
+            OERRLOG("File '%s' not found", lname);
             break;
         }
         Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
@@ -931,7 +931,7 @@ static void dfsunlink(const char *lname, IUserDescriptor *user)
         if (sf->removeSubFile(lname,false))
             OUTLOG("removed %s from %s",lname,sf->queryLogicalName());
         else
-            ERRLOG("FAILED to remove %s from %s",lname,sf->queryLogicalName());
+            OERRLOG("FAILED to remove %s from %s",lname,sf->queryLogicalName());
     }
 }
 
@@ -1045,7 +1045,7 @@ static int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
     static CIpTable dafilesrvips;
     Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,user);
     if (!file) {
-        ERRLOG("VERIFY: cannot find %s",name);
+        OERRLOG("VERIFY: cannot find %s",name);
         return 1;
     }
     CDateTime filetime;
@@ -1072,7 +1072,7 @@ static int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
                 if (!dafilesrvips.verifyDaliFileServer(ep)) {
                     StringBuffer ips;
                     ep.getIpText(ips);
-                    ERRLOG("VERIFY: file %s, cannot run DAFILESRV on %s",name,ips.str());
+                    OERRLOG("VERIFY: file %s, cannot run DAFILESRV on %s",name,ips.str());
                     return 4;
                 }
                 RemoteFilename rfn;
@@ -1122,7 +1122,7 @@ static int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
                     item.crc = partfile->getCRC();
                     partfile->getTime(NULL,&item.dt,NULL);
                     if ((item.crc==0)&&!partfile->exists()) {
-                        ERRLOG("VERIFY: does not exist part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                        OERRLOG("VERIFY: does not exist part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
                         ok = false;
                     }
                 }
@@ -1147,7 +1147,7 @@ static int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
         item.filename.setPort(0);
         if (item.crc!=item.requiredcrc) {
             StringBuffer rfs;
-            ERRLOG("VERIFY: FAILED %s (%x,%x) file %s",name,item.crc,item.requiredcrc,item.filename.getRemotePath(rfs).str());
+            OERRLOG("VERIFY: FAILED %s (%x,%x) file %s",name,item.crc,item.requiredcrc,item.filename.getRemotePath(rfs).str());
             afor.ok = false;
         }
     }
@@ -1255,8 +1255,8 @@ static void checksuperfile(const char *lfn,bool fix=false)
     lname.makeFullnameQuery(query, DXB_SuperFile, true);
     Owned<IRemoteConnection> conn = querySDS().connect(query.str(),myProcessSession(),fix?RTM_LOCK_WRITE:0, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to %s",lfn);
-        ERRLOG("Superfile %s FAILED",lname.get());
+        OERRLOG("Could not connect to %s",lfn);
+        OERRLOG("Superfile %s FAILED",lname.get());
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -1272,9 +1272,9 @@ static void checksuperfile(const char *lfn,bool fix=false)
                 break;
             StringBuffer s;
             s.appendf("SuperFile %s: corrupt, subfile file part %d is duplicated",lname.get(),i+1);
-            ERRLOG("%s",s.str());
+            OERRLOG("%s",s.str());
             if (!fix||!doFix()) {
-                ERRLOG("Superfile %s FAILED",lname.get());
+                OERRLOG("Superfile %s FAILED",lname.get());
                 return;
             }
             root->removeProp(path.str());
@@ -1283,9 +1283,9 @@ static void checksuperfile(const char *lfn,bool fix=false)
         if (!sub) {
             StringBuffer s;
             s.appendf("SuperFile %s: corrupt, subfile file part %d cannot be found",lname.get(),i+1);
-            ERRLOG("%s",s.str());
+            OERRLOG("%s",s.str());
             if (!fix||!doFix()) {
-                ERRLOG("Superfile %s FAILED",lname.get());
+                OERRLOG("Superfile %s FAILED",lname.get());
                 return;
             }
             fixed = true;
@@ -1303,9 +1303,9 @@ static void checksuperfile(const char *lfn,bool fix=false)
                 subconn.setown(querySDS().connect(subquery.str(),myProcessSession(),0, daliConnectTimeoutMs));
             }
             if (!subconn) {
-                ERRLOG("SuperFile %s is missing sub-file file %s",lname.get(),subname.str());
+                OERRLOG("SuperFile %s is missing sub-file file %s",lname.get(),subname.str());
                 if (!fix||!doFix()) {
-                    ERRLOG("Superfile %s FAILED",lname.get());
+                    OERRLOG("Superfile %s FAILED",lname.get());
                     return;
                 }
                 root->removeTree(sub);
@@ -1368,7 +1368,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
         if (sub) {
             unsigned pn = sub->getPropInt("@num");
             if (pn>subnum) {
-                ERRLOG("SuperFile %s: corrupt, subfile file part %d spurious",lname.get(),pn);
+                OERRLOG("SuperFile %s: corrupt, subfile file part %d spurious",lname.get(),pn);
                 if (fixstate==0)
                 {
                     if (fix&&doFix())
@@ -1392,11 +1392,11 @@ static void checksuperfile(const char *lfn,bool fix=false)
         if (!isEmptyPTree(sub)&&!sub->queryProp("description")) {
             if (fix) {
                 if (!fixed)
-                    ERRLOG("FIX Empty Superfile %s contains non-empty Attr",lname.get());
+                    OERRLOG("FIX Empty Superfile %s contains non-empty Attr",lname.get());
                 root->removeTree(sub);
             }
             else if (sub->getPropInt64("@recordCount")||sub->getPropInt64("@size"))
-                ERRLOG("FAIL Empty Superfile %s contains non-empty Attr sz=%" I64F "d rc=%" I64F "d",lname.get(),sub->getPropInt64("@recordCount"),sub->getPropInt64("@size"));
+                OERRLOG("FAIL Empty Superfile %s contains non-empty Attr sz=%" I64F "d rc=%" I64F "d",lname.get(),sub->getPropInt64("@recordCount"),sub->getPropInt64("@size"));
 
         }
     }
@@ -1472,8 +1472,8 @@ static void checksubfile(const char *lfn)
         conn.setown(querySDS().connect(query.str(),myProcessSession(),0, daliConnectTimeoutMs));
     }
     if (!conn) {
-        ERRLOG("Could not connect to %s",lfn);
-        ERRLOG("Subfile %s FAILED",lname.get());
+        OERRLOG("Could not connect to %s",lfn);
+        OERRLOG("Subfile %s FAILED",lname.get());
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -1488,14 +1488,14 @@ static void checksubfile(const char *lfn)
         sdlname.makeFullnameQuery(sdquery, DXB_SuperFile, true);
         Owned<IRemoteConnection> sdconn = querySDS().connect(sdquery.str(),myProcessSession(),0, daliConnectTimeoutMs);
         if (!conn) {
-            ERRLOG("SubFile %s has missing owner superfile %s",lname.get(),sdlname.get());
+            OERRLOG("SubFile %s has missing owner superfile %s",lname.get(),sdlname.get());
             ok = false;
         }
         else {
             StringBuffer path;
             IPropertyTree *sub = sdconn->queryRoot()->queryPropTree(path.clear().appendf("SubFile[@name=\"%s\"]",lname.get()).str());
             if (!sub) {
-                ERRLOG("Superfile %s is not linked to %s",sdlname.get(),lname.get());
+                OERRLOG("Superfile %s is not linked to %s",sdlname.get(),lname.get());
                 ok = false;
             }
         }
@@ -1720,7 +1720,7 @@ static void dfsscopes(const char *name, IUserDescriptor *user)
         ln.clear().append("SCOPE '").append(iter->query()).append('\'');
         Owned<IRemoteConnection> conn = querySDS().connect(s.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
         if (!conn)
-            ERRLOG("%s - Could not connect using %s",ln.str(),s.str());
+            OERRLOG("%s - Could not connect using %s",ln.str(),s.str());
         else {
             unsigned files;
             unsigned sfiles;
@@ -1769,7 +1769,7 @@ static void cleanscopes(IUserDescriptor *user)
         dlfn.makeScopeQuery(s.clear(),true);
         Owned<IRemoteConnection> conn = querySDS().connect(s.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
         if (!conn)  
-            DBGLOG("Could not connect to '%s' using %s",iter->query(),s.str());
+            OWARNLOG("Could not connect to '%s' using %s",iter->query(),s.str());
         else {
             if (recursiveCheckEmptyScope(*conn->queryRoot())) {
                 toremove.append(iter->query());
@@ -1853,7 +1853,7 @@ static void listworkunits(const char *test, const char *min, const char *max)
             const char *tval = strchr(test,'=');
             if (!tval)
             {
-                ERRLOG("missing '=' in %s",test);
+                OERRLOG("missing '=' in %s",test);
                 return;
             }
             StringBuffer prop;
@@ -1984,7 +1984,7 @@ static void holdlock(const char *logicalFile, const char *mode, IUserDescriptor 
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalFile, userDesc, write, false, false, NULL, 5000);
     if (!file)
     {
-        ERRLOG("File not found: %s", logicalFile);
+        OERRLOG("File not found: %s", logicalFile);
         return;
     }
     OwnedPtr<DistributedFilePropertyLock> writeLock;
@@ -2028,7 +2028,7 @@ static void workunittimings(const char *wuid)
     path.append("/WorkUnits/").append(wuid);
     Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), 0, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("WU %s not found",wuid);
+        OERRLOG("WU %s not found",wuid);
         return;
     }
     IPropertyTree *wu = conn->queryRoot();
@@ -2156,7 +2156,7 @@ static void clusterlist()
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
-        ERRLOG("Could not connect to /Environment/Software");
+        OERRLOG("Could not connect to /Environment/Software");
         return;
     }
     StringArray list;
@@ -2180,7 +2180,7 @@ static void auditlog(const char *froms, const char *tos, const char *matchs)
         from.setDateString(froms);
     }
     catch (IException *) {
-        ERRLOG("%s: invalid date (format YYYY-MM-DD)",froms);
+        OERRLOG("%s: invalid date (format YYYY-MM-DD)",froms);
         throw;
     }
     CDateTime to;
@@ -2188,7 +2188,7 @@ static void auditlog(const char *froms, const char *tos, const char *matchs)
         to.setDateString(tos);
     }
     catch (IException *) {
-        ERRLOG("%s: invalid date (format YYYY-MM-DD)",tos);
+        OERRLOG("%s: invalid date (format YYYY-MM-DD)",tos);
         throw;
     }
     StringAttrArray res;
@@ -2234,7 +2234,7 @@ static void mpping(const char *eps)
     Owned<ICommunicator> comm = createCommunicator(grp,true);
     unsigned start = msTick();
     if (!comm->verifyConnection(0,60*1000))
-        ERRLOG("MPping %s failed",eps);
+        OERRLOG("MPping %s failed",eps);
     else
         OUTLOG("MPping %s succeeded in %d",eps,msTick()-start);
 }
@@ -3310,7 +3310,7 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    ERRLOG("Unknown command %s",cmd);
+                    OERRLOG("Unknown command %s",cmd);
                     ret = 255;
                 }
             }
@@ -3622,7 +3622,7 @@ int main(int argc, char* argv[])
                             dumpWorkunitAttr(params.item(1), nullptr);
                     }
                     else
-                        ERRLOG("Unknown command %s",cmd);
+                        OERRLOG("Unknown command %s",cmd);
                 }
                 catch (IException *e)
                 {

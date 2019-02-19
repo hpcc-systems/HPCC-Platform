@@ -70,7 +70,7 @@ public:
         CPPUNIT_NS::Exception *e = failure.thrownException();
         if (e)
             s.appendf(" %s %s",e->message().shortDescription().c_str(),e->message().details().c_str());
-        ERRLOG("%s",s.str());
+        OERRLOG("%s",s.str());
         m_lastTestFailed  = true;
     }
     

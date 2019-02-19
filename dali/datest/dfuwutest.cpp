@@ -45,7 +45,7 @@ void testAbort(const char *wuid)
         wu->requestAbort();
     }
     else
-        ERRLOG("WUID %s not found", wuid);
+        OERRLOG("WUID %s not found", wuid);
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
@@ -421,7 +421,7 @@ IFileDescriptor *createRoxieFileDescriptor(const char *cluster, const char *lfn,
         grpname.append("__servers");
     Owned<IGroup> grp = queryNamedGroupStore().lookup(grpname.str());
     if (!grp) {
-        ERRLOG("Logical group %s not found",grpname.str());
+        OERRLOG("Logical group %s not found",grpname.str());
         return NULL;
     }
     Owned<IFileDescriptor> ret = createFileDescriptor();
@@ -432,7 +432,7 @@ IFileDescriptor *createRoxieFileDescriptor(const char *cluster, const char *lfn,
         dirxpath.appendf("Software/RoxieCluster[@name=\"%s\"]/Roxie%sProcess[@channel=\"%d\"]/@dataDirectory",cluster,servers?"Server":"Slave",i+1);
         const char * dir = envroot->queryProp(dirxpath.str());
         if (!dir) {
-            ERRLOG("dataDirectory not specified");
+            OERRLOG("dataDirectory not specified");
             return NULL;
         }
         makePhysicalPartName(lfn,i+1,width,filename,false,DFD_OSdefault,dir);

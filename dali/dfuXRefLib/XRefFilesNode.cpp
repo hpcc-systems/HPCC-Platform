@@ -103,7 +103,7 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
     Owned<IGroup> group = queryNamedGroupStore().lookup(clustername);
     if (!group)
     {
-        ERRLOG("%s cluster not found",clustername);
+        OERRLOG("%s cluster not found",clustername);
         errstr.appendf("ERROR: %s cluster not found",clustername);
         return false;
     }
@@ -130,7 +130,7 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
                 if (group->rank(ep)==RANK_NULL)
                 {
                     StringBuffer eps;
-                    ERRLOG("%s %s Part %d on %s is not in cluster %s",title,rep?"Replicate":"Primary",pn,ep.getUrlStr(eps).str(),clustername);
+                    OERRLOG("%s %s Part %d on %s is not in cluster %s",title,rep?"Replicate":"Primary",pn,ep.getUrlStr(eps).str(),clustername);
                     errstr.appendf("ERROR: %s %s part %d on %s is not in cluster %s",title,rep?"Replicate":"Primary",pn,ep.getUrlStr(eps).str(),clustername);
                     return false;
                 }
@@ -138,7 +138,7 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
                 {
                     if ((pn-1+rep)%n==gn)
                     {
-                        ERRLOG("Logical file for %s exists (part not orphaned?)",title);
+                        OERRLOG("Logical file for %s exists (part not orphaned?)",title);
                         errstr.appendf("Logical file for %s exists (part not orphaned?)",title);
                         return false;
                     }
@@ -158,7 +158,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
     IPropertyTree* subBranch = FindNode(Partmask);
     if (!subBranch)
     {
-        ERRLOG("%s branch not found",Partmask);
+        OERRLOG("%s branch not found",Partmask);
         errstr.appendf("ERROR: %s branch not found",Partmask);
         return false;
     }
@@ -237,7 +237,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
                     {
                         StringBuffer errname;
                         files.item(idx).getRemotePath(errname);
-                        ERRLOG("Could not delete file %s",errname.str());
+                        OERRLOG("Could not delete file %s",errname.str());
                         CriticalBlock block(crit);
                         if (errstr.length())
                             errstr.append('\n');
@@ -274,7 +274,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
     afor.For(files.ordinality(),10,false,true);
     if (!RemoveTreeNode(Partmask))                 
     {
-        ERRLOG("Error Removing XRef Branch %s",Partmask);
+        OERRLOG("Error Removing XRef Branch %s",Partmask);
         return false;
     }
     m_bChanged = true;
@@ -291,7 +291,7 @@ bool CXRefFilesNode::RemoveLogical(const char* LogicalName,IUserDescriptor* udes
     IPropertyTree* pLogicalFileNode =  queryDataTree().getBranch(xpath.str());
     if (!pLogicalFileNode)
     {
-        ERRLOG("Branch %s not found",xpath.str());
+        OERRLOG("Branch %s not found",xpath.str());
         errstr.appendf("Branch %s not found",xpath.str());
         return false;
     }
@@ -299,13 +299,13 @@ bool CXRefFilesNode::RemoveLogical(const char* LogicalName,IUserDescriptor* udes
         return false;
     if (queryDistributedFileDirectory().existsPhysical(LogicalName,udesc))
     {
-        ERRLOG("Logical file %s all parts exist (not lost?))",LogicalName);
+        OERRLOG("Logical file %s all parts exist (not lost?))",LogicalName);
         errstr.appendf("Logical file %s all parts exist (not lost?))",LogicalName);
         return false;
     }
     if (!queryDataTree().removeTree(pLogicalFileNode))
     {
-        ERRLOG("Removing XRef Branch %s", xpath.str());
+        OERRLOG("Removing XRef Branch %s", xpath.str());
         errstr.appendf("Removing XRef Branch %s", xpath.str());
         return false;
     }
@@ -319,7 +319,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
     IPropertyTree* subBranch = FindNode(Partmask);
     if (!subBranch)
     {
-        ERRLOG("%s node not found",Partmask);
+        OERRLOG("%s node not found",Partmask);
         errstr.appendf("ERROR: %s node not found",Partmask);
         return false;
     }
@@ -329,14 +329,14 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
     StringBuffer logicalName;
     if (!LogicalNameFromMask(Partmask,logicalName))
     {
-        ERRLOG("%s - could not attach",Partmask);
+        OERRLOG("%s - could not attach",Partmask);
         errstr.appendf("ERROR: %s - could not attach",Partmask);
         return false;
     }
 
     if (queryDistributedFileDirectory().exists(logicalName.str(),udesc))
     {
-        ERRLOG("Logical File %s already Exists. Can not reattach to Dali",logicalName.str());
+        OERRLOG("Logical File %s already Exists. Can not reattach to Dali",logicalName.str());
         errstr.appendf("Logical File %s already Exists. Can not reattach to Dali",logicalName.str());
         return false;
     }
@@ -378,7 +378,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
         if (!_node||!*_node)
             _node = part.queryProp("RNode[1]");
         if (!*_node||!*_node) {
-            ERRLOG("%s - could not attach (missing part info)",Partmask);
+            OERRLOG("%s - could not attach (missing part info)",Partmask);
             errstr.appendf("ERROR: %s - could not attach (missing part info)",Partmask);
             return false;
         }
@@ -400,7 +400,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
         else if (isCompressed != partCompressed)
         {
             VStringBuffer err("%s - could not attach (mixed compressed/non-compressed physical parts detected)", Partmask);
-            ERRLOG("%s", err.str());
+            OERRLOG("%s", err.str());
             errstr.append(err.str());
             return false;
         }
@@ -426,7 +426,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
     dFile->attach(logicalName.str(),udesc);
 
     if (!RemoveTreeNode(Partmask)) {                   
-        ERRLOG("Removing XRef Branch %s",Partmask);
+        OERRLOG("Removing XRef Branch %s",Partmask);
         errstr.appendf("ERROR: Removing XRef Branch %s",Partmask);
         return false;
     }

@@ -143,16 +143,16 @@ bool ClusterPartDiskMapSpec::calcPartLocation (unsigned part, unsigned maxparts,
     if (copy) {
         if (fw) {
             if (interleave>1)
-                ERRLOG("ClusterPartDiskMapSpec interleave not allowed if fill width set");
+                IERRLOG("ClusterPartDiskMapSpec interleave not allowed if fill width set");
             if (flags&CPDMSF_repeatedPart)
-                ERRLOG("ClusterPartDiskMapSpec repeated part not allowed if fill width set");
+                IERRLOG("ClusterPartDiskMapSpec repeated part not allowed if fill width set");
             unsigned m = clusterwidth/maxparts;
             drv = startDrv+(repdrv+(copy/m-1))%maxDrvs;
             node += (copy%m)*maxparts;
         }
         else if ((flags&CPDMSF_repeatedPart)) {
             if (flags&CPDMSF_wrapToNextDrv)
-                ERRLOG("ClusterPartDiskMapSpec repeated part not allowed if wrap to next drive set");
+                IERRLOG("ClusterPartDiskMapSpec repeated part not allowed if wrap to next drive set");
             unsigned repnum = copy%dc;
             unsigned nodenum = copy/dc;
             drv = startDrv+repnum%maxDrvs;
@@ -1595,13 +1595,13 @@ public:
         CPartDescriptor &p = *part(idx);
         p.set(idx,filename,pt);
         if (idx>=pending->ordinality())
-            ERRLOG("IFileDescriptor setPart called after cluster finished");
+            IERRLOG("IFileDescriptor setPart called after cluster finished");
         else {
             SocketEndpoint &pep = pending->element(idx);
             if (pep.isNull())
                 pep=ep;
             else
-                ERRLOG("IFileDescriptor setPart called twice for same part");
+                IERRLOG("IFileDescriptor setPart called twice for same part");
         }
     }
 
@@ -2306,7 +2306,7 @@ IPartDescriptor *deserializePartFileDescriptor(MemoryBuffer &mb)
     IArrayOf<IPartDescriptor> parts;
     Owned<CFileDescriptor> parent = doDeserializePartFileDescriptors(mb,&parts);
     if (parts.ordinality()!=1)
-        ERRLOG("deserializePartFileDescriptor deserializing multiple parts not single part");
+        IERRLOG("deserializePartFileDescriptor deserializing multiple parts not single part");
     if (parts.ordinality()==0)
         return NULL;
     return LINK(&parts.item(0));
@@ -2955,7 +2955,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
                 }
             }
             else
-                ERRLOG("createFileDescriptorFromRoxie: %s missing part %s",id,xpath.str());
+                OERRLOG("createFileDescriptorFromRoxie: %s missing part %s",id,xpath.str());
         }
     }
     res->setPartMask(mask);

@@ -31,7 +31,7 @@ class CLargeDataStore: public CInterface, implements ILargeDataStore
             if (!isAbsolutePath(ldsrootdir)) {
                 char cpath[_MAX_DIR];
                 if (!GetCurrentDirectory(_MAX_DIR, cpath)){
-                    ERRLOG("CLargeDataStore::initBase: Current directory path too big, bailing out");
+                    OERRLOG("CLargeDataStore::initBase: Current directory path too big, bailing out");
                     throwUnexpected();
                 }
                 basedir.append(cpath);

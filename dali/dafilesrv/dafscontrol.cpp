@@ -110,7 +110,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
     if (!isdali||!getCluster(grpip,eps)) {
         SocketEndpoint ep(grpip);
         if (ep.isNull()) {
-            ERRLOG("%s is not a group name or ip",grpip);
+            OERRLOG("%s is not a group name or ip",grpip);
             return 0;
         }
         if (ep.port==0)
@@ -193,7 +193,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
                     {
                         unsigned err = stopRemoteServer(sock);
                         if (err!=0) {
-                            ERRLOG("Could not stop server on %s, %d returned",epstr.str(),err);
+                            OERRLOG("Could not stop server on %s, %d returned",epstr.str(),err);
                             if (mode!=AMstopver)
                                 return;     // even though failed to stop - still return code
                         }
@@ -226,9 +226,9 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
                 result.item(i).getUrlStr(epstr.clear());
                 StringAttrItem &attr = resultstr.item(i);
                 if (attr.text.length()==0) 
-                    ERRLOG("%s: %s not running DAFILESRV",grpip,epstr.str());
+                    OERRLOG("%s: %s not running DAFILESRV",grpip,epstr.str());
                 else 
-                    ERRLOG("%s: %s %s running DAFILESRV version %s",grpip,(mode==AMstopver)?"was":"is",epstr.str(),attr.text.get());
+                    OERRLOG("%s: %s %s running DAFILESRV version %s",grpip,(mode==AMstopver)?"was":"is",epstr.str(),attr.text.get());
             }
             unsigned numok = eps.ordinality()-result.ordinality();
             if (mode==AMcheckvermajor)
@@ -262,7 +262,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
             StringBuffer epstr;
             ForEachItemIn(i,result) {
                 result.item(i).getUrlStr(epstr.clear());
-                ERRLOG("%s: %s not running DAFILESRV",grpip,epstr.str());
+                OERRLOG("%s: %s not running DAFILESRV",grpip,epstr.str());
             }
             unsigned numok = eps.ordinality()-result.ordinality();
             PROGLOG("%s: %d node%s running DAFILESRV",grpip,numok,(numok!=1)?"s":"");
@@ -373,14 +373,14 @@ int main(int argc, char* argv[])
                         SocketEndpoint ep(argv[ai+1]);
                         int ret = setDafileSvrTraceFlags(ep,(byte)atoi(argv[ai+2]));
                         if (ret!=0)
-                            ERRLOG("setDafileSvrTraceFlags returned %d",ret);
+                            UERRLOG("setDafileSvrTraceFlags returned %d",ret);
                     }
                     else {
                         ForEachItemIn(ni,eps) {
                             SocketEndpoint ep = eps.item(ni);
                             int ret = setDafileSvrTraceFlags(ep,(byte)atoi(argv[ai+2]));
                             if (ret!=0)
-                                ERRLOG("setDafileSvrTraceFlags returned %d",ret);
+                                UERRLOG("setDafileSvrTraceFlags returned %d",ret);
                             StringBuffer s("done ");
                             ep.getUrlStr(s);
                             PROGLOG("%s",s.str());
@@ -406,7 +406,7 @@ int main(int argc, char* argv[])
                         VStringBuffer result("Info for %s", epStr.str());
                         int ret = getDafileSvrInfo(ep, level, result);
                         if (ret!=0)
-                            ERRLOG("getDafileSvrInfo for %s returned %d", epStr.str(), ret);
+                            UERRLOG("getDafileSvrInfo for %s returned %d", epStr.str(), ret);
                         else
                             PROGLOG("%s", result.str());
                     }
@@ -418,7 +418,7 @@ int main(int argc, char* argv[])
                             VStringBuffer result("Info for %s: ", epStr.str());
                             int ret = getDafileSvrInfo(ep, level, result);
                             if (ret!=0)
-                                ERRLOG("getDafileSvrInfo for %s returned %d", epStr.str(), ret);
+                                UERRLOG("getDafileSvrInfo for %s returned %d", epStr.str(), ret);
                             else
                                 PROGLOG("%s", result.str());
                         }
@@ -436,14 +436,14 @@ int main(int argc, char* argv[])
                         SocketEndpoint ep(argv[ai+1]);
                         int ret = setDafileSvrThrottleLimit(ep, (ThrottleClass)atoi(argv[ai+2]), atoi(argv[ai+3]), atoi(argv[ai+4]), atoi(argv[ai+5]), atoi(argv[ai+6]), &errMsg);
                         if (ret!=0)
-                            ERRLOG("setDafileSvrThrottleLimit returned %d, error = %s", ret, errMsg.str());
+                            UERRLOG("setDafileSvrThrottleLimit returned %d, error = %s", ret, errMsg.str());
                     }
                     else {
                         ForEachItemIn(ni,eps) {
                             SocketEndpoint ep = eps.item(ni);
                             int ret = setDafileSvrThrottleLimit(ep, (ThrottleClass)atoi(argv[ai+2]), atoi(argv[ai+3]), atoi(argv[ai+4]), atoi(argv[ai+5]), atoi(argv[ai+6]), &errMsg.clear());
                             if (ret!=0)
-                                ERRLOG("setDafileSvrThrottleLimit returned %d, error = %s", ret, errMsg.str());
+                                UERRLOG("setDafileSvrThrottleLimit returned %d, error = %s", ret, errMsg.str());
                             StringBuffer s("done ");
                             ep.getUrlStr(s);
                             PROGLOG("%s",s.str());
