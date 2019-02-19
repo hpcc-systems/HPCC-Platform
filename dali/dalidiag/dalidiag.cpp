@@ -137,7 +137,7 @@ void timeQorSDS(bool timeq)
     }
     HiresTimer hrt;
     unsigned last = msTick();
-    PrintLog("last 10   last 100 last 1000 change");
+    DBGLOG("last 10   last 100 last 1000 change");
     for (;;) {
         i++;
         hrt.reset();
@@ -151,7 +151,7 @@ void timeQorSDS(bool timeq)
             sdsroot->setPropInt(subname.str(),i++);
             sdsconn->commit();
             if (!testsdssub.notifysem.wait(1000*60))
-                PrintLog("Notify Timeout!");
+                DBGLOG("Notify Timeout!");
         }
         res[in] = hrt.get();
         if (sz<MAXHISTORY)
@@ -219,7 +219,7 @@ void timeQorSDS(bool timeq)
             }
             last100av = a;
             last100max = m;
-            PrintLog("%.6f, %.6f, %.6f, (%c%c%c)",
+            DBGLOG("%.6f, %.6f, %.6f, (%c%c%c)",
                       last10av,last100av,av,last10inc,last100inc,inc);
             last = msTick();
         }
@@ -235,7 +235,7 @@ void cleanq()
     StringBuffer path("/Queues");
     Owned<IRemoteConnection> conn = querySDS().connect(path.str(),myProcessSession(),RTM_LOCK_WRITE, INFINITE);
     if (!conn) {
-        PrintLog("Could not connect to %s",path.str());
+        UERRLOG("Could not connect to %s",path.str());
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -290,7 +290,7 @@ void partInfo(const char *name,unsigned copy)
         }
     }
     else
-        DBGLOG("ERROR: %s not found", name);
+        UERRLOG("ERROR: %s not found", name);
 }
 
 
@@ -374,7 +374,7 @@ void backupList(const char *cluster)
         }
     }
     else 
-        DBGLOG("ERROR: cluster %s not found", cluster);
+        UERRLOG("Cluster %s not found", cluster);
 }
 
 void filePermissions(const char *lname,const char *username,const char *password)

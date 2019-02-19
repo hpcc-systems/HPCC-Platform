@@ -868,7 +868,7 @@ static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, Stri
                     catch (IException *e) { // maybe duplicate already?
                         StringBuffer msg;
                         e->errorMessage(msg);
-                        WARNLOG("ARCHIVE %s renaming %s to %s",msg.str(),path.str(),renpath.str());
+                        OWARNLOG("ARCHIVE %s renaming %s to %s",msg.str(),path.str(),renpath.str());
                         e->Release();
                     }
                 }
@@ -1114,12 +1114,12 @@ public:
         catch (IException *e) {
             StringBuffer err;
             e->errorMessage(err);
-            WARNLOG("setting archiveError: %s",err.str());
+            IERRLOG("setting archiveError: %s",err.str());
             e->Release();
         }
 #endif
         if (s.length())
-            WARNLOG("%s",s.str());
+            OWARNLOG("%s",s.str());
         return false;
     }
 
@@ -1184,7 +1184,7 @@ protected:
 
         bool backup()
         {
-            ERRLOG("cDFUWUBranchItem backup not supported");
+            IERRLOG("cDFUWUBranchItem backup not supported");
             return true;
         }
 
@@ -1214,7 +1214,7 @@ public:
             return true;
         }
         if (s.length())
-            WARNLOG("%s",s.str());
+            OWARNLOG("%s",s.str());
         return false;
     }
 
@@ -1275,7 +1275,7 @@ class CDFUrecoveryArchiver: public CBranchArchiver
 
         bool backup()
         {
-            ERRLOG("cDRBranchItem backup not supported");
+            IERRLOG("cDRBranchItem backup not supported");
             return true;
         }
 

@@ -352,7 +352,7 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
         {
             StringBuffer err;
             e->errorMessage(err);
-            ERRLOG("CDfsLogicalFileName::expand %s",err.str());
+            IERRLOG("CDfsLogicalFileName::expand %s",err.str());
             throw;
         }
     }
@@ -599,7 +599,7 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
     {
         StringBuffer err;
         e->errorMessage(err);
-        WARNLOG("CDfsLogicalFileName::set %s",err.str());
+        IERRLOG("CDfsLogicalFileName::set %s",err.str());
         e->Release();
     }
     if (multi)
@@ -668,7 +668,7 @@ void CDfsLogicalFileName::set(const char *scopes,const char *tail)
     s.append(tail);
     set(s.str());
     if (multi)
-        WARNLOG("set with scopes called on multi-lfn %s",get());
+        DBGLOG("set with scopes called on multi-lfn %s",get());
 }
 
 
@@ -884,7 +884,7 @@ void CDfsLogicalFileName::setQuery(const SocketEndpoint &rfsep,const char *query
 void CDfsLogicalFileName::setCluster(const char *cname)
 {
     if (multi)
-        WARNLOG("setCluster called on multi-lfn %s",get());
+        DBGLOG("setCluster called on multi-lfn %s",get());
     skipSp(cname);
     StringBuffer name(cname);
     cluster.set(name.clip().toLowerCase().str());
@@ -899,7 +899,7 @@ const char *CDfsLogicalFileName::get(bool removeforeign) const
         return "";
     if (removeforeign) {
         if (multi)
-            WARNLOG("CDfsLogicalFileName::get with removeforeign set called on multi-lfn %s",get());
+            DBGLOG("CDfsLogicalFileName::get with removeforeign set called on multi-lfn %s",get());
         ret += localpos;
     }
     return ret;
@@ -917,10 +917,10 @@ StringBuffer &CDfsLogicalFileName::get(StringBuffer &str, bool removeforeign, bo
 const char *CDfsLogicalFileName::queryTail() const
 {
     if (multi)
-        WARNLOG("CDfsLogicalFileName::queryTail called on multi-lfn %s",get());
+        DBGLOG("CDfsLogicalFileName::queryTail called on multi-lfn %s",get());
     const char *tail = get()+tailpos;
     if (strstr(tail,"::")!=NULL) {
-        ERRLOG("Tail contains '::'!");
+        OERRLOG("Tail contains '::'!");
     }
     return get()+tailpos;
 }
@@ -933,7 +933,7 @@ StringBuffer &CDfsLogicalFileName::getTail(StringBuffer &buf) const
 StringBuffer &CDfsLogicalFileName::getScopes(StringBuffer &buf,bool removeforeign) const
 {
     if (multi)
-        WARNLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
+        DBGLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
     // gets leading scopes without trailing ::
     const char *s =lfn.get();
     if (!s||(tailpos<=2))
@@ -954,7 +954,7 @@ unsigned CDfsLogicalFileName::numScopes(bool removeforeign) const
     if (!s)
         return 0;
     if (multi)
-        WARNLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
+        DBGLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
     if (removeforeign)
         s += localpos;
     // num scopes = number of "::"s
@@ -974,7 +974,7 @@ StringBuffer &CDfsLogicalFileName::getScope(StringBuffer &buf,unsigned idx,bool 
     if (!s)
         return buf;
     if (multi)
-        WARNLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
+        DBGLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
     if (removeforeign)
         s += localpos;
     // num scopes = number of "::"s
@@ -995,7 +995,7 @@ StringBuffer &CDfsLogicalFileName::getScope(StringBuffer &buf,unsigned idx,bool 
 StringBuffer &CDfsLogicalFileName::makeScopeQuery(StringBuffer &query, bool absolute) const
 {
     if (multi)
-        WARNLOG("CDfsLogicalFileName::makeFullnameQuery called on multi-lfn %s",get());
+        DBGLOG("CDfsLogicalFileName::makeFullnameQuery called on multi-lfn %s",get());
     if (absolute)
         query.append(SDS_DFS_ROOT "/");
     // returns full xpath for containing scope
@@ -1077,7 +1077,7 @@ bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
         ns = NULL;
     if (ns) {
         if (multi)
-            WARNLOG("CDfsLogicalFileName::getEp called on multi-lfn %s",get());
+            DBGLOG("CDfsLogicalFileName::getEp called on multi-lfn %s",get());
         const char *e = strstr(ns,"::");
         if (e) {
             StringBuffer node(e-ns,ns);
@@ -1111,7 +1111,7 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
         return false;
     }
     if (multi)
-        WARNLOG("CDfsLogicalFileName::makeFullnameQuery called on multi-lfn %s",get());
+        DBGLOG("CDfsLogicalFileName::makeFullnameQuery called on multi-lfn %s",get());
     const char *s = skipScope(lfn,EXTERNAL_SCOPE);
     if (s)
         s = strstr(s,"::");
@@ -1544,7 +1544,7 @@ unsigned getFileGroups(IPropertyTree *pt,StringArray &groups, bool checkclusters
                 on = "<UNKNOWN>";
             unsigned nc = pt->getPropInt("@numclusters");
             if (nc&&(nc!=groups.ordinality())) {
-                ERRLOG("%s groups/numclusters mismatch",on);
+                OERRLOG("%s groups/numclusters mismatch",on);
             }
             MemoryAttr ma;
             unsigned ng = groups.ordinality();
@@ -1565,7 +1565,7 @@ unsigned getFileGroups(IPropertyTree *pt,StringArray &groups, bool checkclusters
                 ForEachItemIn(i,groups) {
                     if (strcmp(cname,groups.item(i))==0) {
                         if (found[i]) {
-                            ERRLOG("'%s' has duplicate cluster",on);
+                            OERRLOG("'%s' has duplicate cluster",on);
                         }
                         else
                             found[i] = true;
@@ -1575,13 +1575,13 @@ unsigned getFileGroups(IPropertyTree *pt,StringArray &groups, bool checkclusters
                 }
                 if (!ok) {
                     const char * gs = pt->queryProp("@group");
-                    ERRLOG("'%s' has missing cluster(%s) in groups(%s)",on,cname,gs?gs:"NULL");
+                    OERRLOG("'%s' has missing cluster(%s) in groups(%s)",on,cname,gs?gs:"NULL");
                 }
             }
             if (anyfound) {
                 for (unsigned i=0;i<ng;i++)
                     if (!found[i])
-                        WARNLOG("'%s' has missing group(%s) in clusters",on,groups.item(i));
+                        DBGLOG("'%s' has missing group(%s) in clusters",on,groups.item(i));
             }
         }
     }
@@ -1652,7 +1652,7 @@ void expandFileTree(IPropertyTree *file,bool expandnodes,const char *cluster)
                 break;
             }
         if (i==ng)
-            ERRLOG("expandFileTree: Cluster %s not found in file",cluster);
+            OERRLOG("expandFileTree: Cluster %s not found in file",cluster);
     }
     if (cn<ng) {
         const char *gname = groups.item(cn);
@@ -2578,7 +2578,7 @@ public:
     }
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-//      PrintLog("Notification(%" I64F "x) of %s - flags = %d",(__int64) id, xpath, flags);
+//      DBGLOG("Notification(%" I64F "x) of %s - flags = %d",(__int64) id, xpath, flags);
         sem.signal();
     }
 };
@@ -2754,7 +2754,7 @@ public:
     ~CDFSredirection()
     {
         if (linked)
-            ERRLOG("CDFSredirection: cDFSredirect leaked(%d)",linked);
+            IERRLOG("CDFSredirection: cDFSredirect leaked(%d)",linked);
         clear();
     }
 
@@ -2874,7 +2874,7 @@ public:
         // *doesn't* reload (but invalidates last load time)
         Owned<IRemoteConnection> conn = querySDS().connect("Files/Redirection", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
         if (!conn) {
-            ERRLOG("Cannot update Files/Redirection");
+            OERRLOG("Cannot update Files/Redirection");
             return;
         }
         IPropertyTree &root = *conn->queryRoot();
@@ -2988,7 +2988,7 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &reload, 
             {
                 unsigned tt = msTick()-start;
                 if (count++>0) {// don't warn first time
-                    WARNLOG("safeChangeModeWrite on %s waiting for %ds",name,tt/1000);
+                    DBGLOG("safeChangeModeWrite on %s waiting for %ds",name,tt/1000);
                     if (count==2)
                         PrintStackReport();
                 }
@@ -3004,7 +3004,7 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &reload, 
         }
         // temporarily release the lock, we don't need to warn twice, do we?
         if (!reload) {
-            WARNLOG("safeChangeModeWrite - temporarily releasing lock on %s to avoid deadlock",name);
+            DBGLOG("safeChangeModeWrite - temporarily releasing lock on %s to avoid deadlock",name);
             conn->changeMode(RTM_NONE);
             reload = true;
         }

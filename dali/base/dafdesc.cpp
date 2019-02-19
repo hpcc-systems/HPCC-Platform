@@ -143,16 +143,16 @@ bool ClusterPartDiskMapSpec::calcPartLocation (unsigned part, unsigned maxparts,
     if (copy) {
         if (fw) {
             if (interleave>1)
-                ERRLOG("ClusterPartDiskMapSpec interleave not allowed if fill width set");
+                IERRLOG("ClusterPartDiskMapSpec interleave not allowed if fill width set");
             if (flags&CPDMSF_repeatedPart)
-                ERRLOG("ClusterPartDiskMapSpec repeated part not allowed if fill width set");
+                IERRLOG("ClusterPartDiskMapSpec repeated part not allowed if fill width set");
             unsigned m = clusterwidth/maxparts;
             drv = startDrv+(repdrv+(copy/m-1))%maxDrvs;
             node += (copy%m)*maxparts;
         }
         else if ((flags&CPDMSF_repeatedPart)) {
             if (flags&CPDMSF_wrapToNextDrv)
-                ERRLOG("ClusterPartDiskMapSpec repeated part not allowed if wrap to next drive set");
+                IERRLOG("ClusterPartDiskMapSpec repeated part not allowed if wrap to next drive set");
             unsigned repnum = copy%dc;
             unsigned nodenum = copy/dc;
             drv = startDrv+repnum%maxDrvs;
@@ -634,7 +634,7 @@ public:
         ismulti = false;
         if (!isEmptyPTree(pt)) {
             if (pt->getPropInt("@num",idx+1)-1!=idx)
-                WARNLOG("CPartDescriptor part index mismatch");
+                IERRLOG("CPartDescriptor part index mismatch");
             overridename.set(pt->queryProp("@name"));
             if (overridename.isEmpty())
                 overridename.clear();
@@ -965,7 +965,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
         assertex(np>=n);
         if (n==0) {
             clusters.remove(clusters.ordinality()-1);
-            WARNLOG("CFileDescriptor: removing empty cluster");
+            IWARNLOG("CFileDescriptor: removing empty cluster");
         }
         else {
             unsigned w;
@@ -997,7 +997,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
 
                 CPartDescriptor *pt = part(i);
                 if (!pt)
-                    WARNLOG("Null part in pending file descriptor");
+                    IWARNLOG("Null part in pending file descriptor");
                 else if (pt->isMulti()) {
                     assertex(!pt->overridename.isEmpty());
                     if (!isAbsolutePath(pt->overridename)) {        // assumes all multi are same
@@ -1023,7 +1023,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
         else
             splitDirTail(part0.overridename,dir);
         if (dir.length()==0) {
-            WARNLOG("CFileDescriptor cannot determine directory for file %s in '%s'",tracename.str(),part0.overridename.str());
+            IWARNLOG("CFileDescriptor cannot determine directory for file %s in '%s'",tracename.str(),part0.overridename.str());
         }
         else {
             const char *s = dir.str();
@@ -1486,7 +1486,7 @@ public:
                 pt.addPropTree("Cluster",ct.getClear());
             }
             else
-                WARNLOG("CFileDescriptor::serializeTree - empty cluster");
+                IWARNLOG("CFileDescriptor::serializeTree - empty cluster");
         }
         if (grplist.length())
             pt.setProp("@group",grplist.str());
@@ -1595,13 +1595,13 @@ public:
         CPartDescriptor &p = *part(idx);
         p.set(idx,filename,pt);
         if (idx>=pending->ordinality())
-            ERRLOG("IFileDescriptor setPart called after cluster finished");
+            IERRLOG("IFileDescriptor setPart called after cluster finished");
         else {
             SocketEndpoint &pep = pending->element(idx);
             if (pep.isNull())
                 pep=ep;
             else
-                ERRLOG("IFileDescriptor setPart called twice for same part");
+                IERRLOG("IFileDescriptor setPart called twice for same part");
         }
     }
 
@@ -2306,7 +2306,7 @@ IPartDescriptor *deserializePartFileDescriptor(MemoryBuffer &mb)
     IArrayOf<IPartDescriptor> parts;
     Owned<CFileDescriptor> parent = doDeserializePartFileDescriptors(mb,&parts);
     if (parts.ordinality()!=1)
-        ERRLOG("deserializePartFileDescriptor deserializing multiple parts not single part");
+        IERRLOG("deserializePartFileDescriptor deserializing multiple parts not single part");
     if (parts.ordinality()==0)
         return NULL;
     return LINK(&parts.item(0));
@@ -2820,10 +2820,10 @@ void removePartFiles(IFileDescriptor *desc,IMultiException *mexcept)
 //                          PROGLOG("Removed '%s'",partfile->queryFilename());
                         unsigned t = msTick()-start;
                         if (t>60*1000)
-                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            OWARNLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
                     }
 //                      else
-//                          LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+//                          OWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
                 }
                 catch (IException *e)
                 {
@@ -2955,7 +2955,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
                 }
             }
             else
-                ERRLOG("createFileDescriptorFromRoxie: %s missing part %s",id,xpath.str());
+                IERRLOG("createFileDescriptorFromRoxie: %s missing part %s",id,xpath.str());
         }
     }
     res->setPartMask(mask);
