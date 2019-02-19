@@ -391,12 +391,12 @@ void Thread::startRelease()
     if (status) {
         threadid = 0;
         Release();
-        ERRLOG("pthread_create returns %d",status);
+        IERRLOG("pthread_create returns %d",status);
         PrintStackReport();
         PrintMemoryReport();
         StringBuffer s;
         getThreadList(s);
-        ERRLOG("Running threads:\n %s",s.str());
+        IERRLOG("Running threads:\n %s",s.str());
         throw makeOsException(status);
     }
     unsigned retryCount = 10;
@@ -1322,7 +1322,7 @@ static void CheckAllowedProgram(const char *prog,const char *allowed)
         if (WildMatch(head.str(),list.item(i)))
             return;
     }
-    ERRLOG("Unauthorized pipe program(%s)",head.str());
+    OERRLOG("Unauthorized pipe program(%s)",head.str());
     throw MakeStringException(-1,"Unauthorized pipe program(%s)",head.str());
 }
 
@@ -1444,7 +1444,7 @@ public:
             if (_title) {
                 StringBuffer errstr;
                 formatSystemError(errstr, GetLastError());
-                ERRLOG("%s: PIPE process '%s' failed: %s", title.get(), prog, errstr.str());
+                OERRLOG("%s: PIPE process '%s' failed: %s", title.get(), prog, errstr.str());
             }
             return false;
         }
@@ -1730,7 +1730,7 @@ static unsigned dowaitpid(HANDLE pid, int mode)
                 return WEXITSTATUS(stat);
             else if (WIFSIGNALED(stat))
             {
-                ERRLOG("Program was terminated by signal %u", (unsigned) WTERMSIG(stat));
+                OERRLOG("Program was terminated by signal %u", (unsigned) WTERMSIG(stat));
                 if (WTERMSIG(stat)==SIGPIPE)
                     return 0;
                 return 254;
@@ -1746,7 +1746,7 @@ static unsigned dowaitpid(HANDLE pid, int mode)
         if (err == ECHILD) 
             break;
         if (err!=EINTR) {
-            ERRLOG("dowait failed with errcode %d",err);
+            OERRLOG("dowait failed with errcode %d",err);
             return (unsigned)-1;
         }       
     }

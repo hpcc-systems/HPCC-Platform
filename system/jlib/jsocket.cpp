@@ -1012,7 +1012,7 @@ ISocket* CSocket::accept(bool allowcancel)
         return NULL;
     }
     if (state != ss_open) {
-        ERRLOG("invalid accept, state = %d",(int)state);
+        IERRLOG("invalid accept, state = %d",(int)state);
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
     }
     if (connectionless()) {
@@ -2062,7 +2062,7 @@ size32_t CSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
 
     if (nwritten < size)
     {
-        ERRLOG("writetms timed out; timeout: %u, nwritten: %u, size: %u", timeoutms, nwritten, size);
+        IERRLOG("writetms timed out; timeout: %u, nwritten: %u, size: %u", timeoutms, nwritten, size);
         THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
     }
 
@@ -2938,7 +2938,7 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
             {
                 if (!recursioncheck) {
                     recursioncheck = true;
-                    DBGLOG("Error retrieving interface flags for interface %s", item->ifr_name);
+                    IERRLOG("Error retrieving interface flags for interface %s", item->ifr_name);
                     recursioncheck = false;
                 }
                 continue;

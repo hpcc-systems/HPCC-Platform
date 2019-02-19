@@ -48,7 +48,7 @@ bool processArgvFilenamesFromFile(IFileArray & filenames, const char * filename)
     FILE * in = fopen(filename, "r");
     if (!in)
     {
-        ERRLOG("Error: File '%s' does not exist", filename);
+        UERRLOG("Error: File '%s' does not exist", filename);
         return false;
     }
 
@@ -90,7 +90,7 @@ bool processArgvFilename(IFileArray & filenames, const char * filename)
         Owned<IFile> cur = createIFile(filename);
         if (cur->isFile() != foundYes)
         {
-            ERRLOG("Error: File '%s' does not exist", filename);
+            UERRLOG("Error: File '%s' does not exist", filename);
             return false;
         }
         filenames.append(*cur.getClear());
@@ -124,7 +124,7 @@ bool ArgvIterator::matchOption(StringAttr & value, const char * name)
         return true;
     }
 
-    ERRLOG("Error: Need to supply a value for %s", arg);
+    UERRLOG("Error: Need to supply a value for %s", arg);
     return false;
 }
 
@@ -159,7 +159,7 @@ bool ArgvIterator::matchFlag(StringAttr & value, const char * name)
         return true;
     }
 
-    ERRLOG("Error: %s needs to supply an associated value", arg);
+    UERRLOG("Error: %s needs to supply an associated value", arg);
     return false;
 }
 
@@ -213,7 +213,7 @@ bool ArgvIterator::matchPathFlag(StringBuffer & option, const char * name)
         return true;
     }
 
-    ERRLOG("Error: %s needs to specify a directory", arg);
+    UERRLOG("Error: %s needs to specify a directory", arg);
     return false;
 }
 

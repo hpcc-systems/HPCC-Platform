@@ -631,7 +631,7 @@ void raiseAssertException(const char *assertion, const char *file, unsigned line
     if (queryLogMsgManager())
     {
         printStackReport();
-        ERRLOG("%s",s.str());       // make sure doesn't get lost!
+        IERRLOG("%s",s.str());       // make sure doesn't get lost!
         queryLogMsgManager()->flushQueue(10*1000);
 #ifdef _DEBUG
         // cause a breakpoint in the debugger if we are debugging.

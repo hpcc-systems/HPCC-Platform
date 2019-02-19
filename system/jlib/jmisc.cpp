@@ -430,7 +430,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
         outh = CreateFile(outfile,GENERIC_READ|GENERIC_WRITE,FILE_SHARE_READ|FILE_SHARE_WRITE,&security,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
         if (outh == INVALID_HANDLE_VALUE)
         {
-            ERRLOG("Cannot create file '%s' error code %d",outfile,(int)GetLastError());
+            OERRLOG("Cannot create file '%s' error code %d",outfile,(int)GetLastError());
             return false;
         }
     }
@@ -438,7 +438,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
         if (!DuplicateHandle(GetCurrentProcess(),outh,GetCurrentProcess(),&StartupInfo.hStdOutput, 0, TRUE, DUPLICATE_SAME_ACCESS) || 
              !DuplicateHandle(GetCurrentProcess(),outh,GetCurrentProcess(),&StartupInfo.hStdError, 0, TRUE, DUPLICATE_SAME_ACCESS))
         {
-            ERRLOG("Execution of \"%s\" failed, DuplicateHandle error = %d",command_line, (int)GetLastError());
+            OERRLOG("Execution of \"%s\" failed, DuplicateHandle error = %d",command_line, (int)GetLastError());
             CloseHandle(outh);
             return false;
         }
@@ -468,7 +468,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
     {
         int lastError = (int)GetLastError();      // for debugging
         //print out why create process failed
-        ERRLOG("Execution of \"%s\" failed, error = %d",command_line,lastError);
+        OERRLOG("Execution of \"%s\" failed, error = %d",command_line,lastError);
     }
     if (outh)
     {
@@ -498,7 +498,7 @@ jlib_decl bool interrupt_program(HANDLE handle, bool stopChildren, int signum)
 {
     if (signum==0)
         return TerminateProcess(handle,1)!=FALSE;
-    ERRLOG("interrupt_program signal %d not supported in windows",signum);
+    OERRLOG("interrupt_program signal %d not supported in windows",signum);
     return false;
 }
 
@@ -532,7 +532,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
                 close(outh);
             }
             else  {
-                ERRLOG("invoke_program: could not open %s",outfile);
+                OERRLOG("invoke_program: could not open %s",outfile);
                 return false;
             }
         }
@@ -564,7 +564,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
         {
             //print out why create process failed
             int err = errno;
-            ERRLOG("invoke_program(%s) failed with error(%d): %s",command_line,err,strerror(err));
+            OERRLOG("invoke_program(%s) failed with error(%d): %s",command_line,err,strerror(err));
         }
         assertex(0); // don't expect to get here!
         _exit(0);
@@ -580,7 +580,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
         else
             s.append(errno);
 
-        ERRLOG("%s",s.str());
+        OERRLOG("%s",s.str());
         if(throwException)
             throw MakeStringExceptionDirect(-1, s.str());
         return false;
@@ -598,16 +598,16 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
                 break;
             if (errno != EINTR)
             {
-                ERRLOG("invoke_program(%s): wait failed (%d, %d, %d)",command_line,(int) wpid, retv, errno);
+                OERRLOG("invoke_program(%s): wait failed (%d, %d, %d)",command_line,(int) wpid, retv, errno);
                 return false;
             }
         }
         if (!WIFEXITED(retv)) //did not exit normally
         {
             int err = errno;
-            ERRLOG("invoke_program(%s): failed.",command_line);
-            ERRLOG("The process was killed by signal %d%s.",(int)WTERMSIG(retv),WCOREDUMP(retv)?" - core dumped":"");
-            ERRLOG("Last system error is %s",strerror(err));
+            OERRLOG("invoke_program(%s): failed.",command_line);
+            OERRLOG("The process was killed by signal %d%s.",(int)WTERMSIG(retv),WCOREDUMP(retv)?" - core dumped":"");
+            OERRLOG("Last system error is %s",strerror(err));
         }
 
         runcode = WEXITSTATUS(retv);
@@ -625,7 +625,7 @@ bool wait_program(HANDLE handle,DWORD &runcode,bool block)
     int retv;
     pid_t ret = waitpid(pid, &retv, block?0:WNOHANG);
     if (ret == (pid_t)-1) {
-        ERRLOG("wait_program: wait failed (%d)",errno);
+        IERRLOG("wait_program: wait failed (%d)",errno);
         return true; // actually it failed but assume finished
     }
     else if (ret==0)
