@@ -46,9 +46,9 @@ typedef Owned<IFileSprayer> OwnedIFileSprayer;
 void CDistributedFileSystem::copy(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
 {
     if (to->queryLogicalName())
-        LOG(MCdebugInfo, unknownJob, "DFS: copy(%s,%s)", from->queryLogicalName(), to->queryLogicalName());
+        DBGLOG("DFS: copy(%s,%s)", from->queryLogicalName(), to->queryLogicalName());
     else
-        LOG(MCdebugInfo, unknownJob, "DFS: copy(%s)", from->queryLogicalName());
+        DBGLOG("DFS: copy(%s)", from->queryLogicalName());
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
 
@@ -64,7 +64,7 @@ void CDistributedFileSystem::copy(IDistributedFile * from, IDistributedFile * to
 void CDistributedFileSystem::exportFile(IDistributedFile * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
 {
     StringBuffer temp;
-    LOG(MCdebugInfo, unknownJob, "DFS: export(%s,%s)", from->queryLogicalName(), to->getTraceName(temp).str());
+    DBGLOG("DFS: export(%s,%s)", from->queryLogicalName(), to->getTraceName(temp).str());
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
     sprayer->setOperation(dfu_export);
@@ -80,9 +80,9 @@ void CDistributedFileSystem::import(IFileDescriptor * from, IDistributedFile * t
 {
     StringBuffer temp;
     if (to->queryLogicalName())
-        LOG(MCdebugInfo, unknownJob, "DFS: import(%s,%s)", from->getTraceName(temp).str(), to->queryLogicalName());
+        DBGLOG("DFS: import(%s,%s)", from->getTraceName(temp).str(), to->queryLogicalName());
     else
-        LOG(MCdebugInfo, unknownJob, "DFS: import(%s)", from->getTraceName(temp).str());
+        DBGLOG("DFS: import(%s)", from->getTraceName(temp).str());
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
     sprayer->setOperation(dfu_import);
@@ -97,9 +97,9 @@ void CDistributedFileSystem::import(IFileDescriptor * from, IDistributedFile * t
 void CDistributedFileSystem::move(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
 {
     if (to->queryLogicalName())
-        LOG(MCdebugInfo, unknownJob, "DFS: move(%s,%s)", from->queryLogicalName(), to->queryLogicalName());
+        DBGLOG("DFS: move(%s,%s)", from->queryLogicalName(), to->queryLogicalName());
     else
-        LOG(MCdebugInfo, unknownJob, "DFS: move(%s)", from->queryLogicalName());
+        DBGLOG("DFS: move(%s)", from->queryLogicalName());
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
     sprayer->setOperation(dfu_move);
@@ -115,7 +115,7 @@ void CDistributedFileSystem::move(IDistributedFile * from, IDistributedFile * to
 
 void CDistributedFileSystem::replicate(IDistributedFile * from, IGroup *destgroup, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
 {
-    LOG(MCdebugInfo, unknownJob, "DFS: replicate(%s)", from->queryLogicalName());
+    DBGLOG("DFS: replicate(%s)", from->queryLogicalName());
 
     FileSprayer sprayer(options, recovery, recoveryConnection, wuid);
     sprayer.setOperation(dfu_replicate_distributed);
@@ -131,7 +131,7 @@ void CDistributedFileSystem::replicate(IDistributedFile * from, IGroup *destgrou
 void CDistributedFileSystem::replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
 {
     StringBuffer s;
-    LOG(MCdebugInfo, unknownJob, "DFS: replicate(%s, %x)", fd->getTraceName(s).str(), (unsigned)mode);
+    DBGLOG("DFS: replicate(%s, %x)", fd->getTraceName(s).str(), (unsigned)mode);
 
     FileSprayer sprayer(options, recovery, recoveryConnection, wuid);
     sprayer.setOperation(dfu_replicate);
@@ -146,7 +146,7 @@ void CDistributedFileSystem::replicate(IFileDescriptor * fd, DaftReplicateMode m
 void CDistributedFileSystem::transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
 {
     StringBuffer s1, s2;
-    LOG(MCdebugInfo, unknownJob, "DFS: transfer(%s,%s)", from->getTraceName(s1).str(), to->getTraceName(s1).str());
+    DBGLOG("DFS: transfer(%s,%s)", from->getTraceName(s1).str(), to->getTraceName(s1).str());
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
     sprayer->setOperation(dfu_transfer);
@@ -280,7 +280,7 @@ offset_t CDistributedFileSystem::getSize(IDistributedFilePart * part, bool force
 void CDistributedFileSystem::replicate(IDistributedFilePart * part, INode *node)
 {
     StringBuffer partname;
-    LOG(MCdebugInfo, unknownJob, "DFS: replicate part(%s)", part->getPartName(partname).str());
+    DBGLOG("DFS: replicate part(%s)", part->getPartName(partname).str());
 
     FileSprayer sprayer(NULL, NULL, NULL, NULL);
     sprayer.setReplicate(true);
@@ -298,7 +298,7 @@ bool CDistributedFileSystem::compress(IDistributedFilePart * part)
         OwnedIFile file = getIFile(part, copy);
         if (!file->setCompression(true))
         {
-            LOG(MCerror, unknownJob, "Failed to compress file part %s", file->queryFilename());
+            OERRLOG("Failed to compress file part %s", file->queryFilename());
             ok = false;
         }
     }

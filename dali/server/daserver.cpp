@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
             fileMsgHandler = lf->beginLogging();
         }
 
-        DBGLOG("Build %s", BUILD_TAG);
+        LOG(MCoperatorInfo, unknownJob, "Build %s", BUILD_TAG);
 
         if (serverConfig)
         {
@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
                                 rfn.setPath(ep,mirrorPath.str());
                             }
                             else {
-                                WARNLOG("Local path used for backup url: %s", mirrorPath.str());
+                                OWARNLOG("Local path used for backup url: %s", mirrorPath.str());
                                 rfn.setLocalPath(mirrorPath.str());
                             }
                             rfn.getRemotePath(backupURL);

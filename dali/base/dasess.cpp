@@ -1262,7 +1262,7 @@ public:
     static CLdapWorkItem *get(IDaliLdapConnection *_ldapconn,Semaphore &_threaddone)
     {
         if (!_threaddone.wait(1000*60*5)) {
-            ERRLOG("Too many stalled LDAP threads");
+            IERRLOG("Too many stalled LDAP threads");
             return NULL;
         }
         return new CLdapWorkItem(_ldapconn,_threaddone);
@@ -1332,11 +1332,11 @@ public:
     {
         stopping = true;
         if (!ldapsig.wait(60*1000))
-            WARNLOG("LDAP stalled(1)");
+            OWARNLOG("LDAP stalled(1)");
         if (ldapworker) {
             ldapworker->stop();
             if (!ldapworker->join(1000))
-                WARNLOG("LDAP stalled(2)");
+                OWARNLOG("LDAP stalled(2)");
             ldapworker.clear();
         }
         ldapconn.clear();
@@ -1372,7 +1372,7 @@ public:
         CProcessSessionState *s = new CProcessSessionState(id,client,role);
         while (!sessionstates.add(s)) // takes ownership
         {
-            WARNLOG("Dali session manager: session already registered");
+            OWARNLOG("Dali session manager: session already registered");
             sessionstates.remove(id);
         }
         while (!processlookup.add(s))
@@ -1385,7 +1385,7 @@ public:
             dbgassertex(previousState); // Must be there, it's reason add() failed
             SessionId oldSessionId = previousState->getId();
             s->addSessionIds(*previousState, false); // merges sessions from previous process state into new one that replaces it
-            WARNLOG("Dali session manager: registerClient process session already registered, old (%" I64F "x) replaced", oldSessionId);
+            OWARNLOG("Dali session manager: registerClient process session already registered, old (%" I64F "x) replaced", oldSessionId);
             processlookup.remove(previousState, this);
         }
     }
@@ -1395,7 +1395,7 @@ public:
         CHECKEDCRITICALBLOCK(sessmanagersect,60000);
         CSessionState *s = new CSessionState(id);
         while (!sessionstates.add(s)) { // takes ownership
-            WARNLOG("Dali session manager: session already registered (2)");
+            OWARNLOG("Dali session manager: session already registered (2)");
             sessionstates.remove(id);
         }
     }
@@ -1494,11 +1494,11 @@ public:
                     ldapworker->start(key,obj,udesc,flags,reqSignature,reqUTCTimestamp);
                     for (unsigned i=0;i<10;i++) {
                         if (i)
-                            WARNLOG("LDAP stalled(%d) - retrying",i);
+                            OWARNLOG("LDAP stalled(%d) - retrying",i);
                         SecAccessFlags ret;
                         if (ldapworker->wait(1000*20,(int&)ret)) {
                             if (ret==CLDAPE_ldapfailure) {
-                                LOG(MCoperatorError, unknownJob, "LDAP - failure (returning no access for %s)",obj); 
+                                OERRLOG("LDAP - failure (returning no access for %s)",obj); 
                                 ldapsig.signal();
                                 if (err)
                                     *err = CLDAPE_ldapfailure;
@@ -1523,7 +1523,7 @@ public:
                         ldapworker->stop();
                     ldapworker.clear(); // abandon thread
                 }
-                LOG(MCoperatorError, unknownJob, "LDAP stalled - aborting (returning no access for %s)",obj); 
+                OERRLOG("LDAP stalled - aborting (returning no access for %s)",obj); 
                 ldapsig.signal();
                 if (err)
                     *err = CLDAPE_getpermtimeout;
@@ -1535,7 +1535,7 @@ public:
                 static unsigned lasttick=0;
                 static unsigned first50=0;
                 if ((waiting!=last)&&(msTick()-lasttick>1000)) {
-                    WARNLOG("%d threads waiting for ldap",waiting);
+                    OWARNLOG("%d threads waiting for ldap",waiting);
                     last = waiting;
                     lasttick = msTick();
                 }
@@ -1543,7 +1543,7 @@ public:
                     if (first50==0)
                         first50 = msTick();
                     else if (msTick()-first50>60*1000) {
-                        LOG(MCoperatorError, unknownJob, "LDAP stalled - aborting (returning 0 for %s)", obj); 
+                        OERRLOG("LDAP stalled - aborting (returning 0 for %s)", obj); 
                         if (err)
                             *err = CLDAPE_getpermtimeout;
                         break;
@@ -1698,7 +1698,7 @@ protected:
         MemoryBuffer mb;
         bool abort=true;
         mb.append(abort);
-        OERRLOG("Session Manager - adding unknown session ID %" I64F "x", nstub->getSessionId());
+        OWARNLOG("Session Manager - adding unknown session ID %" I64F "x", nstub->getSessionId());
         subs->notify(mb); 
         delete nstub;
         return;
@@ -2018,7 +2018,7 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
             }
         }
         StringBuffer str;
-        PROGLOG("Failed to connect to Dali Server %s.", comm->queryGroup().queryNode(r).endpoint().getUrlStr(str).str());
+        OERRLOG("Failed to connect to Dali Server %s.", comm->queryGroup().queryNode(r).endpoint().getUrlStr(str).str());
         if (tm.timedout())
         {
             PROGLOG("%s", str.append(" Timed out.").str());

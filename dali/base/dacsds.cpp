@@ -46,7 +46,7 @@ static CriticalSection SDScrit;
 #define CHECK_CONNECTED(XSTR)                                                                                        \
     if (!connected)                                                                                                   \
     {                                                                                                               \
-        LOG(MCerror, unknownJob, XSTR": Closed connection (xpath=%s, sessionId=%" I64F "d)", xpath.get(), sessionId);       \
+        DBGLOG(XSTR": Closed connection (xpath=%s, sessionId=%" I64F "d)", xpath.get(), sessionId);       \
         return;                                                                                                     \
     }
 
@@ -1291,7 +1291,7 @@ bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
     {
         bool avail = concurrentRequests.wait(clientThrottleDelay);
         if (!avail)
-            WARNLOG("Excessive concurrent Dali SDS client transactions. Transaction delayed.");
+            OWARNLOG("Excessive concurrent Dali SDS client transactions. Transaction delayed.");
         bool res;
         try { res = queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST); }
         catch (IException *)
@@ -1601,7 +1601,7 @@ void CClientSDSManager::commit(CRemoteConnection &connection, bool *disconnectDe
             if (DCERR_server_closed == e->errorCode())
             {
                 if (changes)
-                    WARNLOG("Dali server disconnect, failed to commit data");
+                    OWARNLOG("Dali server disconnect, failed to commit data");
                 e->Release();
                 if (disconnectDeleteRoot)
                     noteDisconnected(connection);
@@ -2110,7 +2110,7 @@ void CClientSDSManager::setConfigOpt(const char *opt, const char *value)
                 {
                     // generally won't be waiting, as would expect this option to typically be called just after component startup time.
                     if (!concurrentRequests.wait(clientThrottleDelay))
-                        WARNLOG("Waiting on active requests to lower clientThrottleLimit");
+                        OWARNLOG("Waiting on active requests to lower clientThrottleLimit");
                     else
                     {
                         ++c;

@@ -509,7 +509,7 @@ public:
         }
         catch (IException *e)
         {
-            LOG(MCuserWarning, e, "SDS: Error notifying subscriber");
+            LOG(MCinternalError, e, "SDS: Error notifying subscriber");
             e->Release();
         }
         return false; // unsubscribe
@@ -607,7 +607,7 @@ public:
 
     void closed(SessionId id)
     {
-        LOG(MCwarning, unknownJob, "Connection (%" I64F "x) was leaked by exiting client (%" I64F "x) path=%s", connectionId, id, queryXPath());
+        OWARNLOG("Connection (%" I64F "x) was leaked by exiting client (%" I64F "x) path=%s", connectionId, id, queryXPath());
         aborted(id);
         subsid=0;
     }
@@ -992,7 +992,7 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
         {
             exception.setown(e);
             StringBuffer s(msg);
-            LOG(MCoperatorError, unknownJob, e, s.append("writeDelta, failed").str());
+            LOG(MCinternalError, unknownJob, e, s.append("writeDelta, failed").str());
         }
         if (!exception.get())
             break;
@@ -1264,12 +1264,12 @@ public:
         {
             if (items>lastNumWarnItems) // track as they go up
             {
-                LOG(MCoperatorWarning, "Backup thread has a high # (%d) of pending transaction queued to write", items);
+                OWARNLOG("Backup thread has a high # (%d) of pending transaction queued to write", items);
                 lastNumWarnItems = items;
             }
             else if (warningTime.elapsed() >= 60000) // if falling, avoid logging too much
             {
-                LOG(MCoperatorWarning, "Backup thread has a high # (%d) of pending transaction queued to write", items);
+                OWARNLOG("Backup thread has a high # (%d) of pending transaction queued to write", items);
                 lastNumWarnItems = 0;
                 warningTime.reset(0);
             }
@@ -1285,7 +1285,7 @@ public:
             addWaiting = false;
             recentTimeThrottled += (msTick()-ms); // reset when queue < largeWarningThreshold
             if (recentTimeThrottled >= softQueueLimitDelay && (0 == throttleCounter % 10)) // softQueueLimit exceeded - log every 10 transactions if recentTimeThrottled >= softQueueLimitDelay (1 unsignalled delay)
-                LOG(MCoperatorWarning, "Primary transactions are being delayed by lagging backup, currently %d queued, recent total throttle delay=%d", items, recentTimeThrottled);
+                OWARNLOG("Primary transactions are being delayed by lagging backup, currently %d queued, recent total throttle delay=%d", items, recentTimeThrottled);
             ++throttleCounter; // also reset when queue < largeWarningThreshold
         }
         if (waiting)
@@ -1309,7 +1309,7 @@ public:
         }
         catch (IException *e)
         {
-            LOG(MCoperatorWarning, e, "BackupHandler(async) write operation failed, possible backup data loss");
+            LOG(MCoperatorWarning, unknownJob, e, "BackupHandler(async) write operation failed, possible backup data loss");
             e->Release();
         }
         return false;
@@ -2907,19 +2907,19 @@ IPropertyTree *createServerTree(const char *tag=NULL)
     {                                                                                                                       \
         StringBuffer s(TEXT": Consistency check failure, id'd tree not found: ");                                           \
         s.append(PATH).append(", id=").append(ID);                                              \
-        LOG(MCoperatorWarning, unknownJob, s.str());                                                                        \
+        OWARNLOG("%s",s.str());                                                                        \
     }                                                                                                                       \
     else if (!LOCALTREE)                                                                                                    \
     {                                                                                                                       \
         StringBuffer s(TEXT": Consistency check failure, positional property specification: ");                             \
         s.append(PATH).append(", in client update not found in parent tree: ").append(PARENTNAME);              \
-        LOG(MCoperatorWarning, unknownJob, s.str());                                                                        \
+        OWARNLOG("%s",s.str());                                                                        \
     }                                                                                                                       \
     else if (IDTREE != LOCALTREE)                                                                                           \
     {                                                                                                                       \
         StringBuffer s(TEXT": Consistency check failure, positional property specification does not match id'd tree, prop=");\
         s.append(PATH);                                                                                         \
-        LOG(MCoperatorWarning, unknownJob, s.str());                                                                        \
+        OWARNLOG("%s",s.str());                                                                        \
     }
 
 PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange &parentBranchChange)
@@ -3866,12 +3866,12 @@ int CSDSTransactionServer::run()
                     try { coven.reply(mb); }
                     catch (IJSOCK_Exception *e)
                     {
-                        LOG(MCwarning, unknownJob, e, "Failed to reply to client (CSDSTransactionServer thread)");
+                        LOG(MCinternalError, unknownJob, e, "Failed to reply to client (CSDSTransactionServer thread)");
                         e->Release();
                     }
                     catch (IMP_Exception *e)
                     {
-                        LOG(MCwarning, unknownJob, e, "Failed to reply to client (CSDSTransactionServer thread)");
+                        LOG(MCinternalError, unknownJob, e, "Failed to reply to client (CSDSTransactionServer thread)");
                         e->Release();
                     }
                 }
@@ -3883,7 +3883,7 @@ int CSDSTransactionServer::run()
         {
             StringBuffer s("Failure receiving message from client ");
             mb.getSender().getUrlStr(s);
-            LOG(MCwarning, unknownJob, e, s.str());
+            LOG(MCinternalError, unknownJob, e, s.str());
             e->Release();
         }
     }
@@ -4199,7 +4199,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 {
                     StringBuffer s("Failed to establish locks to multiple paths: ");
                     getMConnectString(mConnect, s);
-                    LOG(MCwarning, unknownJob, e, s.str());
+                    LOG(MCinternalError, unknownJob, e, s.str());
                     throw;
                 }
                 catch (DALI_CATCHALL)
@@ -4603,7 +4603,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
     }
     catch (IMP_Exception *e)
     {
-        LOG(MCwarning, unknownJob, e, "Failed to reply to client (processMessage)");
+        LOG(MCinternalError, unknownJob, e, "Failed to reply to client (processMessage)");
         e->Release();
     }
     catch (IException *e)
@@ -4625,7 +4625,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         }
         catch (IException *e)
         {
-            LOG(MCwarning, unknownJob, e, "Failed to reply and failed to send reply error to client");
+            LOG(MCinternalError, unknownJob, e, "Failed to reply and failed to send reply error to client");
             e->Release();
         }
     }
@@ -4811,7 +4811,7 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
         unsigned crc = crcPipeStream->queryCrc();
 
         if (crcValidation && crc != crcValidation)
-            LOG(MCoperatorWarning, unknownJob, "Error processing store %s - CRC ERROR (file size=%" I64F "d, validation crc=%x, calculated crc=%x)", storeFilename, iFileIOStore->size(), crcValidation, crc); // not fatal yet (maybe later)
+            OWARNLOG("Error processing store %s - CRC ERROR (file size=%" I64F "d, validation crc=%x, calculated crc=%x)", storeFilename, iFileIOStore->size(), crcValidation, crc); // not fatal yet (maybe later)
     }
     catch (IException *e)
     {
@@ -4819,7 +4819,7 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
         {
             StringBuffer s("Exception - loading store file : ");
             s.appendf("%s", storeFilename);
-            LOG(MCoperatorError, unknownJob, e, s.str());
+            LOG(MCinternalError, unknownJob, e, s.str());
         }
         if (SDSExcpt_OpenStoreFailed != e->errorCode())
             if (!logErrorsOnly)
@@ -5360,8 +5360,8 @@ public:
                         if (fSize > lastGood)
                         {
                             offset_t diff = fSize - lastGood;
-                            LOG(MCoperatorError, unknownJob, "Delta file '%s', has %" I64F "d bytes of trailing data (possible power loss during save?), file size: %" I64F "d, last committed size: %" I64F "d", filename, diff, fSize, lastGood);
-                            LOG(MCoperatorError, unknownJob, "Resetting delta file '%s' to size: %" I64F "d", filename, lastGood);
+                            IERRLOG("Delta file '%s', has %" I64F "d bytes of trailing data (possible power loss during save?), file size: %" I64F "d, last committed size: %" I64F "d", filename, diff, fSize, lastGood);
+                            IERRLOG("Resetting delta file '%s' to size: %" I64F "d", filename, lastGood);
                             iFileIO->close();
                             backup(filename);
                             iFileIO.setown(iFile->open(IFOreadwrite));
@@ -5387,7 +5387,7 @@ public:
             {
                 noErrors = false;
                 StringBuffer s;
-                LOG(MCoperatorWarning, unknownJob, "%s", s.append("Delta '").append(filename).append("' crc mismatch").str());
+                OWARNLOG("%s", s.append("Delta '").append(filename).append("' crc mismatch").str());
             }
         }
         return noErrors;
@@ -5482,7 +5482,7 @@ public:
         }
         catch (IException *e)
         {
-            LOG(MCoperatorError, unknownJob, e, "detachCurrentDelta");
+            LOG(MCinternalError, unknownJob, e, "detachCurrentDelta");
             e->Release();
         }
         return res;
@@ -5521,7 +5521,7 @@ public:
             }
             catch (IException *e)
             {
-                LOG(MCoperatorError, unknownJob, e, "Exception(1) - Error saving store file");
+                LOG(MCinternalError, unknownJob, e, "Exception(1) - Error saving store file");
                 iFileIOTmpStore.clear();
                 iFileTmpStore->remove();
                 throw;
@@ -5560,7 +5560,7 @@ public:
                 catch (IException *e)
                 {
                     StringBuffer s("Exception(2) - Error saving store file");
-                    LOG(MCoperatorError, unknownJob, e, s.str());
+                    LOG(MCinternalError, unknownJob, e, s.str());
                     e->Release();
                     return;
                 }
@@ -5612,7 +5612,7 @@ public:
         catch (IException *e)
         {
             StringBuffer s("Exception(3) - Error saving store file");
-            LOG(MCoperatorError, unknownJob, e, s.str());
+            LOG(MCinternalError, unknownJob, e, s.str());
             e->Release();
         }
         if (done)
@@ -6346,12 +6346,12 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     }
     catch (IException *e)
     {
-        LOG(MCoperatorError, unknownJob, e, "Exception - Failed to load main store");
+        LOG(MCinternalError, unknownJob, e, "Exception - Failed to load main store");
         throw;
     }
     catch (DALI_CATCHALL)
     {
-        LOG(MCoperatorError, unknownJob, "Unknown exception - Failed to load main store");
+        IERRLOG("Unknown exception - Failed to load main store");
         throw;
     }
 
@@ -6380,7 +6380,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
                 doTimeComparison = true;
         }
         if (!doTimeComparison)
-            LOG(MCoperatorWarning, unknownJob, "Unable to use time comparison when comparing delta backup file");
+            OWARNLOG("Unable to use time comparison when comparing delta backup file");
     }
     Owned<IRemoteConnection> conn = connect("/", 0, RTM_INTERNAL, INFINITE);
     initializeInternals(conn->queryRoot());
@@ -6553,7 +6553,7 @@ void CCovenSDSManager::saveDelta(const char *path, IPropertyTree &changeTree)
     {
         // NB: writeDelta retries a few times before giving up.
         VStringBuffer errMsg("saveDelta: failed to save delta data, blockedDelta size=%d", blockedDelta.length());
-        LOG(MCoperatorError, unknownJob, e, errMsg.str());
+        LOG(MCinternalError, unknownJob, e, errMsg.str());
         e->Release();
         return;
     }
@@ -6563,18 +6563,18 @@ void CCovenSDSManager::saveDelta(const char *path, IPropertyTree &changeTree)
         {
             if (backupOutOfSync) // true if there was previously an exception during synchronously writing delta to backup.
             {
-                LOG(MCoperatorError, unknownJob, "Backup delta is out of sync due to a prior backup write error, attempting to resync");
+                IERRLOG("Backup delta is out of sync due to a prior backup write error, attempting to resync");
                 // catchup - check and copy primary delta to backup
                 validateDeltaBackup();
                 backupOutOfSync = false;
-                LOG(MCoperatorError, unknownJob, "Backup delta resynchronized");
+                IERRLOG("Backup delta resynchronized");
             }
             else
                 backupHandler.addDelta(blockedDelta, iStoreHelper->queryCurrentEdition(), first);
         }
         catch (IException *e)
         {
-            LOG(MCoperatorError, unknownJob, e, "saveDelta: failed to save backup delta data");
+            LOG(MCinternalError, unknownJob, e, "saveDelta: failed to save backup delta data");
             e->Release();
             backupOutOfSync = true;
         }
@@ -7163,19 +7163,19 @@ void CCovenSDSManager::stop()
 
 void CCovenSDSManager::restart(IException * e)
 {
-    LOG(MCwarning, unknownJob, "-------: stopping SDS server");
+    OWARNLOG("-------: stopping SDS server");
     StringBuffer msg;
     msg.append("Unhandled exception, restarting: ").append(e->errorCode()).append(": ");
     e->errorMessage(msg);
     stop();
     connections.kill();
-    LOG(MCwarning, unknownJob, "-------: stopped");
-    LOG(MCwarning, unknownJob, "-------: saving current store . . . . . .");
+    OWARNLOG("-------: stopped");
+    OWARNLOG("-------: saving current store . . . . . .");
     saveStore();
-    LOG(MCwarning, unknownJob, "-------: store saved.");
-    LOG(MCwarning, unknownJob, "-------: restarting SDS server restart");
+    OWARNLOG("-------: store saved.");
+    OWARNLOG("-------: restarting SDS server restart");
     start();
-    LOG(MCwarning, unknownJob, "-------: restarted");
+    OWARNLOG("-------: restarted");
 }
 
 CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *root, SessionId sessionId, unsigned mode, unsigned timeout, const char *xpath, CRemoteTreeBase *&tree, ConnectionId _connectionId, StringAttr *deltaPath, Owned<IPropertyTree> &deltaChange, Owned<CBranchChange> &branchChange, unsigned &additions)
@@ -8160,7 +8160,7 @@ void CCovenSDSManager::handleNodeNotify(notifications n, CServerRemoteTree &tree
     CSDSNotifyHandlerMapping *m = nodeNotifyHandlers.find(handlerKey);
     if (!m)
     {
-        LOG(MCwarning, unknownJob, "Unknown notify handler name \"%s\", handing event %s", handlerKey, notificationStr(n));
+        IERRLOG("Unknown notify handler name \"%s\", handing event %s", handlerKey, notificationStr(n));
         return;
     }
     switch (n)
@@ -8176,7 +8176,7 @@ void CCovenSDSManager::handleNodeNotify(notifications n, CServerRemoteTree &tree
             }
             break;
         default:
-            LOG(MCerror, unknownJob, "Unknown notification type (%d)", n);
+            IERRLOG("Unknown notification type (%d)", n);
             break;
     }
 }
@@ -8639,7 +8639,7 @@ bool CCovenSDSManager::fireException(IException *e)
 {
     //This code is rather dodgy (and causes more problems than it solves) 
     // so ignore unhandled exceptions for the moment! 
-    LOG(MCoperatorError, unknownJob, e, "Caught unhandled exception!");
+    LOG(MCinternalError, unknownJob, e, "Caught unhandled exception!");
     return true;
     { CHECKEDCRITICALBLOCK(unhandledCrit, fakeCritTimeout);
         if (processingUnhandled)
@@ -8649,7 +8649,7 @@ bool CCovenSDSManager::fireException(IException *e)
                 LOG(MCdisaster, unknownJob, e, "FATAL, too many exceptions");
                 return false; // did not successfully handle.
             }
-            LOG(MCoperatorError, unknownJob, e, "Exception while restarting or shutting down");
+            LOG(MCinternalError, unknownJob, e, "Exception while restarting or shutting down");
             return true;
         }
         handled = false;
@@ -8684,7 +8684,7 @@ bool CCovenSDSManager::fireException(IException *e)
                 manager.unhandledThread.clear();
             }
             catch (IException *_e) { LOG(MCoperatorError, unknownJob, _e, "Exception while restarting or shutting down"); _e->Release(); }
-            catch (DALI_CATCHALL) { LOG(MCoperatorError, unknownJob, "Unknown exception while restarting or shutting down"); }
+            catch (DALI_CATCHALL) { IERRLOG("Unknown exception while restarting or shutting down"); }
             if (!restart)
             {
                 e->Link();
@@ -8955,7 +8955,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
                 StringBuffer xpath(d.queryProp("@name"));
                 xpath.append('[').append(d.queryProp("@pos")).append(']');
                 if (!currentBranch.removeProp(xpath.str()))
-                    LOG(MCoperatorWarning, unknownJob, "Property '%s' missing, but recorded as being present at time of delete, in section '%s'", xpath.str(), headerPath.get());
+                    OWARNLOG("Property '%s' missing, but recorded as being present at time of delete, in section '%s'", xpath.str(), headerPath.get());
             }
             IPropertyTree *ac = change.queryPropTree(ATTRCHANGE_TAG);
             if (ac)
@@ -8971,7 +8971,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
                 ForEach (*aIter)
                 {
                     if (!currentBranch.removeProp(aIter->queryName()))
-                        LOG(MCoperatorWarning, unknownJob, "Property '%s' missing, but recorded as being present at time of delete, in section '%s'", aIter->queryName(), headerPath.get());
+                        OWARNLOG("Property '%s' missing, but recorded as being present at time of delete, in section '%s'", aIter->queryName(), headerPath.get());
                 }
             }
 
@@ -9014,7 +9014,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
                 catch (IException *e)
                 {
                     StringBuffer s("Error processing delta section: sectionEndOffset=");
-                    LOG(MCoperatorError, unknownJob, e, s.append(sectionEndOffset).str());
+                    LOG(MCinternalError, unknownJob, e, s.append(sectionEndOffset).str());
                     if (stopOnError) throw;
                     hadError = true;
                     e->Release();
@@ -9063,7 +9063,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
             catch (IException *e)
             {
                 StringBuffer s("Error processing delta section: sectionEndOffset=");
-                LOG(MCoperatorError, unknownJob, e, s.append(endOffset).str());
+                LOG(MCinternalError, unknownJob, e, s.append(endOffset).str());
                 if (stopOnError) throw;
                 hadError = true;
                 e->Release();
@@ -9080,7 +9080,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
     {
         if (stopOnError)
             throw;
-        LOG(MCoperatorError, unknownJob, e, "XML parse error on delta load - load truncated");
+        LOG(MCinternalError, unknownJob, e, "XML parse error on delta load - load truncated");
         e->Release();
     }
     return !deltaProcessor.hadError;

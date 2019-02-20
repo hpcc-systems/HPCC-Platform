@@ -232,7 +232,7 @@ void FileTransferThread::logIfRunning(StringBuffer &list)
     {
         StringBuffer url;
         ep.getUrlStr(url);
-        LOG(MCwarning, unknownJob, "Still waiting for slave %s", url.str());
+        OWARNLOG("Still waiting for slave %s", url.str());
         if (list.length())
             list.append(',');
         list.append(url);

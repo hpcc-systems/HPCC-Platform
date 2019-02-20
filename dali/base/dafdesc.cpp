@@ -2820,10 +2820,10 @@ void removePartFiles(IFileDescriptor *desc,IMultiException *mexcept)
 //                          PROGLOG("Removed '%s'",partfile->queryFilename());
                         unsigned t = msTick()-start;
                         if (t>60*1000)
-                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            OWARNLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
                     }
 //                      else
-//                          LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+//                          OWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
                 }
                 catch (IException *e)
                 {

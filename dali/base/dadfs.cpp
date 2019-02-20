@@ -1232,7 +1232,7 @@ static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *us
             user->getUserName(sb);
         if (sb.length()==0)
         {
-            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp setUserDescriptor() %d",__LINE__);
+            IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp setUserDescriptor() %d",__LINE__);
             //following debug code to be removed
             PrintStackReport();
         }
@@ -1250,7 +1250,7 @@ static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor 
         if (!user)
         {
 #ifdef NULL_DALIUSER_STACKTRACE
-            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getScopePermissions() line %d",__LINE__);
+            IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp getScopePermissions() line %d",__LINE__);
             //following debug code to be removed
             PrintStackReport();
 #endif
@@ -1288,7 +1288,7 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
 #ifdef NULL_DALIUSER_STACKTRACE
     if (!user)
     {
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp checkLogicalScope() line %d",__LINE__);
+        IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp checkLogicalScope() line %d",__LINE__);
         PrintStackReport();
     }
 #endif
@@ -3380,12 +3380,12 @@ protected:
                     {
                         unsigned start = msTick();
                         if (!partfile->remove()&&(copy==0)&&!islazy) // only warn about missing primary files
-                            LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                            OWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
                         else
                         {
                             unsigned t = msTick()-start;
                             if (t>5*1000)
-                                LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                                OWARNLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
                         }
                     }
                     catch (IException *e)
@@ -10876,10 +10876,10 @@ bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsigned short port,C
                         PROGLOG("Removed '%s'",partfile->queryFilename());
                         unsigned t = msTick()-start;
                         if (t>5*1000)
-                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            OWARNLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
                     }
                     else
-                        LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                        OWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
 #else
                     if (partfile->exists())
                         PROGLOG("Would remove '%s'",partfile->queryFilename());
