@@ -68,7 +68,8 @@ void ConfigEnv::create(IPropertyTree *params)
    {
      StringBuffer optionsXml, envXml;
      const char* pServiceName = "WsDeploy_wsdeploy_esp";
-     int roxieNodes=1, thorNodes=1, slavesPerNode=1, supportNodes=1, espNodes=1;
+     int roxieNodes=1, thorNodes=1, slavesPerNode=1, supportNodes=1,
+         espNodes=1, thorChannelsPerSlave=1, roxieChannelsPerSlave=1;
      bool roxieOnDemand = true;
      MapStringTo<StringBuffer> dirMap;
      Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ESP_CONFIG_PATH);
@@ -93,6 +94,12 @@ void ConfigEnv::create(IPropertyTree *params)
      if (params->hasProp("@roxie-on-demand"))
        roxieOnDemand = params->getPropBool("@roxie-on-demand", true);
 
+     if (params->hasProp("@thor-channels-per-slave"))
+       thorChannelsPerSlave = params->getPropInt("@thor-channels-per-slave", 1);
+
+     if (params->hasProp("@roxie-channels-per-slave"))
+       roxieChannelsPerSlave = params->getPropInt("@roxie-channels-per-slave", 1);
+
      StringBuffer ipAddr;
      const StringArray& ipList = m_envHelper->getNodeList();
 
@@ -112,8 +119,8 @@ void ConfigEnv::create(IPropertyTree *params)
            "Must provide either ip or ipfile. To do JIRA HPCC-15636");
      }
      */
-     optionsXml.appendf("<XmlArgs supportNodes=\"%d\" roxieNodes=\"%d\" thorNodes=\"%d\" espNodes=\"%d\" slavesPerNode=\"%d\" roxieOnDemand=\"%s\" ", supportNodes, roxieNodes,
-      thorNodes, espNodes, slavesPerNode, roxieOnDemand?"true":"false");
+     optionsXml.appendf("<XmlArgs supportNodes=\"%d\" roxieNodes=\"%d\" thorNodes=\"%d\" espNodes=\"%d\" slavesPerNode=\"%d\" roxieOnDemand=\"%s\" thorChannelsPerSlave=\"%d\" roxieChannelsPerSlave=\"%d\"  ",
+      supportNodes, roxieNodes, thorNodes, espNodes, slavesPerNode, roxieOnDemand?"true":"false", thorChannelsPerSlave, roxieChannelsPerSlave);
 
      if (ipAddr.length() > 0)
        optionsXml.appendf("ipList=\"%s\"/>", ipAddr.str());

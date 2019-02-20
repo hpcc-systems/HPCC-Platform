@@ -25,6 +25,8 @@ map<string, string> CEnvGen::m_envCategoryMap =
 {
   {""  , "Software"},
   {"sw", "Software"},
+  {"pg", "Programs"},
+  {"es", "EnvSettings"},
   {"hd", "Hardware"}
 };
 
@@ -114,6 +116,16 @@ bool CEnvGen::parseArgs(int argc, char** argv)
         i++;
         config->addProp("@slaves-per-node", argv[i++]);
      }
+     else if (stricmp(argv[i], "-thorchannelsperslave") == 0)
+     {
+        i++;
+        config->addProp("@thor-channels-per-slave", argv[i++]);
+     }
+     else if (stricmp(argv[i], "-roxiechannelsperslave") == 0)
+     {
+        i++;
+        config->addProp("@roxie-channels-per-slave", argv[i++]);
+     }
      else if (stricmp(argv[i], "-roxieondemand") == 0)
      {
         i++;
@@ -146,7 +158,7 @@ bool CEnvGen::parseArgs(int argc, char** argv)
         if (!convertOverrideTask(config, argv[i++]))
            return false;
      }
-     else if (stricmp(argv[i], "-set_xpath_attrib_value")== 0)
+     else if (stricmp(argv[i], "-set-xpath-attrib-value")== 0)
      {
         i++;
         m_arrXPaths.append(*new StringBufferItem (argv[i++]));
@@ -155,12 +167,12 @@ bool CEnvGen::parseArgs(int argc, char** argv)
      }
 
      // new parameters
-     else if (stricmp(argv[i], "-env_options") == 0)
+     else if (stricmp(argv[i], "-env-options") == 0)
      {
         i++;
         config->addProp("@options", argv[i++]);
      }
-     else if (stricmp(argv[i], "-env_rules") == 0)
+     else if (stricmp(argv[i], "-env-rules") == 0)
      {
         i++;
         config->addProp("@rules", argv[i++]);
@@ -298,6 +310,11 @@ bool CEnvGen::parseArgs(int argc, char** argv)
      {
         usage_update_input_format_3_json();
         return false;
+     }
+     else if (stricmp(argv[i], "-cloud") == 0)
+     {
+        i++;
+        cloudConfiguration(config, argv[i++]);
      }
      else
      {
@@ -481,6 +498,11 @@ void CEnvGen::createUpdateNodeTask(const char* action, IPropertyTree * config, c
     parts.appendList(param, ":");
 
     String part1(parts.item(0));
+    if (part1.startsWith("spark"))
+    {
+        sbParam.clear().append("pg:buildset#sparkthor");
+        createUpdateTask(action, config, sbParam.str());
+    }
 
     if (part1.startsWith("thor"))
     {
@@ -500,7 +522,7 @@ void CEnvGen::createUpdateNodeTask(const char* action, IPropertyTree * config, c
 
        else
        {
-          sbParam.append("sw:");
+          sbParam.clear().append("sw:");
           StringBuffer sbPart1(part1.str());
           sbPart1.replaceString("@", ":instance@");
           sbParam.appendf("%s", sbPart1.str());
@@ -667,8 +689,8 @@ void CEnvGen::usage()
   puts("   envgen -env_out <environment file> -ip <ip addr> [options]");
   puts("");
   puts("options: ");
-  puts("   -env_in : Full path of the input environment file to update.");
-  puts("   -env_out | -env: Full path of the output environment file to generate or update.");
+  puts("   -env-in : Full path of the input environment file to update.");
+  puts("   -env-out | -env: Full path of the output environment file to generate or update.");
   puts("          If a file with the same name exists, and no \"-update\" provided");
   puts("          a new name with _xxx will be generated ");
   puts("   -ip  : Ip addresses that should be used for environment generation");
@@ -696,6 +718,10 @@ void CEnvGen::usage()
   puts("          will be used, otherwise 0 ESP nodes will be generated.");
   puts("   -slavesPerNode <number of thor slaves per node>: Number of thor nodes ");
   puts("          per slave.");
+  puts("   -thorChannelsPerSlave <number of channels per thor slave>: Number of thor channels per slave.");
+  puts("          The default is 1.");
+  puts("   -roxieChannelsPerSlave <number of channels per roxie slave>: Number of roxie channels per slave.");
+  puts("          The default is 1.");
   puts("   -roxieondemand <enable roxie on demand(1) or disable roxie on demand(any ");
   puts("          other value)>: Specify 1 to enable Roxie on demand. ");
   puts("          Any other value will disable Roxie on demand");
@@ -712,15 +738,16 @@ void CEnvGen::usage()
   puts("          directory and to set eclwatch's enableSystemUseRewrite to true, provide the following options:");
   puts("             \"-override DropZone,@directory,/mnt/disk1/mydropzone ");
   puts("               -override espsmc,@enableSystemUseRewrite,true\"");
-  puts("   -set_xpath_attrib_value <XPATH> <ATTRIBUTE> <VALUE>: sets or add the xpath attribute and value.");
-  puts("          Example: \"-set_xpath_attrib_value  Software/Topology/Cluster[@name=\"thor\"]/ThorCluster @process thor123\"");
-  puts("   -add_content <XPATH> <content file in XML or JSON format>: adds  content to the xpath.");
-  puts("          Example: \"-add_content  Software/Topology /tmp/new_topology_cluster.xml");
-  puts("   -env_options environment options file. The default is /etc/HPCCSystems/environment.conf.");
-  puts("   -env_rules: a rule file to generate environment. The default is /etc/HPCCSystems/genenvrules.conf.");
-  puts("   -env_rules: a rule file to generate environment. The default is /etc/HPCCSystems/genenvrules.conf.");
+  puts("   -set-xpath-attrib-value <XPATH> <ATTRIBUTE> <VALUE>: sets or add the xpath attribute and value.");
+  puts("          Example: \"-set-xpath-attrib-value  Software/Topology/Cluster[@name=\"thor\"]/ThorCluster @process thor123\"");
+  puts("   -add-content <XPATH> <content file in XML or JSON format>: adds  content to the xpath.");
+  puts("          Example: \"-add-content  Software/Topology /tmp/new_topology_cluster.xml");
+  puts("   -env-options environment options file. The default is /etc/HPCCSystems/environment.conf.");
+  puts("   -env-rules: a rule file to generate environment. The default is /etc/HPCCSystems/genenvrules.conf.");
+  puts("   -env-rules: a rule file to generate environment. The default is /etc/HPCCSystems/genenvrules.conf.");
   puts("   -buildset: the buildset file with full path. The directory also contains all XSD files.");
   puts("              the default is /opt/HPCCSystems/componentfiles/configxml/buildset.xml.");
+  puts("   -cloud <none|aws>: set certain attributes for particular cloud environment. The default is none");
 
   puts("");
   puts("For update, there are three input formats. See following for the usage.");
@@ -945,6 +972,15 @@ bool CEnvGen::convertOverrideTask(IPropertyTree *config, const char * input)
 
    createUpdateTask("modify", config, sbTask.str());
    return true;
+}
+
+void CEnvGen::cloudConfiguration(IPropertyTree * config, const char* cloud)
+{
+   if (!stricmp(cloud, "aws"))
+   {
+       createUpdateTask("modify", config, "sw:espsmc@enableSystemUseRewrite=true|false");
+       createUpdateTask("modify", config, "sw:roxie@roxieMulticastEnabled=false");
+   }
 }
 
 

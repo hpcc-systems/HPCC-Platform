@@ -26,7 +26,7 @@ enum CfgEnvErrorCode
 
    InvalidParams=2000,
    NullPointer=2001,
-   UnknownCompoent=2002,
+   UnknownComponent=2002,
    CannotCreateCompoent=2003,
    UnknownTask=2004,
    MissingRequiredParam=2005,

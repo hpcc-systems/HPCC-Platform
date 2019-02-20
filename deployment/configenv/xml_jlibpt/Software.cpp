@@ -192,6 +192,10 @@ void Software::getSWCompName(const char *inputName, StringBuffer& out)
    {
       out.append("ftslave");
    }
+   else if (!stricmp(compNameLC, "spark") || !stricmp(compNameLC, "sparkthor") || !stricmp(compNameLC, "SparkThorProcess"))
+   {
+      out.append("sparkthor");
+   }
    else
    {
       out.append(compNameLC);

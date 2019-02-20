@@ -14,16 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-configure_file(setup setup COPYONLY)
-configure_file(add-node add-node COPYONLY)
-configure_file(mod-node mod-node COPYONLY)
-configure_file(rmv-node rmv-node COPYONLY)
-configure_file(esp-service esp-service COPYONLY)
-configure_file(topology topology COPYONLY)
-configure_file(misc misc COPYONLY)
-configure_file(regression regression COPYONLY)
-configure_file(run_valgrind.in run_valgrind @ONLY)
-configure_file(test.sh.in test.sh @ONLY)
+# function tests are moved to https://github.com/xwang2713/HPCC-Config-Test
 
-execute_process ( WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${CMAKE_COMMAND} -E make_directory  src )
-execute_process ( WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/src ./src/ )
+# Memory leak check with valgrind
+configure_file(run_valgrind.in run_valgrind @ONLY)
