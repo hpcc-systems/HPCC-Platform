@@ -1847,15 +1847,25 @@ void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, size3
 {
     StringBuffer recstr;
     unsigned i;
+    bool printHex = false;
     for (i = 0; i < recSize; i++)
     {
         unsigned char c = ((unsigned char *) keyBuffer)[i];
-        recstr.appendf("%c", isprint(c) ? c : '.');
+        if (isprint(c))
+            recstr.append(c);
+        else
+        {
+            recstr.append('.');
+            printHex = true;
+        }
     }
-    recstr.append ("\n");
-    for (i = 0; i < recSize; i++)
+    if (printHex)
     {
-        recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
+        recstr.append ("\n");
+        for (i = 0; i < recSize; i++)
+        {
+            recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
+        }
     }
     recstr.append ("\nusing filter:\n");
     filter->describe(recstr);
