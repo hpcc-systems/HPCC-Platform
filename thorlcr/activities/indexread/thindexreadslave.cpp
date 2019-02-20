@@ -743,12 +743,11 @@ public:
         if (!helper->transformMayFilter() && !helper->hasMatchFilter())
         {
             if (choosenLimit)
-            {
                 remoteLimit = choosenLimit;
-                if ((RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
-                    remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
-            }
         }
+
+        if ((RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
+            remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
 
         if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
             keyedLimitCount = getCount(keyedLimit, true);
