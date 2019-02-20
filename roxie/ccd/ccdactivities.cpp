@@ -3466,7 +3466,7 @@ public:
     virtual IMessagePacker *process()
     {
         MTIME_SECTION(queryActiveTimer(), "CRoxieIndexGroupAggregateActivity ::process");
-        Owned<IRowManager> rowManager = roxiemem::createRowManager(0, NULL, logctx, NULL, true); // MORE - should not really use default limits
+        Owned<IRowManager> rowManager = roxiemem::createRowManager(0, NULL, logctx, NULL, false); // MORE - should not really use default limits
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
         unsigned processedBefore = processed;
