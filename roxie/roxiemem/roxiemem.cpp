@@ -3970,9 +3970,6 @@ public:
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p num=%u",
                     maxPageLimit, peakPages, dataBuffs, dataBuffPages, possibleGoers.load(), this, activeRowManagers.load());
 
-        if (!ignoreLeaks)
-            reportLeaks(2);
-
         //Ensure that the rowHeaps release any references to the fixed heaps, and no longer call back when they
         //are destroyed
         {
