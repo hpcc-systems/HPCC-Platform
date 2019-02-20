@@ -50,6 +50,7 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
     const char* validate = pParams->queryProp("@validateComputers");
     const char* skip = pParams->queryProp("@skipExisting");
     const char* slavesPerNode = pParams->queryProp("@slavesPerNode");
+    const char* channelsPerSlave = pParams->queryProp("@channelsPerSlave");
     bool checkComps = validate && !strcmp(validate, "true");
     bool skipExisting = skip && !strcmp(skip, "true");
 
@@ -82,6 +83,14 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
         if (numNodes < 1)
             numNodes = 1;
         pThor->setPropInt("@slavesPerNode", numNodes);
+
+        int numChannels = 1;
+        if (channelsPerSlave && *channelsPerSlave)
+          numChannels = atoi(channelsPerSlave);
+
+        if (numChannels < 1)
+          numChannels = 1;
+        pThor->setPropInt("@channelsPerSlave", numChannels);
 
         if (!strcmp(newType, "Master"))
             retVal = this->AddNewNodes(pThor, XML_TAG_THORMASTERPROCESS, 0, computers, checkComps, skipExisting, usageList);
