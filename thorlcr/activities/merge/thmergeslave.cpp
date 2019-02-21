@@ -167,7 +167,7 @@ public:
                         static bool logged=false;
                         if (!logged) {
                             logged = true;
-                            WARNLOG("GlobalMergeSlaveActivity mismatch serialize, deserialize (%u,%u)",sz,mb.length());
+                            IWARNLOG("GlobalMergeSlaveActivity mismatch serialize, deserialize (%u,%u)",sz,mb.length());
                         }
                     }
 #ifdef _FULL_TRACE

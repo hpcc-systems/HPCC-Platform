@@ -730,7 +730,7 @@ int main( int argc, char *argv[]  )
         char thorPath[1024];
         if (!GetCurrentDirectory(1024, thorPath))
         {
-            ERRLOG("ThorMaster::main: Current directory path too big, setting it to null");
+            OERRLOG("ThorMaster::main: Current directory path too big, setting it to null");
             thorPath[0] = 0;
         }
         unsigned l = strlen(thorPath);
@@ -817,7 +817,7 @@ int main( int argc, char *argv[]  )
 
             PROGLOG("verifying mp connection to rest of cluster");
             if (!queryNodeComm().verifyAll())
-                ERRLOG("Failed to connect to all nodes");
+                OERRLOG("Failed to connect to all nodes");
             else
                 PROGLOG("verified mp connection to rest of cluster");
 

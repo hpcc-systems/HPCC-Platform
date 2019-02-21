@@ -165,8 +165,8 @@ public:
     }
     void stop(const char *title)
     {
-        PrintLog("%8.2f : %s",(double)((double)(msTick()-cstart))/1000,title);
-        PrintLog("--------------------------------------");
+        DBGLOG("%8.2f : %s",(double)((double)(msTick()-cstart))/1000,title);
+        DBGLOG("--------------------------------------");
     }
     unsigned cstart;
 };
@@ -579,7 +579,7 @@ public:
             {
                 CSortNode &slave = slaves.item(i);
                 unsigned slavesamples = averagerecspernode?((unsigned)((averagerecspernode/2+averagesamples*slave.numrecs)/averagerecspernode)):1;
-                //PrintLog("%d samples for %d",slavesamples,i);
+                //DBGLOG("%d samples for %d",slavesamples,i);
                 if (slavesamples)
                 {
                     size32_t samplebufsize;
@@ -697,7 +697,7 @@ public:
             for (unsigned j=0;j<numnodes;j++) {
                 str.appendf("%" RCPF "d, ",splitMap[j+i*numnodes]);
             }
-            PrintLog("%s",str.str());
+            DBGLOG("%s",str.str());
         }
 #endif
 #endif

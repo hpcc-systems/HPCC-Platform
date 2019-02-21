@@ -1861,7 +1861,7 @@ public:
         streamin->seek(pos,origin);
         if (t!=streamin->tell())  // crc invalid
             if (valid) {
-                WARNLOG("CRCFileStream::seek called - CRC will be invalid");
+                IWARNLOG("CRCFileStream::seek called - CRC will be invalid");
                 valid = false;
             }
     }
