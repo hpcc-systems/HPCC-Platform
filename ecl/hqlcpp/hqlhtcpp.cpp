@@ -805,14 +805,14 @@ static IHqlExpression * getExtractMatchingAssign(HqlExprArray & assigns, IHqlExp
     {
         IHqlExpression & assign = assigns.item(idx);
 #ifdef TRACE_ASSIGN_MATCH
-        PrintLog("Next comparison:");
+        DBGLOG("Next comparison:");
         x.clear().append("target(").append((unsigned)assign.queryChild(0)->queryChild(0)).append(":");
         x.appendf("%p", assign.queryChild(0)->queryChild(1)).append(")   ");
         assign.queryChild(0)->toString(x);
-        PrintLog(x.str());
+        DBGLOG("%s", x.str());
         x.clear().append("search(").appendf("%p", search).append(")   ");
         search->toString(x);
-        PrintLog(x.str());
+        DBGLOG("%s",x.str());
 #endif
         IHqlExpression * lhs = assign.queryChild(0);
         IHqlExpression * candidateField = lhs->queryChild(1);
@@ -2847,16 +2847,16 @@ IReferenceSelector * DatasetSelector::select(BuildCtx & ctx, IHqlExpression * se
             unsigned numFields = record->numChildren();
             unsigned idxc;
             StringBuffer fields;
-            PrintLog("Fields:");
+            DBGLOG("Fields:");
             for (idxc = 0; idxc < numFields; idxc++)
             {
                 IHqlExpression * field = record->queryChild(idxc);
                 IAtom * name = field->queryName();
                 fields.clear();
                 fields.appendf("        %20s [@%lx := %lx] ", name->str(), field, field->queryChild(0));
-                PrintLog(fields.str());
+                DBGLOG("%s",fields.str());
             }
-            PrintLog("Search: %20s [@%lx])", selectedField->queryName()->str(),selectedField);
+            DBGLOG("Search: %20s [@%lx])", selectedField->queryName()->str(),selectedField);
 #endif
 
             StringBuffer searchName, datasetName;
@@ -5061,7 +5061,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
         }
     case type_row:      UNIMPLEMENTED; break; //should be translated to rawData.
     default:
-        PrintLog("%d", ttc);
+        DBGLOG("%d", ttc);
         throwUnexpectedX("No getResult defined for this type");
         break;
     }
@@ -5354,7 +5354,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         }
         //fall through
     default:
-        PrintLog("%d", retType);
+        DBGLOG("%d", retType);
         throwError(HQLERR_InvalidSetResultType);
     }
 
@@ -9006,7 +9006,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityEmbed(BuildCtx & ctx, IHqlExpr
 void HqlCppTranslator::doBuildStmtUpdate(BuildCtx & ctx, IHqlExpression * expr)
 {
     // MJH - CODE TO DO UPDATE GOES HERE
-    PrintLog("in HqlCppTranslator::doBuildStmtUpdate()");
+    DBGLOG("in HqlCppTranslator::doBuildStmtUpdate()");
 }
 
 
@@ -19212,7 +19212,7 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
 {
     checkAbort();
 
-    // PrintLog(title);
+    // DBGLOG("%s",title);
     LOG(MCdebugInfo(200), unknownJob, "Tracing expressions: %s", title);
     static LogMsgCategory debug500 = MCdebugInfo(500);
     static LogMsgCategory debug5000 = MCdebugInfo(5000);

@@ -538,7 +538,7 @@ public:
                 VStringBuffer statusCmd("git status --porcelain -z -- %s", sourcePath->queryStr());
                 if (!pipe->run("git", statusCmd, ".", false, true, false, 0, false))
                 {
-                    WARNLOG("Failed to run git status for %s", sourcePath->queryStr());
+                    UWARNLOG("Failed to run git status for %s", sourcePath->queryStr());
                 }
                 else
                 {
@@ -549,7 +549,7 @@ public:
                         Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
                         readSimpleStream(buf, *pipeReader, 128);
                         if (retcode)
-                            WARNLOG("Failed to run git status for %s: returned %d (%s)", sourcePath->queryStr(), retcode, buf.str());
+                            UWARNLOG("Failed to run git status for %s: returned %d (%s)", sourcePath->queryStr(), retcode, buf.str());
                         else if (buf.length())
                             dirtyState = dirty;
                         else

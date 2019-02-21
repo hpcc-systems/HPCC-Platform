@@ -489,7 +489,7 @@ static int doMain(int argc, const char *argv[])
 #ifndef _DEBUG
     catch (...)
     {
-        ERRLOG("Unexpected exception\n");
+        IERRLOG("Unexpected exception\n");
         return 4;
     }
 #endif
@@ -530,7 +530,7 @@ bool setTargetPlatformOption(const char *platform, ClusterType &optTargetCluster
     ClusterType clusterType = getClusterType(platform);
     if (clusterType == NoCluster)
     {
-        ERRLOG("Unknown ecl target platform %s\n", platform);
+        UERRLOG("Unknown ecl target platform %s\n", platform);
         return false;
     }
     optTargetClusterType = clusterType;
@@ -756,9 +756,9 @@ void EclCC::reportCompileErrors(IErrorReceiver & errorProcessor, const char * pr
 #endif
                 if (strstr(s.str(), noCompiler))
                 {
-                    ERRLOG("Fatal Error: Unable to locate C++ compiler/linker");
+                    OERRLOG("Fatal Error: Unable to locate C++ compiler/linker");
                 }
-                ERRLOG("\n---------- compiler output --------------\n%s\n--------- end compiler output -----------", s.str());
+                UERRLOG("\n---------- compiler output --------------\n%s\n--------- end compiler output -----------", s.str());
             }
         }
     }
@@ -859,7 +859,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                     fprintf(stdout, "Output file '%s' created\n",outputFile);
                     break;
                 case WUStateFailed:
-                    ERRLOG("Failed to create output file '%s'\n",outputFile);
+                    UERRLOG("Failed to create output file '%s'\n",outputFile);
                     break;
                 case WUStateUploadingFiles:
                     fprintf(stdout, "Output file '%s' created, local file upload required\n",outputFile);
@@ -868,7 +868,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                     fprintf(stdout, "No DLL/SO required\n");
                     break;
                 default:
-                    ERRLOG("Unexpected Workunit state %d\n", (int) wu->getState());
+                    UERRLOG("Unexpected Workunit state %d\n", (int) wu->getState());
                     break;
                 }
             }
@@ -1219,10 +1219,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
                 updateArchiveFromCache(instance.archive, cache, queryAttributePath);
                 return;
             }
-            DBGLOG("Cannot create archive from cache for %s because it is a macro", queryAttributePath);
+            UWARNLOG("Cannot create archive from cache for %s because it is a macro", queryAttributePath);
         }
         else
-            DBGLOG("Cannot create archive from cache for %s because it is not up to date", queryAttributePath);
+            UWARNLOG("Cannot create archive from cache for %s because it is not up to date", queryAttributePath);
     }
 
     {
@@ -1860,7 +1860,7 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                     Owned<IPipeProcess> pipe = createPipeProcess();
                     if (!pipe->run("git", "git describe --always --tags --dirty --long", ".", false, true, false, 0, false))
                     {
-                        WARNLOG("Failed to run git describe");
+                        UWARNLOG("Failed to run git describe");
                     }
                     else
                     {
@@ -1871,7 +1871,7 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                             Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
                             readSimpleStream(buf, *pipeReader, 128);
                             if (retcode)
-                                WARNLOG("Failed to run git describe: returned %d (%s)", retcode, buf.str());
+                                UWARNLOG("Failed to run git describe: returned %d (%s)", retcode, buf.str());
                             else if (buf.length())
                             {
                                 buf.replaceString("\n","");
@@ -1934,7 +1934,7 @@ bool EclCC::generatePrecompiledHeader()
 {
     if (inputFiles.ordinality() != 0)
     {
-        ERRLOG("No input files should be specified when generating precompiled header");
+        UERRLOG("No input files should be specified when generating precompiled header");
         return false;
     }
     StringArray paths;
@@ -1953,7 +1953,7 @@ bool EclCC::generatePrecompiledHeader()
     }
     if (!foundPath)
     {
-        ERRLOG("Cannot find eclinclude4.hpp");
+        UERRLOG("Cannot find eclinclude4.hpp");
         return false;
     }
     Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, NULL);
@@ -1975,7 +1975,7 @@ bool EclCC::generatePrecompiledHeader()
     }
     else
     {
-        ERRLOG("Compilation failed - see %s for details", cclogFilename.str());
+        UERRLOG("Compilation failed - see %s for details", cclogFilename.str());
         return false;
     }
 }
@@ -2043,7 +2043,7 @@ bool EclCC::processFiles()
     {
         if (optBatchMode || !optQueryRepositoryReference)
         {
-            ERRLOG("No input files could be opened");
+            UERRLOG("No input files could be opened");
             return false;
         }
     }
@@ -2712,7 +2712,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             if (!checkFileExists(optIniFilename))
             {
-                ERRLOG("Error: INI file '%s' does not exist",optIniFilename.get());
+                UERRLOG("Error: INI file '%s' does not exist",optIniFilename.get());
                 return 1;
             }
         }
@@ -2730,7 +2730,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
             const char * split = strchr(tempArg, ':');
             if (!split)
             {
-                ERRLOG("Error: syntax is -split=part:splits\n");
+                UERRLOG("Error: syntax is -split=part:splits\n");
                 return 1;
             }
             batchSplit = atoi(split+1);
@@ -2803,7 +2803,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (arg[0] == '-')
         {
-            ERRLOG("Error: unrecognised option %s",arg);
+            UERRLOG("Error: unrecognised option %s",arg);
             usage();
             return 1;
         }
@@ -2844,7 +2844,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
     {
         if (optGenerateHeader || optShowPaths || (!optBatchMode && optQueryRepositoryReference))
             return 0;
-        ERRLOG("No input filenames supplied");
+        UERRLOG("No input filenames supplied");
         return 1;
     }
     return 0;

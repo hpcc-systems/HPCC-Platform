@@ -45,7 +45,7 @@
 
 #define LIMIT_FOR_GET       (NULL)
 
-//#define TraceExprPrintLog(x, expr)                PrintLog(x ": %s", expr->toString(StringBuffer()).str());
+//#define TraceExprPrintLog(x, expr)                DBGLOG(x ": %s", expr->toString(StringBuffer()).str());
 
 static void normalizeAdditions(IHqlExpression * expr, HqlExprAttr & var, HqlExprAttr & fixed)
 {

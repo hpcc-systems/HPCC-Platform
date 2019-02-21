@@ -7657,7 +7657,7 @@ bool ErrorSeverityMapper::addMapping(const char * category, const char * value)
 {
     if (!category || !*category)
     {
-        ERRLOG("Error: No warning category supplied");
+        UERRLOG("Error: No warning category supplied");
         return false;
     }
 
@@ -7669,7 +7669,7 @@ bool ErrorSeverityMapper::addMapping(const char * category, const char * value)
     ErrorSeverity severity = getSeverity(action);
     if (severity == SeverityUnknown)
     {
-        ERRLOG("Error: Invalid warning severity '%s'", value);
+        UERRLOG("Error: Invalid warning severity '%s'", value);
         return false;
     }
 
@@ -7687,7 +7687,7 @@ bool ErrorSeverityMapper::addMapping(const char * category, const char * value)
         return true;
     }
 
-    ERRLOG("Error: Mapping doesn't specify a valid warning code or category '%s'", category);
+    UERRLOG("Error: Mapping doesn't specify a valid warning code or category '%s'", category);
     return false;
 }
 

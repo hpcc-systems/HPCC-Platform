@@ -6267,7 +6267,7 @@ void CHqlField::onCreateField()
 #endif
 #ifdef DEBUG_ON_CREATE
     if (queryName() == createIdAtom("imgLength"))
-        PrintLog("Create field %s=%p", expr->queryName()->str(), expr);
+        DBGLOG("Create field %s=%p", expr->queryName()->str(), expr);
 #endif
 
     infoFlags &= ~(HEFfunctionOfGroupAggregate);
@@ -6714,7 +6714,7 @@ void CHqlDataset::cacheParent()
             }
             else
             {
-                PrintLog("cacheParent->queryDataset get NULL for: %s", getOpString(inDs->getOperator()));
+                DBGLOG("cacheParent->queryDataset get NULL for: %s", getOpString(inDs->getOperator()));
             }
         }
         break;
@@ -8726,7 +8726,7 @@ void CHqlRemoteScope::noteExternalLookup(HqlLookupContext & ctx, IHqlExpression 
 
 IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-//  PrintLog("lookupSymbol %s#%d", searchName->getAtomNamePtr(),version);
+//  DBGLOG("lookupSymbol %s#%d", searchName->getAtomNamePtr(),version);
     preloadSymbols(ctx, false);
     OwnedHqlExpr resolvedSym = resolved->lookupSymbol(searchName, lookupFlags, ctx);
     if (resolvedSym && resolvedSym->getOperator() == no_processing)
@@ -10129,7 +10129,7 @@ CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescop
             defined.setValue(lower(valueId),value);
         }
     }
-    //PrintLog(debug.str());
+    //DBGLOG(debug.str());
 }
 
 //==============================================================================================================
@@ -14022,16 +14022,13 @@ static bool queryOriginalName(ITypeInfo* type, StringBuffer& s)
 }
 
 
-void PrintLogExprTree(IHqlExpression *expr, const char *caption, bool full)
+void PrintLogExprTree(IHqlExpression *expr, const char *caption)
 {
-    StringBuffer s;
-    toECL(expr, s, full);
-    s.append('\n');
+#ifndef DISABLE_PRINTLOG
     if (caption)
-        PrintLog(caption);
-    else if (full)
-        s.insert(0, "\n");
-    PrintLogDirect(s.str());
+        IERRLOG("%s", caption);
+    dbglogExpr(expr);
+#endif
 }
 
 //========This will go to IExpression implementations ======================================================================================================
@@ -14504,7 +14501,7 @@ extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquer
     }
     catch (...)
     {
-        PrintLog("InstantECL transformations - exception caught");
+        IERRLOG("InstantECL transformations - exception caught");
     }
     return LINK(qquery);
 }

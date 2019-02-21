@@ -1093,7 +1093,7 @@ extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, 
     {
         StringBuffer buff;
         buff.append("Skipping OPT index read of nonexistent file ").append(lfn);
-        WARNLOG("%s", buff.str());
+        UWARNLOG("%s", buff.str());
         _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
@@ -1276,7 +1276,7 @@ extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_ag
     {
         StringBuffer buff;
         buff.append("Skipping OPT index normalize of nonexistent file ").append(lfn);
-        WARNLOG("%s", buff.str());
+        UWARNLOG("%s", buff.str());
         _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
@@ -1394,7 +1394,7 @@ extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_ag
     {
         StringBuffer buff;
         buff.append("Skipping OPT index aggregate of nonexistent file ").append(lfn);
-        WARNLOG("%s", buff.str());
+        UWARNLOG("%s", buff.str());
         _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullAggregateActivity(_agent, _activityId, _subgraphId, arg, arg, _kind);
     }
@@ -1500,7 +1500,7 @@ extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent,
     {
         StringBuffer buff;
         buff.append("Skipping OPT index count of nonexistent file ").append(lfn);
-        WARNLOG("%s", buff.str());
+        UWARNLOG("%s", buff.str());
         _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullCountActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
@@ -1612,7 +1612,7 @@ extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext
     {
         StringBuffer buff;
         buff.append("Skipping OPT index group aggregate of nonexistent file ").append(lfn);
-        WARNLOG("%s", buff.str());
+        UWARNLOG("%s", buff.str());
         _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
@@ -2231,7 +2231,7 @@ public:
             {
                 StringBuffer buff;
                 buff.append("Skipping OPT fetch of nonexistent file ").append(lfn);
-                WARNLOG("%s", buff.str());
+                UWARNLOG("%s", buff.str());
                 agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
             }
         }
@@ -2553,7 +2553,7 @@ public:
         {
             StringBuffer buff;
             buff.append("Skipping OPT fetch of nonexistent file ").append(lfn);
-            WARNLOG("%s", buff.str());
+            UWARNLOG("%s", buff.str());
             agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
         }
             
@@ -4001,7 +4001,7 @@ public:
         {
             StringBuffer buff;
             buff.append("Skipping OPT keyed join against nonexistent file ").append(lfn);
-            WARNLOG("%s", buff.str());
+            UWARNLOG("%s", buff.str());
             agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
         }
         CHThorThreadedActivityBase::start();

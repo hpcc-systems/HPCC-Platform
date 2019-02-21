@@ -211,7 +211,7 @@ public:
         PROGLOG("Scheduler[%s]: received event [%s/%s] @%s", serverName.get(), name.get(), text.get(), target.get());
         if(strcmp(name.get(), "CRON")==0)
         {
-            WARNLOG("Scheduler[%s]: Unexpectedly got external CRON event (ignoring)", serverName.get());
+            OWARNLOG("Scheduler[%s]: Unexpectedly got external CRON event (ignoring)", serverName.get());
             return;
         }
         bool checkWuid = (target && *target);

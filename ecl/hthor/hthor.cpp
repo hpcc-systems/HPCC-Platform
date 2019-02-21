@@ -451,7 +451,7 @@ void CHThorDiskWriteActivity::resolve()
                 if(extend)
                     agent.logFileAccess(f->queryDistributedFile(), "HThor", "EXTENDED");
                 else if(overwrite) {
-                    PrintLog("Removing %s from DFS", lfn.str());
+                    LOG(MCoperatorInfo, "Removing %s from DFS", lfn.str());
                     agent.logFileAccess(f->queryDistributedFile(), "HThor", "DELETED");
                     if (!agent.queryResolveFilesLocally())
                         f->queryDistributedFile()->detach();
@@ -1050,7 +1050,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
         {
             if (TIWoverwrite & helper.getFlags()) 
             {
-                PrintLog("Removing %s from DFS", lfn.str());
+                LOG(MCuserInfo, "Removing %s from DFS", lfn.str());
                 agent.logFileAccess(f, "HThor", "DELETED");
                 f->detach();
             }
@@ -8156,7 +8156,7 @@ void CHThorDiskReadBaseActivity::resolve()
         {
             StringBuffer buff;
             buff.appendf("Input file '%s' was missing but declared optional", mangledHelperFileName.str());
-            WARNLOG("%s", buff.str());
+            UWARNLOG("%s", buff.str());
             agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
         }
     }
@@ -8173,7 +8173,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
             {
                 StringBuffer msg;
                 msg.append("DFS and code generated group info. differs: DFS(").append(grouped ? "grouped" : "ungrouped").append("), CodeGen(").append(grouped ? "ungrouped" : "grouped").append("), using DFS info");
-                WARNLOG("%s", msg.str());
+                UWARNLOG("%s", msg.str());
                 agent.addWuException(msg.str(), WRN_MismatchGroupInfo, SeverityError, "hthor");
             }
         }
@@ -8198,7 +8198,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
             {
                 StringBuffer msg;
                 msg.append("Ignoring compression attribute on file ").append(mangledHelperFileName.str()).append(", which is not published as compressed");
-                WARNLOG("%s", msg.str());
+                UWARNLOG("%s", msg.str());
                 agent.addWuException(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, "hthor");
                 compressed = true;
             }
@@ -8487,7 +8487,7 @@ bool CHThorDiskReadBaseActivity::openNext()
         {
             closepart();
             StringBuffer msg;
-            WARNLOG("%s", E->errorMessage(msg).str());
+            IWARNLOG("%s", E->errorMessage(msg).str());
             if (saveOpenExc.get())
                 E->Release();
             else
