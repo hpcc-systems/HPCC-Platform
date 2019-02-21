@@ -671,8 +671,6 @@ define([
                         Modified: { label: this.i18n.ModifiedUTCGMT, width: 155 }
                     }
                 }, this.id + "WorkunitsGrid");
-
-                var context = this;
                 this.workunitsGrid.on(".dgrid-row-url:click", function (evt) {
                     if (context._onRowDblClick) {
                         var item = context.workunitsGrid.row(evt).data;
@@ -703,6 +701,7 @@ define([
                         context.downloadToList.set("disabled", true);
                     }
                 });
+                ESPUtil.goToPageUserPreference(this.workunitsGrid, "DFUQueryWidget");
                 this.workunitsGrid.startup();
 
                 this.copyGrid.createGrid({

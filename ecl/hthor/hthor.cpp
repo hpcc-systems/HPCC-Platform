@@ -8651,7 +8651,7 @@ void CHThorDiskReadActivity::ready()
     if (helper.getFlags() & TDRlimitskips)
         limit = (unsigned __int64) -1;
     stopAfter = helper.getChooseNLimit();
-    if (!helper.transformMayFilter())
+    if (!helper.transformMayFilter() && !helper.hasMatchFilter())
         remoteLimit = stopAfter;
 }
 

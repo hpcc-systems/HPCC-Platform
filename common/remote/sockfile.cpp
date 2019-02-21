@@ -4344,7 +4344,7 @@ protected:
         unsigned crc = crc32.get();
 
         keyIndex.setown(createKeyIndex(fileName, crc, isTlk, allowPreload));
-        keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true));
+        keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true, false));
         filters.createSegmentMonitors(keyManager);
         keyManager->finishSegmentMonitors();
         keyManager->reset();

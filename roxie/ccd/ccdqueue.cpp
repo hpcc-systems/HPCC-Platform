@@ -2883,7 +2883,7 @@ public:
     virtual int run()
     {
         Owned<StringContextLogger> logctx = new StringContextLogger("PacketDiscarder");
-        rowManager.setown(roxiemem::createRowManager(1, NULL, *logctx, NULL));
+        rowManager.setown(roxiemem::createRowManager(1, NULL, *logctx, NULL, false));
         mc.setown(ROQ->queryReceiveManager()->createMessageCollator(rowManager, RUID_DISCARD));
         ROQ->queryReceiveManager()->setDefaultCollator(mc);
         while (!aborted)
@@ -3013,7 +3013,7 @@ public:
 
     virtual int run()
     {
-        rowManager.setown(roxiemem::createRowManager(1, NULL, queryDummyContextLogger(), NULL));
+        rowManager.setown(roxiemem::createRowManager(1, NULL, queryDummyContextLogger(), NULL, false));
         mc.setown(ROQ->queryReceiveManager()->createMessageCollator(rowManager, RUID_PING));
         unsigned pingsReceived = 0;
         unsigned pingsElapsed = 0;

@@ -81,10 +81,11 @@ manyPeople := DATASET(nodes * 100,
 SrcAddrIp := '.';
 File := 'persons';
 OriginalDataFile := prefix + File;
+OriginalDataFile2 := prefix + File + '2';
 
 //  Outputs  ---
 setupPeople := OUTPUT(somePeople,,OriginalDataFile, JSON, OVERWRITE);
-
+setupPeople2 := OUTPUT(somePeople,,OriginalDataFile2,  JSON('', HEADING('', ''), OPT, TRIM), OVERWRITE);
 
 ClusterName := 'mythor';
 
@@ -131,21 +132,45 @@ c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(desprayRec,
 #end
 
 
+// This should be fine based on valid target file path and SrcAddIp
+DesprayTargetFile2 := dropzonePath + WORKUNIT + '-' + File + '2';
+dst2b := NOFOLD(DATASET([{OriginalDataFile, DesprayTargetFile2, SrcAddrIp, True, '', ''}], desprayRec));
+
+p2b := NOTHOR(PROJECT(NOFOLD(dst2b), doDespray(LEFT)));
+
+c2b := CATCH(NOFOLD(p2b), ONFAIL(TRANSFORM(desprayRec,
+                                  SELF.sourceFile := OriginalDataFile,
+                                  SELF.destFile := DesprayTargetFile2,
+                                  SELF.ip := SrcAddrIp,
+                                  SELF.allowOverwrite := True,
+                                  SELF.result := 'Fail',
+                                  SELF.msg := FAILMESSAGE
+                                 )));
+#if (VERBOSE = 1)
+     despray2 := output(c2b);
+#else
+     despray2 := output(c2b, {result});
+#end
+
+
+
 sprayRec := RECORD
+  string sourceFileName;
+  string targetFileName;
   string result;
   string msg;
 end;
 
-SprayTargetFileName := prefix + 'spray_test';
-
 //To spray a JSON file we use XML Spray
 sprayRec doSpray(sprayRec l) := TRANSFORM
+    SELF.sourceFileName := l.sourceFileName;
+    SELF.targetFileName := l.targetFileName;
     SELF.msg := FileServices.fSprayXml(
                                 SOURCEIP := '.',
-                                SOURCEPATH := DesprayTargetFile1,
+                                SOURCEPATH := l.sourceFileName,
                                 SOURCEROWTAG := 'Row',
                                 DESTINATIONGROUP := 'my'+engine,
-                                DESTINATIONLOGICALNAME := SprayTargetFileName,
+                                DESTINATIONLOGICALNAME := l.targetFileName,
                                 TIMEOUT := -1,
                                 ESPSERVERIPPORT := 'http://127.0.0.1:8010/FileSpray',
                                 ALLOWOVERWRITE := true
@@ -154,10 +179,13 @@ sprayRec doSpray(sprayRec l) := TRANSFORM
 end;
 
 
-dst3 := NOFOLD(DATASET([{'', ''}], sprayRec));
+SprayTargetFileName1 := prefix + 'spray_test';
+dst3 := NOFOLD(DATASET([{DesprayTargetFile1, SprayTargetFileName1, '', ''}], sprayRec));
 
 p3 := NOTHOR(PROJECT(NOFOLD(dst3), doSpray(LEFT)));
 c3 := CATCH(NOFOLD(p3), ONFAIL(TRANSFORM(sprayRec,
+                                  SELF.sourceFileName := DesprayTargetFile1,
+                                  SELF.targetFileName := SprayTargetFileName1,
                                   SELF.result := 'Spray Fail',
                                   SELF.msg := FAILMESSAGE
                                  )));
@@ -168,7 +196,27 @@ c3 := CATCH(NOFOLD(p3), ONFAIL(TRANSFORM(sprayRec,
 #end
 
 
-ds := DATASET(SprayTargetFileName, Layout_Person, JSON('Row'));
+
+SprayTargetFileName2 := prefix + 'spray_test2';
+dst3b := NOFOLD(DATASET([{DesprayTargetFile2, SprayTargetFileName2, '', ''}], sprayRec));
+
+p3b := NOTHOR(PROJECT(NOFOLD(dst3b), doSpray(LEFT)));
+c3b := CATCH(NOFOLD(p3b), ONFAIL(TRANSFORM(sprayRec,
+                                  SELF.sourceFileName := DesprayTargetFile2,
+                                  SELF.targetFileName := SprayTargetFileName2,
+                                  SELF.result := 'Spray Fail',
+                                  SELF.msg := FAILMESSAGE
+                                 )));
+#if (VERBOSE = 1)
+    spray2 := output(c3b);
+#else
+    spray2 := output(c3b, {result});
+#end
+
+
+
+ds := DATASET(SprayTargetFileName1, Layout_Person, JSON('Row'));
+ds2 := DATASET(SprayTargetFileName2, Layout_Person, JSON('Row'));
 
 string compareDatasets(dataset(Layout_Person) ds1, dataset(Layout_Person) ds2) := FUNCTION
    boolean result := (0 = COUNT(JOIN(ds1, ds2, left.PersonID=right.PersonID, FULL ONLY)));
@@ -193,9 +241,24 @@ SEQUENTIAL(
 
     output(compareDatasets(somePeople,ds)),
 
+
+    setupPeople2,
+    despray2,
+    spray2,
+
+#if (VERBOSE = 1)
+    output(ds2, NAMED('ds2')),
+#end
+
+    output(compareDatasets(somePeople,ds2)),
+
     // Clean-up
     FileServices.DeleteLogicalFile(OriginalDataFile),
-    FileServices.DeleteLogicalFile(SprayTargetFileName),
     FileServices.DeleteExternalFile('.', DesprayTargetFile1),
+    FileServices.DeleteLogicalFile(SprayTargetFileName1),
+
+    FileServices.DeleteLogicalFile(OriginalDataFile2),
+    FileServices.DeleteExternalFile('.', DesprayTargetFile2),
+    FileServices.DeleteLogicalFile(SprayTargetFileName2),
 
 );

@@ -2479,7 +2479,7 @@ class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
         CKeyLookup(IndexDistributeSlaveActivity &_owner, IHThorKeyedDistributeArg *_helper, IKeyIndex *_tlk)
             : owner(_owner), helper(_helper), tlk(_tlk)
         {
-            tlkManager.setown(createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), tlk, nullptr, helper->hasNewSegmentMonitors()));
+            tlkManager.setown(createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), tlk, nullptr, helper->hasNewSegmentMonitors(), false));
             numslaves = owner.queryContainer().queryJob().querySlaves();
         }
         unsigned hash(const void *data)

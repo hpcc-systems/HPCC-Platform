@@ -411,7 +411,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
 
         IKeyManager *createKeyManager()
         {
-            return createLocalKeyManager(queryHelper()->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, queryHelper()->hasNewSegmentMonitors());
+            return createLocalKeyManager(queryHelper()->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, queryHelper()->hasNewSegmentMonitors(), false);
         }
         inline IHThorKeyedJoinArg *queryHelper() const { return activityCtx->queryHelper(); }
     };

@@ -51,9 +51,9 @@
                 <entry><emphasis>operation</emphasis></entry>
 
                 <entry>One of the following actions: spray, despray, copy,
-                remove, rename, list, add, addsuper, removesuper, listsuper,
-                savexml, status, abort, resubmit, monitor, listhistory, and
-                erasehistory</entry>
+                remove, rename, list, add, addsuper, copysuper, removesuper,
+                listsuper, savexml, status, abort, resubmit, monitor,
+                listhistory, and erasehistory</entry>
               </row>
 
               <row>
@@ -1109,6 +1109,75 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
           <programlisting>dfuplus action=removesuper superfile=mysuper subfiles=file1,file2</programlisting>
         </sect3>
 
+        <sect3 id="CLI_DFU_CopySuperOperations">
+          <title>Copysuper Operations:</title>
+
+          <para>The <emphasis role="bold">copysuper</emphasis> operation
+          copies a superfile from one cluster to another.</para>
+
+          <para>These <emphasis>options </emphasis>are used by the <emphasis
+          role="bold">copysuper</emphasis>
+          <emphasis>operation</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="142.40pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis>srcname=&lt;source-super-name&gt;
+                    </emphasis></entry>
+
+                    <entry>The logical name of the source superfile.</entry>
+                  </row>
+
+                  <row>
+                    <entry>dstname=&lt;destination-super-name&gt;</entry>
+
+                    <entry>The logical name of the destination
+                    superfile.</entry>
+                  </row>
+
+                  <row>
+                    <entry>dstcluster=&lt;cluster-name&gt;</entry>
+
+                    <entry>The name of the destination cluster.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis><emphasis><emphasis>srcdali</emphasis>
+                    </emphasis></emphasis></entry>
+
+                    <entry>The hostname or IP of the source Dali
+                    server.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis><emphasis><emphasis>srcusername</emphasis>
+                    </emphasis></emphasis></entry>
+
+                    <entry>Optional, The username to use for the source
+                    environment. </entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis><emphasis><emphasis>srcpassword</emphasis>
+                    </emphasis></emphasis></entry>
+
+                    <entry>Optional, The password to use for the source
+                    environment. </entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Example:</para>
+
+          <programlisting>dfuplus action=copysuper srcname=jd::super1 dstname=jd::super2 dstcluster=mythor srcdali=. </programlisting>
+        </sect3>
+
         <sect3 id="CLI_DFU_ListSuperOperations">
           <title>Listsuper Operations:</title>
 
@@ -1140,7 +1209,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para>Example:</para>
 
-          <programlisting>dfuplus action=listsuper superfile=mysuper</programlisting>
+          <programlisting>dfuplus action=listsuper superfile=mysuper </programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_StatusOperations">

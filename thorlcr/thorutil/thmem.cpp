@@ -2439,12 +2439,12 @@ CThorAllocator::CThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, u
             slaveAllocators.append(*slaveAllocator);
             slaveAllocatorMetaCaches.append(*slaveAllocator->getAllocatorCache());
         }
-        rowManager.setown(roxiemem::createGlobalRowManager(memLimit, sharedMemLimit, numChannels, NULL, *logctx, allocatorMetaCache, (const roxiemem::IRowAllocatorCache **)slaveAllocatorMetaCaches.getArray(), false, true));
+        rowManager.setown(roxiemem::createGlobalRowManager(memLimit, sharedMemLimit, numChannels, NULL, *logctx, allocatorMetaCache, (const roxiemem::IRowAllocatorCache **)slaveAllocatorMetaCaches.getArray(), true));
         for (unsigned c=0; c<numChannels; c++)
             slaveAllocators.item(c).setRowManager(rowManager->querySlaveRowManager(c));
     }
     else
-        rowManager.setown(roxiemem::createRowManager(memLimit, NULL, *logctx, allocatorMetaCache, false, true));
+        rowManager.setown(roxiemem::createRowManager(memLimit, NULL, *logctx, allocatorMetaCache, true));
 
     rowManager->setMemoryLimit(memLimit, 0==memorySpillAtPercentage ? 0 : memLimit/100*memorySpillAtPercentage);
     const bool paranoid = false;

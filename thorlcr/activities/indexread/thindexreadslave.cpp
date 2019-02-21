@@ -260,7 +260,7 @@ public:
                 rfn.getPath(path); // NB: use for tracing only, IDelayedFile uses IPartDescriptor and any copy
 
                 Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, false, false);
-                Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors());
+                Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors(), false);
                 if (localMerge)
                 {
                     if (!keyIndexSet)
@@ -287,7 +287,7 @@ public:
                     return createIndexLookup(keyManager);
                 }
             }
-            keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, nullptr, helper->hasNewSegmentMonitors()));
+            keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, nullptr, helper->hasNewSegmentMonitors(), false));
             const ITranslator *translator = translators.item(0);
             if (translator)
                 keyMergerManager->setLayoutTranslator(&translator->queryTranslator());
@@ -542,7 +542,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
     virtual void prepareManager(IKeyManager *manager) override
     {
         PARENT::prepareManager(manager);
-        if (choosenLimit && !helper->transformMayFilter())
+        if (choosenLimit && !helper->transformMayFilter() && !helper->hasMatchFilter())
             manager->setChooseNLimit(choosenLimit);
     }
     const void *nextKeyGE(const void *seek, unsigned numFields)
@@ -740,11 +740,14 @@ public:
             steppingMeta.setExtra(steppedExtra);
 
         // NB: setup remoteLimit before base start() call which if parts remote, will use remoteLimit
-        if (choosenLimit)
+        if (!helper->transformMayFilter() && !helper->hasMatchFilter())
         {
-            remoteLimit = choosenLimit;
-            if (!helper->transformMayFilter() && (RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
-                remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
+            if (choosenLimit)
+            {
+                remoteLimit = choosenLimit;
+                if ((RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
+                    remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
+            }
         }
 
         if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))

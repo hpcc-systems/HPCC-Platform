@@ -4333,7 +4333,6 @@ private:
     const IRowAllocatorCache *allocatorCache;
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
-    bool ignoreLeaks;
     bool outputOOMReports;
     bool trackMemoryByActivity;
     bool minimizeFootprint;
@@ -4350,7 +4349,7 @@ protected:
     }
 
 public:
-    CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
+    CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _outputOOMReports)
         : hugeHeap(this, _logctx, _allocatorCache), logctx(_logctx), allocatorCache(_allocatorCache)
     {
         logctx.Link();
@@ -4381,7 +4380,6 @@ public:
         dataBuffs = 0;
         activeBuffs = NULL;
         dataBuffPages = 0;
-        ignoreLeaks = _ignoreLeaks;
         outputOOMReports = _outputOOMReports;
         minimizeFootprint = false;
         minimizeFootprintCritical = false;
@@ -4412,9 +4410,6 @@ public:
         if (memTraceLevel >= 2)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p num=%u",
                     maxPageLimit, peakPages, dataBuffs, dataBuffPages, possibleGoers.load(), this, activeRowManagers.load());
-
-        if (!ignoreLeaks)
-            reportLeaks(2);
 
         //Ensure that the rowHeaps release any references to the fixed heaps, and no longer call back when they
         //are destroyed
@@ -5239,8 +5234,8 @@ class CGlobalRowManager;
 class CSlaveRowManager : public CChunkingRowManager
 {
 public:
-    CSlaveRowManager(unsigned _slaveId, CGlobalRowManager * _globalManager, memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
-        : CChunkingRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), slaveId(_slaveId), globalManager(_globalManager)
+    CSlaveRowManager(unsigned _slaveId, CGlobalRowManager * _globalManager, memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _outputOOMReports)
+        : CChunkingRowManager(_memLimit, _tl, _logctx, _allocatorCache, _outputOOMReports), slaveId(_slaveId), globalManager(_globalManager)
     {
     }
 
@@ -5351,8 +5346,8 @@ class CCallbackRowManager : public CChunkingRowManager
 {
 public:
 
-    CCallbackRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
-        : CChunkingRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), callbacks(this)
+    CCallbackRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _outputOOMReports)
+        : CChunkingRowManager(_memLimit, _tl, _logctx, _allocatorCache, _outputOOMReports), callbacks(this)
     {
     }
 
@@ -5460,15 +5455,15 @@ protected:
 class CGlobalRowManager : public CCallbackRowManager
 {
 public:
-    CGlobalRowManager(memsize_t _memLimit, memsize_t _globalLimit, unsigned _numSlaves, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool _ignoreLeaks, bool _outputOOMReports)
-        : CCallbackRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), numSlaves(_numSlaves)
+    CGlobalRowManager(memsize_t _memLimit, memsize_t _globalLimit, unsigned _numSlaves, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool _outputOOMReports)
+        : CCallbackRowManager(_memLimit, _tl, _logctx, _allocatorCache, _outputOOMReports), numSlaves(_numSlaves)
     {
         DBGLOG("Create Global/Slave Row Manager %uMB total global can use max %uMB", (unsigned)(_memLimit / 0x100000), (unsigned)(_globalLimit / 0x100000));
         assertex(_globalLimit <= _memLimit);
         globalPageLimit = (unsigned) PAGES(_globalLimit, HEAP_ALIGNMENT_SIZE);
         slaveRowManagers = new CChunkingRowManager * [numSlaves];
         for (unsigned i=0; i < numSlaves; i++)
-            slaveRowManagers[i] = new CSlaveRowManager(i+1, this, _memLimit, _tl, _logctx, slaveAllocatorCaches ? slaveAllocatorCaches[i] : _allocatorCache, _ignoreLeaks, _outputOOMReports);
+            slaveRowManagers[i] = new CSlaveRowManager(i+1, this, _memLimit, _tl, _logctx, slaveAllocatorCaches ? slaveAllocatorCaches[i] : _allocatorCache, _outputOOMReports);
     }
     ~CGlobalRowManager()
     {
@@ -6520,20 +6515,20 @@ void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); 
 //================================================================================
 //
 
-extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks, bool outputOOMReports)
+extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool outputOOMReports)
 {
     if (numDirectBuckets == 0)
         throw MakeStringException(ROXIEMM_HEAP_ERROR, "createRowManager() called before setTotalMemoryLimit()");
 
-    return new CCallbackRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks, outputOOMReports);
+    return new CCallbackRowManager(memLimit, tl, logctx, allocatorCache, outputOOMReports);
 }
 
-extern IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool ignoreLeaks, bool outputOOMReports)
+extern IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool outputOOMReports)
 {
     if (numDirectBuckets == 0)
         throw MakeStringException(ROXIEMM_HEAP_ERROR, "createRowManager() called before setTotalMemoryLimit()");
 
-    return new CGlobalRowManager(memLimit, globalLimit, numSlaves, tl, logctx, allocatorCache, slaveAllocatorCaches, ignoreLeaks, outputOOMReports);
+    return new CGlobalRowManager(memLimit, globalLimit, numSlaves, tl, logctx, allocatorCache, slaveAllocatorCaches, outputOOMReports);
 }
 
 extern void setMemoryStatsInterval(unsigned secs)
@@ -7215,7 +7210,7 @@ protected:
 #endif
         HeapPointerCompressor compressor;
         const unsigned numAllocs = 100;
-        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL, false);
         memsize_t max = numAllocs * compressor.getSize();
         byte * memory = (byte *)malloc(max + 1);
         void * * ptrs = new void * [numAllocs];
@@ -7237,7 +7232,7 @@ protected:
     }
     void testHuge()
     {
-        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL, false);
         ReleaseRoxieRow(rm1->allocate(1800000, 0));
         ASSERT(rm1->numPagesAfterCleanup(false)==0); // page should be freed even if force not specified
         ASSERT(rm1->getMemoryUsage()== PAGES(1800000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE)*HEAP_ALIGNMENT_SIZE);
@@ -7251,7 +7246,7 @@ protected:
         ASSERT(PackedFixedSizeHeaplet::chunkHeaderSize == 4);  // NOTE - this is NOT 8 byte aligned, so can't safely be used to allocate ptr arrays
 
         // Check some alignments
-        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL, false);
         OwnedRoxieRow rs = rm1->allocate(18, 0);
         OwnedRoxieRow rh = rm1->allocate(1800000, 0);
         ASSERT((((memsize_t) rs.get()) & 0x7) == 0);
@@ -7278,7 +7273,7 @@ protected:
 
     void testRelease()
     {
-        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL, false);
         ReleaseRoxieRow(rm1->allocate(1000, 0));
         ASSERT(rm1->numPagesAfterCleanup(true)==0);
         ASSERT(rm1->getMemoryUsage()==HEAP_ALIGNMENT_SIZE);
@@ -7295,7 +7290,7 @@ protected:
         ASSERT(rm1->getMemoryUsage()==HEAP_ALIGNMENT_SIZE);
 
 
-        Owned<IRowManager> rm2 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm2 = createRowManager(0, NULL, logctx, NULL, false);
         ReleaseRoxieRow(rm2->allocate(4000000, 0));
         ASSERT(rm2->numPagesAfterCleanup(true)==0);
         ASSERT(rm2->getMemoryUsage()==PAGES(4000000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE)*HEAP_ALIGNMENT_SIZE);
@@ -7313,25 +7308,25 @@ protected:
 
         for (unsigned d = 0; d < 50; d++)
         {
-            Owned<IRowManager> rm3 = createRowManager(0, NULL, logctx, NULL);
+            Owned<IRowManager> rm3 = createRowManager(0, NULL, logctx, NULL, false);
             ReleaseRoxieRow(rm3->allocate(HEAP_ALIGNMENT_SIZE - d + 10, 0));
             ASSERT(rm3->numPagesAfterCleanup(true)==0);
         }
 
         // test leak reporting does not crash....
-        Owned<IRowManager> rm4 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm4 = createRowManager(0, NULL, logctx, NULL, false);
         rm4->allocate(4000000, 0);
         rm4.clear();
 
-        Owned<IRowManager> rm5 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm5 = createRowManager(0, NULL, logctx, NULL, false);
         rm5->allocate(4000, 0);
         rm5.clear();
     }
 
     void testFixed()
     {
-        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
-        Owned<IRowManager> rm2 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL, false);
+        Owned<IRowManager> rm2 = createRowManager(0, NULL, logctx, NULL, false);
         void *ptrs[20000];
         unsigned i;
         for (i = 0; i < 10000; i++)
@@ -7380,7 +7375,7 @@ protected:
 
     void testMixed()
     {
-        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL, false);
         void *ptrs[20000];
         unsigned i;
         for (i = 0; i < 10000; i++)
@@ -7402,7 +7397,7 @@ protected:
     }
     void testExhaust()
     {
-        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL, false);
         rm1->setMemoryLimit(20*HEAP_ALIGNMENT_SIZE);
         try
         {
@@ -7421,7 +7416,7 @@ protected:
     }
     void testCycling()
     {
-        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL, false);
         rm1->setMemoryLimit(2*1024*1024);
         unsigned i;
         for (i = 0; i < 1000; i++)
@@ -7514,7 +7509,7 @@ protected:
 
     void testAllocSize()
     {
-        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, NULL, false);
         testCapacity(rm, 1);
         testCapacity(rm, 32);
         testCapacity(rm, 32768, PAGES(2 * 32768, (HEAP_ALIGNMENT_SIZE- sizeof(FixedSizeHeaplet))));
@@ -7671,7 +7666,7 @@ protected:
         if (numThreads == 0)
             return;
 
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         CountingRowAllocatorCache rowCache;
         void * memory = suballoc_aligned(1, true);
         unsigned heapFlags = 0;
@@ -7711,7 +7706,7 @@ protected:
     void testOldFixedCas()
     {
         CountingRowAllocatorCache rowCache;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
         Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|RHFoldfixed);
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
@@ -7725,7 +7720,7 @@ protected:
     {
         CountingRowAllocatorCache rowCache;
         Owned<IFixedRowHeap> rowHeap;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
         //For this test the row heap is assign to a variable that will be destroyed after the manager, to ensure that works.
         rowHeap.setown(rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|flags));
         Semaphore sem;
@@ -7740,7 +7735,7 @@ protected:
     unsigned doTestFixedCas(const char * variant, unsigned flags)
     {
         CountingRowAllocatorCache rowCache;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
@@ -7779,7 +7774,7 @@ protected:
     void testGeneralCas()
     {
         CountingRowAllocatorCache rowCache;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
@@ -7817,7 +7812,7 @@ protected:
     void testVariableCas()
     {
         CountingRowAllocatorCache rowCache;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
@@ -7848,7 +7843,7 @@ protected:
     }
     void testRoundup()
     {
-        Owned<IRowManager> rowManager = createRowManager(1, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(1, NULL, logctx, NULL, false);
         CChunkingRowManager * managerObject = static_cast<CChunkingRowManager *>(rowManager.get());
         const unsigned maxFrac = firstFractionalHeap;
 
@@ -7900,7 +7895,7 @@ protected:
         //and that row heaps are cleaned up correctly when the row manager is destroyed.
         CountingRowAllocatorCache rowCache;
         Owned<IFixedRowHeap> savedRowHeap;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
         {
             Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|RHFunique);
             void * row = rowHeap->allocate();
@@ -7971,7 +7966,7 @@ protected:
     void testReleaseAll()
     {
         CountingRowAllocatorCache rowCache;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
 
         //Test releaseAll on various different heap variants
         testReleaseAll(rowCache, rowManager, RHFhasdestructor|RHFunique);
@@ -7987,7 +7982,7 @@ protected:
     void testCallback(unsigned numPerPage, unsigned pages, unsigned spillPages, double scale, unsigned flags)
     {
         CountingRowAllocatorCache rowCache;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
         rowManager->setMemoryLimit(pages * numCasThreads * HEAP_ALIGNMENT_SIZE, spillPages * numCasThreads * HEAP_ALIGNMENT_SIZE);
         rowManager->setMemoryCallbackThreshold((unsigned)-1);
         rowManager->setCallbackOnThread(true);
@@ -8146,7 +8141,7 @@ protected:
     }
     void testCompacting()
     {
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
 
         Owned<IFixedRowHeap> rowHeap1 = rowManager->createFixedRowHeap(compactingAllocSize-FixedSizeHeaplet::chunkHeaderSize, 0, 0);
         Owned<IFixedRowHeap> rowHeap2 = rowManager->createFixedRowHeap(compactingAllocSize-PackedFixedSizeHeaplet::chunkHeaderSize, 0, RHFpacked);
@@ -8183,7 +8178,7 @@ protected:
     void testRecursiveCallbacks1()
     {
         const size32_t bigRowSize = HEAP_ALIGNMENT_SIZE * 2 / 3;
-        Owned<IRowManager> rowManager = createRowManager(2 * HEAP_ALIGNMENT_SIZE, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(2 * HEAP_ALIGNMENT_SIZE, NULL, logctx, NULL, false);
 
         //The lower cost allocator allocates an extra row when it is called to free all its rows.
         //this will only succeed if the higher cost allocator is then called to free its data.
@@ -8197,7 +8192,7 @@ protected:
     void testRecursiveCallbacks2()
     {
         const size32_t bigRowSize = HEAP_ALIGNMENT_SIZE * 2 / 3;
-        Owned<IRowManager> rowManager = createRowManager(2 * HEAP_ALIGNMENT_SIZE, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(2 * HEAP_ALIGNMENT_SIZE, NULL, logctx, NULL, false);
 
         //Both allocators allocate extra memory when they are requested to free.  Ensure that an exception
         //is thrown instead of the previous stack fault.
@@ -8245,7 +8240,7 @@ protected:
     {
         //Test allocating within the heap when a limit is set on the row manager
         {
-            Owned<IRowManager> rowManager = createRowManager(HEAP_ALIGNMENT_SIZE, NULL, logctx, NULL);
+            Owned<IRowManager> rowManager = createRowManager(HEAP_ALIGNMENT_SIZE, NULL, logctx, NULL, false);
             testFragmentCallbacks(rowManager, 1);
         }
 
@@ -8253,7 +8248,7 @@ protected:
         {
             HeapPreserver preserver;
             adjustHeapSize(HEAP_BITS);
-            Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+            Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
             testFragmentCallbacks(rowManager, HEAP_BITS);
         }
     }
@@ -8266,7 +8261,7 @@ protected:
     {
         //Test with a limit set on the memory manager
         const size32_t bigRowSize = HEAP_ALIGNMENT_SIZE * 2 / 3;
-        Owned<IRowManager> rowManager = createRowManager(1, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(1, NULL, logctx, NULL, false);
 
         SimpleCallbackBlockAllocator alloc1(rowManager, bigRowSize, 20, 1);
         SimpleCallbackBlockAllocator alloc2(rowManager, bigRowSize, 10, 2);
@@ -8283,7 +8278,7 @@ protected:
     void testCostCallbacks2()
     {
         //Test with no limit set on the memory manager
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
 
         const memsize_t bigRowSize = HEAP_ALIGNMENT_SIZE * (heapTotalPages * 2 / 3);
         SimpleCallbackBlockAllocator alloc1(rowManager, bigRowSize, 20, 1);
@@ -8311,7 +8306,7 @@ protected:
         for (unsigned i=0; i < numCallbacks; i++)
             callbacks[i] = new TestingRowBuffer(i % numCosts, i % (numCosts * numIds));
 
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         unsigned startTime = msTick();
         for (unsigned iter=0; iter < numIter; iter++)
         {
@@ -8344,7 +8339,7 @@ protected:
         const memsize_t allMemoryAlloc = allMemory - halfPage;
         IRowManager * * slaveManagers = new IRowManager * [numSlaves];
         SimpleCallbackBlockAllocator * * allocators = new SimpleCallbackBlockAllocator * [numSlaves];
-        Owned<IRowManager> globalManager = createGlobalRowManager(allMemory, allMemory, numSlaves, NULL, logctx, NULL, NULL, true, false);
+        Owned<IRowManager> globalManager = createGlobalRowManager(allMemory, allMemory, numSlaves, NULL, logctx, NULL, NULL, false);
         for (unsigned i1 = 0; i1 < numSlaves; i1++)
         {
             slaveManagers[i1] = globalManager->querySlaveRowManager(i1);
@@ -8423,7 +8418,7 @@ protected:
     }
     void testResize()
     {
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         memsize_t maxMemory = heapTotalPages * HEAP_ALIGNMENT_SIZE;
         memsize_t wasted = 0;
 
@@ -8564,7 +8559,7 @@ protected:
     void testResizeLock()
     {
         ResizeCallback callback;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         callback.rows = (const void * *)rowManager->allocate(1, 0);
         Owned<ReleaseThread> releaser = new ReleaseThread(callback, rowManager);
         Owned<ResizeThread> resizer = new ResizeThread(callback, rowManager);
@@ -8642,7 +8637,7 @@ protected:
         unsigned requestSize = 20;
         unsigned allocSize = 32 + sizeof(void*);
         memsize_t numAlloc = (memorySize / allocSize) * 3 /4;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         void * * rows = (void * *)rowManager->allocate(numAlloc * sizeof(void*), 0);
         unsigned startTime = msTick();
         for (memsize_t i=0; i < numAlloc; i++)
@@ -8663,7 +8658,7 @@ protected:
     void testFragmenting()
     {
         memsize_t requestSize = 32;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         unsigned startTime = msTick();
         void * prev = rowManager->allocate(requestSize, 1);
         try
@@ -8694,7 +8689,7 @@ protected:
     void testDoubleFragmenting()
     {
         memsize_t requestSize = 32;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         unsigned startTime = msTick();
         void * prev1 = rowManager->allocate(requestSize, 1);
         void * prev2 = rowManager->allocate(requestSize, 1);
@@ -8731,7 +8726,7 @@ protected:
     void testResizeFragmenting()
     {
         memsize_t requestSize = 32;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         unsigned startTime = msTick();
         void * prev = rowManager->allocate(requestSize, 1);
         try
@@ -8762,7 +8757,7 @@ protected:
     void testResizeDoubleFragmenting()
     {
         memsize_t requestSize = 32;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         unsigned startTime = msTick();
         void * prev1 = rowManager->allocate(requestSize, 1);
         void * prev2 = rowManager->allocate(requestSize, 1);
@@ -8849,7 +8844,7 @@ protected:
         const unsigned numAllocs = maxAllocs/4;
         const unsigned rowsetSize = numAllocs*4;
         const unsigned releaseSize = numAllocs * 3 / 4;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         const void * * rowset = new const void * [rowsetSize];
         memset(rowset, 0, sizeof(void *) * rowsetSize);
 
@@ -8960,7 +8955,7 @@ protected:
 
     void testHuge()
     {
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         void * huge = rowManager->allocate(hugeAllocSize, 1);
         ASSERT(rowManager->numPagesAfterCleanup(true)==16385);
         ReleaseRoxieRow(huge);
@@ -9117,7 +9112,7 @@ protected:
 
     unsigned testSingleSync(size_t numRows, size_t granularity, bool shuffle)
     {
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         ConstPointerArray rows;
         createRows(rowManager, numRows, rows, shuffle);
         cycle_t start = get_cycles_now();

@@ -236,7 +236,7 @@ int main(int argc, const char **argv)
                 {
                     writer.setown(new SimpleOutputWriter);
                     const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
-                    manager.setown(createLocalKeyManager(inrec, index, nullptr, true));
+                    manager.setown(createLocalKeyManager(inrec, index, nullptr, true, false));
                     size32_t minRecSize = 0;
                     if (globals->hasProp("fields"))
                     {
