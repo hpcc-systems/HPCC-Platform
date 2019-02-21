@@ -2460,7 +2460,7 @@ protected:
             }
             if (allKeys->numParts())
             {
-                tlk.setown(createKeyMerger(*keyRecInfo, allKeys, 0, &logctx, hasNewSegmentMonitors()));
+                tlk.setown(createKeyMerger(*keyRecInfo, allKeys, 0, &logctx, hasNewSegmentMonitors(), !logctx.isBlind()));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -2473,7 +2473,7 @@ protected:
             IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
             if (filechanged)
             {
-                tlk.setown(createLocalKeyManager(*keyRecInfo, k, &logctx, hasNewSegmentMonitors()));
+                tlk.setown(createLocalKeyManager(*keyRecInfo, k, &logctx, hasNewSegmentMonitors(), !logctx.isBlind()));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -2723,7 +2723,7 @@ public:
                 i++;
             }
             if (allKeys->numParts())
-                tlk.setown(::createKeyMerger(*keyRecInfo, allKeys, steppingOffset, &logctx, hasNewSegmentMonitors()));
+                tlk.setown(::createKeyMerger(*keyRecInfo, allKeys, steppingOffset, &logctx, hasNewSegmentMonitors(), !logctx.isBlind()));
             else
                 tlk.clear();
             createSegmentMonitorsPending = true;

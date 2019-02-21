@@ -915,7 +915,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     Owned<IKeyIndex> keyIndex = activity.createPartKeyIndex(partNo, copy, false);
                     partKeySet->addIndex(keyIndex.getClear());
                 }
-                keyManager.setown(createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, helper->hasNewSegmentMonitors()));
+                keyManager.setown(createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, helper->hasNewSegmentMonitors(), false));
                 setupTranslation(0, 0, *keyManager);
             }
             processRows(processing, 0, keyManager);
@@ -1791,7 +1791,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         {
             IKeyIndex *tlkKeyIndex = &tlkKeyIndexes.item(i);
             const RtlRecord &keyRecInfo = helper->queryIndexRecordSize()->queryRecordAccessor(true);
-            Owned<IKeyManager> tlkManager = createLocalKeyManager(keyRecInfo, nullptr, nullptr, helper->hasNewSegmentMonitors());
+            Owned<IKeyManager> tlkManager = createLocalKeyManager(keyRecInfo, nullptr, nullptr, helper->hasNewSegmentMonitors(), false);
             tlkManager->setKey(tlkKeyIndex);
             keyManagers.append(*tlkManager.getClear());
         }
@@ -1826,7 +1826,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy)
     {
         Owned<IKeyIndex> keyIndex = createPartKeyIndex(partNo, copy, false);
-        return createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors());
+        return createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors(), false);
     }
     const void *preparePendingLookupRow(void *row, size32_t maxSz, const void *lhsRow, size32_t keySz)
     {
