@@ -1246,7 +1246,7 @@ public:
                         StringBuffer m;
                         E->errorMessage(m);
                         suspend(m.str());
-                        ERRLOG("Query %s suspended: %s", id.get(), m.str());
+                        OERRLOG("Query %s suspended: %s", id.get(), m.str());
                         E->Release();
                     }
                 }

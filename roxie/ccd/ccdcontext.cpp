@@ -3045,7 +3045,7 @@ public:
                     e->errorMessage(msg);
                     addExceptionToWorkunit(w, SeverityError, "Roxie", code, msg.str(), NULL, 0, 0, 0);
                     e->Release();
-                    WARNLOG("%s (%d)", msg.str(), code);
+                    OWARNLOG("%s (%d)", msg.str(), code);
                 }
             }
             while (clusterNames.ordinality())

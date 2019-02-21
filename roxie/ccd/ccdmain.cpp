@@ -781,12 +781,12 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (ttlTmp < 0)
         {
             multicastTTL = 1;
-            WARNLOG("multicastTTL value (%d) invalid, must be >=0, resetting to %u", ttlTmp, multicastTTL);
+            IWARNLOG("multicastTTL value (%d) invalid, must be >=0, resetting to %u", ttlTmp, multicastTTL);
         }
         else if (ttlTmp > 255)
         {
             multicastTTL = 255;
-            WARNLOG("multicastTTL value (%d) invalid, must be <=%u, resetting to maximum", ttlTmp, multicastTTL);
+            IWARNLOG("multicastTTL value (%d) invalid, must be <=%u, resetting to maximum", ttlTmp, multicastTTL);
         }
         else
             multicastTTL = ttlTmp;
@@ -1160,7 +1160,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                             if (!isEmptyString(passPhrase))
                                 decrypt(passPhraseStr, passPhrase);
     #else
-                            WARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
+                            OWARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
                             continue;
     #endif
                         }
@@ -1211,7 +1211,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             catch (IException *E)
             {
                 StringBuffer x;
-                DBGLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
+                IERRLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
                 E->Release();
             }
         }
@@ -1234,7 +1234,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     catch (IException *E)
     {
         StringBuffer x;
-        DBGLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
+        IERRLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
         E->Release();
     }
 
