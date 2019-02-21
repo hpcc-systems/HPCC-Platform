@@ -115,11 +115,9 @@ ECL_H3_API uint32_t ECL_H3_CALL baseCell(ICodeContext *_ctx, unsigned __int64 in
 
 ECL_H3_API void ECL_H3_CALL toString(ICodeContext *_ctx, size32_t &lenVarStr, char *&varStr, unsigned __int64 index)
 {
-    char buff[17];
-    ::h3ToString(index, buff, 17);
-    lenVarStr = strlen(buff);
-    varStr = static_cast<char *>(rtlMalloc(lenVarStr));
-    memcpy(varStr, buff, lenVarStr);
+    varStr = static_cast<char *>(rtlMalloc(17));
+    ::h3ToString(index, varStr, 17);
+    lenVarStr = strlen(varStr);
 }
 
 ECL_H3_API unsigned __int64 ECL_H3_CALL fromString(ICodeContext *_ctx, const char *strIdx)

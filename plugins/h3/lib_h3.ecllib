@@ -36,7 +36,7 @@ EXPORT h3 := SERVICE : plugin('h3plugin'), library('h3'), namespace('h3'), CPP, 
     //  Introspection  ---
     h3_resolution_t resolution(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='resolution';
     UNSIGNED4 baseCell(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='baseCell';
-    STRING toString(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='toString';
+    STRING16 toString(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='toString';
     h3_index_t fromString(CONST VARSTRING strIdx) : cpp,action,context,fold,entrypoint='fromString';
     BOOLEAN isValid(CONST h3_index_t idx) : cpp,action,context,fold,entrypoint='isValid';
 

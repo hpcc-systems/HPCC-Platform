@@ -179,6 +179,13 @@ SET OF h3_index_t uncompact(CONST SET OF h3_index_t indexes, CONST h3_resolution
 
 Uncompacts the compacted set of `indexes` to the resolution `resolution` and returns the uncompacted set. 
 
+### Regions
+```c
+SET OF h3_index_t polyfill(CONST LINKCOUNTED DATASET(h3_boundary_t) boundary, CONST h3_resolution_t resolution)
+```
+
+polyfill takes an array of lat/long representing a polygon (open ended) and returns a dataset of hexagons that are contained by the polygon.
+
 ### Miscellaneous functions
 
 #### degsToRads
