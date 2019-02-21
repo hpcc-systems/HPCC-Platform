@@ -683,7 +683,7 @@ protected:
     void testAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags, unsigned low, unsigned high, int modify, bool checking)
     {
         CheckingRowAllocatorCache cache;
-        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, &cache);
+        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, &cache, false);
         Owned<IEngineRowAllocator> alloc = checking ? createCrcRoxieRowAllocator(NULL, *rm, meta, 0, 0, flags) : createRoxieRowAllocator(NULL, *rm, meta, 0, 0, flags);
 
         for (unsigned size=low; size <= high; size++)
@@ -740,7 +740,7 @@ protected:
 
     void testChecking()
     {
-        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, NULL, false);
 
         for (unsigned fixedSize=1; fixedSize<64; fixedSize++)
         {
@@ -760,7 +760,7 @@ protected:
     void testAllocatorCache()
     {
         IArrayOf<IOutputMetaData> metas;
-        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, NULL);
+        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, NULL, false);
         class CAllocatorCallback : implements IRowAllocatorMetaActIdCacheCallback
         {
             IRowManager *rm;
