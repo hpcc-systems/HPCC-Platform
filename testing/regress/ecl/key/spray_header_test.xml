@@ -9,14 +9,3 @@
 <Dataset name='Result 4'>
  <Row><Result_4>Pass</Result_4></Row>
 </Dataset>
-<Dataset name='Result 5'>
-</Dataset>
-<Dataset name='Result 6'>
- <Row><result>Despray Pass</result></Row>
-</Dataset>
-<Dataset name='Result 7'>
- <Row><result>Spray Pass</result></Row>
-</Dataset>
-<Dataset name='Result 8'>
- <Row><Result_8>Compare Pass</Result_8></Row>
-</Dataset>
