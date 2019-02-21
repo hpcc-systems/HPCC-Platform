@@ -1397,7 +1397,7 @@ int CWsPackageProcessSoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpReques
     if (meIn && (meIn->ordinality() > 0))
     {
         StringBuffer msg;
-        WARNLOG("Exception(s) in EspHttpBinding::onFinishUpload - %s", meIn->errorMessage(msg).append('\n').str());
+        IWARNLOG("Exception(s) in EspHttpBinding::onFinishUpload - %s", meIn->errorMessage(msg).append('\n').str());
         if ((ctx.getResponseFormat() == ESPSerializationXML) || (ctx.getResponseFormat() == ESPSerializationJSON))
         {
             response->handleExceptions(NULL, meIn, "FileSpray", "UploadFile", NULL, false);
@@ -1411,7 +1411,7 @@ int CWsPackageProcessSoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpReques
     Owned<IEspWsPackageProcess> iserv = (IEspWsPackageProcess*)getService();
     if(iserv == NULL)
     {
-        WARNLOG("Exception(s) in %s::%s - Service not available", service, method);
+        IWARNLOG("Exception(s) in %s::%s - Service not available", service, method);
 	    respStr.append("{\"Code\":-1,\"Exception\":\"Service not available\"}");
     }
     else
@@ -1451,7 +1451,7 @@ int CWsPackageProcessSoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpReques
         else
         {
             StringBuffer msg;
-            WARNLOG("Exception(s) in %s::%s - %s", service, method, me->errorMessage(msg).str());
+            IWARNLOG("Exception(s) in %s::%s - %s", service, method, me->errorMessage(msg).str());
             respStr.appendf("{\"Code\":-1,\"Exception\":\"%s\"}", msg.str());
         }
     }

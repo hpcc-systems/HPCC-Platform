@@ -35,7 +35,7 @@ bool CDALIKVStore::createStore(const char * apptype, const char * storename, con
     VStringBuffer xpath("Store[%s='%s'][1]", DALI_KVSTORE_NAME_ATT,  storename);
     if (root->hasProp(xpath.str()))
     {
-        WARNLOG("DALI KV Store: Cannot create app '%s' entry, it already exists", storename);
+        IWARNLOG("DALI KV Store: Cannot create app '%s' entry, it already exists", storename);
         return false;
     }
 

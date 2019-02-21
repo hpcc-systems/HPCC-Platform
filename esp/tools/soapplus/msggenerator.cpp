@@ -64,7 +64,7 @@ MessageGenerator::MessageGenerator(const char* path, bool keepfile, SchemaType s
         if (loadFile(cfg, globals->queryProp("cfg")))
             m_cfg.setown(createPTreeFromXMLString(cfg));
         else
-            ERRLOG("Can not load cfg file; ignored");
+            UERRLOG("Can not load cfg file; ignored");
     }
 
     m_logfile = stdout;
@@ -419,7 +419,7 @@ void MessageGenerator::genRoxieMessage(const char* templatemsg, StringBuffer& me
         const char* name = ds->queryProp("@name");
         if (!name)
         {
-            ERRLOG("XmlSchema without name");
+            UERRLOG("XmlSchema without name");
             continue;
         }
         
@@ -429,14 +429,14 @@ void MessageGenerator::genRoxieMessage(const char* templatemsg, StringBuffer& me
         IXmlType* type = xs->queryElementType("Dataset");
         if (!type)
         {
-            ERRLOG("Can not find type '%s'", name);
+            UERRLOG("Can not find type '%s'", name);
             continue;
         }
         // get the Row type
         type = type->queryFieldType(0);
         if (!type)
         {
-            ERRLOG("The root element for %s is not an array", name);
+            UERRLOG("The root element for %s is not an array", name);
             continue;
         }
 

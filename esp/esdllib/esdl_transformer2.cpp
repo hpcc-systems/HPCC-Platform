@@ -1232,7 +1232,7 @@ void Esdl2Struct::addChildren(Esdl2Transformer *xformer, IEsdlDefObjectIterator 
             else
             {
                 VStringBuffer msg("Can not find element: %s for %s as data_for target", dataFrom, self ? self->queryName() : "UNKNOWN");
-                ERRLOG("%s", msg.str());
+                IERRLOG("%s", msg.str());
                 throw MakeStringException(-1, "Internal Error: %s", msg.str());
             }
         }
@@ -1859,7 +1859,7 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
                 xppToXmlString(*xpp, stag, logdata);
             else
             {
-                WARNLOG("ESDL processing HPCC Result: Dataset ignored: %s", dataset);
+                UWARNLOG("ESDL processing HPCC Result: Dataset ignored: %s", dataset);
                 xpp->skipSubTree();
             }
         }

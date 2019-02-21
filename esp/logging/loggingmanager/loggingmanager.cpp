@@ -36,7 +36,7 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
 {
     if (!cfg)
     {
-        ERRLOG(EspLoggingErrors::ConfigurationFileEntryError, "Logging Manager setting not found for %s", service);
+        OERRLOG(EspLoggingErrors::ConfigurationFileEntryError, "Logging Manager setting not found for %s", service);
         return false;
     }
 
@@ -60,7 +60,7 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
         IEspLogAgent* loggingAgent = loadLoggingAgent(agentName, agentPlugin, service, cfg);
         if (!loggingAgent)
         {
-            ERRLOG(-1, "Failed to create logging agent for %s", agentName);
+            OERRLOG(-1, "Failed to create logging agent for %s", agentName);
             continue;
         }
         loggingAgent->init(agentName, agentType, &loggingAgentTree, service);
@@ -124,7 +124,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, con
     {
         status.set("Failed to update log: ");
         e->errorMessage(status);
-        ERRLOG("%s", status.str());
+        OERRLOG("%s", status.str());
         e->Release();
     }
 
@@ -147,7 +147,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPr
     {
         status.set("Failed to update log: ");
         e->errorMessage(status);
-        ERRLOG("%s", status.str());
+        OERRLOG("%s", status.str());
         e->Release();
     }
 
@@ -194,7 +194,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPr
     {
         status.set("Failed to update log: ");
         e->errorMessage(status);
-        ERRLOG("%s", status.str());
+        OERRLOG("%s", status.str());
         e->Release();
     }
     return bRet;
@@ -271,7 +271,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
     {
         StringBuffer errorStr;
         e->errorMessage(errorStr);
-        ERRLOG("Failed to update log: %s",errorStr.str());
+        OERRLOG("Failed to update log: %s",errorStr.str());
         resp.setStatusCode(-1);
         resp.setStatusMessage(errorStr.str());
         e->Release();
@@ -367,7 +367,7 @@ bool CLoggingManager::getTransactionSeed(StringBuffer& transactionSeed, StringBu
     {
         e->errorMessage(status);
         status.insert(0, "Failed to get Transaction Seed: ");
-        ERRLOG("%s",status.str());
+        OERRLOG("%s",status.str());
         e->Release();
     }
 
@@ -399,7 +399,7 @@ bool CLoggingManager::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
     {
         StringBuffer errorStr;
         e->errorMessage(errorStr);
-        ERRLOG("Failed to get Transaction Seed: %s",errorStr.str());
+        OERRLOG("Failed to get Transaction Seed: %s",errorStr.str());
         resp.setStatusCode(-1);
         resp.setStatusMessage(errorStr.str());
         e->Release();

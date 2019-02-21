@@ -171,7 +171,7 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
                     }
                     catch(...)
                     {
-                        ERRLOG("Error starting thread from http thread pool.");
+                        IERRLOG("Error starting thread from http thread pool.");
                         if(accepted.get())
                         {
                             accepted->close();
@@ -205,12 +205,12 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
     catch (IException *e) 
     {
         StringBuffer estr;
-        ERRLOG("Exception(%d, %s) in CHttpProtocol::notifySelected()", e->errorCode(), e->errorMessage(estr).str());
+        IERRLOG("Exception(%d, %s) in CHttpProtocol::notifySelected()", e->errorCode(), e->errorMessage(estr).str());
         e->Release();
     }
     catch(...)
     {
-        ERRLOG("Unknown Exception in CHttpProtocol::notifySelected()");
+        IERRLOG("Unknown Exception in CHttpProtocol::notifySelected()");
     }
 
     return false;
@@ -378,12 +378,12 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
     catch (IException *e) 
     {
         StringBuffer estr;
-        ERRLOG("Exception(%d, %s) in CSecureHttpProtocol::notifySelected()", e->errorCode(), e->errorMessage(estr).str());
+        IERRLOG("Exception(%d, %s) in CSecureHttpProtocol::notifySelected()", e->errorCode(), e->errorMessage(estr).str());
         e->Release();
     }
     catch(...)
     {
-        ERRLOG("Unknown Exception in CSecureHttpProtocol::notifySelected()");
+        IERRLOG("Unknown Exception in CSecureHttpProtocol::notifySelected()");
     }
 
     return false;
@@ -455,12 +455,12 @@ bool CHttpThread::onRequest()
         {
             StringBuffer emsg;
             e->errorMessage(emsg);
-            DBGLOG("%s", emsg.str());
+            IERRLOG("%s", emsg.str());
             return false;
         }
         catch(...)
         {
-            DBGLOG("Unknown exception accepting from secure socket");
+            IERRLOG("Unknown exception accepting from secure socket");
             return false;
         }
         ESPLOG(LogMax, "Request from secure socket");
@@ -535,7 +535,7 @@ void CPooledHttpThread::threadmain()
         {
             StringBuffer emsg;
             e->errorMessage(emsg);
-            DBGLOG("%s", emsg.str());
+            IERRLOG("%s", emsg.str());
             return;
         }
         catch(...)
@@ -572,12 +572,12 @@ void CPooledHttpThread::threadmain()
     catch (IException *e) 
     {
         StringBuffer estr;
-        ERRLOG("Exception(%d, %s) in CPooledHttpThread::threadmain().", e->errorCode(), e->errorMessage(estr).str());
+        IERRLOG("Exception(%d, %s) in CPooledHttpThread::threadmain().", e->errorCode(), e->errorMessage(estr).str());
         e->Release();
     }
     catch(...)
     {
-        ERRLOG("General Exception - in CPooledHttpThread::threadmain().");
+        IERRLOG("General Exception - in CPooledHttpThread::threadmain().");
     }
     clearThreadLocal();
 
@@ -593,12 +593,12 @@ void CPooledHttpThread::threadmain()
     catch (IException *e) 
     {
         StringBuffer estr;
-        ERRLOG("Exception(%d, %s) - CPooledHttpThread::threadmain(), closing socket.", e->errorCode(), e->errorMessage(estr).str());
+        IERRLOG("Exception(%d, %s) - CPooledHttpThread::threadmain(), closing socket.", e->errorCode(), e->errorMessage(estr).str());
         e->Release();
     }
     catch(...)
     {
-        ERRLOG("General Exception - CPooledHttpThread::threadmain(), closing socket.");
+        IERRLOG("General Exception - CPooledHttpThread::threadmain(), closing socket.");
     }
 
 }

@@ -216,7 +216,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                                 lscfg.setown(proc_cfg->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
                             if(lscfg == NULL)
                             {
-                                ERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
+                                OERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
                                 throw MakeStringException(-1, "can't find bnd_cfg for LdapSecurity %s", lsname.str());
                             }
                         }
@@ -649,7 +649,7 @@ void EspHttpBinding::populateRequest(CHttpRequest *request)
     ISecUser *user = m_secmgr->createUser(userid.str());
     if(user == NULL)
     {
-        WARNLOG("Couldn't create ISecUser object for %s", userid.str());
+        UWARNLOG("Couldn't create ISecUser object for %s", userid.str());
         return;
     }
 
@@ -706,7 +706,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     ISecUser *user = ctx->queryUser();
     if(user == NULL)
     {
-        WARNLOG("Can't find user in context");
+        UWARNLOG("Can't find user in context");
         ctx->setAuthError(EspAuthErrorUserNotFoundInContext);
         ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: No username provided");
         return false;
@@ -735,7 +735,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
 
     if(m_secmgr.get() == NULL)
     {
-        WARNLOG("No mechanism established for authentication");
+        UWARNLOG("No mechanism established for authentication");
         ctx->setAuthError(EspAuthErrorNoAuthMechanism);
         return false;
     }
@@ -743,7 +743,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     ISecResourceList* rlist = ctx->queryResources();
     if(rlist == NULL)
     {
-        WARNLOG("No Security Resource");
+        UWARNLOG("No Security Resource");
         ctx->setAuthError(EspAuthErrorEmptySecResource);
         return false;
     }
@@ -1088,7 +1088,7 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
         {
             VStringBuffer s("*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
             out.append(s);
-            ERRLOG("%s", s.str());
+            IERRLOG("%s", s.str());
             return;
         }
 
@@ -1147,7 +1147,7 @@ static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, const char
     else 
     {
         const char* value = tree->queryProp(NULL);
-        DBGLOG("Unknown xml tag ignored: <%s>%s</%s>", name, value?value:"", name);
+        UWARNLOG("Unknown xml tag ignored: <%s>%s</%s>", name, value?value:"", name);
     }
 }
 
@@ -1242,7 +1242,7 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
         {
             VStringBuffer s("*** Invalid array definition: tag=%s, indent=%d, itemName=%s", tag, indent,itemName?itemName:"NULL");
             out.append(s);
-            ERRLOG(s);
+            IERRLOG(s);
             return;
         }
 
@@ -1544,7 +1544,7 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
         response->send();
         return 0;
     }
-    DBGLOG("Config access denied");
+    OERRLOG("Config access denied");
     return onGetNotFound(context, request, response, NULL);
 }
 
@@ -2047,7 +2047,7 @@ int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHtt
     else
     {
         StringBuffer msg;
-        WARNLOG("Exception(s) in EspHttpBinding::onFinishUpload - %s", me->errorMessage(msg).append('\n').str());
+        IWARNLOG("Exception(s) in EspHttpBinding::onFinishUpload - %s", me->errorMessage(msg).append('\n').str());
         content.appendf("<br/><b>%s</b>", msg.str());
     }
     content.append("</div>"
@@ -2740,7 +2740,7 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
         }
     } catch (IException* e) {
         StringBuffer msg;
-        DBGLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
+        IERRLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
     }
 
     // schema
@@ -2803,6 +2803,6 @@ void EspHttpBinding::sortResponse(IEspContext& context, CHttpRequest* request, M
         content.setBuffer(len, result.detach(), true);      
     } catch (IException* e) {
         StringBuffer msg;
-        DBGLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
+        IERRLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
     }
 }

@@ -142,7 +142,7 @@ public:
             if (*start == '<')
                 soapNS.append(sptr-start-1,start+1);
             else if (strstr(value,"<Envelope") == NULL)
-                ERRLOG("Parsing soap namespace failed");
+                UERRLOG("Parsing soap namespace failed");
         }
 
         // save soap body
@@ -154,7 +154,7 @@ public:
             while (*sptr && *sptr!='>')
                 sptr++; 
             if (*sptr!='>') {
-                DBGLOG("Parsing soap message error: could not find ending > for Body");
+                UWARNLOG("Parsing soap message error: could not find ending > for Body");
                 return;
             }
             sptr++; // skip '>'

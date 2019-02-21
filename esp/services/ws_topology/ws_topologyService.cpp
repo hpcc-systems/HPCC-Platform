@@ -51,7 +51,7 @@ void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *se
 
     if (!daliClientActive())
     {
-        ERRLOG("No Dali Connection Active.");
+        OERRLOG("No Dali Connection Active.");
         throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI, "No Connection to Dali server is active. Please specify a Dali server in the configuration file.");
     }
 

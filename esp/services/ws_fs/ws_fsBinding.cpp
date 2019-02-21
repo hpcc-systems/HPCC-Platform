@@ -510,7 +510,7 @@ int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* requ
     else
     {
         StringBuffer msg;
-        WARNLOG("Exception(s) in EspHttpBinding::onStartUpload - %s", me->errorMessage(msg).append('\n').str());
+        IWARNLOG("Exception(s) in EspHttpBinding::onStartUpload - %s", me->errorMessage(msg).append('\n').str());
         if ((ctx.getResponseFormat() == ESPSerializationXML) || (ctx.getResponseFormat() == ESPSerializationJSON))
             response->handleExceptions(NULL, me, "FileSpray", "UploadFile", NULL, false);
         else

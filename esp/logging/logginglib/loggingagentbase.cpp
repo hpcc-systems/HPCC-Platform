@@ -381,7 +381,7 @@ bool CDBLogAgentBase::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
         {
             StringBuffer errorStr, errorMessage;
             errorMessage.append("Failed to get TransactionSeed: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
-            ERRLOG("%s -- try %d", errorMessage.str(), retry);
+            OERRLOG("%s -- try %d", errorMessage.str(), retry);
             e->Release();
             if (retry < maxTriesGTS)
             {
@@ -447,7 +447,7 @@ bool CDBLogAgentBase::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResp
     {
         StringBuffer errorStr, errorMessage;
         errorMessage.append("Failed to update log: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
-        ERRLOG("%s", errorMessage.str());
+        OERRLOG("%s", errorMessage.str());
         e->Release();
         resp.setStatusCode(-1);
         resp.setStatusMessage(errorMessage.str());

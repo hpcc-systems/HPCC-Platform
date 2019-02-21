@@ -576,14 +576,14 @@ void SQLBinaryExpression::toECLStringTranslateSource(
 
             if (translation1.length() != 0)
             {
-                WARNLOG("Operand 1 of binary expression could not be translated.");
+                UWARNLOG("Operand 1 of binary expression could not be translated.");
                 eclStr.append(translation1);
                 eclStr.append(getOpStr());
                 eclStr.append(convert);
             }
             else
             {
-                WARNLOG("Operand 2 of binary expression could not be translated.");
+                UWARNLOG("Operand 2 of binary expression could not be translated.");
                 eclStr.append(convert);
                 eclStr.append(getOpStr());
                 eclStr.append(translation2);
@@ -591,13 +591,13 @@ void SQLBinaryExpression::toECLStringTranslateSource(
         }
         else
         {
-            WARNLOG("Binary expression could not be translated.");
+            UWARNLOG("Binary expression could not be translated.");
             return;
         }
     }
     else
     {
-        WARNLOG("Binary expression could not be translated.");
+        UWARNLOG("Binary expression could not be translated.");
         return;
     }
 }

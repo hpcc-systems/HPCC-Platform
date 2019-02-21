@@ -86,7 +86,7 @@ int Schedule::run()
                     catch(IException *e)
                     {
                         StringBuffer msg;
-                        ERRLOG("Exception %d:%s in WsWorkunits Schedule::run", e->errorCode(), e->errorMessage(msg).str());
+                        IERRLOG("Exception %d:%s in WsWorkunits Schedule::run", e->errorCode(), e->errorMessage(msg).str());
                         e->Release();
                     }
                     itr->next();
@@ -95,17 +95,17 @@ int Schedule::run()
             catch(IException *e)
             {
                 StringBuffer msg;
-                ERRLOG("Exception %d:%s in WS_FS Schedule::run", e->errorCode(), e->errorMessage(msg).str());
+                IERRLOG("Exception %d:%s in WS_FS Schedule::run", e->errorCode(), e->errorMessage(msg).str());
                 e->Release();
             }
             catch(...)
             {
-                ERRLOG("Unknown exception in WS_FS Schedule::run");
+                IERRLOG("Unknown exception in WS_FS Schedule::run");
             }
         }
         else
         {
-            WARNLOG("Detached from DALI, WS_FS schedule interrupted");
+            OWARNLOG("Detached from DALI, WS_FS schedule interrupted");
             waitTimeMillies = (unsigned)-1;
         }
         semSchedule.wait(waitTimeMillies);
@@ -156,15 +156,15 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
 
     StringBuffer prop;
     prop.appendf("queueLabel=%s", m_QueueLabel.str());
-    PrintLog(prop.str());
+    DBGLOG("%s", prop.str());
     prop.clear();
     prop.appendf("monitorQueueLabel=%s", m_MonitorQueueLabel.str());
-    PrintLog(prop.str());
+    DBGLOG("%s", prop.str());
 
     if (!daliClientActive())
     {
-        ERRLOG("No Dali Connection Active.");
-        throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
+        OERRLOG("No Dali Connection Active.");
+        throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in your configuration file");
     }
 
     m_sched.start();

@@ -2396,12 +2396,12 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
                 catch(IException *e)
                 {
                     StringBuffer msg;
-                    ERRLOG("Exception %d:%s in WS_DFU queryDistributedFileSystem().getSize()", e->errorCode(), e->errorMessage(msg).str());
+                    IERRLOG("Exception %d:%s in WS_DFU queryDistributedFileSystem().getSize()", e->errorCode(), e->errorMessage(msg).str());
                     e->Release();
                 }
                 catch(...)
                 {
-                    ERRLOG("Unknown exception in WS_DFU queryDistributedFileSystem().getSize()");
+                    IERRLOG("Unknown exception in WS_DFU queryDistributedFileSystem().getSize()");
                 }
 
                 PartList.append(*FilePart.getClear());
@@ -2456,7 +2456,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             }
             catch(...)
             {
-                DBGLOG("Failed in retrieving graphs from workunit %s", wuid);
+                IERRLOG("Failed in retrieving graphs from workunit %s", wuid);
             }
         }
     }
@@ -5749,12 +5749,12 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     }
     catch (IException *e)
     {
-        DBGLOG(e);
+        IERRLOG(e);
         e->Release();
     }
     catch(...)
     {
-        DBGLOG("Unknown Exception - view data file: %s", indexName);
+        IERRLOG("Unknown Exception - view data file: %s", indexName);
     }
 
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());

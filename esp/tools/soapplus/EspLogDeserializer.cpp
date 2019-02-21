@@ -200,7 +200,7 @@ static void LoadMethodMappings()
 
     int rc = ferror(fp);
     if (rc)
-        ERRLOG("Loading EspMethods.txt failed (may be partially loaded), system error code: %d", rc);
+        OERRLOG("Loading EspMethods.txt failed (may be partially loaded), system error code: %d", rc);
     fclose(fp);
 }
 
@@ -357,7 +357,7 @@ bool loadEspLog(const char* logFileName, HttpClient& httpClient, HttpStat& httpS
 {
     if (!logFileName || !*logFileName)
     {
-        ERRLOG("Input log file name not specified.");
+        OERRLOG("Input log file name not specified.");
         return false;
     }
 
@@ -367,7 +367,7 @@ bool loadEspLog(const char* logFileName, HttpClient& httpClient, HttpStat& httpS
     int maxInstances = httpClient.queryGlobals()->getPropInt("items", -1);
     if (maxInstances == 0)
     {
-        ERRLOG("Maximum instances specified with -n option cannot be 0.");
+        OERRLOG("Maximum instances specified with -n option cannot be 0.");
         return false;
     }
 

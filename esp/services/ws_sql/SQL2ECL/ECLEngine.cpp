@@ -62,16 +62,16 @@ void ECLEngine::generateIndexSetupAndFetch(HPCCFilePtr file, SQLTable * table, i
         if (strncmp(indexHintFromSQL.trim().str(), "0", 1)==0)
         {
             avoidindex = true;
-            WARNLOG("Will not use any index.");
+            UWARNLOG("Will not use any index.");
             return;
         }
         else
-            WARNLOG("Empty index hint found!");
+            UWARNLOG("Empty index hint found!");
     }
 
     findAppropriateIndex(file, indexHintFromSQL.str(), selectsqlobj, indexname);
     if (indexHintFromSQL.length() > 0 && indexname.length() == 0)
-        WARNLOG("Unusable index hint detected.");
+        UWARNLOG("Unusable index hint detected.");
 
     if (indexname.length()>0)
     {
@@ -120,12 +120,12 @@ void ECLEngine::generateIndexSetupAndFetch(HPCCFilePtr file, SQLTable * table, i
 
             if (isPayloadIndex)
             {
-                WARNLOG(" as PAYLOAD");
+                UWARNLOG(" as PAYLOAD");
                 idxsetupstr.appendf("IdxDS%d := Idx%d(%s", tableindex, tableindex, keyedAndWild.str());
             }
             else
             {
-                WARNLOG(" Not as PAYLOAD");
+                UWARNLOG(" Not as PAYLOAD");
                 idxsetupstr.appendf("IdxDS%d := FETCH(TblDS%d, Idx%d( %s ), RIGHT.%s", tableindex, tableindex, tableindex, keyedAndWild.str(), indexfile->getIdxFilePosField());
             }
             idxsetupstr.append(");\n");
@@ -134,7 +134,7 @@ void ECLEngine::generateIndexSetupAndFetch(HPCCFilePtr file, SQLTable * table, i
             eclEntities->appendProp("IndexRead", idxsetupstr.str());
         }
         else
-            WARNLOG("NOT USING INDEX!");
+            UWARNLOG("NOT USING INDEX!");
     }
 }
 
@@ -299,7 +299,7 @@ void ECLEngine::generateSelectECL(HPCCSQLTreeWalker * selectsqlobj, StringBuffer
 
                 if (tablejoin->getOnClause() != NULL && !tablejoin->getOnClause()->containsEqualityCondition(translator, "LEFT", "RIGHT"))
                 {
-                    WARNLOG("Warning: No Join EQUALITY CONDITION detected!, using ECL ALL option");
+                    UWARNLOG("Warning: No Join EQUALITY CONDITION detected!, using ECL ALL option");
                     out.append(", ALL");
                 }
 

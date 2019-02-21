@@ -157,7 +157,7 @@ public:
                 workers.push_back(new WorkerThread(*this));
                 workers.back()->start();
             }
-//            PrintLog("%d threads",workers.size());
+//            DBGLOG("%d threads",workers.size());
         }
     }
 
