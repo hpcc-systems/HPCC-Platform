@@ -204,6 +204,10 @@
                         path="WsELKAccess"
                         resource="WsELKAccess"
                         service="ws_elk"/>
+                    <AuthenticateFeature description="Access to ws store service"
+                        path="WsStoreAccess"
+                        resource="WsStoreAccess"
+                        service="ws_store"/>
                     <ProcessFilters>
                         <Platform name="Windows">
                             <ProcessFilter name="any">
@@ -262,6 +266,25 @@
                         path="OthersWorkunitsAccess"
                         resource="OthersWorkunitsAccess"
                         service="ws_sql"/>
+                </Properties>
+            </BuildSet>
+            <BuildSet deployable="no"
+                installSet="deploy_map.xml"
+                name="ws_store"
+                path="componentfiles/ws_store"
+                processName="EspService"
+                schema="esp_service_wsstore.xsd">
+                <Properties bindingType="ws_storeSoapBinding"
+                    defaultPort="8511"
+                    defaultResourcesBasedn="ou=WsStore,ou=EspServices,ou=ecl"
+                    defaultSecurePort="18511"
+                    plugin="ws_store"
+                    type="ws_store">
+                    <Authenticate access="Read"
+                        description="Root access to WS STORE service"
+                        path="/"
+                        required="Read"
+                        resource="WsStoreAccess"/>
                 </Properties>
             </BuildSet>
             <BuildSet installSet="deploy_map.xml"

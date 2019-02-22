@@ -125,6 +125,10 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:with-param name="bindingNode" select="$bindingNode"/>
             <xsl:with-param name="authNode" select="$authNode"/>
         </xsl:apply-templates>
+        <xsl:apply-templates select="." mode="ws_store">
+            <xsl:with-param name="bindingNode" select="$bindingNode"/>
+            <xsl:with-param name="authNode" select="$authNode"/>
+        </xsl:apply-templates>
     </xsl:template>
 
     <!-- WS-SMC -->
@@ -625,6 +629,41 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         </EspBinding>
     </xsl:template>
 
+    <!-- WS-Store -->
+    <xsl:template match="EspService" mode="ws_store">
+        <xsl:param name="bindingNode"/>
+        <xsl:param name="authNode"/>
+
+        <xsl:variable name="serviceType" select="'ws_store'"/>
+        <xsl:variable name="serviceName" select="concat($serviceType, '_', @name, '_', $process)"/>
+        <xsl:variable name="bindName" select="concat($serviceType, '_', $bindingNode/@name, '_', $process)"/>
+        <xsl:variable name="bindType" select="'ws_storeSoapBinding'"/>
+        <xsl:variable name="servicePlugin">
+            <xsl:call-template name="defineServicePlugin">
+                <xsl:with-param name="plugin" select="'ws_store'"/>
+            </xsl:call-template>
+        </xsl:variable>
+        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
+            <xsl:element name="StoreProvider">
+                <xsl:attribute name="lib">dalistorelib</xsl:attribute>
+            </xsl:element>
+            <xsl:element name="Stores">
+                <xsl:element name="Store">
+                    <xsl:attribute name="description">Generic KeyVal store for HPCC Applications</xsl:attribute>
+                    <xsl:attribute name="name">HPCCApps</xsl:attribute>
+                    <xsl:attribute name="default">true</xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </EspService>
+        <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}"
+            plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
+            <xsl:call-template name="bindAuthentication">
+                <xsl:with-param name="bindingNode" select="$bindingNode"/>
+                <xsl:with-param name="authMethod" select="$authNode/@method"/>
+                <xsl:with-param name="service" select="'ws_store'"/>
+            </xsl:call-template>
+        </EspBinding>
+    </xsl:template>
    <xsl:template match="*" mode="copy">
       <xsl:copy>
          <xsl:apply-templates select="@*[string(.) != '']|node()" mode="copy"/>

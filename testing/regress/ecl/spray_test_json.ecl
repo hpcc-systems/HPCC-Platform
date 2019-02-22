@@ -35,7 +35,7 @@ isUnBallanced := #IFDEFINED(root.isUnBallanced, false);
 
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 engine := thorlib.platform() : stored('thor');
-prefix := setup.Files(false, false).QueryFilePrefix;
+prefix := setup.Files(false, false).FilePrefix + '-' + WORKUNIT;
 nodes := thorlib.nodes();
 
 unsigned VERBOSE := 0;
@@ -84,8 +84,8 @@ OriginalDataFile := prefix + File;
 OriginalDataFile2 := prefix + File + '2';
 
 //  Outputs  ---
-setupPeople := OUTPUT(somePeople,,OriginalDataFile, JSON, OVERWRITE);
-setupPeople2 := OUTPUT(somePeople,,OriginalDataFile2,  JSON('', HEADING('', ''), OPT, TRIM), OVERWRITE);
+setupPeople := OUTPUT(somePeople,,DYNAMIC(OriginalDataFile), JSON, OVERWRITE);
+setupPeople2 := OUTPUT(somePeople,,DYNAMIC(OriginalDataFile2),  JSON('', HEADING('', ''), OPT, TRIM), OVERWRITE);
 
 ClusterName := 'mythor';
 
@@ -215,8 +215,8 @@ c3b := CATCH(NOFOLD(p3b), ONFAIL(TRANSFORM(sprayRec,
 
 
 
-ds := DATASET(SprayTargetFileName1, Layout_Person, JSON('Row'));
-ds2 := DATASET(SprayTargetFileName2, Layout_Person, JSON('Row'));
+ds := DATASET(DYNAMIC(SprayTargetFileName1), Layout_Person, JSON('Row'));
+ds2 := DATASET(DYNAMIC(SprayTargetFileName2), Layout_Person, JSON('Row'));
 
 string compareDatasets(dataset(Layout_Person) ds1, dataset(Layout_Person) ds2) := FUNCTION
    boolean result := (0 = COUNT(JOIN(ds1, ds2, left.PersonID=right.PersonID, FULL ONLY)));
