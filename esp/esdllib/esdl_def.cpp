@@ -977,7 +977,7 @@ static SecAccessFlags translateAuthLevel(const char* flag)
         return SecAccess_Full;
 
     DBGLOG("Unknown access level: %s", flag);
-    return SecAccess_Full;
+    throw( MakeStringException(0, "Unknown access level: %s", flag) );
 }
 
 static void parseAccessList(const char * rawServiceAccessList, MapStringTo<SecAccessFlags> & accessmap, const char * defaultaccessname)
