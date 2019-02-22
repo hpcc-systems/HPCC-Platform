@@ -299,7 +299,7 @@ bool WindowsCreateDirectory(const char * path)
         if (CreateDirectory(path, NULL))
             return true;
         DWORD err = GetLastError();
-        if ((err==ERROR_FILE_NOT_FOUND) || (err==ERROR_PATH_NOT_FOUND) || (err==ERROR_FILE_EXISTS) || (err==ERROR_CANNOT_MAKE))
+        if ((err==ERROR_FILE_NOT_FOUND) || (err==ERROR_PATH_NOT_FOUND) || (err==ERROR_FILE_EXISTS) || (err==ERROR_CANNOT_MAKE) || (err==ERROR_ACCESS_DENIED))
             break;
         else if (err==ERROR_ALREADY_EXISTS) {
             DWORD attr = GetFileAttributes(path);
@@ -310,7 +310,7 @@ bool WindowsCreateDirectory(const char * path)
         if ((retry++==10)||  // some or all of the following can occur when the domain controller gets busy
                              // retrying improves chance of success
             ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME))) 
-            throw makeOsExceptionV(err,"WindowsCreateDirectory %s", path);
+            return false;
         //PROGLOG("Retrying(%d) WindowsCreateDirectory %s, err=%d",retry,filename,err);
         Sleep(retry*100); 
     }
