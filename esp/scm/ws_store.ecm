@@ -1,0 +1,171 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+
+ESPStruct KVPair
+{
+   string Key;
+   string Value;
+};
+
+ESPStruct NamespaceSet
+{
+   string Namespace;
+   ESParray<ESPStruct KVPair, Entry> Entries;
+};
+
+ESPrequest ListKeysRequest
+{
+    string StoreName;
+    string Namespace;
+    bool   UserSpecific(false);
+};
+
+ESPresponse [exceptions_inline] ListKeysResponse
+{
+    string StoreName;
+    string Namespace;
+    ESParray<string, Key> KeySet;
+};
+
+ESPrequest ListNamespacesRequest
+{
+    string StoreName;
+    bool   UserSpecific(false);
+};
+
+ESPresponse [exceptions_inline] ListNamespacesResponse
+{
+    string StoreName;
+    ESParray<string, Namespace> Namespaces;
+};
+
+ESPrequest DeleteNamespaceRequest
+{
+    string StoreName;
+    string Namespace;
+    bool   UserSpecific(false);
+    string TargetUser;
+};
+
+ESPresponse [exceptions_inline] DeleteNamespaceResponse
+{
+    bool Success;
+};
+
+ESPrequest DeleteRequest
+{
+    string StoreName;
+    string Namespace;
+    string Key;
+    bool   UserSpecific(false);
+    string TargetUser;
+};
+
+ESPresponse [exceptions_inline] DeleteResponse
+{
+    bool Success;
+};
+
+ESPrequest FetchRequest
+{
+    string StoreName;
+    string Namespace;
+    string Key;
+    bool   UserSpecific(false);
+};
+
+ESPresponse [exceptions_inline] FetchResponse
+{
+    string Value;
+};
+
+ESPrequest FetchAllRequest
+{
+    string StoreName;
+    string Namespace;
+    bool   UserSpecific(false);
+};
+
+ESPrequest FetchKeyMDRequest
+{
+    string StoreName;
+    string Namespace;
+    string Key;
+    bool   UserSpecific(false);
+};
+
+ESPresponse [exceptions_inline] FetchKeyMDResponse
+{
+    string StoreName;
+    string Namespace;
+    string Key;
+    ESParray<ESPStruct KVPair, Pair> Pairs;
+};
+
+ESPresponse [exceptions_inline] FetchAllResponse
+{
+    string Namespace;
+    ESParray<ESPStruct KVPair, Pair> Pairs;
+};
+
+ESPrequest SetRequest
+{
+    string StoreName;
+    string Namespace;
+    string Key;
+    string Value;
+    bool   UserSpecific(false);
+};
+
+ESPresponse [exceptions_inline] SetResponse
+{
+    bool Success;
+};
+
+ESPrequest CreateStoreRequest
+{
+    string Name;
+    string Type;
+    string Description;
+    bool   UserSpecific(false);
+};
+
+ESPresponse [exceptions_inline] CreateStoreResponse
+{
+    string Name;
+    string Type;
+    string Description;
+    string Owner;
+};
+
+ESPservice [version("1.00"), default_client_version("1.00"), auth_feature("WsStoreAccess:READ"), exceptions_inline("./smc_xslt/exceptions.xslt")] wsstore
+{
+    ESPmethod [auth_feature("WsStoreAccess:FULL")] Delete(DeleteRequest, DeleteResponse);
+    ESPmethod [auth_feature("WsStoreAccess:FULL")] DeleteNamespace(DeleteNamespaceRequest, DeleteNamespaceResponse);
+    ESPmethod [auth_feature("WsStoreAccess:WRITE")] Set(SetRequest, SetResponse);
+    ESPmethod [auth_feature("WsStoreAccess:READ")] Fetch(FetchRequest, FetchResponse);
+    ESPmethod [auth_feature("WsStoreAccess:READ")] FetchAll(FetchAllRequest, FetchAllResponse);
+    ESPmethod [auth_feature("WsStoreAccess:FULL")] FetchKeyMetadata(FetchKeyMDRequest, FetchKeyMDResponse);
+    ESPmethod [auth_feature("WsStoreAccess:READ")] ListKeys(ListKeysRequest, ListKeysResponse);
+    ESPmethod [auth_feature("WsStoreAccess:READ")] ListNamespaces(ListNamespacesRequest, ListNamespacesResponse);
+    ESPmethod [auth_feature("WsStoreAccess:FULL")] CreateStore(CreateStoreRequest, CreateStoreResponse);
+};
+
+SCMexportdef(wsstore);
+
+SCMapi(wsstore) IClientwsstore *createwsstoreClient();

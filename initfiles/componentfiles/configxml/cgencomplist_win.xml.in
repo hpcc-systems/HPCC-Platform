@@ -81,6 +81,12 @@
   <Component name="esp_wubilling" processName='EspService' schema='wswubilling.xsd' deployable='no'>
     <File name="@temp\esp_service_wswubilling.xsl" method="esp_service_module"/>
   </Component>
+  <Component name="ws_sql">
+       <File name="@temp/esp_service_wssql.xsl" method="esp_service_module"/>
+  </Component>
+  <Component name="ws_store">
+       <File name="@temp/esp_service_wsstore.xsl" method="esp_service_module"/>
+  </Component>
   <Component name="espadl" processName='EspService' schema='esp_service_wsadl.xsd' deployable='no'>
     <File name="@temp\esp_service_wsadl.xsl" method="esp_service_module"/>
   </Component>
