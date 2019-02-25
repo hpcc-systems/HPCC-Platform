@@ -139,6 +139,8 @@ class WsWuInfo
     IEspWUArchiveModule* readArchiveModuleAttr(IPropertyTree& moduleTree, const char* path);
     void readArchiveFiles(IPropertyTree* archiveTree, const char* path, IArrayOf<IEspWUArchiveFile>& files);
     void outputALine(size32_t len, const char* content, MemoryBuffer& outputBuf, IFileIOStream* outIOS);
+    bool readLogLineID(char* linePtr, unsigned long& lineID);
+    void readWorkunitLog(OwnedIFileIOStream ios, MemoryBuffer& buf, const char* outFile);
 public:
     WsWuInfo(IEspContext &ctx, IConstWorkUnit *cw_) :
       context(ctx), cw(cw_)
@@ -641,5 +643,83 @@ public:
 
     void send(const char *body, const void *attachment, size32_t lenAttachment, StringArray &warnings);
 };
+
+class CThorSlaveLogFileItem : public CSimpleInterface
+{
+public:
+    CThorSlaveLogFileItem(const char*_groupName, const char*_logDate, const char*_logDir,
+        unsigned _slaveNum, const char*_fileName)
+        : groupName(_groupName), logDate(_logDate), logDir(_logDir), slaveNum(_slaveNum),
+        fileName(_fileName) { };
+
+    StringAttr groupName, logDate, logDir, fileName;
+    unsigned slaveNum;
+};
+
+class CGetThorSlaveLogToFileThreadParam : public CInterface
+{
+    Owned<CThorSlaveLogFileItem> logFile;
+    WsWuInfo* wuInfo;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CGetThorSlaveLogToFileThreadParam(WsWuInfo* _wuInfo, CThorSlaveLogFileItem* _logFile)
+        : wuInfo(_wuInfo)
+    {
+        logFile.setown(_logFile);
+    }
+
+    virtual void doWork()
+    {
+        MemoryBuffer dummy;
+        wuInfo->getWorkunitThorSlaveLog(logFile->groupName.get(), nullptr, logFile->logDate.str(),
+            logFile->logDir.get(), logFile->slaveNum, dummy, logFile->fileName.get(), false);;
+    }
+};
+
+class CGetThorSlaveLogToFileThread : public CInterface, implements IPooledThread
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CGetThorSlaveLogToFileThread() {};
+
+    virtual void init(void* _param) override
+    {
+        param.setown((CGetThorSlaveLogToFileThreadParam*)_param);
+    }
+    virtual void threadmain() override
+    {
+        param->doWork();
+        param.clear();
+    }
+
+    virtual bool canReuse() const override
+    {
+        return true;
+    }
+    virtual bool stop() override
+    {
+        return true;
+    }
+   
+private:
+    Owned<CGetThorSlaveLogToFileThreadParam> param;
+};
+
+//---------------------------------------------------------------------------------------------
+
+class CGetThorSlaveLogToFileThreadFactory : public CInterface, public IThreadFactory
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    IPooledThread *createNew()
+    {
+        return new CGetThorSlaveLogToFileThread();
+    }
+};
+
+
 }
 #endif
