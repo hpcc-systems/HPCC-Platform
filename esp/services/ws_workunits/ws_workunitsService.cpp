@@ -1556,7 +1556,6 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             {
                 //The access is checked here because getArchivedWUInfo() has its own access check.
                 ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
-                PROGLOG("WUInfo: %s", wuid.str());
 
                 unsigned long flags=0;
                 if (req.getTruncateEclTo64k())
@@ -1595,6 +1594,8 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                     flags|=WUINFO_IncludeAllowedClusters;
                 if (req.getIncludeTotalClusterTime())
                     flags|=WUINFO_IncludeTotalClusterTime;
+
+                PROGLOG("WUInfo: %s %lx", wuid.str(), flags);
 
                 WsWuInfo winfo(context, wuid.str());
                 winfo.getInfo(resp.updateWorkunit(), flags);
