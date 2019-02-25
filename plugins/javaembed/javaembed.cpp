@@ -4507,27 +4507,44 @@ static bool isFullClassFile(StringBuffer &className, bool &seenPublic, size32_t 
     return false;
 }
 
-static StringBuffer & cleanupJavaError(StringBuffer &ret, const char *err, unsigned lineNumberOffset)
+static bool suppressJavaError(const char *err)
 {
-    // Remove filename (as it's generated) and fix up line number. Skip errors that do not have line number in
+    if (!err || !*err)
+        return true;
+    if (streq(err, "1 error"))
+        return true;
+    char *rest;
+    if (strtoul(err, &rest, 10) && streq(rest, " errors"))
+        return true;
+    return false;
+}
+
+static StringBuffer & cleanupJavaError(StringBuffer &ret, StringBuffer &prefix, const char *err, unsigned lineNumberOffset)
+{
+    // Remove filename (as it's generated) and fix up line number. Errors that do not have line number use previous error's line number.
     const char *colon = strchr(err, ':');
+    // Java errors are a bit of a pain - if you suppress the ones without line numbers you get too little information, if you don't you get too much
     if (colon && isdigit(colon[1]))
     {
         char *end;
         unsigned lineno = strtoul(colon+1, &end, 10) - lineNumberOffset;
-        ret.appendf("(%u,1)%s", lineno, end);
+        prefix.clear().appendf("(%u,1)", lineno);
+        ret.append(prefix).append(end);
     }
+    else if (!suppressJavaError(err))
+        ret.append(prefix).appendf(": error: %s", err);
     return ret;
 }
 
 static void cleanupJavaErrors(StringBuffer &ret, const char *errors, unsigned lineNumberOffset)
 {
     StringArray errlines;
-    errlines.appendList(errors, "\n");
+    errlines.appendList(errors, "\n", false);
+    StringBuffer prefix;
     ForEachItemIn(idx, errlines)
     {
         StringBuffer cleaned;
-        cleanupJavaError(cleaned, errlines.item(idx), lineNumberOffset);
+        cleanupJavaError(cleaned, prefix, errlines.item(idx), lineNumberOffset);
         if (cleaned.length())
             ret.append(cleaned).append('\n');
     }
@@ -4593,12 +4610,7 @@ void doPrecompile(size32_t & __lenResult, void * & __result, const char *funcNam
         unsigned retcode = pipe->wait();
         cleanupJavaErrors(errors, javaErrors, lineNumberOffset);
         if (retcode)
-        {
-            if (javaErrors.length())
-                throw makeStringExceptionV(0, "%s", errors.str());
-            else
-                throw makeStringException(0, "Failed to precompile java code");
-        }
+            throw makeStringException(0, "Failed to precompile java code");
         VStringBuffer mainfile("%s" PATHSEPSTR "%s.class", tmpDirName.str(), classname.str());
         JavaClassReader reader(mainfile);
         DBGLOG("Analysing generated class %s", reader.queryClassName());
