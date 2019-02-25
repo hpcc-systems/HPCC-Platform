@@ -395,6 +395,9 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         sashaServerPort = cfg->getPropInt(xpath.str(), DEFAULT_SASHA_PORT);
     }
 
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ThorSlaveLogThreadPoolSize", process, service);
+    thorSlaveLogThreadPoolSize = cfg->getPropInt(xpath, THOR_SLAVE_LOG_THREAD_POOL_SIZE);
+
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ZAPEmail", process, service);
     IPropertyTree *zapEmail = cfg->queryPropTree(xpath.str());
     if (zapEmail)
@@ -3026,14 +3029,8 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
             {
-                StringBuffer logDir, groupName;
-                getConfigurationDirectory(directories, "log", "thor", req.getProcess(), logDir);
-                const char* instanceName = req.getClusterGroup();
-                getClusterThorGroupName(groupName, instanceName);
-                if (groupName.isEmpty())
-                    throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", instanceName);
-
-                winfo.getWorkunitThorSlaveLog(groupName.str(), req.getIPAddress(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, nullptr, false);
+                winfo.getWorkunitThorSlaveLog(directories, req.getProcess(), req.getClusterGroup(), req.getIPAddress(),
+                    req.getLogDate(), req.getSlaveNumber(), mb, nullptr, false);
                 openSaveFile(context, opt, req.getSizeLimit(), "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))
@@ -4723,7 +4720,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         StringBuffer zipFileName, zipFileNameWithPath;
         //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
         CWsWuFileHelper helper(directories);
-        helper.createWUZAPFile(context, cwu, zapInfoReq, zipFileName, zipFileNameWithPath);
+        helper.createWUZAPFile(context, cwu, zapInfoReq, zipFileName, zipFileNameWithPath, thorSlaveLogThreadPoolSize);
 
         //Download ZIP file to user
         Owned<IFile> f = createIFile(zipFileNameWithPath.str());

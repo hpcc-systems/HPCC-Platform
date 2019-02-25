@@ -234,6 +234,9 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:if test="string(@clusterQueryStateThreadPoolSize) != ''">
                 <ClusterQueryStateThreadPoolSize><xsl:value-of select="@clusterQueryStateThreadPoolSize"/></ClusterQueryStateThreadPoolSize>
             </xsl:if>
+            <xsl:if test="string(@ThorSlaveLogThreadPoolSize) != ''">
+                <ThorSlaveLogThreadPoolSize><xsl:value-of select="@ThorSlaveLogThreadPoolSize"/></ThorSlaveLogThreadPoolSize>
+            </xsl:if>
             <xsl:if test="string(@AWUsCacheTimeout) != ''">
                 <AWUsCacheMinutes><xsl:value-of select="@AWUsCacheTimeout"/></AWUsCacheMinutes>
             </xsl:if>
