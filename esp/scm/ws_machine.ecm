@@ -23,6 +23,52 @@ SCMenum ThresholdType
     THRESHOLD_MB
 };
 
+ESPStruct [nil_remove] DiskUsage
+{
+    string Name;
+    string Path;
+    string Description;
+    int64 InUse;
+    int64 Available;
+    int PercentAvailable;
+};
+
+ESPStruct [nil_remove] MachineUsage
+{
+    string Name;
+    string NetAddress;
+    string Description;
+    ESParray<ESPstruct DiskUsage> DiskUsages;
+};
+
+ESPStruct [nil_remove] Component
+{
+    string Type;
+    string Name;
+};
+
+ESPStruct [nil_remove] ComponentUsage
+{
+    string Type;
+    string Name;
+    string Description;
+    ESParray<ESPstruct MachineUsage> MachineUsages;
+};
+
+ESPStruct [nil_remove] TargetClusterUsage
+{
+    string Name;
+    string Description;
+    ESParray<ESPstruct ComponentUsage> ComponentUsages;
+};
+
+ESPStruct [nil_remove] NodeGroupUsage
+{
+    string Name;
+    string Description;
+    ESParray<ESPstruct ComponentUsage> ComponentUsages;
+};
+
 ESPrequest GetMachineInfoRequest
 {
     ESParray<string> Addresses;
@@ -367,8 +413,38 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] UpdateComponentStatusResp
     string Status;
 };
 
+ESPrequest [nil_remove] GetComponentUsageRequest
+{
+    ESParray<ESPstruct Component> Components;
+};
+
+ESPresponse [encode(0), nil_remove, exceptions_inline] GetComponentUsageResponse 
+{
+    ESParray<ESPstruct ComponentUsage> ComponentUsages;
+};
+
+ESPrequest [nil_remove] GetTargetClusterUsageRequest
+{
+    ESParray<string> TargetClusters;
+};
+
+ESPresponse [encode(0), nil_remove, exceptions_inline] GetTargetClusterUsageResponse 
+{
+    ESParray<ESPstruct TargetClusterUsage> TargetClusterUsages;
+};
+
+ESPrequest [nil_remove] GetNodeGroupUsageRequest
+{
+    ESParray<string> NodeGroups;
+};
+
+ESPresponse [encode(0), nil_remove, exceptions_inline] GetNodeGroupUsageResponse 
+{
+    ESParray<ESPstruct NodeGroupUsage> NodeGroupUsages;
+};
+
 //-------- service ---------
-ESPservice [auth_feature("DEFERRED"), version("1.13")] ws_machine
+ESPservice [auth_feature("DEFERRED"), version("1.14")] ws_machine
 {
     ESPmethod [resp_xsl_default("./smc_xslt/clusterprocesses.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetTargetClusterInfo(GetTargetClusterInfoRequest, GetTargetClusterInfoResponse);
@@ -381,6 +457,10 @@ ESPservice [auth_feature("DEFERRED"), version("1.13")] ws_machine
 
     ESPmethod GetComponentStatus(GetComponentStatusRequest, GetComponentStatusResponse);
     ESPmethod UpdateComponentStatus(UpdateComponentStatusRequest, UpdateComponentStatusResponse);
+
+    ESPmethod [min_ver("1.14")] GetComponentUsage(GetComponentUsageRequest, GetComponentUsageResponse);
+    ESPmethod [min_ver("1.14")] GetTargetClusterUsage(GetTargetClusterUsageRequest, GetTargetClusterUsageResponse);
+    ESPmethod [min_ver("1.14")] GetNodeGroupUsage(GetNodeGroupUsageRequest, GetNodeGroupUsageResponse);
 
     ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/metrics.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
        GetMetrics(MetricsRequest, MetricsResponse);
