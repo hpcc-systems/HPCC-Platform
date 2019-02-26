@@ -40,5 +40,6 @@ install ( TARGETS dalistorelib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATI
 add_dependencies ( dalistorelib jlib espscm)
 
 target_link_libraries ( dalistorelib
+    dalibase
     jlib
 )
