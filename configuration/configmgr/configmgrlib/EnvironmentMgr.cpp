@@ -440,6 +440,15 @@ void EnvironmentMgr::validate(Status &status, bool includeHiddenNodes) const
     if (m_pRootNode)
     {
         m_pSchema->validate(status, true, includeHiddenNodes);
+
+        //
+        // Now call all support libs for additional validation.
+        //
+        // Call any registered support libs with the event
+        for (auto &libIt: m_supportLibs)
+        {
+            libIt->validate(m_pSchema, m_pRootNode, status);
+        }
     }
     else
     {

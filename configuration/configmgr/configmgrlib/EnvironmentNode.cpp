@@ -232,18 +232,43 @@ void EnvironmentNode::validate(Status &status) const
     {
         attrIt.second->validate(status, m_id);
 
-        //
-        // Does this value need to be from another set of values?
-        if (attrIt.second->getSchemaValue()->isFromUniqueValueSet())
+        if (attrIt.second->isValueSet())
         {
-            bool found = false;
-            std::vector<std::string> allValues;
-            attrIt.second->getSchemaValue()->getAllKeyRefValues(allValues);
-            for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
-                found = *it == attrIt.second->getValue();
-            if (!found)
+            //
+            // If this value must be unique, make sure it is
+            if (attrIt.second->getSchemaValue()->isUniqueValue())
             {
-                status.addMsg(statusMsg::error, m_id, attrIt.second->getName(), "Attribute value must be from a unique set");
+                bool found = false;
+                std::vector<std::string> allValues;
+                attrIt.second->getAllValuesForSiblings(allValues);
+                std::set<std::string> unquieValues;
+                for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
+                {
+                    auto ret = unquieValues.insert(*it);
+                    found = !ret.second;
+                }
+
+                if (found)
+                {
+                    status.addUniqueMsg(statusMsg::error, m_id, attrIt.second->getName(),
+                                        "Attribute value must be unique");
+                }
+            }
+
+            //
+            // Does this value need to be from another set of values?
+            if (attrIt.second->getSchemaValue()->isFromUniqueValueSet())
+            {
+                bool found = false;
+                std::vector<std::string> allValues;
+                attrIt.second->getSchemaValue()->getAllKeyRefValues(allValues);
+                for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
+                    found = *it == attrIt.second->getValue();
+                if (!found)
+                {
+                    status.addMsg(statusMsg::error, m_id, attrIt.second->getName(),
+                                  "Attribute value must be from a unique set");
+                }
             }
         }
     }
@@ -310,12 +335,12 @@ void EnvironmentNode::getInsertableItems(std::vector<InsertableItem> &insertable
         {
             if (findIt->second < pCfgItem->getMaxInstances())
             {
-                insertableItems.push_back(InsertableItem(shared_from_this(), pCfgItem));
+                insertableItems.emplace_back(InsertableItem(shared_from_this(), pCfgItem));
             }
         }
         else
         {
-            insertableItems.push_back(InsertableItem(shared_from_this(), pCfgItem));
+            insertableItems.emplace_back(InsertableItem(shared_from_this(), pCfgItem));
         }
     }
 }

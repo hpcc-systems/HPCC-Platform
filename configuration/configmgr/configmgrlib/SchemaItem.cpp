@@ -708,44 +708,14 @@ void SchemaItem::validate(Status &status, bool includeChildren, bool includeHidd
         {
             if (envNodes.second.size() < m_minInstances || envNodes.second.size() > m_maxInstances)
             {
-                for (auto &pEnvNode: envNodes.second)
-                {
-                    std::string path;
-                    getPath(path);
-                    std::string msg;
-                    msg = "The number of " + path + " nodes (" + std::to_string(envNodes.second.size()) +
-                          ") is outside the range of " + std::to_string(m_minInstances) +
-                          " to " + std::to_string(m_maxInstances);
-                    status.addMsg(statusMsg::error, pEnvNode->getId(), "", msg);
-                }
-            }
-        }
-
-
-        //
-        // Check the attributes for uniqueness.
-        for (auto &attribute: m_attributes)
-        {
-            if (attribute.second->isUniqueValue())
-            {
-                std::vector<std::shared_ptr<EnvironmentValue>> envValues;
-                std::set<std::string> unquieValues;
-                attribute.second->getAllEnvironmentValues(envValues);
-                bool found = false;
-                for (auto it = envValues.begin(); it != envValues.end() && !found; ++it)
-                {
-                    auto ret = unquieValues.insert((*it)->getValue());
-                    found = !ret.second;
-                    if (found)
-                    {
-                        std::string path;
-                        getPath(path);
-                        status.addUniqueMsg(statusMsg::error, (*it)->getEnvironmentNode()->getId(),
-                                            attribute.second->getName(),
-                                            "Attribute value (" + (*it)->getValue() + ") must be unique");
-                    }
-                }
-
+                std::string path;
+                getPath(path);
+                std::string msg;
+                msg = "The number of " + path + " nodes (" + std::to_string(envNodes.second.size()) +
+                      ") is outside the range of " + std::to_string(m_minInstances) +
+                      " to " + std::to_string(m_maxInstances);
+                std::string nodeId = !envNodes.second.empty() ? envNodes.second[0]->getId() : "";
+                status.addMsg(statusMsg::error, nodeId, "", msg);
             }
         }
 
