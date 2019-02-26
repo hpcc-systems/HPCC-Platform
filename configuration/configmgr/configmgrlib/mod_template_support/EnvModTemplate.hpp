@@ -59,7 +59,7 @@ class CFGMGRLIB_API EnvModTemplate
         void parseOperations(const rapidjson::Value &operations);
         void parseOperation(const rapidjson::Value &operation);
         void parseOperationCommonData(const rapidjson::Value &operationData, std::shared_ptr<Operation> pOp);
-        void parseOperationFindAttributes(const rapidjson::Value &operationData, std::shared_ptr<OperationFindNode> pFindOp);
+        void parseAttribute(const rapidjson::Value &attributeData, modAttribute *pAttribute);
 
 
     protected:

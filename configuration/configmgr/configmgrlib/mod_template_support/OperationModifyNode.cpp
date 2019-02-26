@@ -21,10 +21,9 @@
 #include "TemplateExecutionException.hpp"
 
 
-void OperationModifyNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs)
+void OperationModifyNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pVariables)
 {
     std::shared_ptr<EnvironmentNode> pEnvNode;
-    getParentNodeIds(pEnvMgr, pInputs);
 
     //
     // Execute for each parent node
@@ -34,7 +33,7 @@ void OperationModifyNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs)
         {
             Status status;
 
-            std::string nodeId = pInputs->doValueSubstitution(parentNodeId);
+            std::string nodeId = pVariables->doValueSubstitution(parentNodeId);
             pEnvNode = pEnvMgr->findEnvironmentNodeById(nodeId);
             if (pEnvNode)
             {
@@ -49,17 +48,19 @@ void OperationModifyNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs)
                     }
                 }
                 pEnvNode->setAttributeValues(attrValues, status, true, true);
+
+                //
+                // Process node value
+                processNodeValue(pVariables, pEnvNode);
             }
             else
             {
-                // todo base execute method in Opeeration class should catch this exception and rethrow a standard exception
                 throw TemplateExecutionException("There was an error retrieving a node for modification");
             }
         }
     }
     else if (m_throwOnEmpty)
     {
-        throw TemplateExecutionException("Unable to find parent node");
+        throw TemplateExecutionException("No nodes selected.");
     }
-
 }

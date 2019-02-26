@@ -63,7 +63,7 @@ void IPAddressRangeVariable::addValue(const std::string &range)
 
             //
             // If valid, look at the last part, it's one of three possibilities
-            // 1. a*b - indicats starting 4th octet value 'a' and creating 'b' IP addresses
+            // 1. a*b - indicates starting 4th octet value 'a' and creating 'b' IP addresses
             // 2. a-b - indicates create a range of ip addresses with the 4th octet ranging from a to b
             // 3. a   - just a single octet, so a single ip address
             if (isValid)

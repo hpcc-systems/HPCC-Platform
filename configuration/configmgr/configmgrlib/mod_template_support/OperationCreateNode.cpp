@@ -24,13 +24,9 @@
 #include "Status.hpp"
 
 
-void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs)
+void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pVariables)
 {
     std::shared_ptr<EnvironmentNode> pNewEnvNode;
-
-    //
-    // Find the parent node(s). Either was input, or based on a path, which may match more than one node
-    getParentNodeIds(pEnvMgr, pInputs);
 
     //
     // Create an input to hold the newly created node ID(s) if indicated. The IDs are saved as the node(s) is/are
@@ -38,12 +34,12 @@ void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs)
     std::shared_ptr<Variable> pSaveNodeIdInput;
     if (!m_saveNodeIdName.empty())
     {
-        pSaveNodeIdInput = createInput(m_saveNodeIdName, "string", pInputs, m_duplicateSaveNodeIdInputOk);
+        pSaveNodeIdInput = createInput(m_saveNodeIdName, "string", pVariables, m_duplicateSaveNodeIdInputOk);
     }
 
     //
     // Create any attribute save inputs
-    createAttributeSaveInputs(pInputs);
+    createAttributeSaveInputs(pVariables);
 
     //
     // Execute for each parent node
@@ -53,7 +49,7 @@ void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs)
         {
             Status status;
 
-            std::string nodeId = pInputs->doValueSubstitution(parentNodeId);
+            std::string nodeId = pVariables->doValueSubstitution(parentNodeId);
 
             //
             // Get a new node for insertion (this does not insert the node, but rather returns an orphaned node that
@@ -94,7 +90,11 @@ void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs)
 
                     //
                     // Save any attribute values to inputs for use later
-                    saveAttributeValues(pInputs, pNewEnvNode);
+                    saveAttributeValues(pVariables, pNewEnvNode);
+
+                    //
+                    // Process node value
+                    processNodeValue(pVariables, pNewEnvNode);
                 }
                 else
                 {
@@ -107,8 +107,8 @@ void OperationCreateNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs)
             }
         }
     }
-    else
+    else if (m_throwOnEmpty)
     {
-        throw TemplateExecutionException("Unable to find parent node");
+        throw TemplateExecutionException("No parent nodes selected for creation of new child nodes");
     }
 }
