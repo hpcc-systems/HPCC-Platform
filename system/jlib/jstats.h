@@ -273,6 +273,7 @@ public:
     }
 
     StatisticKind queryKind() const { return kind; }
+    StringBuffer & describe(StringBuffer & out) const;
 
 protected:
     StatisticKind kind;
@@ -324,6 +325,7 @@ public:
 
     const StringArray & queryScopes() const { return scopes; }
     bool matchOnly(StatisticScopeType scopeType) const;
+    StringBuffer & describe(StringBuffer & out) const;
 
 protected:
     void intersectDepth(unsigned _minDepth, unsigned _maxDepth);

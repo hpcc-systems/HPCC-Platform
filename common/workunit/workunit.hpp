@@ -1075,6 +1075,7 @@ public:
     WuScopeFilter & addRequiredStat(StatisticKind statKind, stat_type lowValue, stat_type highValue);
 
     void finishedFilter(); // Call once filter has been completely set up
+    StringBuffer & describe(StringBuffer & out) const; // describe the filter - each option is preceded by a comma
 
     bool includeStatistic(StatisticKind kind) const;
     bool includeAttribute(WuAttr attr) const;
