@@ -6024,7 +6024,7 @@ public:
             const char *curKind = file.queryAttributes().queryProp("@kind");
             if (!kind)
                 kind = curKind;
-            else if (!streq(kind, curKind))
+            else if (!strsame(kind, curKind))
             {
                 kind = nullptr;
                 break;
