@@ -408,8 +408,12 @@ void CLogThread::writeJobQueue(IEspUpdateLogRequestWrap* jobToWrite)
 
 IEspUpdateLogRequestWrap* CLogThread::readJobQueue()
 {
-    unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+#define LOG_LEVEL LogNormal
+    unsigned startTime = (getEspLogLevel()>=LOG_LEVEL) ? msTick() : 0;
     CriticalBlock b(logQueueCrit);
-    ESPLOG(LogNormal, "LThread:waitRQ: %dms\n", msTick() -  startTime);
+    unsigned delta = (getEspLogLevel()>=LOG_LEVEL) ? msTick() - startTime : 0;
+    if (delta > 1) // <=1ms is not indicative of an unexpected delay
+        ESPLOG(LOG_LEVEL, "LThread:waitRQ: %dms", delta);
     return (IEspUpdateLogRequestWrap*)logQueue.dequeue();
+#undef LOG_LEVEL
 }
