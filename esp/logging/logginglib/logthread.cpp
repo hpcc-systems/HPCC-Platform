@@ -146,7 +146,7 @@ bool CLogThread::enqueue(IEspUpdateLogRequestWrap* logRequest)
         logFailSafe->GenerateGUID(GUID, NULL);
         logRequest->setGUID(GUID.str());
         if (serializeLogRequestContent(logRequest, reqBuf))
-            logFailSafe->Add(GUID, reqBuf.str());
+            logFailSafe->Add(GUID, reqBuf.str(), nullptr);
         ESPLOG(LogNormal, "LThread:addToFailSafe: %dms\n", msTick() -  startTime);
     }
 
@@ -286,7 +286,7 @@ void CLogThread::checkRollOver()
             StringBuffer reqBuf;
             const char* GUID = pEspRequest->getGUID();
             if(GUID && *GUID && serializeLogRequestContent(pEspRequest, reqBuf))
-                logFailSafe->Add(GUID, reqBuf.str());
+                logFailSafe->Add(GUID, reqBuf.str(), nullptr);
         }
         ESPLOG(LogNormal, "LThread:AddFailSafe: %dms\n", msTick() -  startTime);
     }

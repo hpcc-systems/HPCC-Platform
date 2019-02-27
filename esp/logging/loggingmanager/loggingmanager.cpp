@@ -18,6 +18,7 @@
 #include "LoggingErrors.hpp"
 #include "loggingcommon.hpp"
 #include "loggingmanager.hpp"
+#include "compressutil.hpp"
 
 CLoggingManager::~CLoggingManager(void)
 {
@@ -37,6 +38,13 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
     {
         ERRLOG(EspLoggingErrors::ConfigurationFileEntryError, "Logging Manager setting not found for %s", service);
         return false;
+    }
+
+    oneTankFile = cfg->getPropBool("FailSafe");
+    if (oneTankFile)
+    {
+        logFailSafe.setown(createFailSafeLogger(cfg, service, cfg->queryProp("@name")));
+        logContentFilter.readAllLogFilters(cfg);
     }
 
     Owned<IPTreeIterator> loggingAgentSettings = cfg->getElements("LogAgent");
@@ -218,6 +226,15 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
     {
         if (espContext)
             espContext->addTraceSummaryTimeStamp(LogMin, "LMgr:startQLog");
+
+        if (oneTankFile)
+        {
+            Owned<CLogRequestInFile> reqInFile = new CLogRequestInFile();
+            if (!saveToTankFile(req, reqInFile))
+                ERRLOG("LoggingManager: failed in saveToTankFile().");
+            //The reqInFile may be used for passing information to log agents in another PR.
+        }
+
         for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
         {
             IUpdateLogThread* loggingThread = loggingAgentThreads[x];
@@ -240,6 +257,70 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
         e->Release();
     }
     return bRet;
+}
+
+bool CLoggingManager::saveToTankFile(IEspUpdateLogRequestWrap& logRequest, CLogRequestInFile* reqInFile)
+{
+    if (!logFailSafe.get())
+    {
+        ERRLOG("CLoggingManager::saveToTankFile: logFailSafe not configured.");
+        return false;
+    }
+
+    unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+
+    StringBuffer GUID;
+    logFailSafe->GenerateGUID(GUID, NULL);
+    reqInFile->setGUID(GUID);
+    reqInFile->setOption(logRequest.getOption());
+
+    StringBuffer reqBuf;
+    Owned<IEspUpdateLogRequestWrap> logRequestFiltered = logContentFilter.filterLogContent(&logRequest);
+    if (!serializeLogRequestContent(logRequestFiltered, GUID, reqBuf))
+    {
+        ERRLOG("CLoggingManager::saveToTankFile: failed in serializeLogRequestContent().");
+        return false;
+    }
+
+    logFailSafe->AddACK(GUID);//Ack this logging request since the task will be done as soon as the next line is called.
+    logFailSafe->Add(GUID, reqBuf, reqInFile);
+
+    ESPLOG(LogNormal, "LThread:saveToTankFile: %dms\n", msTick() - startTime);
+    return true;
+}
+
+unsigned CLoggingManager::serializeLogRequestContent(IEspUpdateLogRequestWrap* request, const char* GUID, StringBuffer& logData)
+{
+    addXMLItemToBuf(LOGREQUEST_GUID, GUID, logData);
+
+    const char* option = request->getOption();
+    if (!isEmptyString(option))
+        addXMLItemToBuf(LOGREQUEST_OPTION, option, logData);
+
+    logData.append("<").append(LOGREQUEST).append(">");
+
+    const char* logRequest = request->getUpdateLogRequest();
+    MemoryBuffer memBuf;
+    LZWCompress(logRequest, strlen(logRequest), memBuf, 0x100);
+    JBASE64_Encode(memBuf.toByteArray(), memBuf.length(), logData);
+
+    logData.append("</").append(LOGREQUEST).append(">");
+
+    return logData.length();
+}
+
+void CLoggingManager::addXMLItemToBuf(const char* tag, int value, StringBuffer& buf)
+{
+    buf.append("<").append(tag).append(">");
+    buf.append(value);
+    buf.append("</").append(tag).append(">");
+}
+
+void CLoggingManager::addXMLItemToBuf(const char* tag, const char* value, StringBuffer& buf)
+{
+    buf.append("<").append(tag).append(">");
+    buf.append(value);
+    buf.append("</").append(tag).append(">");
 }
 
 bool CLoggingManager::getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status)
