@@ -63,6 +63,42 @@
         </xs:element>
      </xs:sequence>
 
+     <xs:sequence>
+        <xs:element name="Filter" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>Filters</title>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:attribute name="filter" type="relativePath" use="required">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>1</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="type" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>2</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="ESPContext"/>
+                  <xs:enumeration value="UserContext"/>
+                  <xs:enumeration value="UserRequest"/>
+                  <xs:enumeration value="UserResponse"/>
+                  <xs:enumeration value="BackEndRequest"/>
+                  <xs:enumeration value="BackEndResponse"/>
+                 </xs:restriction>
+               </xs:simpleType>              
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+
     </xs:complexType>
   </xs:element>
 </xs:schema>

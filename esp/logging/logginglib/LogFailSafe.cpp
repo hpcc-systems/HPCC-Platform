@@ -275,7 +275,7 @@ void CLogFailSafe::SplitLogRecord(const char* requestStr,StringBuffer& GUID, Str
     SplitRecord(requestStr,GUID,Cache);
 }
 
-void CLogFailSafe::Add(const char* GUID,IInterface& pIn)
+void CLogFailSafe::Add(const char* GUID,IInterface& pIn, CLogRequestInFile* reqInFile)
 {
     CSoapRequestBinding* reqObj = dynamic_cast<CSoapRequestBinding*>(&pIn);
     if (reqObj == 0)
@@ -283,10 +283,10 @@ void CLogFailSafe::Add(const char* GUID,IInterface& pIn)
 
     StringBuffer dataStr;
     reqObj->serializeContent(NULL,dataStr,NULL);
-    Add(GUID, dataStr);
+    Add(GUID, dataStr, reqInFile);
 }
 
-void CLogFailSafe::Add(const char* GUID, const StringBuffer& strContents)
+void CLogFailSafe::Add(const char* GUID, const StringBuffer& strContents, CLogRequestInFile* reqInFile)
 {
     VStringBuffer dataStr("<cache>%s</cache>", strContents.str());
 
@@ -302,12 +302,12 @@ void CLogFailSafe::Add(const char* GUID, const StringBuffer& strContents)
         if (fileSize > safeRolloverSizeThreshold)
             SafeRollover();
     }
-    m_Added.Append(GUID, dataStr.str());
+    m_Added.Append(GUID, dataStr.str(), reqInFile);
 }
 
 void CLogFailSafe::AddACK(const char* GUID)
 {
-    m_Cleared.Append(GUID, "");
+    m_Cleared.Append(GUID, "", nullptr);
 
     CriticalBlock b(m_critSec);
     GuidMap::iterator it = m_PendingLogs.find(GUID);
