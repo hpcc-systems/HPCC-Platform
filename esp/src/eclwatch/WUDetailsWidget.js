@@ -121,6 +121,7 @@ define([
                 this.includeSlaveLogsCheckbox = registry.byId(this.id + "IncludeSlaveLogsCheckbox");
                 this.logsForm = registry.byId(this.id + "LogsForm");
                 this.allowOnlyNumber = registry.byId(this.id + "AllowOnlyNumber");
+                this.protected = registry.byId(this.id + "Protected");
 
                 this.infoGridWidget = registry.byId(this.id + "InfoContainer");
                 this.zapDialog = registry.byId(this.id + "ZapDialog");
@@ -287,6 +288,10 @@ define([
                     .wuid(params.Wuid)
                     .lazyRender()
                     ;
+
+                this.protected.on("change", function(evt){
+                    context._onSave();
+                })
             },
 
             initTab: function () {
