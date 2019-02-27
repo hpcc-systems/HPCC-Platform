@@ -91,7 +91,8 @@ define([
                     ;
                 this.layout = new hpccLayout.Layered()
                     .target(domNode.id)
-                    .widgets([this.messageWidget, this.graphWidget])
+                    .addLayer(this.messageWidget)
+                    .addLayer(this.graphWidget)
                     .render()
                     ;
                 this._options = {};
