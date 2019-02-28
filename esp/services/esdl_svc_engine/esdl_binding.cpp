@@ -506,6 +506,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 {
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue(LogMin, "method", mthName);
+    const char* srvName = srvdef.queryName();
 
     if (m_serviceLevelCrtFail)
         throw MakeStringException(-1, "%s::%s disabled due to Custom Transform errors. Review transform template in configuration.", srvdef.queryName(), mthName);
@@ -578,7 +579,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     else if
     (stricmp(mthName, "ping")==0 || mthdef.hasProp("Ping"))
     {
-        handlePingRequest(mthdef.queryName(),out,context.getResponseFormat());
+        handlePingRequest(srvName, out, flags);
         return;
     }
     else
@@ -1033,12 +1034,12 @@ void EsdlServiceImpl::handleEchoTest(const char *mthName,
     }
 }
 
-void EsdlServiceImpl::handlePingRequest(const char *mthName,StringBuffer &out,ESPSerializationFormat format)
+void EsdlServiceImpl::handlePingRequest(const char *srvName, StringBuffer &out, unsigned int flags)
 {
-    if (format == ESPSerializationJSON)
-        out.appendf("{\"%sPingResponse\": {}}", mthName);
+    if (flags & ESDL_BINDING_RESPONSE_JSON)
+        out.appendf("\"%sPingResponse\": {}", srvName);
     else
-        out.appendf("<%sResponse></%sResponse>", mthName, mthName);
+        out.appendf("<%sPingResponse></%sPingResponse>", srvName, srvName);
 }
 
 void EsdlServiceImpl::generateTargetURL(IEspContext & context,
@@ -2691,12 +2692,14 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
         Owned<IPropertyTree> contentTree = createPTreeFromJSONString(content.str());
         if (contentTree)
         {
-            StringBuffer reqestName(methodName);
-            reqestName.append("Request");
+            StringBuffer requestName;
+            if (stricmp(methodName, "ping") == 0)
+                requestName.append(serviceName);
+            requestName.append(methodName).append("Request");
 
-            Owned<IPropertyTree> reqTree = contentTree->getBranch(reqestName.str());
+            Owned<IPropertyTree> reqTree = contentTree->getBranch(requestName.str());
             if (!reqTree)
-                throw MakeStringException(-1, "EsdlBinding::%s::%s: Could not find \"%s\" section in JSON request", serviceName, methodName, reqestName.str());
+                throw MakeStringException(-1, "EsdlBinding::%s::%s: Could not find \"%s\" section in JSON request", serviceName, methodName, requestName.str());
 
             if (!m_esdl)
             {
