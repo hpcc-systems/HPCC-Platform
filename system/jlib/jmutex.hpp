@@ -999,7 +999,7 @@ public:
     template <typename FUNC> X * query(FUNC factory) { return querySingleton(singleton, cs, factory); }
     X * queryExisting() const { return singleton.load(std::memory_order_acquire); }
 private:
-    std::atomic<X *> singleton{nullptr};
+    std::atomic<X *> singleton = {nullptr};
     CriticalSection cs;
 };
 
