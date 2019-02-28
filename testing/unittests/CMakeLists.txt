@@ -36,6 +36,7 @@ set (    SRCS
          cryptotests.cpp
          configmgr/ConfigMgrUnitTests.cpp
          configmgr/ConfigMgrTemplateTests.cpp
+         configmgr/ConfigMgrHPCCTests.cpp
     )
 
 include_directories (

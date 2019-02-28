@@ -174,10 +174,10 @@ void outputStatus(Status &status, enum statusMsg::msgLevel lvl)
             if (pNode)
             {
                 pNode->getPath(path);
-                std::cout << status.getStatusTypeString(msg.msgLevel) << " - Path: " << path;
+                std::cout << status.getStatusTypeString(msg.msgLevel) << " : Path=" << path;
                 if (!msg.attribute.empty())
                     std::cout << "[" << msg.attribute << "]";
-                std::cout << " Message: " << msg.msg << std::endl;
+                std::cout << " Message=" << msg.msg << std::endl;
             }
         }
     }

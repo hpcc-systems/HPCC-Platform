@@ -15,5 +15,26 @@
 #    limitations under the License.
 ##############################################################################
 
-HPCC_ADD_SUBDIRECTORY (add_required_instances)
-HPCC_ADD_SUBDIRECTORY (check_port_bindings)
+project ( cfghpcc_checkportbindings )
+
+SET(  SRCS
+        CheckPortBindings.cpp
+        )
+
+INCLUDE_DIRECTORIES(
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/system/jlib
+        ${HPCC_SOURCE_DIR}/deployment/deploy
+        ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/..
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../configmgrlib
+        ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/oss
+)
+
+ADD_DEFINITIONS( -D_USRDLL )
+HPCC_ADD_LIBRARY( cfghpcc_checkportbindings SHARED ${SRCS} )
+TARGET_LINK_LIBRARIES( cfghpcc_checkportbindings configmgr jlib )
+
+INSTALL ( TARGETS cfghpcc_checkportbindings RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

@@ -66,29 +66,30 @@
                             <eventType>create</eventType>
                             <eventAction>insertXML</eventAction>
                             <eventData>
-                            <itemType>espbinding</itemType>
-                            <match>
-                                <!-- match the event node's (the created espbinding) "service" attribute value
-                                     against all /Environment/Software/EspService nodes with a matching "name"
-                                     attribute value (other rules may limit the number of matches) -->
-                                <eventNodeAttribute>service</eventNodeAttribute>
-                                <targetPath>/Environment/Software/EspService</targetPath>
-                                <targetAttribute>name</targetAttribute>
-                            </match>
-                            <xml>
-                                <Authenticate access="Read" description="Root access to WS ECL service"
-                                              path="/" required="Read" resource="WsEclAccess"/>
-                                <AuthenticateFeature description="Access to WS ECL service"
-                                                     path="WsEclAccess" resource="WsEclAccess" service="ws_ecl"/>
-                            </xml>
+                                <itemType>espbinding</itemType>
+                                <match>
+                                    <!-- match the event node's (the created espbinding) "service" attribute value
+                                         against all /Environment/Software/EspService nodes with a matching "name"
+                                         attribute value (other rules may limit the number of matches) -->
+                                    <eventNodeAttribute>service</eventNodeAttribute>
+                                    <targetPath>/Environment/Software/EspService</targetPath>
+                                    <targetAttribute>name</targetAttribute>
+                                </match>
+                                <xml>
+                                    <Authenticate access="Read" description="Root access to WS ECL service"
+                                                  path="/" required="Read" resource="WsEclAccess"/>
+                                    <AuthenticateFeature description="Access to WS ECL service"
+                                                         path="WsEclAccess" resource="WsEclAccess" service="ws_ecl"/>
+                                </xml>
+                            </eventData>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:sequence>
                 <xs:attributeGroup ref="buildInfo"/>
                 <xs:attribute name="name" type="xs:string" hpcc:diaplayName="Name" use="required"
                               hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="ws_ecl"
+                              hpcc:uniqueKey="espservice_name"
                               hpcc:tooltip="Name for this ESP service"/>
-
                 <xs:attribute name="description" type="xs:string" hpcc:displayName="Description"
                               hpcc:presetValue="WS ECL Service"
                               hpcc:tooltip="Allows creation of web services using ECL language"/>
@@ -114,16 +115,3 @@
         </xs:element>
     </hpcc:insert>
 </xs:schema>
-
-
-
-<Authenticate access="Read"
-              description="Root access to WS ECL service"
-              path="/"
-              required="Read"
-              resource="WsEclAccess"/>
-<AuthenticateFeature description="Access to WS ECL service"
-                     path="WsEclAccess"
-                     resource="WsEclAccess"
-                     service="ws_ecl"/>
-</Properties>
