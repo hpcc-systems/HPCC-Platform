@@ -721,6 +721,9 @@ public:
                     size32_t sz;
                     StringBuffer ds;
                     try {
+                        StringBuffer fullPath;
+                        rfn.getRemotePath(fullPath);
+                        recursiveCreateDirectoryForFile(fullPath);
                         Owned<IFileIO> fileio = file->open(IFOcreate);
                         CDateTime dt;
                         dt.setNow();
