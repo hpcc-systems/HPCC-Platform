@@ -36,7 +36,8 @@
 #define REQPATH_CREATEANDDOWNLOADZAP "/WsWorkunits/WUCreateAndDownloadZAPInfo"
 #define REQPATH_DOWNLOADFILES "/WsWorkunits/WUDownloadFiles"
 
-const unsigned DefaultMaxJobQueueItemsInWUGetJobQueueResponse = 1000;
+const unsigned defaultMaxJobQueueItemsInWUGetJobQueueResponse = 1000;
+const unsigned defaultMaxJobsInWUGetJobListResponse = 1000000;
 
 bool getClusterJobQueueXLS(StringBuffer &xml, const char* cluster, const char* startDate, const char* endDate, const char* showType)
 {
@@ -1787,6 +1788,329 @@ bool CWsWorkunitsEx::onWUClusterJobSummaryXLS(IEspContext &context, IEspWUCluste
     return true;
 }
 
+bool CWsWorkunitsEx::onWUGetThorJobList(IEspContext &context, IEspWUGetThorJobListRequest &req, IEspWUGetThorJobListResponse &resp)
+{
+    SecAccessFlags accessOwn, accessOthers;
+    getUserWuAccessFlags(context, accessOwn, accessOthers, true);
+
+    unsigned maxJobsToReturn = req.getMaxJobsToReturn();
+    if (maxJobsToReturn == 0)
+        maxJobsToReturn = defaultMaxJobsInWUGetJobListResponse;
+
+    CDateTime queryAuditLogFrom, queryAuditLogTo;
+    StringBuffer startDate = req.getStartDate();
+    StringBuffer endDate = req.getEndDate();
+    if (!startDate.isEmpty())
+    {
+        if (startDate.length() == 10)
+            startDate.append("T00:00:00");
+        queryAuditLogFrom.setString(startDate, nullptr, false);
+    }
+    StringBuffer queryAuditLogToStr;
+    if (isEmptyString(endDate))
+        queryAuditLogTo.setNow();
+    else
+    {
+        if (endDate.length() == 10)
+            endDate.append("T23:59:59");
+        queryAuditLogTo.setString(endDate, nullptr, false);
+    }
+    queryAuditLogTo.getString(queryAuditLogToStr, false);
+
+    IArrayOf<IEspECLJob> eclJobList, inProgressECLJobList;
+    const char *cluster = req.getCluster();
+    double version = context.getClientVersion();
+    bool tooManyJobs = getThorJobsFromAuditLog(version, queryAuditLogFrom, queryAuditLogTo,
+        cluster, maxJobsToReturn, eclJobList);
+    if (tooManyJobs)
+    {
+        VStringBuffer msg("More than %u jobs are found. Only %u jobs are returned.", maxJobsToReturn, maxJobsToReturn);
+        resp.setWarning(msg);
+        resp.setJobList(eclJobList);
+        return true;
+    }
+    resp.setJobList(eclJobList);
+
+    //Find out which WUs stopped by abnormal termination
+    getInProgressThorJobsFromAuditLog(version, queryAuditLogFrom, queryAuditLogTo, queryAuditLogToStr,
+        cluster, eclJobList, inProgressECLJobList);
+
+    //Find out the WUs which is started before *and* ended after the search time range.
+    getPreviousInProgressThorJobsFromAuditLog(version, queryAuditLogFrom, queryAuditLogToStr,
+        cluster, eclJobList, inProgressECLJobList);
+    resp.setInProgressJobList(inProgressECLJobList);
+    return true;
+}
+
+bool CWsWorkunitsEx::getThorJobsFromAuditLog(double version, CDateTime &queryAuditLogFrom, CDateTime &queryAuditLogTo,
+    const char *cluster, unsigned maxJobsToReturn, IArrayOf<IEspECLJob> &eclJobList)
+{
+    StringBuffer filter("Timing,ThorGraph");
+    if(notEmpty(cluster))
+        filter.appendf(",%s", cluster);
+
+    StringAttrArray jobs;
+    queryAuditLogs(queryAuditLogFrom, queryAuditLogTo, filter, jobs);
+    ForEachItemIn(idx, jobs)
+    {
+        const char* line = jobs.item(idx).text;
+        if(isEmptyString(line))
+            continue;
+
+        if ((maxJobsToReturn > 0) && (eclJobList.length() >= maxJobsToReturn))
+            return true;
+
+        Owned<IEspECLJob> job = createEclJobFromAuditLine(version, line);
+        eclJobList.append(*job.getClear());
+    }
+    return false;
+}
+
+void CWsWorkunitsEx::getInProgressThorJobsFromAuditLog(double version, CDateTime &queryAuditLogFrom,
+    CDateTime &queryAuditLogTo, const char *queryAuditLogToStr, const char *cluster,
+    IArrayOf<IEspECLJob> &eclJobList, IArrayOf<IEspECLJob> &inProgressECLJobList)
+{
+    StringAttrArray jobs;
+    StringBuffer filter("Progress,Thor");
+    queryAuditLogs(queryAuditLogFrom, queryAuditLogTo, filter, jobs);
+
+    int len = jobs.length();
+    ForEachItemIn(idx, jobs)
+    {
+        const char *curJob = jobs.item(idx).text;
+        if (isEmptyString(curJob))
+            continue;
+
+        StringBuffer dtStr, actionStr, wuidStr, graphStr, subGraphStr, clusterStr;
+        if (!readECLWUCurrentJob(curJob, cluster, queryAuditLogToStr, dtStr, actionStr, wuidStr,
+            graphStr, subGraphStr, clusterStr))
+            continue;
+
+        //Find a job which is started, but, is never not stopped.
+        if (!strieq(actionStr.str(), "StartSubgraph") || wuidStr.isEmpty() || graphStr.isEmpty())
+            continue;
+
+        //Now, check if the job is stopped by itself or the cluster is stopped before the job finishes.
+        bool jobStopped = false;
+        bool jobAdded = false;
+        int idx1 = idx + 1;
+        while (idx1 < len)
+        {
+            const char *job1 = jobs.item(idx1).text;
+            if (isEmptyString(job1))
+            {
+                idx1++;
+                continue;
+            }
+
+            StringBuffer dtStr1, actionStr1, wuidStr1, graphStr1, subGraphStr1, clusterStr1;
+            if (!readECLWUCurrentJob(job1, cluster, queryAuditLogToStr, dtStr1, actionStr1, wuidStr1,
+                graphStr1, subGraphStr1, clusterStr1))
+            {
+                idx1++;
+                continue;
+            }
+
+            //If the cluster is stopped before the job finishes, the job should be added into
+            //the inProgressECLJobList if not in the eclJobList.
+            if (strieq(actionStr1.str(), "Startup") || strieq(actionStr1.str(), "Terminate"))
+            {
+                checkAddToInProgressECLJobList(version, wuidStr, graphStr, subGraphStr, clusterStr,
+                    dtStr, dtStr1, eclJobList, inProgressECLJobList);
+                jobAdded = true;
+                break;
+            }
+
+            if (strieq(actionStr1.str(), "Stop") && strieq(wuidStr.str(), wuidStr1.str()) && strieq(graphStr.str(), graphStr1.str()))
+            {
+                //If the job is stopped by itself, it should not be added into the inProgressECLJobList.
+                jobStopped = true;
+                break;
+            }
+
+            idx1++;
+        }
+
+        //If this job is not stopped due to other reason, it should be added into the inProgressECLJobList if not in the eclJobList.
+        if (!jobStopped && !jobAdded)
+        {
+            checkAddToInProgressECLJobList(version, wuidStr, graphStr, subGraphStr, clusterStr, dtStr,
+                nullptr, eclJobList, inProgressECLJobList);
+        }
+    }
+}
+
+void CWsWorkunitsEx::checkAddToInProgressECLJobList(double version, const char *wuid, const char *graph,
+    const char *subGraph, const char *cluster, const char *startTime, const char *endTime,
+    IArrayOf<IEspECLJob> &eclJobList, IArrayOf<IEspECLJob> &inProgressECLJobList)
+{
+    bool foundInECLJobList = false;
+    ForEachItemIn(idx, eclJobList)
+    {
+        IConstECLJob& curECLJob = eclJobList.item(idx);
+        const char *eclWUID = curECLJob.getWuid();
+        if (isEmptyString(eclWUID) || !strieq(eclWUID, wuid))
+            continue;
+        const char *eclGraphNum = curECLJob.getGraphNum();
+        if (isEmptyString(eclGraphNum) || !strieq(eclGraphNum, graph))
+            continue;
+        const char *eclSubgraphNum = curECLJob.getSubGraphNum();
+        if (isEmptyString(eclSubgraphNum) || !strieq(eclSubgraphNum, subGraph))
+            continue;
+        const char *eclDate = curECLJob.getFinishedDate();
+        if (isEmptyString(eclDate))
+            continue;
+        if (stricmp(eclDate, startTime) < 0)
+            continue;
+        if (!isEmptyString(endTime) && (stricmp(eclDate, endTime) > 0))
+            continue;
+
+        foundInECLJobList = true;
+        break;
+    }
+
+    if (foundInECLJobList)
+        return;
+
+    Owned<IEspECLJob> job = createECLJob();
+    job->setWuid(wuid);
+    job->setCluster(cluster);
+
+    StringBuffer graph0("graph");
+    graph0.append(graph);
+    job->setGraph(graph0);
+    if (version > 1.05)
+    {
+        job->setGraphNum(graph);
+        job->setSubGraphNum(subGraph);
+    }
+
+    job->setStartedDate(startTime);
+    if (!isEmptyString(endTime))
+        job->setFinishedDate(endTime);
+    inProgressECLJobList.append(*job.getClear());
+}
+
+void CWsWorkunitsEx::getPreviousInProgressThorJobsFromAuditLog(double version, CDateTime queryAuditLogFrom, const char *queryAuditLogToStr,
+    const char *cluster, IArrayOf<IEspECLJob> &eclJobList, IArrayOf<IEspECLJob> &inProgressECLJobList)
+{
+    StringBuffer filter("Progress,Thor");
+    CDateTime fromTimeNext = queryAuditLogFrom, toTimeNext;
+    bool clusterTerminated = false;
+    for (unsigned day = 0; !clusterTerminated && day < MAXSUBGRAPHDAYS; day++)
+    {
+        toTimeNext = fromTimeNext;
+        fromTimeNext.adjustTime(-1440);
+
+        StringAttrArray jobs;
+        queryAuditLogs(fromTimeNext, toTimeNext, filter, jobs);
+        int len = jobs.length();
+        if (len == 0)
+            continue; //No job in this time period. Go to the next time period.
+
+        //Find when the cluster is terminated.
+        unsigned nextIdx = 0;
+        ForEachItemInRev(idx, jobs)
+        {
+            const char *curJob = jobs.item(idx).text;
+            if(isEmptyString(curJob))
+                continue;
+
+            StringBuffer dtStr, actionStr, wuidStr, graphStr, subGraphStr, clusterStr;
+            if (!readECLWUCurrentJob(curJob, cluster, queryAuditLogToStr, dtStr, actionStr, wuidStr, graphStr,
+                subGraphStr, clusterStr))
+                continue;
+
+            if (strieq(actionStr.str(), "Startup") || strieq(actionStr.str(), "Terminate"))
+            {
+                clusterTerminated = true;
+
+                StringBuffer dt;
+                const char *ptr = strchr(curJob, ',');
+                dt.append(ptr - curJob, curJob);
+                dt.setCharAt(10, 'T');
+                fromTimeNext.setString(dt, nullptr, false);
+                nextIdx = idx + 1;
+                break;
+            }
+        }
+
+        if (nextIdx >= len)
+        { //The cluster is terminated at the beginning of this time period.
+            break;
+        }
+
+        //Get jobs which are finished in this time period.
+        //Those jobs should also not be added into the inProgressECLJobList.
+        getThorJobsFromAuditLog(version, fromTimeNext, toTimeNext, cluster, 0, eclJobList);
+
+        //Now, find a job which is started, but, stopped by itself.
+        //And add it to the inProgressECLJobList if not in the eclJobList.
+        while (nextIdx < len)
+        {
+            const char *curJob = jobs.item(nextIdx).text;
+            if (isEmptyString(curJob))
+            {
+                nextIdx++;
+                continue;
+            }
+
+            StringBuffer dtStr, actionStr, wuidStr, graphStr, subGraphStr, clusterStr;
+            if (!readECLWUCurrentJob(curJob, cluster, queryAuditLogToStr, dtStr, actionStr, wuidStr, graphStr,
+                subGraphStr, clusterStr))
+            {
+                nextIdx++;
+                continue;
+            }
+
+            //Find a job which is started.
+            if (!strieq(actionStr.str(), "StartSubgraph") || wuidStr.isEmpty() || graphStr.isEmpty())
+            {
+                nextIdx++;
+                continue;
+            }
+
+            //Check if the job is stopped by itself.
+            bool jobStopped = false;
+            int idx1 = nextIdx + 1;
+            while (idx1 < len)
+            {
+                const char *job1 = jobs.item(idx1).text;
+                if (isEmptyString(job1))
+                {
+                    idx1++;
+                    continue;
+                }
+
+                StringBuffer dtStr1, actionStr1, wuidStr1, graphStr1, subGraphStr1, clusterStr1;
+                if (!readECLWUCurrentJob(job1, cluster, queryAuditLogToStr, dtStr1, actionStr1, wuidStr1,
+                    graphStr1, subGraphStr1, clusterStr1))
+                {
+                    idx1++;
+                    continue;
+                }
+
+                if (strieq(actionStr1.str(), "Stop") && strieq(wuidStr.str(), wuidStr1.str())
+                    && strieq(graphStr.str(), graphStr1.str()))
+                {
+                    jobStopped = true;
+                    break;
+                }
+
+                idx1++;
+            }
+
+            //If this job is not stopped, it should be added into the inProgressECLJobList if not in the eclJobList.
+            if (!jobStopped)
+            {
+                checkAddToInProgressECLJobList(version, wuidStr, graphStr, subGraphStr, clusterStr, dtStr,
+                    nullptr, eclJobList, inProgressECLJobList);
+            }
+            nextIdx++;
+        }
+    }
+}
+
 bool CWsWorkunitsEx::onWUGetThorJobQueue(IEspContext &context, IEspWUGetThorJobQueueRequest &req, IEspWUGetThorJobQueueResponse &resp)
 {
     try
@@ -1799,7 +2123,7 @@ bool CWsWorkunitsEx::onWUGetThorJobQueue(IEspContext &context, IEspWUGetThorJobQ
         StringBuffer endDate = req.getEndDate();
         unsigned maxJobQueueItemsToReturn = req.getMaxJobQueueItemsToReturn();
         if (maxJobQueueItemsToReturn == 0)
-            maxJobQueueItemsToReturn = DefaultMaxJobQueueItemsInWUGetJobQueueResponse;
+            maxJobQueueItemsToReturn = defaultMaxJobQueueItemsInWUGetJobQueueResponse;
 
         CDateTime fromTime, toTime;
         if (!startDate.isEmpty())

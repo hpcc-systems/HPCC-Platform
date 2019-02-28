@@ -868,6 +868,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(User) },
     { CYCLESTAT(System) },
     { CYCLESTAT(Total) },
+    { SIZESTAT(OsDiskRead) },
+    { SIZESTAT(OsDiskWrite) },
 };
 
 

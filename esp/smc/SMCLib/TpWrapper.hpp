@@ -121,6 +121,7 @@ using std::string;
 #define eqHoleCollatorProcess   "HoleCollatorProcess"
 #define eqHoleStandbyProcess    "HoleStandbyProcess"
 #define eqSparkThorProcess      "SparkThorProcess"
+#define eqRoxieServerProcess    "RoxieServerProcess"
 
 #define SDS_LOCK_TIMEOUT 30000
 

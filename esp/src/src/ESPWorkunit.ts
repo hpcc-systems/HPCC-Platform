@@ -264,11 +264,19 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
         var context = this;
         WsWorkunits.WUCreate({
             load: function (response) {
-                _workunits[response.WUCreateResponse.Workunit.Wuid] = context;
-                context.Wuid = response.WUCreateResponse.Workunit.Wuid;
-                context.startMonitor(true);
-                context.updateData(response.WUCreateResponse.Workunit);
-                context.onCreate();
+                if (lang.exists("Exceptions.Exception", response)) {
+                    dojo.publish("hpcc/brToaster", {
+                        message: "<h4>" + response.Exceptions.Source + "</h4>" + "<p>" + response.Exceptions.Exception[0].Message + "</p>",
+                        type: "error",
+                        duration: -1
+                    });
+                } else {
+                    _workunits[response.WUCreateResponse.Workunit.Wuid] = context;
+                    context.Wuid = response.WUCreateResponse.Workunit.Wuid;
+                    context.startMonitor(true);
+                    context.updateData(response.WUCreateResponse.Workunit);
+                    context.onCreate();
+                }
             }
         });
     },

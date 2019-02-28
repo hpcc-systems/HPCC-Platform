@@ -38,6 +38,31 @@ void Programs::create(IPropertyTree *params)
 
 unsigned Programs::add(IPropertyTree *params)
 {
+   IPropertyTree * envTree = m_envHelper->getEnvTree();
+   const char* compName = m_envHelper->getXMLTagName(params->queryProp("@component"));
+   const IPropertyTree * buildSet = m_envHelper->getBuildSetTree();
+   StringBuffer xpath;
+
+   if (!stricmp(compName, "BuildSet"))
+   {
+      const char* key = params->queryProp("@key");
+      if (!key || !(*key))
+      {
+         throw MakeStringException(CfgEnvErrorCode::InvalidParams, "Missing BuildSet name");
+      }
+
+      xpath.clear().appendf("./%s/%s/%s/[@name=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, key);
+      IPropertyTree * sparkBuild = envTree->queryPropTree(xpath.str());
+      if (sparkBuild) return 0;
+
+      sparkBuild = buildSet->queryPropTree(xpath.str());
+      if (!sparkBuild)
+         throw MakeStringException(CfgEnvErrorCode::UnknownComponent, "Missing %s program name in BuildSet.xml", key);
+
+      IPropertyTree * pProgramTree = envTree->queryPropTree("./" XML_TAG_PROGRAMS "/" XML_TAG_BUILD);
+      pProgramTree->addPropTree(XML_TAG_BUILDSET, createPTreeFromIPT(sparkBuild));
+   }
+
    return 0;
 }
 

@@ -278,7 +278,10 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
     EsdlBindingImpl::splitURLList(url, protocol, name, pw, iplist, path, ops);
 
     entry.setProp("@prot", protocol);
-    entry.setProp("@path", path);
+    // Setting the path here overrides any existing path attribute value. Only do it when
+    // the url attribute explicitly includes a non-empty value.
+    if (path.length() > 0 && !streq(path, "/"))
+        entry.setProp("@path", path);
 
     try
     {

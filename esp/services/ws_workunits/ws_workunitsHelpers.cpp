@@ -728,7 +728,7 @@ bool WsWuInfo::hasSubGraphTimings()
 {
     try
     {
-        WuScopeFilter filter("stype[subgraph],props[stat]");
+        WuScopeFilter filter("depth[3],stype[subgraph],stat[TimeElapsed],nested[0]");
         Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
         ForEach(*it)
         {

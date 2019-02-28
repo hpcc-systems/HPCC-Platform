@@ -49,6 +49,7 @@ public:
    void addUpdateAttributesFromString(IPropertyTree *updateTree, const char *attrs);
    void addUpdateTaskFromFile(const char* inFile);
    bool convertOverrideTask(IPropertyTree * config, const char* input);
+   void cloudConfiguration(IPropertyTree * config, const char* cloud);
    bool process();
 
 
