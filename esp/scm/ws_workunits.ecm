@@ -1057,6 +1057,21 @@ ESPresponse [exceptions_inline] WUGetThorJobQueueResponse
     string Warning;
 };
 
+ESPrequest [nil_remove] WUGetThorJobListRequest
+{
+    string Cluster;
+    string StartDate;
+    string EndDate;
+    unsigned MaxJobsToReturn(0);
+};
+
+ESPresponse [exceptions_inline] WUGetThorJobListResponse
+{
+    ESParray<ESPstruct ECLJob> JobList;
+    ESParray<ESPstruct ECLJob> InProgressJobList;
+    string Warning;
+};
+
 ESPrequest GVCAjaxGraphRequest
 {
     string Name;
@@ -2337,6 +2352,7 @@ ESPservice [
     ESPmethod [cache_seconds(600), min_ver("1.71")] WUDetailsMeta(WUDetailsMetaRequest, WUDetailsMetaResponse);
     ESPmethod [clear_cache_group, min_ver("1.72")] WUEclDefinitionAction(WUEclDefinitionActionRequest, WUEclDefinitionActionResponse);
     ESPmethod [cache_seconds(60), min_ver("1.74")] WUGetThorJobQueue(WUGetThorJobQueueRequest, WUGetThorJobQueueResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.74")] WUGetThorJobList(WUGetThorJobListRequest, WUGetThorJobListResponse);
 };
 
 
