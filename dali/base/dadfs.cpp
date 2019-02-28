@@ -4135,10 +4135,16 @@ public:
         char psc = getPathSepChar(directory.get());
         DFD_OS os = SepCharBaseOs(psc);
         StringBuffer basedir;
-        if (newbasedir)
-            diroverride = newbasedir;
 
-        const char *myBase = queryBaseDirectory(grp_unknown, 0, os);
+        const char *myBase;
+        if (newbasedir)
+        {
+            diroverride = newbasedir;
+            myBase = newbasedir;
+        }
+        else
+            myBase = queryBaseDirectory(grp_unknown, 0, os);
+
         StringBuffer baseDir, newPath;
         makePhysicalPartName(logicalName.get(), 0, 0, newPath, false, os, diroverride);
         if (!getBase(directory, newPath, baseDir))
@@ -6024,7 +6030,7 @@ public:
             const char *curKind = file.queryAttributes().queryProp("@kind");
             if (!kind)
                 kind = curKind;
-            else if (!streq(kind, curKind))
+            else if (!strsame(kind, curKind))
             {
                 kind = nullptr;
                 break;

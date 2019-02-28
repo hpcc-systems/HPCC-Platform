@@ -624,10 +624,6 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
         JBASE64_Encode(uidpair.str(), uidpair.length(), result, false);
         StringBuffer authhdr("Basic ");
 
-        //Remove the \n from the end of the encoded string.
-        //Should it even be there??
-        result.setCharAt(result.length() - 1,0);
-
         authhdr.append(result.str());
         httprequest->addHeader("Authorization", authhdr.str());
     }
