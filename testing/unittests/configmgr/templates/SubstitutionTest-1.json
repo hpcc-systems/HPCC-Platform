@@ -37,10 +37,9 @@
     ],
     "operations" : [
         {
-            "action" : "modify_node",
-            "parent_path" : "/Root/Child1",
+            "action" : "modify",
+            "target_path" : "/Root/Child1",
             "data" : {
-                "count" : "{{numsystems}}",
                 "attributes" : [
                     {
                         "name" : "name",

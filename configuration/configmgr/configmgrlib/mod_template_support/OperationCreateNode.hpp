@@ -31,7 +31,7 @@ class OperationCreateNode : public Operation
 
     protected:
 
-        void doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs) override;
+        void doExecute(EnvironmentMgr *pEnvMgr, Variables *pVariables) override;
 
 
     protected:

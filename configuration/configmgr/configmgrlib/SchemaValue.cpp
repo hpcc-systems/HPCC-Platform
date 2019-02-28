@@ -232,72 +232,7 @@ bool SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
     }
 
     //
-    // Is there a specialized rule that limits the values? The order is important here. Place more restrictive rules first. Note also that
-    // a rule could be used inside a unique value set which should remain the last entry in this if then else if block
-
-    //
-    // uniqueItemType_espBinding - value is based on a unique item type described by the data for the rule. This is version 1
-    else if (m_valueLimitRuleType == "uniqueItemType_espBinding")
-    {
-        std::vector<std::string> params = splitString(m_valueLimitRuleData, ",");
-        if (params.size() != 4)
-        {
-            std::string msg = "Applying rule " + m_valueLimitRuleType + ", expected 4 parameters in rule data";
-            throw(ParseException(msg));
-        }
-
-
-        std::vector<std::shared_ptr<EnvironmentNode>> existingSourceNodes;
-        pEnvNode->fetchNodes(params[0], existingSourceNodes);
-        std::vector<std::string> existingSourceAttributeValues;
-        for (auto &existingNodeIt: existingSourceNodes)
-        {
-            existingSourceAttributeValues.push_back( existingNodeIt->getAttributeValue(params[1]));
-        }
-
-        //
-        // Get the full set of possible values using the params[1] values. From its parts, parts[0] is the path
-        // to find the set of all possible nodes that could serve as an allowable value.
-        std::vector<std::shared_ptr<EnvironmentNode>> allSourceNodes;
-        std::string sourceAttributeName = params[3];  // for use below in case parts is reused later
-        pEnvNode->fetchNodes(params[2], allSourceNodes);
-
-        //
-        // For each exising source node, using the existingSourceAttributeValues, matching the name to the value in
-        // sourceAttributeName, and collect the itemType values found.
-        std::vector<std::string> existingItemTypes;
-        for (auto &existingValueIt: existingSourceAttributeValues)
-        {
-            std::vector<std::shared_ptr<EnvironmentNode>>::iterator sourceIt = std::find_if(allSourceNodes.begin(), allSourceNodes.end(),
-                [&](std::shared_ptr<EnvironmentNode> &srcIt) {
-                    return srcIt->getAttributeValue(sourceAttributeName) == existingValueIt;
-            });
-
-            if (sourceIt != allSourceNodes.end())
-            {
-                existingItemTypes.push_back((*sourceIt)->getSchemaItem()->getItemType());
-            }
-        }
-
-        //
-        // Build the allowable value list by only adding itmes from the all sources list that don't hvae
-        // an entry in the existing item type vector
-        for (auto &sourceIt: allSourceNodes)
-        {
-            std::vector<std::string>::const_iterator itemTypeIt = std::find_if(existingItemTypes.begin(), existingItemTypes.end(), [&](const std::string &itemIt) {
-                return itemIt == sourceIt->getSchemaItem()->getItemType();
-            });
-
-            if (itemTypeIt == existingItemTypes.end())
-            {
-                allowedValues.emplace_back(AllowedValue(sourceIt->getAttributeValue(sourceAttributeName), ""));
-            }
-        }
-        rc = true;
-    }
-
-    //
-    // Or, keyed? (note that the keyed check MUST be last since a more restrictive rule may be defined for UI purposes
+    // Or, keyed? (note that the keyed check MUST be last since a more restrictive rule may be defined for logical purposes
     // while a keyed reference is present for XML schema validation)
     else if (isFromUniqueValueSet())
     {
@@ -347,7 +282,8 @@ bool SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
             // based on the dependent attribute source.
             for (auto &allowedValue: allowedValues)
             {
-                std::string path = matchPath + "[@" + matchAttribute + "='" + allowedValue.m_value + "']";
+                std::string path = matchPath;
+                path.append("[@").append(matchAttribute).append("='").append(allowedValue.m_value).append("']");
                 std::vector<std::shared_ptr<EnvironmentNode>> envNodes;
                 pEnvValuesNode->fetchNodes(path, envNodes);
                 if (!envNodes.empty())

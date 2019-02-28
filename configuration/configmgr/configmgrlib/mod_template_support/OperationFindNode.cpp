@@ -27,10 +27,6 @@
 void OperationFindNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pVariables)
 {
     //
-    // Get nodes
-    getParentNodeIds(pEnvMgr, pVariables);
-
-    //
     // Any parent node IDs found?
     if (!m_parentNodeIds.empty())
     {
@@ -50,6 +46,7 @@ void OperationFindNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pVariables
             for (auto &parentNodeId: m_parentNodeIds)
             {
                 std::string nodeId = pVariables->doValueSubstitution(parentNodeId);
+                auto pEnvNode = pEnvMgr->findEnvironmentNodeById(nodeId);
                 if (pSaveNodeIdVar)
                 {
                     pSaveNodeIdVar->addValue(nodeId);
@@ -59,9 +56,12 @@ void OperationFindNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pVariables
                 // Attributes should only be present if values were to be saved
                 if (!m_attributes.empty())
                 {
-                    auto pEnvNode = pEnvMgr->findEnvironmentNodeById(nodeId);
                     saveAttributeValues(pVariables, pEnvNode);
                 }
+
+                //
+                // Process node value
+                processNodeValue(pVariables, pEnvNode);
             }
         }
     }
@@ -79,6 +79,7 @@ void OperationFindNode::doExecute(EnvironmentMgr *pEnvMgr, Variables *pVariables
             {
                 m_nodeType = m_path.substr(lastSlashPos + 1);
                 m_path = m_path.substr(0, lastSlashPos);
+                getParentNodeIds(pEnvMgr, pVariables);  // reset these since the parent path has changed
             }
             else
             {

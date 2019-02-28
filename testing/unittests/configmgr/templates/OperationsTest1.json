@@ -16,8 +16,8 @@
     ],
     "operations" : [
         {
-            "action" : "create_node",
-            "parent_path" : "/Root/Child1",
+            "action" : "create",
+            "target_path" : "/Root/Child1",
             "data" : {
                 "node_type" : "subchild1",
                 "attributes" : [

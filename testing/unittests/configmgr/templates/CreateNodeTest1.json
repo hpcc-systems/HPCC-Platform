@@ -6,12 +6,12 @@
     "operations" : [
         {
             "description" : "Create another subchild in the path specified",
-            "action" : "create_node",
-            "parent_path" : "/Root/Child1",
+            "action" : "create",
+            "target_path" : "/Root/Child1",
             "data" : {
                 "node_type" : "subchild1",
-                "save_nodeid" : {
-                    "save_name" : "subchild1"
+                "save" : {
+                    "name" : "subchild1"
                 },
                 "attributes" : [
                     {
@@ -27,8 +27,8 @@
         },
         {
             "description" : "now modify the attributes in what was added above",
-            "action" : "modify_node",
-            "parent_nodeid" : "{{subchild1}}",
+            "action" : "modify",
+            "target_nodeid" : "{{subchild1}}",
             "data" : {
                 "attributes" : [
                     {
@@ -44,11 +44,11 @@
         },
         {
             "description" : "create a new non defined node (no schema)",
-            "action" : "find_node",
-            "parent_path" : "/Root/AdHocNode",
+            "action" : "find",
+            "target_path" : "/Root/AdHocNode",
             "data" : {
                 "create_if_not_found" : true,
-                "attributes" : [
+                "attribute_refs" : [
                     {
                         "name" : "newattr1",
                         "value" : "iamnew"

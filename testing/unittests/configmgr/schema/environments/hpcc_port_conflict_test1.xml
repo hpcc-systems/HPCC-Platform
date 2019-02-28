@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Edited with ConfigMgr on ip 192.168.56.1 on 2019-01-16T15:55:02 -->
+<Environment>
+    <Hardware>
+        <Computer computerType="linuxmachine"
+                  domain="localdomain"
+                  name="node201"
+                  netAddress="10.173.84.201"/>
+        <Computer computerType="linuxmachine"
+                  domain="localdomain"
+                  name="node202"
+                  netAddress="10.173.84.202"/>
+        <Computer computerType="linuxmachine"
+                  domain="localdomain"
+                  name="node203"
+                  netAddress="10.173.84.203"/>
+        <Computer computerType="linuxmachine"
+                  domain="localdomain"
+                  name="node204"
+                  netAddress="10.173.84.204"/>
+        <Computer computerType="linuxmachine"
+                  domain="localdomain"
+                  name="node205"
+                  netAddress="10.173.84.205"/>
+        <ComputerType computerType="linuxmachine"
+                      manufacturer="unknown"
+                      name="linuxmachine"
+                      nicSpeed="1000"
+                      opSys="linux"/>
+        <Domain name="localdomain"/>
+        <Switch name="Switch"/>
+    </Hardware>
+    <Programs>
+    </Programs>
+    <Software>
+        <EspService ActivityInfoCacheSeconds="10"
+                    allowNewRoxieOnDemandQuery="false"
+                    AWUsCacheTimeout="15"
+                    build="_"
+                    buildSet="espsmc"
+                    clusterQueryStateThreadPoolSize="25"
+                    defaultTargetCluster=""
+                    description="ESP services for SMC"
+                    disableUppercaseTranslation="false"
+                    enableSystemUseRewrite="false"
+                    excludePartitions="/dev*,/sys,/proc/*"
+                    monitorDaliFileServer="false"
+                    name="esp_service_type1_1"
+                    NodeGroupCacheMinutes="30"
+                    pluginsPath="/opt/HPCCSystems/plugins"
+                    serverForArchivedECLWU=""
+                    syntaxCheckQueue=""
+                    viewTimeout="1000"
+                    warnIfCpuLoadOver="95"
+                    warnIfFreeMemoryUnder="5"
+                    warnIfFreeStorageUnder="5">
+        </EspService>
+        <EspService build="_"
+                    buildSet="ws_ecl"
+                    description="WS ECL Service"
+                    name="esp_service_type2_1"
+                    roxieTimeout="300"
+                    workunitTimeout="600">
+        </EspService>
+        <EspService build="_"
+                    buildSet="ws_ecl"
+                    description="WS ECL Service"
+                    httpCallerIdHeader="HPCC-Caller-Id"
+                    httpGlobalIdHeader="HPCC-Global-Id"
+                    name="esp_service_type2_2"
+                    roxieTimeout="300"
+                    workunitTimeout="600"
+                    xsltMaxDepth="100000"
+                    xsltMaxVars="1000000">
+            <Target name="hthor"/>
+        </EspService>
+
+        <EspService build="_"
+                    buildSet="DynamicESDL"
+                    description="My ESDL Based Web Service Interface"
+                    LoggingManager=""
+                    name="esp_service_type3_1"
+                    namespaceBase="urn:hpccsystems:ws"
+                    namespaceScheme="">
+        </EspService>
+
+        <EspService build="_"
+                    buildSet="DynamicESDL"
+                    description="My ESDL Based Web Service Interface"
+                    LoggingManager=""
+                    name="esp_service_type3_2"
+                    namespaceBase="urn:hpccsystems:ws"
+                    namespaceScheme="">
+        </EspService>
+        <EspProcess build="_"
+                    buildSet="esp"
+                    componentfilesDir="/opt/HPCCSystems/componentfiles"
+                    controlPort="8010"
+                    daliServers="mydali"
+                    description="Test ESP with a port conflict"
+                    enableSEHMapping="true"
+                    formOptionsAccess="false"
+                    httpConfigAccess="true"
+                    logLevel="1"
+                    logRequests="false"
+                    logResponses="false"
+                    maxBacklogQueueSize="200"
+                    maxConcurrentThreads="0"
+                    maxRequestEntityLength="8000000"
+                    name="test_esp1"
+                    perfReportDelay="60"
+                    portalurl="http://hpccsystems.com/download"
+                    txSummaryLevel="1"
+                    txSummaryResourceReq="false">
+            <Authentication checkViewPermissions="false"
+                            htpasswdFile="/etc/HPCCSystems/.htpasswd"
+                            ldapAuthMethod="kerberos"
+                            ldapConnections="10"
+                            ldapServer=""
+                            method="ldap"
+                            passwordExpirationWarningDays="10"/>
+            <EspBinding defaultForPort="true"
+                        defaultServiceVersion=""
+                        name="binding1"
+                        port="8010"
+                        protocol="http"
+                        resourcesBasedn="ou=SMC,ou=EspServices,ou=ecl"
+                        service="esp_service_type1_1"
+                        type=""
+                        workunitsBasedn="ou=workunits,ou=ecl"
+                        wsdlServiceAddress="">
+            </EspBinding>
+            <EspBinding defaultForPort="true"
+                        defaultServiceVersion=""
+                        name="binding2"
+                        port="8010"
+                        protocol="http"
+                        resourcesBasedn="ou=WsEcl,ou=EspServices,ou=ecl"
+                        service="esp_service_type1_1"
+                        type=""
+                        workunitsBasedn="ou=workunits,ou=ecl"
+                        wsdlServiceAddress="">
+            </EspBinding>
+            <Instance computer="node201"
+                      directory="/var/lib/HPCCSystems/myesp"
+                      FQDN=""
+                      name="node201"
+                      netAddress="10.173.84.201"/>
+        </EspProcess>
+    </Software>
+</Environment>
