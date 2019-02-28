@@ -80,7 +80,7 @@ IPropertyTree * ComponentBase::updateNode(IPropertyTree* pNode, IPropertyTree *p
       sb.clear().appendf("@%s",attrName);
 
       const char* curValue = pNode->queryProp(sb.str());
-      if (curValue && attrOldValue && stricmp(curValue, attrOldValue))
+      if (attrOldValue && (!curValue || stricmp(curValue, attrOldValue)))
       {
          continue;
       }
