@@ -94,17 +94,17 @@
                 "action": {
                     "type" : "string",
                     "enum": [
-                        "create_node",
-                        "modify_node",
-                        "find_node",
-                        "delete_node"
+                        "create",
+                        "modify",
+                        "find",
+                        "delete"
                     ],
                     "description" : "Action to perform for this operation"
                 },
-                "parent_path": {
+                "target_path": {
                     "type": "string"
                 },
-                "parent_nodeid": {
+                "target_nodeid": {
                     "type": "string"
                 }
             },
@@ -115,7 +115,7 @@
                             "properties": {
                                 "action": {
                                     "enum": [
-                                        "create_node"
+                                        "create"
                                     ]
                                 },
                                 "data": {
@@ -131,7 +131,7 @@
                             "properties": {
                                 "action": {
                                     "enum": [
-                                        "modify_node"
+                                        "modify"
                                     ]
                                 },
                                 "data": {
@@ -147,7 +147,7 @@
                             "properties": {
                                 "action": {
                                     "enum": [
-                                        "find_node"
+                                        "find"
                                     ]
                                 },
                                 "data": {
@@ -155,14 +155,15 @@
                                 }
                             },
                             "required": [
-                                "action"
+                                "action",
+                                "target_path"
                             ]
                         },
                         {
                             "properties": {
                                 "action": {
                                     "enum": [
-                                        "delete_node"
+                                        "delete"
                                     ]
                                 },
                                 "data": {
@@ -179,12 +180,12 @@
                     "oneOf": [
                         {
                             "required": [
-                                "parent_path"
+                                "target_path"
                             ]
                         },
                         {
                             "required": [
-                                "parent_nodeid"
+                                "target_nodeid"
                             ]
                         }
                     ]
@@ -204,35 +205,43 @@
                 "node_type": {
                     "type": "string"
                 },
-                "save_nodeid": {
+                "save": {
                     "$ref": "#/definitions/save_info"
                 },
+                "error_if_not_found": {
+                    "type": "boolean",
+                    "default" : true,
+                    "description" : "Halt execution if no parent nodes selected for which this child would be created"
+                },
+                "node_value" : {
+                    "$ref" : "#/definitions/node_value_new"
+                },
                 "attributes": {
-                    "$ref": "#/definitions/attribute_values"
+                    "$ref": "#/definitions/attribute_values_new"
                 }
             },
-            "allOf": [
-                {
-                    "required": [
-                        "node_type"
-                    ]
-                }
+            "required" : [
+                "node_type"
             ]
         },
         "modify_data_info": {
             "type": "object",
             "properties": {
-                "count": {
-                    "type": "string"
-                },
                 "start_index": {
                     "type": "string"
                 },
-                "save_nodeid": {
+                "save": {
                     "$ref": "#/definitions/save_info"
                 },
+                "error_if_not_found": {
+                    "type": "boolean",
+                    "default" : true
+                },
+                "node_value" : {
+                    "$ref" : "#/definitions/node_value_mod"
+                },
                 "attributes": {
-                    "$ref": "#/definitions/attribute_values"
+                    "$ref": "#/definitions/attribute_values_mod"
                 }
             },
             "allOf": [
@@ -240,6 +249,13 @@
                     "required": [
                         "attributes"
                     ]
+                },
+                {
+                    "not" : {
+                        "required" : [
+                            "count"
+                        ]
+                    }
                 }
             ]
         },
@@ -249,7 +265,7 @@
                 "node_type": {
                     "type": "string"
                 },
-                "save_nodeid": {
+                "save": {
                     "$ref": "#/definitions/save_info"
                 },
                 "error_if_not_found": {
@@ -260,17 +276,33 @@
                     "type": "boolean",
                     "default" : false
                 },
+                "node_value" : {
+                    "$ref" : "#/definitions/node_value_ref"
+                },
                 "attributes": {
                     "$ref": "#/definitions/attribute_refs"
                 }
-            }
+            },
+            "allOf" : [
+                {
+                    "not" : {
+                        "required" : [
+                            "count"
+                        ]
+                    }
+                },
+                {
+                    "not" : {
+                        "required" : [
+                            "start_index"
+                        ]
+                    }
+                }
+            ]
         },
         "delete_data_info": {
             "type": "object",
             "properties": {
-                "count": {
-                    "type": "string"
-                },
                 "start_index": {
                     "type": "string"
                 },
@@ -278,9 +310,25 @@
                     "type": "boolean",
                     "default" : true
                 }
-            }
+            },
+            "allOf" : [
+                {
+                    "not" : {
+                        "required" : [
+                            "count"
+                        ]
+                    }
+                },
+                {
+                    "not" : {
+                        "required" : [
+                            "node_value"
+                        ]
+                    }
+                }
+            ]
         },
-        "attribute_value": {
+        "attribute_value_mod": {
             "type": "object",
             "properties": {
                 "name": {
@@ -289,11 +337,8 @@
                 "value": {
                     "type": "string"
                 },
-                "save_value": {
+                "save": {
                     "$ref": "#/definitions/save_info"
-                },
-                "do_not_set": {
-                    "type": "boolean"
                 },
                 "error_if_not_found" : {
                     "type" : "boolean",
@@ -301,18 +346,93 @@
                     "description" : "Used for actions that are looking for the presence of the attribute"
                 }
             },
-            "required": [
-                "name",
-                "value"
-            ],
-            "not" : {
-                "required" : ["first_of"]
-            }
+            "allOf" : [
+                {
+                    "required": [
+                        "name",
+                        "value"
+                    ]
+                },
+                {
+                    "allOf" : [
+                        {
+                            "not" : {
+                                "required" : [
+                                    "first_of"
+                                ]
+                            }
+                        },
+                        {
+                            "not" : {
+                                "required" : [
+                                    "error_if_empty"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
         },
-        "attribute_values": {
+        "attribute_values_mod": {
             "type": "array",
             "items": {
-                "$ref": "#/definitions/attribute_value"
+                "$ref": "#/definitions/attribute_value_mod"
+            }
+        },
+        "attribute_value_new": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                },
+                "save": {
+                    "$ref": "#/definitions/save_info"
+                },
+                "do_not_set": {
+                    "type": "boolean"
+                }
+            },
+            "allOf" : [
+                {
+                    "required": [
+                        "name",
+                        "value"
+                    ]
+                },
+                {
+                    "allOf" : [
+                        {
+                            "not" : {
+                                "required" : [
+                                    "error_if_not_found"
+                                ]
+                            }
+                        },
+                        {
+                            "not" : {
+                                "required" : [
+                                    "error_if_empty"
+                                ]
+                            }
+                        },
+                        {
+                            "not" : {
+                                "required" : [
+                                    "first_of"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "attribute_values_new": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/attribute_value_new"
             }
         },
         "attribute_ref" : {
@@ -328,7 +448,7 @@
                 "name": {
                     "type": "string"
                 },
-                "save_value": {
+                "save": {
                     "$ref": "#/definitions/save_info"
                 },
                 "error_if_not_found" : {
@@ -342,15 +462,37 @@
                     "description" : "Requires the attribute to be present and have a value (one of first of also)"
                 }
             },
-            "oneOf": [
+            "allOf" : [
                 {
-                    "required": [
-                        "name"
+                    "oneOf" : [
+                        {
+                            "required" : [
+                                "name"
+                            ]
+                        },
+                        {
+                            "required" : [
+                                "first_of"
+                            ]
+                        }
                     ]
                 },
                 {
-                    "required" : [
-                        "first_of"
+                    "allOf" : [
+                        {
+                            "not" : {
+                                "required" : [
+                                    "do_not_set"
+                                ]
+                            }
+                        },
+                        {
+                            "not" : {
+                                "required" : [
+                                    "value"
+                                ]
+                            }
+                        }
                     ]
                 }
             ]
@@ -364,7 +506,7 @@
         "save_info": {
             "type": "object",
             "properties": {
-                "save_name": {
+                "name": {
                     "type": "string"
                 },
                 "duplicate_ok": {
@@ -372,8 +514,51 @@
                 }
             },
             "required": [
-                "save_name"
+                "name"
             ]
+        },
+        "node_value_ref" :{
+            "type" : "object",
+            "properties" : {
+                "save": {
+                    "$ref": "#/definitions/save_info"
+                },
+                "error_if_empty" : {
+                    "type" : "boolean",
+                    "default" : false,
+                    "description" : "Halt execution if the node has no value"
+                }
+            }
+        },
+        "node_value_new" :{
+            "type" : "object",
+            "properties" : {
+                "value" : {
+                    "type" : "string"
+                },
+                "save": {
+                    "$ref": "#/definitions/save_info",
+                    "description" : "Object for saving the node's new value"
+                }
+            }
+        },
+        "node_value_mod" :{
+            "type" : "object",
+            "properties" : {
+                "value" : {
+                    "type" : "string",
+                    "description" : "New value for the node"
+                },
+                "save": {
+                    "$ref": "#/definitions/save_info",
+                    "description" : "Object for saving the node value"
+                },
+                "error_if_empty" : {
+                    "type" : "boolean",
+                    "default" : false,
+                    "description" : "Halt execution if the node has no value"
+                }
+            }
         }
     }
 }

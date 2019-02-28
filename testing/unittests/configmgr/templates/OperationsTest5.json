@@ -6,28 +6,28 @@
     ],
     "operations" : [
         {
-            "action" : "find_node",
-            "parent_path" : "/Root/Child1/SubChild1",
+            "action" : "find",
+            "target_path" : "/Root/Child1/SubChild1",
             "data" : {
-                "attributes" : [
+                "attribute_refs" : [
                     {
                         "name" : "attr1",
-                        "save_value" : {
-                            "save_name" : "attrvalue"
+                        "save" : {
+                            "name" : "attrvalue"
                         }
                     }
                 ]
             }
         },
         {
-            "action" : "find_node",
-            "parent_path" : "/Root/Child2/SubChild2",
+            "action" : "find",
+            "target_path" : "/Root/Child2/SubChild2",
             "data" : {
-                "attributes" : [
+                "attribute_refs" : [
                     {
                         "name" : "attr1",
-                        "save_value" : {
-                            "save_name" : "attrvalue",
+                        "save" : {
+                            "name" : "attrvalue",
                             "duplicate_ok" : false
                         }
                     }
