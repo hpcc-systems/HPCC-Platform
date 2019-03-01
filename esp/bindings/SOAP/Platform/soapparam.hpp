@@ -58,7 +58,7 @@ template <>
 inline void appendStringBuffer(StringBuffer& s, unsigned long value)
 {   s.appendulong(value); }
 
-class ESPHTTP_API BaseEspParam
+class esp_http_decl BaseEspParam
 {
 public:
    bool isNil;
@@ -223,7 +223,7 @@ public:
     }
 };
 
-class ESPHTTP_API SoapStringParam : public BaseEspParam
+class esp_http_decl SoapStringParam : public BaseEspParam
 {
 private:
     StringBuffer value;
@@ -285,7 +285,7 @@ public:
     bool unmarshallAttach(IEspContext* ctx, IProperties &params, MapStrToBuf *attachments, const char *tagname, const char *basepath=NULL, const char* optGroup=NULL, const char *xsdtype="", const char *prefix="");
 };
 
-class ESPHTTP_API BaseEspStruct
+class esp_http_decl BaseEspStruct
 {
 private:
    nilBehavior nilBH;
@@ -377,7 +377,7 @@ public:
     }
 };
 
-class ESPHTTP_API SoapParamBinary
+class esp_http_decl SoapParamBinary
 {
 private:
    MemoryBuffer value;
@@ -415,7 +415,7 @@ public:
     }
 };
 
-class ESPHTTP_API SoapAttachString
+class esp_http_decl SoapAttachString
 {
 private:
    StringBuffer value;
@@ -530,9 +530,9 @@ public:
     }
 };
 
-ESPHTTP_API StringBuffer &buildVarPath(StringBuffer &path, const char *tagname, const char *basepath, const char *item, const char *tail, int *idx);
+esp_http_decl StringBuffer &buildVarPath(StringBuffer &path, const char *tagname, const char *basepath, const char *item, const char *tail, int *idx);
 
-class ESPHTTP_API EspBaseArrayParam
+class esp_http_decl EspBaseArrayParam
 {
 protected:
     nilBehavior nilBH;

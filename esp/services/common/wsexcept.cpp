@@ -154,7 +154,7 @@ public:
     virtual MessageAudience errorAudience() const
     {
         synchronized block(mutex);
-        return ordinality() == 1 ? item(0).errorAudience() : MSGAUD_unknown;
+        return ordinality() == 1 ? item(0).errorAudience() : MSGAUD_programmer;
     }
     virtual WsErrorType errorType() const
     {

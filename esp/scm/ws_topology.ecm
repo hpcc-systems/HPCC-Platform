@@ -18,6 +18,7 @@
 ////////////////////////////////////////////////////////////
 
 //  ===========================================================================
+
 ESPStruct TpMachine
 {
     string Name;
@@ -32,6 +33,7 @@ ESPStruct TpMachine
     int    Port;
     [min_ver("1.18")] int    ProcessNumber;
 };
+
 //  ===========================================================================
 ESPStruct TpCluster
 {
@@ -252,6 +254,25 @@ ESPStruct TpGenesisServer
 };
 
 //  ===========================================================================
+ESPStruct TpSparkThor
+{
+    string Name;
+    string Build;
+    string ThorClusterName;
+    string ThorPath;
+    unsigned SparkExecutorCores;
+    int64 SparkExecutorMemory;
+    unsigned SparkMasterPort;
+    unsigned SparkMasterWebUIPort;
+    unsigned SparkWorkerCores;
+    int64 SparkWorkerMemory;
+    unsigned SparkWorkerPort;
+    string LogDirectory;
+    string Path;
+    ESParray<ESPstruct TpMachine> TpMachines;
+};
+
+//  ===========================================================================
 ESPStruct TpQueue
 {
     string Name;
@@ -276,6 +297,7 @@ ESPStruct TpServices
     ESParray<ESPstruct TpLdapServer>  TpLdapServers;
     ESParray<ESPstruct TpMySqlServer> TpMySqlServers;
     ESParray<ESPstruct TpSashaServer> TpSashaServers;
+    [min_ver("1.28")] ESParray<ESPstruct TpSparkThor>   TpSparkThors;
 };
 
 ESPStruct TpClusterNameType
@@ -612,7 +634,7 @@ ESPresponse [nil_remove, exceptions_inline] TpDropZoneQueryResponse
     ESParray<ESPstruct TpDropZone>    TpDropZones;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.27"), cache_group("ESPWsTP"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.28"), cache_group("ESPWsTP"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/targetclusters.xslt")] TpTargetClusterQuery(TpTargetClusterQueryRequest, TpTargetClusterQueryResponse);
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/topology.xslt")] TpClusterQuery(TpClusterQueryRequest, TpClusterQueryResponse);

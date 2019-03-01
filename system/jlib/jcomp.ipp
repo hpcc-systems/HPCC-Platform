@@ -34,7 +34,7 @@ public:
     virtual void addLibraryPath(const char * libPath);
     virtual void addLinkOption(const char * option);
     virtual void addInclude(const char * includePath);
-    virtual void addSourceFile(const char * filename);
+    virtual void addSourceFile(const char * filename, const char *flags);
     virtual void addObjectFile(const char * filename);
     virtual bool compile();
     virtual void extractErrors(IArrayOf<IError> & errors);
@@ -53,11 +53,11 @@ public:
     virtual bool fireException(IException *e);
 
 protected:
-    void expandCompileOptions(StringBuffer & target);
+    void expandCompileOptions(StringBuffer & target, bool isC);
     void expandRootDirectory(StringBuffer & expanded, StringBuffer & in);
     StringBuffer & getObjectName(StringBuffer & out, const char * filename);
     void removeTemporaries();
-    bool compileFile(IThreadPool * pool, const char * filename, Semaphore & finishedCompiling);
+    bool compileFile(IThreadPool * pool, const char * filename, const char *flags, Semaphore & finishedCompiling);
     bool doLink();
     void writeLogFile(const char* filepath, StringBuffer& log);
 
@@ -71,6 +71,7 @@ protected:
     StringAttr      sourceDir;
     StringAttr      targetDir;
     StringArray     allSources;
+    StringArray     allFlags;
     StringArray     logFiles;
     StringAttr      ccLogPath;
     StringAttr      coreName;

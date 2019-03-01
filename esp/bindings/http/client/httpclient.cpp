@@ -17,17 +17,13 @@
 
 #pragma warning(disable : 4786)
 
-#ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl DECL_EXPORT
-#else
-    #define esp_http_decl DECL_IMPORT
-#endif
+
 //Jlib
 #include "jliball.hpp"
 
 //ESP Bindings
 #include "httpclient.ipp"
-#include "http/platform/httptransport.ipp"
+#include "http/platform/httptransport.hpp"
 #include "securesocket.hpp"
 #include "bindutil.hpp"
 #include "espplugin.ipp"
@@ -627,10 +623,6 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
         StringBuffer result;
         JBASE64_Encode(uidpair.str(), uidpair.length(), result, false);
         StringBuffer authhdr("Basic ");
-
-        //Remove the \n from the end of the encoded string.
-        //Should it even be there??
-        result.setCharAt(result.length() - 1,0);
 
         authhdr.append(result.str());
         httprequest->addHeader("Authorization", authhdr.str());

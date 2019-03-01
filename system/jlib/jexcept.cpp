@@ -289,12 +289,8 @@ const char* serializeMessageAudience(MessageAudience ma)
     const char* ret;
     switch(ma)
     {
-    case MSGAUD_unknown:     ret = "unknown";       break;
     case MSGAUD_operator:    ret = "operator";      break;
     case MSGAUD_user:        ret = "user";          break;
-    case MSGAUD_monitor:     ret = "monitor";       break;
-    case MSGAUD_performance: ret = "performance";   break;
-    case MSGAUD_internal:    ret = "internal";      break;
     case MSGAUD_programmer:  ret = "programmer";    break;
     case MSGAUD_legacy:      ret = "legacy";        break;
     case MSGAUD_all:         ret = "all";           break;
@@ -305,19 +301,13 @@ const char* serializeMessageAudience(MessageAudience ma)
 
 MessageAudience deserializeMessageAudience(const char* text)
 {
-    MessageAudience ma = MSGAUD_unknown;
+    MessageAudience ma = MSGAUD_programmer;
     if (text && *text)
     {
         if (!strcmp(text, "operator"))
             ma = MSGAUD_operator;
         else if (!strcmp(text, "user"))
             ma = MSGAUD_user;
-        else if (!strcmp(text, "monitor"))
-            ma = MSGAUD_monitor;
-        else if (!strcmp(text, "performance"))
-            ma = MSGAUD_performance;
-        else if (!strcmp(text, "internal"))
-            ma = MSGAUD_internal;
         else if (!strcmp(text, "programmer"))
             ma = MSGAUD_programmer;
         else if (!strcmp(text, "legacy"))
@@ -564,7 +554,7 @@ public:
     virtual MessageAudience errorAudience() const
     { 
         synchronized block(m_mutex);
-        return ordinality() == 1 ? item(0).errorAudience() : MSGAUD_unknown; 
+        return ordinality() == 1 ? item(0).errorAudience() : MSGAUD_programmer;
     }
     
 private:

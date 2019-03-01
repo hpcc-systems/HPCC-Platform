@@ -56,6 +56,14 @@ struct EspAuthRequest
     bool isSoapPost;
 };
 
+class CESPCookieVerification : public CInterface
+{
+public:
+    StringAttr cookieName, cookieValue, valid, verificationDetails;
+
+    CESPCookieVerification(const char* name, const char* value) : cookieName(name), cookieValue(value), valid("false") { };
+};
+
 interface IRemoteConnection;
 class CEspHttpServer : implements IHttpServerService, public CInterface
 {
@@ -77,6 +85,13 @@ protected:
     EspAuthState checkUserAuth();
     void readAuthRequest(EspAuthRequest& req);
     EspAuthState preCheckAuth(EspAuthRequest& authReq);
+    EspAuthState verifyCookies(EspAuthRequest& authReq);
+    void verifyCookie(EspAuthRequest& authReq, CESPCookieVerification& cookie);
+    bool verifyESPSessionIDCookie(EspAuthRequest& authReq);
+    void verifyESPUserNameCookie(EspAuthRequest& authReq, CESPCookieVerification& cookie);
+    void verifyESPAuthenticatedCookie(EspAuthRequest& authReq, CESPCookieVerification& cookie);
+    void sendVerifyCookieResponse(EspAuthRequest& authReq, CIArrayOf<CESPCookieVerification>& cookies);
+
     EspAuthState checkUserAuthPerRequest(EspAuthRequest& authReq);
     EspAuthState checkUserAuthPerSession(EspAuthRequest& authReq, StringBuffer& authorizationHeader);
     EspAuthState authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL, bool unlock);

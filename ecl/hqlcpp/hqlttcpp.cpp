@@ -13896,6 +13896,21 @@ IHqlExpression * substituteClusterSize(unsigned numNodes, IHqlExpression * expr,
     return transformer.transformRoot(expr);
 }
 
+void HqlCppTranslator::checkWorkflowDuplication(HqlExprArray & exprs)
+{
+    const unsigned minActivities = options.checkDuplicateMinActivities;
+    const unsigned threshold = 100 + options.checkDuplicateThreshold;
+    unsigned __int64 rawCount = getExpressionCount(exprs, true, false, false);
+    if (rawCount < minActivities)
+        return;
+
+    unsigned __int64 sequentialCount = getExpressionCount(exprs, true, false, true);
+    unsigned __int64 workflowCount = getExpressionCount(exprs, true, true, false);
+    if (workflowCount * 100 > rawCount * threshold)
+        reportWarning(CategoryEfficiency, HQLWRN_ExpressionsDuplicated, "Warning workflow actions may significantly increase the graph size (estimate %u%%)", (unsigned)(workflowCount * 100 /rawCount) - 100);
+    if (sequentialCount * 100 > rawCount * threshold)
+        reportWarning(CategoryEfficiency, HQLWRN_ExpressionsDuplicated, "Warning sequential actions may significantly increase the graph size (estimate ~%u%%)", (unsigned)(sequentialCount * 100 /rawCount) - 100);
+}
 
 
 void HqlCppTranslator::substituteClusterSize(HqlExprArray & exprs)
@@ -13940,6 +13955,10 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
     {
         expandDelayedFunctionCalls(&queryErrorProcessor(), exprs);
     }
+
+    //This option defaults off - it checks if use of workflow or sequential is likely to increase query size significantly
+    if (options.checkDuplicateThreshold != 0)
+        checkWorkflowDuplication(exprs);
 
     {
         traceExpressions("before normalize", exprs);

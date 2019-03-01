@@ -21,7 +21,7 @@
     <xs:include schemaLocation="types.xsd"/>
     <hpcc:insert hpcc:schemaPath="/Environment/Software">
         <xs:element name="ESPLoggingAgent" hpcc:displayName="ESP Logging Agent"
-                    hpcc:itemType="loggingagent_esp" hpcc:category="Logging Agent"
+                    hpcc:itemType="esploggingagent" hpcc:category="Logging Agent"
                     maxOccurs="unbounded" hpcc:class="component">
             <xs:complexType>
 

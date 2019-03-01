@@ -18,14 +18,10 @@
 #ifndef _HTTPTRANSPORT_IPP__
 #define _HTTPTRANSPORT_IPP__
 
+#include "esphttp.hpp"
+
 //Jlib
 #include "jsocket.hpp"
-
-#ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl DECL_EXPORT
-#else
-    #define esp_http_decl DECL_IMPORT
-#endif
 
 //ESP Bindings
 #include "http/platform/httptransport.hpp"

@@ -553,6 +553,7 @@ interface IConstWUClusterInfo : extends IInterface
     virtual unsigned getNumberOfSlaveLogs() const = 0;
     virtual ClusterType getPlatform() const = 0;
     virtual IStringVal & getAgentQueue(IStringVal & str) const = 0;
+    virtual IStringVal & getAgentName(IStringVal & str) const = 0;
     virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
     virtual IStringVal & getRoxieProcess(IStringVal & str) const = 0;
     virtual const StringArray & getThorProcesses() const = 0;

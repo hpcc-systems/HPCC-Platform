@@ -20,7 +20,7 @@
     xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
     xmlns:hpcc="something hpcc.xsd">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:element name="Environment" hpcc:category="root" hpcc:class="category">
+    <xs:element name="Environment" hpcc:category="root" hpcc:class="category" hpcc:itemType="hpcc">
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="EnvSettings" hpcc:class="category" hpcc:displayName="System Settings" hpcc:hidden="true"/>

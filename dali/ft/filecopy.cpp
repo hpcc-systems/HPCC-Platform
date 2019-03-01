@@ -1085,7 +1085,9 @@ void FileSprayer::calculateMany2OnePartition()
 {
     LOG(MCdebugProgressDetail, job, "Setting up many2one partition");
     const char *partSeparator = srcFormat.getPartSeparatorString();
+    offset_t partSeparatorLength = ( partSeparator == nullptr ? 0 : strlen(partSeparator));
     offset_t lastContentLength = 0;
+    offset_t contentLength = 0;
     ForEachItemIn(idx, sources)
     {
         FilePartInfo & cur = sources.item(idx);
@@ -1094,7 +1096,7 @@ void FileSprayer::calculateMany2OnePartition()
         setCanAccessDirectly(curFilename);
         if (partSeparator)
         {
-            offset_t contentLength = (cur.size > cur.xmlHeaderLength + cur.xmlFooterLength ? cur.size - cur.xmlHeaderLength - cur.xmlFooterLength : 0);
+            contentLength = (cur.size > cur.xmlHeaderLength + cur.xmlFooterLength  + partSeparatorLength ? cur.size - cur.xmlHeaderLength - cur.xmlFooterLength - partSeparatorLength : 0);
             if (contentLength)
             {
                 if (lastContentLength)
@@ -1106,7 +1108,11 @@ void FileSprayer::calculateMany2OnePartition()
                 lastContentLength = contentLength;
             }
         }
-        partition.append(*new PartitionPoint(idx, 0, cur.headerSize, cur.size, cur.size));
+        else
+            contentLength = (cur.size > cur.headerSize ? cur.size - cur.headerSize : 0);
+
+        if (contentLength)
+            partition.append(*new PartitionPoint(idx, 0, cur.headerSize, cur.size, cur.size));
     }
 
     if (srcFormat.isCsv())

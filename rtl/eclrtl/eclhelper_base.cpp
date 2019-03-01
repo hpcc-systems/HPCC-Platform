@@ -153,6 +153,9 @@ bool CThorCombineArg::canFilter() { return false; }
 
 bool CThorCombineGroupArg::canFilter() { return false; }
 
+// CThorRollupGroupArg
+bool CThorRollupGroupArg::canFilter() { return false; }
+
 //CThorActionArg
 
 void CThorActionArg::action() {}
@@ -352,6 +355,11 @@ IOutputMetaData * CThorKeyedJoinArg::queryDiskRecordSize() { return NULL; }
 IOutputMetaData * CThorKeyedJoinArg::queryProjectedDiskRecordSize() { return NULL; }
 unsigned __int64 CThorKeyedJoinArg::extractPosition(const void * _right) { return 0; }
 
+unsigned CThorKeyedJoinArg::getFetchFlags() { return 0; }
+unsigned CThorKeyedJoinArg::getDiskFormatCrc() { return 0; }
+unsigned CThorKeyedJoinArg::getProjectedFormatCrc() { return getDiskFormatCrc(); }  // Should really be crc of queryProjectedDiskRecordSize layout
+void CThorKeyedJoinArg::getFileEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+
 bool CThorKeyedJoinArg::leftCanMatch(const void * inputRow) { return true; }
 bool CThorKeyedJoinArg::indexReadMatch(const void * indexRow, const void * inputRow, IBlobProvider * blobs) { return true; }
 
@@ -360,6 +368,8 @@ void CThorKeyedJoinArg::onLimitExceeded() { }
 unsigned __int64 CThorKeyedJoinArg::getSkipLimit() { return 0; }
 unsigned CThorKeyedJoinArg::getMatchAbortLimit() { return 0; }
 void CThorKeyedJoinArg::onMatchAbortLimitExceeded() { }
+unsigned CThorKeyedJoinArg::getProjectedIndexFormatCrc() { return getIndexFormatCrc(); }  // Should really be crc of queryIndexReadInputRecordSize layout (?)
+
 
 unsigned CThorKeyedJoinArg::getJoinLimit() { return 0; }
 unsigned CThorKeyedJoinArg::getKeepLimit() { return 0; }
@@ -526,9 +536,39 @@ const char * CThorCsvWriteArg::getCluster(unsigned idx) { return NULL; }
 
 bool CThorXmlParseArg::requiresContents() { return false; }
 
+
+unsigned CThorFetchArg::getFetchFlags() { return 0; }
+unsigned CThorFetchArg::getDiskFormatCrc() { return 0; }
+unsigned CThorFetchArg::getProjectedFormatCrc() { return getDiskFormatCrc(); }  // Should really be crc of queryProjectedDiskRecordSize layout
+void CThorFetchArg::getFileEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+unsigned __int64 CThorFetchArg::getRowLimit() { return (unsigned __int64) -1; }
+void CThorFetchArg::onLimitExceeded()         { }
+size32_t CThorFetchArg::extractJoinFields(ARowBuilder & rowBuilder, const void * _right) { return 0; }
+bool CThorFetchArg::extractAllJoinFields()    { return false; }
+IOutputMetaData * CThorFetchArg::queryExtractedSize() { return NULL; }
+
+unsigned CThorCsvFetchArg::getFetchFlags() { return 0; }
+unsigned CThorCsvFetchArg::getDiskFormatCrc() { return 0; }
+unsigned CThorCsvFetchArg::getProjectedFormatCrc() { return getDiskFormatCrc(); }  // Should really be crc of queryProjectedDiskRecordSize layout
+void CThorCsvFetchArg::getFileEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+unsigned __int64 CThorCsvFetchArg::getRowLimit() { return (unsigned __int64) -1; }
+void CThorCsvFetchArg::onLimitExceeded()         { }
+size32_t CThorCsvFetchArg::extractJoinFields(ARowBuilder & rowBuilder, const void * _right) { return 0; }
+bool CThorCsvFetchArg::extractAllJoinFields()    { return false; }
+IOutputMetaData * CThorCsvFetchArg::queryExtractedSize() { return NULL; }
+
 //CThorXmlFetchArg
 
+unsigned CThorXmlFetchArg::getFetchFlags() { return 0; }
+unsigned CThorXmlFetchArg::getDiskFormatCrc() { return 0; }
+unsigned CThorXmlFetchArg::getProjectedFormatCrc() { return getDiskFormatCrc(); }  // Should really be crc of queryProjectedDiskRecordSize layout
+void CThorXmlFetchArg::getFileEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 bool CThorXmlFetchArg::requiresContents() { return false; }
+unsigned __int64 CThorXmlFetchArg::getRowLimit() { return (unsigned __int64) -1; }
+void CThorXmlFetchArg::onLimitExceeded()         { }
+size32_t CThorXmlFetchArg::extractJoinFields(ARowBuilder & rowBuilder, const void * _right) { return 0; }
+bool CThorXmlFetchArg::extractAllJoinFields()    { return false; }
+IOutputMetaData * CThorXmlFetchArg::queryExtractedSize() { return NULL; }
 
 //CThorXmlWriteArg
 
@@ -544,6 +584,12 @@ unsigned CThorXmlWriteArg::getExpiryDays() { return 0; }
 void CThorXmlWriteArg::getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) { }
 void CThorXmlWriteArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 const char * CThorXmlWriteArg::getCluster(unsigned idx) { return NULL; }
+
+//CHThorXmlWriteExtra
+const char * CHThorXmlWriteExtra::getXmlIteratorPath() { return NULL; }             // supplies the prefix and suffix for a row
+const char * CHThorXmlWriteExtra::getHeader() { return NULL; }
+const char * CHThorXmlWriteExtra::getFooter() { return NULL; }
+unsigned CHThorXmlWriteExtra::getXmlFlags() { return 0; }
 
 //CThorSoapActionArg
 
@@ -605,6 +651,15 @@ size32_t CThorParseArg::executeProduction(ARowBuilder & rowBuilder, unsigned id,
 unsigned CThorIndexReadArg::getFlags() { return 0; }
 bool CThorIndexReadArg::getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
 void CThorIndexReadArg::setCallback(IThorIndexCallback * _tc) { fpp = _tc; }
+bool CThorIndexReadArg::canMatchAny()                              { return true; }
+void CThorIndexReadArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorIndexReadArg::canMatch(const void * row)                 { return true; }
+bool CThorIndexReadArg::hasMatchFilter()                           { return false; }
+IHThorSteppedSourceExtra * CThorIndexReadArg::querySteppingExtra()  { return nullptr; }
+
+unsigned __int64 CThorIndexReadArg::getChooseNLimit()              { return I64C(0x7fffffffffffffff); }
+unsigned __int64 CThorIndexReadArg::getRowLimit()                  { return (unsigned __int64) -1; }
+void CThorIndexReadArg::onLimitExceeded()                          { }
 
 bool CThorIndexReadArg::needTransform() { return false; }
 bool CThorIndexReadArg::transformMayFilter() { return false; }
@@ -617,7 +672,6 @@ size32_t CThorIndexReadArg::unfilteredTransform(ARowBuilder & rowBuilder, const 
 
 size32_t CThorIndexReadArg::transformOnLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
 size32_t CThorIndexReadArg::transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
-IHThorSteppedSourceExtra *CThorIndexReadArg::querySteppingExtra() { return NULL; }
 
 //CThorSteppedIndexReadArg
 
@@ -632,6 +686,17 @@ unsigned CThorSteppedIndexReadArg::getPrefetchSize() { return 0; }
 unsigned CThorIndexNormalizeArg::getFlags() { return 0; }
 bool CThorIndexNormalizeArg::getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
 void CThorIndexNormalizeArg::setCallback(IThorIndexCallback * _tc) { fpp = _tc; }
+bool CThorIndexNormalizeArg::canMatchAny()                              { return true; }
+void CThorIndexNormalizeArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorIndexNormalizeArg::canMatch(const void * row)                 { return true; }
+bool CThorIndexNormalizeArg::hasMatchFilter()                           { return false; }
+IHThorSteppedSourceExtra * CThorIndexNormalizeArg::querySteppingExtra()  { return nullptr; }
+
+unsigned __int64 CThorIndexNormalizeArg::getChooseNLimit()              { return I64C(0x7fffffffffffffff); }
+unsigned __int64 CThorIndexNormalizeArg::getRowLimit()                  { return (unsigned __int64) -1; }
+void CThorIndexNormalizeArg::onLimitExceeded()                          { }
+unsigned __int64 CThorIndexNormalizeArg::getKeyedLimit()                { return (unsigned __int64) -1; }
+void CThorIndexNormalizeArg::onKeyedLimitExceeded()                     { }
 
 size32_t CThorIndexNormalizeArg::transformOnLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
 size32_t CThorIndexNormalizeArg::transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
@@ -641,6 +706,11 @@ size32_t CThorIndexNormalizeArg::transformOnKeyedLimitExceeded(ARowBuilder & row
 unsigned CThorIndexAggregateArg::getFlags() { return 0; }
 bool CThorIndexAggregateArg::getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
 void CThorIndexAggregateArg::setCallback(IThorIndexCallback * _tc) { fpp = _tc; }
+bool CThorIndexAggregateArg::canMatchAny()                              { return true; }
+void CThorIndexAggregateArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorIndexAggregateArg::canMatch(const void * row)                 { return true; }
+bool CThorIndexAggregateArg::hasMatchFilter()                           { return false; }
+IHThorSteppedSourceExtra * CThorIndexAggregateArg::querySteppingExtra()  { return nullptr; }
 size32_t CThorIndexAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 void CThorIndexAggregateArg::processRows(ARowBuilder & rowBuilder, size32_t srcLen, const void * src) { rtlFailUnexpected(); }
 
@@ -649,6 +719,11 @@ void CThorIndexAggregateArg::processRows(ARowBuilder & rowBuilder, size32_t srcL
 unsigned CThorIndexCountArg::getFlags() { return 0; }
 bool CThorIndexCountArg::getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
 void CThorIndexCountArg::setCallback(IThorIndexCallback * _tc) { fpp = _tc; }
+bool CThorIndexCountArg::canMatchAny()                              { return true; }
+void CThorIndexCountArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorIndexCountArg::canMatch(const void * row)                 { return true; }
+bool CThorIndexCountArg::hasMatchFilter()                           { return false; }
+IHThorSteppedSourceExtra * CThorIndexCountArg::querySteppingExtra()  { return nullptr; }
 unsigned __int64 CThorIndexCountArg::getRowLimit() { return (unsigned __int64) -1; }
 void CThorIndexCountArg::onLimitExceeded() { }
 unsigned __int64 CThorIndexCountArg::getKeyedLimit() { return (unsigned __int64) -1; }
@@ -658,12 +733,20 @@ size32_t CThorIndexCountArg::numValid(size32_t srcLen, const void * _src)
     rtlFailUnexpected();
     return 0;
 }
+bool CThorIndexCountArg::hasFilter()                                                { return false; }       // also true if denormalized(!)
+size32_t CThorIndexCountArg::numValid(const void * src)                             { return 1; }           //NB: Can be > 1 if source is normlized
+unsigned __int64 CThorIndexCountArg::getChooseNLimit()                              { return (unsigned __int64) -1; }
 
 //CThorIndexGroupAggregateArg
 
 unsigned CThorIndexGroupAggregateArg::getFlags() { return 0; }
 bool CThorIndexGroupAggregateArg::getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
 void CThorIndexGroupAggregateArg::setCallback(IThorIndexCallback * _tc) { fpp = _tc; }
+bool CThorIndexGroupAggregateArg::canMatchAny()                              { return true; }
+void CThorIndexGroupAggregateArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorIndexGroupAggregateArg::canMatch(const void * row)                 { return true; }
+bool CThorIndexGroupAggregateArg::hasMatchFilter()                           { return false; }
+IHThorSteppedSourceExtra * CThorIndexGroupAggregateArg::querySteppingExtra()  { return nullptr; }
 bool CThorIndexGroupAggregateArg::createGroupSegmentMonitors(IIndexReadContext *ctx) { return false; }
 unsigned CThorIndexGroupAggregateArg::getGroupingMaxField() { return 0; }
 size32_t CThorIndexGroupAggregateArg::initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
@@ -676,6 +759,15 @@ void CThorIndexGroupAggregateArg::processRows(size32_t srcLen, const void * src,
 
 unsigned CThorDiskReadArg::getFlags() { return 0; }
 void CThorDiskReadArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
+bool CThorDiskReadArg::canMatchAny()                              { return true; }
+void CThorDiskReadArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorDiskReadArg::canMatch(const void * row)                 { return true; }
+bool CThorDiskReadArg::hasMatchFilter()                           { return false; }
+void CThorDiskReadArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+
+unsigned __int64 CThorDiskReadArg::getChooseNLimit()              { return I64C(0x7fffffffffffffff); }
+unsigned __int64 CThorDiskReadArg::getRowLimit()                  { return (unsigned __int64) -1; }
+void CThorDiskReadArg::onLimitExceeded()                          { }
 
 bool CThorDiskReadArg::needTransform() { return false; }
 bool CThorDiskReadArg::transformMayFilter() { return false; }
@@ -697,6 +789,16 @@ size32_t CThorDiskReadArg::transformOnKeyedLimitExceeded(ARowBuilder & rowBuilde
 
 unsigned CThorDiskNormalizeArg::getFlags() { return 0; }
 void CThorDiskNormalizeArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
+bool CThorDiskNormalizeArg::canMatchAny()                              { return true; }
+void CThorDiskNormalizeArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorDiskNormalizeArg::canMatch(const void * row)                 { return true; }
+bool CThorDiskNormalizeArg::hasMatchFilter()                           { return false; }
+void CThorDiskNormalizeArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+unsigned __int64 CThorDiskNormalizeArg::getChooseNLimit()              { return I64C(0x7fffffffffffffff); }
+unsigned __int64 CThorDiskNormalizeArg::getRowLimit()                  { return (unsigned __int64) -1; }
+void CThorDiskNormalizeArg::onLimitExceeded()                          { }
+unsigned __int64 CThorDiskNormalizeArg::getKeyedLimit()                { return (unsigned __int64) -1; }
+void CThorDiskNormalizeArg::onKeyedLimitExceeded()                     { }
 size32_t CThorDiskNormalizeArg::transformOnLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
 size32_t CThorDiskNormalizeArg::transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
 
@@ -704,22 +806,40 @@ size32_t CThorDiskNormalizeArg::transformOnKeyedLimitExceeded(ARowBuilder & rowB
 
 unsigned CThorDiskAggregateArg::getFlags() { return 0; }
 void CThorDiskAggregateArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
+bool CThorDiskAggregateArg::canMatchAny()                              { return true; }
+void CThorDiskAggregateArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorDiskAggregateArg::canMatch(const void * row)                 { return true; }
+bool CThorDiskAggregateArg::hasMatchFilter()                           { return false; }
+void CThorDiskAggregateArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 size32_t CThorDiskAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 
 //CThorDiskCountArg
 
 unsigned CThorDiskCountArg::getFlags() { return 0; }
 void CThorDiskCountArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
+bool CThorDiskCountArg::canMatchAny()                              { return true; }
+void CThorDiskCountArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorDiskCountArg::canMatch(const void * row)                 { return true; }
+bool CThorDiskCountArg::hasMatchFilter()                           { return false; }
+void CThorDiskCountArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 
 unsigned __int64 CThorDiskCountArg::getRowLimit() { return (unsigned __int64) -1; }
 void CThorDiskCountArg::onLimitExceeded() { }
 unsigned __int64 CThorDiskCountArg::getKeyedLimit() { return (unsigned __int64) -1; }
 void CThorDiskCountArg::onKeyedLimitExceeded() { }
+bool CThorDiskCountArg::hasFilter()                                                { return false; }       // also true if denormalized(!)
+size32_t CThorDiskCountArg::numValid(const void * src)                             { return 1; }           //NB: Can be > 1 if source is normlized
+unsigned __int64 CThorDiskCountArg::getChooseNLimit()                              { return (unsigned __int64) -1; }
 
 //CThorDiskGroupAggregateArg
 
 unsigned CThorDiskGroupAggregateArg::getFlags() { return 0; }
 void CThorDiskGroupAggregateArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
+bool CThorDiskGroupAggregateArg::canMatchAny()                              { return true; }
+void CThorDiskGroupAggregateArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorDiskGroupAggregateArg::canMatch(const void * row)                 { return true; }
+bool CThorDiskGroupAggregateArg::hasMatchFilter()                           { return false; }
+void CThorDiskGroupAggregateArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 bool CThorDiskGroupAggregateArg::createGroupSegmentMonitors(IIndexReadContext *ctx) { return false; }
 unsigned CThorDiskGroupAggregateArg::getGroupingMaxField() { return 0; }
 size32_t CThorDiskGroupAggregateArg::initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
@@ -735,6 +855,11 @@ void CThorCsvReadArg::onLimitExceeded() { }
 unsigned CThorCsvReadArg::getDiskFormatCrc() { return 0; }   // no meaning
 unsigned CThorCsvReadArg::getProjectedFormatCrc() { return 0; }   // no meaning
 void CThorCsvReadArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
+bool CThorCsvReadArg::canMatchAny()                              { return true; }
+void CThorCsvReadArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorCsvReadArg::canMatch(const void * row)                 { return true; }
+bool CThorCsvReadArg::hasMatchFilter()                           { return false; }
+void CThorCsvReadArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 
 //CThorXmlReadArg
 
@@ -745,10 +870,22 @@ void CThorXmlReadArg::onLimitExceeded() { }
 unsigned CThorXmlReadArg::getDiskFormatCrc() { return 0; }   // no meaning
 unsigned CThorXmlReadArg::getProjectedFormatCrc() { return 0; }   // no meaning
 void CThorXmlReadArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
+bool CThorXmlReadArg::canMatchAny()                              { return true; }
+void CThorXmlReadArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorXmlReadArg::canMatch(const void * row)                 { return true; }
+bool CThorXmlReadArg::hasMatchFilter()                           { return false; }
+void CThorXmlReadArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 
 //CThorChildGroupAggregateArg
 
 size32_t CThorChildGroupAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
+
+//CThorChildThroughNormalizeArg
+unsigned __int64 CThorChildThroughNormalizeArg::getChooseNLimit()              { return I64C(0x7fffffffffffffff); }
+unsigned __int64 CThorChildThroughNormalizeArg::getRowLimit()                  { return (unsigned __int64) -1; }
+void CThorChildThroughNormalizeArg::onLimitExceeded()                          { }
+unsigned __int64 CThorChildThroughNormalizeArg::getKeyedLimit()                { return (unsigned __int64) -1; }
+void CThorChildThroughNormalizeArg::onKeyedLimitExceeded()                     { }
 
 //CThorLoopArg
 

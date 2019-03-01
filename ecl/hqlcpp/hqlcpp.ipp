@@ -143,21 +143,25 @@ public:
     virtual const char * queryLibrary(unsigned idx);
     virtual const char * queryObjectFile(unsigned idx);
     virtual const char * querySourceFile(unsigned idx);
+    virtual const char * querySourceFlags(unsigned idx);
+    virtual const char * queryTempDirectory(unsigned idx);
+    virtual bool querySourceIsTemp(unsigned idx);
     virtual HqlStmts * querySection(IAtom * section);
     virtual void flushHints();
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback);
     virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
     virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
-    virtual void addManifest(const char *filename){resources.addManifest(filename);}
-    virtual void addManifestFromArchive(IPropertyTree *archive){resources.addManifestFromArchive(archive);}
+    virtual void addManifest(const char *filename, ICodegenContextCallback *ctxCallback) { resources.addManifest(filename, ctxCallback); }
+    virtual void addManifestsFromArchive(IPropertyTree *archive, ICodegenContextCallback *ctxCallback) { resources.addManifestsFromArchive(archive, ctxCallback); }
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){resources.addWebServiceInfo(wsinfo);}
     virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId);
+    virtual void useSourceFile(const char * srcname, const char *flags, bool isTemp);
+    virtual void addTemporaryDir(const char * path);
     
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
     void useLibrary(const char * libname);
     void useObjectFile(const char * objname);
-    void useSourceFile(const char * srcname);
     unsigned addStringResource(unsigned len, const char * body);
     void addHint(const char * hintXml, ICodegenContextCallback * ctxCallback);
 
@@ -174,7 +178,10 @@ public:
     StringAttrArray     modules;
     StringAttrArray     objectFiles;
     StringAttrArray     sourceFiles;
+    StringAttrArray     sourceFlags;
+    StringAttrArray     tempDirs;
     StringAttrArray     includes;
+    BoolArray           sourceIsTemp;
     CIArray             extra;
     ResourceManager     resources;
     Owned<IWorkUnit>    workunit;
@@ -613,8 +620,10 @@ struct HqlCppOptions
     unsigned            searchDistanceThreshold;
     unsigned            generateActivityThreshold;    // Record activities which take more than this value (in ms) to generate (0 disables)
     cycle_t             generateActivityThresholdCycles;
-   int                 defaultNumPersistInstances;
+    int                 defaultNumPersistInstances;
     unsigned            reportDFSinfo;
+    unsigned            checkDuplicateThreshold;
+    unsigned            checkDuplicateMinActivities;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
     bool                peephole;
@@ -1898,6 +1907,8 @@ protected:
     bool useRowAccessorClass(IHqlExpression * record, bool isTargetRow);
 
     void ensureSerialized(BuildCtx & ctx, const CHqlBoundTarget & variable);
+
+    void checkWorkflowDuplication(HqlExprArray & exprs);
 
     void doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * leftSelector, IHqlExpression * rightRecord, IHqlExpression * rightSelector, StringBuffer & selectorText, bool isCount);
     void doBuildExprRowDiff(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);

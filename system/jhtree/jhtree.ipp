@@ -106,7 +106,7 @@ public:
     virtual bool IsShared() const { return CInterface::IsShared(); }
 
 // IKeyIndex impl.
-    virtual IKeyCursor *getCursor(const IIndexFilterList *filter) override;
+    virtual IKeyCursor *getCursor(const IIndexFilterList *filter, bool logExcessiveSeeks) override;
 
     virtual size32_t keySize();
     virtual bool hasPayload();
@@ -181,9 +181,9 @@ protected:
 
     bool eof=false;
     bool matched=false; //MORE - this should probably be renamed. It's tracking state from one call of lookup to the next.
-
+    bool logExcessiveSeeks = false;
 public:
-    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter);
+    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks);
     ~CKeyCursor();
 
     virtual bool next(char *dst, KeyStatsCollector &stats) override;

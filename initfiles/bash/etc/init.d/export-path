@@ -15,6 +15,6 @@
 #    limitations under the License.
 ################################################################################
 currentDirectory=`pwd`
-sourceCmd="export \"PATH=${currentDirectory}:${PATH}\""
+sourceCmd="export \"PATH=${currentDirectory}:/usr/sbin:/usr/local/sbin:${PATH}\""
 eval $sourceCmd
 ##echo "path = $PATH"

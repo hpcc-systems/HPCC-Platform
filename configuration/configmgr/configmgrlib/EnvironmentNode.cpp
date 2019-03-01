@@ -217,30 +217,30 @@ std::string EnvironmentNode::getLocalValue() const
 }
 
 
-void EnvironmentNode::validate(Status &status, bool includeChildren, bool includeHiddenNodes) const
+void EnvironmentNode::validate(Status &status) const
 {
-    if (!m_pSchemaItem->isHidden() || includeHiddenNodes)
+    //
+    // Check node value
+    if (m_pLocalValue)
     {
-        //
-        // Check node value
-        if (m_pLocalValue)
-        {
-            m_pLocalValue->validate(status, m_id);
-        }
+        m_pLocalValue->validate(status, m_id);
+    }
 
-        //
-        // Check any attributes
-        for (auto attrIt = m_attributes.begin(); attrIt != m_attributes.end(); ++attrIt)
-        {
-            attrIt->second->validate(status, m_id);
+    //
+    // Check any attributes
+    for (auto &attrIt: m_attributes)
+    {
+        attrIt.second->validate(status, m_id);
 
+        if (attrIt.second->isValueSet())
+        {
             //
             // If this value must be unique, make sure it is
-            if (attrIt->second->getSchemaValue()->isUniqueValue())
+            if (attrIt.second->getSchemaValue()->isUniqueValue())
             {
                 bool found = false;
                 std::vector<std::string> allValues;
-                attrIt->second->getAllValuesForSiblings(allValues);
+                attrIt.second->getAllValuesForSiblings(allValues);
                 std::set<std::string> unquieValues;
                 for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
                 {
@@ -250,33 +250,25 @@ void EnvironmentNode::validate(Status &status, bool includeChildren, bool includ
 
                 if (found)
                 {
-                    status.addUniqueMsg(statusMsg::error, m_id, attrIt->second->getName(), "Attribute value must be unique");
+                    status.addUniqueMsg(statusMsg::error, m_id, attrIt.second->getName(),
+                                        "Attribute value must be unique");
                 }
             }
 
             //
             // Does this value need to be from another set of values?
-            if (attrIt->second->getSchemaValue()->isFromUniqueValueSet())
+            if (attrIt.second->getSchemaValue()->isFromUniqueValueSet())
             {
                 bool found = false;
                 std::vector<std::string> allValues;
-                attrIt->second->getSchemaValue()->getAllKeyRefValues(allValues);
+                attrIt.second->getSchemaValue()->getAllKeyRefValues(allValues);
                 for (auto it = allValues.begin(); it != allValues.end() && !found; ++it)
-                    found = *it == attrIt->second->getValue();
+                    found = *it == attrIt.second->getValue();
                 if (!found)
                 {
-                    status.addMsg(statusMsg::error, m_id, attrIt->second->getName(), "Attribute value must be from a unique set");
+                    status.addMsg(statusMsg::error, m_id, attrIt.second->getName(),
+                                  "Attribute value must be from a unique set");
                 }
-            }
-        }
-
-        //
-        // Now check all children
-        if (includeChildren)
-        {
-            for (auto childIt = m_children.begin(); childIt != m_children.end(); ++childIt)
-            {
-                childIt->second->validate(status, includeChildren, includeHiddenNodes);
             }
         }
     }
@@ -343,12 +335,12 @@ void EnvironmentNode::getInsertableItems(std::vector<InsertableItem> &insertable
         {
             if (findIt->second < pCfgItem->getMaxInstances())
             {
-                insertableItems.push_back(InsertableItem(shared_from_this(), pCfgItem));
+                insertableItems.emplace_back(InsertableItem(shared_from_this(), pCfgItem));
             }
         }
         else
         {
-            insertableItems.push_back(InsertableItem(shared_from_this(), pCfgItem));
+            insertableItems.emplace_back(InsertableItem(shared_from_this(), pCfgItem));
         }
     }
 }
@@ -487,6 +479,17 @@ void EnvironmentNode::doFetchNodes(ConfigPath &configPath, std::vector<std::shar
                 nodes.insert(nodes.end(), childNodes.begin(), childNodes.end());
             }
         }
+    }
+}
+
+
+void EnvironmentNode::getPath(std::string &path) const
+{
+    path = m_name + path;
+    path = "/" + path;
+    if (!m_pParent.expired())
+    {
+        m_pParent.lock()->getPath(path);
     }
 }
 

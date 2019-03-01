@@ -277,7 +277,11 @@ public:
     {
         matched = false;
 
+#if U_ICU_VERSION_MAJOR_NUM>=59
+        sample.setTo((const char16_t *) (_str + _from), _len);
+#else
         sample.setTo(_str + _from, _len);
+#endif
         matcher->reset(sample);
         matched = matcher->find() != FALSE;
         if (matched)
@@ -400,7 +404,11 @@ public:
         UErrorCode uerr = U_ZERO_ERROR;
         UnicodeString uStrSearch;
 
+#if U_ICU_VERSION_MAJOR_NUM>=59
+        uStrSearch.setTo((const char16_t *) _search, _srcLen);
+#else
         uStrSearch.setTo(_search, _srcLen);
+#endif
         matcher->reset(uStrSearch);
         while (matcher->find())
         {

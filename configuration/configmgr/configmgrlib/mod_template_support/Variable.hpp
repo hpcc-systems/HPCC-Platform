@@ -23,12 +23,11 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include "platform.h"
+#include "Cfgmgrlib.hpp"
 
-class Variable;
 
-std::shared_ptr<Variable> variableFactory(const std::string &type, const std::string &name);
-
-class Variable
+class CFGMGRLIB_API Variable
 {
     public:
 
@@ -59,5 +58,6 @@ class Variable
     friend class EnvModTemplate;
 };
 
+std::shared_ptr<Variable> variableFactory(const std::string &type, const std::string &name);
 
 #endif //HPCCSYSTEMS_PLATFORM_ENVMODTEMPLATEINPUT_HPP

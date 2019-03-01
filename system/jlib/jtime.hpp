@@ -88,6 +88,7 @@ public:
     void setTimeString(char const * str, char const * * end = NULL, bool local = false); // Leaves the date alone, sets to the time given as hh:mm:ss[.nnnnnnnnn]
     void setNow();
     void adjustTime(int deltaMins);
+    void adjustTimeSecs(int deltaSecs);
 
     void getDate(unsigned & year, unsigned & month, unsigned & day, bool local = false) const;
     void getTime(unsigned & hour, unsigned & minute, unsigned & second, unsigned & nano, bool local = false) const;

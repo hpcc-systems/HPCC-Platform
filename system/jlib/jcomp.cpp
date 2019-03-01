@@ -59,7 +59,8 @@
 #define BASE_ADDRESS "0x00480000"
 //#define BASE_ADDRESS        "0x10000000"
 
-static const char * CC_NAME[] =   { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
+static const char * CC_NAME_CPP[] =   { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
+static const char * CC_NAME_C[] =   { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"#" PATHSEPSTR "bin" PATHSEPSTR "gcc\"" };
 static const char * LINK_NAME[] = { "\"#" PATHSEPSTR "bin" PATHSEPSTR "link.bat\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
 static const char * LIB_DIR[] = { "\"#\\lib\"", "\"#/lib\"" };
 static const char * LIB_OPTION_PREFIX[] = { "", "-Wl," };
@@ -80,12 +81,12 @@ static const char * LIBFLAG_DEBUG[] = { "/MDd", "" };
 static const char * LIBFLAG_RELEASE[] = { "/MD", "" };
 static const char * COMPILE_ONLY[] = { "/c", "-c" };
 
-static const char * CC_OPTION_CORE[] = { "", "-std=c++11 -fvisibility=hidden -DUSE_VISIBILITY=1 -Werror -Wno-tautological-compare" };
+static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1 -Werror -Wno-tautological-compare" };
 static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." , "" };
 static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC  -O0" };
-
-
 static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC  -O0" };
+static const char * CC_OPTION_C[] = { "", "" };
+static const char * CC_OPTION_CPP[] = { "", "-std=c++11" };
 
 static const char * CC_OPTION_PRECOMPILEHEADER[] = { "", " -x c++-header" };
 
@@ -152,7 +153,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
     StringBuffer fname;
     if (path)
     {
-        const char *finger = CC_NAME[targetCompiler];
+        const char *finger = CC_NAME_CPP[targetCompiler];
         while (*finger)
         {
             if (*finger == '#')
@@ -179,7 +180,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
     }
     else
     {
-        fname.append(compilerRoot).append(CC_NAME[targetCompiler]);
+        fname.append(compilerRoot).append(CC_NAME_CPP[targetCompiler]);
         fname.replaceString("#",NULL);
     }
     if (verbose)
@@ -359,10 +360,11 @@ void CppCompiler::addLinkOption(const char * option)
         linkerOptions.append(' ').append(LIB_OPTION_PREFIX[targetCompiler]).append(option);
 }
 
-void CppCompiler::addSourceFile(const char * filename)
+void CppCompiler::addSourceFile(const char * filename, const char *flags)
 {
     DBGLOG("addSourceFile %s", filename);
     allSources.append(filename);
+    allFlags.append(flags);
 }
 
 void CppCompiler::addObjectFile(const char * filename)
@@ -401,7 +403,7 @@ bool CppCompiler::compile()
 
     ForEachItemIn(i0, allSources)
     {
-        ret = compileFile(pool, allSources.item(i0), finishedCompiling);
+        ret = compileFile(pool, allSources.item(i0), allFlags.item(i0), finishedCompiling);
         if (!ret)
             break;
         ++numSubmitted;
@@ -468,13 +470,15 @@ bool CppCompiler::compile()
     return ret;
 }
 
-bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semaphore & finishedCompiling)
+bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, const char *flags, Semaphore & finishedCompiling)
 {
     if (!filename || *filename == 0)
         return false;
 
     StringBuffer cmdline;
-    cmdline.append(CC_NAME[targetCompiler]);
+    const char *ext = pathExtension(filename);
+    bool isC = ext != nullptr && strieq(ext, ".c");
+    cmdline.append(isC ? CC_NAME_C[targetCompiler] : CC_NAME_CPP[targetCompiler]);
     if (precompileHeader)
         cmdline.append(CC_OPTION_PRECOMPILEHEADER[targetCompiler]);
     cmdline.append(" \"");
@@ -485,7 +489,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     }
     cmdline.append(filename);
     cmdline.append("\" ");
-    expandCompileOptions(cmdline);
+    expandCompileOptions(cmdline, isC);
 
     if (useDebugLibrary)
         cmdline.append(" ").append(LIBFLAG_DEBUG[targetCompiler]);
@@ -512,6 +516,8 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
             getObjectName(cmdline, filename);
         cmdline.append("\"");
     }
+    if (flags)
+        cmdline.append(" ").append(flags);
     
     StringBuffer expanded;
     expandRootDirectory(expanded, cmdline);
@@ -647,7 +653,7 @@ void CppCompiler::extractErrors(IArrayOf<IError> & errors)
     }
 }
 
-void CppCompiler::expandCompileOptions(StringBuffer & target)
+void CppCompiler::expandCompileOptions(StringBuffer & target, bool isC)
 {
     target.append(" ").append(CC_OPTION_CORE[targetCompiler]).append(" ");
     if (targetDebug)
@@ -655,6 +661,10 @@ void CppCompiler::expandCompileOptions(StringBuffer & target)
     else
         target.append(CC_OPTION_RELEASE[targetCompiler]);
     target.append(compilerOptions).append(CC_EXTRA_OPTIONS);
+    if (isC)
+        target.append(" ").append(CC_OPTION_C[targetCompiler]);
+    else
+        target.append(" ").append(CC_OPTION_CPP[targetCompiler]);
 }
 
 bool CppCompiler::doLink()
@@ -827,7 +837,8 @@ void CppCompiler::setTargetBitLength(unsigned bitlength)
     case Vs6CppCompiler:
         switch (bitlength)
         {
-        case 32: break; // 64-bit windows TBD at present....
+        case 32: break; // option is passed with --arch to VsDevCmd, cannot control from the command line
+        case 64: break; // you will get a link error if it has not been set compatibility
         default:
             throwUnexpected();
         }

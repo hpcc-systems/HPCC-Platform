@@ -24,12 +24,11 @@
 #include "platform.h"
 #include "Status.hpp"
 #include "NameValue.hpp"
-
+#include "Cfgmgrlib.hpp"
 
 class EnvironmentValue;
 
-
-struct DECL_EXPORT AllowedValue
+struct CFGMGRLIB_API AllowedValue
 {
     AllowedValue() {}
     AllowedValue(const std::string &value, const std::string &desc="") : m_value(value), m_displayName(value), m_description(desc) { }
@@ -46,7 +45,7 @@ struct DECL_EXPORT AllowedValue
 };
 
 
-class DECL_EXPORT SchemaTypeLimits
+class CFGMGRLIB_API SchemaTypeLimits
 {
     public:
 

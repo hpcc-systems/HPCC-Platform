@@ -32,11 +32,11 @@ struct modAttribute {
     void addName(const std::string &_name) { names.emplace_back(_name); }
     const std::string &getName(std::size_t idx=0) { return names[idx]; }
     std::size_t getNumNames() { return names.size(); }
-    std::vector<std::string> names;
+    std::vector<std::string> names;  // attribute name. Vector is for first_of use when finding the first match.
     std::string value;
     std::string startIndex;
     std::string cookedValue;
-    std::string saveValue;
+    std::string saveVariableName;
     bool doNotSet;
     bool duplicateSaveValueOk;
     bool errorIfNotFound;
@@ -53,18 +53,19 @@ class Operation
 
         Operation() : m_count("1"), m_startIndex("0") {}
         virtual ~Operation() = default;
-        bool execute(EnvironmentMgr *pEnvMgr, Variables *pInputs);
+        bool execute(EnvironmentMgr *pEnvMgr, Variables *pVariables);
         void addAttribute(modAttribute &newAttribute);
-        void assignAttributeCookedValues(Variables *pInputs);
+        void assignAttributeCookedValues(Variables *pVariables);
 
 
     protected:
 
         virtual void doExecute(EnvironmentMgr *pEnvMgr, Variables *pInputs) = 0;
-        void getParentNodeIds(EnvironmentMgr *pEnvMgr, Variables *pInputs);
-        std::shared_ptr<Variable> createInput(std::string inputName, const std::string &inputType, Variables *pInputs, bool existingOk);
-        bool createAttributeSaveInputs(Variables *pInputs);
-        void saveAttributeValues(Variables *pInputs, const std::shared_ptr<EnvironmentNode> &pEnvNode);
+        void getParentNodeIds(EnvironmentMgr *pEnvMgr, Variables *pVariables);
+        std::shared_ptr<Variable> createInput(std::string inputName, const std::string &inputType, Variables *pVariables, bool existingOk);
+        bool createAttributeSaveInputs(Variables *pVariables);
+        void saveAttributeValues(Variables *pVariables, const std::shared_ptr<EnvironmentNode> &pEnvNode);
+        void processNodeValue(Variables *pVariables, const std::shared_ptr<EnvironmentNode> &pEnvNode);
 
 
     protected:
@@ -75,6 +76,8 @@ class Operation
         std::vector<modAttribute> m_attributes;
         std::string m_count;
         std::string m_startIndex;
+        modAttribute m_nodeValue;
+        bool m_nodeValueValid = false;
         bool m_throwOnEmpty = true;
         std::string m_saveNodeIdName;
         bool m_duplicateSaveNodeIdInputOk = false;

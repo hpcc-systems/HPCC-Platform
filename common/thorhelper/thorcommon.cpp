@@ -2114,7 +2114,12 @@ ITranslator *getTranslators(const char *tracing, unsigned expectedCrc, IOutputMe
     Owned<const IKeyTranslator> keyedTranslator;
     if (getTranslators(translator, &keyedTranslator, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode))
     {
-        if (!publishedFormat)
+        if (RecordTranslationMode::AlwaysECL == mode)
+        {
+            publishedFormat = expectedFormat;
+            publishedCrc = expectedCrc;
+        }
+        else if (!publishedFormat)
             publishedFormat = expectedFormat;
         class CTranslator : public CSimpleInterfaceOf<ITranslator>
         {

@@ -627,7 +627,13 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
                     return true;
                 }
                 else
+                {
                     matchedRes = res;//allowed at this scope, but must also look at child scopes
+                }
+            }
+            else
+            {
+                matchedRes = nullptr;//don't use parent scope permissions for managed child scope, need to get from LDAP
             }
         }
     }
@@ -645,7 +651,7 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
         }
         else
         {
-            managedScope.append(const_cast<char *>(res->getName()));
+            managedScope.append(const_cast<char *>(res->getName()));//return deepest managed scope
 
 #ifdef _DEBUG
             DBGLOG("FileScope %s for %s(%s) managed but not cached, took %dms", fullScope, sec_user.getName(), res->getName(), msTick()-start);

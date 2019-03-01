@@ -32,7 +32,13 @@ std::vector<std::string> splitString(const std::string &input, const std::string
         std::string item = input.substr(start, (end == std::string::npos) ? std::string::npos : end - start);
         if (!item.empty())
             list.push_back(item);
-        start = ((end > (std::string::npos - delimLen)) ? std::string::npos : end + delimLen);
+
+        if (end != std::string::npos)
+        {
+            start = end + delimLen;
+            if (start >= input.length())
+                end = std::string::npos;
+        }
     }
     return list;
 }

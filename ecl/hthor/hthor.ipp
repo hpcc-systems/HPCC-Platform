@@ -2263,8 +2263,9 @@ protected:
     StringAttr logicalFileName;
     StringArray subfileLogicalFilenames;
     Owned<ISuperFileDescriptor> superfile;
-    Owned<const IDynamicTransform> translator;
-    Owned<const IKeyTranslator> keyedTranslator;
+    const IDynamicTransform *translator = nullptr;
+    const IKeyTranslator *keyedTranslator = nullptr;
+    Owned<ITranslator> translators;
     IPointerArrayOf<IOutputMetaData> actualLayouts;  // Do we need to keep more than one?
     IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
     RowFilter actualFilter;               // This refers to the actual disk layout

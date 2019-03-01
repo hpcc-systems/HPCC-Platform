@@ -33,20 +33,20 @@ cd @RUNTIME_PATH@/${_component}
 
 MASTER_IP="$(@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -listall -c ${_component} | awk -F "," '{print $3;}')"
     
-log "rsync -e \"ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no\" --timeout=60 ${MASTER_IP}:@RUNTIME_PATH@/${_component}/spark-env.sh @RUNTIME_PATH@/${_component}/spark-env.sh"
+log "rsync -e \"ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no\" --timeout=60 ${MASTER_IP}:@RUNTIME_PATH@/${_component}/spark-hpcc-env.sh @RUNTIME_PATH@/${_component}/spark-hpcc-env.sh"
 rsync_att=3
 rsync_stat=1
 while [[ $rsync_stat -ne 0 && $rsync_att -gt 0 ]] ; do
-    rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" --timeout=60 ${MASTER_IP}:@RUNTIME_PATH@/${_component}/spark-env.sh spark-env.sh
+    rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" --timeout=60 ${MASTER_IP}:@RUNTIME_PATH@/${_component}/spark-hpcc-env.sh spark-hpcc-env.sh
     rsync_stat=$?
     ((rsync_att--))
     log "rsync returns ${rsync_stat}"
 done
-if [ ! -f @RUNTIME_PATH@/${_component}/spark-env.sh ] ; then
+if [ ! -f @RUNTIME_PATH@/${_component}/spark-hpcc-env.sh ] ; then
     log "Error, $slavesfname file missing"
     exit 1
 fi
-source @RUNTIME_PATH@/${_component}/spark-env.sh
+source @RUNTIME_PATH@/${_component}/spark-hpcc-env.sh
 
 MASTER_URL="spark://${MASTER_IP}:${SPARK_MASTER_PORT}"
 

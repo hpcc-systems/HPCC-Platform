@@ -135,15 +135,14 @@
     <sect2 id="Uploading_files_w_secure_client">
       <title>Uploading files with a Secure Copy Client</title>
 
-      <para>To upload a large file for processing to your virtual machine, you
-      will need a tool that supports the secure copy protocol. In this
-      section, we discuss using WinSCP. There are other tools available, but
-      the steps are similar.</para>
+      <para>To upload a large file for processing to your system, you will
+      need a tool that supports the secure copy protocol (SCP). There are
+      several free tools available, and the steps are quite similar.</para>
 
       <para><orderedlist>
           <listitem>
-            <para>Open the WinSCP tool, and login to your Landing Zone node
-            using the username and password given.</para>
+            <para>Open the SCP tool, and login to your Landing Zone node using
+            the username and password given.</para>
 
             <para><informaltable colsep="1" rowsep="1">
                 <tgroup cols="2">
@@ -166,33 +165,24 @@
                   </tbody>
                 </tgroup>
               </informaltable></para>
+
+            <para>Ensure you are using the secure protocol, SFTP, connected to
+            your Landing Zone's IP or hostname through port 22 in your SCP
+            tool.</para>
           </listitem>
 
           <listitem>
-            <para>Once logged in, it should, navigate automatically to the
-            landing zone folder. (/var/lib/LexisNexis/mydropzone)</para>
+            <para>Once logged in, set the destination to the landing zone
+            folder. (/var/lib/HPCCSystems/mydropzone)</para>
           </listitem>
 
           <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Navigate to where your local file is in the left part of the
-            window.</para>
-
-            <para><figure>
-                <title>WinSCP</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="../../images/LZimg05.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+            <para>Navigate to the location where your local file is.</para>
           </listitem>
 
           <listitem>
-            <para>Select the data file to send and copy it to the landing
-            zone, using drag-and-drop.</para>
+            <para>Select the data file to send and copy it to your landing
+            zone.</para>
           </listitem>
         </orderedlist></para>
     </sect2>

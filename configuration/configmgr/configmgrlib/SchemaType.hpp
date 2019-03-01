@@ -24,10 +24,10 @@
 #include <vector>
 #include "SchemaTypeLimits.hpp"
 #include "platform.h"
+#include "Cfgmgrlib.hpp"
 
 
-
-class DECL_EXPORT SchemaType
+class CFGMGRLIB_API SchemaType
 {
     public:
 

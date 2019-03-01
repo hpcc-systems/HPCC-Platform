@@ -273,6 +273,7 @@
 #define HQLWRN_OutputScalarInsideChildQuery     4547
 #define HQLWRN_GlobalDatasetFromChildQuery      4548
 #define HQLWRN_NestedSequentialUseOrdered       4214
+#define HQLWRN_ExpressionsDuplicated            4549
 
 //Temporary errors
 #define HQLERR_OrderOnVarlengthStrings          4601

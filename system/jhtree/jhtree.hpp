@@ -90,7 +90,7 @@ interface jhtree_decl IKeyIndexBase : public IInterface
 
 interface jhtree_decl IKeyIndex : public IKeyIndexBase
 {
-    virtual IKeyCursor *getCursor(const IIndexFilterList *filter) = 0;
+    virtual IKeyCursor *getCursor(const IIndexFilterList *filter, bool logExcessiveSeeks) = 0;
     virtual size32_t keySize() = 0;
     virtual bool isFullySorted() = 0;
     virtual bool isTopLevelKey() = 0;
@@ -170,7 +170,6 @@ extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheAdds;
 extern jhtree_decl RelaxedAtomic<unsigned> preloadCacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> preloadCacheAdds;
-extern jhtree_decl bool logExcessiveSeeks;
 extern jhtree_decl bool linuxYield;
 extern jhtree_decl bool traceSmartStepping;
 extern jhtree_decl bool flushJHtreeCacheOnOOM;
@@ -288,9 +287,9 @@ inline offset_t extractFpos(IKeyManager * manager)
 
 class RtlRecord;
 
-extern jhtree_decl IKeyManager *createLocalKeyManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *ctx, bool _newFilters);
-extern jhtree_decl IKeyManager *createKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet * _key, unsigned sortFieldOffset, IContextLogger *ctx, bool _newFilters);
-extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo, IKeyIndex * _onekey, unsigned sortFieldOffset, IContextLogger *ctx, bool _newFilters);
+extern jhtree_decl IKeyManager *createLocalKeyManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *ctx, bool _newFilters, bool _logExcessiveSeeks);
+extern jhtree_decl IKeyManager *createKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet * _key, unsigned sortFieldOffset, IContextLogger *ctx, bool _newFilters, bool _logExcessiveSeeks);
+extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo, IKeyIndex * _onekey, unsigned sortFieldOffset, IContextLogger *ctx, bool _newFilters, bool _logExcessiveSeeks);
 
 class KLBlobProviderAdapter : implements IBlobProvider
 {

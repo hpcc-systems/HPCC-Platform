@@ -206,7 +206,7 @@ class StringPointerArrayMapper : public SimpleArrayMapper<const char *>
 public:
     static void construct(const char * & member, const char * newValue)
     {
-        member = strdup(newValue);
+        member = newValue ? strdup(newValue) : nullptr;
     }
     static void destruct(MEMBER & member)
     {

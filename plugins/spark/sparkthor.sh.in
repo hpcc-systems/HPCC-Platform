@@ -26,7 +26,7 @@ _component=${2:-mysparkthor}
 export logfile="@LOG_PATH@/${_component}/sparkthor.log"
 source @INSTALL_DIR@/sbin/hpcc_setenv
 source @INSTALL_DIR@/etc/init.d/hpcc_common
-source ./spark-env.sh
+source ./spark-hpcc-env.sh
 
 # update slaves file in case state of environment has been altered since last run
 errorMessage=$( @EXEC_PATH@/daliadmin server=$DALISERVER clusternodes ${NODEGROUP} @RUNTIME_PATH@/${_component}/slaves 2>&1 )

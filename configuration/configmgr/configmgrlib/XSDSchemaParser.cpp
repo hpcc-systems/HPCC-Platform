@@ -374,6 +374,7 @@ void XSDSchemaParser::parseElement(const pt::ptree &elemTree)
     if (category == "root")
     {
         m_pSchemaItem->setProperty("name", elementName);
+        m_pSchemaItem->setProperty("itemType", itemType);
         parseXSD(childTree);
     }
     else

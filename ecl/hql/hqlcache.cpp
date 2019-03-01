@@ -112,8 +112,8 @@ bool EclCachedDefinition::calcUpToDate(hash64_t optionHash) const
 class EclXmlCachedDefinition : public EclCachedDefinition
 {
 public:
-    EclXmlCachedDefinition(IEclCachedDefinitionCollection * _collection, IEclSource * _definition, IPropertyTree * _root)
-    : EclCachedDefinition(_collection, _definition), cacheTree(_root) {}
+    EclXmlCachedDefinition(IEclCachedDefinitionCollection * _collection, IEclSource * _definition, IPropertyTree * _cacheTree)
+    : EclCachedDefinition(_collection, _definition), cacheTree(_cacheTree) {}
 
     virtual timestamp_type getTimeStamp() const override;
     virtual IFileContents * querySimplifiedEcl() const override;
@@ -189,8 +189,8 @@ void EclXmlCachedDefinition::queryDependencies(StringArray & values) const
 class EclFileCachedDefinition : public EclXmlCachedDefinition
 {
 public:
-    EclFileCachedDefinition(IEclCachedDefinitionCollection * _collection, IEclSource * _definition, IPropertyTree * _root, IFile * _file)
-    : EclXmlCachedDefinition(_collection, _definition, _root), file(_file)
+    EclFileCachedDefinition(IEclCachedDefinitionCollection * _collection, IEclSource * _definition, IPropertyTree * _cacheTree, IFile * _file)
+    : EclXmlCachedDefinition(_collection, _definition, _cacheTree), file(_file)
     {
     }
 
@@ -247,8 +247,8 @@ IEclCachedDefinition * EclCachedDefinitionCollection::getDefinition(const char *
 class EclXmlCachedDefinitionCollection : public EclCachedDefinitionCollection
 {
 public:
-    EclXmlCachedDefinitionCollection(IEclRepository * _repository, IPropertyTree * _root)
-    : EclCachedDefinitionCollection(_repository), root(_root) {}
+    EclXmlCachedDefinitionCollection(IEclRepository * _repository, IPropertyTree * _cacheTree)
+    : EclCachedDefinitionCollection(_repository), root(_cacheTree) {}
 
     virtual IEclCachedDefinition * createDefinition(const char * eclpath) override;
 
@@ -267,9 +267,9 @@ IEclCachedDefinition * EclXmlCachedDefinitionCollection::createDefinition(const 
     return new EclXmlCachedDefinition(this, definition, resolved);
 }
 
-IEclCachedDefinitionCollection * createEclXmlCachedDefinitionCollection(IEclRepository * repository, IPropertyTree * root)
+IEclCachedDefinitionCollection * createEclXmlCachedDefinitionCollection(IEclRepository * repository, IPropertyTree * cacheTree)
 {
-    return new EclXmlCachedDefinitionCollection(repository, root);
+    return new EclXmlCachedDefinitionCollection(repository, cacheTree);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -277,33 +277,33 @@ IEclCachedDefinitionCollection * createEclXmlCachedDefinitionCollection(IEclRepo
 class EclFileCachedDefinitionCollection : public EclCachedDefinitionCollection
 {
 public:
-    EclFileCachedDefinitionCollection(IEclRepository * _repository, const char * _root)
-    : EclCachedDefinitionCollection(_repository), root(_root)
+    EclFileCachedDefinitionCollection(IEclRepository * _repository, const char * _cacheRootPath)
+    : EclCachedDefinitionCollection(_repository), cacheRootPath(_cacheRootPath)
     {
-        makeAbsolutePath(root, false);
-        addPathSepChar(root);
+        makeAbsolutePath(cacheRootPath, false);
+        addPathSepChar(cacheRootPath);
     }
 
     virtual IEclCachedDefinition * createDefinition(const char * eclpath) override;
 
 private:
-    StringBuffer root;
+    StringBuffer cacheRootPath;
 };
 
 
 IEclCachedDefinition * EclFileCachedDefinitionCollection::createDefinition(const char * eclpath)
 {
-    StringBuffer filename(root);
+    StringBuffer filename(cacheRootPath);
     convertSelectsToPath(filename, eclpath);
     filename.append(".cache");
 
     Owned<IFile> file = createIFile(filename);
-    Owned<IPropertyTree> root;
+    Owned<IPropertyTree> cacheTree;
     if (file->exists())
     {
         try
         {
-            root.setown(createPTree(*file));
+            cacheTree.setown(createPTree(*file));
         }
         catch (IException * e)
         {
@@ -313,13 +313,13 @@ IEclCachedDefinition * EclFileCachedDefinitionCollection::createDefinition(const
     }
 
     Owned<IEclSource> definition = repository->getSource(eclpath);
-    return new EclFileCachedDefinition(this, definition, root, file);
+    return new EclFileCachedDefinition(this, definition, cacheTree, file);
 }
 
 
-extern HQL_API IEclCachedDefinitionCollection * createEclFileCachedDefinitionCollection(IEclRepository * repository, const char * root)
+extern HQL_API IEclCachedDefinitionCollection * createEclFileCachedDefinitionCollection(IEclRepository * repository, const char * _cacheRootPath)
 {
-    return new EclFileCachedDefinitionCollection(repository, root);
+    return new EclFileCachedDefinitionCollection(repository, _cacheRootPath);
 }
 
 

@@ -2162,9 +2162,19 @@ void HqlCppTranslator::ensureDatasetFormat(BuildCtx & ctx, ITypeInfo * type, CHq
             OwnedITypeInfo streamedType = setStreamedAttr(type, true);
             OwnedHqlExpr call = bindFunctionCall(createRowStreamId, args, streamedType);
             buildTempExpr(ctx, call, tgt);
-            return;
         }
-        break;
+        return;
+    }
+
+    if (hasStreamedModifier(tgtType) && (format != FormatNatural))
+    {
+        OwnedHqlExpr serializedExpr = tgt.getTranslatedExpr();
+        buildTempExpr(ctx, serializedExpr, tgt, format);
+        tgtType = tgt.queryType();
+    }
+
+    switch (format)
+    {
     case FormatBlockedDataset:
         if (isArrayRowset(tgtType))
         {
@@ -2795,6 +2805,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
         case no_translated:
         case no_null:
         case no_id2blob:
+            if (!hasStreamedModifier(exprType))
             {
                 IIdAtom * func = NULL;
                 if (!isArrayRowset(to))
@@ -2843,6 +2854,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
                     return;
                 }
             }
+            break;
         }
     }
 

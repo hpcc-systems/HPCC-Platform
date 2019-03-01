@@ -784,54 +784,6 @@ HqlExprAssociation * BuildCtx::queryFirstAssociation(AssocKind searchKind)
 }
 
 
-//Search for an association, but don't allow it to be conditional, or be hidden by the definition of a cursor.
-HqlExprAssociation * BuildCtx::queryFirstCommonAssociation(AssocKind searchKind)
-{
-    HqlStmts * searchStmts = curStmts;
-    unsigned searchMask = searchKind|AssocCursor;
-
-    // search all statements in the tree before this one, to see
-    // if an expression already exists...  If so return the target
-    // of the assignment.
-    for (;;)
-    {
-        if (searchStmts->associationMask & searchMask)
-        {
-            CIArray & defs = searchStmts->defs;
-            ForEachItemInRev(idx, defs)
-            {
-                HqlExprAssociation & cur = (HqlExprAssociation &)defs.item(idx);
-                AssocKind kind = cur.getKind();
-                if (kind == searchKind)
-                    return &cur;
-                if (kind == AssocCursor)
-                    return NULL;
-            }
-        }
-
-        HqlStmt * limitStmt = searchStmts->queryStmt();
-        if (!limitStmt)
-            break;
-        switch (limitStmt->getStmt())
-        {
-        //case quote_compound_stmt:
-        //case quote_compoundopt_stmt,
-        case filter_stmt:
-        case label_stmt:
-        case switch_stmt:
-        case case_stmt:
-        case default_stmt:
-        case break_stmt:
-        case continue_stmt:
-            return NULL;
-        }
-
-        searchStmts = limitStmt->queryContainer();
-    }
-    return NULL;
-}
-
-
 void BuildCtx::walkAssociations(AssocKind searchMask, IAssociationVisitor & visitor)
 {
     HqlStmts * searchStmts = curStmts;

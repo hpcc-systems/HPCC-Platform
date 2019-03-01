@@ -18,13 +18,9 @@
 #ifndef _ESPCACHE_IPP__
 #define _ESPCACHE_IPP__
 
-#include "esp.hpp"
+#include "esphttp.hpp"
 
-#ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl DECL_EXPORT
-#else
-    #define esp_http_decl DECL_IMPORT
-#endif
+#include "esp.hpp"
 
 enum ESPCacheResult
 {
@@ -41,4 +37,5 @@ interface IEspCache : extends IInterface
 };
 
 extern esp_http_decl IEspCache* createESPCache(const char* setting);
+
 #endif

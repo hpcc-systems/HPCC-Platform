@@ -1463,7 +1463,7 @@ protected:
         b.append("PROXY"); // MORE - a better log prefix might be good...
         request.serialize(b);
 
-        Owned<IRowManager> rowManager = roxiemem::createRowManager(1, NULL, *logctx, NULL);
+        Owned<IRowManager> rowManager = roxiemem::createRowManager(1, NULL, *logctx, NULL, false);
         Owned<IMessageCollator> mc = ROQ->queryReceiveManager()->createMessageCollator(rowManager, ruid);
 
         Owned<IRoxieQueryPacket> packet = createRoxiePacket(b);

@@ -152,10 +152,12 @@ define([
         },
 
        _onCloseFilePermissions: function () {
-        this.filePermissionDialog.hide();
-       },
+            this.filePermissionDialog.hide();
+            this.nameSelect.reset();
+            this.usersSelect.set("value","");
+            this.groupsSelect.set("value","");
+        },
         _onCheckFilePermissions: function () {
-            var context = this;
             this.filePermissionDialog.show();
         },
         _onCheckFileSubmit: function () {
@@ -481,6 +483,18 @@ define([
             this.filter.on("apply", function (evt) {
                 context.refreshHRef();
                 context.refreshUsersGrid();
+            });
+
+            this.filePermissionDialog.on("cancel", function(evt){
+                context._onCloseFilePermissions();
+            });
+
+            this.groupsSelect.on("click", function(evt){
+                context.usersSelect.set("value", "");
+            });
+
+            this.usersSelect.on("click", function(evt){
+                context.groupsSelect.set("value", "");
             });
 
             WsAccount.MyAccount({

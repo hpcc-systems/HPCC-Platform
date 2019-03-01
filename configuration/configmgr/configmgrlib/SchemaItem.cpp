@@ -21,6 +21,7 @@
 #include "SchemaTypeIntegerLimits.hpp"
 #include <algorithm>
 #include "Utils.hpp"
+#include "EnvironmentNode.hpp"
 
 
 SchemaItem::SchemaItem(const std::string &name, const std::string &className, const std::shared_ptr<SchemaItem> &pParent) :
@@ -34,6 +35,14 @@ SchemaItem::SchemaItem(const std::string &name, const std::string &className, co
     m_properties["name"] = name;
     m_properties["displayName"] = name;
     m_properties["className"] = className;
+
+    //
+    // If this is a default schema item, allow any number of them
+    if (className == "default")
+    {
+        m_minInstances = 0;
+        m_maxInstances = UINT_MAX;
+    }
 
     //
     // If this is a root node (no parent), then do some additional init
@@ -474,9 +483,9 @@ std::shared_ptr<SchemaItem> SchemaItem::getSchemaRoot()
 void SchemaItem::getPath(std::string &path) const
 {
     path = getProperty("name") + path;
+    path = "/" + path;
     if (!m_pParent.expired())
     {
-        path = "/" + path;
         m_pParent.lock()->getPath(path);
     }
 }
@@ -645,4 +654,91 @@ void SchemaItem::processEvent(const std::string &eventType, const std::shared_pt
 void SchemaItem::setRequiredInstanceComponents(const std::string list)
 {
     m_requiredInstanceComponents = splitString(list, "|");
+}
+
+
+void SchemaItem::validate(Status &status, bool includeChildren, bool includeHiddenNodes) const
+{
+    //
+    // If the schema is not hiding the node or we want hidden nodes, validate it
+    if (!isHidden() || includeHiddenNodes)
+    {
+        //
+        // Check the number of environment nodes against the allowed min/max range. Note that since the schema does not
+        // maintain a parent child relationship like the environment, the environment nodes for this schema item need to
+        // be separated by each environment node's parent. Then the number of nodes, by parent, is compared agains the
+        // allowed min/max range
+        std::map<std::string, std::vector<std::shared_ptr<EnvironmentNode>>> envNodesByParent;
+
+        //
+        // Fill in the nodes by parent so that we know how many of this schema item are under each parent. Note some will
+        // be 0 and this needs to be known in case the min number is not 0. If there is not parent for this item, then we
+        // are at the root and no check is necessary (expired check OK since the schema is static once loaded)
+        if (!m_pParent.expired())
+        {
+            auto pParentItem = m_pParent.lock();  // also, schema items are not deleted, so this will always be good
+            for (auto &pParentWeakEnvNode: pParentItem->m_envNodes)
+            {
+                std::shared_ptr<EnvironmentNode> pParentEnvNode = pParentWeakEnvNode.lock();
+                if (pParentEnvNode)
+                {
+                    envNodesByParent[pParentEnvNode->getId()] = std::vector<std::shared_ptr<EnvironmentNode>>();
+                }
+            }
+        }
+
+        //
+        // Now build the vector per parent node ID
+        for (auto &pWeakEnvNode: m_envNodes)
+        {
+            std::shared_ptr<EnvironmentNode> pEnvNode = pWeakEnvNode.lock();
+            if (pEnvNode)
+            {
+                std::shared_ptr<EnvironmentNode> pParentEnvNode = pEnvNode->getParent();
+                if (pParentEnvNode)
+                {
+                    envNodesByParent[pParentEnvNode->getId()].emplace_back(pEnvNode);
+                }
+            }
+        }
+
+        //
+        // Now validate the count of nodes
+        for (auto &envNodes: envNodesByParent)
+        {
+            if (envNodes.second.size() < m_minInstances || envNodes.second.size() > m_maxInstances)
+            {
+                std::string path;
+                getPath(path);
+                std::string msg;
+                msg = "The number of " + path + " nodes (" + std::to_string(envNodes.second.size()) +
+                      ") is outside the range of " + std::to_string(m_minInstances) +
+                      " to " + std::to_string(m_maxInstances);
+                std::string nodeId = !envNodes.second.empty() ? envNodes.second[0]->getId() : "";
+                status.addMsg(statusMsg::error, nodeId, "", msg);
+            }
+        }
+
+        //
+        // Now validate each environment node (at this time go ahead and reset the member variable of weak pointers as well
+        // to get rid of any stale values)
+        for (auto &pWeakEnvNode: m_envNodes)
+        {
+            std::shared_ptr<EnvironmentNode> pEnvNode = pWeakEnvNode.lock();
+            if (pEnvNode)
+            {
+                pEnvNode->validate(status);
+            }
+        }
+
+        //
+        // Validate children, if so indicated
+        if (includeChildren)
+        {
+            for (auto &pSchemaChild: m_children)
+            {
+                pSchemaChild->validate(status, includeChildren, includeHiddenNodes);
+            }
+        }
+    }
 }

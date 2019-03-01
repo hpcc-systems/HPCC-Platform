@@ -1080,14 +1080,6 @@ bool HqlParseContext::createCache(const char * simplifiedEcl, bool isMacro)
     if (!baseFilename)
         return false;
 
-    // This is actually checked in parseAttribute - consider removing
-    if (!regenerateCache)
-    {
-        Owned<IEclCachedDefinition> cached = cache->getDefinition(fullName);
-        if (cached->isUpToDate(optionHash))
-            return false;
-    }
-
     if (!recursiveCreateDirectoryForFile(baseFilename))
         return false;
     StringBuffer filename(baseFilename);
@@ -12684,8 +12676,10 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
             type = LINK(fieldType);
             break;
         }
-    case no_embedbody:
     case no_id2blob:
+        assertex(!recordRequiresLinkCount(&args.item(1)));
+        // fallthrough
+    case no_embedbody:
     case no_temprow:
     case no_projectrow:         // arg(1) is actually a transform
         {

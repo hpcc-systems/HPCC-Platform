@@ -95,6 +95,9 @@
                     <xs:attribute name="defaultSLAPriorityTimeWarning" type="xs:nonNegativeInteger"
                                   hpcc:displayName="Default SLA Priority Time Warning (ms)" hpcc:presetValue="5000"
                                   hpcc:tooltip="Time (ms) before generating SNMP warning for a SLA-high-priority query (if not overriden)"/>
+                    <!-- defaultStripLeadingWhitespace my present a problem as xs:boolean (as it was in the previous XSD. The previous XSD
+                         gave a default value of "1", which is NOT compliant for an xs:boolean type which expects "true" or "false". Perhaps this
+                         should be changed? Or, should we recognize "1" and "0" as allowed xs:boolean values when validating -->
                     <xs:attribute name="defaultStripLeadingWhitespace" type="xs:boolean"
                                   hpcc:displayName="Default Strip Leading Whitespace" hpcc:presetValue="true"
                                   hpcc:tooltip="Default value for stripping leading whitespace in input XML values"/>

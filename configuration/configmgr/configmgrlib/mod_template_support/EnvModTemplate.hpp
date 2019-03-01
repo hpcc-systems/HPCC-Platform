@@ -30,11 +30,12 @@
 #include "OperationFindNode.hpp"
 #include <map>
 #include <vector>
+#include "platform.h"
+#include "Cfgmgrlib.hpp"
 
 
-class EnvModTemplate
+class CFGMGRLIB_API EnvModTemplate
 {
-
     public:
 
         EnvModTemplate(EnvironmentMgr *pEnvMgr, const std::string &schemaFile);
@@ -58,7 +59,7 @@ class EnvModTemplate
         void parseOperations(const rapidjson::Value &operations);
         void parseOperation(const rapidjson::Value &operation);
         void parseOperationCommonData(const rapidjson::Value &operationData, std::shared_ptr<Operation> pOp);
-        void parseOperationFindAttributes(const rapidjson::Value &operationData, std::shared_ptr<OperationFindNode> pFindOp);
+        void parseAttribute(const rapidjson::Value &attributeData, modAttribute *pAttribute);
 
 
     protected:

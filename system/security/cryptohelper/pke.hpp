@@ -20,7 +20,7 @@
 #ifndef PKE_HPP
 #define PKE_HPP
 
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
 
 #include "cryptocommon.hpp"
 
@@ -40,8 +40,10 @@ protected:
     void loadKeyFromMem(const char *key);
     bool loadKeyFromFile(const char *keyFile);
     void finalize(RSA *rsaKey, const char *keyName);
+
 public:
     CLoadedKey() { }
+    CLoadedKey(const CLoadedKey&) = delete;
     inline EVP_PKEY *get() const           { return key; }
     inline EVP_PKEY * operator -> () const { return key; }
     inline operator EVP_PKEY *() const     { return key; }
@@ -62,7 +64,7 @@ jlib_decl size32_t privateKeyDecrypt(void *dst, size32_t dstMaxSz, size32_t inLe
 
 #else
 class CLoadedKey;
-#endif // end of #if defined(_USE_OPENSSL) && !defined(_WIN32)
+#endif // end of #if defined(_USE_OPENSSL)
 
 #endif // PKE_HPP
 

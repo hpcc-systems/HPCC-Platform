@@ -20,7 +20,7 @@
  * For now just AES.
  */
 
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
 
 #include "jliball.hpp"
 #include <openssl/pem.h>
@@ -179,5 +179,5 @@ size32_t aesDecryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const v
 
 } // end of namespace cryptohelper
 
-#endif // end of #if defined(_USE_OPENSSL) && !defined(_WIN32)
+#endif // end of #if defined(_USE_OPENSSL)
 

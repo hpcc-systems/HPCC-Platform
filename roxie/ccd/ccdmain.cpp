@@ -715,8 +715,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         logFullQueries = topology->getPropBool("@logFullQueries", false);
         debugPermitted = topology->getPropBool("@debugPermitted", true);
         blindLogging = topology->getPropBool("@blindLogging", false);
-        if (!blindLogging)
-            logExcessiveSeeks = true;
         preloadOnceData = topology->getPropBool("@preloadOnceData", true);
         reloadRetriesFailed  = topology->getPropBool("@reloadRetriesSuspended", true);
 #if defined(__linux__) && defined(SYS_ioprio_set)

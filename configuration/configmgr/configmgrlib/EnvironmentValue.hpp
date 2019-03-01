@@ -22,10 +22,11 @@
 #include "SchemaValue.hpp"
 #include "Status.hpp"
 #include "platform.h"
+#include "Cfgmgrlib.hpp"
 
 class EnvironmentNode;
 
-class DECL_EXPORT EnvironmentValue
+class CFGMGRLIB_API EnvironmentValue
 {
     public:
 

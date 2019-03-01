@@ -20,7 +20,7 @@
         xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
     <hpcc:insert hpcc:schemaPath="/Environment/Software">
-        <xs:element name="DropZone" hpcc:displayName="Drop Zones" hpcc:itemType="dropzone" maxOccurs="unbounded"
+        <xs:element name="DropZone" hpcc:displayName="Drop Zones" hpcc:itemType="DropZone" maxOccurs="unbounded"
                     hpcc:docid="dz.t1" hpcc:class="component">
             <xs:complexType>
                 <xs:sequence>

@@ -108,6 +108,15 @@ public:
     virtual const char * getXmlIteratorPath() override;
 };
 
+//A class which only implements default values for the interface
+class ECLRTL_API CHThorXmlWriteExtra : public IHThorXmlWriteExtra
+{
+    virtual const char * getXmlIteratorPath() override;
+    virtual const char * getHeader() override;
+    virtual const char * getFooter() override;
+    virtual unsigned getXmlFlags() override;
+};
+
 class ECLRTL_API CThorPipeWriteArg : public CThorSinkArgOf<IHThorPipeWriteArg>
 {
 public:
@@ -219,6 +228,7 @@ class ECLRTL_API CThorCombineGroupArg : public CThorArgOf<IHThorCombineGroupArg>
 
 class ECLRTL_API CThorRollupGroupArg : public CThorArgOf<IHThorRollupGroupArg>
 {
+    virtual bool canFilter() override;
 };
 
 class ECLRTL_API CThorRegroupArg : public CThorArgOf<IHThorRegroupArg>
@@ -462,9 +472,15 @@ class ECLRTL_API CThorKeyedJoinArg : public CThorArgOf<IHThorKeyedJoinArg>
     virtual unsigned getMatchAbortLimit() override;
     virtual void onMatchAbortLimitExceeded() override;
 
+    virtual unsigned getFetchFlags() override;
+    virtual unsigned getDiskFormatCrc() override;
+    virtual unsigned getProjectedFormatCrc() override;
+    virtual void getFileEncryptKey(size32_t & keyLen, void * & key) override;
+
     virtual unsigned getJoinLimit() override;
     virtual unsigned getKeepLimit() override;
     virtual unsigned getJoinFlags() override;
+    virtual unsigned getProjectedIndexFormatCrc() override;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) override;
 
     virtual size32_t extractFetchFields(ARowBuilder & rowBuilder, const void * _input) override;
@@ -585,6 +601,15 @@ class ECLRTL_API CThorKeyedDistributeArg : public CThorArgOf<IHThorKeyedDistribu
 
 class ECLRTL_API CThorFetchArg : public CThorArgOf<IHThorFetchArg>
 {
+    virtual unsigned getFetchFlags() override;
+    virtual unsigned getDiskFormatCrc() override;
+    virtual unsigned getProjectedFormatCrc() override;
+    virtual void getFileEncryptKey(size32_t & keyLen, void * & key) override;
+    virtual unsigned __int64 getRowLimit() override;
+    virtual void onLimitExceeded() override;
+    virtual size32_t extractJoinFields(ARowBuilder & rowBuilder, const void * _right) override;
+    virtual bool extractAllJoinFields() override;
+    virtual IOutputMetaData * queryExtractedSize() override;
 };
 
 class ECLRTL_API CThorWorkUnitWriteArg : public CThorSinkArgOf<IHThorWorkUnitWriteArg>
@@ -711,6 +736,15 @@ class ECLRTL_API CThorCsvWriteArg : public CThorSinkArgOf<IHThorCsvWriteArg>
 
 class ECLRTL_API CThorCsvFetchArg: public CThorArgOf<IHThorCsvFetchArg>
 {
+    virtual unsigned getFetchFlags() override;
+    virtual unsigned getDiskFormatCrc() override;
+    virtual unsigned getProjectedFormatCrc() override;
+    virtual void getFileEncryptKey(size32_t & keyLen, void * & key) override;
+    virtual unsigned __int64 getRowLimit() override;
+    virtual void onLimitExceeded() override;
+    virtual size32_t extractJoinFields(ARowBuilder & rowBuilder, const void * _right) override;
+    virtual bool extractAllJoinFields() override;
+    virtual IOutputMetaData * queryExtractedSize() override;
 };
 
 //-- Xml --
@@ -722,7 +756,16 @@ class ECLRTL_API CThorXmlParseArg : public CThorArgOf<IHThorXmlParseArg>
 
 class ECLRTL_API CThorXmlFetchArg : public CThorArgOf<IHThorXmlFetchArg>
 {
+    virtual unsigned getFetchFlags() override;
+    virtual unsigned getDiskFormatCrc() override;
+    virtual unsigned getProjectedFormatCrc() override;
+    virtual void getFileEncryptKey(size32_t & keyLen, void * & key) override;
     virtual bool requiresContents() override;
+    virtual unsigned __int64 getRowLimit() override;
+    virtual void onLimitExceeded() override;
+    virtual size32_t extractJoinFields(ARowBuilder & rowBuilder, const void * _right) override;
+    virtual bool extractAllJoinFields() override;
+    virtual IOutputMetaData * queryExtractedSize() override;
 };
 
 //Simple xml generation...
@@ -814,6 +857,15 @@ class ECLRTL_API CThorIndexReadArg : public CThorArgOf<IHThorIndexReadArg>
     virtual unsigned getFlags() override;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) override;
     virtual void setCallback(IThorIndexCallback * _tc) override;
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual IHThorSteppedSourceExtra *querySteppingExtra() override;
+
+    virtual unsigned __int64 getChooseNLimit() override;
+    virtual unsigned __int64 getRowLimit() override;
+    virtual void onLimitExceeded() override;
 
     virtual bool needTransform() override;
     virtual bool transformMayFilter() override;
@@ -826,7 +878,6 @@ class ECLRTL_API CThorIndexReadArg : public CThorArgOf<IHThorIndexReadArg>
 
     virtual size32_t transformOnLimitExceeded(ARowBuilder & rowBuilder) override;
     virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) override;
-    virtual IHThorSteppedSourceExtra *querySteppingExtra() override;
 
 public:
     IThorIndexCallback * fpp;
@@ -845,6 +896,17 @@ class ECLRTL_API CThorIndexNormalizeArg : public CThorArgOf<IHThorIndexNormalize
     virtual unsigned getFlags() override;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) override;
     virtual void setCallback(IThorIndexCallback * _tc) override;
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual IHThorSteppedSourceExtra *querySteppingExtra() override;
+
+    virtual unsigned __int64 getChooseNLimit() override;
+    virtual unsigned __int64 getRowLimit() override;
+    virtual void onLimitExceeded() override;
+    virtual unsigned __int64 getKeyedLimit() override;
+    virtual void onKeyedLimitExceeded() override;
 
     virtual size32_t transformOnLimitExceeded(ARowBuilder & rowBuilder) override;
     virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) override;
@@ -858,6 +920,11 @@ class ECLRTL_API CThorIndexAggregateArg : public CThorArgOf<IHThorIndexAggregate
     virtual unsigned getFlags() override;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) override;
     virtual void setCallback(IThorIndexCallback * _tc) override;
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual IHThorSteppedSourceExtra *querySteppingExtra() override;
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) override;
     virtual void processRows(ARowBuilder & rowBuilder, size32_t srcLen, const void * src) override;
 
@@ -870,13 +937,21 @@ class ECLRTL_API CThorIndexCountArg : public CThorArgOf<IHThorIndexCountArg>
     virtual unsigned getFlags() override;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) override;
     virtual void setCallback(IThorIndexCallback * _tc) override;
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual IHThorSteppedSourceExtra *querySteppingExtra() override;
 
     virtual unsigned __int64 getRowLimit() override;
     virtual void onLimitExceeded() override;
     virtual unsigned __int64 getKeyedLimit() override;
     virtual void onKeyedLimitExceeded() override;
 
+    virtual bool hasFilter() override;
+    virtual size32_t numValid(const void * src) override;
     virtual size32_t numValid(size32_t srcLen, const void * _src) override;
+    virtual unsigned __int64 getChooseNLimit() override;
 
 public:
     IThorIndexCallback * fpp;
@@ -887,6 +962,11 @@ class ECLRTL_API CThorIndexGroupAggregateArg : public CThorArgOf<IHThorIndexGrou
     virtual unsigned getFlags() override;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) override;
     virtual void setCallback(IThorIndexCallback * _tc) override;
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual IHThorSteppedSourceExtra *querySteppingExtra() override;
     virtual bool createGroupSegmentMonitors(IIndexReadContext *ctx) override;
     virtual unsigned getGroupingMaxField() override;
     virtual size32_t initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) override;
@@ -903,6 +983,16 @@ class ECLRTL_API CThorDiskReadArg : public CThorArgOf<IHThorDiskReadArg>
 {
     virtual unsigned getFlags() override;
     virtual void setCallback(IThorDiskCallback * _tc) override;
+
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
+
+    virtual unsigned __int64 getChooseNLimit() override;
+    virtual unsigned __int64 getRowLimit() override;
+    virtual void onLimitExceeded() override;
 
     virtual bool needTransform() override;
     virtual bool transformMayFilter() override;
@@ -926,6 +1016,18 @@ class ECLRTL_API CThorDiskNormalizeArg : public CThorArgOf<IHThorDiskNormalizeAr
     virtual unsigned getFlags() override;
     virtual void setCallback(IThorDiskCallback * _tc) override;
 
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
+
+    virtual unsigned __int64 getChooseNLimit() override;
+    virtual unsigned __int64 getRowLimit() override;
+    virtual void onLimitExceeded() override;
+    virtual unsigned __int64 getKeyedLimit() override;
+    virtual void onKeyedLimitExceeded() override;
+
     virtual size32_t transformOnLimitExceeded(ARowBuilder & rowBuilder) override;
     virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) override;
 
@@ -937,6 +1039,11 @@ class ECLRTL_API CThorDiskAggregateArg : public CThorArgOf<IHThorDiskAggregateAr
 {
     virtual unsigned getFlags() override;
     virtual void setCallback(IThorDiskCallback * _tc) override;
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) override;
 
 public:
@@ -947,11 +1054,19 @@ class ECLRTL_API CThorDiskCountArg : public CThorArgOf<IHThorDiskCountArg>
 {
     virtual unsigned getFlags() override;
     virtual void setCallback(IThorDiskCallback * _tc) override;
-
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual unsigned __int64 getRowLimit() override;
     virtual void onLimitExceeded() override;
     virtual unsigned __int64 getKeyedLimit() override;
     virtual void onKeyedLimitExceeded() override;
+
+    virtual bool hasFilter() override;
+    virtual size32_t numValid(const void * src) override;
+    virtual unsigned __int64 getChooseNLimit() override;
 
 public:
     IThorDiskCallback * fpp;
@@ -961,6 +1076,11 @@ class ECLRTL_API CThorDiskGroupAggregateArg : public CThorArgOf<IHThorDiskGroupA
 {
     virtual unsigned getFlags() override;
     virtual void setCallback(IThorDiskCallback * _tc) override;
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual bool createGroupSegmentMonitors(IIndexReadContext *ctx) override;
     virtual unsigned getGroupingMaxField() override;
     virtual size32_t initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) override;
@@ -980,7 +1100,11 @@ class ECLRTL_API CThorCsvReadArg: public CThorArgOf<IHThorCsvReadArg>
     virtual unsigned getDiskFormatCrc() override;   // no meaning
     virtual unsigned getProjectedFormatCrc() override;   // no meaning
     virtual void setCallback(IThorDiskCallback * _tc) override;
-
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
 public:
     IThorDiskCallback * fpp;
 };
@@ -994,7 +1118,11 @@ class ECLRTL_API CThorXmlReadArg: public CThorArgOf<IHThorXmlReadArg>
     virtual unsigned getDiskFormatCrc() override;   // no meaning
     virtual unsigned getProjectedFormatCrc() override;   // no meaning
     virtual void setCallback(IThorDiskCallback * _tc) override;
-
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
 public:
     IThorDiskCallback * fpp;
 };
@@ -1019,6 +1147,11 @@ class ECLRTL_API CThorChildGroupAggregateArg : public CThorArgOf<IHThorChildGrou
 //Normalize
 class ECLRTL_API CThorChildThroughNormalizeArg : public CThorArgOf<IHThorChildThroughNormalizeArg>
 {
+    virtual unsigned __int64 getChooseNLimit() override;
+    virtual unsigned __int64 getRowLimit() override;
+    virtual void onLimitExceeded() override;
+    virtual unsigned __int64 getKeyedLimit() override;
+    virtual void onKeyedLimitExceeded() override;
 };
 
 class ECLRTL_API CThorLoopArg : public CThorArgOf<IHThorLoopArg>

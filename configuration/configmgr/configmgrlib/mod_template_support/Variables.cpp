@@ -84,7 +84,6 @@ std::string Variables::doValueSubstitution(const std::string &value) const
     //
     // A value has the form {{name}}[{{index}}] where name and index can be simple strings and the index is optional
     // Or {{name}}.size which will return the size of the variable name (number of entries)
-    // Or name.size
     std::string varName, result = value;
     std::size_t index;
 
@@ -104,7 +103,7 @@ std::string Variables::doValueSubstitution(const std::string &value) const
 
         if (bracketStartPos != std::string::npos && sizePos != std::string::npos)
         {
-            throw TemplateException("Both [] and .size may not appear in a variable variable");
+            throw TemplateException("Both [] and .size may not appear in a variable");
         }
 
         if (bracketStartPos != std::string::npos)

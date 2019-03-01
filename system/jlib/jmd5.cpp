@@ -439,6 +439,11 @@ void md5_string(StringBuffer& inpstring, StringBuffer& outstring)
     md5_string(inpstring, inpstring.length(), outstring);
 }
 
+void md5_data(const MemoryBuffer& in, StringBuffer& outstring)
+{
+    md5_string(in.toByteArray(), in.length(), outstring);
+}
+
 /* define chunk size to use with IFileIO read. */
 #define CHUNKSIZE 0x100000
 

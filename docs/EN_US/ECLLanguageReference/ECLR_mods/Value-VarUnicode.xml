@@ -8,14 +8,14 @@
       <primary>VARUNICODE</primary>
     </indexterm><indexterm>
       <primary>VARUNICODE value type</primary>
-    </indexterm>[</emphasis><emphasis>locale</emphasis><emphasis
+    </indexterm>[</emphasis><emphasis>_locale</emphasis><emphasis
   role="bold">][</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]</emphasis></para>
 
-  <para>A UTF-16 encoded unicode character string of <emphasis>n</emphasis>
+  <para>A UTF-16 encoded Unicode character string of <emphasis>n</emphasis>
   characters, null terminated (not space-padded). The <emphasis>n
   </emphasis>may be omitted only when used as a parameter type. The optional
-  <emphasis>locale </emphasis>specifies a valid unicode locale code, as
+  <emphasis>locale </emphasis>specifies a valid Unicode locale code, as
   specified in ISO standards 639 and 3166 (not needed if LOCALE is specified
   on the RECORD structure containing the field definition).</para>
 

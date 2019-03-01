@@ -352,9 +352,9 @@ IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExp
     if (cur->hasAttribute(blobAtom))
     {
         if (cur->isDataset())
-            return createDataset(no_id2blob, LINK(physicalSelect), LINK(cur->queryRecord()));
+            return createDataset(no_id2blob, LINK(physicalSelect), getSerializedForm(cur->queryRecord(), diskAtom));
         else if (cur->isDatarow())
-            return createRow(no_id2blob, LINK(physicalSelect), LINK(cur->queryRecord()));
+            return createRow(no_id2blob, LINK(physicalSelect), getSerializedForm(cur->queryRecord(), diskAtom));
         else
             return createValue(no_id2blob, cur->getType(), LINK(physicalSelect));
     }
@@ -10471,4 +10471,75 @@ const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeIn
     return deserializer.addType(info, type);
 }
 
+extern HQL_API IHqlExpression *checkSignature(unsigned fileSize, const char *fileContents)
+{
+    Owned<IPipeProcess> pipe = createPipeProcess();
+    if (!pipe->run("gpg", "gpg --verify -", ".", true, false, true, 0, false))
+        throw makeStringException(0, "Signature could not be checked because gpg was not found");
+    pipe->write(fileSize, fileContents);
+    pipe->closeInput();
+    unsigned retcode = pipe->wait();
+
+    StringBuffer buf;
+    Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
+    readSimpleStream(buf, *pipeReader);
+    DBGLOG("GPG %d %s", retcode, buf.str());
+    if (retcode)
+    {
+        StringArray allErrs;
+        allErrs.appendList(buf, "\n");
+        ForEachItemInRev(idx, allErrs)
+        {
+            if (strlen(allErrs.item(idx)))
+                throw makeStringExceptionV(0, "gpg error: gpg returned %d: %s", retcode, allErrs.item(idx));
+        }
+        throw makeStringExceptionV(0, "gpg error: gpg returned %d", retcode);
+    }
+    else
+    {
+        const char * sigprefix = "Good signature from \"";
+        const char * const s = buf.str();
+        const char * match = strstr(s, sigprefix);
+        if (match)
+        {
+            match += strlen(sigprefix);
+            const char * const end = strchr(match, '\"');
+            if (end)
+            {
+                buf.setLength(end-s);
+                const char * sig = buf.str() + (match-s);
+                return createExprAttribute(_signed_Atom,createConstant(sig));
+            }
+        }
+        throw makeStringExceptionV(0, "gpg error: gpg response not recognised");
+    }
+}
+
+extern HQL_API StringBuffer &stripSignature(StringBuffer &out, const char *fileContents)
+{
+    assertex(startsWith(fileContents, "-----BEGIN PGP SIGNED MESSAGE-----"));
+    // Look for first blank line
+    const char *head = fileContents;
+    while ((head = strchr(head, '\n')) != nullptr)
+    {
+        head++;
+        if (*head=='\n')
+        {
+            head++;
+            break;
+        }
+        else if (*head=='\r' && head[1]=='\n')
+        {
+            head += 2;
+            break;
+        }
+    }
+    if (!head)
+        throw makeStringException(0, "End of PGP header not found");
+    // Now look for signature
+    const char *tail = strstr(head, "-----BEGIN PGP SIGNATURE-----");
+    if (!tail)
+        throw makeStringException(0, "PGP signature not found");
+    return out.append(tail-head, head);
+}
 

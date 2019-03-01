@@ -1938,7 +1938,7 @@ IActivityReplicatedFile *createEnsurePrimaryPartFile(const char *logicalFilename
 ///////////////
 
 class CFileCache;
-class CLazyFileIO : public CInterface
+class CLazyFileIO : public CSimpleInterfaceOf<IFileIO>
 {
     CFileCache &cache;
     Owned<IActivityReplicatedFile> repFile;
@@ -1948,6 +1948,7 @@ class CLazyFileIO : public CInterface
     CRuntimeStatisticCollection fileStats;
     CriticalSection crit;
     Owned<IFileIO> iFileIO; // real IFileIO
+    CActivityBase *activity = nullptr;
 
     IFileIO *getFileIO()
     {
@@ -1960,24 +1961,40 @@ class CLazyFileIO : public CInterface
         return iFileIO.getClear();
     }
 public:
-    IMPLEMENT_IINTERFACE;
-
     CLazyFileIO(CFileCache &_cache, const char *_filename, IActivityReplicatedFile *_repFile, bool _compressed, IExpander *_expander)
         : cache(_cache), filename(_filename), repFile(_repFile), compressed(_compressed), expander(_expander), fileStats(diskLocalStatistics)
     {
     }
+    void setActivity(CActivityBase *_activity)
+    {
+        activity = _activity;
+    }
     IFileIO *getOpenFileIO(CActivityBase &activity);
     const char *queryFindString() const { return filename.get(); } // for string HT
-    void close()
+// IFileIO impl.
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override
     {
+        Owned<IFileIO> iFileIO = getOpenFileIO(*activity);
+        return iFileIO->read(pos, len, data);
+    }
+    virtual offset_t size() override
+    {
+        Owned<IFileIO> iFileIO = getOpenFileIO(*activity);
+        return iFileIO->size();
+    }
+    virtual void close() override
+    {
+        /* NB: clears CLazyFileIO's ownership of the underlying IFileIO, there will be disposed on exit of this function if no other references,
+         * and as a result will close the underlying file handle or remote connection.
+         * There can be concurrent threads and theoretically other threads could be in some of the other CLazyFileIO methods and still have
+         * references to the underlying iFileIO, in which case the last thread referencing it will release, dispose and close handle.
+         * But given that we are in probably here via purgeOldest(), then it is very unlikely that there is an active read at this time.
+         */
         Owned<IFileIO> openiFileIO = getClearFileIO();
         if (openiFileIO)
-        {
-            openiFileIO->close();
             mergeStats(fileStats, openiFileIO);
-        }
     }
-    unsigned __int64 getStatistic(StatisticKind kind)
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
         switch (kind)
         {
@@ -1991,99 +2008,39 @@ public:
         unsigned __int64 openValue = openiFileIO ? openiFileIO->getStatistic(kind) : 0;
         return openValue + fileStats.getStatisticValue(kind);
     }
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override
+    {
+        throwUnexpectedX("CDelayedFileWrapper::write() called for a cached IFileIO object");
+    }
+    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override
+    {
+        throwUnexpectedX("CDelayedFileWrapper::appendFile() called for a cached IFileIO object");
+    }
+    virtual void setSize(offset_t size) override
+    {
+        throwUnexpectedX("CDelayedFileWrapper::setSize() called for a cached IFileIO object");
+    }
+    virtual void flush() override
+    {
+        throwUnexpectedX("CDelayedFileWrapper::flush() called for a cached IFileIO object");
+    }
 };
 
-class CFileCache : public CInterface, implements IThorFileCache
+class CFileCache : public CSimpleInterfaceOf<IThorFileCache>
 {
     OwningStringSuperHashTableOf<CLazyFileIO> files;
-    CICopyArrayOf<CLazyFileIO> openFiles;
+    ICopyArrayOf<CLazyFileIO> openFiles;
     unsigned limit, purgeN;
     CriticalSection crit;
 
-    class CDelayedFileWapper : public CSimpleInterfaceOf<IDelayedFile>, implements IFileIO
-    {
-        typedef CSimpleInterfaceOf<IDelayedFile> PARENT;
-
-        CFileCache &cache;
-        CActivityBase &activity;
-        Linked<CLazyFileIO> lFile;
-        CriticalSection crit;
-
-    public:
-        IMPLEMENT_IINTERFACE_USING(PARENT);
-
-        CDelayedFileWapper(CFileCache &_cache, CActivityBase &_activity, CLazyFileIO &_lFile) : cache(_cache), activity(_activity), lFile(&_lFile) { }
-
-        ~CDelayedFileWapper()
-        {
-            cache.remove(lFile->queryFindString());
-        }
-        // IDelayedFile impl.
-        virtual IMemoryMappedFile *getMappedFile() override { return nullptr; }
-        virtual IFileIO *getFileIO() override
-        {
-            // NB: lFile needs an activity to open fileIO
-            return lFile->getOpenFileIO(activity);
-        }
-        // IFileIO impl.
-        virtual size32_t read(offset_t pos, size32_t len, void * data) override
-        {
-            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
-            return iFileIO->read(pos, len, data);
-        }
-        virtual offset_t size() override
-        {
-            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
-            return iFileIO->size();
-        }
-        virtual size32_t write(offset_t pos, size32_t len, const void * data) override
-        {
-            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
-            return iFileIO->write(pos, len, data);
-        }
-        virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override
-        {
-            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
-            return iFileIO->appendFile(file, pos, len);
-        }
-        virtual void setSize(offset_t size) override
-        {
-            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
-            iFileIO->setSize(size);
-        }
-        virtual void flush() override
-        {
-            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
-            iFileIO->flush();
-        }
-        virtual void close() override
-        {
-            lFile->close();
-        }
-        virtual unsigned __int64 getStatistic(StatisticKind kind) override
-        {
-            return lFile->getStatistic(kind);
-        }
-    };
-
     void purgeOldest()
     {
+        // NB: called in crit
         // will be ordered oldest first.
-        unsigned count = 0;
-        CICopyArrayOf<CLazyFileIO> toClose;
-        ForEachItemIn(o, openFiles)
-        {
-            CLazyFileIO &lFile = openFiles.item(o);
-            toClose.append(lFile);
-            if (++count>=purgeN) // crude for now, just remove oldest N
-                break;
-        }
-        ForEachItemIn(r, toClose)
-        {
-            CLazyFileIO &lFile = toClose.item(r);
-            lFile.close();
-            openFiles.zap(lFile);
-        }
+        dbgassertex(purgeN >= openFiles.ordinality()); // purgeOldest() should not be called unless >= limit, and purgeN always >= limit.
+        for (unsigned i=0; i<purgeN; i++)
+            openFiles.item(i).close();
+        openFiles.removen(0, purgeN);
     }
     bool _remove(const char *filename)
     {
@@ -2094,8 +2051,6 @@ class CFileCache : public CInterface, implements IThorFileCache
         return true;
     }
 public:
-    IMPLEMENT_IINTERFACE;
-
     CFileCache(unsigned _limit) : limit(_limit)
     {
         assertex(limit);
@@ -2103,7 +2058,6 @@ public:
         if (purgeN > limit) purgeN=limit; // why would it be, but JIC.
         PROGLOG("FileCache: limit = %d, purgeN = %d", limit, purgeN);
     }
-
     void opening(CLazyFileIO &lFile)
     {
         CriticalBlock b(crit);
@@ -2112,34 +2066,46 @@ public:
             purgeOldest(); // will close purgeN
             assertex(openFiles.ordinality() < limit);
         }
+        // NB: moves to end if already in openFiles, meaning head of openFiles are oldest used
         openFiles.zap(lFile);
         openFiles.append(lFile);
     }
-
 // IThorFileCache impl.
-    virtual bool remove(const char *filename)
+    virtual bool remove(const char *filename) override
     {
         CriticalBlock b(crit);
         return _remove(filename);
     }
-    virtual IDelayedFile *lookup(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander)
+    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander) override
     {
         StringBuffer filename;
         RemoteFilename rfn;
         partDesc.getFilename(0, rfn);
         rfn.getPath(filename);
         CriticalBlock b(crit);
-        Linked<CLazyFileIO> file = files.find(filename.str());
+        CLazyFileIO *file = files.find(filename.str());
         if (!file)
         {
             Owned<IActivityReplicatedFile> repFile = createEnsurePrimaryPartFile(logicalFilename, &partDesc);
             bool compressed = partDesc.queryOwner().isCompressed();
-            file.setown(new CLazyFileIO(*this, filename.str(), repFile.getClear(), compressed, expander));
+            file = new CLazyFileIO(*this, filename.str(), repFile.getClear(), compressed, expander);
+            files.replace(* file); // NB: files HT owns
+
+            /* NB: there will be 1 CLazyFileIO per physical file part name
+             * They will be linked by multiple lookups
+             *
+             * When the file cache hits the limit, it will calll CLazyFileIO.close()
+             * This does not actually close the file, but releases CLazyFileIO's underlying real IFileIO
+             * Each active CLazyFileIO file op. has a link to the underlying IFileIO.
+             * Meaning, that only when there are no active ops. and close() has exited, is the underlying
+             * real IFileIO actually freed and the file handle closed.
+             */
         }
-        files.replace(*LINK(file));
-        return new CDelayedFileWapper(*this, activity, *file); // to avoid circular dependency and allow destruction to remove from cache
+        file->setActivity(&activity); // an activity needed by IActivityReplicatedFile, mainly for logging purposes.
+        return LINK(file);
     }
 };
+
 ////
 IFileIO *CLazyFileIO::getOpenFileIO(CActivityBase &activity)
 {
@@ -2163,6 +2129,35 @@ IFileIO *CLazyFileIO::getOpenFileIO(CActivityBase &activity)
 IThorFileCache *createFileCache(unsigned limit)
 {
     return new CFileCache(limit);
+}
+
+IDelayedFile *createDelayedFile(IFileIO *iFileIO)
+{
+    /* NB: all this serves to do, is to create IDelayedFile shell
+     * It does not implement the delay itself, the CLazyFileIO it links to does that.
+     * However a IDelayedFile is expected/used by some jhtree mechanism, as a further
+     * delayed route before invoking key loads.
+     */
+
+    class CDelayedFileWrapper : public CSimpleInterfaceOf<IDelayedFile>
+    {
+        Linked<IFileIO> lFile;
+
+    public:
+        CDelayedFileWrapper(IFileIO *_lFile) : lFile(_lFile) { }
+        ~CDelayedFileWrapper()
+        {
+        }
+        // IDelayedFile impl.
+        virtual IMemoryMappedFile *getMappedFile() override { return nullptr; }
+        virtual IFileIO *getFileIO() override
+        {
+            return lFile.getLink();
+        }
+    };
+
+    // NB: CLazyFileIO can't implement IDelayedFile, purely because it's method would cause circular links
+    return new CDelayedFileWrapper(iFileIO);
 }
 
 /*

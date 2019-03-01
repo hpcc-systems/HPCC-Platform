@@ -17,26 +17,39 @@
 
 #include "SchemaTypeStringLimits.hpp"
 #include "EnvironmentValue.hpp"
-#include <boost/regex.hpp>
+#include <regex>
+
+#if __cplusplus >= 201103L &&                             \
+    (!defined(__GLIBCXX__) || (__cplusplus >= 201402L) || \
+        (defined(_GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT) || \
+         defined(_GLIBCXX_REGEX_STATE_LIMIT)           || \
+             (defined(_GLIBCXX_RELEASE)                && \
+             _GLIBCXX_RELEASE > 4)))
+#define HAVE_WORKING_REGEX 1
+#else
+#define HAVE_WORKING_REGEX 0
+#endif
+
 
 std::string SchemaTypeStringLimits::getLimitString() const
 {
-
-    return "String limit info";
+    return "";
 }
 
 
 bool SchemaTypeStringLimits::doValueTest(const std::string &testValue) const
 {
     bool isValid;
-    int len = testValue.length();
+    size_t len = testValue.length();
     isValid = len >= m_minLength && len <= m_maxLength;
 
     // test patterns
-    for (auto it = m_patterns.begin(); it != m_patterns.end() && isValid; ++it)
+#if HAVE_WORKING_REGEX
+    for (auto pattern = m_patterns.begin(); isValid && pattern != m_patterns.end(); ++pattern)
     {
-        const boost::regex expr(*it);
-        isValid = boost::regex_match(testValue, expr);
+        std::regex r(pattern->c_str());
+        isValid = std::regex_match(testValue.c_str(), r);
     }
+#endif
     return isValid;
 }

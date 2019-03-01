@@ -413,8 +413,6 @@ define([
                         PercentDone: { label: this.i18n.PctComplete, width: 90, sortable: false }
                     }
                 }, this.id + "WorkunitsGrid");
-
-                var context = this;
                 this.workunitsGrid.on(".dgrid-row-url:click", function (evt) {
                     if (context._onRowDblClick) {
                         var item = context.workunitsGrid.row(evt).data;
@@ -445,6 +443,7 @@ define([
                         context.downloadToList.set("disabled", true);
                     }
                 });
+                ESPUtil.goToPageUserPreference(this.workunitsGrid, "GetDFUWorkunitsWidget");
                 this.workunitsGrid.startup();
             },
 

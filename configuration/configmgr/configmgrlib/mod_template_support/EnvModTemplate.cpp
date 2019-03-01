@@ -137,17 +137,28 @@ void EnvModTemplate::parseTemplate()
     //
     // Process the defined template sections. If any errors are found, thrown an exception
 
-    //
-    // Inputs
-    if (m_pTemplate->HasMember("variables"))
+    try
     {
-        const rapidjson::Value &variables = (*m_pTemplate)["variables"];
-        parseVariables(variables);
-    }
+        //
+        // Inputs
+        if (m_pTemplate->HasMember("variables"))
+        {
+            const rapidjson::Value &variables = (*m_pTemplate)["variables"];
+            parseVariables(variables);
+        }
 
-    //
-    // Operations (a required section)
-    parseOperations((*m_pTemplate)["operations"]);
+        //
+        // Operations (a required section)
+        parseOperations((*m_pTemplate)["operations"]);
+    }
+    catch (TemplateException &te)
+    {
+        throw;  // just rethrow
+    }
+    catch (...)
+    {
+        throw TemplateException("An exception has occured while parsing the input template", false);
+    }
 }
 
 
@@ -180,7 +191,10 @@ void EnvModTemplate::parseVariable(const rapidjson::Value &varValue)
         pVariable->m_userPrompt = "Input value for " + varName;
 
     it = varValue.FindMember("description");
-    if (it != varValue.MemberEnd()) pVariable->m_description = it->value.GetString();
+    if (it != varValue.MemberEnd())
+    {
+        pVariable->m_description = it->value.GetString();
+    }
 
     it = varValue.FindMember("values");
     if (it != varValue.MemberEnd())
@@ -192,10 +206,16 @@ void EnvModTemplate::parseVariable(const rapidjson::Value &varValue)
     }
 
     it = varValue.FindMember("prepared_value");
-    if (it != varValue.MemberEnd()) pVariable->m_preparedValue = trim(it->value.GetString());
+    if (it != varValue.MemberEnd())
+    {
+        pVariable->m_preparedValue = trim(it->value.GetString());
+    }
 
     it = varValue.FindMember("user_input");
-    if (it != varValue.MemberEnd()) pVariable->m_userInput = it->value.GetBool();
+    if (it != varValue.MemberEnd())
+    {
+        pVariable->m_userInput = it->value.GetBool();
+    }
 
     m_variables.add(pVariable);
 }
@@ -280,19 +300,19 @@ void EnvModTemplate::parseOperation(const rapidjson::Value &operation)
     std::shared_ptr<Operation> pOp;
     std::string action(operation.FindMember("action")->value.GetString());
 
-    if (action == "create_node")
+    if (action == "create")
     {
         pOp = std::make_shared<OperationCreateNode>();
     }
-    else if (action == "modify_node")
+    else if (action == "modify")
     {
         pOp = std::make_shared<OperationModifyNode>();
     }
-    else if (action == "find_node")
+    else if (action == "find")
     {
         pOp = std::make_shared<OperationFindNode>();
     }
-    else if (action == "delete_node")
+    else if (action == "delete_")
     {
         pOp = std::make_shared<OperationDeleteNode>();
     }
@@ -303,14 +323,14 @@ void EnvModTemplate::parseOperation(const rapidjson::Value &operation)
 
     //
     // Get the parent based on presence of key (schema validates presence of one of these)
-    auto it = operation.FindMember("parent_path");
+    auto it = operation.FindMember("target_path");
     if (it != operation.MemberEnd())
     {
         pOp->m_path = trim(it->value.GetString());
     }
     else
     {
-        it = operation.FindMember("parent_nodeid");
+        it = operation.FindMember("target_nodeid");
         pOp->m_parentNodeId = trim(it->value.GetString());
     }
 
@@ -323,18 +343,24 @@ void EnvModTemplate::parseOperation(const rapidjson::Value &operation)
 
         //
         // Parse specific operation type values
-        if (action == "create_node")
+        if (action == "create")
         {
             std::shared_ptr<OperationCreateNode> pCreateOp = std::dynamic_pointer_cast<OperationCreateNode>(pOp);
             pCreateOp->m_nodeType = dataIt->value.FindMember("node_type")->value.GetString();
         }
-        else if (action == "find_node")
+        else if (action == "find")
         {
+            std::shared_ptr<OperationFindNode> pFindOp = std::dynamic_pointer_cast<OperationFindNode>(pOp);
             it = dataIt->value.FindMember("create_if_not_found");
             if (it != dataIt->value.MemberEnd())
             {
-                std::shared_ptr<OperationFindNode> pFindOp = std::dynamic_pointer_cast<OperationFindNode>(pOp);
                 pFindOp->m_createIfNotFound = it->value.GetBool();
+            }
+
+            it = dataIt->value.FindMember("node_type");
+            if (it != dataIt->value.MemberEnd())
+            {
+                pFindOp->m_nodeType = dataIt->value.FindMember("node_type")->value.GetString();
             }
         }
     }
@@ -363,16 +389,26 @@ void EnvModTemplate::parseOperationCommonData(const rapidjson::Value &operationD
 
     //
     // Save node id
-    rapidjson::Value::ConstMemberIterator saveInfoIt = dataObj.FindMember("save_nodeid");
+    rapidjson::Value::ConstMemberIterator saveInfoIt = dataObj.FindMember("save");
     if (saveInfoIt != dataObj.MemberEnd())
     {
-        pOp->m_saveNodeIdName = saveInfoIt->value.GetObject().FindMember("save_name")->value.GetString();
+        pOp->m_saveNodeIdName = saveInfoIt->value.GetObject().FindMember("name")->value.GetString();
         it = saveInfoIt->value.GetObject().FindMember("duplicate_ok");
         if (it != saveInfoIt->value.MemberEnd()) pOp->m_duplicateSaveNodeIdInputOk = it->value.GetBool();
     }
 
     //
-    // Get the attributes (if any)
+    // Node value?
+    rapidjson::Value::ConstMemberIterator nodeValueIt = dataObj.FindMember("node_value");
+    if (nodeValueIt != dataObj.MemberEnd())
+    {
+        parseAttribute(nodeValueIt->value, &pOp->m_nodeValue);
+        pOp->m_nodeValueValid = true;
+    }
+
+    //
+    // Get the attributes. Note that the allowed key/value pairs for each entry in this array vary by operation type.
+    // The schema validates that the member objects are correct based on the operation type.
     it = dataObj.FindMember("attributes");
     if (it != dataObj.MemberEnd())
     {
@@ -381,54 +417,7 @@ void EnvModTemplate::parseOperationCommonData(const rapidjson::Value &operationD
         for (auto &attr: it->value.GetArray())
         {
             modAttribute newAttribute;
-            //
-            // Get the attribute name or set of names. One shall be present based on the schema and operation type
-            auto valueIt = attr.FindMember("name");
-            if (valueIt != attr.MemberEnd())
-            {
-                newAttribute.addName(trim(valueIt->value.GetString()));
-            }
-            else
-            {
-                valueIt = attr.FindMember("first_of");
-                if (valueIt != attr.MemberEnd())
-                {
-                    for (auto &nameIt: valueIt->value.GetArray())
-                    {
-                        newAttribute.addName(trim(nameIt.GetString()));
-                    }
-                }
-            }
-
-            //
-            // Remaining attribute values and settings
-            valueIt = attr.FindMember("value");
-            if (valueIt != attr.MemberEnd())
-            {
-                newAttribute.value = trim(valueIt->value.GetString());
-            }
-
-            attrValueIt = attr.FindMember("start_index");
-            if (attrValueIt != attr.MemberEnd()) newAttribute.startIndex = trim(attrValueIt->value.GetString());
-
-            attrValueIt = attr.FindMember("do_not_set");
-            if (attrValueIt != attr.MemberEnd()) newAttribute.doNotSet = attrValueIt->value.GetBool();
-
-            saveInfoIt = attr.FindMember("save_value");
-            if (saveInfoIt != attr.MemberEnd())
-            {
-                newAttribute.saveValue = saveInfoIt->value.GetObject().FindMember("save_name")->value.GetString();
-                attrValueIt = saveInfoIt->value.GetObject().FindMember("duplicate_ok");
-                if (attrValueIt != saveInfoIt->value.MemberEnd())
-                    newAttribute.duplicateSaveValueOk = attrValueIt->value.GetBool();
-            }
-
-            attrValueIt = attr.FindMember("error_if_not_found");
-            if (attrValueIt != attr.MemberEnd()) newAttribute.errorIfNotFound = attrValueIt->value.GetBool();
-
-            attrValueIt = attr.FindMember("error_if_empty");
-            if (attrValueIt != attr.MemberEnd()) newAttribute.errorIfEmpty = attrValueIt->value.GetBool();
-
+            parseAttribute(attr, &newAttribute);
             pOp->addAttribute(newAttribute);
         }
     }
@@ -441,6 +430,70 @@ void EnvModTemplate::parseOperationCommonData(const rapidjson::Value &operationD
         pOp->m_throwOnEmpty = it->value.GetBool();
 }
 
+
+void EnvModTemplate::parseAttribute(const rapidjson::Value &attributeValue, modAttribute *pAttribute)
+{
+    auto attributeData = attributeValue.GetObject();
+    //
+    // Get the attribute name or set of names. One shall be present based on the schema and operation type
+    auto valueIt = attributeData.FindMember("name");
+    if (valueIt != attributeData.MemberEnd())
+    {
+        pAttribute->addName(trim(valueIt->value.GetString()));
+    }
+    else
+    {
+        valueIt = attributeData.FindMember("first_of");
+        if (valueIt != attributeData.MemberEnd())
+        {
+            for (auto &nameIt: valueIt->value.GetArray())
+            {
+                pAttribute->addName(trim(nameIt.GetString()));
+            }
+        }
+    }
+
+    //
+    // Remaining attribute values and settings
+    valueIt = attributeData.FindMember("value");
+    if (valueIt != attributeData.MemberEnd())
+    {
+        pAttribute->value = trim(valueIt->value.GetString());
+    }
+
+    auto attrValueIt = attributeData.FindMember("start_index");
+    if (attrValueIt != attributeData.MemberEnd())
+    {
+        pAttribute->startIndex = trim(attrValueIt->value.GetString());
+    }
+
+    attrValueIt = attributeData.FindMember("do_not_set");
+    if (attrValueIt != attributeData.MemberEnd())
+    {
+        pAttribute->doNotSet = attrValueIt->value.GetBool();
+    }
+
+    auto saveInfoIt = attributeData.FindMember("save");
+    if (saveInfoIt != attributeData.MemberEnd())
+    {
+        pAttribute->saveVariableName = saveInfoIt->value.GetObject().FindMember("save")->value.GetString();
+        attrValueIt = saveInfoIt->value.GetObject().FindMember("duplicate_ok");
+        if (attrValueIt != saveInfoIt->value.MemberEnd())
+            pAttribute->duplicateSaveValueOk = attrValueIt->value.GetBool();
+    }
+
+    attrValueIt = attributeData.FindMember("error_if_not_found");
+    if (attrValueIt != attributeData.MemberEnd())
+    {
+        pAttribute->errorIfNotFound = attrValueIt->value.GetBool();
+    }
+
+    attrValueIt = attributeData.FindMember("error_if_empty");
+    if (attrValueIt != attributeData.MemberEnd())
+    {
+        pAttribute->errorIfEmpty = attrValueIt->value.GetBool();
+    }
+}
 
 
 void EnvModTemplate::execute()

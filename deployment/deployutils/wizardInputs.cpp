@@ -128,6 +128,20 @@ void CWizardInputs::setEnvironment()
   if (m_thorSlavesPerNode < 1)
     m_thorSlavesPerNode = 1;
 
+  m_thorChannelsPerSlave = 1;
+  if(m_pXml->hasProp("@thorChannelsPerSlave"))
+    m_thorChannelsPerSlave = atoi( m_pXml->queryProp("@thorChannelsPerSlave"));
+
+  if (m_thorChannelsPerSlave < 1)
+    m_thorChannelsPerSlave = 1;
+
+  m_roxieChannelsPerSlave = 1;
+  if(m_pXml->hasProp("@roxieChannelsPerSlave"))
+    m_roxieChannelsPerSlave = atoi( m_pXml->queryProp("@roxieChannelsPerSlave"));
+
+  if (m_roxieChannelsPerSlave < 1)
+    m_roxieChannelsPerSlave = 1;
+
   m_roxieOnDemand = m_pXml->getPropBool("@roxieOnDemand", true);
 
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalConfFile", m_service.str());
@@ -896,6 +910,13 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
     }
     xpath.clear().appendf("./%s/%s[%s=\"%s\"]/%s[%s=\"\"]", XML_TAG_SOFTWARE, XML_TAG_ROXIECLUSTER, XML_ATTR_NAME, compName.str(), XML_TAG_ROXIE_SERVER, XML_ATTR_NETADDRESS);
     pNewEnvTree->removeProp(xpath.str());
+
+    xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ROXIECLUSTER, XML_ATTR_NAME, compName.str());
+    IPropertyTree* pRoxieCluster = pNewEnvTree->queryPropTree(xpath.str());
+    if (pRoxieCluster) {
+      pRoxieCluster->setPropInt("@channelsPerSlave", m_roxieChannelsPerSlave);
+    }
+
   }
   else if(!strcmp(buildSetName, "thor"))
   {
@@ -918,7 +939,7 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
       handleThorTopologyOp(pNewEnvTree, "Add", xml.str(), msg);
 
       //Now add Slave 
-      xml.clear().appendf("<ThorData type=\"Slave\" name=\"%s\" validateComputers=\"false\" slavesPerNode=\"%d\" skipExisting=\"false\" >", compName.str(), m_thorSlavesPerNode);
+      xml.clear().appendf("<ThorData type=\"Slave\" name=\"%s\" validateComputers=\"false\" slavesPerNode=\"%d\" channelsPerSlave=\"%d\" skipExisting=\"false\" >", compName.str(), m_thorSlavesPerNode, m_thorChannelsPerSlave);
       unsigned numOfNodes = ipAssignedToComp.ordinality() == 1 ? 0 : 1;
 
       for( ; numOfNodes < ipAssignedToComp.ordinality() ; numOfNodes++)

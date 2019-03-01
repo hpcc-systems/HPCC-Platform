@@ -4344,7 +4344,7 @@ protected:
         unsigned crc = crc32.get();
 
         keyIndex.setown(createKeyIndex(fileName, crc, isTlk, allowPreload));
-        keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true));
+        keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true, false));
         filters.createSegmentMonitors(keyManager);
         keyManager->finishSegmentMonitors();
         keyManager->reset();
@@ -4510,6 +4510,7 @@ void checkExpiryTime(IPropertyTree &metaInfo)
     }
     catch (IException *e)
     {
+        e->Release();
         throw createDafsException(DAFSERR_cmdstream_invalidexpiry, "createRemoteActivity: invalid expiry specification");
     }
     CDateTime nowDt;
@@ -4537,7 +4538,7 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
     Owned<IPropertyTree> metaInfoEnvelope = createPTree(decompressedMetaInfoMb);
 
     Owned<IPropertyTree> metaInfo;
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL)
     MemoryBuffer metaInfoBlob;
     metaInfoEnvelope->getPropBin("metaInfoBlob", metaInfoBlob);
 

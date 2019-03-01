@@ -345,18 +345,17 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             printf("\n  Testing IPRange input...");
             printf("\n  Testing getting an IPRange input pointer...");
             pInput = m_pTemplate->getVariable("ips");
-            std::shared_ptr<IPAddressRangeVariable> pIpRangeInput = std::dynamic_pointer_cast<IPAddressRangeVariable>(pInput);
-            if (!pIpRangeInput)
+            if (!pInput)
             {
-                CPPUNIT_ASSERT_MESSAGE("Unable to dynamic cast input poniter to expected type of IPRange", false);
+                CPPUNIT_ASSERT_MESSAGE("Unable to find input 'ips'", false);
             }
             printf("passed.");
 
             printf("\n  Set single IP address...");
             try
             {
-                pIpRangeInput->addValue("1.2.3.4");
-                rc = pIpRangeInput->getValue(0) == "1.2.3.4";
+                pInput->addValue("1.2.3.4");
+                rc = pInput->getValue(0) == "1.2.3.4";
                 CPPUNIT_ASSERT_MESSAGE("Return value did not match expected value", rc);
             }
             catch (TemplateException &te)
@@ -367,8 +366,8 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             printf("\n  Set multiple IP addresses (';' separated IP addresses)...");
             try
             {
-                pIpRangeInput->addValue("1.2.3.4;1.2.3.5");
-                rc = pIpRangeInput->getValue(0) == "1.2.3.4";
+                pInput->addValue("1.2.3.4;1.2.3.5");
+                rc = pInput->getValue(0) == "1.2.3.4";
             }
             catch (TemplateException &te)
             {
@@ -379,14 +378,14 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             printf("\n  Set a single range (1.2.3.1-5)...");
             try
             {
-                pIpRangeInput->addValue("1.2.3.1-5");
-                CPPUNIT_ASSERT_MESSAGE("Expected 5 values for variable", pIpRangeInput->getNumValues() == 5);
+                pInput->addValue("1.2.3.1-5");
+                CPPUNIT_ASSERT_MESSAGE("Expected 5 values for variable", pInput->getNumValues() == 5);
 
-                rc  = pIpRangeInput->getValue(0) == "1.2.3.1";
-                rc &= pIpRangeInput->getValue(1) == "1.2.3.2";
-                rc &= pIpRangeInput->getValue(2) == "1.2.3.3";
-                rc &= pIpRangeInput->getValue(3) == "1.2.3.4";
-                rc &= pIpRangeInput->getValue(4) == "1.2.3.5";
+                rc  = pInput->getValue(0) == "1.2.3.1";
+                rc &= pInput->getValue(1) == "1.2.3.2";
+                rc &= pInput->getValue(2) == "1.2.3.3";
+                rc &= pInput->getValue(3) == "1.2.3.4";
+                rc &= pInput->getValue(4) == "1.2.3.5";
                 CPPUNIT_ASSERT_MESSAGE("Expected values were not returned correctly", rc);
             }
             catch (TemplateException &te)
@@ -398,15 +397,15 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             printf("\n  Set a valid and arange (3.4.5.6;1.2.3.1-5)...");
             try
             {
-                pIpRangeInput->addValue("3.4.5.6;1.2.3.1-5");
-                CPPUNIT_ASSERT_MESSAGE("Expected 6 values for variable", pIpRangeInput->getNumValues() == 6);
+                pInput->addValue("3.4.5.6;1.2.3.1-5");
+                CPPUNIT_ASSERT_MESSAGE("Expected 6 values for variable", pInput->getNumValues() == 6);
 
-                rc  = pIpRangeInput->getValue(0) == "3.4.5.6";
-                rc &= pIpRangeInput->getValue(1) == "1.2.3.1";
-                rc &= pIpRangeInput->getValue(2) == "1.2.3.2";
-                rc &= pIpRangeInput->getValue(3) == "1.2.3.3";
-                rc &= pIpRangeInput->getValue(4) == "1.2.3.4";
-                rc &= pIpRangeInput->getValue(5) == "1.2.3.5";
+                rc  = pInput->getValue(0) == "3.4.5.6";
+                rc &= pInput->getValue(1) == "1.2.3.1";
+                rc &= pInput->getValue(2) == "1.2.3.2";
+                rc &= pInput->getValue(3) == "1.2.3.3";
+                rc &= pInput->getValue(4) == "1.2.3.4";
+                rc &= pInput->getValue(5) == "1.2.3.5";
                 CPPUNIT_ASSERT_MESSAGE("Expected values were not returned correctly", rc);
             }
             catch (TemplateException &te)

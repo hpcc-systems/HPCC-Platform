@@ -127,6 +127,7 @@
 <st id='ShowProcessesUsingFilter'>Show processes using filter</st>
 <st id='Size'>Size</st>
 <st id='SlaveNumber'>Slave Number</st>
+<st id='SparkThor'>SparkThor</st>
 <st id='Starting'>Starting</st>
 <st id='State'>State</st>
 <st id='Stopping'>Stopping</st>
@@ -156,6 +157,7 @@
 <st id='ViewingPage'>Viewing page</st>
 <st id='ViewLogFile'>View Log File</st>
 <st id='ViewAuditLogFile'>View Audit Log File</st>
+<st id='ViewSparkClusterInfo'>View Integrated Spark Cluster Information</st>
 <st id='WarnIfAvailableDiskSpaceIsUnder'>Warn if available disk space is under</st>
 <st id='WarnIfAvailableMemoryIsUnder'>Warn if available memory is under</st>
 <st id='WarnIfCPUUsageIsOver'>Warn if CPU usage is over</st>

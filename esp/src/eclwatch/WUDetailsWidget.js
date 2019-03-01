@@ -128,6 +128,7 @@ define([
                 this.emailFrom = registry.byId(this.id + "EmailFrom");
                 this.emailSubject = registry.byId(this.id + "EmailSubject");
                 this.emailBody = registry.byId(this.id + "EmailBody");
+                this.protected = registry.byId(this.id + "Protected");
 
                 this.infoGridWidget = registry.byId(this.id + "InfoContainer");
                 this.zapDialog = registry.byId(this.id + "ZapDialog");
@@ -331,6 +332,10 @@ define([
                     .wuid(params.Wuid)
                     .lazyRender()
                     ;
+
+                this.protected.on("change", function(evt){
+                    context._onSave();
+                })
             },
 
             initTab: function () {

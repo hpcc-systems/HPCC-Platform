@@ -34,5 +34,6 @@
 #define CFGMGR_ERROR_ENVIRONMENT_LOCKING     CONFIG_MGR_ERROR_START+11   // Error locking the enironment
 #define CFGMGR_ERROR_NODE_INVALID            CONFIG_MGR_ERROR_START+12   // Enironment node not valid
 #define CFGMGR_ERROR_PATH_INVALID            CONFIG_MGR_ERROR_START+13   // The path specified is not valid
+#define CFGMGR_ERROR_NODE_COPY_INVALID       CONFIG_MGR_ERROR_START+14   // The node copy data is not valid
 
 #endif

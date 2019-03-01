@@ -299,7 +299,7 @@ public:
     inline OwnedConstRoxieRow(const void * _ptr)            { ptr = _ptr; }
     inline OwnedConstRoxieRow(const OwnedConstRoxieRow & other) { ptr = other.getLink(); }
 
-    inline ~OwnedConstRoxieRow()                            { ReleaseRoxieRow(ptr); }
+    inline ~OwnedConstRoxieRow()                            { if (ptr) ReleaseRoxieRow(ptr); }
     
 private: 
     /* these overloaded operators are the devil of memory leak. Use set, setown instead. */
@@ -507,8 +507,8 @@ interface IActivityMemoryUsageMap : public IInterface
     virtual void reportStatistics(IStatisticTarget & target, unsigned detailtarget, const IRowAllocatorCache *allocatorCache) = 0;
 };
 
-extern roxiemem_decl IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks = false, bool outputOOMReports = false);
-extern roxiemem_decl IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool ignoreLeaks, bool outputOOMReports);
+extern roxiemem_decl IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool outputOOMReports);
+extern roxiemem_decl IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool outputOOMReports);
 
 // Fixed size aggregated link-counted zero-overhead data Buffer manager
 

@@ -167,7 +167,8 @@ class Host(object):
                 return out_hosts
 
             for host in out_hosts:
-                m = re.search(host.ip, inet_out)
+                str = r"\s" + re.escape(host.ip) + r"\s"
+                m = re.search(str, inet_out)
                 if not m:
                     out_hosts_2.append(host)
 

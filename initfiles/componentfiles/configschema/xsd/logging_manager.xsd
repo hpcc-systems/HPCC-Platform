@@ -20,7 +20,7 @@
         xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
     <hpcc:insert hpcc:schemaPath="/Environment/Software">
-        <xs:element name="LoggingManager" hpcc:displayName="Logging Manager" hpcc:itemType="logging_manager" minOccurs="0"
+        <xs:element name="LoggingManager" hpcc:displayName="Logging Manager" hpcc:itemType="loggingmanager" minOccurs="0"
                     maxOccurs="unbounded" hpcc:class="component">
             <xs:complexType>
                 <xs:sequence>

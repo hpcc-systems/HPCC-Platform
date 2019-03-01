@@ -808,13 +808,16 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 if (!optShared)
                     wu->setDebugValueInt("standAloneExe", 1, true);
                 EclGenerateTarget target = optWorkUnit ? EclGenerateNone : (optNoCompile ? EclGenerateCpp : optShared ? EclGenerateDll : EclGenerateExe);
-                gatherResourceManifestFilenames(instance, resourceManifestFiles);
-                ForEachItemIn(i, resourceManifestFiles)
-                    generator->addManifest(resourceManifestFiles.item(i));
                 if (instance.srcArchive)
                 {
-                    generator->addManifestFromArchive(instance.srcArchive);
+                    generator->addManifestsFromArchive(instance.srcArchive);
                     instance.srcArchive.clear();
+                }
+                else
+                {
+                    gatherResourceManifestFilenames(instance, resourceManifestFiles);
+                    ForEachItemIn(i, resourceManifestFiles)
+                        generator->addManifest(resourceManifestFiles.item(i));
                 }
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
@@ -1150,8 +1153,18 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     if (syntaxChecking || instance.archive)
         severityMapper->addMapping("security", "ignore");
 
+    //This option isn't particularly useful, but is here to help test the code to gather disk information
+    bool optGatherDiskStats = instance.wu->getDebugValueBool("gatherEclccDiskStats", false);
     size32_t prevErrs = errorProcessor.errCount();
     cycle_t startCycles = get_cycles_now();
+    CpuInfo systemStartTime(false, true);
+    CpuInfo processStartTime(true, false);
+
+    //Avoid creating the OsDiskStats object if not gathering timings to avoid unnecessary initialisation
+    OwnedPtr<OsDiskStats> systemIoStartInfo;
+    if (optGatherDiskStats)
+        systemIoStartInfo.setown(new OsDiskStats(true));
+
     addTimeStamp(instance.wu, SSTcompilestage, "compile", StWhenStarted);
     const char * sourcePathname = queryContents ? str(queryContents->querySourcePath()) : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
@@ -1434,8 +1447,34 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     }
 
     unsigned __int64 totalTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
+    CpuInfo systemFinishTime(false, true);
+    CpuInfo processFinishTime(true, false);
+    OwnedPtr<OsDiskStats> systemIoFinishInfo;
+    if (optGatherDiskStats)
+        systemIoFinishInfo.setown(new OsDiskStats(true));
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
     updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
+
+    if (systemFinishTime.getTotal())
+    {
+        CpuInfo systemElapsed = systemFinishTime - systemStartTime;
+        CpuInfo processElapsed = processFinishTime - processStartTime;
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StNumSysContextSwitches, NULL, systemElapsed.getNumContextSwitches());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeOsUser, NULL, systemElapsed.getUserNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeOsSystem, NULL, systemElapsed.getSystemNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeOsTotal, NULL, systemElapsed.getTotalNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeUser, NULL, processElapsed.getUserNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeSystem, NULL, processElapsed.getSystemNs());
+    }
+
+    if (optGatherDiskStats)
+    {
+        const BlockIoStats summaryIo = systemIoFinishInfo->querySummaryStats() - systemIoStartInfo->querySummaryStats();
+        if (summaryIo.rd_sectors)
+            updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StSizeOsDiskRead, NULL, summaryIo.rd_sectors * summaryIo.getSectorSize());
+        if (summaryIo.wr_sectors)
+            updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StSizeOsDiskWrite, NULL, summaryIo.wr_sectors * summaryIo.getSectorSize());
+    }
 }
 
 void EclCC::processDefinitions(EclRepositoryArray & repositories)
@@ -1916,7 +1955,7 @@ bool EclCC::generatePrecompiledHeader()
     }
     Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, NULL);
     compiler->setDebug(true);  // a precompiled header with debug can be used for no-debug, but not vice versa
-    compiler->addSourceFile("eclinclude4.hpp");
+    compiler->addSourceFile("eclinclude4.hpp", nullptr);
     compiler->setPrecompileHeader(true);
     if (compiler->compile())
     {

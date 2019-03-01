@@ -20,18 +20,14 @@
 #ifndef _SOAPMESSAGE_HPP__
 #define _SOAPMESSAGE_HPP__
 
+#include "esphttp.hpp"
+
 #include "jliball.hpp"
 #include "jexcept.hpp"
 #include "soapesp.hpp"
 #include "esp.hpp"
 
 #include "http/platform/mime.hpp"
-#ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl DECL_EXPORT
-#else
-    #define esp_http_decl DECL_IMPORT
-#endif
-
 #include "http/platform/httptransport.ipp"
 
 #include <xpp/XmlPullParser.h>

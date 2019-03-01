@@ -111,7 +111,7 @@ protected:
     bool extractSingleFieldTempTable(IHqlExpression * expr, SharedHqlExpr & retField, SharedHqlExpr & retValues);
 
     IHqlExpression * optimizeAggregateCompound(IHqlExpression * transformed);
-    IHqlExpression * optimizeAggregateUnsharedDataset(IHqlExpression * expr, bool isSimpleCount);
+    IHqlExpression * optimizeAggregateUnsharedDataset(IHqlExpression * expr, bool isSimpleCount, bool isLocal);
     IHqlExpression * optimizeJoinCondition(IHqlExpression * expr);
     IHqlExpression * optimizeDistributeDedup(IHqlExpression * expr);
     IHqlExpression * optimizeIf(IHqlExpression * expr);

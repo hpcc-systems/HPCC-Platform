@@ -37,7 +37,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -300,7 +300,15 @@
               </varlistentry>
             </variablelist></para>
 
-          <para><programlisting>sudo wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
+          <para><programlisting>sudo wget \
+ http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
+
+          <para>This will add the devtools-2.repo file to your system. Verify
+          that the following information is in the devtools-2.repo file for
+          the yum installation to work. <programlisting>[testing-devtools-2-centos-6]
+name=testing 2 devtools for CentOS 6 
+baseurl=http://people.centos.org/tru/devtools-2/6/$basearch/RPMS
+gpgcheck=0</programlisting></para>
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
@@ -515,6 +523,17 @@
               <listitem>
                 <para>Install the <emphasis role="bold">ECL IDE and Client
                 Tools for Windows</emphasis>.</para>
+
+                <variablelist>
+                  <varlistentry>
+                    <term>Note:</term>
+
+                    <listitem>
+                      <para>The ECL IDE only runs on Windows operating
+                      systems.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist>
               </listitem>
 
               <listitem>
@@ -1161,6 +1180,31 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             Scripts</link>) for more details.</para>
           </listitem>
         </orderedlist>
+
+        <sect3 id="Addl_SSH_KeyInfo">
+          <title>Additional SSH Key Information</title>
+
+          <para>On a multi-node HPCC system, certificates and SSH keys must
+          all match across all nodes for the system to work properly. If you
+          used the <emphasis>install-cluster.sh</emphasis> script as outlined
+          in the steps above, this would make sure that everything is properly
+          in sync. However, it is still a good idea to verify that they do all
+          match up. Another way to ensure this is to use the delivered
+          <emphasis>hpcc-push.sh</emphasis> script. For example, the following
+          commands would push out the certificate, key, and public key out to
+          all hosts defined in the environment.</para>
+
+          <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
+     -s /home/hpcc/certificate/public.key.pem -t /home/hpcc/certificate/public.key.pem 
+sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
+     -s /home/hpcc/certificate/key.pem -t /home/hpcc/certificate/key.pem 
+sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
+     -s /home/hpcc/certificate/certificate.pem -t /home/hpcc/certificate/certificate.pem </programlisting>
+
+          <para>See the appendix (<link
+          linkend="Example-Scripts">Appendix:Example Scripts</link>) for more
+          information on using this script.</para>
+        </sect3>
       </sect2>
     </sect1>
 

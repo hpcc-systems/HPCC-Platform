@@ -31,13 +31,14 @@ class EnvSupportLib
 
         EnvSupportLib(const std::string &libName, EnvironmentMgr *pEnvMgr);
         ~EnvSupportLib();
+        bool isValid() const { return m_libHandle != nullptr && m_pSupportLib != nullptr; }
         void processEvent(const std::string &event, const std::shared_ptr<SchemaItem> &pSchema, const std::shared_ptr<EnvironmentNode> &pEventNode, Status &status) const;
         void validate(const std::shared_ptr<SchemaItem> &pSchema, const std::shared_ptr<EnvironmentNode> &pEnvironment, Status &status) const;
 
 
     private:
 
-        void *m_libHandle;
+        HINSTANCE m_libHandle;
         std::string m_libName;
         HPCCConfigSupport *m_pSupportLib;
 };

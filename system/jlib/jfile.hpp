@@ -252,6 +252,11 @@ extern jlib_decl void copyFile(const char *target, const char *source, size32_t 
 extern jlib_decl void copyFile(IFile * target, IFile * source,size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL,CFflags copyFlags=CFnone);
 extern jlib_decl bool recursiveCreateDirectory(const char * path);
 extern jlib_decl bool recursiveCreateDirectoryForFile(const char *filename);
+/**
+ * Recursively remove a directory and all its contents and subdirectories
+ */
+extern jlib_decl void recursiveRemoveDirectory(IFile *dir);
+extern jlib_decl void recursiveRemoveDirectory(const char *dir);
 
 extern jlib_decl void splitFilename(const char * filename, StringBuffer * drive, StringBuffer * path, StringBuffer * tail, StringBuffer * ext, bool longExt = false);
 extern jlib_decl bool splitUNCFilename(const char * filename, StringBuffer * machine, StringBuffer * path, StringBuffer * tail, StringBuffer * ext);

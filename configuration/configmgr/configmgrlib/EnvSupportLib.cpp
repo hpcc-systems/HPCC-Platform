@@ -1,4 +1,4 @@
-/*##############################################################################
+﻿/*##############################################################################
 
     HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 
@@ -19,32 +19,19 @@
 #include "EnvSupportLib.hpp"
 #include "Exceptions.hpp"
 #include "HPCCConfigSupport.hpp"
+#include "jutil.hpp"
 
-
-EnvSupportLib::EnvSupportLib(const std::string &libName, EnvironmentMgr *pEnvMgr) : m_libName(libName), m_libHandle(nullptr)
+EnvSupportLib::EnvSupportLib(const std::string &libName, EnvironmentMgr *pEnvMgr) :
+    m_libName(libName), m_libHandle(nullptr), m_pSupportLib(nullptr)
 {
-    if (m_libName.empty())
+    m_libHandle = LoadSharedObject(m_libName.c_str(), true, false);
+    if (m_libHandle != nullptr)
     {
-        std::string msg = "Error missing library name";
-        throw (ParseException(msg));
-    }
-
-    m_libHandle = dlopen(m_libName.c_str(), RTLD_LAZY);
-    if (m_libHandle == nullptr)
-    {
-        std::string msg = "Error opening support library " + libName + ", error = " + dlerror();
-        throw (ParseException(msg));
-    }
-
-    getHPCCSupportLib_t getInstanceProc = (getHPCCSupportLib_t)dlsym(m_libHandle, "getInstance");
-    if (getInstanceProc != nullptr)
-    {
-        m_pSupportLib = getInstanceProc(pEnvMgr);;
-    }
-    else
-    {
-        std::string msg = "Error getting getInstance function " + libName + ", error = " + dlerror();
-        throw (ParseException(msg));
+        auto getInstanceProc = (getHPCCSupportLib_t) GetSharedProcedure(m_libHandle, "getCfgMgrSupportInstance");
+        if (getInstanceProc != nullptr)
+        {
+            m_pSupportLib = getInstanceProc(pEnvMgr);;
+        }
     }
 }
 
@@ -53,7 +40,7 @@ EnvSupportLib::~EnvSupportLib()
 {
     if (m_libHandle != nullptr)
     {
-        dlclose(m_libHandle);
+        FreeSharedObject(m_libHandle);
         m_libHandle = nullptr;
     }
 }

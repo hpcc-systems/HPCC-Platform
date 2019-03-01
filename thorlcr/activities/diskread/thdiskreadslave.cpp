@@ -495,7 +495,7 @@ public:
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc) const override
         {
             CDiskRecordPartHandler::getMetaInfo(info, partDesc);
-            if (activity.helper->transformMayFilter() || (TDRkeyed & activity.helper->getFlags()))
+            if (activity.helper->transformMayFilter() || activity.hasMatchFilter || (TDRkeyed & activity.helper->getFlags()))
             {
                 info.totalRowsMin = 0; // all bets off! 
                 info.unknownRowsOutput = info.canReduceNumRows = true;
@@ -611,7 +611,7 @@ public:
         else
             limit = (rowcount_t)helper->getRowLimit();
         stopAfter = (rowcount_t)helper->getChooseNLimit();
-        if (!helper->transformMayFilter())
+        if (!helper->transformMayFilter() && !hasMatchFilter)
         {
             remoteLimit = stopAfter;
             if (limit && (limit < remoteLimit))

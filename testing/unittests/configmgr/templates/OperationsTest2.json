@@ -6,20 +6,20 @@
     ],
     "operations" : [
         {
-            "action" : "find_node",
-            "parent_path" : "/Root/Child1",
+            "action" : "find",
+            "target_path" : "/Root/Child1",
             "data" : {
-                "save_nodeid" : {
-                    "save_name" : "nodes"
+                "save" : {
+                    "name" : "nodes"
                 }
             }
         },
         {
-            "action" : "find_node",
-            "parent_path" : "/Root/Child2",
+            "action" : "find",
+            "target_path" : "/Root/Child2",
             "data" : {
-                "save_nodeid" : {
-                    "save_name" : "nodes",
+                "save" : {
+                    "name" : "nodes",
                     "duplicate_ok" : true
                 }
             }

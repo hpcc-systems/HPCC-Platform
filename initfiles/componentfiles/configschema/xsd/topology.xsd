@@ -23,7 +23,7 @@
         <xs:element name="Topology" hpcc:displayName="Topology" hpcc:itemType="topology" minOccurs="0" maxOccurs="unbounded" hpcc:class="component">
             <xs:complexType>
                 <xs:sequence>
-                    <xs:element name="Cluster">
+                    <xs:element name="Cluster" minOccurs="0" maxOccurs="unbounded">
                         <xs:complexType>
                             <xs:sequence>
                                 <xs:element name="EclAgentProcess" hpcc:displayName="ECL Agent Process" hpcc:itemType="topology_eclagentprocess" hpcc:class="elementSet"

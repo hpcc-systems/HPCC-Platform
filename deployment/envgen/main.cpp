@@ -90,6 +90,10 @@ void usage()
   puts("          If greater than 1 instance is specified, -assign_ips for esp is required to be set.");
   puts("   -slavesPerNode <number of thor slaves per node>: Number of thor nodes ");
   puts("          per slave.");
+  puts("   -thorChannelsPerSlave <number of channels per thor slave>: Number of thor channels per slave.");
+  puts("          The default is 1.");
+  puts("   -roxieChannelsPerSlave <number of channels per roxie slave>: Number of roxie channels per slave.");
+  puts("          The default is 1.");
   puts("   -roxieondemand <enable roxie on demand(1) or disable roxie on demand(any ");
   puts("          other value)>: Enable roxie on demand by specifying 1 for flag. ");
   puts("          Any other value will disable roxie on demand");
@@ -121,7 +125,7 @@ int main(int argc, char** argv)
   const char* out_envname = NULL;
   const char* in_ipfilename;
   StringBuffer ipAddrs;
-  int roxieNodes=1, thorNodes=1, slavesPerNode=1, supportNodes=1, espNodes=1;
+  int roxieNodes=1, thorNodes=1, slavesPerNode=1, supportNodes=1, espNodes=1, thorChannelsPerSlave=1, roxieChannelsPerSlave=1;
   bool roxieOnDemand = true;
   MapStringTo<StringBuffer> dirMap;
   StringArray overrides;
@@ -200,6 +204,26 @@ int main(int argc, char** argv)
       i++;
 
       if (validateInteger(argv[i++],slavesPerNode) != true)
+      {
+        releaseAtoms();
+        return 1;
+      }
+    }
+    else if (stricmp(argv[i], "-thorchannelsperslave") == 0)
+    {
+      i++;
+
+      if (validateInteger(argv[i++],thorChannelsPerSlave) != true)
+      {
+        releaseAtoms();
+        return 1;
+      }
+    }
+    else if (stricmp(argv[i], "-roxiechannelsperslave") == 0)
+    {
+      i++;
+
+      if (validateInteger(argv[i++],roxieChannelsPerSlave) != true)
       {
         releaseAtoms();
         return 1;
@@ -298,8 +322,8 @@ int main(int argc, char** argv)
     const char* pServiceName = "WsDeploy_wsdeploy_esp";
     Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG);
 
-    optionsXml.appendf("<XmlArgs supportNodes=\"%d\" roxieNodes=\"%d\" thorNodes=\"%d\" espNodes=\"%d\" slavesPerNode=\"%d\" roxieOnDemand=\"%s\" ipList=\"%s\"/>", supportNodes, roxieNodes,
-      thorNodes, espNodes, slavesPerNode, roxieOnDemand?"true":"false", ipAddrs.str());
+    optionsXml.appendf("<XmlArgs supportNodes=\"%d\" roxieNodes=\"%d\" thorNodes=\"%d\" espNodes=\"%d\" slavesPerNode=\"%d\" thorChannelsPerSlave=\"%d\" roxieChannelsPerSlave=\"%d\" roxieOnDemand=\"%s\" ipList=\"%s\"/>", supportNodes, roxieNodes,
+      thorNodes, espNodes, slavesPerNode, thorChannelsPerSlave, roxieChannelsPerSlave, roxieOnDemand?"true":"false", ipAddrs.str());
 
     buildEnvFromWizard(optionsXml, pServiceName, pCfg, envXml, arrBuildSetWithAssignedIPs, arrAssignIPRanges, &dirMap);
 

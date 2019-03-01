@@ -97,7 +97,7 @@ bool CLoggingManager::updateLog(IEspLogEntry* entry, StringBuffer& status)
         return updateLog(entry->getEspContext(), entry->getOption(), entry->getLogInfoTree(), entry->getExtraLog(), status);
 
     return updateLog(entry->getEspContext(), entry->getOption(), entry->getUserContextTree(), entry->getUserRequestTree(),
-        entry->getBackEndResp(), entry->getUserResp(), entry->getLogDatasets(), status);
+        entry->getBackEndReq(), entry->getBackEndResp(), entry->getUserResp(), entry->getLogDatasets(), status);
 }
 
 bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, const char* logContent, StringBuffer& status)
@@ -147,7 +147,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPr
 }
 
 bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPropertyTree* userContext, IPropertyTree* userRequest,
-        const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status)
+    const char* backEndReq, const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status)
 {
     if (!initialized)
         throw MakeStringException(-1,"LoggingManager not initialized");
@@ -178,7 +178,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPr
             espContextTree->addProp("ResponseTime", VStringBuffer("%.4f", (msTick()-espContext->queryCreationTime())/1000.0));
         }
         Owned<IEspUpdateLogRequestWrap> req =  new CUpdateLogRequestWrap(nullptr, option, espContextTree.getClear(), LINK(userContext), LINK(userRequest),
-            backEndResp, userResp, logDatasets);
+            backEndReq, backEndResp, userResp, logDatasets);
         Owned<IEspUpdateLogResponse> resp =  createUpdateLogResponse();
         bRet = updateLog(espContext, *req, *resp, status);
     }

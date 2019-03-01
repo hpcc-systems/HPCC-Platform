@@ -284,13 +284,37 @@ export var LocalStorage = dojo.declare([Evented], {
     removeItem: function (key) {
         localStorage.removeItem(key);
     },
-    getItem: function (key) {
-        localStorage.getItem(key)
+    getItem: function (key, type) {
+        return type === "Number" ? Number(localStorage.getItem(key)) : localStorage.getItem(key);
     },
     clear: function () {
         localStorage.clear();
     }
 });
+
+export function goToPageUserPreference(gridName, key) {
+    var context = this;
+    var inGotoPage;
+    var initUserPref = this.LocalStorage.prototype.getItem(key, "Number");
+    if (initUserPref) {
+        gridName.set("rowsPerPage", initUserPref);
+    }
+    aspect.after(gridName, 'gotoPage', function (deferred, args) {
+        return deferred.then(function (){
+            if (!inGotoPage) {
+                var currentUserPref = context.LocalStorage.prototype.getItem(key, "Number");
+                var currentGridValue = gridName.rowsPerPage;
+                if (currentUserPref !== currentGridValue) {
+                    inGotoPage = true;
+                    context.LocalStorage.prototype.setItem(key, currentGridValue);
+                    gridName.set("rowsPerPage", currentGridValue);
+                    return;
+                }
+            }
+            inGotoPage = false;
+        });
+    });
+}
 
 
 export var MonitorLockClick = dojo.declare([Evented], {

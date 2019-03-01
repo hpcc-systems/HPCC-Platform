@@ -1,6 +1,6 @@
 ##############################################################################
 #
-#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -16,3 +16,4 @@
 ##############################################################################
 
 HPCC_ADD_SUBDIRECTORY (add_required_instances)
+HPCC_ADD_SUBDIRECTORY (check_port_bindings)

@@ -3257,7 +3257,7 @@ void printStart(int argc, const char *argv[])
 
 bool ControlHandler()
 {
-    LOG(MCevent,"ControlHandler Stop signalled");
+    LOG(MCoperatorInfo,"ControlHandler Stop signalled");
     return true;
 }
 

@@ -36,6 +36,11 @@ IF (NOT LIBARCHIVE_FOUND)
 
     FIND_PATH (LIBARCHIVE_INCLUDE_DIR NAMES archive.h PATHS "${EXTERNALS_DIRECTORY}/libarchive/${libarchive_ver}/include" NO_DEFAULT_PATH)
     FIND_LIBRARY (LIBARCHIVE_LIBRARIES NAMES ${libarchive_lib} PATHS "${EXTERNALS_DIRECTORY}/libarchive/${libarchive_ver}/lib/${osdir}" NO_DEFAULT_PATH)
+  ELSEIF(APPLE)
+    # We want to ignore any libraries provided by the OS
+    SET (libarchive_lib "archive")
+    FIND_PATH(LIBARCHIVE_INCLUDE_DIR NAMES archive.h /opt/local/include /usr/local/include /usr/local/Cellar)
+    FIND_LIBRARY(LIBARCHIVE_LIBRARIES NAMES ${libarchive_lib} PATHS /opt/local/lib /usr/local/lib /usr/local/Cellar NO_DEFAULT_PATH)
   ELSE()
     SET (libarchive_lib "archive")
     FIND_PATH (LIBARCHIVE_INCLUDE_DIR NAMES archive.h)

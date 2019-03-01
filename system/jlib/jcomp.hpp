@@ -50,7 +50,7 @@ public:
     virtual void addLibraryPath(const char * libPath) = 0;
     virtual void addInclude(const char * includePath) = 0;
     virtual void addLinkOption(const char * option) = 0;
-    virtual void addSourceFile(const char * filename) = 0;
+    virtual void addSourceFile(const char * filename, const char *flags) = 0;
     virtual void addObjectFile(const char * filename) = 0;
     virtual bool compile() = 0;
     virtual void extractErrors(IArrayOf<IError> & errors) = 0;

@@ -1242,6 +1242,8 @@ extern HQL_API IHqlExpression * quickFullReplaceExpressions(IHqlExpression * exp
 extern HQL_API void dbglogTransformStats(bool reset);
 extern HQL_API void gatherTransformStats(IStatisticTarget & target);
 extern HQL_API void clearTransformStats();
+extern HQL_API unsigned getExpressionCount(IHqlExpression * expr, bool onlyActivities, bool processColon, bool processSequential);
+extern HQL_API unsigned getExpressionCount(const HqlExprArray & exprs, bool onlyActivities, bool processColon, bool processSequential);
 
 #ifdef OPTIMIZE_TRANSFORM_ALLOCATOR
 size32_t beginTransformerAllocator();

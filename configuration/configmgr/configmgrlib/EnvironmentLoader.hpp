@@ -27,15 +27,17 @@
 #include "Status.hpp"
 #include "NameValue.hpp"
 #include "platform.h"
+#include "Cfgmgrlib.hpp"
 
 
-class DECL_EXPORT EnvironmentLoader
+class CFGMGRLIB_API EnvironmentLoader
 {
     public:
 
         EnvironmentLoader() { }
         virtual ~EnvironmentLoader() { }
-        virtual std::vector<std::shared_ptr<EnvironmentNode>> load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) const = 0;
+        virtual std::vector<std::shared_ptr<EnvironmentNode>> load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem,
+                const std::string itemType = std::string("")) const = 0;
 
 
     protected:

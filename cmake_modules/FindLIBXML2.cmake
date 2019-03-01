@@ -1,4 +1,4 @@
-################################################################################
+﻿################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@
 
 if (NOT LIBXML2_FOUND)
   IF (WIN32)
-    SET (libxml2_libs "xml2 libxml2")
+    SET (libxml2_libs "libxml2-2")
   ELSE()
     SET (libxml2_libs "xml2 libxml2")
   ENDIF()

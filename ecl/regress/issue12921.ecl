@@ -27,7 +27,7 @@ streamed dataset(outRecord) doRead(const varstring name) := EMBED(C++ : distribu
             deserializer.setown(resultAllocator->createDiskDeserializer(_ctx));
         }
 
-        virtual const void * nextRow()
+        virtual const void * nextRow() override
         {
             if (!source || source->isEof())
                 return NULL;
@@ -37,7 +37,7 @@ streamed dataset(outRecord) doRead(const varstring name) := EMBED(C++ : distribu
             return builder.finalizeRowClear(size);
         }
 
-        virtual void stop()
+        virtual void stop() override
         {
         }
 

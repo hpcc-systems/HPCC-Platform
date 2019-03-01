@@ -31,12 +31,14 @@ FIND_PATH(APR_INCLUDE_DIR apr.h
 /usr/local/include/apr-1.0
 /usr/include/apr-1
 /usr/include/apr-1.0
+/opt/local/include/apr-1
+/opt/local/include/apr-1.0
 )
 
 SET(APR_NAMES ${APR_NAMES} apr-1)
 FIND_LIBRARY(APR_LIBRARY
   NAMES ${APR_NAMES}
-  PATHS /usr/lib /usr/local/lib
+  PATHS /usr/lib /usr/local/lib /opt/local/lib
   )
 
 IF (APR_LIBRARY AND APR_INCLUDE_DIR)
@@ -73,12 +75,14 @@ FIND_PATH(APRUTIL_INCLUDE_DIR apu.h
 /usr/local/include/apr-1.0
 /usr/include/apr-1
 /usr/include/apr-1.0
+/opt/local/include/apr-1
+/opt/local/include/apr-1.0
 )
 
 SET(APRUTIL_NAMES ${APRUTIL_NAMES} aprutil-1)
 FIND_LIBRARY(APRUTIL_LIBRARY
   NAMES ${APRUTIL_NAMES}
-  PATHS /usr/lib /usr/local/lib
+  PATHS /usr/lib /usr/local/lib /opt/local/lib
   )
 
 IF (APRUTIL_LIBRARY AND APRUTIL_INCLUDE_DIR)

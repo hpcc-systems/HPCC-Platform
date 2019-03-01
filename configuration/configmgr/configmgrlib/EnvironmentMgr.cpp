@@ -20,7 +20,12 @@
 #include "XMLEnvironmentMgr.hpp"
 #include "InsertableItem.hpp"
 #include "Utils.hpp"
+#include "jfile.hpp"
+#include "build-config.h"
+
+#ifndef WIN32
 #include <dlfcn.h>
+#endif
 
 std::atomic_int EnvironmentMgr::m_key(1);
 
@@ -67,28 +72,25 @@ bool EnvironmentMgr::loadSchema(const std::string &configPath, const std::string
         }
 
         //
-        // Load any support libs that are environment specific
-        auto findIt = cfgParms.find("support_libs");
-        if (findIt != cfgParms.end())
+        // Load support libs based on the schema type which is read from the itemType property of the schema root node.
+        std::string envType = m_pSchema->getItemType();
+        std::string libPath = LIB_DIR;
+        std::string libMask = "libcfg" + envType + "_*";
+        Owned<IFile> pDir = createIFile(libPath.c_str());
+        if (pDir->exists())
         {
-            std::vector<std::string> supportLibNames = splitString(findIt->second, ",");
-            for (auto &libName: supportLibNames)
+            Owned<IDirectoryIterator> it = pDir->directoryFiles(libMask.c_str(), false, false);
+            ForEach(*it)
             {
-                std::string fullName = libName + ".so";
-
-                try
+                StringBuffer fname;
+                std::string filename = it->getName(fname).str();
+                std::shared_ptr<EnvSupportLib> pLib = std::make_shared<EnvSupportLib>(filename, this);
+                if (pLib->isValid())
                 {
-                    std::shared_ptr<EnvSupportLib> pLib = std::make_shared<EnvSupportLib>(fullName, this);
                     m_supportLibs.push_back(pLib);
-                }
-                catch (ParseException &pe)
-                {
-                    m_message = pe.what();
-                    rc = false;
                 }
             }
         }
-
     }
     return rc;
 }
@@ -157,6 +159,13 @@ std::string EnvironmentMgr::getRootNodeId() const
     }
     return nodeId;
 }
+
+
+bool EnvironmentMgr::serialize(std::ostream &out, const std::shared_ptr<EnvironmentNode> &pStartNode)
+{
+   return false;
+}
+
 
 
 bool EnvironmentMgr::saveEnvironment(const std::string &qualifiedFilename)
@@ -248,7 +257,7 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
             }
             else
             {
-                pNewNode->validate(status, true, false);
+                m_pSchema->validate(status, true, false);
             }
         }
         else
@@ -299,12 +308,33 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
     std::vector<NameValue> empty;
     for (auto &pCfgChild: cfgItemChildren)
     {
-        for (int i = 0; i<pCfgChild->getMinInstances(); ++i)
+        for (unsigned i = 0; i<pCfgChild->getMinInstances(); ++i)
         {
             addNewEnvironmentNode(pNewEnvNode, pCfgChild, empty, status);
         }
     }
 
+    return pNewEnvNode;
+}
+
+
+std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::string &nodeData,
+        Status &status, const std::string &itemType)
+{
+    std::shared_ptr<EnvironmentNode> pNewEnvNode;
+    std::istringstream newNodeData(nodeData);
+    std::vector<std::shared_ptr<EnvironmentNode>> newNodes = doLoadEnvironment(newNodeData, pParentNode->getSchemaItem(), itemType);  // not root
+    if (!newNodes.empty())
+    {
+        pNewEnvNode = newNodes[0];
+        pParentNode->addChild(pNewEnvNode);
+        assignNodeIds(pNewEnvNode);
+        validate(status);
+    }
+    else
+    {
+        status.addMsg(statusMsg::error, "Error pasting new node data.");
+    }
     return pNewEnvNode;
 }
 
@@ -409,7 +439,16 @@ void EnvironmentMgr::validate(Status &status, bool includeHiddenNodes) const
 {
     if (m_pRootNode)
     {
-        m_pRootNode->validate(status, true, includeHiddenNodes);
+        m_pSchema->validate(status, true, includeHiddenNodes);
+
+        //
+        // Now call all support libs for additional validation.
+        //
+        // Call any registered support libs with the event
+        for (auto &libIt: m_supportLibs)
+        {
+            libIt->validate(m_pSchema, m_pRootNode, status);
+        }
     }
     else
     {

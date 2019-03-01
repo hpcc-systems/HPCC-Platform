@@ -174,7 +174,7 @@ public:
     virtual int run()
     {
         Owned<IReceiveManager> rcvMgr = createReceiveManager(7000, 7001, 7002, 7003, multicastIP, udpQueueSize, maxPacketsPerSender, myIndex);
-        Owned<roxiemem::IRowManager> rowMgr = roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), NULL);
+        Owned<roxiemem::IRowManager> rowMgr = roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), NULL, false);
         Owned<IMessageCollator> collator = rcvMgr->createMessageCollator(rowMgr, 1);
         unsigned lastReport = 0;
         unsigned receivedTotal = 0;
@@ -1120,7 +1120,7 @@ int main(int argc, char * argv[] )
     if (modeType & RCV_MODE_BIT) 
     {
         rcvMgr = createReceiveManager(7000, 7001, 7002, 7003, multiCast, 100, 0x7fffffff, myIndex);
-        rowMgr = createRowManager(0, NULL, queryDummyContextLogger(), NULL);
+        rowMgr = createRowManager(0, NULL, queryDummyContextLogger(), NULL, false);
         msgCollA = rcvMgr->createMessageCollator(rowMgr, 100);
         if (destB)
         {

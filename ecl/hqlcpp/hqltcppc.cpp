@@ -601,6 +601,9 @@ void CMemberInfo::buildOffset(HqlCppTranslator & translator, BuildCtx & ctx, IRe
             IHqlExpression * accessor = selector->queryRootRow()->ensureAccessor(translator, ctx);
             assertex(accessor);
             value.setown(createValue(no_select, LINK(sizetType), LINK(accessor), LINK(cachedAccessorOffset.queryVarSize())));
+            //The type in the line above is a lie.  It is actually a size_t (rather than a size32_t).
+            //Add a cast to ensure that all offsets are calculated as size32_t to avoid problems with (temporary) numeric underflow
+            value.setown(createValue(no_cast, LINK(sizetType), value.getClear()));
         }
         bound.expr.setown(createSizeExpression(value, cachedAccessorOffset.getFixedSize()));
     }
@@ -1112,7 +1115,12 @@ void CContainerInfo::buildSizeOf(HqlCppTranslator & translator, BuildCtx & ctx, 
         IHqlExpression * accessor = selector->queryRootRow()->ensureAccessor(translator, ctx);
         assertex(accessor);
         if (accessorSize.queryVarSize())
+        {
             bound.expr.setown(createValue(no_select, LINK(sizetType), LINK(accessor), LINK(accessorSize.queryVarSize())));
+            //The type in the line above is a lie.  It is actually a size_t (rather than a size32_t).
+            //Add a cast to ensure that all offsets are calculated as size32_t to avoid problems with (temporary) numeric underflow
+            bound.expr.setown(createValue(no_cast, LINK(sizetType), bound.expr.getClear()));
+        }
         bound.expr.setown(createSizeExpression(bound.expr, accessorSize.getFixedSize()));
     }
     else

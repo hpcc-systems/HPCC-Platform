@@ -94,3 +94,6 @@
 <Dataset name='falsex_6'>
  <Row><falsex_6>false</falsex_6></Row>
 </Dataset>
+<Dataset name='decimal'>
+ <Row><decimal>true</decimal></Row>
+</Dataset>

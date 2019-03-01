@@ -17,11 +17,7 @@
 
 #pragma warning (disable : 4786)
 
-#ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl DECL_EXPORT
-#else
-    #define esp_http_decl DECL_IMPORT
-#endif
+#include "esphttp.hpp"
 
 #include "platform.h"
 #include "espprotocol.hpp"

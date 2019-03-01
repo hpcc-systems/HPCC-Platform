@@ -464,8 +464,6 @@ define([
                         TotalClusterTime: { label: this.i18n.TotalClusterTime, width: 117 }
                     }
                 }, this.id + "WorkunitsGrid");
-
-                var context = this;
                 this.workunitsGrid.on(".dgrid-row-url:click", function (evt) {
                     if (context._onRowDblClick) {
                         var item = context.workunitsGrid.row(evt).data;
@@ -496,9 +494,10 @@ define([
                         context.downloadToList.set("disabled", true);
                     }
                 });
-                aspect.after(this.workunitsGrid, 'gotoPage', function (deferred, args) {
-                    return deferred.then(function () {
-                        args[0] > 1 ? context._idleWatcher.stop() : context._idleWatcher.start()
+                ESPUtil.goToPageUserPreference(this.workunitsGrid, "WUQueryWidget");
+                aspect.after(this.workunitsGrid, "gotoPage", function (deferred, args) {
+                    return deferred.then(function (){
+                        args[0] > 1 ? context._idleWatcher.stop() : context._idleWatcher.start();
                     });
                 });
                 this.workunitsGrid.startup();

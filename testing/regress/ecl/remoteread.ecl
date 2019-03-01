@@ -37,11 +37,17 @@ IMPORT STD;
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 
+//MORE: If executed in parallel the prefix could cause problems - but outputing the filenames causes mismatches
+rrPrefix := IF(optRemoteRead, 'R', 'L');
+cmPrefix := IF(optCompression!='', optCompression, 'X');
+//xxprefix := filePrefix + rrPrefix + cmPrefix;
+
 fname := prefix + 'remoteread';
 fname_comp := prefix + 'remoteread_comp';
 fname_index := prefix + 'remoteread_index';
 fname_large := prefix + 'remoteread_large';
 fname_large_out := prefix + 'remoteread_largeout';
+fname_large_index := prefix + 'remoteread_large_index';
 
 rec := RECORD
  string10 fname;
@@ -83,6 +89,9 @@ largeoutrec := RECORD // shuffles order
 END;
 
 
+dsLarge := DATASET(fname_large, rec, FLAT);
+idxLarge := INDEX(dsLarge,,fname_large_index);
+
 
 SEQUENTIAL(
  OUTPUT(inds, , fname, OVERWRITE);
@@ -90,18 +99,22 @@ SEQUENTIAL(
  BUILDINDEX(i, OVERWRITE);
  OUTPUT(largeds, , fname_large, OVERWRITE);
  OUTPUT(largeds, , fname_large, OVERWRITE);
-
+ BUILD(idxLarge);
  OUTPUT(ds);
  OUTPUT(ds_comp);
  OUTPUT(i);
  OUTPUT(ds_trans);
- SUM(NOFOLD(DATASET(fname_large, rec, FLAT)), age);
+ output(choosen(dsLarge(age=54), 5));
+ output(choosen(dsLarge(keyed(age=54)), 5));
+ output(choosen(idxLarge(age=54), 5));
+ SUM(NOFOLD(dsLarge), age);
 
  // Clean-up
  FileServices.DeleteLogicalFile(fname),
  FileServices.DeleteLogicalFile(fname_comp),
  FileServices.DeleteLogicalFile(fname_index),
  FileServices.DeleteLogicalFile(fname_large),
+ FileServices.DeleteLogicalFile(fname_large_index),
 );
 
 

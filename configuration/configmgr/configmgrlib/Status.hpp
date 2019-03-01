@@ -22,10 +22,10 @@
 #include <vector>
 #include <string>
 #include "platform.h"
+#include "Cfgmgrlib.hpp"
 
 
-
-struct DECL_EXPORT statusMsg {
+struct CFGMGRLIB_API statusMsg {
 
     enum msgLevel
     {
@@ -45,7 +45,7 @@ struct DECL_EXPORT statusMsg {
 };
 
 
-class DECL_EXPORT Status
+class CFGMGRLIB_API Status
 {
     public:
 
@@ -61,7 +61,8 @@ class DECL_EXPORT Status
         bool isError() const { return m_highestMsgLevel >= statusMsg::error; }
         std::string getStatusTypeString(enum statusMsg::msgLevel status) const;
         enum statusMsg::msgLevel getMsgLevelFromString(const std::string &status) const;
-        std::vector<statusMsg> getMessages() const;
+        std::vector<statusMsg> getMessages(enum statusMsg::msgLevel level = statusMsg::fatal, bool andBelow = true,
+                const std::string &nodeId = std::string(), const std::string &attribute = std::string()) const;
         void add(const std::vector<statusMsg> msgs);
 
 

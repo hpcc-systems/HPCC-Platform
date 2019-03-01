@@ -59,7 +59,7 @@ if(SPARK)
 
     if(NOT SPARK_HPCC_JAR)
         if(NOT SPARK_HPCC_VERSION)
-            set(SPARK_HPCC_VERSION "7.0.0")
+            set(SPARK_HPCC_VERSION "7.0.2")
         endif()
         file(DOWNLOAD
             ${CENTRAL_REPO}/org/hpccsystems/spark-hpcc/${SPARK_HPCC_VERSION}/spark-hpcc-${SPARK_HPCC_VERSION}.jar
@@ -71,7 +71,7 @@ if(SPARK)
 
     if(NOT WSCLIENT_JAR)    
         if(NOT WSCLIENT_VERSION)
-            set(WSCLIENT_VERSION "7.0.0")
+            set(WSCLIENT_VERSION "7.0.2")
         endif()
         file(DOWNLOAD
             ${CENTRAL_REPO}/org/hpccsystems/wsclient/${WSCLIENT_VERSION}/wsclient-${WSCLIENT_VERSION}-jar-with-dependencies.jar
@@ -141,6 +141,12 @@ if(SPARK)
             ${CMAKE_CURRENT_BINARY_DIR}/spark-env.sh
         COMPONENT runtime
         DESTINATION "externals/spark-hadoop/conf"
+        )
+    install(
+        FILES
+            ${CMAKE_CURRENT_SOURCE_DIR}/spark-env.install
+        COMPONENT runtime
+        DESTINATION "etc/init.d/install"
         )
 
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/sparkthor.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/sparkthor.sh" @ONLY)

@@ -97,6 +97,7 @@ interface IConstInstanceInfo : extends IConstEnvBase
     virtual IConstMachineInfo * getMachine() const = 0;
     virtual IStringVal & getEndPoint(IStringVal & str) const = 0;
     virtual unsigned getPort() const = 0;
+    virtual IStringVal & getDirectory(IStringVal & str) const = 0;
     virtual IStringVal & getExecutableDirectory(IStringVal & str) const = 0;
     virtual bool getRunInfo(IStringVal & progpath, IStringVal & workdir, const char * defaultprogname) const = 0;
 };
@@ -134,6 +135,31 @@ interface IConstDaFileSrvInfo : extends IConstEnvBase
     virtual bool getSecure() const = 0;
 };
 
+interface IConstInstanceInfoIterator : extends IIteratorOf<IConstInstanceInfo>
+{
+    virtual unsigned count() const = 0;
+};
+
+interface IConstSparkThorInfo : extends IConstEnvBase
+{
+    virtual IStringVal & getName(IStringVal & str) const = 0;
+    virtual IStringVal & getBuild(IStringVal & str) const = 0;
+    virtual IStringVal & getThorClusterName(IStringVal & str) const = 0;
+    virtual unsigned getSparkExecutorCores() const = 0;
+    virtual unsigned long getSparkExecutorMemory() const = 0;
+    virtual unsigned getSparkMasterPort() const = 0;
+    virtual unsigned getSparkMasterWebUIPort() const = 0;
+    virtual unsigned getSparkWorkerCores() const = 0;
+    virtual unsigned long getSparkWorkerMemory() const = 0;
+    virtual unsigned getSparkWorkerPort() const = 0;
+    virtual IConstInstanceInfoIterator * getInstanceIterator() const = 0;
+};
+
+interface IConstSparkThorInfoIterator : extends IIteratorOf<IConstSparkThorInfo>
+{
+    virtual unsigned count() const = 0;
+};
+
 interface IConstEnvironment : extends IConstEnvBase
 {
     virtual IConstDomainInfo * getDomain(const char * name) const = 0;
@@ -159,6 +185,8 @@ interface IConstEnvironment : extends IConstEnvBase
     virtual const char *getPrivateKeyPath(const char *keyPairName) const = 0;
     virtual const char *getFileAccessUrl() const = 0;
     virtual IConstDaFileSrvInfo *getDaFileSrvGroupInfo(const char *name) const = 0;
+    virtual IConstSparkThorInfo *getSparkThor(const char *name) const = 0;
+    virtual IConstSparkThorInfoIterator *getSparkThorIterator() const = 0;
 };
 
 
@@ -186,7 +214,7 @@ class StringBuffer;
 extern "C" ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory(bool update);
 extern "C" ENVIRONMENT_API void closeEnvironment();
 
-
+extern ENVIRONMENT_API unsigned long readSizeSetting(const char * sizeStr, const unsigned long defaultSize);
 
 
 #endif // _ENVIRONMENT_INCL
