@@ -504,7 +504,7 @@ int main(int argc, const char *argv[])
     queryStderrLogMsgHandler()->setMessageFields(0);
 
     // Turn logging down (we turn it back up if -v option seen)
-    Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);
+    Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user| MSGAUD_operator, MSGCLS_error);
     queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
     unsigned exitCode = doMain(argc, argv);
     stopPerformanceMonitor();
