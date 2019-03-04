@@ -6051,7 +6051,9 @@ void CWsDfuEx::getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAc
     bool writePermissions = (accessType == SecAccess_Write) || (accessType == SecAccess_Full);
     bool readPermissions = true; // by implication
 
-    StringBuffer fileName = req.getName();
+    CDfsLogicalFileName lfn;
+    lfn.set(req.getName());
+    StringBuffer fileName = lfn.get();
     if (!isEmptyString(req.getCluster()))
         fileName.append("@").append(req.getCluster());
 
@@ -6352,7 +6354,9 @@ bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &r
             userDesc->set(userId.str(), context.queryPassword(), context.querySignature());
         }
 
-        StringBuffer tempFileName = fileName;
+        CDfsLogicalFileName lfn;
+        lfn.set(fileName);
+        StringBuffer tempFileName = lfn.get();
         tempFileName.append(DFUFileCreate_FileNamePostfix);
 
         StringBuffer jobId = requestBase.getJobId();
@@ -6414,7 +6418,9 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
              throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid FileId: empty FileName.");
 
         StringBuffer userId, newFileName;
-        newFileName.set(tempFileName);
+        CDfsLogicalFileName lfn;
+        lfn.set(tempFileName);
+        newFileName.set(lfn.get());
         if (newFileName.length() <= strlen(DFUFileCreate_FileNamePostfix))
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid FileId: cannot read FileName from %s.", tempFileName);
         newFileName.setLength(newFileName.length() - strlen(DFUFileCreate_FileNamePostfix)); //remove DFUFileCreate_FileNamePostfix
