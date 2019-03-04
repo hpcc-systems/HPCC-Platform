@@ -9784,7 +9784,7 @@ IHqlExpression * HqlGram::checkEmbedBody(const attribute & errpos, DefineIdSt * 
                             if (strnicmp(err, "warning:", 8)==0)
                             {
                                 err = strchr(err, ':') + 1;
-                                while (isspace(*err))
+                                if (isspace(*err))
                                     err++;
                                 reportWarning(CategoryEmbed, WRN_EMBEDWARNING, pos, "%s", err);
                             }
@@ -9793,7 +9793,7 @@ IHqlExpression * HqlGram::checkEmbedBody(const attribute & errpos, DefineIdSt * 
                                 if (strnicmp(err, "error:", 6)==0)
                                 {
                                     err = strchr(err, ':') + 1;
-                                    while (isspace(*err))
+                                    if (isspace(*err))
                                         err++;
                                 }
                                 reportError(ERR_EMBEDERROR, pos, "%s", err);

@@ -113,6 +113,7 @@ ESPStruct DFULogicalFile
     [min_ver("1.30")] string SuperOwners;
     [min_ver("1.30")] bool Persistent(false);
     [min_ver("1.34")] bool IsProtected(false);
+    [min_ver("1.41")] string KeyType;
 };
 
 ESPStruct DFUPart
@@ -204,6 +205,7 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.39")] ESPstruct DFUFilePartition Partition;
     [min_ver("1.39")] ESParray<ESPstruct DFUFileBloom> Blooms;
     [min_ver("1.40")] int ExpireDays;
+    [min_ver("1.41")] string KeyType;
 };
 
 ESPStruct DFUSpaceItem
@@ -919,7 +921,7 @@ ESPresponse [exceptions_inline, nil_remove] DFUFilePublishResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.40"),
+    version("1.41"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
