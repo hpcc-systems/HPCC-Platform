@@ -15,4 +15,6 @@
 ################################################################################
 
 ADD_SUBDIRECTORY(xsd)
-ADD_SUBDIRECTORY(templates)
+if ( PLATFORM AND UNIX )
+   ADD_SUBDIRECTORY(templates)
+endif ()
