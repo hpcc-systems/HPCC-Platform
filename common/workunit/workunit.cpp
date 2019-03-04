@@ -6894,11 +6894,17 @@ bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffe
 //   1 : Signature does not verify (wuid/username don't match, or signature does not verify)
 //   2 : Workunit not active
 //   Throws if unable to open workunit
-wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
+wuTokenStates verifyWorkunitDAToken(const char * _user, const char * _distributedAccessToken)
 {
+    if (isEmptyString(_user) || isEmptyString(_distributedAccessToken))
+    {
+        ERRLOG("verifyWorkunitDAToken : User and token must be provided");
+        return wuTokenInvalid;
+    }
+
     StringBuffer tokWuid;
     StringBuffer tokUser;
-    if (!extractFromWorkunitDAToken(distributedAccessToken, &tokWuid, &tokUser, nullptr))//get the wuid and user
+    if (!extractFromWorkunitDAToken(_distributedAccessToken, &tokWuid, &tokUser, nullptr))//get the wuid and user
     {
         //Not a valid workunit distributed access token
         return wuTokenInvalid;
@@ -6910,7 +6916,7 @@ wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
     {
         const char * finger;
         StringBuffer token;//receives copy of everything up until signature
-        for (finger = distributedAccessToken; *finger && *finger != ';'; finger++)
+        for (finger = _distributedAccessToken; *finger && *finger != ';'; finger++)
             token.append(1, finger);
         token.append(1, finger);//append ;
 
@@ -6930,13 +6936,18 @@ wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
     }
 
     //Verify user matches
-    if (!isEmptyString(cw->queryUser()) || !isEmptyString(tokUser.str()))
+    if (!isEmptyString(cw->queryUser()) && !isEmptyString(tokUser.str()))
     {
-        if (!streq(cw->queryUser(), tokUser.str()))
+        if (!streq(cw->queryUser(), tokUser.str()) || !streq(cw->queryUser(), _user))
         {
-            ERRLOG("verifyWorkunitDAToken : token user does not match workunit");
+            ERRLOG("verifyWorkunitDAToken : token user (%s) does not match WU user (%s) or context user (%s)", tokUser.str(), cw->queryUser(), _user);
             return wuTokenInvalid;
         }
+    }
+    else
+    {
+        ERRLOG("verifyWorkunitDAToken : workunit user and token user must be provided");
+        return wuTokenInvalid;
     }
 
     // no need to compare tokWuid with workunit wuid, because it will always match

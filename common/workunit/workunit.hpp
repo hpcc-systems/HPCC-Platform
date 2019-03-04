@@ -1602,7 +1602,7 @@ extern WORKUNIT_API void updateSuppliedXmlParams(IWorkUnit * w);
 
 //workunit distributed access token support
 enum wuTokenStates { wuTokenValid=0, wuTokenInvalid, wuTokenWorkunitInactive };
-extern WORKUNIT_API wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken);
+extern WORKUNIT_API wuTokenStates verifyWorkunitDAToken(const char * _user, const char * _distributedAccessToken);
 extern WORKUNIT_API bool extractFromWorkunitDAToken(const char * token, StringBuffer * wuid, StringBuffer * user, StringBuffer * privKey);
 inline bool isWorkunitDAToken(const char * distributedAccessToken)
 {
