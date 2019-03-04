@@ -501,10 +501,11 @@ const StringArray &HelperDll::queryManifestFiles(const char *type, const char *w
     if (!list)
     {
         // The temporary path we unpack to is based on so file's current location and workunit
+        // MORE - this is good for deployed cases, may not be so good for standalone executables.
         StringBuffer tempDir;
         splitFilename(name, &tempDir, &tempDir, &tempDir, nullptr);
         list.setown(new ManifestFileList(type, tempDir));
-        tempDir.append(PATHSEPCHAR).append(wuid);
+        tempDir.append(".tmp").append(PATHSEPCHAR).append(wuid);
         VStringBuffer xpath("Resource[@type='%s']", type);
         Owned<IPropertyTreeIterator> resourceFiles = queryManifest().getElements(xpath.str());
         ForEach(*resourceFiles)
