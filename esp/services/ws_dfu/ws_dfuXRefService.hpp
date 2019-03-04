@@ -26,116 +26,135 @@
 
 class CXRefExBuilderThread : public Thread
 {
-    Owned<IXRefNode> m_xRefNode;
-    bool bRunning;
-    Mutex _boolMutex;
+    bool stopThread = false;
+    bool xRefRunning = false;
+    CriticalSection critRunningStatus;
+    CriticalSection critQueue;
     Semaphore m_sem;
-    SafeQueueOf<IXRefNode, false> m_pNodeQueue;
-    bool m_bRun;
-    StringBuffer _CurrentClusterName;
-    virtual void SetRunningStatus(bool bStatus)
+    SafeQueueOf<IXRefNode, false> nodeQueue;
+    StringBuffer currentClusterName;
+
+    void setRunningStatus(bool status)
     {
-        CriticalSection(_boolMutex);
-        bRunning = bStatus;
+        CriticalBlock b(critRunningStatus);
+        xRefRunning = status;
+    }
+    IXRefNode* readNodeQueue()
+    {
+        CriticalBlock b(critQueue);
+        return (IXRefNode*)nodeQueue.dequeue();
+    }
+    void writeNodeQueue(IXRefNode* xRefNode)
+    {
+        if (!xRefNode)
+            return;
+
+        CriticalBlock b(critQueue);
+        nodeQueue.enqueue(LINK(xRefNode));
     }
 public:
-   IMPLEMENT_IINTERFACE;
-   CXRefExBuilderThread() 
-   {
-       m_bRun = true;
-       bRunning = false; 
-   }
+    IMPLEMENT_IINTERFACE;
 
-   virtual void QueueRequest(IXRefNode* xRefNode,const char* cluster)
-   {
-       if(xRefNode == 0 || cluster == 0)
-           return;
+    CXRefExBuilderThread() { };
+    ~CXRefExBuilderThread(){DBGLOG("Destroyed XRef thread");};
 
-       CriticalSection(_RunningMutex);
-       
-       xRefNode->setCluster(cluster);
-       xRefNode->Link();
-       m_pNodeQueue.enqueue(xRefNode);
-       m_sem.signal();
-   }
+    virtual void queueRequest(IXRefNode* xRefNode, const char* cluster)
+    {
+        if (!xRefNode || isEmptyString(cluster))
+            return;
 
-   ~CXRefExBuilderThread(){DBGLOG("Destroyed XRef thread");}
+        xRefNode->setCluster(cluster);
+        writeNodeQueue(xRefNode);
+        m_sem.signal();
+    }
+
     virtual int run()
     {
         Link();
-        while(m_bRun)
+        while (!stopThread)
         {
             m_sem.wait();
-            if (m_pNodeQueue.ordinality() != 0)
-                RunXRef();
+            runXRef();
         }
         Release();
         return 0;
     }
 
-    void RunXRef()
+    void runXRef()
     {
-
         //catch all exceptions so we can signal for the new build to start
-        try{
-            SetRunningStatus(true);
-            Owned<IXRefNode> xRefNode  = (IXRefNode*)m_pNodeQueue.dequeue();
-            _CurrentClusterName.clear();
-            xRefNode->getCluster(_CurrentClusterName);
-            if (xRefNode->useSasha()) // if sasha processing just set submitted
-                xRefNode->setStatus("Submitted");
-            else {
-                Owned<IPropertyTree> tree = runXRefCluster(_CurrentClusterName.str(), xRefNode);
-                DBGLOG("finished run");
+        try
+        {
+            while (true)
+            {
+                Owned<IXRefNode> xRefNode  = readNodeQueue();
+                if (!xRefNode)
+                    break;
+
+                if (xRefNode->useSasha()) // if sasha processing just set submitted
+                    xRefNode->setStatus("Submitted");
+                else
+                {
+                    setRunningStatus(true);
+                    xRefNode->getCluster(currentClusterName);
+                    Owned<IPropertyTree> tree = runXRefCluster(currentClusterName.str(), xRefNode);
+                    DBGLOG("finished run XRef for %s", currentClusterName.str());
+                    currentClusterName.clear();
+                    setRunningStatus(false);
+                }
             }
-            SetRunningStatus(false);
         }
         catch(IException* e)
         {
             StringBuffer errorStr;
             e->errorMessage(errorStr);
-            ERRLOG("Exception thrown while running XREF: %s",errorStr.str());
+            ERRLOG("Exception thrown while running XREF: %s", errorStr.str());
             e->Release();
         }
         catch(...)
         {
             ERRLOG("Unknown Exception thrown from XREF");
         }
-        //Signal that we are ready to process another job if there is one....
-        m_sem.signal();
-
     }
 
-    virtual bool IsRunning()
+    virtual bool isRunning()
     {
-        CriticalSection(_boolMutex);
-        return bRunning;
+        CriticalBlock b(critRunningStatus);
+        return xRefRunning;
     }
-    virtual bool IsQueued(const char* Queue)
+    virtual bool isQueued(const char* clusterName)
     {
-        if(Queue == 0)
+        if (isEmptyString(clusterName))
             return false;
-        ForEachItemIn(x,m_pNodeQueue)
+
+        if (!currentClusterName.isEmpty() && streq(currentClusterName, clusterName))
+            return true;
+
+        CriticalBlock b(critQueue);
+        ForEachItemIn(x, nodeQueue)
         {
-            IXRefNode* Item = m_pNodeQueue.item(x);
+            IXRefNode* Item = nodeQueue.item(x);
             StringBuffer cachedCluster;
             Item->getCluster(cachedCluster);
-            if(strcmp(cachedCluster.str(),Queue) == 0 || strcmp(_CurrentClusterName.str(),Queue) == 0)
+            if (streq(cachedCluster, clusterName))
                 return true;
         }
         return false;
     }
-    virtual void Cancel()
+    virtual void cancel()
     {
-        while(m_pNodeQueue.ordinality() >0)
+        CriticalBlock b(critQueue);
+        while (nodeQueue.ordinality() > 0)
         {
-            Owned<IXRefNode> xRefNode  = (IXRefNode*)m_pNodeQueue.dequeue();
+            Owned<IXRefNode> xRefNode  = (IXRefNode*)nodeQueue.dequeue();
         }
         m_sem.signal();
     }
-    virtual void Shutdown()
+    virtual void stop()
     {
-        m_bRun = false;
+        stopThread = true;
+        m_sem.signal();
+        join();
     }
 };
 
