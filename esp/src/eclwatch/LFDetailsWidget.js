@@ -152,7 +152,11 @@ define([
             },
             _onSave: function (event) {
                 var context = this;
-                this.logicalFile.save(dom.byId(context.id + "Description").value);
+                var protectedCheckbox = registry.byId(this.id + "isProtected");
+                this.logicalFile.save({
+                    Description: dom.byId(context.id + "Description").value,
+                    isProtected: protectedCheckbox.get("checked")
+                }, null);
             },
             _onDelete: function (event) {
                 if (confirm(this.i18n.YouAreAboutToDeleteThisFile)) {
@@ -246,7 +250,6 @@ define([
                         context.updateInput(name, oldValue, newValue);
                     });
                     this.replicateSourceLogicalFile.set("value", params.Name);
-                    this.logicalFile.refresh();
                 }
                 this.copyTargetSelect.init({
                     Groups: true
@@ -381,10 +384,12 @@ define([
                     this.updateInput("DespraySourceName", oldValue, newValue);
                     this.updateInput("CopySourceName", oldValue, newValue);
                     this.updateInput("CopyTargetName", oldValue, newValue);
-                } else if (name === "IsProtected") {
+                } else if (name === "ProtectList") {
                     dom.byId(this.id + "ProtectedImage").src = this.logicalFile.getProtectedImage();
                 } else if (name === "IsCompressed") {
                     dom.byId(this.id + "CompressedImage").src = this.logicalFile.getCompressedImage();
+                } else if (name === "IsProtected") {
+                    this.updateInput("isProtected", oldValue, newValue);
                 } else if (name === "Ecl" && newValue) {
                     this.setDisabled(this.id + "_Source", false);
                     this.setDisabled(this.id + "_DEF", false);

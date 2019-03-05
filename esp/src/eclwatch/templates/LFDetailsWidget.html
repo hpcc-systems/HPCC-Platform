@@ -111,7 +111,7 @@
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <h2>
                         <img id="${id}CompressedImage"/>&nbsp;
-                        <img id="${id}ProtectedImage" src="${dojoConfig.urlInfo.resourcePath}/img/locked.png" />&nbsp;<img id="${id}StateIdImage" class="iconLogicalFile" />&nbsp;<span id="${id}Name" class="bold"></span>
+                        <img id="${id}ProtectedImage" src="${dojoConfig.urlInfo.resourcePath}/img/unlocked.png" />&nbsp;<img id="${id}StateIdImage" class="iconLogicalFile" />&nbsp;<span id="${id}Name" class="bold"></span>
                         <button id="${id}ClippyButton" class="clippy" data-clipboard-target="#${id}Name"><img src="${dojoConfig.urlInfo.resourcePath}/img/clippy.png" alt="${i18n.CopyToClipboard}"></button>
                     </h2>
                     <form id="${id}SummaryForm" class="leftAlignFields">
@@ -141,8 +141,8 @@
                                 <div id="${id}JobName"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}Protected">${i18n.Protected}:</label>
-                                <div><input id="${id}Protected" data-dojo-type="dijit.form.CheckBox"/></div>
+                                <label class="Prompt" for="${id}isProtected">${i18n.Protected}:</label>
+                                <div><input id="${id}isProtected" data-dojo-type="dijit.form.CheckBox"/></div>
                             </li>
                             <li>
                                 <label for="${id}ContentType">${i18n.ContentType}: </label>
