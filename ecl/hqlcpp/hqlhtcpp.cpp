@@ -6524,11 +6524,15 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityKeyedDistribute(ctx, expr);
                 break;
             case no_select:
-                if (isNewSelector(expr))
+            {
+                bool isNew;
+                IHqlExpression * ds = querySelectorDataset(expr, isNew);
+                if (isNew && (ds->getOperator() != no_translated) && !ctx.queryAssociation(ds, AssocRow, nullptr))
                     result = doBuildActivitySelectNew(ctx, expr);
                 else
                     result = doBuildActivityChildDataset(ctx, expr);
                 break;
+            }
                 //Items in this list need to also be in the list inside doBuildActivityChildDataset
             case no_call:
             case no_externalcall:

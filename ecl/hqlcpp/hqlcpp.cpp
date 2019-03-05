@@ -8463,8 +8463,8 @@ void HqlCppTranslator::optimizeOrderValues(HqlExprArray & leftValues, HqlExprArr
         if (!compareSize)
             continue;
 
-        bool nextLeftIsNew;
-        bool nextRightIsNew;
+        bool nextLeftIsNew = false;
+        bool nextRightIsNew = false;
         IHqlExpression * nextLeft = &leftValues.item(i+1);
         IHqlExpression * nextRight = &rightValues.item(i+1);
         if (querySimpleOrderSelector(nextLeft, nextLeftIsNew) != leftSel || querySimpleOrderSelector(nextRight, nextRightIsNew) != rightSel ||

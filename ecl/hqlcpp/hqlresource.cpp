@@ -1261,6 +1261,8 @@ bool ActivityInvariantHoister::findSplitPoints(IHqlExpression * expr, bool isPro
                 locator.analyseChild(expr->queryChild(0), true);
                 break;
             }
+        case no_translated:
+            break;
         case no_childquery:
             throwUnexpected();
         default:
@@ -3916,6 +3918,16 @@ void EclResourcer::deriveUsageCounts(IHqlExpression * expr)
         info->numUses++;
         if (insideNeverSplit || insideSteppedNeverSplit)
             info->neverSplit = true;
+
+        //Currently code that is executed inline is not resourced at the same time as code that is executed
+        //out of line.  If a row has already been evaluated inline, ensure that this expression is not modified
+        //e.g. by adding splitters - otherwise it will be re-evaluated in a child query, rather than reusing
+        //the expression already evaluated. Fixing HPCC-9318 would make this test redundant.
+        if (ctx && expr->isDatarow())
+        {
+            if ((getNumActivityArguments(expr) != 0) && ctx->queryAssociation(expr, AssocRow, nullptr))
+                insideNeverSplit = true;
+        }
 
         switch (expr->getOperator())
         {
@@ -6664,7 +6676,7 @@ IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression
 }
 
 
-static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCopyArray * activeRows, IHqlExpression * _expr,
+static IHqlExpression * doResourceGraph(BuildCtx * ctx, HqlCppTranslator & translator, HqlExprCopyArray * activeRows, IHqlExpression * _expr,
                                         ClusterType targetClusterType, unsigned clusterSize,
                                         IHqlExpression * graphIdExpr, unsigned numResults, bool isChild, bool useGraphResults, bool unlimitedResources)
 {
@@ -6689,6 +6701,7 @@ static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCo
 
     {
         EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), translator.queryOptions(), options);
+        resourcer.setContext(ctx);
         resourcer.tagActiveCursors(activeRows);
         resourcer.resourceGraph(expr, transformed);
         totalResults = resourcer.numGraphResults();
@@ -6708,18 +6721,18 @@ static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCo
 
 IHqlExpression * resourceLibraryGraph(HqlCppTranslator & translator, IHqlExpression * expr, ClusterType targetClusterType, unsigned clusterSize, IHqlExpression * graphIdExpr, unsigned numResults)
 {
-    return doResourceGraph(translator, NULL, expr, targetClusterType, clusterSize, graphIdExpr, numResults, false, true, false);       //?? what value for isChild (e.g., thor library call).  Need to gen twice?
+    return doResourceGraph(nullptr, translator, NULL, expr, targetClusterType, clusterSize, graphIdExpr, numResults, false, true, false);       //?? what value for isChild (e.g., thor library call).  Need to gen twice?
 }
 
 
-IHqlExpression * resourceNewChildGraph(HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned numResults)
+IHqlExpression * resourceNewChildGraph(BuildCtx & ctx, HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned numResults)
 {
-    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, true, true, false);
+    return doResourceGraph(&ctx, translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, true, true, false);
 }
 
 IHqlExpression * resourceLoopGraph(HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned numResults, bool insideChildQuery, bool unlimitedResources)
 {
-    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, insideChildQuery, true, unlimitedResources);
+    return doResourceGraph(nullptr, translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, insideChildQuery, true, unlimitedResources);
 }
 
 IHqlExpression * resourceRemoteGraph(HqlCppTranslator & translator, IHqlExpression * _expr, ClusterType targetClusterType, unsigned clusterSize)
