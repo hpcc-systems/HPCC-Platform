@@ -172,7 +172,7 @@ public:
     virtual void createServersList(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer &servers) {};
     virtual bool handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawreq, const char * rawresp, const char * finalresp, const char * logdata);
     void handleEchoTest(const char *mthName, IPropertyTree *req, StringBuffer &soapResp, ESPSerializationFormat format);
-    void handlePingRequest(const char *mthName,StringBuffer &out,ESPSerializationFormat format);
+    void handlePingRequest(const char *srvName, StringBuffer &out, unsigned int flags);
     virtual void handleFinalRequest(IEspContext &context, IEsdlCustomTransform *srvCrt, IEsdlCustomTransform *mthCrt, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy, StringBuffer &rawreq);
     void getSoapBody(StringBuffer& out,StringBuffer& soapresp);
     void getSoapError(StringBuffer& out,StringBuffer& soapresp,const char *,const char *);
