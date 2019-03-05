@@ -2911,8 +2911,6 @@ void WuScopeFilter::finishedFilter()
             if (!(properties & (PTattributes|PThints)))
                 sourceFlags &= ~(SSFsearchGraph|SSFsearchWorkflow);
         }
-
-
     }
 
     //Optimize sources if they haven't been explicitly specified
@@ -2931,22 +2929,11 @@ void WuScopeFilter::finishedFilter()
         if (!(properties & (PTattributes|PThints)))
             sourceFlags &= ~(SSFsearchGraph);
 
-        setDepth(1, 1);    // MORE - will become 2 once scopes are modified to include the workflow id.
+        setDepth(2, 2);
     }
     else if (matchOnly(SSTsubgraph))
     {
         sourceFlags &= ~(SSFsearchWorkflow);
-
-        //subgraph timings are stored globally - otherwise need to look in the graph stats.
-        if (!(properties & (PTattributes|PThints)))
-        {
-            if (desiredStats.ordinality() == 1)
-            {
-                StatisticKind stat = (StatisticKind)desiredStats.item(0);
-                if (stat == StTimeElapsed || stat == StWhenStarted)
-                    sourceFlags &= ~(SSFsearchGraphStats|SSFsearchGraph);
-            }
-        }
     }
     else if (matchOnly(SSTcompilestage))
     {
@@ -2959,10 +2946,32 @@ void WuScopeFilter::finishedFilter()
         sourceFlags &= ~(SSFsearchGlobalStats|SSFsearchWorkflow);
     }
 
-    // Everything stored in the graphs stats has a depth of 2 or more - so ignore if there are not matches in that depth
-    if ((include.nestedDepth == 0) && (scopeFilter.compareDepth(2) > 0))
+    // Everything stored in the graphs stats has a depth of 3 or more - so ignore if there are not matches in that depth
+    if (include.nestedDepth == 0)
     {
-        sourceFlags &= ~(SSFsearchGraphStats);
+        if (scopeFilter.compareDepth(3) > 0)    // 3 is larger than any scope in the filter
+            sourceFlags &= ~(SSFsearchGraphStats);
+        else if (scopeFilter.compareDepth(3) == 0)    // 3 matches the maximum scope in the filter
+        {
+            //Subgraph WhenStarted and TimeElapsed are stored globally.  If that is all that is required
+            //then do not include the subgraph timings
+            if (desiredStats.ordinality())
+            {
+                bool needGraphStats = false;
+                ForEachItemIn(i, desiredStats)
+                {
+                    unsigned stat = desiredStats.item(i);
+                    if ((stat != StWhenStarted) && (stat != StTimeElapsed))
+                        needGraphStats = true;
+                }
+                if (!needGraphStats)
+                {
+                    sourceFlags &= ~(SSFsearchGraphStats);
+                    if (matchOnly(SSTsubgraph))
+                        sourceFlags &= SSFsearchGlobalStats;
+                }
+            }
+        }
     }
 
     if (scopeFilter.compareDepth(1) < 0)
