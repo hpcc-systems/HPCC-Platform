@@ -1441,7 +1441,8 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
         if (MATCHES_CONST_PREFIX(text, FunctionScopePrefix))
         {
             setFunctionId(text+ strlen(FunctionScopePrefix));
-            *_next = text + strlen(text);
+            if (_next)
+                *_next = text + strlen(text);
             return true;
         }
         break;
