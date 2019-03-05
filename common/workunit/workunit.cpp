@@ -2465,6 +2465,12 @@ static constexpr EnumMapping propertyMappings[] = {
         { PTstatistics, "stat" }, { PTstatistics, "statistic" }, { PTattributes, "attr" }, { PTattributes, "attribute" }, { PThints, "hint" },
         { PTstatistics, "stats" }, { PTstatistics, "statistics" }, { PTattributes, "attrs" }, { PTattributes, "attributes" }, { PThints, "hints" },
         { PTnone, "none" }, { PTscope, "scope" }, { PTall, "all" }, { 0, nullptr } };
+
+
+
+WuScopeSourceFlags querySource(const char * source) { return (WuScopeSourceFlags)getEnum(source, sourceMappings, SSFunknown); }
+const char * querySourceText(WuScopeSourceFlags source) { return getEnumText(source, sourceMappings, nullptr); }
+
 WuScopeFilter::WuScopeFilter(const char * filter)
 {
     addFilter(filter);
@@ -2848,7 +2854,7 @@ void WuScopeFilter::addRequiredStat(const char * filter)
 
 WuScopeFilter & WuScopeFilter::addSource(const char * source)
 {
-    WuScopeSourceFlags mask = (WuScopeSourceFlags)getEnum(source, sourceMappings, SSFunknown);
+    WuScopeSourceFlags mask = querySource(source);
     if (mask == SSFunknown)
         throw makeStringExceptionV(0, "Unexpected source '%s'", source);
     if (!mask)
@@ -3044,6 +3050,117 @@ ScopeCompare WuScopeFilter::compareMatchScopes(const char * scope) const
 }
 
 
+StringBuffer & WuScopeFilter::describe(StringBuffer & out) const
+{
+    scopeFilter.describe(out);
+    if (requiredStats.size())
+    {
+        out.append(",where[");
+        bool first = false;
+        for (const auto & stat : requiredStats)
+        {
+            if (!first)
+                out.append(",");
+            stat.describe(out);
+            first = false;
+        }
+        out.append("]");
+    }
+
+    {
+        StringBuffer sources;
+        for (unsigned mask=1; mask; mask *= 2)
+        {
+            if (sourceFlags & mask)
+            {
+                const char * source = querySourceText((WuScopeSourceFlags)mask);
+                if (source)
+                    sources.append(",").append(source);
+            }
+        }
+        if (sources)
+            out.append(",source[").append(sources.str()+1).append("]");
+    }
+
+    if (include.nestedDepth != UINT_MAX)
+        out.appendf(",nested[%u]", include.nestedDepth);
+
+    if (include.scopeTypes)
+    {
+        out.append(",include[");
+        ForEachItemIn(i, include.scopeTypes)
+        {
+            if (i)
+                out.append(",");
+            out.append(queryScopeTypeName((StatisticScopeType)include.scopeTypes.item(i)));
+        }
+        out.append("]");
+    }
+
+    {
+        StringBuffer props;
+        if (properties == PTnone)
+            props.append(",none");
+        else if (properties == PTall)
+            props.append(",all");
+        else
+        {
+            if (properties & PTstatistics)
+                props.append(",stat");
+            if (properties & PTattributes)
+                props.append(",attr");
+            if (properties & PThints)
+                props.append(",hint");
+            if (properties & PTscope)
+                props.append(",scope");
+        }
+        out.append(",properties[").append(props.str()+1).append("]");
+    }
+
+    if (desiredStats)
+    {
+        out.append(",stat[");
+        ForEachItemIn(i, desiredStats)
+        {
+            if (i)
+                out.append(",");
+            out.append(queryStatisticName((StatisticKind)desiredStats.item(i)));
+        }
+        out.append("]");
+    }
+
+    if (desiredAttrs)
+    {
+        out.append(",attr[");
+        ForEachItemIn(i, desiredAttrs)
+        {
+            if (i)
+                out.append(",");
+            out.append(queryWuAttributeName((WuAttr)desiredAttrs.item(i)));
+        }
+        out.append("]");
+    }
+
+    if (desiredHints)
+    {
+        out.append(",hint[");
+        ForEachItemIn(i, desiredHints)
+        {
+            if (i)
+                out.append(",");
+            out.append(desiredHints.item(i));
+        }
+        out.append("]");
+    }
+
+    if (desiredMeasure != SMeasureAll)
+        out.append(",measure[").append(queryMeasureName(desiredMeasure)).append("]");
+
+    if (minVersion != 0)
+        out.appendf(",version(%" I64F "u)", minVersion);
+
+    return out;
+}
 //--------------------------------------------------------------------------------------------------------------------
 
 EnumMapping states[] = {
