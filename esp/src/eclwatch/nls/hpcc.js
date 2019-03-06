@@ -371,7 +371,7 @@ define({root:
     Logout: "Log Out",
     Logs: "Logs",
     LogVisualization: "Log Visualization",
-    LogVisualizationUnconfigured: "Log Visualization is not configured, please check your confriguration manager settings.",
+    LogVisualizationUnconfigured: "Log Visualization is not configured, please check your configuration manager settings.",
     log_analysis_1: "log_analysis_1*",
     LostFile: "Lost Files",
     LostFile2: "Lost Files",
