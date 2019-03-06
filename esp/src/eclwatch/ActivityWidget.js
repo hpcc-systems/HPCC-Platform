@@ -4,31 +4,39 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/on",
     "dojo/dom-attr",
 
     "dijit/registry",
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator",
-    "dijit/layout/ContentPane",
     "dijit/Tooltip",
 
     "dgrid/selector",
     "dgrid/tree",
 
     "hpcc/GridDetailsWidget",
-    "src/ESPRequest",
     "src/ESPActivity",
     "hpcc/DelayLoadWidget",
     "src/ESPUtil",
     "src/Utility",
+    "src/DiskUsage",
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domAttr,
-    registry, Button, ToggleButton, ToolbarSeparator, ContentPane, Tooltip,
+    "dojo/text!../templates/ActivityPageWidget.html",
+
+    "dijit/layout/TabContainer",
+    "dijit/layout/BorderContainer",
+    "dijit/Toolbar",
+    "dijit/form/Button",
+    "dijit/ToolbarSeparator",
+    "dijit/layout/ContentPane"
+
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domAttr,
+    registry, Button, ToggleButton, ToolbarSeparator, Tooltip,
     selector, tree,
-    GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil, Utility) {
-
+    GridDetailsWidget, ESPActivity, DelayLoadWidget, ESPUtil, Utility, DiskUsage,
+    template
+) {
         var DelayedRefresh = declare("DelayedRefresh", [], {
             _activityWidget: null,
             _promises: null,
@@ -47,7 +55,7 @@ define([
                     var context = this;
                     Promise.all(this._promises).then(function () {
                         context._activityWidget.refreshGrid();
-                        setTimeout(function() {
+                        setTimeout(function () {
                             context._activityWidget._refreshActionState();
                         }, 100);
                     });
@@ -56,7 +64,7 @@ define([
         });
 
         return declare("ActivityWidget", [GridDetailsWidget], {
-
+            templateString: template,
             i18n: nlsHPCC,
             gridTitle: nlsHPCC.title_Activity,
             idProperty: "__hpcc_id",
@@ -70,6 +78,12 @@ define([
                 } else {
                     domAttr.set(this.autoRefreshButton, "iconClass", "iconAutoRefresh");
                 }
+            },
+
+            //  Hitched actions  ---
+            _onRefresh: function (event) {
+                this.inherited(arguments);
+                this.refreshUsage();
             },
 
             _onPause: function (event, params) {
@@ -216,6 +230,24 @@ define([
                 promises.refresh();
             },
 
+            postCreate: function (args) {
+                this.inherited(arguments);
+                var context = this;
+
+                this._diskSummaryPane = registry.byId(this.id + "DiskSummaryCP");
+
+                var origResize = this._diskSummaryPane.resize;
+                this._diskSummaryPane.resize = function (size) {
+                    origResize.apply(this, arguments);
+                    if (context._diskUsage && context._diskUsage.renderCount()) {
+                        context._diskUsage
+                            .resize({ width: size.w, height: size.h })
+                            .lazyRender()
+                            ;
+                    }
+                }
+            },
+
             doSearch: function (searchText) {
                 this.searchText = searchText;
                 this.selectChild(this.gridTab);
@@ -227,6 +259,18 @@ define([
                     return;
 
                 var context = this;
+                this._diskUsage = new DiskUsage.Summary()
+                    .target(this.id + "DiskSummary")
+                    .on("click", function (gauge, details) {
+                        var tab = context.ensurePane({ details: details, __hpcc_id: "Usage:" + details.Name }, { usage: true });
+                        if (tab) {
+                            context.selectChild(tab);
+                        }
+                    })
+                    .render()
+                    .refresh()
+                    ;
+
                 this.autoRefreshButton = registry.byId(this.id + "AutoRefresh");
                 this.activity.disableMonitor(true);
                 this.activity.watch("__hpcc_changedCount", function (item, oldValue, newValue) {
@@ -471,7 +515,19 @@ define([
             },
 
             createDetail: function (id, row, params) {
-                if (this.activity.isInstanceOfQueue(row) && row.ClusterType === 3) {
+                if (params.usage) {
+                    return new DelayLoadWidget({
+                        id: id,
+                        title: row.details.Name,
+                        closable: true,
+                        delayWidget: "DiskUsageDetails",
+                        hpcc: {
+                            params: {
+                                details: row.details
+                            }
+                        }
+                    });
+                } else if (this.activity.isInstanceOfQueue(row) && row.ClusterType === 3) {
                     return new DelayLoadWidget({
                         id: id,
                         title: row.ClusterName,
@@ -527,7 +583,13 @@ define([
                 return null;
             },
 
-            refreshGrid: function (args) {
+            refreshUsage: function () {
+                this._diskUsage
+                    .refresh()
+                    ;
+            },
+
+            refreshGrid: function () {
                 this.firstLoad = false;
                 this.activity.refresh();
             },

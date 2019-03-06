@@ -1,4 +1,7 @@
-const debugServerIP = "192.168.99.103";
+const CLUSTER_MV = "192.168.99.103";
+const CLUSTER_GJS = "192.168.3.22";
+const CLUSTER_160 = "10.173.160.101";
+const debugServerIP = CLUSTER_MV ;
 const debugHPCC_JS = false; //  Should never be TRUE in a PR  ---
 
 let rewrite = [
@@ -36,7 +39,7 @@ let rewrite = [
 
 if (debugHPCC_JS) {
     rewrite = [
-        { from: "/esp/files/node_modules/@hpcc-js/*", to: "/hpcc-js/packages/$1" }
+        { from: "/esp/files/node_modules/@hpcc-js/*/dist/index.min.js", to: "/node_modules/@hpcc-js/$1/dist/index.js" }
     ].concat(rewrite);
 }
 
