@@ -8,6 +8,7 @@ define([
     "dojo/dom-attr",
     "dojo/request/iframe",
     "dojo/dom-class",
+    "dojo/on",
     "dojo/query",
     "dojo/store/Memory",
     "dojo/store/Observable",
@@ -56,7 +57,7 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domForm, domAttr, iframe, domClass, query, Memory, Observable,
+], function (declare, lang, i18n, nlsHPCC, dom, domForm, domAttr, iframe, domClass, on, query, Memory, Observable,
     registry,
     OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
     Clippy,
@@ -110,6 +111,7 @@ define([
                 this.xmlWidget = registry.byId(this.id + "_XML");
                 this.publishForm = registry.byId(this.id + "PublishForm");
                 this.zapDescription = registry.byId(this.id + "ZapDescription");
+                this.zapForm = registry.byId(this.id + "ZapForm");
                 this.warnHistory = registry.byId(this.id + "WarnHistory");
                 this.warnTimings = registry.byId(this.id + "WarnTimings");
                 this.clusters = registry.byId(this.id + "Clusters");
@@ -121,6 +123,11 @@ define([
                 this.includeSlaveLogsCheckbox = registry.byId(this.id + "IncludeSlaveLogsCheckbox");
                 this.logsForm = registry.byId(this.id + "LogsForm");
                 this.allowOnlyNumber = registry.byId(this.id + "AllowOnlyNumber");
+                this.emailCheckbox = registry.byId(this.id + "EmailCheckbox");
+                this.emailTo = registry.byId(this.id + "EmailTo");
+                this.emailFrom = registry.byId(this.id + "EmailFrom");
+                this.emailSubject = registry.byId(this.id + "EmailSubject");
+                this.emailBody = registry.byId(this.id + "EmailBody");
                 this.protected = registry.byId(this.id + "Protected");
 
                 this.infoGridWidget = registry.byId(this.id + "InfoContainer");
@@ -149,10 +156,21 @@ define([
 
             _onCancelDialog: function () {
                 this.zapDialog.hide();
+                this.emailCheckbox.set("checked", false);
+                this.emailCheckbox.set("value", "false");
+                this.emailSubject.reset();
+                this.emailBody.reset();
+            },
+
+            _onSubmitDialog: function(){
+                if (this.zapForm.validate()) {
+                    this.zapForm.set("action", "/WsWorkunits/WUCreateAndDownloadZAPInfo");
+                    this.zapDialog.hide();
+                }
             },
 
             //  Hitched actions  ---
-            _onSave: function (event) {
+            _onSave: function(event) {
                 var protectedCheckbox = registry.byId(this.id + "Protected");
                 var context = this;
                 this.wu.update({
@@ -236,7 +254,7 @@ define([
                 this.selectChild(this.graphsWidget.id);
             },
 
-            onZapReport: function (event) {
+            _onZapReport: function (event) {
                 var context = this;
                 WsWorkunits.WUGetZAPInfo({
                     request: {
@@ -244,15 +262,41 @@ define([
                     }
                 }).then(function (response) {
                     context.zapDialog.show();
+                    context.emailCheckbox.on("change", function(evt){
+                        if (context.emailCheckbox.get("checked")){
+                            context.emailCheckbox.set("value", "true");
+                            context.emailSubject.set("required", true);
+                        } else {
+                            context.emailCheckbox.set("value", "false");
+                            context.emailSubject.set("required", false);
+                        }
+                    });
                     if (lang.exists("WUGetZAPInfoResponse", response)) {
+                        if (response.WUGetZAPInfoResponse.EmailTo) {
+                            context.emailCheckbox.set("disabled", false);
+                            context.emailTo.set("disabled", false);
+                            context.emailFrom.set("disabled", false);
+                            context.emailSubject.set("disabled", false);
+                            context.emailBody.set("disabled", false);
+                        } else {
+                            context.emailCheckbox.set("disabled", true);
+                            context.emailTo.set("disabled", true);
+                            context.emailFrom.set("disabled", true);
+                            context.emailSubject.set("disabled", true);
+                            context.emailBody.set("disabled", true);
+                        }
                         context.updateInput("ZapWUID", null, response.WUGetZAPInfoResponse.WUID);
                         context.updateInput("BuildVersion", null, response.WUGetZAPInfoResponse.BuildVersion);
                         context.updateInput("ESPIPAddress", null, response.WUGetZAPInfoResponse.ESPIPAddress);
                         context.updateInput("ThorIPAddress", null, response.WUGetZAPInfoResponse.ThorIPAddress);
+                        context.updateInput("EmailTo", null, response.WUGetZAPInfoResponse.EmailTo);
+                        context.updateInput("EmailFrom", null, response.WUGetZAPInfoResponse.EmailFrom);
 
                         context.buildVersion = response.WUGetZAPInfoResponse.BuildVersion;
                         context.espIPAddress = response.WUGetZAPInfoResponse.ESPIPAddress;
                         context.thorIPAddress = response.WUGetZAPInfoResponse.ThorIPAddress;
+                        context.emailTo = response.WUGetZAPInfoResponse.EmailTo;
+                        context.emailFrom = response.WUGetZAPInfoResponse.EmailFrom;
                     }
                 });
             },
