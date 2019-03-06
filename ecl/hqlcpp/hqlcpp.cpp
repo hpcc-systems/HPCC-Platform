@@ -1855,6 +1855,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.newIndexReadMapping, "newIndexReadMapping", false), // Not yet enabled due to problems with merging mapped fields and roxie/thor integration
         DebugOption(options.checkDuplicateThreshold, "checkDuplicateThreshold", 0), // If non zero, create a warning if duplicates > this percentage increase
         DebugOption(options.checkDuplicateMinActivities, "checkDuplicateMinActivities", 100),
+        DebugOption(options.diskReadsAreSimple, "diskReadsAreSimple", false), // Not yet enabled - needs filters to default to generating keyed info first
     };
 
     //get options values from workunit
