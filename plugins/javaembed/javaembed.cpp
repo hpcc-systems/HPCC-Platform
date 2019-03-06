@@ -3905,11 +3905,14 @@ public:
                 if (!instance)
                 {
                     if (streq(methodName, "<init>"))
+                    {
                         result.l = JNIenv->NewObjectA(javaClass, javaMethodID, args);
-                    else
-                        throw MakeStringException(0, "non static member function %s called, but no instance available", methodName.get());  // Should never happen
+                        return;
+                    }
+                    assertex(persistMode == persistNone);
+                    instance = createInstance();
                 }
-                else if (javaMethodID)
+                if (javaMethodID)
                 {
                     switch (*returnType)
                     {
@@ -3930,6 +3933,7 @@ public:
                 else
                 {
                     assertex(methodName[0]=='~');
+                    result.l = 0;
                 }
             }
             else
@@ -4084,6 +4088,21 @@ protected:
         }
     }
 
+    jobject createInstance()
+    {
+        jmethodID constructor;
+        try
+        {
+            constructor = JNIenv->GetMethodID(javaClass, "<init>", "()V");
+        }
+        catch (IException *E)
+        {
+            Owned<IException> e = E;
+            throw MakeStringException(0, "parameterless constructor required");
+        }
+        return JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
+    }
+
     void loadFunction(const char *classpath, size32_t bytecodeLen, const byte *bytecode)
     {
         try
@@ -4154,19 +4173,9 @@ protected:
                     }
                     javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
                 }
-                if (nonStatic && !instance && !isConstructor)
+                if (nonStatic && !instance && !isConstructor && persistMode != persistNone)
                 {
-                    jmethodID constructor;
-                    try
-                    {
-                        constructor = JNIenv->GetMethodID(javaClass, "<init>", "()V");
-                    }
-                    catch (IException *E)
-                    {
-                        Owned<IException> e = E;
-                        throw MakeStringException(0, "parameterless constructor required");
-                    }
-                    instance = JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
+                    instance = createInstance();
                     if (persistBlock.locked())
                     {
                         if (persistMode==persistQuery || persistMode==persistWorkunit)
@@ -4191,7 +4200,7 @@ protected:
                     shortClassName = myClassName;
                 if (!streq(methodName+1, shortClassName))
                     throw MakeStringException(0, "class name %s does not match", shortClassName);
-                signature.set("()V");
+                signature.set("()L");  // We return 0
             }
             else
             {
