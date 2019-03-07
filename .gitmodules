@@ -37,3 +37,6 @@
 [submodule "configuration/configmgr/RapidJSON"]
         path = configuration/configmgr/RapidJSON
         url = https://github.com/hpcc-systems/rapidjson
+[submodule "plugins/h3/uber-h3"]
+	path = plugins/h3/uber-h3
+	url = https://github.com/hpcc-systems/h3.git

@@ -83,6 +83,20 @@ ECLRTL_API void * rtlMalloc(size32_t size)
     return retVal;
 }
 
+ECLRTL_API void * rtlCalloc(size32_t num, size32_t size)
+{
+    if (!num || !size)
+        return NULL;
+
+    void *retVal = calloc(num, size);
+    if (!retVal)
+    {
+        PrintStackReport();
+        rtlThrowOutOfMemory(0, "Memory allocation error!");
+    }
+    return retVal;
+}
+
 void rtlFree(void *ptr)
 {
     free(ptr);
