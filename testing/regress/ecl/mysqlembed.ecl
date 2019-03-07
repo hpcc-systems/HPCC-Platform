@@ -148,6 +148,10 @@ streamed dataset(childrec) testMySQLStoredProcedure2(STRING lid) := EMBED(mysql 
   CALL testSP(?);
 ENDEMBED;
 
+streamed dataset(childrec) testMySQLStoredProcedure3(DATASET(stringrec) lids) := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  CALL testSP(?);
+ENDEMBED;
+
 dataset(childrec) testMySQLStringParam(string filter) := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   SELECT * from tbl1 where name = ?;
 ENDEMBED;
@@ -220,6 +224,7 @@ sequential (
       OUTPUT(testMySQLDateTime()),
       OUTPUT(testMySQLTransform()),
       OUTPUT(testMySQLStoredProcedure()),
-      OUTPUT(testMySQLStoredProcedure2('name1'))
+      OUTPUT(testMySQLStoredProcedure2('name1')),
+      OUTPUT(testMySQLStoredProcedure3(DATASET([{'name1'},{'name2'}], stringrec)))
   )
 );
