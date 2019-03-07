@@ -455,6 +455,10 @@ export function resolve(hpccWidget, callback) {
         case "GraphPageWidget":
             require(["hpcc/GraphPageWidget"], doLoad);
             break;
+        case "GraphsWidget":
+            //  ECLIDE Backward Compatibility  ---
+            require(["hpcc/GraphsWUWidget"], doLoad);
+            break;
         case "GraphsWUWidget":
             require(["hpcc/GraphsWUWidget"], doLoad);
             break;

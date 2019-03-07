@@ -47,7 +47,7 @@ import "dijit/form/Select";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 
-import declareDecorator from './DeclareDecorator';
+import { declareDecorator } from './DeclareDecorator';
 
 type _Widget = any;
 export interface GraphTreeWidget extends _Widget { }
