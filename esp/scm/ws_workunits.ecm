@@ -1187,11 +1187,13 @@ ESPrequest WUQueryGetSummaryStatsRequest
     string QueryId;
     string FromTime; //YYYY-MM-DDTHH:MM:SS
     string ToTime;
+    [min_ver("1.75")] bool All(false); //Return an array of all the raw stats that are available in the nominated time frame
 };
 
 ESPresponse [exceptions_inline] WUQueryGetSummaryStatsResponse
 {
     ESParray<ESPstruct QuerySummaryStats> StatsList;
+    [min_ver("1.75")] string RawStats;
 };
 
 ESPrequest WUExportRequest
@@ -2265,7 +2267,7 @@ ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
 // ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.74"), default_client_version("1.74"), cache_group("ESPWsWUs"),
+    version("1.75"), default_client_version("1.75"), cache_group("ESPWsWUs"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

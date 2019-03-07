@@ -3304,7 +3304,8 @@ bool CWsWorkunitsEx::onWUGetNumFileToCopy(IEspContext& context, IEspWUGetNumFile
     return true;
 }
 
-void getSummaryStatsByQueryId(const char *target, const char *queryId, const char *fromTime, const char *toTime, IArrayOf<IEspQuerySummaryStats>& querySummaryStatsList)
+void getSummaryStatsByQueryId(const char *target, const char *queryId, const char *fromTime,
+    const char *toTime, bool returnAllRawStats, StringBuffer &rawStats, IArrayOf<IEspQuerySummaryStats>& querySummaryStatsList)
 {
     if (!target || !*target)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Target name required");
@@ -3336,6 +3337,12 @@ void getSummaryStatsByQueryId(const char *target, const char *queryId, const cha
         StringBuffer sb;
         toXML(queryAggregates, sb);
         DBGLOG("getSummaryStatsByQueryId(): '%s' => '%s'", control.str(), sb.str());
+    }
+
+    if (returnAllRawStats)
+    {
+        toXML(queryAggregates, rawStats);
+        return;
     }
 
     //Parse queryAggregates and build querySummaryStatsList.
@@ -3383,6 +3390,7 @@ void getSummaryStatsByQueryId(const char *target, const char *queryId, const cha
             querySummaryStats->setStatus(status);
         querySummaryStatsList.append(*querySummaryStats.getLink());
     }
+
     return;
 }
 
@@ -3390,9 +3398,19 @@ bool CWsWorkunitsEx::onWUQueryGetSummaryStats(IEspContext& context, IEspWUQueryG
 {
     try
     {
+        bool returnAllRawStats = false;
+        double version = context.getClientVersion();
+        if (version >= 1.75)
+            returnAllRawStats = req.getAll();
+
+        StringBuffer rawStats;
         IArrayOf<IEspQuerySummaryStats> querySummaryStatsList;
-        getSummaryStatsByQueryId(req.getTarget(), req.getQueryId(), req.getFromTime(), req.getToTime(), querySummaryStatsList);
-        resp.setStatsList(querySummaryStatsList);
+        getSummaryStatsByQueryId(req.getTarget(), req.getQueryId(), req.getFromTime(),
+            req.getToTime(), returnAllRawStats, rawStats, querySummaryStatsList);
+        if (returnAllRawStats)
+            resp.setRawStats(rawStats);
+        else
+            resp.setStatsList(querySummaryStatsList);
     }
     catch(IException* e)
     {
