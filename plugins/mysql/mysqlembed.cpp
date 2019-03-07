@@ -675,11 +675,18 @@ public:
     {
         if (stmt && *stmt)
         {
+            // NOTE - we ignore all but the first result from stored procedures
+#if MYSQL_VERSION_ID >= 50500
+            while (mysql_stmt_next_result(*stmt)==0)
+            {
+                // Ignore and discard any additional results for the current row - typically the status result from a stored procedure call
+                mysql_stmt_free_result(*stmt);
+            }
+#endif
             if (inputBindings.numColumns() && mysql_stmt_bind_param(*stmt, inputBindings.queryBindings()))
                 fail(mysql_stmt_error(*stmt));
             if (mysql_stmt_execute(*stmt))
                 fail(mysql_stmt_error(*stmt));
-            // NOTE - we ignore all but the first result from stored procedures
             res.setown(new MySQLResult(mysql_stmt_result_metadata(*stmt)));
             if (*res)
             {

@@ -78,6 +78,18 @@ void CEsdlCustomTransformChoose::processClauses(IPropertyTree *request, IXpathCo
                             request->appendProp(targetField, evaluatedValue.str());
                         }
                     }
+                    catch (IException* e)
+                    {
+                        StringBuffer eMsg;
+                        e->errorMessage(eMsg);
+                        e->Release();
+
+                        VStringBuffer msg("Could not process Custom Transform: '%s' [%s]", cur.queryName(), eMsg.str());
+                        if (!optional)
+                            throw MakeStringException(-1, "%s", msg.str());
+                        else
+                            ERRLOG("%s", msg.str());
+                    }
                     catch (...)
                     {
                         VStringBuffer msg("Could not process Custom Transform: '%s' ", cur.queryName());
@@ -207,9 +219,15 @@ bool CEsdlCustomTransformChoose::evaluate(IXpathContext * xpathContext)
     {
         evalresp = xpathContext->evaluateAsBoolean(m_compiledConditionalXpath.getLink());
     }
+    catch (IException* e)
+    {
+        StringBuffer msg;
+        DBGLOG("%s", e->errorMessage(msg).str());
+        e->Release();
+    }
     catch (...)
     {
-        DBGLOG("CEsdlCustomTransformChoose:evaluate: Could not evaluate xpath '%s'", xpathContext->getXpath());
+        DBGLOG("CEsdlCustomTransformChoose:evaluate: Could not evaluate xpath '%s'", m_compiledConditionalXpath->getXpath());
     }
     return evalresp;
 }

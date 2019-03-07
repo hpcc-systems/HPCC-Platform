@@ -103,6 +103,7 @@ interface ICompiledUStrRegExpr
 
 //-----------------------------------------------------------------------------
 ECLRTL_API void * rtlMalloc(size32_t size);
+ECLRTL_API void * rtlCalloc(size32_t num, size32_t size);
 ECLRTL_API void rtlFree(void * x);
 ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size);
 ECLRTL_API __int64 rtlRound(double x);

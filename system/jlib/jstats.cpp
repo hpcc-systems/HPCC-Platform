@@ -1187,6 +1187,17 @@ const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDisk
 
 //--------------------------------------------------------------------------------------------------------------------
 
+StringBuffer & StatisticValueFilter::describe(StringBuffer & out) const
+{
+    out.append(queryStatisticName(kind));
+    if (minValue == maxValue)
+        out.append("=").append(minValue);
+    else
+        out.append("=").append(minValue).append("..").append(maxValue);
+    return out;
+}
+//--------------------------------------------------------------------------------------------------------------------
+
 class Statistic
 {
 public:
@@ -1457,7 +1468,8 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
         if (MATCHES_CONST_PREFIX(text, FunctionScopePrefix))
         {
             setFunctionId(text+ strlen(FunctionScopePrefix));
-            *_next = text + strlen(text);
+            if (_next)
+                *_next = text + strlen(text);
             return true;
         }
         break;
@@ -2895,6 +2907,51 @@ int ScopeFilter::compareDepth(unsigned depth) const
     if (depth > maxDepth)
         return +1;
     return 0;
+}
+
+StringBuffer & ScopeFilter::describe(StringBuffer & out) const
+{
+    if ((minDepth != 0) || (maxDepth != UINT_MAX))
+    {
+        if (minDepth == maxDepth)
+            out.appendf(",depth(%u)", minDepth);
+        else
+            out.appendf(",depth(%u,%u)", minDepth, maxDepth);
+    }
+    if (scopeTypes)
+    {
+        out.append(",stype[");
+        ForEachItemIn(i, scopeTypes)
+        {
+            if (i)
+                out.append(",");
+            out.append(queryScopeTypeName((StatisticScopeType)scopeTypes.item(i)));
+        }
+        out.append("]");
+    }
+    if (scopes)
+    {
+        out.append(",scope[");
+        ForEachItemIn(i, scopes)
+        {
+            if (i)
+                out.append(",");
+            out.append(scopes.item(i));
+        }
+        out.append("]");
+    }
+    if (ids)
+    {
+        out.append(",id[");
+        ForEachItemIn(i, ids)
+        {
+            if (i)
+                out.append(",");
+            out.append(ids.item(i));
+        }
+        out.append("]");
+    }
+    return out;
 }
 
 void ScopeFilter::finishedFilter()

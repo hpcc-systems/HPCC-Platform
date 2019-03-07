@@ -34,6 +34,7 @@
 #include <libxml/hash.h>
 
 #include "xpathprocessor.hpp"
+#include "xmlerror.hpp"
 
 class CLibCompiledXpath : public CInterface, public ICompiledXpath
 {
@@ -98,7 +99,7 @@ public:
     virtual bool addVariable(const char * name,  const char * val) override
     {
         WriteLockBlock wblock(m_rwlock);
-        if (m_xpathContext && val && *val)
+        if (m_xpathContext && val)
         {
             return xmlXPathRegisterVariable(m_xpathContext, (xmlChar *)name, xmlXPathNewCString(val)) == 0;
         }
@@ -121,116 +122,31 @@ public:
 
     virtual bool evaluateAsBoolean(const char * xpath)
     {
-        bool bresult = false;
-        if (xpath && *xpath)
-        {
-            xmlXPathObjectPtr evaluatedXpathObj = evaluate(xpath);
-            if (evaluatedXpathObj && evaluatedXpathObj->type == XPATH_BOOLEAN)
-            {
-                bresult = evaluatedXpathObj->boolval;
-            }
-            else
-                throw MakeStringException(-1,"XpathProcessor:evaluateAsBoolean: Error: Could not evaluate XPATH '%s' as boolean", m_xpath.str());
-
-            xmlXPathFreeObject(evaluatedXpathObj);
-        }
-        else
-            throw MakeStringException(-1,"XpathProcessor:evaluateAsBoolean: Error: empty xpath provided");
-
-        return bresult;
+        if (!xpath || !*xpath)
+            throw MakeStringException(XPATHERR_MissingInput,"XpathProcessor:evaluateAsBoolean: Error: Could not evaluate empty XPATH");
+        return evaluateAsBoolean(evaluate(xpath), xpath);
     }
     virtual bool evaluateAsString(const char * xpath, StringBuffer & evaluated)
     {
-        if (xpath && *xpath)
-        {
-            xmlXPathObjectPtr evaluatedXpathObj = evaluate(xpath);
-            evaluated.clear();
-            if (evaluatedXpathObj && evaluatedXpathObj->type == XPATH_NODESET)
-            {
-                xmlNodeSetPtr nodes = evaluatedXpathObj->nodesetval;
-                for (int i = 0; i < nodes->nodeNr; i++)
-                {
-                    xmlNodePtr nodeTab = nodes->nodeTab[i];
-                    evaluated.append((const char *)xmlNodeGetContent(nodeTab));
-                }
-                xmlXPathFreeObject(evaluatedXpathObj);
-            }
-            else
-                throw MakeStringException(-1,"XpathProcessor:evaluateAsString: Error: Could not evaluate XPATH as string");
-        }
-        else
-            throw MakeStringException(-1,"XpathProcessor:evaluateAsString: Error: empty xpath provided");
-
-        return evaluated.str();
+        if (!xpath || !*xpath)
+            throw MakeStringException(XPATHERR_MissingInput,"XpathProcessor:evaluateAsString: Error: Could not evaluate empty XPATH");
+        return evaluateAsString(evaluate(xpath), evaluated, xpath);
     }
 
     virtual bool evaluateAsBoolean(ICompiledXpath * compiledXpath) override
     {
-        bool bresult = false;
         CLibCompiledXpath * clibCompiledXpath = static_cast<CLibCompiledXpath *>(compiledXpath);
-        xmlXPathObjectPtr evaluatedXpathObj = evaluate(clibCompiledXpath->getCompiledXPathExpression());
-
-        if (evaluatedXpathObj && evaluatedXpathObj->type == XPATH_BOOLEAN)
-        {
-            bresult = evaluatedXpathObj->boolval;
-        }
-        else
-            throw MakeStringException(-1,"XpathProcessor:evaluateAsBoolean: Error: Could not evaluate XPATH '%s' as boolean", m_xpath.str());
-
-        xmlXPathFreeObject(evaluatedXpathObj);
-        return bresult;
+        if (!clibCompiledXpath)
+            throw MakeStringException(XPATHERR_MissingInput,"XpathProcessor:evaluateAsBoolean: Error: Missing compiled XPATH");
+        return evaluateAsBoolean(evaluate(clibCompiledXpath->getCompiledXPathExpression(), compiledXpath->getXpath()), compiledXpath->getXpath());
     }
 
     virtual const char * evaluateAsString(ICompiledXpath * compiledXpath, StringBuffer & evaluated) override
     {
         CLibCompiledXpath * clibCompiledXpath = static_cast<CLibCompiledXpath *>(compiledXpath);
-        xmlXPathObjectPtr evaluatedXpathObj = evaluate(clibCompiledXpath->getCompiledXPathExpression());
-        evaluated.clear();
-        if (evaluatedXpathObj)
-        {
-            switch (evaluatedXpathObj->type)
-            {
-                case XPATH_NODESET:
-                {
-                    xmlNodeSetPtr nodes = evaluatedXpathObj->nodesetval;
-                    for (int i = 0; i < nodes->nodeNr; i++)
-                    {
-                        xmlNodePtr nodeTab = nodes->nodeTab[i];
-                        evaluated.append((const char *)xmlNodeGetContent(nodeTab));
-                    }
-                    break;
-                }
-                case XPATH_BOOLEAN:
-                case XPATH_NUMBER:
-                case XPATH_STRING:
-                case XPATH_POINT:
-                case XPATH_RANGE:
-                case XPATH_LOCATIONSET:
-                case XPATH_USERS:
-                case XPATH_XSLT_TREE:
-                {
-                    evaluatedXpathObj = xmlXPathConvertString (evaluatedXpathObj); //existing object is freed
-                    if (!evaluatedXpathObj)
-                        throw MakeStringException(-1,"XpathProcessor:evaluateAsString: could not convert result to string");
-                    evaluated.append(evaluatedXpathObj->stringval);
-                    break;
-                }
-                default:
-                {
-                    xmlXPathFreeObject(evaluatedXpathObj);
-                    throw MakeStringException(-1,"XpathProcessor:evaluateAsString: Error: Encountered unsupported XPATH type");
-                    break;
-                }
-             }
-         }
-         else
-         {
-             xmlXPathFreeObject(evaluatedXpathObj);
-             throw MakeStringException(-1,"XpathProcessor:evaluateAsString: Error: Could not evaluate XPATH as string");
-         }
-
-        xmlXPathFreeObject(evaluatedXpathObj);
-        return evaluated.str();
+        if (!clibCompiledXpath)
+            throw MakeStringException(XPATHERR_MissingInput,"XpathProcessor:evaluateAsString: Error: Missing compiled XPATH");
+        return evaluateAsString(evaluate(clibCompiledXpath->getCompiledXPathExpression(), compiledXpath->getXpath()), evaluated, compiledXpath->getXpath());
     }
 
 private:
@@ -257,7 +173,71 @@ private:
         return false;
     }
 
-    virtual xmlXPathObjectPtr evaluate(xmlXPathCompExprPtr compiledXpath)
+    bool evaluateAsBoolean(xmlXPathObjectPtr evaluatedXpathObj, const char* xpath)
+    {
+        if (!evaluatedXpathObj)
+        {
+            throw MakeStringException(XPATHERR_InvalidInput, "XpathProcessor:evaluateAsBoolean: Error: Could not evaluate XPATH '%s'", xpath);
+        }
+        if (XPATH_BOOLEAN != evaluatedXpathObj->type)
+        {
+            xmlXPathFreeObject(evaluatedXpathObj);
+            throw MakeStringException(XPATHERR_UnexpectedInput, "XpathProcessor:evaluateAsBoolean: Error: Could not evaluate XPATH '%s' as Boolean", xpath);
+        }
+
+        bool bresult = evaluatedXpathObj->boolval;
+
+        xmlXPathFreeObject(evaluatedXpathObj);
+        return bresult;
+    }
+
+    const char* evaluateAsString(xmlXPathObjectPtr evaluatedXpathObj, StringBuffer& evaluated, const char* xpath)
+    {
+        if (!evaluatedXpathObj)
+            throw MakeStringException(XPATHERR_InvalidInput,"XpathProcessor:evaluateAsString: Error: Could not evaluate XPATH '%s'", xpath);
+
+        evaluated.clear();
+        switch (evaluatedXpathObj->type)
+        {
+            case XPATH_NODESET:
+            {
+                xmlNodeSetPtr nodes = evaluatedXpathObj->nodesetval;
+                for (int i = 0; i < nodes->nodeNr; i++)
+                {
+                    xmlNodePtr nodeTab = nodes->nodeTab[i];
+                    auto nodeContent = xmlNodeGetContent(nodeTab);
+                    evaluated.append((const char *)nodeContent);
+                    xmlFree(nodeContent);
+                }
+                break;
+            }
+            case XPATH_BOOLEAN:
+            case XPATH_NUMBER:
+            case XPATH_STRING:
+            case XPATH_POINT:
+            case XPATH_RANGE:
+            case XPATH_LOCATIONSET:
+            case XPATH_USERS:
+            case XPATH_XSLT_TREE:
+            {
+                evaluatedXpathObj = xmlXPathConvertString (evaluatedXpathObj); //existing object is freed
+                if (!evaluatedXpathObj)
+                    throw MakeStringException(XPATHERR_UnexpectedInput,"XpathProcessor:evaluateAsString: Error: Could not evaluate XPATH '%s'; could not convert result to string", xpath);
+                evaluated.append(evaluatedXpathObj->stringval);
+                break;
+            }
+            default:
+            {
+                xmlXPathFreeObject(evaluatedXpathObj);
+                throw MakeStringException(XPATHERR_UnexpectedInput,"XpathProcessor:evaluateAsString: Error: Could not evaluate XPATH '%s' as string; unexpected type %d", xpath, evaluatedXpathObj->type);
+                break;
+            }
+        }
+        xmlXPathFreeObject(evaluatedXpathObj);
+        return evaluated.str();
+    }
+
+    virtual xmlXPathObjectPtr evaluate(xmlXPathCompExprPtr compiledXpath, const char* xpath)
     {
         xmlXPathObjectPtr evaluatedXpathObj = nullptr;
         if (compiledXpath)
@@ -269,7 +249,7 @@ private:
             }
             else
             {
-                throw MakeStringException(-1,"XpathProcessor:evaluate: Error: Invalid xpathCotext detected. Ensure xmldoc has been set");
+                throw MakeStringException(XPATHERR_InvalidState,"XpathProcessor:evaluate: Error: Could not evaluate XPATH '%s'; ensure xmldoc has been set", xpath);
             }
         }
 
@@ -288,7 +268,7 @@ private:
             }
             else
             {
-                throw MakeStringException(-1,"XpathProcessor:evaluate: Error: Invalid xpathCotext detected. Ensure xmldoc has been set");
+                throw MakeStringException(XPATHERR_InvalidState,"XpathProcessor:evaluate: Error: Could not evaluate XPATH '%s'; ensure xmldoc has been set", xpath);
             }
         }
 
