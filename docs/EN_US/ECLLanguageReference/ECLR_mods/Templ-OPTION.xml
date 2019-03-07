@@ -1017,15 +1017,6 @@
 
           <tbody>
             <row>
-              <entry><emphasis>clusterSize</emphasis></entry>
-
-              <entry>Default: none</entry>
-
-              <entry>Override the number of nodes in the cluster (for
-              testing)</entry>
-            </row>
-
-            <row>
               <entry><emphasis>debugNlp</emphasis></entry>
 
               <entry>Default: false</entry>

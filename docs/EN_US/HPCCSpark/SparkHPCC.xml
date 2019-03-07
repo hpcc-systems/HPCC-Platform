@@ -707,23 +707,24 @@
       such as Eclipse via the Spark-submit application whereas the examples
       below are dependent on the Spark shell.</para>
 
+      <para>The following examples assume a Spark Shell. You can use the
+      spark-submit command if you intend to compile and package these
+      examples. To properly connect your spark shell to the Integrated Spark
+      cluster, provide the following parameters when starting the
+      shell:</para>
+
+      <programlisting>bin/spark-shell  \
+ --master=&lt;spark://{remotesparkhost-IP}:{sparkport}&gt; --conf="spark.driver.host={localhost-ip}" </programlisting>
+
       <sect2 id="iris_lr">
         <title>Iris_LR</title>
 
-        <para>The Iris_LR example assumes a Spark Shell. You can use the
-        spark-submit command if you intend to compile and package these
-        examples. If you are already logged onto a node on an integrated
-        Spark-HPCC Cluster run the spark-shell:</para>
-
-        <programlisting> /opt/HPCCSystems/externals \
- /spark-hadoop/bin/spark-shell --master=spark://{sparkhost-IP}:{sparkport}</programlisting>
-
-        <para>The next step is to establish your HpccFile and your RDD for
-        that file. You need the name of the file, the protocol (http or
-        https), the name or IP of the ESP, the port for the ESP (usually
-        8010), and your user account and password. The <emphasis>sc</emphasis>
-        value is the <emphasis>SparkContext</emphasis> object provided by the
-        shell.</para>
+        <para>This example assumes that you have Spark Shell running. The next
+        step is to establish your HpccFile and your RDD for that file. You
+        need the name of the file, the protocol (http or https), the name or
+        IP of the ESP, the port for the ESP (usually 8010), and your user
+        account and password. The <emphasis>sc</emphasis> value is the
+        <emphasis>SparkContext</emphasis> object provided by the shell.</para>
 
         <programlisting> val espcon = new Connection("http", "myeclwatchhost", "8010");
  espcon.setUserName("myuser");
