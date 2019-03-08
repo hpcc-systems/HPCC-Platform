@@ -72,7 +72,7 @@ public:
     virtual void toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0 );
     virtual void toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, StringBuffer &xslt, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0 );
     virtual void toWSDL( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0 );
-    virtual void toJavaService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId classType, IProperties *opts, unsigned flags);
+    virtual void toMicroService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId classType, IProperties *opts, unsigned flags);
 
     void loadTransformParams( EsdlXslTypeId xslId );
 
@@ -303,7 +303,7 @@ void EsdlDefinitionHelper::loadTransformParams( EsdlXslTypeId xslId)
     }
 }
 
-void EsdlDefinitionHelper::toJavaService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts, unsigned flags)
+void EsdlDefinitionHelper::toMicroService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts, unsigned flags)
 {
     StringBuffer xml;
     int xmlLen = 0;

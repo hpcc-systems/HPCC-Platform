@@ -10,6 +10,7 @@
           </xsdl:choose>
        </xsdl:CustomRequestTransform>
     <Method name="JavaEchoPersonInfo" querytype="java" javamethod="EsdlExample.EsdlExampleService.JavaEchoPersonInfo"/>
+    <Method name="CppEchoPersonInfo" querytype="cpp" method="onEsdlExampleCppEchoPersonInfo" plugin="libEsdlExampleService.so"/>
     <Method name="RoxieEchoPersonInfo" querytype="roxie" url="http://localhost:9876/roxie" queryname="RoxieEchoPersonInfo">
          <xsdl:CustomRequestTransform target="soap:Body/{$query}">
             <xsdl:choose>

@@ -259,6 +259,46 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
     }
 }
 
+void EsdlServiceImpl::configureCppMethod(const char *method, IPropertyTree &entry, IEspPlugin*& plugin)
+{
+    const char *pluginName = entry.queryProp("@plugin");
+    if (!pluginName || !*pluginName)
+    {
+        DBGLOG("C++ plugin name is missing for method %s", method);
+        return;
+    }
+    const char *cppMethod = entry.queryProp("@method");
+    if (!cppMethod || !*cppMethod)
+    {
+        DBGLOG("C++ method name is missing for method %s", method);
+        return;
+    }
+
+    Owned<IEspPlugin> pluginHolder;
+    if (!plugin)
+    {
+        DBGLOG("Loading plugin %s", pluginName);
+        pluginHolder.setown(loadPlugin(pluginName));
+        plugin = pluginHolder.get();
+        if (!plugin || !plugin->isLoaded())
+        {
+            DBGLOG("C++ plugin %s could not be loaded for esdl method %s", pluginName, method);
+            return;
+        }
+        cppPluginMap.remove(pluginName);
+        cppPluginMap.setValue(pluginName, plugin);
+    }
+
+    cpp_service_method_t xproc = (cpp_service_method_t) plugin->getProcAddress(cppMethod);
+    if (!xproc)
+    {
+        DBGLOG("C++ method %s could not be loaded from plugin %s in esdl method %s", cppMethod, pluginName, method);
+        return;
+    }
+    cppProcMap.remove(method);
+    cppProcMap.setValue(method, xproc);
+}
+
 void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entry)
 {
     const char *url = entry.queryProp("@url");
@@ -414,6 +454,8 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         else
             classPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes");
 
+        MapStringToMyClass<IEspPlugin> localCppPluginMap;
+
         Owned<IPropertyTreeIterator> iter = m_pServiceMethodTargets->getElements("Target");
         ForEach(*iter)
         {
@@ -449,6 +491,20 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             const char *type = methodCfg.queryProp("@querytype");
             if (type && strieq(type, "java"))
                 configureJavaMethod(method, methodCfg, classPath);
+            else if (type && strieq(type, "cpp"))
+            {
+                const char* pluginName = methodCfg.queryProp("@plugin");
+                if (!pluginName || !*pluginName)
+                    DBGLOG("C++ plugin name is missing for method %s", method);
+                else
+                {
+                    IEspPlugin* plugin = localCppPluginMap.getValue(pluginName);
+                    bool loaded = (plugin != nullptr);
+                    configureCppMethod(method, methodCfg, plugin);
+                    if (!loaded && plugin != nullptr)
+                        localCppPluginMap.setValue(pluginName, plugin);
+                }
+            }
             else
                 configureUrlMethod(method, methodCfg);
             DBGLOG("Method %s configured", method);
@@ -468,7 +524,8 @@ enum EsdlMethodImplType
     EsdlMethodImplRoxie,
     EsdlMethodImplWsEcl,
     EsdlMethodImplProxy,
-    EsdlMethodImplJava
+    EsdlMethodImplJava,
+    EsdlMethodImplCpp
 };
 
 inline EsdlMethodImplType getEsdlMethodImplType(const char *querytype)
@@ -483,6 +540,8 @@ inline EsdlMethodImplType getEsdlMethodImplType(const char *querytype)
             return EsdlMethodImplProxy;
         if (strieq(querytype, "java"))
             return EsdlMethodImplJava;
+        if (strieq(querytype, "cpp"))
+            return EsdlMethodImplCpp;
     }
     return EsdlMethodImplRoxie;
 }
@@ -650,6 +709,44 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
              m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
 
              out.append(finalRespWriter->str());
+        }
+        else if (implType==EsdlMethodImplCpp)
+        {
+            Owned<IXmlWriterExt> reqWriter = createIXmlWriterExt(0, 0, NULL, WTStandard);
+
+            //Preprocess Request
+            StringBuffer reqcontent;
+            unsigned xflags = (isPublishedQuery(implType)) ? ROXIEREQ_FLAGS : ESDLREQ_FLAGS;
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc");
+            m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, reqWriter.get(), xflags, NULL);
+            context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc");
+
+            reqcontent.set(reqWriter->str());
+            context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
+
+            cpp_service_method_t xproc = nullptr;
+            cpp_service_method_t* xprocp = cppProcMap.getValue(mthName);
+            if (xprocp)
+                xproc = *xprocp;
+            if (!xproc)
+                throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "C++ plugin or method not loaded for method %s", mthName);
+
+            StringBuffer ctxbuf;
+            ctxbuf.append("<EsdlContext>");
+            if (context.queryUserId())
+                ctxbuf.appendf("<username>%s</username>", context.queryUserId());
+            ctxbuf.append("</EsdlContext>");
+
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-cppcall");
+            xproc(ctxbuf.str(), reqcontent.str(), origResp);
+            context.addTraceSummaryTimeStamp(LogNormal, "end-cppcall");
+
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-procres");
+            Owned<IXmlWriterExt> finalRespWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
+            m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
+            context.addTraceSummaryTimeStamp(LogNormal, "end-procres");
+
+            out.append(finalRespWriter->str());
         }
         else
         {
@@ -2132,7 +2229,7 @@ int EsdlBindingImpl::onJavaPlugin(IEspContext &context,
         try
         {
             Owned<IEsdlDefObjectIterator> it = m_esdl->getDependencies(serviceName, methodName, context.getClientVersion(), context.queryRequestParameters(), 0);
-            m_xsdgen->toJavaService( *it, out, EsdlXslToJavaServiceBase, context.queryRequestParameters(), 0);
+            m_xsdgen->toMicroService( *it, out, EsdlXslToJavaServiceBase, context.queryRequestParameters(), 0);
         }
         catch (IException *E)
         {

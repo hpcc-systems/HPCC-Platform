@@ -707,7 +707,7 @@ public:
         StringBuffer xsltpathServiceBase(optXsltPath);
         xsltpathServiceBase.append(XSLT_ESDL2JAVABASE);
         cmdHelper.defHelper->loadTransform( xsltpathServiceBase, NULL, EsdlXslToJavaServiceBase);
-        cmdHelper.defHelper->toJavaService( *structs, outputBuffer, EsdlXslToJavaServiceBase, NULL, optFlags );
+        cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToJavaServiceBase, NULL, optFlags );
 
         VStringBuffer javaFileNameBase("%sServiceBase.java", optService.get());
         saveAsFile(".", javaFileNameBase, outputBuffer.str(), NULL);
@@ -715,7 +715,7 @@ public:
         StringBuffer xsltpathServiceDummy(optXsltPath);
         xsltpathServiceDummy.append(XSLT_ESDL2JAVADUMMY);
         cmdHelper.defHelper->loadTransform( xsltpathServiceDummy, NULL, EsdlXslToJavaServiceDummy);
-        cmdHelper.defHelper->toJavaService( *structs, outputBuffer.clear(), EsdlXslToJavaServiceDummy, NULL, optFlags );
+        cmdHelper.defHelper->toMicroService( *structs, outputBuffer.clear(), EsdlXslToJavaServiceDummy, NULL, optFlags );
 
         VStringBuffer javaFileNameDummy("%sServiceDummy.java", optService.get());
         saveAsFile(".", javaFileNameDummy, outputBuffer.str(), NULL);
@@ -801,6 +801,318 @@ protected:
     Owned<IProperties> params;
 };
 
+#define XSLT_ESDL2CPPBASEHPP "esdl2cpp_srvbasehpp.xslt"
+#define XSLT_ESDL2CPPBASECPP "esdl2cpp_srvbasecpp.xslt"
+#define XSLT_ESDL2CPPSRVHPP "esdl2cpp_srvhpp.xslt"
+#define XSLT_ESDL2CPPSRVCPP "esdl2cpp_srvcpp.xslt"
+#define XSLT_ESDL2CPPCMAKE "esdl2cpp_cmake.xslt"
+#define XSLT_ESDL2CPPTYPES "esdl2cpp_types.xslt"
+
+class Esdl2CppCmd : public EsdlHelperConvertCmd
+{
+public:
+    Esdl2CppCmd() : optFlags(0)
+    {}
+
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        //First two parameters' order is fixed.
+        for (int par = 0; par < 2 && !iter.done(); par++)
+        {
+            const char *arg = iter.query();
+            if (*arg != '-')
+            {
+                if (optSource.isEmpty())
+                    optSource.set(arg);
+                else if (optService.isEmpty())
+                    optService.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument detected before required parameters: %s\n", arg);
+                    usage();
+                    return false;
+                }
+            }
+            else
+            {
+                fprintf(stderr, "\noption detected before required parameters: %s\n", arg);
+                usage();
+                return false;
+            }
+
+            iter.next();
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            if (parseCommandLineOption(iter))
+                continue;
+
+            if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
+                return false;
+        }
+
+        return true;
+    }
+
+    virtual bool parseCommandLineOption(ArgvIterator &iter)
+    {
+        if (iter.matchOption(optService, ESDLOPT_SERVICE))
+            return true;
+        if (iter.matchOption(optMethod, ESDLOPT_METHOD))
+            return true;
+        if (iter.matchOption(optXsltPath, ESDLOPT_XSLT_PATH))
+            return true;
+        if (iter.matchOption(optOutDirPath, ESDL_CONVERT_OUTDIR))
+            return true;
+        if (iter.matchOption(optPreprocessOutputDir, ESDLOPT_PREPROCESS_OUT))
+            return true;
+        if (EsdlConvertCmd::parseCommandLineOption(iter))
+            return true;
+
+        return false;
+    }
+
+    esdlCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
+    {
+        return EsdlConvertCmd::matchCommandLineOption(iter, true);
+    }
+
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        extractEsdlCmdOption(optIncludePath, globals, ESDLOPT_INCLUDE_PATH_ENV, ESDLOPT_INCLUDE_PATH_INI, NULL, NULL);
+
+        if (optSource.isEmpty())
+        {
+            usage();
+            throw( MakeStringException(0, "\nError: Source file parameter required\n"));
+        }
+
+        if( optService.isEmpty() )
+        {
+            usage();
+            throw( MakeStringException(0, "A service name must be provided") );
+        }
+
+        if (!optXsltPath.length())
+        {
+            StringBuffer binXsltPath;
+            getComponentFilesRelPathFromBin(binXsltPath);
+            binXsltPath.append("/xslt/");
+            StringBuffer temp;
+            if (checkFileExists(temp.append(binXsltPath).append(XSLT_ESDL2CPPBASEHPP)))
+                optXsltPath.set(binXsltPath);
+            else
+                optXsltPath.set(temp.set(COMPONENTFILES_DIR).append("/xslt/"));
+        }
+        cmdHelper.verbose = optVerbose;
+        return true;
+    }
+
+    virtual void doTransform(IEsdlDefObjectIterator& objs, StringBuffer &out, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )
+    {
+    }
+    virtual void loadTransform( StringBuffer &xsltpath, IProperties *params )
+    {
+    }
+
+    virtual void setTransformParams(IProperties *params )
+    {
+    }
+
+    virtual int processCMD()
+    {
+        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath);
+        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService, optMethod, ESDLOPTLIST_DELIMITER, 0, NULL, optFlags );
+
+        if(!optPreprocessOutputDir.isEmpty())
+        {
+            outputRaw(*structs);
+        }
+
+
+        StringBuffer outdir;
+        if (optOutDirPath.length() > 0)
+            outdir.append(optOutDirPath);
+        else
+            outdir.append(".");
+        StringBuffer sourcedir(outdir);
+        sourcedir.append(PATHSEPCHAR).append("source");
+        StringBuffer builddir(outdir);
+        builddir.append(PATHSEPCHAR).append("build");
+        recursiveCreateDirectory(sourcedir.str());
+        recursiveCreateDirectory(builddir.str());
+
+        VStringBuffer hppFileNameBase("%sServiceBase.hpp", optService.get());
+        StringBuffer xsltpath(optXsltPath);
+        xsltpath.append(XSLT_ESDL2CPPBASEHPP);
+        StringBuffer filefullpath;
+        filefullpath.append(sourcedir).append(PATHSEPCHAR).append(hppFileNameBase);
+        if (checkFileExists(filefullpath.str()))
+            DBGLOG("ATTENTION: File %s already exists, won't generate again", filefullpath.str());
+        else
+        {
+            cmdHelper.defHelper->loadTransform( xsltpath, NULL, EsdlXslToCppServiceBaseHpp);
+            cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppServiceBaseHpp, NULL, optFlags );
+            saveAsFile(sourcedir, hppFileNameBase, outputBuffer.str(), NULL);
+        }
+
+        VStringBuffer cppFileNameBase("%sServiceBase.cpp", optService.get());
+        outputBuffer.clear();
+        xsltpath.clear().append(optXsltPath);
+        xsltpath.append(XSLT_ESDL2CPPBASECPP);
+        filefullpath.clear().append(sourcedir).append(PATHSEPCHAR).append(cppFileNameBase);
+        if (checkFileExists(filefullpath.str()))
+            DBGLOG("ATTENTION: File %s already exists, won't generate again", filefullpath.str());
+        else
+        {
+            cmdHelper.defHelper->loadTransform( xsltpath, NULL, EsdlXslToCppServiceBaseCpp);
+            cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppServiceBaseCpp, NULL, optFlags );
+            saveAsFile(sourcedir.str(), cppFileNameBase, outputBuffer.str(), NULL);
+        }
+
+        VStringBuffer srvHppFileNameBase("%sService.hpp", optService.get());
+        outputBuffer.clear();
+        xsltpath.clear().append(optXsltPath);
+        xsltpath.append(XSLT_ESDL2CPPSRVHPP);
+        filefullpath.clear().append(sourcedir).append(PATHSEPCHAR).append(srvHppFileNameBase);
+        if (checkFileExists(filefullpath.str()))
+            DBGLOG("ATTENTION: File %s already exists, won't generate again", filefullpath.str());
+        else
+        {
+            cmdHelper.defHelper->loadTransform( xsltpath, NULL, EsdlXslToCppServiceHpp);
+            cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppServiceHpp, NULL, optFlags );
+            saveAsFile(sourcedir.str(), srvHppFileNameBase, outputBuffer.str(), NULL);
+        }
+
+        VStringBuffer srvCppFileNameBase("%sService.cpp", optService.get());
+        outputBuffer.clear();
+        xsltpath.clear().append(optXsltPath);
+        xsltpath.append(XSLT_ESDL2CPPSRVCPP);
+        filefullpath.clear().append(sourcedir).append(PATHSEPCHAR).append(srvCppFileNameBase);
+        if (checkFileExists(filefullpath.str()))
+            DBGLOG("ATTENTION: File %s already exists, won't generate again", filefullpath.str());
+        else
+        {
+            cmdHelper.defHelper->loadTransform( xsltpath, NULL, EsdlXslToCppServiceCpp);
+            cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppServiceCpp, NULL, optFlags );
+            saveAsFile(sourcedir.str(), srvCppFileNameBase, outputBuffer.str(), NULL);
+        }
+
+        outputBuffer.clear();
+        xsltpath.clear().append(optXsltPath);
+        xsltpath.append(XSLT_ESDL2CPPCMAKE);
+        filefullpath.clear().append(sourcedir).append(PATHSEPCHAR).append("CMakeLists.txt");
+        if (checkFileExists(filefullpath.str()))
+            DBGLOG("ATTENTION: File %s already exists, won't generate again", filefullpath.str());
+        else
+        {
+            cmdHelper.defHelper->loadTransform( xsltpath, NULL, EsdlXslToCppCMake);
+            cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppCMake, NULL, optFlags );
+            saveAsFile(sourcedir.str(), "CMakeLists.txt", outputBuffer.str(), NULL);
+        }
+
+        outputBuffer.clear();
+        xsltpath.clear().append(optXsltPath);
+        xsltpath.append(XSLT_ESDL2CPPTYPES);
+        filefullpath.clear().append(sourcedir).append(PATHSEPCHAR).append("primitivetypes.hpp");
+        if (checkFileExists(filefullpath.str()))
+            DBGLOG("ATTENTION: File %s already exists, won't generate again", filefullpath.str());
+        else
+        {
+            cmdHelper.defHelper->loadTransform( xsltpath, NULL, EsdlXslToCppTypes);
+            cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppTypes, NULL, optFlags );
+            saveAsFile(sourcedir.str(), "primitivetypes.hpp", outputBuffer.str(), NULL);
+        }
+        return 0;
+    }
+
+    void printOptions()
+    {
+        puts("Options:");
+        puts("   --method <meth name>[;<meth name>]* Constrain to list of specific method(s)" );
+        puts("   --xslt <xslt file path>             Path to xslt files used to transform EsdlDef to c++ code" );
+        puts("   --preprocess-output <raw output directory> : Output pre-processed xml file to specified directory before applying XSLT transform" );
+        puts("   --show-inheritance                  Turns off the collapse feature. Collapsing optimizes the XML output to strip out structures" );
+        puts("                                       only used for inheritance, and collapses their elements into their child. That simplifies the" );
+        puts("                                       stylesheet. By default this option is on.");
+        puts(ESDLOPT_INCLUDE_PATH_USAGE);
+    }
+
+    virtual void usage()
+    {
+        puts("Usage:");
+
+        puts("esdl cpp sourcePath serviceName [options]\n" );
+        puts("\nsourcePath - Absolute path to the EXSDL Definition file ( XML generated from ECM )" );
+        puts("               which contains ESDL Service definition.\n" );
+        puts("serviceName  - Name of ESDL Service defined in the given EXSDL file.\n" );
+
+        printOptions();
+        EsdlConvertCmd::usage();
+    }
+
+    virtual void outputRaw( IEsdlDefObjectIterator& obj)
+    {
+        if (optPreprocessOutputDir.isEmpty())
+            return;
+
+        StringBuffer xml;
+
+        xml.appendf( "<esxdl name='%s'>", optService.get());
+        cmdHelper.defHelper->toXML( obj, xml, 0, NULL, optFlags );
+        xml.append("</esxdl>");
+        saveAsFile(optPreprocessOutputDir, NULL, xml, NULL );
+    }
+
+    void saveAsFile(const char * dir, const char *name, const char *text, const char *ext="")
+    {
+        StringBuffer path(dir);
+        if (name && *name)
+        {
+            if (*name!=PATHSEPCHAR)
+                addPathSepChar(path);
+            path.append(name);
+        }
+
+        if( ext && *ext )
+            path.append(ext);
+
+        Owned<IFile> file = createIFile(path);
+        Owned<IFileIO> io;
+        io.setown(file->open(IFOcreaterw));
+
+        DBGLOG("Writing c++ to file %s", file->queryFilename());
+
+        if (io.get())
+            io->write(0, strlen(text), text);
+        else
+            DBGLOG("File %s can't be created", file->queryFilename());
+    }
+
+    void setFlag( unsigned f ) { optFlags |= f; }
+    void unsetFlag( unsigned f ) { optFlags &= ~f; }
+
+public:
+    StringAttr optService;
+    StringAttr optXsltPath;
+    StringAttr optMethod;
+    StringAttr optOutDirPath;
+    StringAttr optPreprocessOutputDir;
+    unsigned optFlags;
+
+protected:
+    StringBuffer outputBuffer;
+    Owned<IProperties> params;
+};
+
+
 //=========================================================================================
 
 IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
@@ -813,6 +1125,8 @@ IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
         return new Esdl2EclCmd();
     if (strieq(cmdname, "JAVA"))
        return new Esdl2JavaCmd();
+    if (strieq(cmdname, "CPP"))
+       return new Esdl2CppCmd();
     if (strieq(cmdname, "WSDL"))
         return new Esdl2WSDLCmd();
     if (strieq(cmdname, "PUBLISH"))
