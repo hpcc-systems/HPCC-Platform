@@ -48,6 +48,7 @@ private:
     bool m_is_ssl;
     ISecureSocketContext* m_ssctx;
     IPersistentHandler* m_persistentHandler = nullptr;
+    bool m_shouldClose = false;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -88,6 +89,7 @@ private:
     bool m_is_ssl;
     ISecureSocketContext* m_ssctx;
     IPersistentHandler* m_persistentHandler = nullptr;
+    bool m_shouldClose = false;
 public:
     CHttpThread(ISocket *sock, CEspApplicationPort* apport, bool viewConfig, bool isSSL = false, ISecureSocketContext* ssctx = NULL, IPersistentHandler* persistentHandler = NULL);
     
@@ -96,6 +98,8 @@ public:
 
     virtual void setMaxRequestEntityLength(int len) {m_MaxRequestEntityLength = len;}
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }
+
+    void setShouldClose(bool should) {m_shouldClose = should;}
 };
 
 class esp_http_decl CHttpProtocol : public CEspProtocol
@@ -119,7 +123,7 @@ public:
 
     virtual void init(IPropertyTree * cfg, const char * process, const char * protocol);
 
-    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler) override;
+    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler, bool shouldClose) override;
 //IEspProtocol
     virtual const char * getProtocolName();
 };
@@ -138,7 +142,7 @@ public:
 
     virtual void init(IPropertyTree * cfg, const char * process, const char * protocol);
 
-    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler) override;
+    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler, bool shouldClose) override;
 //IEspProtocol
     virtual const char * getProtocolName();
 };

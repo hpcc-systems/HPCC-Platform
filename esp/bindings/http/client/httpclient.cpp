@@ -249,10 +249,13 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
     if(m_persistentHandler->inDoNotReuseList(&ep))
         m_disableKeepAlive = true;
 
-    Linked<ISocket> pSock = (m_disableKeepAlive || forceNewConnection)?nullptr:m_persistentHandler->getAvailable(&ep);
+    bool shouldClose = false;
+    Linked<ISocket> pSock = (m_disableKeepAlive || forceNewConnection)?nullptr:m_persistentHandler->getAvailable(&ep, &shouldClose);
     if(pSock)
     {
         m_isPersistentSocket = true;
+        if (shouldClose)
+            m_disableKeepAlive = true;
         m_socket = pSock.getLink();
     }
     else
@@ -391,6 +394,8 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
             httprequest->addCookie(LINK(cookie));
     }
 #endif
+
+    httprequest->setPersistentEnabled(!m_disableKeepAlive);
 
     httprequest->send();
 
@@ -534,6 +539,8 @@ HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage 
 
     copyCookies(*httprequest, *forwardRequest, m_host);
 
+    httprequest->setPersistentEnabled(!m_disableKeepAlive);
+
     httprequest->send();
 
     if (m_readTimeoutSecs)
@@ -653,6 +660,8 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
             httprequest->addCookie(LINK(cookie));
     }
 #endif
+
+    httprequest->setPersistentEnabled(!m_disableKeepAlive);
 
     httprequest->send();
 

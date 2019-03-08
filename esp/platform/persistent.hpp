@@ -31,14 +31,14 @@ interface IPersistentHandler : implements IInterface
     virtual void add(ISocket* sock, SocketEndpoint* ep = nullptr) = 0;
     virtual void remove(ISocket* sock) = 0;
     virtual void doneUsing(ISocket* sock, bool keep, unsigned usesOverOne = 0) = 0;
-    virtual Linked<ISocket> getAvailable(SocketEndpoint* ep = nullptr) = 0;
+    virtual Linked<ISocket> getAvailable(SocketEndpoint* ep = nullptr, bool* pShouldClose = nullptr) = 0;
     virtual void stop(bool wait) = 0;
     virtual bool inDoNotReuseList(SocketEndpoint* ep) = 0;
 };
 
 interface IPersistentSelectNotify
 {
-    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* handler) = 0;
+    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* handler, bool shouldClose) = 0;
 };
 
 IPersistentHandler* createPersistentHandler(IPersistentSelectNotify* notify, int maxIdleTime = DEFAULT_MAX_PERSISTENT_IDLE_TIME, int maxReqs = DEFAULT_MAX_PERSISTENT_REQUESTS, PersistentLogLevel loglevel=PersistentLogLevel::PLogMin, bool enableDoNotReuseList=false);
