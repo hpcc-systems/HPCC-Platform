@@ -59,6 +59,7 @@ define([
 
             //  Hitched actions  ---
             _onFilterClear: function (event) {
+                this.emit("clear");
                 this.clear();
             },
 

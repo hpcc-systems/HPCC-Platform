@@ -51,8 +51,6 @@ EXPORT varstring ResolveHostName(varstring hostname ) :=
 EXPORT unsigned8 getUniqueInteger(varstring foreigndali='') :=
     lib_fileservices.FileServices.getUniqueInteger(foreigndali);
 
-END;
-
 /**
  * Simple function that tests a full version string against the individual
  * platform version constants to determine if the platform's version is at
@@ -87,4 +85,6 @@ EXPORT PlatformVersionCheck(STRING v) := FUNCTION
             __ecl_version_major__ = major AND __ecl_version_minor__ = minor AND __ecl_version_subminor__ >= subminor    =>  TRUE,
             FALSE
         );
+END;
+
 END;

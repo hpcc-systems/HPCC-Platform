@@ -33,17 +33,17 @@ export class Timings {
         .baseUrl("")
         .request({
             ScopeFilter: {
-                MaxDepth: 2,
+                MaxDepth: 3,
                 ScopeTypes: []
             },
             NestedFilter: {
-                Depth: 999999,
+                Depth: 0,
                 ScopeTypes: []
             },
             PropertiesToReturn: {
-                AllProperties: true,
+                AllProperties: false,
                 AllStatistics: true,
-                AllHints: true,
+                AllHints: false,
                 Properties: ["WhenStarted", "TimeElapsed"]
             },
             ScopeOptions: {
@@ -156,13 +156,13 @@ export class Timings {
                     ScopeTypes: []
                 },
                 NestedFilter: {
-                    Depth: 999999,
+                    Depth: 0,
                     ScopeTypes: []
                 },
                 PropertiesToReturn: {
-                    AllProperties: true,
+                    AllProperties: false,
                     AllStatistics: true,
-                    AllHints: true,
+                    AllHints: false,
                     Properties: []
                 },
                 ScopeOptions: {

@@ -81,7 +81,11 @@ static const char * LIBFLAG_DEBUG[] = { "/MDd", "" };
 static const char * LIBFLAG_RELEASE[] = { "/MD", "" };
 static const char * COMPILE_ONLY[] = { "/c", "-c" };
 
+#ifdef _DEBUG
 static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1 -Werror -Wno-tautological-compare" };
+#else
+static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1 -Wno-tautological-compare" };
+#endif
 static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." , "" };
 static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC  -O0" };
 static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC  -O0" };

@@ -418,6 +418,9 @@ void WUDetails::processRequest(IEspWUDetailsRequest &req, IEspWUDetailsResponse 
     buildWuScopeFilter(req.getScopeFilter(), req.getNestedFilter(), req.getPropertiesToReturn(),
                        req.getFilter(), scopeOptions);
 
+    StringBuffer filter;
+    PROGLOG("WUDetails: %s", wuScopeFilter.describe(filter).str());
+
     IArrayOf<IEspWUResponseScope> respScopes;
     WUDetailsVisitor wuDetailsVisitor(req.getPropertyOptions(), req.getPropertiesToReturn());
     Owned<IConstWUScopeIterator> iter = &workunit->getScopeIterator(wuScopeFilter);

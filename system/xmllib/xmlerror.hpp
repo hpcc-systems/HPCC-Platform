@@ -41,4 +41,12 @@
 #define XSLERR_ExternalFunctionIncompatible             5658
 #define XSLERR_ExtenrnalFunctionMultipleURIs            5659
 
+
+
+#define XPATHERR_InvalidState                           5680
+#define XPATHERR_MissingInput                           5681
+#define XPATHERR_InvalidInput                           5682
+#define XPATHERR_UnexpectedInput                        5683
+
+
 #endif
