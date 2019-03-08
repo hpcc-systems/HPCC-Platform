@@ -50,7 +50,24 @@ CHttpClientContext::CHttpClientContext(IPropertyTree* config) : m_config(config)
 
 void CHttpClientContext::initPersistentHandler()
 {
-    m_persistentHandler.setown(createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, DEFAULT_MAX_PERSISTENT_REQUESTS, static_cast<PersistentLogLevel>(getEspLogLevel()), true));
+    IEspServer* server = queryEspServer();
+    IPropertyTree* proc_cfg = nullptr;
+    if (server)
+        proc_cfg = server->queryProcConfig();
+    int maxIdleTime = DEFAULT_MAX_PERSISTENT_IDLE_TIME;
+    int maxReqs = DEFAULT_MAX_PERSISTENT_REQUESTS;
+    if (proc_cfg)
+    {
+        maxIdleTime = proc_cfg->getPropInt("@maxPersistentIdleTime", maxIdleTime);
+        maxReqs = proc_cfg->getPropInt("@maxPersistentRequests", maxReqs);
+    }
+    //To disable persistent connections, set maxPersistentIdleTime or maxPersistentRequests to 0
+    if (maxIdleTime == 0 || maxReqs == 0)
+    {
+        DBGLOG("Persistent connection won't be enabled for httpclient because maxPersistentIdleTime or maxPersistentRequests is set to 0");
+        return;
+    }
+    m_persistentHandler.setown(createPersistentHandler(nullptr, maxIdleTime, maxReqs, static_cast<PersistentLogLevel>(getEspLogLevel()), true));
 }
 
 CHttpClientContext::~CHttpClientContext()
@@ -97,7 +114,8 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
         client->setSsCtx(m_ssctx.get());
     }
 
-    client->setPersistentHandler(m_persistentHandler);
+    if (m_persistentHandler)
+        client->setPersistentHandler(m_persistentHandler);
 
 #ifdef COOKIE_HANDLING
     client->m_context = this;
@@ -154,11 +172,11 @@ CHttpClient::~CHttpClient()
     if (m_socket)
     {
         Owned<ISocket> forRelease(m_socket);
-        if (m_isPersistentSocket)
+        if (m_persistentHandler && m_isPersistentSocket)
         {
             m_persistentHandler->doneUsing(m_socket, !m_disableKeepAlive && m_persistable, m_numRequests>1?(m_numRequests-1):0);
         }
-        else if (!m_disableKeepAlive && m_persistable)
+        else if (m_persistentHandler && !m_disableKeepAlive && m_persistable)
         {
             m_persistentHandler->add(m_socket, &m_ep);
         }
@@ -215,7 +233,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
 {
     if (m_socket != nullptr)
     {
-        if(m_isPersistentSocket)
+        if (m_persistentHandler && m_isPersistentSocket)
             m_persistentHandler->doneUsing(m_socket, false, 0);
         close();
     }
@@ -250,7 +268,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
     }
     m_ep = ep;
 
-    if(m_persistentHandler->inDoNotReuseList(&ep))
+    if (!m_persistentHandler || m_persistentHandler->inDoNotReuseList(&ep))
         m_disableKeepAlive = true;
 
     Linked<ISocket> pSock = (m_disableKeepAlive || forceNewConnection)?nullptr:m_persistentHandler->getAvailable(&ep);
