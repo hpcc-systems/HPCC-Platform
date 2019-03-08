@@ -1,6 +1,7 @@
 ###
 ##  Version Information
 ###
+set ( HPCC_NAME "Community Edition" )
 set ( HPCC_PROJECT "community" )
 set ( HPCC_MAJOR 6 )
 set ( HPCC_MINOR 4 )
