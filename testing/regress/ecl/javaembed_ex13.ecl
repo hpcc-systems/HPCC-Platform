@@ -58,6 +58,6 @@ d1 := DATASET([{1}, {2}, {3}], r);
 
 accumulated := ITERATE(d1, t(LEFT, RIGHT), LOCAL);
 
-OUTPUT(accumulated);
+OUTPUT(accumulated, {i});
 objects := TABLE(GROUP(accumulated, TRUE, LOCAL), {px := MAX(GROUP,p)});
 APPLY(objects,EVALUATE(release(px)));

@@ -18,6 +18,7 @@
 //class=embedded
 //class=3rdparty
 //class=error
+//fail
 
 import java;
 string cat(string a, string b) := EMBED(java)
