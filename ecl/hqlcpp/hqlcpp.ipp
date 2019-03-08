@@ -821,6 +821,7 @@ struct HqlCppOptions
     bool                transformNestedSequential;
     bool                forceAllProjectedDiskSerialized;
     bool                newIndexReadMapping;
+    bool                diskReadsAreSimple;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1952,6 +1953,8 @@ protected:
     void transformNestedSequential(HqlExprArray & exprs);
     void convertLogicalToActivities(WorkflowItem & curWorkflow);
     void flattenDatasets(WorkflowArray & array);
+
+    bool needsRealThor(IHqlExpression *expr, unsigned flags);
 
     void spotGlobalCSE(WorkflowItem & curWorkflow);
     IHqlExpression * spotGlobalCSE(IHqlExpression * _expr);

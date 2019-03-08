@@ -45,6 +45,7 @@ The following debug options are currently supported by the code generator:
 "orderDiskFunnel"        true   - if all inputs to a funnel are disk reads, pull in order.
 "parseDfaComplexity"     2000   - maximum complexity of expression to convert to a DFA.
 "pickBestEngine"         true   - use hthor if it is more efficient than thor
+"diskReadsAreSimple"     false  - treat disk reads as simple when evaluating pickBestEngine
 "sortIndexPayload"       true   - do we sort by the non-keyed elements in an index.
 "targetClusterType"      ----   - hthor|thor|roxie - who are we generating code for?
 "topnLimit"              10000  - maximum number of records to do topN on.

@@ -19448,16 +19448,19 @@ void HqlCppTranslator::flattenDatasets(WorkflowArray & array)
 // 2. Filtered index count.
 // 3. Restricted set of records from an index/table.
 
-enum { NRTfiltered = 0x0001, NRTcount = 0x0002, NRTlimited = 0x0004 };
-static bool needsRealThor(IHqlExpression *expr, unsigned flags)
+bool HqlCppTranslator::needsRealThor(IHqlExpression *expr, unsigned flags)
 {
+    enum { NRTfiltered = 0x0001, NRTcount = 0x0002, NRTlimited = 0x0004 };
     unsigned numChildrenToCheck = (unsigned)-1;
     switch (expr->getOperator())
     {
     case no_table:
-        //only allow non filtered limited outputs, and non filtered counts
-        return !((flags == NRTlimited) || (flags == NRTcount));
-
+        if (!options.diskReadsAreSimple)
+        {
+            //only allow non filtered limited outputs, and non filtered counts
+            return !((flags == NRTlimited) || (flags == NRTcount));
+        }
+        //fallthrough...
     case no_newkeyindex:
     case no_keyindex:
     case no_compound_indexread:
@@ -19623,7 +19626,7 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
             }
             if (!containsAnyDataset(child0))
                 return false;
-//          return needsRealThor(child0, isFiltered);
+//          return needsRealThor(child0, isFiltered, diskReadsOnHThor);
             //fallthrough...
         }
 
@@ -19647,12 +19650,6 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     }
     return false;
 }
-
-bool needsRealThor(IHqlExpression *expr)
-{
-    return needsRealThor(expr, 0);
-}
-
 
 IHqlExpression * HqlCppTranslator::getDefaultOutputAttr(IHqlExpression * expr)
 {
@@ -19699,11 +19696,11 @@ void HqlCppTranslator::pickBestEngine(HqlExprArray & exprs)
     {
         ForEachItemIn(idx, exprs)
         {
-            if (needsRealThor(&exprs.item(idx)))
+            if (needsRealThor(&exprs.item(idx), 0))
                 return;
         }
         // if we got this far, thor not required
-        setTargetClusterType(HThorCluster);
+        setTargetClusterType(HThorCluster);  // MORE - what about Roxie?
         DBGLOG("Thor query redirected to hthor instead");
         Owned<IWUException> we = wu()->createException();
         we->setSeverity(SeverityInformation);
@@ -19721,7 +19718,7 @@ void HqlCppTranslator::pickBestEngine(WorkflowArray & workflow)
             HqlExprArray & exprs = workflow.item(idx2).queryExprs();
             ForEachItemIn(idx, exprs)
             {
-                if (needsRealThor(&exprs.item(idx)))
+                if (needsRealThor(&exprs.item(idx), 0))
                     return;
             }
             // if we got this far, thor not required
