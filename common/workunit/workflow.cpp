@@ -603,10 +603,6 @@ private:
 
 //-------------------------------------------------------------------------------------------------
 
-#ifdef TRACE_WORKFLOW
-const LogMsgCategory MCworkflow = MCprogress(50);       // Category used to inform enqueue/start/finish of workflow item
-#endif
-
 WorkflowMachine::WorkflowMachine()
     : ctx(NULL), process(NULL), currentWfid(0), currentScheduledWfid(0), itemsWaiting(0), itemsUnblocked(0), condition(false), logctx(queryDummyContextLogger())
 {

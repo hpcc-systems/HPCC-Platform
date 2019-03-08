@@ -29,7 +29,7 @@
 
 
 
-LogMsgCategory MCdetailDebugInfo(MCdebugInfo(1000));
+constexpr LogMsgCategory MCdetailDebugInfo(MCdebugInfo(1000));
 
 /*
 How the remote spawning works:

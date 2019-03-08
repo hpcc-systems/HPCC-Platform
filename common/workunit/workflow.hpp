@@ -142,7 +142,7 @@ extern WORKUNIT_API const char * queryWorkflowModeText(WFMode mode);
 extern WORKUNIT_API const char * queryWorkflowStateText(WFState state);
 
 #ifdef TRACE_WORKFLOW
-extern const WORKUNIT_API LogMsgCategory MCworkflow;       // Category used to inform enqueue/start/finish of workflow item
+constexpr LogMsgCategory MCworkflow = MCprogress(50); // Category used to inform enqueue/start/finish of workflow item
 #endif
 
 #endif

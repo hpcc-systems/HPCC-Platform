@@ -19,6 +19,3 @@
 
 #include "daftmc.hpp"
 
-const LogMsgCategory MCdebugInfoDetail(MCdebugInfo(1000));
-const LogMsgCategory MCdebugProgressDetail(MCdebugProgress(1000));
-

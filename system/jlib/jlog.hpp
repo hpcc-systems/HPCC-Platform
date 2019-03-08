@@ -345,10 +345,10 @@ inline char const * msgPrefix(LogMsgClass msgClass)
 class jlib_decl LogMsgCategory
 {
 public:
-    LogMsgCategory(LogMsgAudience _audience = MSGAUD_programmer, LogMsgClass _class = MSGCLS_information, LogMsgDetail _detail = DefaultDetail) : audience(_audience), msgClass(_class), detail(_detail) {}
-    inline LogMsgAudience     queryAudience() const { return audience; }
-    inline LogMsgClass        queryClass() const { return msgClass; }
-    inline LogMsgDetail       queryDetail() const { return detail; }
+    constexpr LogMsgCategory(LogMsgAudience _audience = MSGAUD_programmer, LogMsgClass _class = MSGCLS_information, LogMsgDetail _detail = DefaultDetail) : audience(_audience), msgClass(_class), detail(_detail) {}
+    constexpr LogMsgAudience  queryAudience() const { return audience; }
+    constexpr LogMsgClass     queryClass() const { return msgClass; }
+    constexpr LogMsgDetail    queryDetail() const { return detail; }
     void                      serialize(MemoryBuffer & out) const { out.append(audience).append(msgClass).append(detail); }
     void                      deserialize(MemoryBuffer & in)
     {
@@ -357,7 +357,7 @@ public:
         msgClass = (LogMsgClass) c;
         detail = (LogMsgDetail) d;
     }
-    LogMsgCategory const      operator ()(unsigned newDetail) const { return LogMsgCategory(audience, msgClass, newDetail); }
+    constexpr LogMsgCategory  operator ()(unsigned newDetail) const { return LogMsgCategory(audience, msgClass, newDetail); }
 private:
     LogMsgAudience            audience;
     LogMsgClass               msgClass;
@@ -664,27 +664,27 @@ extern jlib_decl ILogMsgHandler * getLogMsgHandlerFromPTree(IPropertyTree * tree
 extern jlib_decl ILogMsgHandler * attachLogMsgMonitorFromPTree(IPropertyTree * tree);     // Takes tree containing <handler> and <filter> elements
 extern jlib_decl void attachManyLogMsgMonitorsFromPTree(IPropertyTree * tree);            // Takes tree containing many <monitor> elements
 
-// Extern standard categories and unknown jobInfo
+// Standard categories and unknown jobInfo
+constexpr LogMsgCategory MCdisaster(MSGAUD_all, MSGCLS_disaster);
+constexpr LogMsgCategory MCuserError(MSGAUD_user, MSGCLS_error);
+constexpr LogMsgCategory MCoperatorError(MSGAUD_operator, MSGCLS_error);
+constexpr LogMsgCategory MCinternalError(MSGAUD_programmer, MSGCLS_error, 1);
+constexpr LogMsgCategory MCuserWarning(MSGAUD_user, MSGCLS_warning);
+constexpr LogMsgCategory MCoperatorWarning(MSGAUD_operator, MSGCLS_warning);
+constexpr LogMsgCategory MCinternalWarning(MSGAUD_programmer, MSGCLS_warning, 1);
+constexpr LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress);
+constexpr LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress);
+constexpr LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress);
+constexpr LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information);
+constexpr LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress);
+constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information);
+constexpr LogMsgCategory MClegacy(MSGAUD_legacy, MSGCLS_legacy, DefaultDetail);
 
-extern jlib_decl const LogMsgCategory MCdisaster;
-extern jlib_decl const LogMsgCategory MCuserError;
-#define MCerror MCuserError
-extern jlib_decl const LogMsgCategory MCoperatorError;
-extern jlib_decl const LogMsgCategory MCinternalError;
-extern jlib_decl const LogMsgCategory MCuserWarning;
-#define MCwarning MCuserWarning
-extern jlib_decl const LogMsgCategory MCoperatorWarning;
-extern jlib_decl const LogMsgCategory MCinternalWarning;
-// MCexception(e, cls) is now a convenient function to get a message category with its audience taken from an exception
 inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error) { return LogMsgCategory((e)->errorAudience(),cls); }
-extern jlib_decl const LogMsgCategory MCuserProgress;
+
+#define MCerror MCuserError
+#define MCwarning MCuserWarning
 #define MCprogress MCuserProgress
-extern jlib_decl const LogMsgCategory MCoperatorProgress;
-extern jlib_decl const LogMsgCategory MCdebugProgress;
-extern jlib_decl const LogMsgCategory MCdebugInfo;
-extern jlib_decl const LogMsgCategory MCstats;
-extern jlib_decl const LogMsgCategory MCoperatorInfo;
-extern jlib_decl const LogMsgCategory MClegacy;
 
 extern jlib_decl const LogMsgJobInfo unknownJob;
 
