@@ -7020,9 +7020,9 @@ bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffe
 //   1 : Signature does not verify (wuid/username don't match, or signature does not verify)
 //   2 : Workunit not active
 //   Throws if unable to open workunit
-wuTokenStates verifyWorkunitDAToken(const char * _user, const char * _distributedAccessToken)
+wuTokenStates verifyWorkunitDAToken(const char * ctxUser, const char * daToken)
 {
-    if (isEmptyString(_user) || isEmptyString(_distributedAccessToken))
+    if (isEmptyString(ctxUser) || isEmptyString(daToken))
     {
         ERRLOG("verifyWorkunitDAToken : User and token must be provided");
         return wuTokenInvalid;
@@ -7030,7 +7030,7 @@ wuTokenStates verifyWorkunitDAToken(const char * _user, const char * _distribute
 
     StringBuffer tokWuid;
     StringBuffer tokUser;
-    if (!extractFromWorkunitDAToken(_distributedAccessToken, &tokWuid, &tokUser, nullptr))//get the wuid and user
+    if (!extractFromWorkunitDAToken(daToken, &tokWuid, &tokUser, nullptr))//get the wuid and user
     {
         //Not a valid workunit distributed access token
         return wuTokenInvalid;
@@ -7042,7 +7042,7 @@ wuTokenStates verifyWorkunitDAToken(const char * _user, const char * _distribute
     {
         const char * finger;
         StringBuffer token;//receives copy of everything up until signature
-        for (finger = _distributedAccessToken; *finger && *finger != ';'; finger++)
+        for (finger = daToken; *finger && *finger != ';'; finger++)
             token.append(1, finger);
         token.append(1, finger);//append ;
 
@@ -7062,17 +7062,25 @@ wuTokenStates verifyWorkunitDAToken(const char * _user, const char * _distribute
     }
 
     //Verify user matches
-    if (!isEmptyString(cw->queryUser()) && !isEmptyString(tokUser.str()))
+    bool wuUserExist = !isEmptyString(cw->queryUser());
+    bool tokUserExist = !isEmptyString(tokUser.str());
+    if (wuUserExist && tokUserExist)
     {
-        if (!streq(cw->queryUser(), tokUser.str()) || !streq(cw->queryUser(), _user))
+        //if both users are found, they must match
+        if (!streq(cw->queryUser(), tokUser.str()) || !streq(cw->queryUser(), ctxUser))
         {
-            ERRLOG("verifyWorkunitDAToken : token user (%s) does not match WU user (%s) or context user (%s)", tokUser.str(), cw->queryUser(), _user);
+            ERRLOG("verifyWorkunitDAToken : token user (%s) does not match WU user (%s) or context user (%s)", tokUser.str(), cw->queryUser(), ctxUser);
             return wuTokenInvalid;
         }
     }
+    else if (!wuUserExist && !tokUserExist)//both users will be empty if no security enabled
+    {
+        //both users will be empty if no security enabled
+    }
     else
     {
-        ERRLOG("verifyWorkunitDAToken : workunit user and token user must be provided");
+        //one user found, but not the other, treat as an error
+        ERRLOG("verifyWorkunitDAToken : workunit user %s and token user %s must be provided", wuUserExist ? cw->queryUser() : "(NULL)", tokUserExist ? tokUser.str() : "(NULL)");
         return wuTokenInvalid;
     }
 
