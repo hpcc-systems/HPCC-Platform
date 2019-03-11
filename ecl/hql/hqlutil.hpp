@@ -440,7 +440,7 @@ public:
 class HQL_API RecordSelectIterator
 {
 public:
-    RecordSelectIterator(IHqlExpression * record, IHqlExpression * selector);
+    RecordSelectIterator(IHqlExpression * record, IHqlExpression * selector, bool newSelect);
 
     bool first();
     bool next();
@@ -464,6 +464,7 @@ protected:
     UnsignedArray indices;
     unsigned ifblockDepth;
     unsigned nestingDepth;
+    bool rootNewSelect;
 };
 
 //===========================================================================

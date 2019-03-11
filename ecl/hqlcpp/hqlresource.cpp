@@ -1344,7 +1344,7 @@ IHqlExpression * ActivityInvariantHoister::projectChildDependent(IHqlExpression 
         while (fields.contains(*projectedField))
             projectedField.setown(cloneFieldMangleName(field));  // Generates a new mangled name each time
 
-        OwnedHqlExpr activeDs = createRow(no_activetable, LINK(ds->queryNormalizedSelector()));
+        OwnedHqlExpr activeDs = createRow(no_activerow, LINK(ds->queryNormalizedSelector()));
         fields.append(*LINK(projectedField));
         values.append(*replaceSelector(value, row, activeDs));
     }

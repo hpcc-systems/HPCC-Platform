@@ -8404,12 +8404,12 @@ void HqlCppTranslator::expandOrder(IHqlExpression * expr, HqlExprArray & leftVal
 }
 
 
-IHqlExpression * HqlCppTranslator::querySimpleOrderSelector(IHqlExpression * expr)
+IHqlExpression * HqlCppTranslator::querySimpleOrderSelector(IHqlExpression * expr, bool & isNew)
 {
     if (expr->getOperator() != no_select)
         return NULL;
 
-    return queryDatasetCursor(expr);
+    return querySelectorDataset(expr, isNew);
 }
 
 static unsigned getMemcmpSize(IHqlExpression * left, IHqlExpression * right, bool isEqualityCompare)
@@ -8452,8 +8452,10 @@ void HqlCppTranslator::optimizeOrderValues(HqlExprArray & leftValues, HqlExprArr
     {
         IHqlExpression * curFirstLeft = &leftValues.item(i);
         IHqlExpression * curFirstRight = &rightValues.item(i);
-        IHqlExpression * leftSel = querySimpleOrderSelector(curFirstLeft);
-        IHqlExpression * rightSel = querySimpleOrderSelector(curFirstRight);
+        bool leftIsNew;
+        bool rightIsNew;
+        IHqlExpression * leftSel = querySimpleOrderSelector(curFirstLeft, leftIsNew);
+        IHqlExpression * rightSel = querySimpleOrderSelector(curFirstRight, rightIsNew);
         if (!leftSel || !rightSel)
             continue;
 
@@ -8461,21 +8463,23 @@ void HqlCppTranslator::optimizeOrderValues(HqlExprArray & leftValues, HqlExprArr
         if (!compareSize)
             continue;
 
+        bool nextLeftIsNew;
+        bool nextRightIsNew;
         IHqlExpression * nextLeft = &leftValues.item(i+1);
         IHqlExpression * nextRight = &rightValues.item(i+1);
-        if (querySimpleOrderSelector(nextLeft) != leftSel || querySimpleOrderSelector(nextRight) != rightSel ||
+        if (querySimpleOrderSelector(nextLeft, nextLeftIsNew) != leftSel || querySimpleOrderSelector(nextRight, nextRightIsNew) != rightSel ||
             (getMemcmpSize(nextLeft, nextRight, isEqualityCompare) == 0))
             continue;
 
         //Worth iterating the selectors...
-        RecordSelectIterator leftIter(leftSel->queryRecord(), leftSel);
+        RecordSelectIterator leftIter(leftSel->queryRecord(), leftSel, leftIsNew);
         ForEach(leftIter)
             if (leftIter.query() == curFirstLeft)
                 break;
         if (!leftIter.isValid() || leftIter.isInsideIfBlock())
             continue;
 
-        RecordSelectIterator rightIter(rightSel->queryRecord(), rightSel);
+        RecordSelectIterator rightIter(rightSel->queryRecord(), rightSel, rightIsNew);
         ForEach(rightIter)
             if (rightIter.query() == curFirstRight)
                 break;

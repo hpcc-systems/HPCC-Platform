@@ -1509,7 +1509,7 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
             same = transformChildren(expr, children);
             IHqlExpression & ds = children.item(0);
             node_operator dsOp = ds.getOperator();
-            if (dsOp == no_activetable)
+            if (dsOp == no_activerow)
             {
                 children.replace(*LINK(ds.queryChild(0)), 0);
                 removeAttribute(children, newAtom);
