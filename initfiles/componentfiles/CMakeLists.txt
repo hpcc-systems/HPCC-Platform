@@ -13,9 +13,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+if ( PLATFORM AND UNIX )
+   ADD_SUBDIRECTORY(ftslave)
+   ADD_SUBDIRECTORY(thor)
+   ADD_SUBDIRECTORY(launcher)
+   ADD_SUBDIRECTORY(configxml)
+endif()
 
-ADD_SUBDIRECTORY(ftslave)
-ADD_SUBDIRECTORY(configxml)
 ADD_SUBDIRECTORY(configschema)
-ADD_SUBDIRECTORY(thor)
-ADD_SUBDIRECTORY(launcher)
