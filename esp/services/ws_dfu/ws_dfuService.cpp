@@ -6426,7 +6426,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         Owned<IDistributedFile> oldFile = queryDistributedFileDirectory().createNew(fileDesc);
         oldFile->validate();
 
-        if (!oldFile->renamePhysicalPartFiles(newFileName.str(), nullptr, nullptr, nullptr))
+        if (!oldFile->renamePhysicalPartFiles(newFileName.str(), nullptr, nullptr, fileDesc->queryDefaultDir()))
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed in renamePhysicalPartFiles %s.", newFileName.str());
 
         Owned<IFileDescriptor> newFileDesc = createFileDescriptor(newFileName, clusterTypeEx, groupName, group);
