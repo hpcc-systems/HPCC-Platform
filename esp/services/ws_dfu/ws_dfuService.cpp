@@ -6098,12 +6098,12 @@ void CWsDfuEx::getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAc
         case CFileAccessRole_External:
         {
             getFilePartsInfo(context, fileDesc, df->numParts(), false, accessInfo);
-            if (req.getReturnJsonTypeInfo() || req.getReturnJsonTypeInfo())
+            if (req.getReturnJsonTypeInfo() || req.getReturnBinTypeInfo())
             {
                 MemoryBuffer binLayout;
                 StringBuffer jsonLayout;
-                if (!getRecordFormatFromRtlType(binLayout, jsonLayout, df->queryAttributes(), req.getReturnJsonTypeInfo(), req.getReturnJsonTypeInfo()))
-                    getRecordFormatFromECL(binLayout, jsonLayout, df->queryAttributes(), req.getReturnJsonTypeInfo(), req.getReturnJsonTypeInfo());
+                if (!getRecordFormatFromRtlType(binLayout, jsonLayout, df->queryAttributes(), req.getReturnBinTypeInfo(), req.getReturnJsonTypeInfo()))
+                    getRecordFormatFromECL(binLayout, jsonLayout, df->queryAttributes(), req.getReturnBinTypeInfo(), req.getReturnJsonTypeInfo());
                 if (req.getReturnJsonTypeInfo() && jsonLayout.length())
                     accessInfo.setRecordTypeInfoJson(jsonLayout.str());
                 if (req.getReturnBinTypeInfo() && binLayout.length())
