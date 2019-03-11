@@ -918,6 +918,12 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     if (!type)
         type.setown(makeVoidType());
 
+    if (type->getTypeCode()!=type_table && type->getTypeCode()!=type_groupedtable && type->getTypeCode()!=type_void)
+    {
+        if (attribs && queryAttributeInList(activityAtom,attribs))
+             reportError(ERR_EMBEDERROR, errpos, "Embedded activity only supports dataset return type or action");
+    }
+
     if (type->getTypeCode() == type_record)
         type.setown(makeRowType(LINK(type)));
 
