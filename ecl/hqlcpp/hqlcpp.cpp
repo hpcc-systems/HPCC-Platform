@@ -12065,9 +12065,21 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
     IValue *optionVal = embedOptions->queryValue();
 
     bool threadlocal = bodyCode->hasAttribute(_threadlocal_Atom) && queryVal != nullptr && optionVal != nullptr;
+    bool singletonEmbedContext = bodyCode->hasAttribute(_singletonEmbedContext_Atom);
     HqlExprArray noargs;
     OwnedHqlExpr getPlugin = bindFunctionCall(language, noargs);
-    OwnedHqlExpr pluginPtr = createQuoted(threadlocal ? "static thread_local Owned<IEmbedContext> __plugin" : "Owned<IEmbedContext> __plugin", getPlugin->getType());
+    OwnedHqlExpr pluginPtr;
+    const char *pluginPtrDef = nullptr;
+    if (threadlocal)
+    {
+        assertex(singletonEmbedContext);
+        pluginPtrDef = "static thread_local IEmbedContext *__plugin";
+    }
+    else if (singletonEmbedContext)
+        pluginPtrDef = "IEmbedContext *__plugin";
+    else
+        pluginPtrDef = "Owned<IEmbedContext> __plugin";
+    pluginPtr.setown(createQuoted(pluginPtrDef, getPlugin->getType()));
     buildAssignToTemp(funcctx, pluginPtr, getPlugin);
 
     StringBuffer createParam;

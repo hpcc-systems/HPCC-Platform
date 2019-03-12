@@ -16,15 +16,16 @@
 ############################################################################## */
 
 EXPORT Language := SERVICE : plugin('javaembed')
-  integer getEmbedContext():cpp,pure,namespace='javaembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()',fold;
+  integer queryEmbedContext():cpp,pure,namespace='javaembed',entrypoint='queryEmbedContext',prototype='IEmbedContext* queryEmbedContext()',fold;
   DATA precompile(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javaembed',entrypoint='precompile',fold;
   STRING syntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javaembed',entrypoint='syntaxCheck',fold;
   STRING checkImport(const varstring funcname, UTF8 importString, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javaembed',entrypoint='checkImport',fold;
 END;
-EXPORT getEmbedContext := Language.getEmbedContext;
+EXPORT getEmbedContext := Language.queryEmbedContext;
 EXPORT precompile := Language.precompile;
 EXPORT syntaxCheck := Language.syntaxCheck;
 EXPORT checkImport := Language.checkImport;
 EXPORT boolean supportsImport := true;
 EXPORT boolean supportsScript := true;
 EXPORT boolean threadlocal := true;
+EXPORT boolean singletonEmbedContext := true;
