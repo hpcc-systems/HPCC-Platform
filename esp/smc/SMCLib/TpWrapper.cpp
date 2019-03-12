@@ -1531,7 +1531,7 @@ void CTpWrapper::getThorSpareMachineList(double clientVersion, const char* clust
         unsigned processNumber = 0;
         Owned<INodeIterator> gi = nodeGroup->getIterator();
         ForEach(*gi)
-            appendMachineList(clientVersion, constEnv, gi->query(), clusterName, eqThorSlaveProcess, processNumber, directory, machineList);
+            appendMachineList(clientVersion, constEnv, gi->query(), clusterName, eqThorSpareProcess, processNumber, directory, machineList);
     }
     catch(IException* e)
     {
