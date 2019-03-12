@@ -46,6 +46,7 @@ static const char * compatibleVersions[] = {
 static const char *version = "Java Embed Helper 1.0.0";
 
 #ifdef _DEBUG
+//#define TRACE_GLOBALREF
 //#define TRACE_CLASSFILE
 //#define CHECK_JNI
 /* Note - if you enable CHECK_JNI and see output like:
@@ -84,6 +85,8 @@ static void UNSUPPORTED(const char *feature)
 namespace javaembed {
 
 static jmethodID throwable_toString;
+
+static void forceGC(class CheckedJNIEnv* JNIenv);
 
 /**
  * CheckedJNIEnv is a wrapper around JNIEnv that ensures that we check for exceptions after every call (and turn them into C++ exceptions).
@@ -138,7 +141,7 @@ public:
     }
     jclass FindGlobalClass(const char *name)
     {
-        return (jclass) NewGlobalRef(FindClass(name));
+        return (jclass) NewGlobalRef(FindClass(name), "NewGlobalRef");
     }
     void GetBooleanArrayRegion(jbooleanArray array,
                                jsize start, jsize len, jboolean *buf) {
@@ -543,11 +546,35 @@ public:
     }
     using JNIEnv::PushLocalFrame;
     using JNIEnv::PopLocalFrame;
-    using JNIEnv::DeleteGlobalRef;
     using JNIEnv::DeleteLocalRef;
-    using JNIEnv::NewGlobalRef;
     using JNIEnv::ExceptionClear;
     using JNIEnv::ExceptionCheck;
+
+#ifdef TRACE_GLOBALREF
+    void DeleteGlobalRef(jobject val)
+    {
+        DBGLOG("DeleteGlobalRef %p", val);
+        JNIEnv::DeleteGlobalRef(val);
+#ifdef CHECK_JNI
+        forceGC(this);
+#endif
+    }
+    jobject NewGlobalRef(jobject val, const char *why)
+    {
+        jobject ret = JNIEnv::NewGlobalRef(val);
+        DBGLOG("NewGlobalRef %p (%s) returns %p", val, why, ret);
+        return ret;
+    }
+#else
+    inline void DeleteGlobalRef(jobject val)
+    {
+        JNIEnv::DeleteGlobalRef(val);
+    }
+    inline jobject NewGlobalRef(jobject val, const char *)
+    {
+        return JNIEnv::NewGlobalRef(val);
+    }
+#endif
 };
 
 static bool printNameForClass(CheckedJNIEnv *JNIenv, jobject clsObj)
@@ -640,6 +667,11 @@ static jmethodID netURL_constructor;
 static jclass throwableClass;
 //static jmethodID throwable_toString;  declared above
 static jclass langIllegalArgumentExceptionClass;
+
+static void forceGC(CheckedJNIEnv* JNIenv)
+{
+    JNIenv->CallStaticVoidMethod(systemClass, system_gc);
+}
 
 static void setupGlobals(CheckedJNIEnv *J)
 {
@@ -897,7 +929,12 @@ public:
         CriticalBlock b(hashCrit);
         PersistedObject *p = persistedObjects.find(key);
         if (p && p->instance)
+        {
             queryJNIEnv()->DeleteGlobalRef(p->instance);
+#ifdef CHECK_JNI
+            forceGC(queryJNIEnv());
+#endif
+        }
         persistedObjects.remove(key);
     }
     static void unregister(const char *key);
@@ -956,11 +993,6 @@ static void checkType(type_t javatype, size32_t javasize, type_t ecltype, size32
         throw MakeStringException(0, "javaembed: Type mismatch"); // MORE - could provide some details!
 }
 
-static void forceGC(CheckedJNIEnv* JNIenv)
-{
-    JNIenv->CallStaticVoidMethod(systemClass, system_gc);
-}
-
 enum PersistMode
 {
     persistNone,
@@ -1004,13 +1036,13 @@ protected:
     JavaObjectAccessor(CheckedJNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jobject _row)
     : JNIenv(_JNIenv), row(_row), outerRow(_outerRow), idx(0), limit(0), inSet(false), inDataSet(false)
     {
-        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(row));
+        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(row), "Class");
     }
     JavaObjectAccessor(CheckedJNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jclass _Class)
     : JNIenv(_JNIenv), outerRow(_outerRow), idx(0), limit(0), inSet(false), inDataSet(false)
     {
         row = NULL;
-        Class = (jclass) JNIenv->NewGlobalRef(_Class);
+        Class = (jclass) JNIenv->NewGlobalRef(_Class, "Class");
     }
     ~JavaObjectAccessor()
     {
@@ -1827,7 +1859,7 @@ public:
     JavaRowStream(jobject _iterator, IEngineRowAllocator *_resultAllocator)
     : resultAllocator(_resultAllocator)
     {
-        iterator = queryJNIEnv()->NewGlobalRef(_iterator);
+        iterator = queryJNIEnv()->NewGlobalRef(_iterator, "iterator");
         // Note that we can't cache the JNIEnv, iterClass, or methodIds here - calls may be made on different threads (though not at the same time).
     }
     ~JavaRowStream()
@@ -1964,7 +1996,7 @@ public:
     JavaObjectXmlWriter(CheckedJNIEnv *_JNIenv, jobject _obj, const char *_reqType, IEsdlDefinition &_esdl, const char *_esdlService, IXmlWriter &_writer)
     : JNIenv(_JNIenv), obj(_obj), writer(_writer), esdl(_esdl), esdlService(_esdlService), reqType(_reqType)
     {
-        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(obj));
+        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(obj), "class");
     }
     ~JavaObjectXmlWriter()
     {
@@ -2162,7 +2194,7 @@ public:
         jclass localClass = JNIenv->FindClass(name);
         if (!localClass)
             return 0;
-        jclass Class = (jclass) JNIenv->NewGlobalRef(localClass);
+        jclass Class = (jclass) JNIenv->NewGlobalRef(localClass, "class");
         javaClasses.setValue(name, Class);
         JNIenv->DeleteLocalRef(localClass);
         return Class;
@@ -2578,7 +2610,7 @@ public:
     {
         if (!local)
             return 0;
-        jobject global = JNIenv->NewGlobalRef(local);
+        jobject global = JNIenv->NewGlobalRef(local, "makeObjectGlobal");
         JNIenv->DeleteLocalRef(local);
         return global;
     }
@@ -3002,7 +3034,7 @@ public:
     : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance)
     {
         if (instance)
-            instance = JNIenv->NewGlobalRef(instance);
+            instance = JNIenv->NewGlobalRef(instance, "instance");
         argcount = 0;
         argsig = NULL;
         nonStatic = (instance != nullptr);
@@ -3059,7 +3091,7 @@ public:
         if (instance)
             JNIenv->DeleteGlobalRef(instance);
         if (classLoader)
-            JNIenv->DeleteGlobalRef(instance);
+            JNIenv->DeleteGlobalRef(classLoader);
     }
 
     virtual bool getBooleanResult()
@@ -3139,14 +3171,14 @@ public:
     virtual unsigned __int64 getUnsignedResult()
     {
         if (*returnType=='L')
-            return (unsigned __int64) JNIenv->NewGlobalRef(result.l);
+            return (unsigned __int64) JNIenv->NewGlobalRef(result.l, "return");
         else if (*returnType=='V' && strieq(methodName, "<init>"))
         {
-            jobject thisObject = JNIenv->NewGlobalRef(result.l);
+            jobject thisObject = JNIenv->NewGlobalRef(result.l, "thisobject");
             switch (persistMode)
             {
             case persistThread:
-                UNIMPLEMENTED;  // MORE - think about what this means?
+                instance = thisObject;  // Means we free the object automatically when this thread is done
                 break;
             case persistWorkunit:
             case persistQuery:
@@ -3495,7 +3527,17 @@ public:
             if (importName[0]=='~')
                 instance = (jobject) val;  // Should ensure it gets released at end of function
             else
-                instance = JNIenv->NewGlobalRef((jobject) val);
+                instance = JNIenv->NewGlobalRef((jobject) val, "instanceParam");
+            if (javaClass)
+            {
+                JNIenv->DeleteGlobalRef(javaClass);
+                javaClass = nullptr;
+            }
+            if (classLoader)
+            {
+                JNIenv->DeleteGlobalRef(classLoader);
+                javaClass = nullptr;
+            }
             loadFunction(classpath, 0, nullptr);
             reinit();
         }
@@ -4100,7 +4142,7 @@ protected:
             Owned<IException> e = E;
             throw MakeStringException(0, "parameterless constructor required");
         }
-        return JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
+        return JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor), "createInstance");
     }
 
     void loadFunction(const char *classpath, size32_t bytecodeLen, const byte *bytecode)
@@ -4150,15 +4192,15 @@ protected:
                 }
                 if (instance)
                 {
-                    javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(instance));
-                    classLoader = JNIenv->NewGlobalRef(getClassLoader(JNIenv, javaClass));
+                    javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(instance), "javaClass");
+                    classLoader = JNIenv->NewGlobalRef(getClassLoader(JNIenv, javaClass), "classLoader");
                     sharedCtx->setThreadClassLoader(classLoader);
                 }
                 if (!javaClass)
                 {
                     if (!classname)
                         throw MakeStringException(MSGAUD_user, 0, "Invalid import name - Expected classname.methodname:signature");
-                    classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode));
+                    classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode), "classLoader");
                     sharedCtx->setThreadClassLoader(classLoader);
 
                     jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
@@ -4171,7 +4213,7 @@ protected:
                         Owned<IException> e = E;
                         throw makeWrappedExceptionV(E, E->errorCode(), "Failed to resolve class name %s", classname.str());
                     }
-                    javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
+                    javaClass = (jclass) JNIenv->NewGlobalRef(javaClass, "javaClass");
                 }
                 if (nonStatic && !instance && !isConstructor && persistMode != persistNone)
                 {
@@ -4183,7 +4225,7 @@ protected:
                             assertex(engine);
                             engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
                         }
-                        persistBlock.leave(JNIenv->NewGlobalRef(instance));
+                        persistBlock.leave(JNIenv->NewGlobalRef(instance, "persistBlockLeave"));
                     }
                 }
             }
@@ -4384,9 +4426,9 @@ public:
         jmethodID loadClassMethod = sharedCtx->JNIenv->GetMethodID(sharedCtx->JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
         jstring methodString = sharedCtx->JNIenv->NewStringUTF(className);
 
-        Class = (jclass) sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString));
+        Class = (jclass) sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString), "Class");
         jmethodID constructor = sharedCtx->JNIenv->GetMethodID(Class, "<init>", "()V");
-        object = sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->NewObject(Class, constructor));
+        object = sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->NewObject(Class, constructor), "constructed");
     }
     virtual IEmbedFunctionContext *createFunctionContext(const char *function)
     {
