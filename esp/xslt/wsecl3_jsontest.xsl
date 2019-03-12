@@ -170,6 +170,12 @@
                             }
                           }
                           break;
+                       case '\n':
+                          break;
+                       case ' ':
+                          if (i > 0 && jsonstring.charAt(i-1) == ':')
+                              pretty += ch;
+                          break;
                        default:
                           pretty += ch;
                   }
