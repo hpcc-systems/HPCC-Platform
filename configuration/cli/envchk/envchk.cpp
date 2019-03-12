@@ -47,10 +47,10 @@ void outputStatus(Status &status, enum statusMsg::msgLevel);
 // Default configuration directories
 EnvironmentType envType = XML;
 std::string masterSchemaFile = "environment.xsd";
-std::string configSchemaDir = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
+std::string configSchemaDir = ".." PATHSEPSTR "componentfiles"  PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
 std::string configSchemaPluginsDir = "xsd" PATHSEPSTR "plugins" PATHSEPSTR;
 std::string envFile;
-enum statusMsg::msgLevel outputLevel = statusMsg::error;
+enum statusMsg::msgLevel outputLevel = statusMsg::warning;
 bool verbose = false;
 bool validateHiddenNodes = false;
 
@@ -163,22 +163,24 @@ int main(int argc, char *argv[])
 
 void outputStatus(Status &status, enum statusMsg::msgLevel lvl)
 {
-    int startLevel = status.getHighestMsgLevel();
-    auto msgs = status.getMessages(lvl);
-    for (auto &msg: msgs)
+    for (int curLevel=lvl; curLevel <= statusMsg::fatal; ++curLevel)
     {
-        std::string path;
-        if (!msg.nodeId.empty())
+        std::vector<statusMsg> msgs = status.getMessages(static_cast<enum statusMsg::msgLevel>(curLevel), false);
+        for (auto &msg: msgs)
         {
-            auto pNode = pEnvMgr->findEnvironmentNodeById(msg.nodeId);
-            if (pNode)
+            std::string path;
+            if (!msg.nodeId.empty())
             {
-                pNode->getPath(path);
-                std::cout << status.getStatusTypeString(msg.msgLevel) << " : Path=" << path;
-                if (!msg.attribute.empty())
-                    std::cout << "[" << msg.attribute << "]";
-                std::cout << " Message=" << msg.msg << std::endl;
+                auto pNode = pEnvMgr->findEnvironmentNodeById(msg.nodeId);
+                if (pNode)
+                {
+                    pNode->getPath(path);
+                }
             }
+            std::cout << status.getStatusTypeString(msg.msgLevel) << " : Path=" << path;
+            if (!msg.attribute.empty())
+                std::cout << "[" << msg.attribute << "]";
+            std::cout << " Message=" << msg.msg << std::endl;
         }
     }
 }
