@@ -16,6 +16,7 @@
 
 FILE(GLOB xsdFiles "${CMAKE_CURRENT_SOURCE_DIR}/*xsd")
 FOREACH( xsdFile ${xsdFiles} )
-    configure_file(${xsdFile} ${CMAKE_CURRENT_BINARY_DIR}/${xsdFile})
-    Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/${xsdFile} DESTINATION componentfiles/configschema/xsd COMPONENT Runtime)
+    get_filename_component( xsdFile2 "${xsdFile}" NAME )
+    configure_file(${xsdFile} ${CMAKE_CURRENT_BINARY_DIR}/${xsdFile2})
+    Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/${xsdFile2} DESTINATION componentfiles/configschema/xsd COMPONENT Runtime)
 ENDFOREACH ()
