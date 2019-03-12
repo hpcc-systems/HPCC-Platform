@@ -27,7 +27,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/system/security/shared/
 )
 
-ADD_DEFINITIONS ( -D_USRDLL -DDALISTORE_EXPORTS )
+ADD_DEFINITIONS ( -D_USRDLL -DDALIKVSTORE_EXPORTS )
 
 set ( SRCS
     ${HPCC_SOURCE_DIR}/esp/services/ws_store/espstorelib/daliKVStore.cpp
