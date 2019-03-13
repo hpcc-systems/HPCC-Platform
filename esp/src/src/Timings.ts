@@ -355,3 +355,36 @@ export class Timings {
     click(row, col, sel) {
     }
 }
+
+export class WUTimelineEx extends WUTimeline {
+
+    constructor() {
+        super();
+    }
+
+    data(): any;
+    data(_: any): this;
+    data(_?: any): any | this {
+        const retVal = super.data.apply(this, arguments);
+        if (arguments.length) {
+            const timeData = {};
+            _.map(function (row) {
+                timeData[row[0]] = {
+                    started: row[1],
+                    finished: row[2]
+                };
+            })
+            this.setData(timeData);
+        }
+        return retVal;
+    }
+
+    refresh() {
+        this.clear();
+        this.fetchScopes();
+    }
+
+    //  Events  ---
+    setData(timeData: { [graphID: string]: { started: string, finished: string } }) {
+    }
+}
