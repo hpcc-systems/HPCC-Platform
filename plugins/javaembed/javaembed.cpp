@@ -4150,6 +4150,7 @@ protected:
         try
         {
             StringBuffer classname;
+            StringAttr checkedClassName;
             // Name should be in the form class.method:signature
             const char *funcname = strrchr(importName, '.');
             if (funcname)
@@ -4162,6 +4163,13 @@ protected:
             {
                 nonStatic = true;  // we assume we are going to call a method of a cached object - and we will get the class from that
                 funcname = importName;
+            }
+            const char *coloncolon = strstr(funcname, "::");
+            if (coloncolon)
+            {
+                // ClassName::FunctionName syntax - used to check that object passed in is of proper class
+                checkedClassName.set(funcname, coloncolon-funcname);
+                funcname = coloncolon+2;
             }
             const char *sig = strchr(funcname, ':');
             if (sig)
@@ -4233,15 +4241,8 @@ protected:
             {
                 if (!instance)
                     throw MakeStringException(0, "~ invalid without instance");
-                StringBuffer myClassName;
-                getClassNameForObject(JNIenv, myClassName, instance);
-                const char *shortClassName = strrchr(myClassName, '.');
-                if (shortClassName)
-                    shortClassName++;
-                else
-                    shortClassName = myClassName;
-                if (!streq(methodName+1, shortClassName))
-                    throw MakeStringException(0, "class name %s does not match", shortClassName);
+                if (!checkedClassName)
+                    checkedClassName.set(methodName+1);
                 signature.set("()L");  // We return 0
             }
             else
@@ -4255,6 +4256,19 @@ protected:
                     javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
                 else
                     javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
+            }
+            if (checkedClassName)
+            {
+                StringBuffer myClassName;
+                getClassNameForObject(JNIenv, myClassName, instance);
+                DBGLOG("Checking class name %s matches %s for function %s", myClassName.str(), checkedClassName.str(), methodName.str());
+                const char *shortClassName = strrchr(myClassName, '.');
+                if (shortClassName)
+                    shortClassName++;
+                else
+                    shortClassName = myClassName;
+                if (!streq(checkedClassName, shortClassName))
+                    throw MakeStringException(0, "Object class %s does not match expected class name %s", shortClassName, checkedClassName.str());
             }
             returnType = strrchr(signature, ')');
             assertex(returnType);  // Otherwise how did Java accept it??
