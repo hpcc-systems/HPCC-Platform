@@ -256,8 +256,9 @@ var GridHelper = declare(null, {
         var retVal = [];
         for (var id in this.selection) {
             if (this.selection[id]) {
-                var storeItem = store.get(id);
-                if (storeItem && storeItem.StateID !== 999) {
+                const rowItem = this.row(id);
+                const storeItem = store.get(id);
+                if (rowItem && rowItem.data && storeItem && storeItem.StateID !== 999) {
                     retVal.push(storeItem);
                 }
             }
@@ -269,9 +270,9 @@ var GridHelper = declare(null, {
 export var LocalStorage = dojo.declare([Evented], {
     constructor: function () {
         var context = this;
-        if (typeof Storage !== void(0)) {
+        if (typeof Storage !== void (0)) {
             window.addEventListener('storage', function (event) {
-                context.emit('storageUpdate', {event});
+                context.emit('storageUpdate', { event });
             });
         } else {
             console.log("Browser doesn't support multi-tab communication");
@@ -300,7 +301,7 @@ export function goToPageUserPreference(gridName, key) {
         gridName.set("rowsPerPage", initUserPref);
     }
     aspect.after(gridName, 'gotoPage', function (deferred, args) {
-        return deferred.then(function (){
+        return deferred.then(function () {
             if (!inGotoPage) {
                 var currentUserPref = context.LocalStorage.prototype.getItem(key, "Number");
                 var currentGridValue = gridName.rowsPerPage;
@@ -333,7 +334,7 @@ export var IdleWatcher = dojo.declare([Evented], {
     },
 
     fireIdle: function () {
-        this.emit("idle", {status: "firedIdle"});
+        this.emit("idle", { status: "firedIdle" });
     },
 
     start: function () {

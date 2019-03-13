@@ -4,10 +4,7 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/dom",
-    "dojo/dom-form",
     "dojo/date",
-    "dojo/on",
     "dojo/topic",
     "dojo/aspect",
 
@@ -27,6 +24,7 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "src/Utility",
+    "src/Clippy",
 
     "dojo/text!../templates/WUQueryWidget.html",
 
@@ -45,10 +43,10 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, date, on, topic, aspect,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, date, topic, aspect,
     registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     selector,
-    _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, Utility,
+    _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, Utility, Clippy,
     template) {
         return declare("WUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
             templateString: template,
@@ -322,6 +320,16 @@ define([
                 if (this.userName === null) {
                     this.mineControl.set("disabled", true);
                 }
+
+                this.wuCopyButton = registry.byId(this.id + "Copy");
+                Clippy.attachDomNode(this.wuCopyButton.domNode, function () {
+                    var wuids = [];
+                    arrayUtil.forEach(context.workunitsGrid.getSelected(), function (item, idx) {
+                        wuids.push(item.Wuid);
+                    });
+                    return wuids.join("\n");
+                });
+                this.refreshActionState();
             },
 
             _onMine: function (event) {
@@ -496,7 +504,7 @@ define([
                 });
                 ESPUtil.goToPageUserPreference(this.workunitsGrid, "WUQueryWidget");
                 aspect.after(this.workunitsGrid, "gotoPage", function (deferred, args) {
-                    return deferred.then(function (){
+                    return deferred.then(function () {
                         args[0] > 1 ? context._idleWatcher.stop() : context._idleWatcher.start();
                     });
                 });
@@ -543,6 +551,8 @@ define([
                     }
                 }
 
+                this.wuCopyButton.set("disabled", !hasSelection)
+                this.wuCopyButton.set("iconClass", !hasSelection ? "iconCopyDisabled" : "iconCopy")
                 registry.byId(this.id + "Open").set("disabled", !hasSelection);
                 registry.byId(this.id + "Delete").set("disabled", !hasNotProtected);
                 registry.byId(this.id + "Abort").set("disabled", !hasNotCompleted);
