@@ -107,13 +107,21 @@ public class HpccClassLoader extends java.lang.ClassLoader
         return sb.toString();
     }
 
-    /* get signature for first method with given name */
-    public static String getSignature ( Class<?> clazz, String simpleName )
+    /* get signature for method with given name, so long as there is only one */
+    public static String getSignature ( Class<?> clazz, String simpleName ) throws Exception
     {
+        String ret = null; 
         Method[] methods = clazz.getMethods();
         for (Method m : methods)
+        {
             if (m.getName().equals(simpleName))
-                return getSignature(m);
-        return null;
+            {
+                if (ret == null)
+                    ret = getSignature(m);
+                else
+                    throw new Exception("Multiple signatures found");  // multiple matches
+            }
+        }
+        return ret;
     }
 }
