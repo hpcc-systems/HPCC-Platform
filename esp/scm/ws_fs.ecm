@@ -473,6 +473,7 @@ ESPrequest [nil_remove] Copy
 
     [min_ver("1.12")] bool preserveCompression(true);
     [min_ver("1.14")] string DFUServerQueue;
+    [min_ver("1.17")] int ExpireDays;
 };
 
 ESPresponse [exceptions_inline]
@@ -680,7 +681,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.16"),
+    version("1.17"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
