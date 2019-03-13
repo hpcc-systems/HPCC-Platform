@@ -39,10 +39,20 @@ class CXRefExBuilderThread : public Thread
         CriticalBlock b(critRunningStatus);
         xRefRunning = status;
     }
+    void clearCurrentClusterName()
+    {
+        CriticalBlock b(critQueue);
+        currentClusterName.clear();
+    }
     IXRefNode* readNodeQueue()
     {
         CriticalBlock b(critQueue);
-        return (IXRefNode*)nodeQueue.dequeue();
+        Owned<IXRefNode> xRefNode = (IXRefNode*)nodeQueue.dequeue();
+        if (!xRefNode)
+            return nullptr;
+
+        xRefNode->getCluster(currentClusterName);
+        return xRefNode.getClear();
     }
     void writeNodeQueue(IXRefNode* xRefNode)
     {
@@ -96,10 +106,9 @@ public:
                 else
                 {
                     setRunningStatus(true);
-                    xRefNode->getCluster(currentClusterName);
                     Owned<IPropertyTree> tree = runXRefCluster(currentClusterName.str(), xRefNode);
                     DBGLOG("finished run XRef for %s", currentClusterName.str());
-                    currentClusterName.clear();
+                    clearCurrentClusterName();
                     setRunningStatus(false);
                 }
             }
@@ -127,10 +136,10 @@ public:
         if (isEmptyString(clusterName))
             return false;
 
+        CriticalBlock b(critQueue);
         if (!currentClusterName.isEmpty() && streq(currentClusterName, clusterName))
             return true;
 
-        CriticalBlock b(critQueue);
         ForEachItemIn(x, nodeQueue)
         {
             IXRefNode* Item = nodeQueue.item(x);
