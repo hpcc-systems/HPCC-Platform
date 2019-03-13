@@ -677,7 +677,7 @@ CEspProtocol::~CEspProtocol()
 
 bool CEspProtocol::notifySelected(ISocket *sock,unsigned selected)
 {
-    return notifySelected(sock, selected, nullptr);
+    return notifySelected(sock, selected, nullptr, false);
 }
 
 const char * CEspProtocol::getProtocolName()

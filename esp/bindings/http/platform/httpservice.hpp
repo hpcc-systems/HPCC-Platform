@@ -68,6 +68,7 @@ interface IRemoteConnection;
 class CEspHttpServer : implements IHttpServerService, public CInterface
 {
     bool isSSL = false;
+    bool shouldClose = false;
     CriticalSection critDaliSession;
 protected:
     ISocket&                m_socket;
@@ -157,6 +158,7 @@ public:
     virtual const char * getServiceType() {return "HttpServer";};
     bool persistentEligible();
     void setIsSSL(bool _isSSL) { isSSL = _isSSL; };
+    void setShouldClose(bool should) { shouldClose = should; }
 };
 
 

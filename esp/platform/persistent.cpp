@@ -126,8 +126,8 @@ public:
         if (info)
         {
             info->useCount += usesOverOne;
-            bool quotaReached = m_maxReqs > 0 && m_maxReqs <= info->useCount;
-            if (keep && !quotaReached)
+            bool reachedQuota = m_maxReqs > 0 && m_maxReqs <= info->useCount;
+            if (keep && !reachedQuota)
             {
                 info->inUse = false;
                 info->timeUsed = usTick()/1000;
@@ -135,7 +135,7 @@ public:
             }
             else
             {
-                if (quotaReached)
+                if (reachedQuota)
                     PERSILOG(PersistentLogLevel::PLogMin, "PERSISTENT: Socket %d reached quota", sock->OShandle());
                 if(!keep)
                     PERSILOG(PersistentLogLevel::PLogMax, "PERSISTENT: Indicated not to keep socket %d", sock->OShandle());
@@ -144,7 +144,7 @@ public:
         }
     }
 
-    virtual Linked<ISocket> getAvailable(SocketEndpoint* ep = nullptr) override
+    virtual Linked<ISocket> getAvailable(SocketEndpoint* ep = nullptr, bool* pShouldClose = nullptr) override
     {
         synchronized block(m_mutex);
         for (auto si:m_infomap)
@@ -158,6 +158,8 @@ public:
                     info->inUse = true;
                     info->timeUsed = usTick()/1000;
                     info->useCount++;
+                    if (pShouldClose != nullptr)
+                        *pShouldClose = m_maxReqs > 0 && m_maxReqs <= info->useCount;
                     m_selectHandler->remove(sock);
                     PERSILOG(PersistentLogLevel::PLogMax, "PERSISTENT: Obtained persistent socket %d from handler %d", sock->OShandle(), m_id);
                     return sock;
@@ -206,6 +208,7 @@ public:
         }
         else if (m_notify != nullptr)
         {
+            bool reachedQuota = false;
             bool ignore = false;
             Owned<ISocket> mysock(LINK(sock));
             PERSILOG(PersistentLogLevel::PLogMax, "Data arrived on persistent connection %d", sock->OShandle());
@@ -220,6 +223,7 @@ public:
                     info->inUse = true;
                     info->timeUsed = usTick()/1000;
                     info->useCount++;
+                    reachedQuota = m_maxReqs > 0 && m_maxReqs <= info->useCount;
                 }
                 else
                 {
@@ -229,7 +233,7 @@ public:
                 m_selectHandler->remove(sock);
             }
             if (!ignore)
-                m_notify->notifySelected(sock, selected, this);
+                m_notify->notifySelected(sock, selected, this, reachedQuota);
         }
         return false;
     }

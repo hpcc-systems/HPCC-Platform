@@ -123,7 +123,7 @@ void CHttpProtocol::init(IPropertyTree * cfg, const char * process, const char *
     }
 }
 
-bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler)
+bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler, bool shouldClose)
 {
     try
     {
@@ -154,7 +154,7 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
                 if(m_maxConcurrentThreads > 0)
                 {
                     // Using Threading pool instead of generating one thread per request.
-                    void ** holder = new void*[6];
+                    void ** holder = new void*[7];
                     holder[0] = (void*)(accepted.getLink());
                     holder[1] = (void*)apport;
                     int maxEntityLength = getMaxRequestEntityLength();
@@ -164,6 +164,7 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
                     ISecureSocketContext* ctx = NULL;
                     holder[4] = (void*)ctx;
                     holder[5] = (void*)persistentHandler;
+                    holder[6] = (void*)&shouldClose;
                     try
                     {
                         http_thread_pool->start((void*)holder, "", m_threadCreateTimeout > 0?m_threadCreateTimeout*1000:0);
@@ -190,6 +191,7 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
                     /* create one thread per request */
                     CHttpThread *workthread = new CHttpThread(accepted.getLink(), apport, CEspProtocol::getViewConfig(), false, nullptr, persistentHandler);
                     workthread->setMaxRequestEntityLength(getMaxRequestEntityLength());
+                    workthread->setShouldClose(shouldClose);
                     workthread->start();
                     workthread->Release();
                 }
@@ -310,7 +312,7 @@ void CSecureHttpProtocol::init(IPropertyTree * cfg, const char * process, const 
     }
 }
 
-bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler)
+bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler, bool shouldClose)
 {
     try
     {
@@ -338,7 +340,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
                     if(m_maxConcurrentThreads > 0)
                     {
                         // Using Threading pool instead of generating one thread per request.
-                        void ** holder = new void*[6];
+                        void ** holder = new void*[7];
                         holder[0] = (void*)accepted.getLink();
                         holder[1] = (void*)apport;
                         int maxEntityLength = getMaxRequestEntityLength();
@@ -347,6 +349,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
                         holder[3] = (void*)&useSSL;
                         holder[4] = (void*)m_ssctx.get();
                         holder[5] = (void*)persistentHandler;
+                        holder[6] = (void*)&shouldClose;
                         http_thread_pool->start((void*)holder);
                         delete [] holder;
                     }
@@ -355,6 +358,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
                         /* create one thread per request */
                         CHttpThread *workthread = new CHttpThread(accepted.getLink(), apport, CEspProtocol::getViewConfig(), true, m_ssctx.get(), persistentHandler);
                         workthread->setMaxRequestEntityLength(getMaxRequestEntityLength());
+                        workthread->setShouldClose(shouldClose);
                         workthread->start();
                         ESPLOG(LogMax, "Request processing thread started.");
                         workthread->Release();
@@ -472,17 +476,18 @@ bool CHttpThread::onRequest()
     initThreadLocal(sizeof(t), &t);
 
     httpserver->setIsSSL(m_is_ssl);
+    httpserver->setShouldClose(m_shouldClose);
     httpserver->processRequest();
 
     if (m_persistentHandler == nullptr)
     {
-        keepAlive = m_apport->queryProtocol()->persistentEnabled() && httpserver->persistentEligible();
+        keepAlive = !m_shouldClose && m_apport->queryProtocol()->persistentEnabled() && httpserver->persistentEligible();
         if (keepAlive)
             m_apport->queryProtocol()->addPersistent(m_socket.get());
     }
     else
     {
-        keepAlive = httpserver->persistentEligible();
+        keepAlive = !m_shouldClose && httpserver->persistentEligible();
         m_persistentHandler->doneUsing(m_socket, keepAlive);
     }
     clearThreadLocal();
@@ -501,6 +506,7 @@ void CPooledHttpThread::init(void *param)
     m_is_ssl = *(bool*)(((void**)param)[3]);
     m_ssctx = (ISecureSocketContext*)(((void**)param)[4]);
     m_persistentHandler = (IPersistentHandler*)(((void**)param)[5]);
+    m_shouldClose = *(bool*)(((void**)param)[6]);
 }
 
 CPooledHttpThread::~CPooledHttpThread()
@@ -543,7 +549,7 @@ void CPooledHttpThread::threadmain()
     {
         httpserver.setown(new CEspHttpServer(*m_socket, m_apport, false, getMaxRequestEntityLength()));
     }
-
+    httpserver->setShouldClose(m_shouldClose);
     time_t t = time(NULL);  
     initThreadLocal(sizeof(t), &t);
     bool keepAlive = false;
@@ -553,13 +559,13 @@ void CPooledHttpThread::threadmain()
         httpserver->processRequest();
         if (m_persistentHandler == nullptr)
         {
-            keepAlive = m_apport->queryProtocol()->persistentEnabled() && httpserver->persistentEligible();
+            keepAlive = !m_shouldClose && m_apport->queryProtocol()->persistentEnabled() && httpserver->persistentEligible();
             if (keepAlive)
                 m_apport->queryProtocol()->addPersistent(m_socket.get());
         }
         else
         {
-            keepAlive = httpserver->persistentEligible();
+            keepAlive = !m_shouldClose && httpserver->persistentEligible();
             m_persistentHandler->doneUsing(m_socket, keepAlive);
         }
     }

@@ -194,7 +194,7 @@ public:
     bool getViewConfig(){return m_viewConfig;}
 
     virtual bool notifySelected(ISocket *sock,unsigned selected);
-    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler) override { return false; };
+    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler, bool shouldClose) override { return false; };
 
     //IEspProtocol
     virtual const char * getProtocolName();
