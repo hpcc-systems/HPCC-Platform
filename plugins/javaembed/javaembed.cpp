@@ -227,7 +227,10 @@ public:
     {
         return checkException(JNIEnv::GetDoubleField(obj,fieldID));
     }
-
+    jboolean IsSameObject(jobject obj1, jobject obj2)
+    {
+        return checkException(JNIEnv::IsSameObject(obj1, obj2));
+    }
     void SetObjectField(jobject obj, jfieldID fieldID, jobject val) {
         functions->SetObjectField(this,obj,fieldID,val);
         checkException();
@@ -3524,21 +3527,27 @@ public:
     {
         if (!strchr(importName, '.') && argcount==0)  // Could require a flag, or a special parameter name...
         {
+            if (!val)
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Null value passed for \"this\"", queryReportName());
             if (importName[0]=='~')
                 instance = (jobject) val;  // Should ensure it gets released at end of function
             else
                 instance = JNIenv->NewGlobalRef((jobject) val, "instanceParam");
-            if (javaClass)
+            jclass newJavaClass = JNIenv->GetObjectClass(instance);
+            if (!JNIenv->IsSameObject(newJavaClass, javaClass))
             {
-                JNIenv->DeleteGlobalRef(javaClass);
-                javaClass = nullptr;
+                if (javaClass)
+                {
+                    JNIenv->DeleteGlobalRef(javaClass);
+                    javaClass = nullptr;
+                }
+                if (classLoader)
+                {
+                    JNIenv->DeleteGlobalRef(classLoader);
+                    javaClass = nullptr;
+                }
+                loadFunction(classpath, 0, nullptr);
             }
-            if (classLoader)
-            {
-                JNIenv->DeleteGlobalRef(classLoader);
-                javaClass = nullptr;
-            }
-            loadFunction(classpath, 0, nullptr);
             reinit();
         }
         else
