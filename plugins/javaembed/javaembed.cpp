@@ -4425,6 +4425,13 @@ public:
     }
 };
 
+static JavaEmbedContext embedContext;
+
+extern DECL_EXPORT IEmbedContext* queryEmbedContext()
+{
+    return &embedContext;
+}
+
 extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {
     return new JavaEmbedContext;

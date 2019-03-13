@@ -1662,8 +1662,12 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
     Owned<IValue> plugin = foldExternalCall(langLoadCall, foldOptions, templateContext);
     if (plugin == nullptr)
         return NULL;
-
-    Owned<IEmbedContext> __plugin = (IEmbedContext *) plugin->getIntValue();  // We declared as int since ecl has no pointer type - not sure what the clean fix is here...
+    // Slightly odd code - the getEmbedContext function returns a linked object or a singleton depending on a flag
+    bool singletonEmbedContext = body->hasAttribute(_singletonEmbedContext_Atom);
+    Owned<IEmbedContext> __pluginLinked;
+    IEmbedContext *__plugin = (IEmbedContext *) plugin->getIntValue();  // We declared as int since ecl has no pointer type - not sure what the clean fix is here...
+    if (!singletonEmbedContext)
+        __pluginLinked.setown(__plugin);  // Make sure we release it, if it's not a singleton
     DummyContext dummyContext;
     Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(&dummyContext,nullptr,flags,optionsStr.str());
     EmbedContextBlock b(__ctx);
