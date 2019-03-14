@@ -6084,8 +6084,6 @@ bool CWsDfuEx::onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &r
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "::DFUFileAccess: Permission denied.");
-
         IConstDFUFileAccessRequestBase &requestBase = req.getRequestBase();
 
         bool returnTextResponse = CFileAccessRole_External == requestBase.getAccessRole();
@@ -6108,8 +6106,6 @@ bool CWsDfuEx::onDFUFileAccessV2(IEspContext &context, IEspDFUFileAccessV2Reques
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUFileAccessV2: Permission denied.");
-
         CDfsLogicalFileName lfn;
         lfn.set(req.getName());
         lfn.setCluster(req.getCluster());
@@ -6211,8 +6207,6 @@ bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &r
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUFileCreate: Permission denied.");
-
         IConstDFUFileAccessRequestBase &requestBase = req.getRequestBase();
         const char *fileName = requestBase.getName();
         const char *clusterName = requestBase.getCluster();
@@ -6310,8 +6304,6 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUFileCreateV2: Permission denied.");
-
         const char *fileName = req.getName();
         const char *clusterName = req.getCluster();
         const char *recordDefinition = req.getECLRecordDefinition();
@@ -6421,8 +6413,6 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
     StringBuffer normalizeTempFileName;
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUFilePublish: Permission denied.");
-
         const char *fileId = req.getFileId();
         if (isEmptyString(fileId))
              throw makeStringException(ECLWATCH_INVALID_INPUT, "DFUFilePublish: No FileId defined.");
