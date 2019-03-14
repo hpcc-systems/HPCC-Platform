@@ -41,7 +41,6 @@ ENDEMBED;
 
 integer accumulate(unsigned p, integer val) := IMPORT(Java, 'accumulate');
 integer clear(unsigned p) := IMPORT(Java, 'clear');
-release(unsigned p) := IMPORT(Java, '~persister'); // After calling this the java object p is no longer usable
 
 p := persister(35) : independent;
 
@@ -51,5 +50,4 @@ sequential(
   accumulate(p, 3);
   clear(p);
   accumulate(p, 10);
-  release(p);  
 );
