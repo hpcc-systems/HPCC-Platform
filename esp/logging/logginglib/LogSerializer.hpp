@@ -90,6 +90,7 @@ public:
     unsigned long getItemCount() const { return m_ItemCount; }//
     unsigned long getFileSize() const { return fileSize; }//
     static StringBuffer& extractFileName(const char* fullName, StringBuffer& fileName);//
+    bool readLogRequest(CLogRequestInFile* file, StringBuffer& logRequest);
     virtual void loadSendLogs(GuidSet& ACKSet, GuidMap& MissedLogs, unsigned long& total_missed);//
     virtual void loadAckedLogs(GuidSet& ReceiveMap);//
 };

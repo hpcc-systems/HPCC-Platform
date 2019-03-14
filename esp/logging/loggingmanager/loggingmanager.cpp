@@ -221,7 +221,6 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
     if (!initialized)
         throw MakeStringException(-1,"LoggingManager not initialized");
 
-    bool bRet = false;
     try
     {
         if (espContext)
@@ -231,17 +230,38 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
         {
             Owned<CLogRequestInFile> reqInFile = new CLogRequestInFile();
             if (!saveToTankFile(req, reqInFile))
-                ERRLOG("LoggingManager: failed in saveToTankFile().");
-            //The reqInFile may be used for passing information to log agents in another PR.
-        }
+                throw MakeStringException(-1, "LoggingManager: failed in saveToTankFile().");
 
-        for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
-        {
-            IUpdateLogThread* loggingThread = loggingAgentThreads[x];
-            if (loggingThread->hasService(LGSTUpdateLOG))
+            //Build new log request for logging agents
+            StringBuffer logContent, v;
+            appendXMLOpenTag(logContent, LOGCONTENTINFILE);
+            appendXMLTag(logContent, LOGCONTENTINFILE_FILENAME, reqInFile->getFileName());
+            appendXMLTag(logContent, LOGCONTENTINFILE_FILEPOS, v.append(reqInFile->getPos()));
+            appendXMLTag(logContent, LOGCONTENTINFILE_FILESIZE, v.clear().append(reqInFile->getSize()));
+            appendXMLTag(logContent, LOGREQUEST_GUID, reqInFile->getGUID());
+            appendXMLCloseTag(logContent, LOGCONTENTINFILE);
+
+            Owned<IEspUpdateLogRequest> logRequest = new CUpdateLogRequest("", "");
+            logRequest->setOption(reqInFile->getOption());
+            logRequest->setLogContent(logContent);
+            for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
             {
-                loggingThread->queueLog(&req);
-                bRet = true;
+                IUpdateLogThread* loggingThread = loggingAgentThreads[x];
+                if (loggingThread->hasService(LGSTUpdateLOG))
+                {
+                    loggingThread->queueLog(logRequest);
+                }
+            }
+        }
+        else
+        {
+            for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
+            {
+                IUpdateLogThread* loggingThread = loggingAgentThreads[x];
+                if (loggingThread->hasService(LGSTUpdateLOG))
+                {
+                    loggingThread->queueLog(&req);
+                }
             }
         }
         if (espContext)
@@ -256,7 +276,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
         resp.setStatusMessage(errorStr.str());
         e->Release();
     }
-    return bRet;
+    return true;
 }
 
 bool CLoggingManager::saveToTankFile(IEspUpdateLogRequestWrap& logRequest, CLogRequestInFile* reqInFile)
