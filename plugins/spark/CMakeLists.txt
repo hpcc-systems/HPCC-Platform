@@ -48,7 +48,7 @@ if(SPARK)
         endif (NOT SPARK_VERSION)
 
         if (NOT SPARK_URL_BASE)
-            set(SPARK_URL_BASE  "http://apache.mirrors.pair.com")
+            set(SPARK_URL_BASE  "https://archive.apache.org/dist")
         endif (NOT SPARK_URL_BASE)
 
         set(SPARK_PACKAGE_NAME "spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}")
