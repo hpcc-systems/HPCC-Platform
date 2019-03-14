@@ -7104,7 +7104,10 @@ public:
             // In future this may be passed the request and build a chain of activities and return sink.
             outputActivity.setown(createOutputActivity(*requestTree, authorizedOnly, keyPairInfo));
 
-            cursorHandle = getNextHandle();
+            {
+                CriticalBlock block(sect);
+                cursorHandle = getNextHandle();
+            }
             remoteRequest.setown(new CRemoteRequest(cursorHandle, outputFormat, compressor, expander, outputActivity));
 
             StringBuffer requestStr("jsonrequest:");
