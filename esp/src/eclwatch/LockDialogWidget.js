@@ -1,26 +1,17 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
     "dojo/dom",
-    "dojo/dom-form",
     "dojo/dom-class",
     "dojo/on",
-    "dojo/dom-style",
     "dojo/request/xhr",
-    "dojo/keys",
     "dojo/cookie",
     "dojo/topic",
-    "dojo/query",
 
     "dijit/registry",
-    "dijit/form/Select",
-    "dijit/form/CheckBox",
 
     "hpcc/_Widget",
-    "src/Utility",
     "src/ws_account",
     "src/ESPUtil",
 
@@ -34,9 +25,9 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, on, domStyle, xhr, keys, cookie, topic, query,
-    registry, Select, CheckBox,
-    _Widget, Utility, WsAccount, ESPUtil,
+], function (declare, i18n, nlsHPCC, dom, domClass, on, xhr, cookie, topic,
+    registry,
+    _Widget, WsAccount, ESPUtil,
     template) {
         return declare("LockDialogWidget", [_Widget], {
             templateString: template,
@@ -84,10 +75,10 @@ define([
                 domClass.remove("SessionLock", "overlay");
                 this.unlockDialog.hide();
                 this.unlockDialog.destroyRecursive()
-                dojo.query(".dijitDialogUnderlayWrapper").forEach(function(node){
+                dojo.query(".dijitDialogUnderlayWrapper").forEach(function (node) {
                     dojo.destroy(node.id);
                 });
-                dojo.query(".unlockDialogToHide").forEach(function(node){
+                dojo.query(".unlockDialogToHide").forEach(function (node) {
                     dojo.destroy(node.id);
                 });
             },
@@ -156,8 +147,8 @@ define([
                     context.storage.setItem("Status", "Locked");
                 } else if (cookie("Status") === "Unlocked") {
                     xhr("esp/lock", {
-                        method: "post",
-                    }).then(function(response){
+                        method: "post"
+                    }).then(function (response) {
                         if (response) {
                             context.unlockDialog.show();
                             domClass.add("SessionLock", "overlay");

@@ -22,7 +22,7 @@ import "dijit/layout/ContentPane";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 
-import declareDecorator from './DeclareDecorator';
+import { declareDecorator } from './DeclareDecorator';
 import { WUScopeController } from "./WUScopeController";
 
 type _Widget = {

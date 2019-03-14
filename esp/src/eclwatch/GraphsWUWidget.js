@@ -7,13 +7,12 @@ define([
 
     "hpcc/GraphsWidget",
     "src/ESPWorkunit",
-    "hpcc/DelayLoadWidget",
     "src/Timings"
 
 ], function (declare,
     ContentPane,
     selector,
-    GraphsWidget, ESPWorkunit, DelayLoadWidget,
+    GraphsWidget, ESPWorkunit,
     srcTimings) {
         return declare("GraphsWUWidget", [GraphsWidget], {
             wu: null,
