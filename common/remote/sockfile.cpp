@@ -1989,7 +1989,7 @@ protected:
         MemoryBuffer newReply;
         initSendBuffer(mrequest);
         mrequest.append((RemoteFileCommandType)RFCStreamRead);
-        VStringBuffer json("{ \"handle\" : %u }", handle);
+        VStringBuffer json("{ \"handle\" : %u, \"format\" : \"binary\" }", handle);
         mrequest.append(json.length(), json.str());
         sendRemoteCommand(mrequest, newReply);
         unsigned newHandle;
@@ -7148,6 +7148,9 @@ public:
                 if (outFmt_Xml == outputFormat)
                     responseWriter->outputCString("urn:hpcc:dfs", "@xmlns:dfs");
                 responseWriter->outputUInt(cursorHandle, sizeof(cursorHandle), "handle");
+                responseWriter->outputEndNested("Response");
+                responseWriter->finalize();
+                reply.append(responseWriter->length(), responseWriter->str());
             }
         }
     }
