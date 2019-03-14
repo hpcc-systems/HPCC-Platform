@@ -29,6 +29,7 @@
 #include "mpbase.hpp"
 #include "dautils.hpp"
 #include "dasds.hpp"
+#include "workunit.hpp"
 
 #include <map>
 #include <string>
@@ -1739,7 +1740,7 @@ public:
                     }
                     else
                     {
-                        DBGLOG("LDAP: Authentication(1) for user %s failed - %s", username, ldap_err2string(rc));
+                        DBGLOG("LDAP: Authentication(1) (%c) for user %s failed - %s", isWorkunitDAToken(password) ? 't' :'f', username, ldap_err2string(rc));
                         user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                     }
                 }
