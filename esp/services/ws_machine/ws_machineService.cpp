@@ -2702,7 +2702,7 @@ void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree
                         const char* pathUsed = folderTree->queryProp("@pathUsed");
                         if (!isEmptyString(pathUsed))
                         {
-                            VStringBuffer desc("%s not found. Read disk usgae from %s", aDiskPath, pathUsed);
+                            VStringBuffer desc("%s not found. Read disk usage from %s", aDiskPath, pathUsed);
                             diskUsage->setDescription(desc);
                         }
                     }
