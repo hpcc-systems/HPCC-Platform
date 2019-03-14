@@ -6513,25 +6513,15 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
             df->detach(30000);
         }
 
-        Owned<IDistributedFile> oldFile = queryDistributedFileDirectory().createNew(fileDesc);
-        oldFile->validate();
-
-        MemoryBuffer mb;
-        fileDesc->serialize(mb);
-        Owned<IFileDescriptor> newFileDesc = deserializeFileDescriptor(mb);
-        StringBuffer newMask;
-        getPartMask(newMask, newFileName, fileDesc->numParts());
-        fileDesc->setPartMask(newMask);
-
-        // create new entry now to establish lock, before renaming unique temporary physical parts
         newFile.setown(queryDistributedFileDirectory().createNew(fileDesc));
+        newFile->validate();
         newFile->setAccessed();
-        newFile->attach(newFileName, userDesc);
+        newFile->attach(normalizeTempFileName, userDesc);
 
-        CDfsLogicalFileName newLfn;
-        newLfn.set(newFileName);
-        if (!oldFile->renamePhysicalPartFiles(newLfn.queryTail(), nullptr, nullptr, fileDesc->queryDefaultDir()))
+        if (!newFile->renamePhysicalPartFiles(newFileName, nullptr, nullptr))//, fileDesc->queryDefaultDir()))
             throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "DFUFilePublish: Failed in renamePhysicalPartFiles %s.", newFileName.str());
+
+        newFile->rename(newFileName, userDesc);
 
         LOG(daliAuditLogCat,",FileAccess,EspProcess,CREATED,%s,%s,%s", groupName, userId.str(), newFileName.str());
     }
