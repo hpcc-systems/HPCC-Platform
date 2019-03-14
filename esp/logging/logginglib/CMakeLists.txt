@@ -36,6 +36,7 @@ ADD_DEFINITIONS ( -D_USRDLL -DLOGGINGCOMMON_EXPORTS )
 set ( SRCS
     ${ESPSCM_GENERATED_DIR}/ws_loggingservice_esp.cpp
     ${HPCC_SOURCE_DIR}/esp/logging/logginglib/datafieldmap.cpp
+    ${HPCC_SOURCE_DIR}/esp/logging/logginglib/compressutil.cpp
     ${HPCC_SOURCE_DIR}/esp/logging/logginglib/loggingagentbase.cpp
     ${HPCC_SOURCE_DIR}/esp/logging/logginglib/LogSerializer.cpp
     ${HPCC_SOURCE_DIR}/esp/logging/logginglib/LogFailSafe.cpp

@@ -70,7 +70,7 @@ CLogSerializer::~CLogSerializer()
     Close();
 }
 
-void CLogSerializer::Append(const char* GUID, const char* Data)
+void CLogSerializer::Append(const char* GUID, const char* Data, CLogRequestInFile* reqInFile)
 {
     StringBuffer toWrite,size;
 
@@ -84,9 +84,16 @@ void CLogSerializer::Append(const char* GUID, const char* Data)
 
     //optimize
     CriticalBlock b(crit);
+    unsigned len = toWrite.length();
+    if (reqInFile)
+    {
+        reqInFile->setFileName(m_file->queryFilename());
+        reqInFile->setPos(m_file->size());
+        reqInFile->setSize(len);
+    }
     m_ItemCount++;
-    fileSize += toWrite.length();
-    m_bytesWritten += m_fileio->write(m_bytesWritten, toWrite.length(), toWrite.str());
+    fileSize += len;
+    m_bytesWritten += m_fileio->write(m_bytesWritten, len, toWrite.str());
 }
 
 void CLogSerializer::Remove(const char* GUID)
