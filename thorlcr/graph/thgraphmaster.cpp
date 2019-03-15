@@ -1310,6 +1310,11 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
             thorEp.setLocalHost(getMachinePortBase());
             logctx->setGlobalId(txId.str(), thorEp, 0);
 
+            SCMStringBuffer callerId;
+            workunit->getDebugValue("CallerId", callerId);
+            if (callerId.length())
+                logctx->setCallerId(callerId.str());
+
             VStringBuffer msg("GlobalId: %s", txId.str());
             workunit->getDebugValue("CallerId", txId);
             if (txId.length())

@@ -2537,6 +2537,7 @@ class DummyLogCtx : implements IContextLogger
 {
 private:
     StringAttr globalId;
+    StringAttr callerId;
     StringBuffer localId;
     StringAttr globalIdHeader;
     StringAttr callerIdHeader;
@@ -2576,14 +2577,22 @@ public:
     {
         return 0;
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
         globalId.set(id);
         appendLocalId(localId.clear(), ep, pid);
     }
+    virtual void setCallerId(const char *id) override
+    {
+        callerId.set(id);
+    }
     virtual const char *queryGlobalId() const
     {
         return globalId.get();
+    }
+    virtual const char *queryCallerId() const override
+    {
+        return callerId.str();
     }
     virtual const char *queryLocalId() const
     {

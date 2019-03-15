@@ -1327,13 +1327,21 @@ public:
     {
         return logctx.queryTraceLevel();
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
         const_cast<IRoxieContextLogger&>(logctx).setGlobalId(id, ep, pid);
+    }
+    virtual void setCallerId(const char *id) override
+    {
+        const_cast<IRoxieContextLogger&>(logctx).setCallerId(id);
     }
     virtual const char *queryGlobalId() const
     {
         return logctx.queryGlobalId();
+    }
+    virtual const char *queryCallerId() const override
+    {
+        return logctx.queryCallerId();
     }
     virtual const char *queryLocalId() const
     {

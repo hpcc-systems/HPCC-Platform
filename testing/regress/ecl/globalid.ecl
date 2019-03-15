@@ -15,30 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef LOGGING_INCL
-#define LOGGING_INCL
+import lib_logging;
+import lib_workunitservices;
 
-#ifdef _WIN32
-#define LOGGING_CALL _cdecl
-#else
-#define LOGGING_CALL
-#endif
+#option('CallerId', 'PkAntaCLkY4MknCnXA');
+#option('GlobalId', 'xPSDvT9akc1fGSTZWJKb');
 
-#ifdef LOGGING_EXPORTS
-#define LOGGING_API DECL_EXPORT
-#else
-#define LOGGING_API DECL_IMPORT
-#endif
+OUTPUT(logging.getGlobalId(), NAMED('GlobalId'));
+OUTPUT(logging.getCallerId(), NAMED('CallerId'));
 
-#include "hqlplugins.hpp"
-#include "eclhelper.hpp"
-
-extern "C" {
-LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
-LOGGING_API void LOGGING_CALL logDbgLog(unsigned srcLen, const char * src);
-LOGGING_API char * LOGGING_CALL logGetGlobalId(ICodeContext *ctx);
-LOGGING_API char * LOGGING_CALL logGetCallerId(ICodeContext *ctx);
-LOGGING_API char * LOGGING_CALL logGetLocalId(ICodeContext *ctx);
-}
-
-#endif

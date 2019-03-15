@@ -122,20 +122,36 @@ public:
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process);
     virtual void setContainer(IEspContainer * container){}
 
-    StringBuffer &getHttpGlobalIdHeader(CHttpRequest *request, StringBuffer &value)
+    inline bool getHttpIdHeader(CHttpRequest *request, const char *header, StringBuffer &value, StringAttr &nameused)
     {
-        if (!globalIdHttpHeader.isEmpty())
-            request->getHeader(globalIdHttpHeader, value);
-        if (value.isEmpty())
-            request->getHeader("HPCC-Global-Id", value); //always support receiving HPCC default
+        if (!header || !*header)
+            return false;
+
+        request->getHeader(header, value.clear());
+        if (value.length())
+        {
+            nameused.set(header);
+            return true;
+        }
+        return false;
+    }
+
+    StringBuffer &getHttpGlobalIdHeader(CHttpRequest *request, StringBuffer &value, StringAttr &nameused)
+    {
+        if (!getHttpIdHeader(request, globalIdHttpHeader, value, nameused))
+        {
+            if (!getHttpIdHeader(request, "Global-Id", value, nameused))
+                getHttpIdHeader(request, "HPCC-Global-Id", value, nameused);
+        }
         return value;
     }
-    StringBuffer &getHttpCallerIdHeader(CHttpRequest *request, StringBuffer &value)
+    StringBuffer &getHttpCallerIdHeader(CHttpRequest *request, StringBuffer &value, StringAttr &nameused)
     {
-        if (!callerIdHttpHeader.isEmpty())
-            request->getHeader(callerIdHttpHeader, value);
-        if (value.isEmpty())
-            request->getHeader("HPCC-Caller-Id", value); //always support receiving HPCC default
+        if (!getHttpIdHeader(request, callerIdHttpHeader, value, nameused))
+        {
+            if (!getHttpIdHeader(request, "Caller-Id", value, nameused))
+                getHttpIdHeader(request, "HPCC-Caller-Id", value, nameused);
+        }
         return value;
     }
     const char *queryGlobalIdHeaderName()
