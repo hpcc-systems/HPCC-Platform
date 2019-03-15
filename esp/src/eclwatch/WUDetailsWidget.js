@@ -156,9 +156,6 @@ define([
 
             _onCancelDialog: function () {
                 this.zapDialog.hide();
-                this.emailCheckbox.set("value", "false");
-                this.emailSubject.reset();
-                this.emailBody.reset();
                 this.checkThorLogStatus();
             },
 
@@ -269,10 +266,8 @@ define([
                     context.zapDialog.show();
                     context.emailCheckbox.on("change", function(evt){
                         if (context.emailCheckbox.get("checked")){
-                            context.emailCheckbox.set("value", "true");
                             context.emailSubject.set("required", true);
                         } else {
-                            context.emailCheckbox.set("value", "false");
                             context.emailSubject.set("required", false);
                         }
                     });
@@ -470,6 +465,7 @@ define([
                         context.slaveLogs.set("disabled", false);
                         context.includeSlaveLogsCheckbox.set("disabled", false);
                         context.includeSlaveLogsCheckbox.set("checked", false);
+                        context.emailCheckbox.set("checked", false);
                         var targetData = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo;
                         for (var i = 0; i < targetData.length; ++i) {
                             context.thorProcess.options.push({
