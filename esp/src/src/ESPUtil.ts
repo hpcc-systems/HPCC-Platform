@@ -21,6 +21,8 @@ import * as DGrid from "dgrid/Grid";
 // @ts-ignore
 import * as OnDemandGrid from "dgrid/OnDemandGrid";
 // @ts-ignore
+import * as CompoundColumns from 'dgrid/extensions/CompoundColumns';
+// @ts-ignore
 import * as Keyboard from "dgrid/Keyboard";
 // @ts-ignore
 import * as Selection from "dgrid/Selection";
@@ -432,11 +434,11 @@ export class UndefinedMemory extends UndefinedMemoryBase {
     }
 }
 
-export function Grid(pagination?, selection?, overrides?) {
+export function Grid(pagination?, selection?, overrides?, compoundColumns?) {
     var baseClass = [];
     var params = {};
     if (pagination) {
-        baseClass = [DGrid, Pagination, ColumnResizer, Keyboard, DijitRegistry];
+        baseClass = [DGrid, Pagination, ColumnResizer, Keyboard, DijitRegistry, CompoundColumns];
         lang.mixin(params, {
             rowsPerPage: 50,
             pagingLinks: 1,
@@ -446,6 +448,9 @@ export function Grid(pagination?, selection?, overrides?) {
         });
     } else {
         baseClass = [OnDemandGrid, ColumnResizer, Keyboard, DijitRegistry];
+    }
+    if (compoundColumns) {
+        baseClass.push(CompoundColumns);
     }
     if (selection) {
         baseClass.push(Selection);
