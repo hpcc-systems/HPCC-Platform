@@ -41,6 +41,19 @@ ESPStruct AddressInfo
     int Zip(33487);  
 };
 
+ESPrequest CppEchoPersonInfoRequest
+{
+     ESPstruct NameInfo Name;
+     ESParray<ESPstruct AddressInfo, Address> Addresses;
+};
+
+ESPresponse CppEchoPersonInfoResponse
+{
+     int count(0);
+     ESPstruct NameInfo Name;
+     ESParray<ESPstruct AddressInfo, Address> Addresses;
+};
+
 ESPrequest JavaEchoPersonInfoRequest
 {
      ESPstruct NameInfo Name;
@@ -69,6 +82,7 @@ ESPresponse RoxieEchoPersonInfoResponse
 
 ESPservice [version("0.01")] EsdlExample
 {
+    ESPmethod CppEchoPersonInfo(CppEchoPersonInfoRequest, CppEchoPersonInfoResponse);
     ESPmethod JavaEchoPersonInfo(JavaEchoPersonInfoRequest, JavaEchoPersonInfoResponse);
     ESPmethod RoxieEchoPersonInfo(RoxieEchoPersonInfoRequest, RoxieEchoPersonInfoResponse);
 };
