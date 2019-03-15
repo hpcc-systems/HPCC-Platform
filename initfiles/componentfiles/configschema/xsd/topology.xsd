@@ -55,7 +55,6 @@
                             <xs:attribute name="prefix" type="xs:string" hpcc:displayName="Prefix" hpcc:tooltip="Need one"/>
 
                         </xs:complexType>
-                        alias="" name="thor400_44_sla" prefix="thor400_44_sla"
                     </xs:element>
                 </xs:sequence>
                 <xs:attributeGroup ref="buildInfo"/>
