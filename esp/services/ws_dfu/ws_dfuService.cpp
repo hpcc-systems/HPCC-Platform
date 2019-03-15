@@ -6518,7 +6518,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         newFile->setAccessed();
         newFile->attach(normalizeTempFileName, userDesc);
 
-        if (!newFile->renamePhysicalPartFiles(newFileName, nullptr, nullptr))//, fileDesc->queryDefaultDir()))
+        if (!newFile->renamePhysicalPartFiles(newFileName, nullptr, nullptr, fileDesc->queryDefaultDir()))
             throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "DFUFilePublish: Failed in renamePhysicalPartFiles %s.", newFileName.str());
 
         newFile->rename(newFileName, userDesc);

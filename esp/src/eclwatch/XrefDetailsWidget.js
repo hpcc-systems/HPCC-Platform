@@ -105,7 +105,20 @@ define([
                     dom.byId(this.id + "LastRun").textContent = params.Modified;
                     dom.byId(this.id + "LastMessage").textContent = params.Status;
                 }
-                this.refreshActionState();
+
+                if (params.Status.indexOf('Generated') !== -1){
+                    this.setDisabled(this.widget._FoundFiles.id, false);
+                    this.setDisabled(this.widget._OrphanFiles.id, false);
+                    this.setDisabled(this.widget._LostFiles.id, false);
+                    this.setDisabled(this.widget._Directories.id, false);
+                    this.setDisabled(this.widget._Errors.id, false);
+                } else {
+                    this.setDisabled(this.widget._FoundFiles.id, true);
+                    this.setDisabled(this.widget._OrphanFiles.id, true);
+                    this.setDisabled(this.widget._LostFiles.id, true);
+                    this.setDisabled(this.widget._Directories.id, true);
+                    this.setDisabled(this.widget._Errors.id, true);
+                }
             },
 
             _onGenerate: function (arg) {
@@ -148,16 +161,5 @@ define([
                 }
             },
 
-            refreshActionState: function () {
-                var disabled = false;
-                if (this.params.Name === "SuperFiles") {
-                    disabled = true;
-                }
-
-                this.foundFilesWidget = registry.byId(this.id + "_FoundFiles").set("disabled", disabled);
-                this.orphanFilesWidget = registry.byId(this.id + "_OrphanFiles").set("disabled", disabled);
-                this.lostFilesWidget = registry.byId(this.id + "_LostFiles").set("disabled", disabled);
-                this.directoriesWidget = registry.byId(this.id + "_Directories").set("disabled", disabled);
-            }
         });
     });

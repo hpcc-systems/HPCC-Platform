@@ -244,7 +244,11 @@ public:
         case DFSERR_CannotFindPartFileCrc:
             return str.append(": Cannot find physical file crc for ").append(errstr);
         case DFSERR_LookupAccessDenied:
-            return str.append(" Lookup access denied for scope ").append(errstr);
+        {
+            StringBuffer ip;
+            queryMyNode()->endpoint().getIpText(ip);
+            return str.appendf(" Lookup access denied for scope %s at Dali %s", errstr.str(), ip.str());
+        }
         case DFSERR_CreateAccessDenied:
             return str.append(" Create access denied for scope ").append(errstr);
         case DFSERR_PhysicalPartAlreadyExists:

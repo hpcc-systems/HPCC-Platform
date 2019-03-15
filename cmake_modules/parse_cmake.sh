@@ -81,7 +81,7 @@ function extract()
     local _file=$1
     local _name=$2
     local _search=$2
-    local _result=`grep -i "set *( *$_search " $_file | sed "s/^ *//" | awk -F "[ \")(]*" '{ print $3 }' -`
+    local _result=`grep -i "set *( *$_search " $_file | sed -E "s/^.*$_search *\"?//" | sed -E "s/\"? *\)//"`
     eval "$_name='$_result'"
 }
 

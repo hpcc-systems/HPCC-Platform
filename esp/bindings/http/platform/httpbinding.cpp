@@ -716,7 +716,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     const char * pwd = user->credentials().getPassword();
     if (isWorkunitDAToken(pwd))
     {
-        wuTokenStates state = verifyWorkunitDAToken(pwd);//throws if cannot open workunit
+        wuTokenStates state = verifyWorkunitDAToken(user->getName(), pwd);//throws if cannot open workunit
         if (state == wuTokenValid)
         {
             user->setAuthenticateStatus(AS_AUTHENTICATED);

@@ -19,31 +19,29 @@ import * as _Widget from "hpcc/_Widget";
 import { Grid } from "./ESPUtil";
 import * as WsWorkunits from "./WsWorkunits";
 import { debounce, getImageURL, Persist } from "./Utility";
+import { declareDecorator } from './DeclareDecorator';
+import { WUScopeController } from "./WUScopeController";
+import { GraphStore, GraphTreeStore } from "./GraphStore";
+import { WUGraphLegend } from "./WUGraphLegend";
 
 // @ts-ignore
 import * as template from "dojo/text!hpcc/templates/GraphTree7Widget.html";
 
-import "hpcc/TimingTreeMapWidget";
 import "dijit/layout/BorderContainer";
-import "dijit/layout/TabContainer";
-import "dijit/layout/StackContainer";
-import "dijit/layout/StackController";
 import "dijit/layout/ContentPane";
-import "dijit/Dialog";
-import "dijit/Fieldset";
-import "dijit/form/TextBox";
-import "dijit/form/SimpleTextarea";
-import "dijit/form/NumberSpinner";
-import "dijit/form/DropDownButton";
-import "dijit/form/Select";
-import "dijit/Toolbar";
+import "dijit/form/Button";
 import "dijit/ToolbarSeparator";
-import "dijit/TooltipDialog"
-
-import declareDecorator from './DeclareDecorator';
-import { WUScopeController } from "./WUScopeController";
-import { GraphStore, GraphTreeStore } from "./GraphStore";
-import { WUGraphLegend } from "./WUGraphLegend";
+import "dijit/form/TextBox";
+import "dijit/form/DropDownButton";
+import "dijit/TooltipDialog";
+import "dijit/form/Form";
+import "hpcc/TableContainer";
+import "dijit/form/CheckBox";
+import "dijit/Fieldset";
+import "dijit/Toolbar";
+import "dijit/layout/StackController";
+import "dijit/layout/StackContainer";
+import "dijit/layout/TabContainer";
 
 type _Widget = {
     id: string;
