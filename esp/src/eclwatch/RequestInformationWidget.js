@@ -56,6 +56,13 @@ define([
             generateRequestInfo: function (params) {
                 var table = domConstruct.create("table", {});
                 for (var key in params) {
+                    if (params[key] === true) {
+                        params[key] = "enabled";
+                    }
+                    if (params[key] === false) {
+                        params[key] = "disabled";
+                    }
+
                     switch (key) {
                         case "SecurityString":
                         case "UserName":
@@ -65,6 +72,8 @@ define([
                         case "SortBy":
                         case "OldIP":
                         case "Path":
+                        case "ClusterType":
+                        case "Cluster":
                             break;
                         default:
                             var tr = domConstruct.create("tr", {}, table);
