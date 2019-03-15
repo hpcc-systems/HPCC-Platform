@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#include <string>
+#include <array>
 
 #include "platform.h"
 #include "jlib.hpp"
