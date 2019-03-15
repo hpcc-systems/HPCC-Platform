@@ -36,17 +36,25 @@ set (    SRCS
 include_directories ( 
          ${HPCC_SOURCE_DIR}/system/include 
          ${HPCC_SOURCE_DIR}/system/xmllib
-         ${HPCC_SOURCE_DIR}/system/security/shared 
-         ${HPCC_SOURCE_DIR}/system/security/securesocket 
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/system/security/securesocket
+         ${HPCC_SOURCE_DIR}/system/security/cryptohelper
+         ${HPCC_SOURCE_DIR}/common/remote
+         ${HPCC_SOURCE_DIR}/common/environment
+         ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/system/mp
-         ${HPCC_SOURCE_DIR}/esp/bindings 
-         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/client 
-         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp 
-         ${HPCC_SOURCE_DIR}/system/jlib 
-         ${HPCC_SOURCE_DIR}/esp/platform 
+         ${HPCC_SOURCE_DIR}/esp/bindings
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/client
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/esp/clients
-         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform 
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
+         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
+         ${HPCC_SOURCE_DIR}/testing/unittests
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWSDFUACCESS_EXPORTS )
@@ -56,8 +64,11 @@ install ( TARGETS wsdfuaccess RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATIO
 target_link_libraries ( wsdfuaccess 
          jlib
          xmllib 
-         esphttp 
+         esphttp
+         remote
+         thorhelper
          dalibase
+         ${CPPUNIT_LIBRARIES}
     )
 
 

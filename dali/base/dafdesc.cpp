@@ -3108,3 +3108,17 @@ void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file)
         }
     }
 }
+
+static IFileDescriptor *factoryForRemoteFileDescriptor(IPropertyTree *fileInfo)
+{
+    if (fileInfo)
+        return deserializeFileDescriptorTree(fileInfo);
+    else
+        return createFileDescriptor();
+}
+
+extern da_decl FileDescriptorFactoryType queryFileDescriptorFactory()
+{
+    return factoryForRemoteFileDescriptor;
+}
+

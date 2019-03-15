@@ -633,6 +633,7 @@ extern THORHELPER_API void setAutoAffinity(unsigned curProcess, unsigned process
 extern THORHELPER_API void bindMemoryToLocalNodes();
 
 extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &props);
+extern THORHELPER_API bool getDaliLayoutInfo(MemoryBuffer &layoutBin, IPropertyTree const &props);
 
 /* Returns a dynamic translator (as 1st parameter) given a generated expected format, the published format and the desired projectedFormat,
  * providing translation mode and crc's allow translation. Returns true if translator created.

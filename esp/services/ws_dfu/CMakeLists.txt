@@ -102,6 +102,7 @@ target_link_libraries ( ws_dfu
          dfuXRefLib 
          dfuwu 
          roxiecommlib 
+         wsdfuaccess
     )
 
 IF (USE_OPENSSL)
