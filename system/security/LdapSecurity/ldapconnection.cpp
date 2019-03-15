@@ -3683,13 +3683,13 @@ public:
                 if (so.length())
                     so.append(',');
                 int fmt = sortOrder[i];
-                if (fmt&UFreverse)
+                if (fmt & RFreverse)
                     so.append('-');
-                if (fmt&UFnocase)
+                if (fmt & RFnocase)
                     so.append('?');
-                if (fmt&UFnumeric)
+                if (fmt & RFnumeric)
                     so.append('#');
-                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+                so.append(getResourceFieldNames((ResourceField) (fmt&0xff)));
             }
         }
         IArrayOf<IPropertyTree> results;
@@ -3937,13 +3937,13 @@ public:
                 if (so.length())
                     so.append(',');
                 int fmt = sortOrder[i];
-                if (fmt&UFreverse)
+                if (fmt & GFreverse)
                     so.append('-');
-                if (fmt&UFnocase)
+                if (fmt & GFnocase)
                     so.append('?');
-                if (fmt&UFnumeric)
+                if (fmt & GFnumeric)
                     so.append('#');
-                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+                so.append(getGroupFieldNames((GroupField) (fmt&0xff)));
             }
         }
         IArrayOf<IPropertyTree> results;

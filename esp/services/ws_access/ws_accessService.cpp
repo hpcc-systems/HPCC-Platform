@@ -813,10 +813,10 @@ bool Cws_accessEx::onGroupQuery(IEspContext &context, IEspGroupQueryRequest &req
         default:
             break;
         }
-        sortOrder[0] = (GroupField) (sortOrder[0] | UFnocase);
+        sortOrder[0] = (GroupField) (sortOrder[0] | GFnocase);
         bool descending = req.getDescending();
         if (descending)
-            sortOrder[0] = (GroupField) (sortOrder[0] | UFreverse);
+            sortOrder[0] = (GroupField) (sortOrder[0] | GFreverse);
 
         unsigned total;
         __int64 cacheHint;
