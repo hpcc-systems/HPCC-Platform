@@ -53,7 +53,10 @@ define([
                     minSize: 240
                 });
                 this.detailsWidget.placeAt(this.gridTab, "last");
-                this.filter = new FilterDropDownWidget();
+                this.filter = new FilterDropDownWidget({});
+                this.filter.init({
+                    ownLabel: this.i18n.MachineInformation
+                });
             },
 
             init: function (params) {
@@ -75,12 +78,7 @@ define([
                         if (context.viewModeMachines.checked || context.viewModeServices.checked) {
                             var MachineInformationClean = "Addresses." + i;
                             MachineInformationCount++;
-                            if (context.viewModeMachines.checked) {
-                                filter[MachineInformationClean] = selection[i].getNetaddress() + "|:" + selection[i].__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_treeItem.Directory + ":" + 0;
-                            }
-                            if (context.viewModeServices.checked) {
-                                filter[MachineInformationClean] = selection[i].getNetaddress() + "|:" + selection[i].getNetaddress() + "|:" + selection[i].__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_treeItem.Directory;
-                            }
+
                             var request = {
                                 Path: selection[i].__hpcc_treeItem.Path,
                                 Cluster: selection[i].__hpcc_treeItem.Name,
@@ -98,6 +96,14 @@ define([
                                 AddProcessesToFilter: filter.AddtionalProcessesToFilter,
                                 cbAutoRefresh: filter.cbAutoRefresh
                             };
+
+                            if (context.viewModeMachines.checked) {
+                                filter[MachineInformationClean] = selection[i].getNetaddress() + "|:" + selection[i].__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_treeItem.Directory + ":" + 0;
+                            }
+                            if (context.viewModeServices.checked) {
+                                filter[MachineInformationClean] = selection[i].getNetaddress() + "|:" + selection[i].getNetaddress() + "|:" + selection[i].__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_treeItem.Directory;
+                            }
+
                             request[MachineInformationClean] = filter[MachineInformationClean];
                             request["Addresses.itemcount"] = MachineInformationCount;
                             WsMachine.GetMachineInfo({
@@ -106,8 +112,6 @@ define([
                                 var pfTab = context.ensureMIPane(response.GetMachineInfoResponse.Machines.MachineInfoEx[0].Address, {
                                     params: response.GetMachineInfoResponse
                                 });
-                                context.detailsWidget.requestInformationWidget.set("disabled", false);
-                                context.detailsWidget.requestInformationWidget.init(response.GetMachineInfoResponse);
                                 pfTab.init(response.GetMachineInfoResponse, "machines");
                             });
                         } else {
@@ -150,7 +154,6 @@ define([
 
             resetFilter: function () {
                 this.filter.filterForm.reset();
-                this.filter.filterDropDown.set("label", this.i18n.MachineInformation);
                 this.filter.iconFilter.src = Utility.getImageURL("noFilter1.png");
                 this.filter.disable(true);
             },
@@ -158,6 +161,7 @@ define([
             createGrid: function (domID) {
                 var context = this;
                 this.openButton = registry.byId(this.id + "Open");
+                dojo.destroy(this.id + "Open");
                 this.filter.placeAt(this.openButton.domNode, "after");
                 this.filter.filterForm.set("style", "width:600px;");
                 this.filter.filterDropDown.set("label", context.i18n.MachineInformation);
@@ -190,7 +194,7 @@ define([
                             context.resetFilter();
                         }
                     },
-                    label: this.i18n.Machines
+                    label: this.i18n.ClusterProcesses
                 }).placeAt(this.openButton.domNode, "after");
                 this.viewModeServices = new ToggleButton({
                     showLabel: true,
@@ -204,7 +208,7 @@ define([
                             context.resetFilter();
                         }
                     },
-                    label: this.i18n.Services
+                    label: this.i18n.SystemServers
                 }).placeAt(this.openButton.domNode, "after");
                 this.viewModeTargets = new ToggleButton({
                     showLabel: true,
@@ -218,7 +222,7 @@ define([
                             context.resetFilter();
                         }
                     },
-                    label: this.i18n.Targets
+                    label: this.i18n.TargetClusters
                 }).placeAt(this.openButton.domNode, "after");
 
                 new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
@@ -463,7 +467,7 @@ define([
                         closable: true,
                         params: params.params
                     });
-                    this.detailsWidget.widget._RequestInformation.addChild(retVal, "last");
+                    this._tabContainer.addChild(retVal, "last");
                 }
                 return retVal;
             },
@@ -474,11 +478,12 @@ define([
                 if (!retVal) {
                     retVal = new PreflightDetailsWidget({
                         id: id,
-                        title: params.params.Machines.MachineInfoEx[0].Address,
+                        style: "width: 100%",
+                        params: params.params,
                         closable: true,
-                        params: params.params
+                        title: params.params.Machines.MachineInfoEx[0].Address
                     });
-                    this.detailsWidget.widget._RequestInformation.addChild(retVal, "last");
+                    this._tabContainer.addChild(retVal, "last");
                 }
                 return retVal;
             },
