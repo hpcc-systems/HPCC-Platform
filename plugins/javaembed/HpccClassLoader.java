@@ -22,6 +22,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.ArrayList;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.Throwable;
 
 public class HpccClassLoader extends java.lang.ClassLoader
@@ -90,7 +91,10 @@ public class HpccClassLoader extends java.lang.ClassLoader
     
     public static String getSignature(Method m)
     {
-        StringBuilder sb = new StringBuilder("(");
+        StringBuilder sb = new StringBuilder();
+        if ((m.getModifiers() & Modifier.STATIC) == 0)
+            sb.append('@');
+        sb.append('(');
         for(Class<?> c : m.getParameterTypes())
         { 
             String sig=java.lang.reflect.Array.newInstance(c, 0).toString();
@@ -114,7 +118,7 @@ public class HpccClassLoader extends java.lang.ClassLoader
         Method[] methods = clazz.getMethods();
         for (Method m : methods)
         {
-            if (m.getName().equals(simpleName))
+            if ((m.getModifiers() & Modifier.PUBLIC) != 0 && m.getName().equals(simpleName))
             {
                 if (ret == null)
                     ret = getSignature(m);

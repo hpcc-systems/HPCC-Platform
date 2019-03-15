@@ -20,7 +20,7 @@
 
 IMPORT Java;
 
-UNSIGNED JavaAccumulator(INTEGER initial) := EMBED(Java)
+UNSIGNED JavaAccumulator(INTEGER initial) := EMBED(Java : persist('Global'))
 public class JavaAccumulator
 {
   public JavaAccumulator(int initial) { tot = initial; }
@@ -41,7 +41,6 @@ ENDEMBED;
 
 INTEGER accumulate(UNSIGNED p, INTEGER val) := IMPORT(Java, 'JavaAccumulator::accumulate');
 INTEGER clear(UNSIGNED p) := IMPORT(Java, 'JavaAccumulator::clear');
-release(UNSIGNED p) := IMPORT(Java, '~JavaAccumulator'); // After calling this the java object p is no longer usable
 
 a := JavaAccumulator(35) : INDEPENDENT;
 
@@ -52,5 +51,4 @@ ORDERED
   accumulate(a, 3);
   clear(a);
   accumulate(a, 10);
-  release(a);  
 );
