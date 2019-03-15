@@ -69,6 +69,7 @@ static IDaFsException *makeDaFsClientException(DaFsExceptionCode code, MessageAu
     return new CDaFsException(code, message, aud);
 }
 
+static IDaFsException *makeDaFsClientExceptionVA(DaFsExceptionCode code, MessageAudience aud, const char *format, va_list args) __attribute__((format(printf,3,0)));
 static IDaFsException *makeDaFsClientExceptionVA(DaFsExceptionCode code, MessageAudience aud, const char *format, va_list args)
 {
     StringBuffer eStr;
@@ -81,6 +82,7 @@ static void throwDsFsClientException(DaFsExceptionCode code, const char *format)
     throw makeDaFsClientException(code, MSGAUD_programmer, format);
 }
 
+static void throwDsFsClientExceptionV(DaFsExceptionCode code, const char *format, ...) __attribute__((format(printf,2,3)));
 static void throwDsFsClientExceptionV(DaFsExceptionCode code, const char *format, ...)
 {
     va_list args;
