@@ -1998,7 +1998,7 @@ void bindMemoryToLocalNodes()
 #endif
 }
 
-extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &props)
+static IOutputMetaData *_getDaliLayoutInfo(MemoryBuffer &layoutBin, IPropertyTree const &props)
 {
     try
     {
@@ -2006,7 +2006,6 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
         bool isGrouped = props.getPropBool("@grouped", false);
         if (props.hasProp("_rtlType"))
         {
-            MemoryBuffer layoutBin;
             props.getPropBin("_rtlType", layoutBin);
             try
             {
@@ -2034,7 +2033,6 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
                     props.getPropBin("_record_layout", mb);
                     expr.setown(patchEclRecordDefinitionFromRecordLayout(expr, mb));
                 }
-                MemoryBuffer layoutBin;
                 if (exportBinaryType(layoutBin, expr, isIndex))
                     return createTypeInfoOutputMetaData(layoutBin, isGrouped);
             }
@@ -2054,6 +2052,18 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
         DBGLOG("Cannot deserialize file metadata: Unknown error");
     }
     return nullptr;
+}
+
+extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &props)
+{
+    MemoryBuffer layoutBin;
+    return _getDaliLayoutInfo(layoutBin, props);
+}
+
+extern THORHELPER_API bool getDaliLayoutInfo(MemoryBuffer &layoutBin, IPropertyTree const &props)
+{
+    Owned<IOutputMetaData> meta = _getDaliLayoutInfo(layoutBin, props);
+    return nullptr != meta; // meta created to verify, but only returning layoutBin;
 }
 
 static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> *keyedTranslator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode)

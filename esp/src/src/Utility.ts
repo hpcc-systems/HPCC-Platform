@@ -395,6 +395,9 @@ export function resolve(hpccWidget, callback) {
         case "DiskUsageWidget":
             require(["hpcc/DiskUsageWidget"], doLoad);
             break;
+        case "DiskUsageDetails":
+            require(["hpcc/DiskUsageDetails"], doLoad);
+            break;
         case "viz/DojoD3Choropleth":
             require(["hpcc/viz/DojoD3Choropleth"], doLoad);
             break;
@@ -454,6 +457,10 @@ export function resolve(hpccWidget, callback) {
             break;
         case "GraphPageWidget":
             require(["hpcc/GraphPageWidget"], doLoad);
+            break;
+        case "GraphsWidget":
+            //  ECLIDE Backward Compatibility  ---
+            require(["hpcc/GraphsWUWidget"], doLoad);
             break;
         case "GraphsWUWidget":
             require(["hpcc/GraphsWUWidget"], doLoad);

@@ -281,7 +281,7 @@ inline bool isInternalEmbedAttr(IAtom *name)
 {
     return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom || 
            name == importAtom || name==foldAtom || name==timeAtom || name==_prebind_Atom || name==_precompile_Atom || name==_original_Atom ||
-           name == _threadlocal_Atom || name == activityAtom || name == localAtom || name == parallelAtom;
+           name == _threadlocal_Atom || name == _singletonEmbedContext_Atom || name == activityAtom || name == localAtom || name == parallelAtom;
 }
 
 

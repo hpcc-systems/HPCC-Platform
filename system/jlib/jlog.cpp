@@ -2180,23 +2180,6 @@ void attachManyLogMsgMonitorsFromPTree(IPropertyTree * tree)
         attachLogMsgMonitorFromPTree(&(iter->query()));
 }
 
-// Standard categories and unknown jobInfo
-
-const LogMsgCategory MCdisaster(MSGAUD_all, MSGCLS_disaster);
-const LogMsgCategory MCuserError(MSGAUD_user, MSGCLS_error);
-const LogMsgCategory MCoperatorError(MSGAUD_operator, MSGCLS_error);
-const LogMsgCategory MCinternalError(MSGAUD_programmer, MSGCLS_error, 1);
-const LogMsgCategory MCuserWarning(MSGAUD_user, MSGCLS_warning);
-const LogMsgCategory MCoperatorWarning(MSGAUD_operator, MSGCLS_warning);
-const LogMsgCategory MCinternalWarning(MSGAUD_programmer, MSGCLS_warning, 1);
-const LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress);
-const LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress);
-const LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress);
-const LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information);
-const LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress);
-const LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information);
-const LogMsgCategory MClegacy(MSGAUD_legacy, MSGCLS_legacy, DefaultDetail);
-
 const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
 
 // Calls to make, remove, and return the manager, standard handler, pass all/none filters, reporter array
@@ -2554,6 +2537,7 @@ class DummyLogCtx : implements IContextLogger
 {
 private:
     StringAttr globalId;
+    StringAttr callerId;
     StringBuffer localId;
     StringAttr globalIdHeader;
     StringAttr callerIdHeader;
@@ -2593,14 +2577,22 @@ public:
     {
         return 0;
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
         globalId.set(id);
         appendLocalId(localId.clear(), ep, pid);
     }
+    virtual void setCallerId(const char *id) override
+    {
+        callerId.set(id);
+    }
     virtual const char *queryGlobalId() const
     {
         return globalId.get();
+    }
+    virtual const char *queryCallerId() const override
+    {
+        return callerId.str();
     }
     virtual const char *queryLocalId() const
     {

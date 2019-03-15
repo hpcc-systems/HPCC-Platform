@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PlatformVersionCheck">
+  <title>PlatformVersionCheck</title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.System.Util.PlatformVersionCheck(
+  </emphasis><emphasis>v</emphasis><emphasis role="bold">
+  );</emphasis><indexterm>
+      <primary>STD.System.Util.PlatformVersionCheck(</primary>
+    </indexterm><indexterm>
+      <primary>System.Util.PlatformVersionCheck(</primary>
+    </indexterm> <indexterm>
+      <primary>PlatformVersionCheck(</primary>
+    </indexterm></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>v</emphasis></entry>
+
+          <entry>Required. The minimum platform version in either xx.xx.xx,
+          xx.xx, or xx format (where xx is an integer and does not need to be
+          zero-padded); extra trailing characters (such as the '-1' in the
+          example below) are ignored.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>TRUE if the platform's current version is equal to or higher
+          than the argument, otherwise FALSE.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">PlatformVersionCheck </emphasis>function
+  tests a full version string against the individual platform version
+  constants to determine if the platform's version is at least as high as the
+  argument. This function is evaluated at compile-time if the argument is a
+  constant. This makes it useful for embedding in #IF() declarations as shown
+  in the example.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+#IF(STD.System.Util.PlatformVersionCheck('8.2.0-1'))
+  OUTPUT('Platform check TRUE');
+#ELSE
+  OUTPUT('Platform check FALSE');
+#END</programlisting>
+</sect1>

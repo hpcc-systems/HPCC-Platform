@@ -1,24 +1,27 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-class",
     "dojo/dom-style",
-    "dojo/Evented",
 
     "dijit/registry",
-    "dijit/layout/BorderContainer",
-    "dijit/layout/ContentPane",
 
     "hpcc/_Widget",
 
     "@hpcc-js/eclwatch",
 
-    "dojo/text!../templates/Graph7Widget.html"
-], function (declare, lang, i18n, nlsHPCC, dom, domClass, domStyle, Evented,
-    registry, BorderContainer, ContentPane,
+    "dojo/text!../templates/Graph7Widget.html",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/ContentPane",
+    "dijit/ToolbarSeparator",
+    "dijit/layout/ContentPane",
+    "dijit/form/Button"
+
+], function (declare, i18n, nlsHPCC, dom, domClass, domStyle,
+    registry,
     _Widget,
     hpccEclWatch,
     template) {

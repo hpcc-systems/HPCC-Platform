@@ -71,6 +71,21 @@
                 </xsl:if>
 
                 <LoggingManager name="{$managerNode/@name}">
+                    <xsl:if test="string($managerNode/@FailSafe) != ''">
+                        <FailSafe><xsl:value-of select="$managerNode/@FailSafe"/></FailSafe>
+                    </xsl:if>
+                    <xsl:if test="string($managerNode/@FailSafeLogsDir) != ''">
+                        <FailSafeLogsDir><xsl:value-of select="$managerNode/@FailSafeLogsDir"/></FailSafeLogsDir>
+                    </xsl:if>
+                    <xsl:if test="string($managerNode/@SafeRolloverThreshold) != ''">
+                        <SafeRolloverThreshold><xsl:value-of select="$managerNode/@SafeRolloverThreshold"/></SafeRolloverThreshold>
+                    </xsl:if>
+                    <Filters>
+                        <xsl:for-each select="$managerNode/Filter">
+                            <Filter value="{current()/@filter}" type="{current()/@type}"/>
+                        </xsl:for-each>
+                    </Filters>
+
                     <xsl:for-each select="$managerNode/ESPLoggingAgent">
                         <xsl:variable name="agentName" select="@ESPLoggingAgent"/>
                         <xsl:variable name="espLoggingAgentNode" select="/Environment/Software/ESPLoggingAgent[@name=$agentName]"/>

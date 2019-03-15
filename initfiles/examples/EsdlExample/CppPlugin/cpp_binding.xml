@@ -1,0 +1,3 @@
+ <Methods>
+    <Method name="CppEchoPersonInfo" querytype="cpp" method="onEsdlExampleCppEchoPersonInfo" plugin="libEsdlExampleService.so"/>
+</Methods>

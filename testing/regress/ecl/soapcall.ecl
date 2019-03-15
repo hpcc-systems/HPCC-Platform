@@ -73,7 +73,7 @@ END;
 // Test some failure cases
 
 output(SORT(SOAPCALL(d, blacklistedTargetURL,'soapbase', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),RETRY(0), log('SOAP: ' + unkname),TIMEOUT(1)), record));
-output(SORT(SOAPCALL(targetURL,'soapbase', { string unkname := 'FAIL' }, dataset(ServiceOutRecord),onFail(doError2),RETRY(0), LOG(MIN), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','4444')),record));
+output(SORT(SOAPCALL(targetURL,'soapbase', { string unkname := 'FAIL' }, dataset(ServiceOutRecord),onFail(doError2),RETRY(0), LOG(MIN), HTTPHEADER('Global-Id','12345678900'), HTTPHEADER('Caller-Id','4444')),record));
 output(SORT(SOAPCALL(d, targetURL,'soapbaseNOSUCHQUERY', { unkname }, DATASET(ServiceOutRecord), onFail(doError3(LEFT)),MERGE(25),PARALLEL(1),RETRY(0), LOG(MIN)), record));
 
 childRecord := record

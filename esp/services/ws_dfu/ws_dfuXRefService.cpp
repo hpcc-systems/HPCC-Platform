@@ -505,15 +505,15 @@ bool CWsDfuXRefEx::onDFUXRefBuild(IEspContext &context, IEspDFUXRefBuildRequest 
         }
         StringBuffer returnStr;
         ESPSerializationFormat fmt = context.getResponseFormat();
-        if (m_XRefbuilder->IsQueued(req.getCluster()) )
+        if (m_XRefbuilder->isQueued(req.getCluster()) )
             appendReplyMessage(fmt == ESPSerializationJSON, returnStr,"/WsDFUXRef/DFUXRefList","An XRef build for cluster %s is in process. Click here to return to the main XRef List.",req.getCluster());
-        else if (!m_XRefbuilder->IsRunning())
+        else if (!m_XRefbuilder->isRunning())
             appendReplyMessage(fmt == ESPSerializationJSON, returnStr,"/WsDFUXRef/DFUXRefList","Running XRef Process. Click here to return to the main XRef List.");
         else
             appendReplyMessage(fmt == ESPSerializationJSON, returnStr,"/WsDFUXRef/DFUXRefList","someone is currently running a Xref build. Your request will be added to the queue. Please click here to return to the main page.");
 
 
-        m_XRefbuilder->QueueRequest(xRefNode,req.getCluster());
+        m_XRefbuilder->queueRequest(xRefNode,req.getCluster());
         resp.setDFUXRefActionResult(returnStr.str());
     }
     catch(IException* e)
@@ -532,7 +532,7 @@ bool CWsDfuXRefEx::onDFUXRefBuildCancel(IEspContext &context, IEspDFUXRefBuildCa
         StringBuffer username;
         context.getUserID(username);
 
-        m_XRefbuilder->Cancel();
+        m_XRefbuilder->cancel();
         StringBuffer returnStr;
         ESPSerializationFormat fmt = context.getResponseFormat();
         if (fmt == ESPSerializationJSON)

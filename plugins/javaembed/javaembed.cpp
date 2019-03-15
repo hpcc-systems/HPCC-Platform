@@ -46,8 +46,10 @@ static const char * compatibleVersions[] = {
 static const char *version = "Java Embed Helper 1.0.0";
 
 #ifdef _DEBUG
+//#define TRACE_GLOBALREF
 //#define TRACE_CLASSFILE
 //#define CHECK_JNI
+//#define FORCE_GC
 /* Note - if you enable CHECK_JNI and see output like:
  *   WARNING in native method: JNI call made without checking exceptions when required to from CallObjectMethodV
  * where for 'from' may be any of several functions, then the cause is likely to be a missing call to checkException()
@@ -84,6 +86,8 @@ static void UNSUPPORTED(const char *feature)
 namespace javaembed {
 
 static jmethodID throwable_toString;
+
+static void forceGC(class CheckedJNIEnv* JNIenv);
 
 /**
  * CheckedJNIEnv is a wrapper around JNIEnv that ensures that we check for exceptions after every call (and turn them into C++ exceptions).
@@ -138,7 +142,7 @@ public:
     }
     jclass FindGlobalClass(const char *name)
     {
-        return (jclass) NewGlobalRef(FindClass(name));
+        return (jclass) NewGlobalRef(FindClass(name), "NewGlobalRef");
     }
     void GetBooleanArrayRegion(jbooleanArray array,
                                jsize start, jsize len, jboolean *buf) {
@@ -224,7 +228,10 @@ public:
     {
         return checkException(JNIEnv::GetDoubleField(obj,fieldID));
     }
-
+    jboolean IsSameObject(jobject obj1, jobject obj2)
+    {
+        return checkException(JNIEnv::IsSameObject(obj1, obj2));
+    }
     void SetObjectField(jobject obj, jfieldID fieldID, jobject val) {
         functions->SetObjectField(this,obj,fieldID,val);
         checkException();
@@ -543,11 +550,36 @@ public:
     }
     using JNIEnv::PushLocalFrame;
     using JNIEnv::PopLocalFrame;
-    using JNIEnv::DeleteGlobalRef;
     using JNIEnv::DeleteLocalRef;
-    using JNIEnv::NewGlobalRef;
     using JNIEnv::ExceptionClear;
     using JNIEnv::ExceptionCheck;
+    using JNIEnv::GetObjectRefType;
+
+#ifdef TRACE_GLOBALREF
+    void DeleteGlobalRef(jobject val)
+    {
+        DBGLOG("DeleteGlobalRef %p", val);
+        JNIEnv::DeleteGlobalRef(val);
+#ifdef FORCE_GC
+        forceGC(this);
+#endif
+    }
+    jobject NewGlobalRef(jobject val, const char *why)
+    {
+        jobject ret = JNIEnv::NewGlobalRef(val);
+        DBGLOG("NewGlobalRef %p (%s) returns %p", val, why, ret);
+        return ret;
+    }
+#else
+    inline void DeleteGlobalRef(jobject val)
+    {
+        JNIEnv::DeleteGlobalRef(val);
+    }
+    inline jobject NewGlobalRef(jobject val, const char *)
+    {
+        return JNIEnv::NewGlobalRef(val);
+    }
+#endif
 };
 
 static bool printNameForClass(CheckedJNIEnv *JNIenv, jobject clsObj)
@@ -640,6 +672,11 @@ static jmethodID netURL_constructor;
 static jclass throwableClass;
 //static jmethodID throwable_toString;  declared above
 static jclass langIllegalArgumentExceptionClass;
+
+static void forceGC(CheckedJNIEnv* JNIenv)
+{
+    JNIenv->CallStaticVoidMethod(systemClass, system_gc);
+}
 
 static void setupGlobals(CheckedJNIEnv *J)
 {
@@ -897,7 +934,12 @@ public:
         CriticalBlock b(hashCrit);
         PersistedObject *p = persistedObjects.find(key);
         if (p && p->instance)
+        {
             queryJNIEnv()->DeleteGlobalRef(p->instance);
+#ifdef FORCE_GC
+            forceGC(queryJNIEnv());
+#endif
+        }
         persistedObjects.remove(key);
     }
     static void unregister(const char *key);
@@ -956,15 +998,11 @@ static void checkType(type_t javatype, size32_t javasize, type_t ecltype, size32
         throw MakeStringException(0, "javaembed: Type mismatch"); // MORE - could provide some details!
 }
 
-static void forceGC(CheckedJNIEnv* JNIenv)
-{
-    JNIenv->CallStaticVoidMethod(systemClass, system_gc);
-}
-
 enum PersistMode
 {
     persistNone,
     persistThread,
+    persistChannel,
     persistWorkunit,
     persistQuery,
     persistGlobal
@@ -984,6 +1022,8 @@ static PersistMode getPersistMode(const char *val, StringAttr &globalScope)
         return persistNone;
     else if (strieq(val, "thread"))
         return persistThread;
+    else if (strieq(val, "channel"))
+        return persistChannel;
     else if (strieq(val, "workunit"))
         return persistWorkunit;
     else if (strieq(val, "query"))
@@ -1004,13 +1044,13 @@ protected:
     JavaObjectAccessor(CheckedJNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jobject _row)
     : JNIenv(_JNIenv), row(_row), outerRow(_outerRow), idx(0), limit(0), inSet(false), inDataSet(false)
     {
-        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(row));
+        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(row), "Class");
     }
     JavaObjectAccessor(CheckedJNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jclass _Class)
     : JNIenv(_JNIenv), outerRow(_outerRow), idx(0), limit(0), inSet(false), inDataSet(false)
     {
         row = NULL;
-        Class = (jclass) JNIenv->NewGlobalRef(_Class);
+        Class = (jclass) JNIenv->NewGlobalRef(_Class, "Class");
     }
     ~JavaObjectAccessor()
     {
@@ -1827,7 +1867,7 @@ public:
     JavaRowStream(jobject _iterator, IEngineRowAllocator *_resultAllocator)
     : resultAllocator(_resultAllocator)
     {
-        iterator = queryJNIEnv()->NewGlobalRef(_iterator);
+        iterator = queryJNIEnv()->NewGlobalRef(_iterator, "iterator");
         // Note that we can't cache the JNIEnv, iterClass, or methodIds here - calls may be made on different threads (though not at the same time).
     }
     ~JavaRowStream()
@@ -1964,7 +2004,7 @@ public:
     JavaObjectXmlWriter(CheckedJNIEnv *_JNIenv, jobject _obj, const char *_reqType, IEsdlDefinition &_esdl, const char *_esdlService, IXmlWriter &_writer)
     : JNIenv(_JNIenv), obj(_obj), writer(_writer), esdl(_esdl), esdlService(_esdlService), reqType(_reqType)
     {
-        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(obj));
+        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(obj), "class");
     }
     ~JavaObjectXmlWriter()
     {
@@ -2162,7 +2202,7 @@ public:
         jclass localClass = JNIenv->FindClass(name);
         if (!localClass)
             return 0;
-        jclass Class = (jclass) JNIenv->NewGlobalRef(localClass);
+        jclass Class = (jclass) JNIenv->NewGlobalRef(localClass, "class");
         javaClasses.setValue(name, Class);
         JNIenv->DeleteLocalRef(localClass);
         return Class;
@@ -2578,7 +2618,7 @@ public:
     {
         if (!local)
             return 0;
-        jobject global = JNIenv->NewGlobalRef(local);
+        jobject global = JNIenv->NewGlobalRef(local, "makeObjectGlobal");
         JNIenv->DeleteLocalRef(local);
         return global;
     }
@@ -3001,15 +3041,17 @@ public:
     JavaEmbedImportContext(ICodeContext *codeCtx, JavaThreadContext *_sharedCtx, jobject _instance, unsigned flags, const char *options)
     : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance)
     {
-        if (instance)
-            instance = JNIenv->NewGlobalRef(instance);
         argcount = 0;
         argsig = NULL;
         nonStatic = (instance != nullptr);
         javaClass = nullptr;
         StringArray opts;
         opts.appendList(options, ",");
-        engine = codeCtx->queryEngineContext();
+        if (codeCtx)
+        {
+            engine = codeCtx->queryEngineContext();
+            nodeNum = codeCtx->getNodeNum();
+        }
         StringBuffer lclassPath;
         if (engine)
         {
@@ -3029,6 +3071,8 @@ public:
                 val++;
                 if (stricmp(optName, "classpath")==0)
                     lclassPath.append(';').append(val);
+                if (strieq(optName, "globalscope"))
+                    globalScopeKey.set(val);
                 else if (strieq(optName, "persist"))
                 {
                     if (persistMode != persistNone)
@@ -3036,6 +3080,7 @@ public:
                     persistMode = getPersistMode(val, globalScopeKey);
                     switch (persistMode)
                     {
+                    case persistChannel:
                     case persistWorkunit:
                     case persistQuery:
                         if (!engine)
@@ -3056,10 +3101,8 @@ public:
     {
         if (javaClass)
             JNIenv->DeleteGlobalRef(javaClass);
-        if (instance)
-            JNIenv->DeleteGlobalRef(instance);
         if (classLoader)
-            JNIenv->DeleteGlobalRef(instance);
+            JNIenv->DeleteGlobalRef(classLoader);
     }
 
     virtual bool getBooleanResult()
@@ -3138,29 +3181,8 @@ public:
     }
     virtual unsigned __int64 getUnsignedResult()
     {
-        if (*returnType=='L')
-            return (unsigned __int64) JNIenv->NewGlobalRef(result.l);
-        else if (*returnType=='V' && strieq(methodName, "<init>"))
-        {
-            jobject thisObject = JNIenv->NewGlobalRef(result.l);
-            switch (persistMode)
-            {
-            case persistThread:
-                UNIMPLEMENTED;  // MORE - think about what this means?
-                break;
-            case persistWorkunit:
-            case persistQuery:
-                // Register this object to be removed automatically at end of specified scope...
-                assertex(engine);
-                VStringBuffer scopeKey("O.%p", thisObject);
-                PersistedObjectCriticalBlock persistBlock;
-                persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
-                assertex(!persistBlock.getInstance());
-                engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
-                persistBlock.leave(thisObject);
-            }
-            return (unsigned __int64) thisObject;
-        }
+        if (*returnType=='V' && strieq(methodName, "<init>"))
+            return (unsigned __int64) result.l;
         throw makeStringExceptionV(MSGAUD_user, 0, "javaembed: In method %s: Unsigned results not supported", queryReportName()); // Java doesn't support unsigned
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
@@ -3492,11 +3514,26 @@ public:
     {
         if (!strchr(importName, '.') && argcount==0)  // Could require a flag, or a special parameter name...
         {
-            if (importName[0]=='~')
-                instance = (jobject) val;  // Should ensure it gets released at end of function
-            else
-                instance = JNIenv->NewGlobalRef((jobject) val);
-            loadFunction(classpath, 0, nullptr);
+            if (!val)
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Null value passed for \"this\"", queryReportName());
+            instance = (jobject) val;
+            if (JNIenv->GetObjectRefType(instance) != JNIGlobalRefType)
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Invalid value passed for \"this\"", queryReportName());
+            jclass newJavaClass = JNIenv->GetObjectClass(instance);
+            if (!JNIenv->IsSameObject(newJavaClass, javaClass))
+            {
+                if (javaClass)
+                {
+                    JNIenv->DeleteGlobalRef(javaClass);
+                    javaClass = nullptr;
+                }
+                if (classLoader)
+                {
+                    JNIenv->DeleteGlobalRef(classLoader);
+                    javaClass = nullptr;
+                }
+                loadFunction(classpath, 0, nullptr);
+            }
             reinit();
         }
         else
@@ -3902,38 +3939,58 @@ public:
             JNIenv->ExceptionClear();
             if (nonStatic)
             {
-                if (!instance)
+                if (streq(methodName, "<init>"))
                 {
-                    if (streq(methodName, "<init>"))
+                    if (!instance)
                     {
-                        result.l = JNIenv->NewObjectA(javaClass, javaMethodID, args);
-                        return;
+                        if (persistMode == persistNone)
+                            throw MakeStringException(0, "Cannot return object without persist");
+                        StringBuffer scopeKey;
+                        getScopeKey(scopeKey);
+                        PersistedObjectCriticalBlock persistBlock;
+                        persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
+                        instance = persistBlock.getInstance();
+                        if (instance)
+                            persistBlock.leave();
+                        else
+                        {
+                            instance = JNIenv->NewGlobalRef(JNIenv->NewObjectA(javaClass, javaMethodID, args), "constructor");
+#ifdef TRACE_GLOBALREF
+                            StringBuffer myClassName;
+                            getClassNameForObject(JNIenv, myClassName, instance);
+                            DBGLOG("Constructed object %p of class %s", instance, myClassName.str());
+#endif
+                            if (persistMode==persistQuery || persistMode==persistWorkunit || persistMode==persistChannel)
+                            {
+                                assertex(engine);
+                                engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode!=persistQuery);
+                            }
+                            persistBlock.leave(instance);
+                        }
                     }
-                    assertex(persistMode == persistNone);
-                    instance = createInstance();
+                    result.l = instance;
+                    return;
                 }
-                if (javaMethodID)
+                else if (!instance)
                 {
-                    switch (*returnType)
-                    {
-                    case 'C': result.c = JNIenv->CallCharMethodA(instance, javaMethodID, args); break;
-                    case 'Z': result.z = JNIenv->CallBooleanMethodA(instance, javaMethodID, args); break;
-                    case 'J': result.j = JNIenv->CallLongMethodA(instance, javaMethodID, args); break;
-                    case 'F': result.f = JNIenv->CallFloatMethodA(instance, javaMethodID, args); break;
-                    case 'D': result.d = JNIenv->CallDoubleMethodA(instance, javaMethodID, args); break;
-                    case 'I': result.i = JNIenv->CallIntMethodA(instance, javaMethodID, args); break;
-                    case 'S': result.s = JNIenv->CallShortMethodA(instance, javaMethodID, args); break;
-                    case 'B': result.s = JNIenv->CallByteMethodA(instance, javaMethodID, args); break;
-                    case '[':
-                    case 'L': result.l = JNIenv->CallObjectMethodA(instance, javaMethodID, args); break;
-                    case 'V': JNIenv->CallVoidMethodA(instance, javaMethodID, args); result.l = nullptr; break;
-                    default: throwUnexpected();
-                    }
+                    assertex(persistMode == persistNone); // Any other persist mode should have already created the instance
+                    instance = createInstance();          // Local object, will be released at exit() from function
                 }
-                else
+                assertex(javaMethodID);
+                switch (*returnType)
                 {
-                    assertex(methodName[0]=='~');
-                    result.l = 0;
+                case 'C': result.c = JNIenv->CallCharMethodA(instance, javaMethodID, args); break;
+                case 'Z': result.z = JNIenv->CallBooleanMethodA(instance, javaMethodID, args); break;
+                case 'J': result.j = JNIenv->CallLongMethodA(instance, javaMethodID, args); break;
+                case 'F': result.f = JNIenv->CallFloatMethodA(instance, javaMethodID, args); break;
+                case 'D': result.d = JNIenv->CallDoubleMethodA(instance, javaMethodID, args); break;
+                case 'I': result.i = JNIenv->CallIntMethodA(instance, javaMethodID, args); break;
+                case 'S': result.s = JNIenv->CallShortMethodA(instance, javaMethodID, args); break;
+                case 'B': result.s = JNIenv->CallByteMethodA(instance, javaMethodID, args); break;
+                case '[':
+                case 'L': result.l = JNIenv->CallObjectMethodA(instance, javaMethodID, args); break;
+                case 'V': JNIenv->CallVoidMethodA(instance, javaMethodID, args); result.l = nullptr; break;
+                default: throwUnexpected();
                 }
             }
             else
@@ -3991,13 +4048,10 @@ public:
     }
     virtual void exit() override
     {
-        if (persistMode == persistNone && instance != nullptr)
-        {
-            JNIenv->DeleteGlobalRef(instance);
-            instance = nullptr;
-        }
+        if (persistMode==persistNone)
+            instance = 0;  // otherwise we leave it for next call as it saves a lot of time looking it up
         JNIenv->PopLocalFrame(nullptr);
-#ifdef CHECK_JNI
+#ifdef FORCE_GC
         forceGC(JNIenv);
 #endif
     }
@@ -4100,26 +4154,31 @@ protected:
             Owned<IException> e = E;
             throw MakeStringException(0, "parameterless constructor required");
         }
-        return JNIenv->NewGlobalRef(JNIenv->NewObject(javaClass, constructor));
+        return JNIenv->NewObject(javaClass, constructor);
     }
 
     void loadFunction(const char *classpath, size32_t bytecodeLen, const byte *bytecode)
     {
         try
         {
-            StringBuffer classname;
+            StringAttr checkedClassName;
+            nonStatic = true;   // until proven otherwise
             // Name should be in the form class.method:signature
             const char *funcname = strrchr(importName, '.');
             if (funcname)
             {
-                classname.append(funcname-importName, importName);
+                classname.clear().append(funcname-importName, importName);
                 classname.replace('/', '.');
                 funcname++;  // skip the '.'
             }
             else
-            {
-                nonStatic = true;  // we assume we are going to call a method of a cached object - and we will get the class from that
                 funcname = importName;
+            const char *coloncolon = strstr(funcname, "::");
+            if (coloncolon)
+            {
+                // ClassName::FunctionName syntax - used to check that object passed in is of proper class
+                checkedClassName.set(funcname, coloncolon-funcname);
+                funcname = coloncolon+2;
             }
             const char *sig = strchr(funcname, ':');
             if (sig)
@@ -4127,10 +4186,9 @@ protected:
                 methodName.set(funcname, sig-funcname);
                 sig++; // skip the ':'
                 if (*sig == '@') // indicates a non-static method
-                {
-                    nonStatic = true;
                     sig++;
-                }
+                else
+                    nonStatic = false;
                 signature.set(sig);
             }
             else
@@ -4139,9 +4197,10 @@ protected:
             {
                 PersistedObjectCriticalBlock persistBlock;
                 StringBuffer scopeKey;
-                if (nonStatic && !instance && persistMode > persistThread && !isConstructor) // MORE - there may be a persist mode between Thread and Wuid, meaning shared between multiple on this thread
+                if (nonStatic && !instance && persistMode >= persistThread && !isConstructor)
                 {
-                    // If the persist scope is global, query, or workunit, we may want to use a pre-existing object. If we do we share its classloader, class, etc.
+                    // If a persist scope is specified, we may want to use a pre-existing object. If we do we share its classloader, class, etc.
+                    assertex(classname.length());  // MORE - what does this imply?
                     getScopeKey(scopeKey);
                     persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
                     instance = persistBlock.getInstance();
@@ -4150,15 +4209,15 @@ protected:
                 }
                 if (instance)
                 {
-                    javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(instance));
-                    classLoader = JNIenv->NewGlobalRef(getClassLoader(JNIenv, javaClass));
+                    javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(instance), "javaClass");
+                    classLoader = JNIenv->NewGlobalRef(getClassLoader(JNIenv, javaClass), "classLoader");
                     sharedCtx->setThreadClassLoader(classLoader);
                 }
                 if (!javaClass)
                 {
                     if (!classname)
                         throw MakeStringException(MSGAUD_user, 0, "Invalid import name - Expected classname.methodname:signature");
-                    classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode));
+                    classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode), "classLoader");
                     sharedCtx->setThreadClassLoader(classLoader);
 
                     jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
@@ -4171,48 +4230,60 @@ protected:
                         Owned<IException> e = E;
                         throw makeWrappedExceptionV(E, E->errorCode(), "Failed to resolve class name %s", classname.str());
                     }
-                    javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
+                    javaClass = (jclass) JNIenv->NewGlobalRef(javaClass, "javaClass");
                 }
-                if (nonStatic && !instance && !isConstructor && persistMode != persistNone)
+                if (nonStatic && !instance && !isConstructor  && persistMode != persistNone)
                 {
                     instance = createInstance();
-                    if (persistBlock.locked())
+#ifdef TRACE_GLOBALREF
+                    StringBuffer myClassName;
+                    getClassNameForObject(JNIenv, myClassName, instance);
+                    DBGLOG("Created object %p of class %s", instance, myClassName.str());
+#endif
+                    if (persistBlock.locked()) // I think this should always be true?
                     {
-                        if (persistMode==persistQuery || persistMode==persistWorkunit)
+                        instance = JNIenv->NewGlobalRef(instance, "createInstance");
+                        if (persistMode==persistQuery || persistMode==persistWorkunit || persistMode==persistChannel)
                         {
                             assertex(engine);
-                            engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
+                            engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode!=persistQuery);
                         }
-                        persistBlock.leave(JNIenv->NewGlobalRef(instance));
+                        persistBlock.leave(instance);
                     }
                 }
             }
-            if (methodName[0]=='~')
+            if (!signature)
             {
-                if (!instance)
-                    throw MakeStringException(0, "~ invalid without instance");
+                getSignature(signature, JNIenv, javaClass, funcname);
+                if (signature.str()[0]=='@')
+                {
+                    nonStatic = true;
+                    signature.set(signature.str()+1);
+                }
+                else
+                    nonStatic = false;
+            }
+            StringBuffer javaSignature;
+            patchSignature(javaSignature, signature);
+
+            if (nonStatic)
+                javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
+            else
+                javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
+            if (checkedClassName)
+            {
                 StringBuffer myClassName;
                 getClassNameForObject(JNIenv, myClassName, instance);
+#ifdef CHECK_JNI
+                DBGLOG("Checking class name %s for %p matches %s for function %s", myClassName.str(), instance, checkedClassName.str(), methodName.str());
+#endif
                 const char *shortClassName = strrchr(myClassName, '.');
                 if (shortClassName)
                     shortClassName++;
                 else
                     shortClassName = myClassName;
-                if (!streq(methodName+1, shortClassName))
-                    throw MakeStringException(0, "class name %s does not match", shortClassName);
-                signature.set("()L");  // We return 0
-            }
-            else
-            {
-                if (!signature)
-                    getSignature(signature, JNIenv, javaClass, funcname);
-                StringBuffer javaSignature;
-                patchSignature(javaSignature, signature);
-
-                if (nonStatic)
-                    javaMethodID = JNIenv->GetMethodID(javaClass, methodName, javaSignature);
-                else
-                    javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodName, javaSignature);
+                if (!streq(checkedClassName, shortClassName))
+                    throw MakeStringException(0, "Object class %s does not match expected class name %s", shortClassName, checkedClassName.str());
             }
             returnType = strrchr(signature, ')');
             assertex(returnType);  // Otherwise how did Java accept it??
@@ -4254,23 +4325,16 @@ protected:
     StringBuffer &getScopeKey(StringBuffer &ret)
     {
         if (globalScopeKey)
-            ret.append(globalScopeKey);
-        else
-        {
-            // MORE - we could key off the class name, but we don't always supply that.
-            // Plus it's mangled as often as not
-            const char *dotpos = strrchr(importName, '.');
-            if (dotpos)
-                ret.append(dotpos-importName+1, importName);
-            else
-                throw MakeStringException(0, "javaembed: cannot determine key for persist in function %s", importName.get());
-        }
-        ret.append('.');
+            ret.append(globalScopeKey).append('.');
+        ret.append(classname).append('.');
         switch (persistMode)
         {
         case persistGlobal:
             ret.append("global");
             break;
+        case persistChannel:
+            ret.append(nodeNum).append('.');
+            // Fall into
         case persistWorkunit:
             engine->getQueryId(ret, true);
             break;
@@ -4285,10 +4349,12 @@ protected:
     CheckedJNIEnv *JNIenv = nullptr;
     jvalue result = {0};
     StringAttr classpath;
+    StringBuffer classname;
     IArrayOf<ECLDatasetIterator> iterators;   // to make sure they get freed
     bool nonStatic = false;
     jobject instance = nullptr; // class instance of object to call methods on
 
+    unsigned nodeNum = 0;
     StringAttr globalScopeKey;
     PersistMode persistMode = persistNone;  // Defines the lifetime of the java object for which this is called.
 
@@ -4384,9 +4450,9 @@ public:
         jmethodID loadClassMethod = sharedCtx->JNIenv->GetMethodID(sharedCtx->JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
         jstring methodString = sharedCtx->JNIenv->NewStringUTF(className);
 
-        Class = (jclass) sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString));
+        Class = (jclass) sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString), "Class");
         jmethodID constructor = sharedCtx->JNIenv->GetMethodID(Class, "<init>", "()V");
-        object = sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->NewObject(Class, constructor));
+        object = sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->NewObject(Class, constructor), "constructed");
     }
     virtual IEmbedFunctionContext *createFunctionContext(const char *function)
     {
@@ -4424,6 +4490,13 @@ public:
         return serviceContext.getClear();
     }
 };
+
+static JavaEmbedContext embedContext;
+
+extern DECL_EXPORT IEmbedContext* queryEmbedContext()
+{
+    return &embedContext;
+}
 
 extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {

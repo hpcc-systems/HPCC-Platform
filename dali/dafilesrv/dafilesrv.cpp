@@ -27,6 +27,7 @@
 #include "jmisc.hpp"
 #include "rmtfile.hpp"
 #include "dalienv.hpp"
+#include "dafdesc.hpp"
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
@@ -38,6 +39,7 @@ static const char* defaultRowSericeConfiguration = "RowSvc";
 
 
 #include "remoteerr.hpp"
+#include "dafscommon.hpp"
 #include "sockfile.hpp"
 
 void usage()
@@ -333,6 +335,7 @@ int initDaemon()
 }
 
 #endif
+
 
 int main(int argc,char **argv) 
 {
@@ -858,6 +861,8 @@ int main(int argc,char **argv)
     server.setown(createRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy, keyPairInfo));
     server->setThrottle(ThrottleStd, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
     server->setThrottle(ThrottleSlow, parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
+    configureRemoteCreateFileDescriptorCB(queryFileDescriptorFactory());
+
     class CPerfHook : public CSimpleInterfaceOf<IPerfMonHook>
     {
     public:

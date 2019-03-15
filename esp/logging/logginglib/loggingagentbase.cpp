@@ -158,7 +158,7 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
     Owned<IPropertyTree> updateLogRequestTree = createPTree("UpdateLogRequest");
 
     StringBuffer source;
-    if (groupFilters.length() < 1)
+    if (logBackEndReq && logBackEndResp && groupFilters.length() < 1)
     {//No filter
         if (logRequestTree)
         {
@@ -233,7 +233,8 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
         }
         else
         {
-            for (unsigned group = 0; group < ESPLCGBackEndResp; group++)
+            //Both ESPLCGBackEndReq and ESPLCGBackEndResp are handled after this loop.
+            for (unsigned group = 0; group < ESPLCGBackEndReq; group++)
             {
                 Owned<IPropertyTree> originalContentTree;
                 if (group == ESPLCGESPContext)
@@ -261,24 +262,35 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
                 if (!originalContentTree)
                     continue;
 
-                IPropertyTree* newContentTree = ensurePTree(logContentTree, espLogContentGroupNames[group]);
-                bool hasFilters = false;
+                bool foundGroupFilters  = false;
                 ForEachItemIn(i, groupFilters)
                 {
                     CESPLogContentGroupFilters& filtersGroup = groupFilters.item(i);
                     if (filtersGroup.getGroup() == group)
                     {
+                        IPropertyTree* newContentTree = ensurePTree(logContentTree, espLogContentGroupNames[group]);
                         if (group != ESPLCGESPContext)//For non ESPLCGESPContext, we want to keep the root of original tree.
                             newContentTree = ensurePTree(newContentTree, originalContentTree->queryName());
                         filterLogContentTree(filtersGroup.getFilters(), originalContentTree, newContentTree, logContentEmpty);
-                        hasFilters =  true;
+                        foundGroupFilters  =  true;
                         break;
                     }
                 }
 
-                if (!hasFilters)
+                if (!foundGroupFilters )
                 {
-                    newContentTree->addPropTree(originalContentTree->queryName(), LINK(originalContentTree));
+                    if (group == ESPLCGESPContext)
+                    {
+                        //The ESPContext tree itself already has the /ESPContext node
+                        //as the top tree node. We should not add another /ESPContext
+                        //node on the top of the ESPContext tree.
+                        logContentTree->addPropTree(originalContentTree->queryName(), LINK(originalContentTree));
+                    }
+                    else
+                    {
+                        IPropertyTree* newContentTree = ensurePTree(logContentTree, espLogContentGroupNames[group]);
+                        newContentTree->addPropTree(originalContentTree->queryName(), LINK(originalContentTree));
+                    }
                     logContentEmpty = false;
                 }
             }

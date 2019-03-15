@@ -34,7 +34,7 @@ import * as DijitRegistry from "dgrid/extensions/DijitRegistry";
 import { select as d3Select } from "d3-selection";
 import { Pagination } from "./Pagination";
 
-import declareDecorator from './DeclareDecorator';
+import { declareDecorator } from './DeclareDecorator';
 
 declare const dojo;
 
@@ -269,9 +269,9 @@ var GridHelper = declare(null, {
 export var LocalStorage = dojo.declare([Evented], {
     constructor: function () {
         var context = this;
-        if (typeof Storage !== void(0)) {
+        if (typeof Storage !== void (0)) {
             window.addEventListener('storage', function (event) {
-                context.emit('storageUpdate', {event});
+                context.emit('storageUpdate', { event });
             });
         } else {
             console.log("Browser doesn't support multi-tab communication");
@@ -333,7 +333,7 @@ export var IdleWatcher = dojo.declare([Evented], {
     },
 
     fireIdle: function () {
-        this.emit("idle", {status: "firedIdle"});
+        this.emit("idle", { status: "firedIdle" });
     },
 
     start: function () {

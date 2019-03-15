@@ -918,6 +918,12 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     if (!type)
         type.setown(makeVoidType());
 
+    if (type->getTypeCode()!=type_table && type->getTypeCode()!=type_groupedtable && type->getTypeCode()!=type_void)
+    {
+        if (attribs && queryAttributeInList(activityAtom,attribs))
+             reportError(ERR_EMBEDERROR, errpos, "Embedded activity only supports dataset return type or action");
+    }
+
     if (type->getTypeCode() == type_record)
         type.setown(makeRowType(LINK(type)));
 
@@ -946,6 +952,9 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         OwnedHqlExpr threadlocal = pluginScope->lookupSymbol(threadlocalId, LSFpublic, lookupCtx);
         if (matchesBoolean(threadlocal, true))
             args.append(*createAttribute(_threadlocal_Atom));
+        OwnedHqlExpr singletonEmbedContext = pluginScope->lookupSymbol(singletonEmbedContextId, LSFpublic, lookupCtx);
+        if (matchesBoolean(singletonEmbedContext, true))
+            args.append(*createAttribute(_singletonEmbedContext_Atom));
         OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(isImport ? checkImportId : syntaxCheckId, LSFpublic, lookupCtx);
         OwnedHqlExpr precompile = isImport ? nullptr : pluginScope->lookupSymbol(precompileId, LSFpublic, lookupCtx);
         if (syntaxCheckFunc || precompile)

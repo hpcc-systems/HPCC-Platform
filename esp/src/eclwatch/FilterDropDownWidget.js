@@ -136,6 +136,7 @@ define([
             },
 
             open: function (event) {
+                this.filterDropDown.focus();
                 this.filterDropDown.openDropDown();
             },
 

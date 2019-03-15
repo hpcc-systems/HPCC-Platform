@@ -107,9 +107,9 @@ typedef unsigned short flzuint16;
 typedef unsigned int   flzuint32;
 
 /* prototypes */
-//int fastlz_compress(const void* input, int length, void* output);
-//int fastlz_compress_level(int level, const void* input, int length, void* output);
-//int fastlz_decompress(const void* input, int length, void* output, int maxout);
+//size32_t fastlz_compress(const void* input, size32_t length, void* output);
+//size32_t fastlz_compress_level(int level, const void* input, size32_t length, void* output);
+//size32_t fastlz_decompress(const void* input, size32_t length, void* output, size32_t maxout);
 
 #define MAX_COPY       32
 #define MAX_LEN       264  /* 256 + 8 */
@@ -136,8 +136,8 @@ typedef const flzuint8* HTAB_T[HASH_SIZE];
 #undef FASTLZ_DECOMPRESSOR
 #define FASTLZ_COMPRESSOR fastlz1_compress
 #define FASTLZ_DECOMPRESSOR fastlz1_decompress
-static FASTLZ_INLINE int FASTLZ_COMPRESSOR(const void* input, int length, void* output, HTAB_T &htab);
-static FASTLZ_INLINE int FASTLZ_DECOMPRESSOR(const void* input, int length, void* output, int maxout);
+static FASTLZ_INLINE size32_t FASTLZ_COMPRESSOR(const void* input, size32_t length, void* output, HTAB_T &htab);
+static FASTLZ_INLINE size32_t FASTLZ_DECOMPRESSOR(const void* input, size32_t length, void* output, size32_t maxout);
 #include "jflz.cpp"
 
 #undef FASTLZ_LEVEL
@@ -151,8 +151,8 @@ static FASTLZ_INLINE int FASTLZ_DECOMPRESSOR(const void* input, int length, void
 #undef FASTLZ_DECOMPRESSOR
 #define FASTLZ_COMPRESSOR fastlz2_compress
 #define FASTLZ_DECOMPRESSOR fastlz2_decompress
-static FASTLZ_INLINE int FASTLZ_COMPRESSOR(const void* input, int length, void* output, HTAB_T &htab);
-static FASTLZ_INLINE int FASTLZ_DECOMPRESSOR(const void* input, int length, void* output, int maxout);
+static FASTLZ_INLINE size32_t FASTLZ_COMPRESSOR(const void* input, size32_t length, void* output, HTAB_T &htab);
+static FASTLZ_INLINE size32_t FASTLZ_DECOMPRESSOR(const void* input, size32_t length, void* output, size32_t maxout);
 #include "jflz.cpp"
 
 #define FASTLZ__JLIBCOMPRESSOR 1
@@ -188,7 +188,7 @@ size32_t fastlz_decompress(const void* input, size32_t length, void* output, siz
   return 0;
 }
 
-int fastlz_compress_level(int level, const void* input, size32_t length, void* output)
+size32_t fastlz_compress_level(int level, const void* input, size32_t length, void* output)
 {
   MemoryAttr ma;
   HTAB_T *ht = (HTAB_T *)ma.allocate(sizeof(HTAB_T)); // HTAB_T too big for stack really
@@ -202,7 +202,7 @@ int fastlz_compress_level(int level, const void* input, size32_t length, void* o
 
 #else /* !defined(FASTLZ_COMPRESSOR) && !defined(FASTLZ_DECOMPRESSOR) */
 
-static FASTLZ_INLINE int FASTLZ_COMPRESSOR(const void* input, int length, void* output, HTAB_T &htab)
+static FASTLZ_INLINE size32_t FASTLZ_COMPRESSOR(const void* input, size32_t length, void* output, HTAB_T &htab)
 {
   const flzuint8* ip = (const flzuint8*) input;
   const flzuint8* ip_bound = ip + length - 2;
@@ -455,7 +455,7 @@ static FASTLZ_INLINE int FASTLZ_COMPRESSOR(const void* input, int length, void* 
   return op - (flzuint8*)output;
 }
 
-static FASTLZ_INLINE int FASTLZ_DECOMPRESSOR(const void* input, int length, void* output, int maxout)
+static FASTLZ_INLINE size32_t FASTLZ_DECOMPRESSOR(const void* input, size32_t length, void* output, size32_t maxout)
 {
   const flzuint8* ip = (const flzuint8*) input;
   const flzuint8* ip_limit  = ip + length;
@@ -636,7 +636,7 @@ class jlib_decl CFastLZCompressor : public CFcmpCompressor
         }
         size32_t *cmpsize = (size32_t *)(outbuf+outlen);
         byte *out = (byte *)(cmpsize+1);
-        *cmpsize = (size32_t)fastlz_compress(inbuf, (int)toflush, out, ht);
+        *cmpsize = fastlz_compress(inbuf, toflush, out, ht);
         if (*cmpsize<toflush)
         {
             *(size32_t *)outbuf += toflush;
@@ -706,7 +706,7 @@ void fastLZCompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
     out.append(len);
     DelayedMarker<size32_t> cmpSzMarker(out);
     void *cmpData = out.reserve(len+fastlzSlack(len));
-    size32_t sz = (len>16)?fastlz_compress(src, (int)len, cmpData):16;
+    size32_t sz = (len>16)?fastlz_compress(src, len, cmpData):16;
     if (sz>=len)
     {
         sz = len;

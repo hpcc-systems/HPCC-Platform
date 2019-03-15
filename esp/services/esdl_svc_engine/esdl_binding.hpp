@@ -31,6 +31,7 @@
 #include "dautils.hpp"
 #include "esdl_store.hpp"
 #include "esdl_monitor.hpp"
+#include "espplugin.ipp"
 
 static const char* ESDL_METHOD_DESCRIPTION="description";
 static const char* ESDL_METHOD_HELP="help";
@@ -65,6 +66,8 @@ static const char* ESDL_METHOD_HELP="help";
 namespace javaembed { IEmbedContext* getEmbedContext(); }
 #endif
 
+typedef int (*cpp_service_method_t)(const char* CtxXML, const char* ReqXML, StringBuffer& RespXML);
+
 class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:
@@ -72,6 +75,8 @@ private:
     MapStringToMyClass<ISmartSocketFactory> connMap;
     MapStringToMyClass<IEmbedServiceContext> javaServiceMap;
     MapStringToMyClass<IException> javaExceptionMap;
+    MapStringToMyClass<IEspPlugin> cppPluginMap;
+    MapStringTo<cpp_service_method_t, cpp_service_method_t> cppProcMap;
     Owned<ILoggingManager> m_oLoggingManager;
     bool m_bGenerateLocalTrxId;
     MapStringToMyClass<IEsdlCustomTransform> m_customRequestTransformMap;
@@ -154,6 +159,7 @@ public:
     virtual void init(const IPropertyTree *cfg, const char *process, const char *service);
     virtual void configureTargets(IPropertyTree *cfg, const char *service);
     void configureJavaMethod(const char *method, IPropertyTree &entry, const char *classPath);
+    void configureCppMethod(const char *method, IPropertyTree &entry, IEspPlugin*& plugin);
     void configureUrlMethod(const char *method, IPropertyTree &entry);
     void addServiceLevelRequestTransform(IPropertyTree *customRequestTransform);
     void addMethodLevelRequestTransform(const char *method, IPropertyTree &methodCfg, IPropertyTree *customRequestTransform);

@@ -2527,6 +2527,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         wuFSpecDest->setFileMask(fileMask.str());
         wuOptions->setOverwrite(req.getOverwrite());
         wuOptions->setPreserveCompression(req.getPreserveCompression());
+        if (!req.getExpireDays_isNull())
+            wuOptions->setExpireDays(req.getExpireDays());
 
         if (bRoxie)
         {

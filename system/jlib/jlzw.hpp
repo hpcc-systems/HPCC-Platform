@@ -144,7 +144,42 @@ extern jlib_decl bool removeCompressorHandler(ICompressHandler *handler); // ret
 extern jlib_decl ICompressor *getCompressor(const char *type, const char *options=NULL);
 extern jlib_decl IExpander *getExpander(const char *type, const char *options=NULL);
 
+inline unsigned translateToCompMethod(const char *compStr)
+{
+    unsigned compMethod = COMPRESS_METHOD_LZ4;
+    if (!isEmptyString(compStr))
+    {
+        if (strieq("FLZ", compStr))
+            compMethod = COMPRESS_METHOD_FASTLZ;
+        else if (strieq("LZW", compStr))
+            compMethod = COMPRESS_METHOD_LZW;
+        else if (strieq("RDIFF", compStr))
+            compMethod = COMPRESS_METHOD_ROWDIF;
+        else if (strieq("LZMA", compStr))
+            compMethod = COMPRESS_METHOD_LZMA;
+        //else // default is LZ4
+    }
+    return compMethod;
+}
 
+inline const char *translateFromCompMethod(unsigned compMethod)
+{
+    switch (compMethod)
+    {
+        case COMPRESS_METHOD_ROWDIF:
+            return "RDIFF";
+        case COMPRESS_METHOD_LZW:
+            return "LZW";
+        case COMPRESS_METHOD_FASTLZ:
+            return "FLZ";
+        case COMPRESS_METHOD_LZ4:
+            return "LZ4";
+        case COMPRESS_METHOD_LZMA:
+            return "LZMA";
+        default:
+            return ""; // none
+    }
+}
 
 #define MIN_ROWCOMPRESS_RECSIZE 8
 #endif

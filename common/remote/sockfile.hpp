@@ -27,6 +27,10 @@
 #define REMOTE_API DECL_IMPORT
 #endif
 
+#define DAFILESRV_METAINFOVERSION 2
+
+#define DAFILESRV_STREAMREAD_MINVERSION 22
+#define DAFILESRV_STREAMGENERAL_MINVERSION 25
 
 enum ThrottleClass
 {
@@ -63,6 +67,7 @@ enum RowServiceCfg
 interface IRemoteFileServer : extends IInterface
 {
     virtual void run(DAFSConnectCfg connectMethod, const SocketEndpoint &listenep, unsigned sslPort=0, const SocketEndpoint *rowServiceEp=nullptr, bool rowServiceSSL=false, bool rowServiceOnStdPort=true) = 0;
+    virtual void run(DAFSConnectCfg _connectMethod, ISocket *listenSocket, ISocket *secureSocket, ISocket *rowServiceSocket) = 0;
     virtual void stop() = 0;
     virtual unsigned idleTime() = 0; // in ms
     virtual void setThrottle(ThrottleClass throttleClass, unsigned limit, unsigned delayMs=DEFAULT_STDCMD_THROTTLEDELAYMS, unsigned cpuThreshold=DEFAULT_STDCMD_THROTTLECPULIMIT, unsigned queueLimit=DEFAULT_STDCMD_THROTTLEQUEUELIMIT) = 0;
@@ -78,13 +83,16 @@ interface IRemoteRowServer : extends IInterface
     virtual StringBuffer &getStats(StringBuffer &stats, bool reset) = 0;
 };
 
-#define FILESRV_VERSION 24 // don't forget VERSTRING in sockfile.cpp
+#define FILESRV_VERSION 25 // don't forget VERSTRING in sockfile.cpp
 
 interface IKeyManager;
 interface IDelayedFile;
+interface IDaFsConnection;
 
 extern REMOTE_API IFile * createRemoteFile(SocketEndpoint &ep,const char * _filename);
 extern REMOTE_API unsigned getRemoteVersion(ISocket * _socket, StringBuffer &ver);
+extern REMOTE_API unsigned getCachedRemoteVersion(IDaFsConnection &daFsConnection);
+extern REMOTE_API unsigned getCachedRemoteVersion(const SocketEndpoint &ep, bool secure);
 extern REMOTE_API unsigned stopRemoteServer(ISocket * _socket);
 extern REMOTE_API const char *remoteServerVersionString();
 extern REMOTE_API IRemoteFileServer * createRemoteFileServer(unsigned maxThreads=DEFAULT_THREADLIMIT, unsigned maxThreadsDelayMs=DEFAULT_THREADLIMITDELAYMS, unsigned maxAsyncCopy=DEFAULT_ASYNCCOPYMAX, IPropertyTree *keyPairInfo=nullptr);
@@ -114,8 +122,26 @@ extern REMOTE_API IRemoteFileIO *createRemoteFilteredFile(SocketEndpoint &ep, co
 interface IIndexLookup;
 extern REMOTE_API IIndexLookup *createRemoteFilteredKey(SocketEndpoint &ep, const char * filename, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseNLimit);
 
+typedef unsigned char RemoteFileCommandType;
+extern REMOTE_API RemoteFileCommandType queryRemoteStreamCmd(); // used by testsocket only
+
+interface IFileDescriptor;
+typedef IFileDescriptor *(*FileDescriptorFactoryType)(IPropertyTree *);
+extern REMOTE_API void configureRemoteCreateFileDescriptorCB(FileDescriptorFactoryType cb);
+
 
 // client only
+extern FileDescriptorFactoryType queryRemoteCreateFileDescriptorCB();
+interface IDaFsConnection : extends IInterface
+{
+    virtual void close(int handle) = 0;
+    virtual void send(MemoryBuffer &sendMb, MemoryBuffer &reply) = 0;
+    virtual unsigned getVersion(StringBuffer &ver) = 0;
+    virtual const SocketEndpoint &queryEp() const = 0;
+};
+
+IDaFsConnection *createDaFsConnection(const SocketEndpoint &ep, DAFSConnectCfg connectMethod, const char *tracing);
+
 extern void clientSetDaliServixSocketCaching(bool set);
 extern void clientDisconnectRemoteFile(IFile *file);
 extern void clientDisconnectRemoteIoOnExit(IFileIO *fileio,bool set);
@@ -134,8 +160,5 @@ extern bool clientAsyncCopyFileSection(const char *uuid,    // from genUUID - mu
 
 extern void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime);
 extern void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket);
-
-typedef unsigned char RemoteFileCommandType;
-extern REMOTE_API RemoteFileCommandType queryRemoteStreamCmd(); // used by testsocket only
 
 #endif

@@ -156,16 +156,21 @@ define([
 
             _onCancelDialog: function () {
                 this.zapDialog.hide();
-                this.emailCheckbox.set("checked", false);
                 this.emailCheckbox.set("value", "false");
                 this.emailSubject.reset();
                 this.emailBody.reset();
+                this.checkThorLogStatus();
             },
 
             _onSubmitDialog: function(){
+                var includeSlaveLogsCheckbox = this.includeSlaveLogsCheckbox.get("checked");
                 if (this.zapForm.validate()) {
+                    //WUCreateAndDownloadZAPInfo is not a webservice so relying on form to submit.
+                    //Server treats "on" and '' as the same thing.
+                    this.includeSlaveLogsCheckbox.set("value", includeSlaveLogsCheckbox ? "on" : "off");
                     this.zapForm.set("action", "/WsWorkunits/WUCreateAndDownloadZAPInfo");
                     this.zapDialog.hide();
+                    this.checkThorLogStatus();
                 }
             },
 
@@ -464,6 +469,7 @@ define([
                         context.clusterGroup = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].ProcessName;
                         context.slaveLogs.set("disabled", false);
                         context.includeSlaveLogsCheckbox.set("disabled", false);
+                        context.includeSlaveLogsCheckbox.set("checked", false);
                         var targetData = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo;
                         for (var i = 0; i < targetData.length; ++i) {
                             context.thorProcess.options.push({

@@ -1817,6 +1817,9 @@ StringBuffer& CHttpRequest::constructHeaderBuffer(StringBuffer& headerbuf, bool 
     if(inclLength && m_content_length > 0)
         headerbuf.append("Content-Length: ").append(m_content_length).append("\r\n");
 
+    if (!m_persistentEnabled)
+        headerbuf.append("Connection: close\r\n");
+
     if(m_cookies.length() > 0)
     {
         headerbuf.append("Cookie: ");

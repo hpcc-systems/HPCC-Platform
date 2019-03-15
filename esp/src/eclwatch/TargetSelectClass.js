@@ -268,6 +268,7 @@ define([
                 }).then(function (response) {
                     if (lang.exists("UserGroupEditInputResponse.Groups.Group", response)) {
                         var targetData = response.UserGroupEditInputResponse.Groups.Group;
+                        Utility.stringLowerSort(targetData,"name");
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
                                 label: targetData[i].name,

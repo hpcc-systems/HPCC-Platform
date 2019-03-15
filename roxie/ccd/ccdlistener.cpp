@@ -1173,7 +1173,11 @@ public:
             SCMStringBuffer globalId;
             SocketEndpoint ep;
             ep.setLocalHost(0);
+            SCMStringBuffer callerId;
             logctx->setGlobalId(wu->getDebugValue("GlobalId", globalId).str(), ep, GetCurrentProcessId());
+            wu->getDebugValue("CallerId", callerId);
+            if (callerId.length())
+                logctx->setCallerId(callerId.str());
         }
         Owned<IQueryFactory> queryFactory;
         try
@@ -1414,7 +1418,7 @@ public:
         return *cascade;
     }
 
-    virtual void setTransactionId(const char *id, bool global)
+    virtual void setTransactionId(const char *id, const char *caller, bool global) override
     {
         if (!id || !*id)
             return;
@@ -1422,10 +1426,30 @@ public:
         ensureContextLogger();
         if (!isEmptyString(logctx->queryGlobalId())) //globalId wins
             return;
-        if (global)
-            logctx->setGlobalId(id, ep, 0);
         StringBuffer s;
-        logctx->set(ep.getIpText(s).appendf(":%u{%s}", ep.port, uid.str()).str());
+        ep.getIpText(s).appendf(":%u{%s}", ep.port, uid.str()); //keep no matter what for existing log parsers
+        if (global)
+        {
+            s.append('[');
+            logctx->setGlobalId(id, ep, 0);
+            if (caller && *caller)
+            {
+                setCallerId(caller);
+                logctx->setCallerId(caller);
+            }
+            if (callerId.length())
+                s.appendf("caller:%s", callerId.str());
+
+            const char *local = logctx->queryLocalId(); //generated in setGlobalId above
+            if (local && *local)
+            {
+                if (callerId.length())
+                    s.append(',');
+                s.appendf("local:%s", local);
+            }
+            s.append("]");
+        }
+        logctx->set(s.str());
     }
     virtual void setCallerId(const char *id)
     {

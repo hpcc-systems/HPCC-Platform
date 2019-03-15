@@ -29,12 +29,21 @@ project(cassandraembed)
 # until then, we build the required libraries from source
 # Build libuv, required by the cassandra driver but not available on all distros
 if(USE_CASSANDRA)
-  add_custom_command(
-    OUTPUT ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX}
-    COMMAND sh ${PROJECT_SOURCE_DIR}/libuv/autogen.sh
-    COMMAND ${PROJECT_SOURCE_DIR}/libuv/configure
-    COMMAND make
-    WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+  if(APPLE)
+	add_custom_command(
+	  OUTPUT ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX}
+	  COMMAND sh ${PROJECT_SOURCE_DIR}/libuv/autogen.sh
+	  COMMAND ${PROJECT_SOURCE_DIR}/libuv/configure --libdir=${CMAKE_INSTALL_PREFIX}/${LIB_DIR}
+	  COMMAND make
+	  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+  else()
+	add_custom_command(
+	  OUTPUT ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX}
+	  COMMAND sh ${PROJECT_SOURCE_DIR}/libuv/autogen.sh
+	  COMMAND ${PROJECT_SOURCE_DIR}/libuv/configure
+	  COMMAND make
+	  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+  endif()
   add_custom_target(
     libuv ALL
     DEPENDS ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX})

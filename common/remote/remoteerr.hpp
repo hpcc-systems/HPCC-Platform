@@ -94,20 +94,5 @@ interface REMOTE_API IDAFS_Exception: extends IException
 { // Raise by dafilesrv calls
 };
 
-enum DAFS_ERROR_CODES {
-    DAFSERR_connection_failed               = -1,
-    DAFSERR_authenticate_failed             = -2,
-    DAFSERR_protocol_failure                = -3,
-    DAFSERR_serveraccept_failed             = -4,
-    DAFSERR_serverinit_failed               = -5,
-    DAFSERR_cmdstream_invalidexpiry         = -6,
-    DAFSERR_cmdstream_authexpired           = -7,
-    DAFSERR_cmdstream_unsupported_recfmt    = -8,
-    DAFSERR_cmdstream_openfailure           = -9,
-    DAFSERR_cmdstream_protocol_failure      = -10,
-    DAFSERR_cmdstream_unauthorized          = -11
-};
-
-
 
 #endif

@@ -449,7 +449,7 @@
         meant for edge cases and more advanced setups. To customize your
         Integrated Spark cluster environment to utilize these additional
         options use the provided <emphasis role="bold">spark-env.sh</emphasis>
-        script. </para>
+        script.</para>
 
         <programlisting>/etc/HPCCSystems/externals/spark-hadoop/spark-env.sh</programlisting>
 
@@ -547,6 +547,41 @@
 
       <para>The Spark-HPCCSystems Distributed Connector also supports PySpark.
       It uses the same classes/API as Java does.</para>
+
+      <sect2 id="SparkSupportHPCCECLWatch" role="brk">
+        <title>Spark support in ECL Watch</title>
+
+        <para>As a part of HPCC Systems, the Spark connector can be monitored
+        from the ECL Watch interface. See the <emphasis>ECL Watch</emphasis>
+        manual for more information about using ECL Watch.</para>
+
+        <para>The <emphasis role="bold">SparkThor</emphasis> cluster is listed
+        on the ECL Watch System Servers page. To access the Systems Servers
+        page:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>In ECL Watch, click on the operations icon/link</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the System Servers tab</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><graphic fileref="images/ECLWA-SprkThor.jpg" /></para>
+
+        <para>This reports information for the master node of the integrated
+        Spark cluster. Here you can verify that the cluster is up and running,
+        and you can run preflight by selecting the SparkThor cluster and
+        pressing the submit button at the bottom of that page.</para>
+
+        <para>Click on the disk icon next to your SparkThor cluster to access
+        its logs.</para>
+
+        <para>Click on the blue information icon to view more integrated Spark
+        cluster information.</para>
+      </sect2>
     </sect1>
 
     <sect1 id="primary-classes">

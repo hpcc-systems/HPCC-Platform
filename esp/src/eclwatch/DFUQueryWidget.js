@@ -402,9 +402,6 @@ define([
                         if (response.DFUQueryResponse.Warning) {
                             context.filter.open();
                             context.filter.setFilterMessage(context.i18n.FilesWarning);
-                            on(document, "click", function () {
-                                context.filter.close();
-                            });
                         } else {
                             context.filter.setFilterMessage("");
                         }

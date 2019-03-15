@@ -24,7 +24,6 @@ source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 component=$(basename $PWD)
 
 PID_NAME="${PID_DIR}/${component}.pid"
-INIT_PID_NAME="${PID_DIR}/init_${component}.pid"
 
 timestamp="$(date +%Y_%m_%d_%H_%M_%S)"
 export logfile="${LOG_DIR}/${component}/init_${component}_${timestamp}.log"
@@ -83,9 +82,7 @@ kill_slaves()
                 # clean up any slaves it was able to reach
                 log "Stopping ${component}"
                 kill_process ${PID_NAME} thormaster_${component} 25
-                unlock ${LOCK_DIR}/$component/${component}.lock
-                rm -f $INIT_PID_NAME $instancedir/slaves > /dev/null 2>&1
-                exit 255
+                rm -f $instancedir/slaves > /dev/null 2>&1
             else
                 log "Frunssh successful"
             fi
@@ -103,7 +100,7 @@ killed()
     unlock ${LOCK_DIR}/$component/${component}.lock
     kill_slaves
     log "removing init.pid file and slaves file"
-    rm -f $INIT_PID_NAME $instancedir/slaves > /dev/null 2>&1
+    rm -f $instancedir/slaves > /dev/null 2>&1
     exit 255
 }
 
@@ -143,7 +140,11 @@ while [[ 1 ]]; do
             log "Error ${FRUNSSH_RC} in frunssh"
             log "Please check ${LOG_DIR}/frunssh for more details"
             # clean up any slaves it was able to reach
-            killed
+            kill_slaves
+            rm -f $instancedir/slaves > /dev/null 2>&1
+            log "Sleeping for 30 seconds before retrying"
+            sleep 30
+            continue
         fi
     fi
 
@@ -166,7 +167,7 @@ while [[ 1 ]]; do
         case $errcode in
         # TEC_Clean
         0)  log "Thormaster ($thorpid) Exited cleanly"
-            rm -f $instancedir/slaves $instancedir/uslaves $PID_NAME $INIT_PID_NAME > /dev/null 2>&1
+            rm -f $instancedir/slaves $instancedir/uslaves $PID_NAME > /dev/null 2>&1
             exit 0
             ;;
         # TEC_CtrlC

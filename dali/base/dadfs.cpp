@@ -244,7 +244,11 @@ public:
         case DFSERR_CannotFindPartFileCrc:
             return str.append(": Cannot find physical file crc for ").append(errstr);
         case DFSERR_LookupAccessDenied:
-            return str.append(" Lookup access denied for scope ").append(errstr);
+        {
+            StringBuffer ip;
+            queryMyNode()->endpoint().getIpText(ip);
+            return str.appendf(" Lookup access denied for scope %s at Dali %s", errstr.str(), ip.str());
+        }
         case DFSERR_CreateAccessDenied:
             return str.append(" Create access denied for scope ").append(errstr);
         case DFSERR_PhysicalPartAlreadyExists:
@@ -1135,6 +1139,7 @@ public:
         defaultTimeout = timems;
         return ret;
     }
+    virtual bool removePhysicalPartFiles(const char *logicalName, IFileDescriptor *fileDesc, IMultiException *mexcept, unsigned numParallelDeletes=0) override;
 };
 
 
@@ -3351,71 +3356,7 @@ protected:
         if (logicalName.isForeign())
             throw MakeStringException(-1,"cannot remove a foreign file (%s)",logicalName.get());
 
-        class casyncfor: public CAsyncFor
-        {
-            IFileDescriptor *fileDesc;
-            CriticalSection errcrit;
-            IMultiException *mexcept;
-        public:
-            bool ok;
-            bool islazy;
-            casyncfor(IFileDescriptor *_fileDesc, IMultiException *_mexcept)
-            {
-                fileDesc = _fileDesc;
-                ok = true;
-                islazy = false;
-                mexcept = _mexcept;
-            }
-            void Do(unsigned i)
-            {
-                IPartDescriptor *part = fileDesc->queryPart(i);
-                unsigned nc = part->numCopies();
-                for (unsigned copy = 0; copy < nc; copy++)
-                {
-                    RemoteFilename rfn;
-                    part->getFilename(copy, rfn);
-                    Owned<IFile> partfile = createIFile(rfn);
-                    StringBuffer eps;
-                    try
-                    {
-                        unsigned start = msTick();
-                        if (!partfile->remove()&&(copy==0)&&!islazy) // only warn about missing primary files
-                            LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
-                        else
-                        {
-                            unsigned t = msTick()-start;
-                            if (t>5*1000)
-                                LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
-                        }
-                    }
-                    catch (IException *e)
-                    {
-                        CriticalBlock block(errcrit);
-                        if (mexcept)
-                            mexcept->append(*e);
-                        else
-                        {
-                            StringBuffer s("Failed to remove file part ");
-                            s.append(partfile->queryFilename()).append(" from ");
-                            rfn.queryEndpoint().getUrlStr(s);
-                            EXCLOG(e, s.str());
-                            e->Release();
-                        }
-                        ok = false;
-                    }
-                }
-            }
-        } afor(fileDesc, mexcept);
-        afor.islazy = fileDesc->queryProperties().getPropBool("@lazy");
-        if (0 == numParallelDeletes)
-            numParallelDeletes = fileDesc->numParts();
-        if (numParallelDeletes > MAX_PHYSICAL_DELETE_THREADS)
-        {
-            WARNLOG("Limiting parallel physical delete threads to %d", MAX_PHYSICAL_DELETE_THREADS);
-            numParallelDeletes = MAX_PHYSICAL_DELETE_THREADS;
-        }
-        afor.For(fileDesc->numParts(),numParallelDeletes,false,true);
-        return afor.ok;
+        return parent->removePhysicalPartFiles(logicalName.get(), fileDesc, mexcept, numParallelDeletes);
     }
 
 protected: friend class CDistributedFilePart;
@@ -4172,8 +4113,6 @@ public:
                 StringBuffer copyDir(baseDir);
                 adjustClusterDir(i, copy, copyDir);
                 fullname.clear().append(copyDir).append(newPath);
-
-                PROGLOG("fullname = %s", fullname.str());
                 newNames.item(i).append(fullname);
             }
         }
@@ -7373,6 +7312,8 @@ public:
                     break;
                 ne->query().setProp("@ip",tos.str());
                 PROGLOG("swapNode swapping %s for %s in group %s",froms.str(),tos.str(),name.str());
+                unsigned nodesSwapped = group.getPropInt("@nodesSwapped");
+                group.setPropInt("@nodesSwapped", nodesSwapped+1);
             }
         }
         CriticalBlock block(cachesect);
@@ -9755,6 +9696,11 @@ public:
         GroupType gt = getGroupType(type);
         return getGroupFromCluster(gt, cluster, expand);
     }
+    IPropertyTree *queryRawGroup(const char *name)
+    {
+        VStringBuffer xpath("Group[@name=\"%s\"]", name);
+        return groupsconnlock.conn->queryRoot()->queryPropTree(xpath.str());
+    }
 };
 
 void initClusterGroups(bool force, StringBuffer &response, IPropertyTree *oldEnvironment, unsigned timems)
@@ -9806,7 +9752,23 @@ static IGroup *getClusterNodeGroup(const char *clusterName, const char *type, bo
     if (!expandedClusterGroup)
         throwStringExceptionV(0, "Failed to get group for '%s' cluster '%s'", type, clusterName);
     if (!expandedClusterGroup->equals(nodeGroup))
-        throwStringExceptionV(0, "DFS cluster topology for '%s', does not match existing DFS group layout for group '%s'", clusterName, nodeGroupName.str());
+    {
+        IPropertyTree *rawGroup = init.queryRawGroup(nodeGroupName);
+        if (!rawGroup)
+            throwUnexpectedX("missing node group");
+        unsigned nodesSwapped = rawGroup->getPropInt("@nodesSwapped");
+        if (nodesSwapped)
+        {
+            unsigned rawGroupSize = rawGroup->getCount("Node");
+            if (rawGroupSize != expandedClusterGroup->ordinality())
+                throwStringExceptionV(0, "DFS cluster topology for '%s', does not match existing DFS group size for group '%s' [Environment cluster group size = %u, Dali group size = %u]",
+                        clusterName, nodeGroupName.str(), expandedClusterGroup->ordinality(), rawGroupSize);
+            VStringBuffer msg("DFS cluster topology for '%s' using group '%s', does not match environment due to previously swapped nodes", clusterName, nodeGroupName.str());
+            WARNLOG("%s", msg.str());
+        }
+        else
+            throwStringExceptionV(0, "DFS cluster topology for '%s', does not match existing DFS group layout for group '%s'", clusterName, nodeGroupName.str());
+    }
     Owned<IGroup> clusterGroup = init.getGroupFromCluster(type, cluster, false);
     ICopyArrayOf<INode> nodes;
     unsigned l=processGroup?cluster.getPropInt("@slavesPerNode", 1):1; // if process group requested, repeat clusterGroup slavesPerNode times.
@@ -12574,6 +12536,76 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
     return getLogicalFiles(udesc, sortOrder, filters, localFilters, localFilterBuf, startOffset, maxNum,
         cacheHint, total, allMatchingFiles, true, true);
 }
+
+bool CDistributedFileDirectory::removePhysicalPartFiles(const char *logicalName, IFileDescriptor *fileDesc, IMultiException *mexcept, unsigned numParallelDeletes)
+{
+    class casyncfor: public CAsyncFor
+    {
+        IFileDescriptor *fileDesc;
+        CriticalSection errcrit;
+        IMultiException *mexcept;
+    public:
+        bool ok;
+        bool islazy;
+        casyncfor(IFileDescriptor *_fileDesc, IMultiException *_mexcept)
+        {
+            fileDesc = _fileDesc;
+            ok = true;
+            islazy = false;
+            mexcept = _mexcept;
+        }
+        void Do(unsigned i)
+        {
+            IPartDescriptor *part = fileDesc->queryPart(i);
+            unsigned nc = part->numCopies();
+            for (unsigned copy = 0; copy < nc; copy++)
+            {
+                RemoteFilename rfn;
+                part->getFilename(copy, rfn);
+                Owned<IFile> partfile = createIFile(rfn);
+                StringBuffer eps;
+                try
+                {
+                    unsigned start = msTick();
+                    if (!partfile->remove()&&(copy==0)&&!islazy) // only warn about missing primary files
+                        LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                    else
+                    {
+                        unsigned t = msTick()-start;
+                        if (t>5*1000)
+                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                    }
+                }
+                catch (IException *e)
+                {
+                    CriticalBlock block(errcrit);
+                    if (mexcept)
+                        mexcept->append(*e);
+                    else
+                    {
+                        StringBuffer s("Failed to remove file part ");
+                        s.append(partfile->queryFilename()).append(" from ");
+                        rfn.queryEndpoint().getUrlStr(s);
+                        EXCLOG(e, s.str());
+                        e->Release();
+                    }
+                    ok = false;
+                }
+            }
+        }
+    } afor(fileDesc, mexcept);
+    afor.islazy = fileDesc->queryProperties().getPropBool("@lazy");
+    if (0 == numParallelDeletes)
+        numParallelDeletes = fileDesc->numParts();
+    if (numParallelDeletes > MAX_PHYSICAL_DELETE_THREADS)
+    {
+        WARNLOG("Limiting parallel physical delete threads to %d", MAX_PHYSICAL_DELETE_THREADS);
+        numParallelDeletes = MAX_PHYSICAL_DELETE_THREADS;
+    }
+    afor.For(fileDesc->numParts(),numParallelDeletes,false,true);
+    return afor.ok;
+}
+
 
 #ifdef _USE_CPPUNIT
 /*

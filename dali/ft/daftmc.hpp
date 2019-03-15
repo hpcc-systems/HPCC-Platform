@@ -20,7 +20,7 @@
 
 #include "daft.hpp"
 
-extern DALIFT_API const LogMsgCategory MCdebugInfoDetail;
-extern DALIFT_API const LogMsgCategory MCdebugProgressDetail;
+constexpr LogMsgCategory MCdebugInfoDetail(MCdebugInfo(1000));
+constexpr LogMsgCategory MCdebugProgressDetail(MCdebugProgress(1000));
 
 #endif

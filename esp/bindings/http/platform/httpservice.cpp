@@ -179,8 +179,8 @@ void checkSetCORSAllowOrigin(CHttpRequest *req, CHttpResponse *resp)
 
 int CEspHttpServer::processRequest()
 {
-    m_request->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled());
-    m_response->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled());
+    m_request->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled() && !shouldClose);
+    m_response->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled() && !shouldClose);
     try
     {
         if (m_request->receive(NULL)==-1) // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)

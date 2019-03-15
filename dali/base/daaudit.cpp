@@ -38,9 +38,6 @@
 #pragma warning (disable : 4355)
 #endif
 
-LogMsgCategory const daliAuditLogCat(MSGAUD_audit, MSGCLS_information, DefaultDetail);
-
-
 enum MAuditRequestKind { 
     MAR_QUERY
 };

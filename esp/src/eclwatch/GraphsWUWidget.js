@@ -7,17 +7,17 @@ define([
 
     "hpcc/GraphsWidget",
     "src/ESPWorkunit",
-    "hpcc/DelayLoadWidget",
-
-    "@hpcc-js/eclwatch"
+    "src/Timings"
 
 ], function (declare,
     ContentPane,
     selector,
-    GraphsWidget, ESPWorkunit, DelayLoadWidget,
-    hpccEclWatch) {
+    GraphsWidget, ESPWorkunit,
+    srcTimings) {
         return declare("GraphsWUWidget", [GraphsWidget], {
             wu: null,
+            _graphsData: null,
+            _timelineData: null,
 
             postCreate: function (args) {
                 this.inherited(arguments);
@@ -49,14 +49,8 @@ define([
                 if (params.Wuid) {
                     var context = this;
                     this.wu = ESPWorkunit.Get(params.Wuid);
-                    var monitorCount = 4;
-                    this.wu.monitor(function () {
-                        if (context.wu.isComplete() || ++monitorCount % 5 === 0) {
-                            context.refreshGrid();
-                        }
-                    });
 
-                    this.timeline = new hpccEclWatch.WUTimeline()
+                    this.timeline = new srcTimings.WUTimelineEx()
                         .target(this.id + "TimelinePane")
                         .maxZoom(Number.MAX_SAFE_INTEGER)
                         .overlapTolerence(1)
@@ -83,8 +77,18 @@ define([
                                 }
                             }
                         }, true)
-                        .render()
+                        .on("setData", function (_) {
+                            context._timelineData = _;
+                            context.updateGrid();
+                        })
                         ;
+
+                    var monitorCount = 4;
+                    this.wu.monitor(function () {
+                        if (context.wu.isComplete() || ++monitorCount % 5 === 0) {
+                            context.refreshGrid();
+                        }
+                    });
                 }
 
                 this._refreshActionState();
@@ -148,16 +152,33 @@ define([
             },
 
             refreshGrid: function (args) {
+                this._timelineData = null;
+                this._graphsData = null;
+
+                this.timeline.refresh();
+
                 var context = this;
                 this.wu.getInfo({
                     onGetTimers: function (timers) {
                         //  Required to calculate Graphs Total Time  ---
                     },
                     onGetGraphs: function (graphs) {
-                        context.store.setData(graphs);
-                        context.grid.refresh();
+                        context._graphsData = graphs;
+                        context.updateGrid();
                     }
                 });
+            },
+
+            updateGrid: function () {
+                if (this._timelineData && this._graphsData) {
+                    var context = this;
+                    this.store.setData(this._graphsData.map(function (row) {
+                        row.WhenStarted = context._timelineData[row.Name].started;
+                        row.WhenFinished = context._timelineData[row.Name].finished;
+                        return row;
+                    }));
+                    this.grid.refresh();
+                }
             }
         });
     });

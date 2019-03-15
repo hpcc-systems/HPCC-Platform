@@ -480,6 +480,7 @@ private:
     StringAttr globalIdHeader = "HPCC-Global-Id";
     StringAttr callerIdHeader = "HPCC-Caller-Id";
     StringAttr globalId;
+    StringAttr callerId;
     StringBuffer localId;
     ContextLogger(const ContextLogger &);  // Disable copy constructor
 public:
@@ -613,14 +614,22 @@ public:
     {
         stats.reset();
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
         globalId.set(id);
         appendLocalId(localId.clear(), ep, pid);
     }
+    virtual void setCallerId(const char *id) override
+    {
+        callerId.set(id);
+    }
     virtual const char *queryGlobalId() const
     {
         return globalId.get();
+    }
+    virtual const char *queryCallerId() const override
+    {
+        return callerId.get();
     }
     virtual const char *queryLocalId() const
     {

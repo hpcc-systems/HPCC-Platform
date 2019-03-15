@@ -32,6 +32,7 @@ set (    SRCS
          rmtspawn.cpp 
          rmtssh.cpp 
          rmtsmtp.cpp 
+         dafsstream.cpp
          sockfile.cpp
          
          remoteerr.hpp
@@ -51,16 +52,23 @@ if (USE_URIPARSER)
 endif(USE_URIPARSER)
 
 include_directories (
-         ./../../system/hrpc 
-         ./../../system/mp 
-         ./../../system/include 
-         ./../../system/jlib 
-         ./../../system/jhtree
-         ./../../rtl/eclrtl
-         ./../../system/security/securesocket
-         ./../../system/security/cryptohelper
-         ./../../testing/unittests
-         ./../../rtl/include
+         ${HPCC_SOURCE_DIR}/system/hrpc 
+         ${HPCC_SOURCE_DIR}/system/mp 
+         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/jlib 
+         ${HPCC_SOURCE_DIR}/system/jhtree
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/system/security/securesocket
+         ${HPCC_SOURCE_DIR}/system/security/cryptohelper
+         ${HPCC_SOURCE_DIR}/testing/unittests
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/common/deftype
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DREMOTE_EXPORTS )
@@ -72,6 +80,7 @@ target_link_libraries ( remote
     eclrtl
     jlib
     jhtree 
+    hql   
     mp
     ${URIPARSER_LIBRARIES}
     ${CPPUNIT_LIBRARIES}

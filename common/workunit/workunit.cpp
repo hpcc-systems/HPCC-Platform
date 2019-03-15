@@ -7020,11 +7020,17 @@ bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffe
 //   1 : Signature does not verify (wuid/username don't match, or signature does not verify)
 //   2 : Workunit not active
 //   Throws if unable to open workunit
-wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
+wuTokenStates verifyWorkunitDAToken(const char * ctxUser, const char * daToken)
 {
+    if (isEmptyString(daToken))
+    {
+        ERRLOG("verifyWorkunitDAToken : Token must be provided");
+        return wuTokenInvalid;
+    }
+
     StringBuffer tokWuid;
     StringBuffer tokUser;
-    if (!extractFromWorkunitDAToken(distributedAccessToken, &tokWuid, &tokUser, nullptr))//get the wuid and user
+    if (!extractFromWorkunitDAToken(daToken, &tokWuid, &tokUser, nullptr))//get the wuid and user
     {
         //Not a valid workunit distributed access token
         return wuTokenInvalid;
@@ -7036,7 +7042,7 @@ wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
     {
         const char * finger;
         StringBuffer token;//receives copy of everything up until signature
-        for (finger = distributedAccessToken; *finger && *finger != ';'; finger++)
+        for (finger = daToken; *finger && *finger != ';'; finger++)
             token.append(1, finger);
         token.append(1, finger);//append ;
 
@@ -7056,13 +7062,37 @@ wuTokenStates verifyWorkunitDAToken(const char * distributedAccessToken)
     }
 
     //Verify user matches
-    if (!isEmptyString(cw->queryUser()) || !isEmptyString(tokUser.str()))
+    bool wuUserExist = !isEmptyString(cw->queryUser());
+    bool tokUserExist = !isEmptyString(tokUser.str());
+    bool ctxUserExist = !isEmptyString(ctxUser);
+    if (wuUserExist && tokUserExist)
     {
-        if (!streq(cw->queryUser(), tokUser.str()))
+        //if both users are found, they must match
+        if (!streq(tokUser.str(), cw->queryUser()))
         {
-            ERRLOG("verifyWorkunitDAToken : token user does not match workunit");
+            ERRLOG("verifyWorkunitDAToken : Token user (%s) does not match WU user (%s)", tokUser.str(), cw->queryUser());
+            return wuTokenInvalid;//Possible Internal error
+        }
+        else if (ctxUserExist && !streq(tokUser.str(), ctxUser))//ctxUser will be empty if security not enabled
+        {
+            ERRLOG("verifyWorkunitDAToken : Token user (%s) does not match Context user (%s)", cw->queryUser(), ctxUser);
             return wuTokenInvalid;
         }
+    }
+    else if (!wuUserExist && !tokUserExist)//both users will be empty if no security enabled
+    {
+        if (ctxUserExist)
+        {
+            ERRLOG("verifyWorkunitDAToken : Security enabled but WU user and Token user not specified");
+            return wuTokenInvalid;
+        }
+        //both users empty and no context user means if no security enabled
+    }
+    else
+    {
+        //one user found, but not the other, treat as an error
+        ERRLOG("verifyWorkunitDAToken : WU user %s and Token user %s must be provided", wuUserExist ? cw->queryUser() : "(NULL)", tokUserExist ? tokUser.str() : "(NULL)");
+        return wuTokenInvalid;
     }
 
     // no need to compare tokWuid with workunit wuid, because it will always match
@@ -12491,7 +12521,7 @@ extern WORKUNIT_API WUState getWorkUnitState(const char* state)
     return (WUState) getEnum(state, states);
 }
 
-const LogMsgCategory MCschedconn = MCprogress(1000);    // Category used to inform about schedule synchronization
+constexpr LogMsgCategory MCschedconn = MCprogress(1000);    // Category used to inform about schedule synchronization
 
 class CWorkflowScheduleConnection : implements IWorkflowScheduleConnection, public CInterface
 {

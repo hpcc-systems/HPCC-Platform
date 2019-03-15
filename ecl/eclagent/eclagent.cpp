@@ -81,10 +81,10 @@ static const char XMLHEADER[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 typedef IEclProcess* (* EclProcessFactory)();
 
-const LogMsgCategory MCsetresult = MCprogress(100);     // Category used to inform when setting result
-const LogMsgCategory MCgetresult = MCprogress(200);     // Category used to inform when getting result
-const LogMsgCategory MCresolve = MCprogress(100);       // Category used to inform during name resolution
-const LogMsgCategory MCrunlock = MCprogress(100);      // Category used to inform about run lock progress
+constexpr LogMsgCategory MCsetresult = MCprogress(100);     // Category used to inform when setting result
+constexpr LogMsgCategory MCgetresult = MCprogress(200);     // Category used to inform when getting result
+constexpr LogMsgCategory MCresolve = MCprogress(100);       // Category used to inform during name resolution
+constexpr LogMsgCategory MCrunlock = MCprogress(100);      // Category used to inform about run lock progress
 
 Owned<IPropertyTree> agentTopology;
 
@@ -2084,7 +2084,10 @@ void EclAgent::runProcess(IEclProcess *process)
             SCMStringBuffer txId;
             queryWorkUnit()->getDebugValue("CallerId", txId);
             if (txId.length())
+            {
+                updateDummyContextLogger().setCallerId(txId.str());
                 msg.append(", CallerId: ").append(txId.str());
+            }
             txId.set(updateDummyContextLogger().queryLocalId());
             if (txId.length())
                 msg.append(", LocalId: ").append(txId.str());

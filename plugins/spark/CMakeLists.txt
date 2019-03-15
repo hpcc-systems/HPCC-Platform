@@ -48,7 +48,7 @@ if(SPARK)
         endif (NOT SPARK_VERSION)
 
         if (NOT SPARK_URL_BASE)
-            set(SPARK_URL_BASE  "http://apache.mirrors.pair.com")
+            set(SPARK_URL_BASE  "https://archive.apache.org/dist")
         endif (NOT SPARK_URL_BASE)
 
         set(SPARK_PACKAGE_NAME "spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}")
@@ -59,7 +59,7 @@ if(SPARK)
 
     if(NOT SPARK_HPCC_JAR)
         if(NOT SPARK_HPCC_VERSION)
-            set(SPARK_HPCC_VERSION "7.0.2")
+            set(SPARK_HPCC_VERSION "7.2.0")
         endif()
         file(DOWNLOAD
             ${CENTRAL_REPO}/org/hpccsystems/spark-hpcc/${SPARK_HPCC_VERSION}/spark-hpcc-${SPARK_HPCC_VERSION}.jar
@@ -69,17 +69,17 @@ if(SPARK)
         set(SPARK_HPCC_JAR ${CMAKE_CURRENT_BINARY_DIR}/spark-hpcc-${SPARK_HPCC_VERSION}.jar)
     endif()
 
-    if(NOT WSCLIENT_JAR)    
-        if(NOT WSCLIENT_VERSION)
-            set(WSCLIENT_VERSION "7.0.2")
+    if(NOT DFSCLIENT_JAR)    
+        if(NOT DFSCLIENT_VERSION)
+            set(DFSCLIENT_VERSION "7.2.0")
         endif()
         file(DOWNLOAD
-            ${CENTRAL_REPO}/org/hpccsystems/wsclient/${WSCLIENT_VERSION}/wsclient-${WSCLIENT_VERSION}-jar-with-dependencies.jar
-            ${CMAKE_CURRENT_BINARY_DIR}/wsclient-${WSCLIENT_VERSION}-jar-with-dependencies.jar
+            ${CENTRAL_REPO}/org/hpccsystems/dfsclient/${DFSCLIENT_VERSION}/dfsclient-${DFSCLIENT_VERSION}-jar-with-dependencies.jar
+            ${CMAKE_CURRENT_BINARY_DIR}/dfsclient-${DFSCLIENT_VERSION}-jar-with-dependencies.jar
             INACTIVITY_TIMEOUT 30
             TIMEOUT 90)
-        set(WSCLIENT_JAR ${CMAKE_CURRENT_BINARY_DIR}/wsclient-${WSCLIENT_VERSION}-jar-with-dependencies.jar)
-    endif(NOT WSCLIENT_JAR)
+        set(DFSCLIENT_JAR ${CMAKE_CURRENT_BINARY_DIR}/dfsclient-${DFSCLIENT_VERSION}-jar-with-dependencies.jar)
+    endif(NOT DFSCLIENT_JAR)
 
 
     message("")
@@ -127,7 +127,7 @@ if(SPARK)
     install(
         FILES 
             ${SPARK_HPCC_JAR}
-            ${WSCLIENT_JAR}
+            ${DFSCLIENT_JAR}
         COMPONENT runtime
         DESTINATION "jars/spark/"
         )

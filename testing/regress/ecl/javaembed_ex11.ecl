@@ -20,10 +20,10 @@
 
 IMPORT Java;
 
-unsigned persister(integer initial) := EMBED(Java)
-public class persister
+UNSIGNED JavaAccumulator(INTEGER initial) := EMBED(Java : persist('Global'))
+public class JavaAccumulator
 {
-  public persister(int initial) { tot = initial; }
+  public JavaAccumulator(int initial) { tot = initial; }
   public synchronized int accumulate(int a)
   {
     tot = tot + a;
@@ -39,17 +39,16 @@ public class persister
 }
 ENDEMBED;
 
-integer accumulate(unsigned p, integer val) := IMPORT(Java, 'accumulate');
-integer clear(unsigned p) := IMPORT(Java, 'clear');
-release(unsigned p) := IMPORT(Java, '~persister'); // After calling this the java object p is no longer usable
+INTEGER accumulate(UNSIGNED p, INTEGER val) := IMPORT(Java, 'JavaAccumulator::accumulate');
+INTEGER clear(UNSIGNED p) := IMPORT(Java, 'JavaAccumulator::clear');
 
-p := persister(35) : global;
+a := JavaAccumulator(35) : INDEPENDENT;
 
-sequential(
-  accumulate(p, 1);
-  accumulate(p, 2);
-  accumulate(p, 3);
-  clear(p);
-  accumulate(p, 10);
-  release(p);  
+ORDERED
+(
+  accumulate(a, 1);
+  accumulate(a, 2);
+  accumulate(a, 3);
+  clear(a);
+  accumulate(a, 10);
 );

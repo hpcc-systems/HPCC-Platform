@@ -45,6 +45,12 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esxdl2xsd.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/esdl2java_srvbase.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/esdl2java_srvdummy.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/esdl2cpp_srvbasehpp.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/esdl2cpp_srvbasecpp.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/esdl2cpp_srvhpp.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/esdl2cpp_srvcpp.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/esdl2cpp_cmake.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/esdl2cpp_types.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/roxie_page.xsl
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/xslt COMPONENT Runtime )

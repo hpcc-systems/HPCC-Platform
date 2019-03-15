@@ -16,9 +16,9 @@
   role="bold">, </emphasis> <emphasis>sourcepath , </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis> srcCSVseparator </emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis> srcCSVseparate </emphasis> <emphasis role="bold">]
   </emphasis> <emphasis>, </emphasis> <emphasis role="bold">[</emphasis>
-  <emphasis> srcCSVterminator </emphasis> <emphasis role="bold">] </emphasis>
+  <emphasis> srcCSVterminate </emphasis> <emphasis role="bold">] </emphasis>
   <emphasis>, </emphasis> <emphasis role="bold">[</emphasis> <emphasis>
   srcCSVquote </emphasis> <emphasis role="bold">] </emphasis> <emphasis>,
   </emphasis> <emphasis role="bold"> </emphasis> <emphasis>destinationgroup,
@@ -55,9 +55,9 @@
   role="bold">, </emphasis> <emphasis>sourcepath , </emphasis> <emphasis
   role="bold"> [</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> srcCSVseparator </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> srcCSVseparate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> srcCSVterminator </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> srcCSVterminate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
   [</emphasis> <emphasis> srcCSVquote </emphasis> <emphasis role="bold">]
   </emphasis> <emphasis>, destinationgroup, destinationlogicalname </emphasis>
@@ -109,14 +109,14 @@
         </row>
 
         <row>
-          <entry><emphasis>srcCSVseparator</emphasis></entry>
+          <entry><emphasis>srcCSVseparate</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV field
           separator. If omitted, the default is '\\,'</entry>
         </row>
 
         <row>
-          <entry><emphasis>srcCSVterminator</emphasis></entry>
+          <entry><emphasis>srcCSVterminate</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV record
           separator. If omitted, the default is '\\n,\\r\\n'</entry>

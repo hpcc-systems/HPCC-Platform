@@ -30,8 +30,6 @@ extern da_decl unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to
 interface IDaliServer;
 extern da_decl IDaliServer *createDaliAuditServer(const char *dir); // called for coven members
 
-extern da_decl LogMsgCategory const daliAuditLogCat;
-
-
+constexpr LogMsgCategory daliAuditLogCat(MSGAUD_audit, MSGCLS_information, DefaultDetail);
 
 #endif

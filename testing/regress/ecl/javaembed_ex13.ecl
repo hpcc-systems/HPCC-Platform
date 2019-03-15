@@ -21,7 +21,7 @@
 
 IMPORT Java;
 
-unsigned persister(integer initial) := EMBED(Java)
+unsigned persister(integer initial) := EMBED(Java : PERSIST('thread'))
 public class persister
 {
   public persister(int initial) { tot = initial; }
@@ -42,7 +42,6 @@ ENDEMBED;
 
 integer accumulate(unsigned p, integer val) := IMPORT(Java, 'accumulate');
 integer clear(unsigned p) := IMPORT(Java, 'clear');
-unsigned release(unsigned p) := IMPORT(Java, '~persister'); // After calling this the java object p is no longer usable
 
 r := record
   integer i;
@@ -58,6 +57,4 @@ d1 := DATASET([{1}, {2}, {3}], r);
 
 accumulated := ITERATE(d1, t(LEFT, RIGHT), LOCAL);
 
-OUTPUT(accumulated);
-objects := TABLE(GROUP(accumulated, TRUE, LOCAL), {px := MAX(GROUP,p)});
-APPLY(objects,EVALUATE(release(px)));
+OUTPUT(accumulated, {i});
