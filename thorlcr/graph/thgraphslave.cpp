@@ -1622,12 +1622,16 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
         {
             SocketEndpoint thorEp;
             thorEp.setLocalHost(getMachinePortBase());
-            logctx->setGlobalId(globalId, thorEp, 0);
 
             VStringBuffer msg("GlobalId: %s", globalId);
+            logctx->setGlobalId(globalId, thorEp, 0);
+
             const char *callerId = workUnitInfo->queryProp("debug/callerid");
             if (callerId && *callerId)
+            {
                 msg.append(", CallerId: ").append(callerId);
+                logctx->setCallerId(callerId);
+            }
             const char *localId = logctx->queryLocalId();
             if (localId && *localId)
                 msg.append(", LocalId: ").append(localId);

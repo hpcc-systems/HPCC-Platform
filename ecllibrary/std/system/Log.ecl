@@ -58,6 +58,14 @@ EXPORT addWorkunitError(varstring text, unsigned code=0) := lib_logging.Logging.
 EXPORT getGlobalId() := lib_logging.Logging.getGlobalId();
 
 /*
+ * Gets the Caller Id associated with the current query or workunit.
+ *
+ * Returns the Caller Id
+ */
+
+EXPORT getCallerId() := lib_logging.Logging.getCallerId();
+
+/*
  * Gets the Local Id associated with the current query or workunit.
  *
  * Returns the Local Id

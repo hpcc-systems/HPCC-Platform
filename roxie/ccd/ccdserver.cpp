@@ -253,13 +253,21 @@ public:
     {
         return ctx->isBlind();
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
         ctx->setGlobalId(id, ep, pid);
+    }
+    virtual void setCallerId(const char *id) override
+    {
+        ctx->setCallerId(id);
     }
     virtual const char *queryGlobalId() const
     {
         return ctx->queryGlobalId();
+    }
+    virtual const char *queryCallerId() const override
+    {
+        return ctx->queryCallerId();
     }
     virtual const char *queryLocalId() const
     {
@@ -1208,14 +1216,23 @@ public:
             return traceLevel;
     }
 
-    virtual void setGlobalId(const char *id, SocketEndpoint&ep, unsigned pid)
+    virtual void setGlobalId(const char *id, SocketEndpoint&ep, unsigned pid) override
     {
         if (ctx)
             ctx->setGlobalId(id, ep, pid);
     }
+    virtual void setCallerId(const char *id) override
+    {
+        if (ctx)
+            ctx->setCallerId(id);
+    }
     virtual const char *queryGlobalId() const
     {
         return ctx ? ctx->queryGlobalId() : nullptr;
+    }
+    virtual const char *queryCallerId() const override
+    {
+        return ctx ? ctx->queryCallerId() : nullptr;
     }
     virtual const char *queryLocalId() const
     {

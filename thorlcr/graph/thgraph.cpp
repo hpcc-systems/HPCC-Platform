@@ -2524,6 +2524,7 @@ class CThorContextLogger : implements IContextLogger, public CSimpleInterface
     StringAttr globalIdHeader;
     StringAttr callerIdHeader;
     StringAttr globalId;
+    StringAttr callerId;
     StringBuffer localId;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -2564,10 +2565,14 @@ public:
     {
         return traceLevel;
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
         globalId.set(id);
         appendLocalId(localId.clear(), ep, pid);
+    }
+    virtual void setCallerId(const char *id) override
+    {
+        callerId.set(id);
     }
     virtual const char *queryGlobalId() const
     {
@@ -2576,6 +2581,10 @@ public:
     virtual const char *queryLocalId() const
     {
         return localId.str();
+    }
+    virtual const char *queryCallerId() const override
+    {
+        return callerId.str();
     }
     virtual void setHttpIdHeaders(const char *global, const char *caller)
     {

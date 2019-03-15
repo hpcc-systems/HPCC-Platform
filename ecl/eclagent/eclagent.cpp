@@ -2084,7 +2084,10 @@ void EclAgent::runProcess(IEclProcess *process)
             SCMStringBuffer txId;
             queryWorkUnit()->getDebugValue("CallerId", txId);
             if (txId.length())
+            {
+                updateDummyContextLogger().setCallerId(txId.str());
                 msg.append(", CallerId: ").append(txId.str());
+            }
             txId.set(updateDummyContextLogger().queryLocalId());
             if (txId.length())
                 msg.append(", LocalId: ").append(txId.str());
