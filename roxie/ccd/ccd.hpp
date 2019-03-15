@@ -617,7 +617,7 @@ public:
     virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
         globalId.set(id);
-        appendLocalId(localId.clear(), ep, pid);
+        appendGloballyUniqueId(localId.clear());
     }
     virtual void setCallerId(const char *id) override
     {
