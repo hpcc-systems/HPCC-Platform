@@ -3071,7 +3071,7 @@ public:
                 val++;
                 if (stricmp(optName, "classpath")==0)
                     lclassPath.append(';').append(val);
-                if (strieq(optName, "globalscope"))
+                else if (strieq(optName, "globalscope"))
                     globalScopeKey.set(val);
                 else if (strieq(optName, "persist"))
                 {
