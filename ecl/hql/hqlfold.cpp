@@ -1479,7 +1479,7 @@ class DummyContext: implements ICodeContext
     virtual char *getGroupName() { throwUnexpected(); } // caller frees return string.
     virtual char *getJobName() { throwUnexpected(); } // caller frees return string.
     virtual char *getJobOwner() { throwUnexpected(); } // caller frees return string.
-    virtual unsigned getNodeNum() { throwUnexpected(); }
+    virtual unsigned getNodeNum() { return 0; }
     virtual unsigned getNodes() { throwUnexpected(); }
     virtual char *getOS() { throwUnexpected(); } // caller frees return string
     virtual char *getPlatform() { throwUnexpected(); } // caller frees return string.
