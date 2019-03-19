@@ -8485,6 +8485,7 @@ bool CHThorDiskReadBaseActivity::openNext()
         partNum++;
         if (checkOpenedFile(file.str(), NULL))
         {
+            actualFilter.appendFilters(fieldFilters);
             opened = true;
             return true;
         }
