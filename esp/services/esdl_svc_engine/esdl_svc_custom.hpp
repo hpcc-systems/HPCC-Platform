@@ -84,7 +84,7 @@ public:
 
     ICompiledXpath * queryCompiledValuePath()
     {
-        return m_compiledValueXpath.getLink();
+        return m_compiledValueXpath;
     }
 
     bool isOptional () const { return m_optional; }

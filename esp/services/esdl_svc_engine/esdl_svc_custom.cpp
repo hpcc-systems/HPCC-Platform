@@ -217,7 +217,7 @@ bool CEsdlCustomTransformChoose::evaluate(IXpathContext * xpathContext)
     bool evalresp = false;
     try
     {
-        evalresp = xpathContext->evaluateAsBoolean(m_compiledConditionalXpath.getLink());
+        evalresp = xpathContext->evaluateAsBoolean(m_compiledConditionalXpath);
     }
     catch (IException* e)
     {
