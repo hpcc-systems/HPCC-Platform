@@ -2976,46 +2976,65 @@ void DiskReadBuilderBase::extractMonitors(IHqlExpression * ds, SharedHqlExpr & u
     //KEYED filters can only currently be implemented for binary files - not csv, xml or pipe....
     if (queryTableMode(tableExpr) == no_flat)
     {
-        OwnedHqlExpr implicitFilter;
-        ForEachItemIn(i, conds)
+        if (translator.queryOptions().implicitKeyedDiskFilter)
         {
-            IHqlExpression * filter = &conds.item(i);
-            if (isSourceInvariant(ds, filter))                  // more actually isSourceInvariant.
-                extendConditionOwn(globalGuard, no_and, LINK(filter));
-            else
+            HqlExprArray newconds;
+            ForEachItemIn(i, conds)
             {
-                node_operator op = filter->getOperator();
-                switch (op)
-                {
-                case no_assertkeyed:
-                case no_assertwild:
-                    {
-                        //MORE: This needs to test that the fields are at fixed offsets, fixed length, and collatable.
-                        OwnedHqlExpr extraFilter;
-                        monitors.extractFilters(filter, extraFilter);
+                IHqlExpression * filter = &conds.item(i);
+                if (isSourceInvariant(ds, filter))                  // more actually isSourceInvariant.
+                    extendConditionOwn(globalGuard, no_and, LINK(filter));
+                else
+                    newconds.append(OLINK(*filter));
+            }
 
-                        //NB: Even if it is keyed then (part of) the test condition might be duplicated.
-                        appendFilter(unkeyedFilter, extraFilter);
+            OwnedHqlExpr extraFilter;
+            monitors.extractFilters(newconds, extraFilter);
+            appendFilter(unkeyedFilter, extraFilter);
+        }
+        else
+        {
+            OwnedHqlExpr implicitFilter;
+            ForEachItemIn(i, conds)
+            {
+                IHqlExpression * filter = &conds.item(i);
+                if (isSourceInvariant(ds, filter))                  // more actually isSourceInvariant.
+                    extendConditionOwn(globalGuard, no_and, LINK(filter));
+                else
+                {
+                    node_operator op = filter->getOperator();
+                    switch (op)
+                    {
+                    case no_assertkeyed:
+                    case no_assertwild:
+                        {
+                            //MORE: This needs to test that the fields are at fixed offsets, fixed length, and collatable.
+                            OwnedHqlExpr extraFilter;
+                            monitors.extractFilters(filter, extraFilter);
+
+                            //NB: Even if it is keyed then (part of) the test condition might be duplicated.
+                            appendFilter(unkeyedFilter, extraFilter);
+                            break;
+                        }
+                    default:
+                        // Add this condition to the catchall filter
+                        appendFilter(implicitFilter, filter);
                         break;
                     }
-                default:
-                    // Add this condition to the catchall filter
-                    appendFilter(implicitFilter, filter);
-                    break;
                 }
             }
-        }
 
-        if (implicitFilter)
-        {
-            if (translator.queryOptions().implicitKeyedDiskFilter && !monitors.isKeyed())
+            if (implicitFilter)
             {
-                OwnedHqlExpr extraFilter;
-                monitors.extractFilters(implicitFilter.get(), extraFilter);
-                appendFilter(unkeyedFilter, extraFilter);
+                if (translator.queryOptions().implicitKeyedDiskFilter && !monitors.isKeyed())
+                {
+                    OwnedHqlExpr extraFilter;
+                    monitors.extractFilters(implicitFilter.get(), extraFilter);
+                    appendFilter(unkeyedFilter, extraFilter);
+                }
+                else
+                    appendFilter(unkeyedFilter, implicitFilter);
             }
-            else
-                appendFilter(unkeyedFilter, implicitFilter);
         }
     }
     else
