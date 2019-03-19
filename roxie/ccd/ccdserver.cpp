@@ -8860,7 +8860,8 @@ public:
     CriticalSection crit2;
     unsigned tailIdx;
     unsigned headIdx;
-    Owned<IException> error;
+    Owned<IException> readError;
+    Owned<IException> startError;
 
     class OutputAdaptor : implements IEngineRowStream, implements IFinalRoxieInput, public CInterface
     {
@@ -9079,8 +9080,8 @@ public:
             if (curIdx == headIdx) // test again now that we have it
             {
                 ActivityTimer t(totalCycles, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
-                if (error)
-                    throw error.getLink();
+                if (readError)
+                    throw readError.getLink();  // Read exceptions are only throw if you try to read past the row where they happened
 
                 try
                 {
@@ -9109,13 +9110,13 @@ public:
 #ifdef TRACE_SPLIT
                     CTXLOG("spill %d caught exception", activityId);
 #endif
-                    error.set(E);
+                    readError.set(E);
                     throw;
                 }
                 catch (...)
                 {
                     IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught in CRoxieServerThroughSpillActivity::readBuffered");
-                    error.set(E);
+                    readError.set(E);
                     throw E;
                 }
             }
@@ -9150,8 +9151,8 @@ public:
     virtual void start(unsigned oid, unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock b(crit);
-        if (error)
-            throw error.getLink();
+        if (startError)
+            throw startError.getLink();
         if (collectFactoryStatistics)
             factory->noteStarted(oid);
         if (traceStartStop)
@@ -9162,7 +9163,8 @@ public:
                 initOutputs();
             tailIdx = 0;
             headIdx = 0;
-            error.clear();
+            startError.clear();
+            readError.clear();
             try
             {
                 CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
@@ -9172,13 +9174,13 @@ public:
 #ifdef TRACE_SPLIT
                 CTXLOG("spill %d caught exception in start", activityId);
 #endif
-                error.set(E);
+                startError.set(E);
                 throw;
             }
             catch (...)
             {
                 IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught in CRoxieServerThroughSpillActivity::start");
-                error.set(E);
+                startError.set(E);
                 throw E;
             }
         }
@@ -9239,7 +9241,8 @@ public:
         activeOutputs = numOutputs;
         while (buffer.ordinality())
             ReleaseRoxieRow(buffer.dequeue());
-        error.clear();
+        startError.clear();
+        readError.clear();
         if (state != STATEreset) // make sure input is only reset once
             CRoxieServerActivity::reset();
     };
@@ -20066,6 +20069,10 @@ public:
         : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorCatchArg &)basehelper)
     {
     }
+
+    // MORE - you could argue we should catch exceptions in START too, though not clear what to do with them
+    // See CRoxieServerSkipCatchActivity::start
+    // This is less significant now that we properly distinguish start exceptions from read exceptions in ThroughSpill activity
 
     virtual const void *nextRow()
     {
