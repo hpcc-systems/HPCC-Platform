@@ -18,6 +18,14 @@
 #ifndef DAFSCOMMON_HPP
 #define DAFSCOMMON_HPP
 
+#define FILESRV_VERSION 25 // don't forget VERSTRING in sockfile.cpp
+// JCSMORE very temporary! (should prob used FILESRV_VERSION)
+#ifdef _WIN32
+#define SERVER_VERSION "DS V2.5Windows "
+#else
+#define SERVER_VERSION "DS V2.5Linux "
+#endif
+
 const unsigned RFEnoerror = 0;
 
 enum
@@ -99,11 +107,37 @@ enum DAFS_ERROR_CODES {
     DAFSERR_cmdstream_generalwritefailure   = -13
 };
 
+
+typedef unsigned char RemoteFileCommandType;
+
 inline MemoryBuffer & initSendBuffer(MemoryBuffer & buff)
 {
     buff.setEndian(__BIG_ENDIAN);       // transfer as big endian...
     buff.append((unsigned)0);           // reserve space for length prefix
     return buff;
 }
+
+enum ThrottleClass
+{
+    ThrottleStd,
+    ThrottleSlow,
+    ThrottleClassMax
+};
+
+// RemoteFileServer throttling defaults
+#define DEFAULT_THREADLIMIT 100
+#define DEFAULT_THREADLIMITDELAYMS (60*1000)
+#define DEFAULT_ASYNCCOPYMAX 10
+
+#define DEFAULT_STDCMD_PARALLELREQUESTLIMIT 80
+#define DEFAULT_STDCMD_THROTTLEDELAYMS 1000
+#define DEFAULT_STDCMD_THROTTLECPULIMIT 85
+#define DEFAULT_STDCMD_THROTTLEQUEUELIMIT 1000
+
+#define DEFAULT_SLOWCMD_PARALLELREQUESTLIMIT 20
+#define DEFAULT_SLOWCMD_THROTTLEDELAYMS 5000
+#define DEFAULT_SLOWCMD_THROTTLECPULIMIT 75
+#define DEFAULT_SLOWCMD_THROTTLEQUEUELIMIT 1000
+
 
 #endif // DAFSCOMMON_HPP

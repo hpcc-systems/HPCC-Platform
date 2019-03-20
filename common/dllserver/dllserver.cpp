@@ -23,7 +23,7 @@
 #include "dllservererr.hpp"
 #include "daclient.hpp"
 #include "dasds.hpp"
-#include "rmtfile.hpp"
+#include "rmtclient.hpp"
 #include "dalienv.hpp"
 #include "thorplugin.hpp"
 

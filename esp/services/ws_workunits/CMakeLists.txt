@@ -53,6 +53,7 @@ include_directories (
          ./../../../dali/dfu
          ./../../../dali/sasha
          ./../../../common/remote
+         ./../../../fs/dafsclient
          ./../../../system/jlib
          ./../../../common/environment
          ./../../../rtl/eclrtl
@@ -94,6 +95,7 @@ target_link_libraries ( ws_workunits
          mp
          hrpc
          remote
+         dafsclient
          xmllib
          esphttp
          dalibase

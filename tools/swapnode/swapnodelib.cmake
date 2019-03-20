@@ -29,6 +29,7 @@ set (    SRCS
 
 include_directories (
          ./../../common/remote
+         ./../../fs/dafsclient
          ./../../system/mp
          ./../../system/include
          ./../../dali/base
@@ -45,6 +46,7 @@ install ( TARGETS swapnodelib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATIO
 target_link_libraries ( swapnodelib
          jlib
          remote
+         dafsclient
          dalibase
          workunit
          environment

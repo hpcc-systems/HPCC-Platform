@@ -39,7 +39,9 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/security/securesocket
          ${HPCC_SOURCE_DIR}/system/security/cryptohelper
-         ${HPCC_SOURCE_DIR}/common/remote
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
+         ${HPCC_SOURCE_DIR}/fs/dafsstream
+         ${HPCC_SOURCE_DIR}/fs/dafsserver
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/rtl/include
@@ -65,9 +67,13 @@ target_link_libraries ( wsdfuaccess
          jlib
          xmllib 
          esphttp
-         remote
+         dafsclient
+         dafsserver
+         dafsstream
          thorhelper
          dalibase
+         dafsclient
+         environment
          ${CPPUNIT_LIBRARIES}
     )
 

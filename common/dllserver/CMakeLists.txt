@@ -33,7 +33,7 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../common/remote 
+         ./../../fs/dafsclient
          ./../../system/mp 
          ./../../rtl/eclrtl 
          ./../../system/include 
@@ -59,7 +59,7 @@ target_link_libraries ( dllserver
          mp 
          hrpc 
          eclrtl 
-         remote 
+         dafsclient
          dalibase 
          environment 
     )

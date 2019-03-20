@@ -27,21 +27,10 @@ project( remote )
 HPCC_ADD_SUBDIRECTORY(hooks)
 
 set (    SRCS 
-         rmtfile.cpp 
          rmtpass.cpp 
          rmtspawn.cpp 
          rmtssh.cpp 
          rmtsmtp.cpp 
-         dafsstream.cpp
-         sockfile.cpp
-         
-         remoteerr.hpp
-         rmtfile.hpp
-         rmtpass.hpp
-         rmtsmtp.hpp
-         rmtspawn.hpp
-         rmtssh.hpp
-         sockfile.hpp
     )
 if (USE_URIPARSER)
   set ( SRCS
@@ -61,12 +50,12 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/security/securesocket
          ${HPCC_SOURCE_DIR}/system/security/cryptohelper
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
          ${HPCC_SOURCE_DIR}/testing/unittests
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/common/deftype
-         ${HPCC_SOURCE_DIR}/dali/base
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )

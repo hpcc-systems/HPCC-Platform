@@ -26,7 +26,6 @@
 #include "portlist.h"
 #include "jsocket.hpp"
 
-#include "rmtfile.hpp"
 #include "rmtpass.hpp"
 
 void CachedPasswordProvider::addPasswordForFilename(const char * filename)

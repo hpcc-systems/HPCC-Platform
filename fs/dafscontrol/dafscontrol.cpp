@@ -28,7 +28,7 @@
 #include "dafdesc.hpp"
 #include "dasds.hpp"
 #include "rmtfile.hpp"
-#include "sockfile.hpp"
+#include "rmtclient.hpp"
 
 #include "dalienv.hpp"
 
@@ -172,7 +172,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
                 case AMcheckvermajor: {
                     // compares versions up to the '-'
                         const char *rv = verstr.str();
-                        const char *v = remoteServerVersionString();
+                        const char *v = SERVER_VERSION;
                         if (mode!=AMcheckvermajor) {
                             while (*v&&(*v!='-')&&(*v==*rv)) {
                                 v++;
@@ -235,7 +235,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
                 PROGLOG("%s: %d node%s running version %.1f of DAFILESRV",grpip,numok,(numok!=1)?"s":"",((double)FILESRV_VERSION)/10.0);
             else {
                 StringBuffer vs;
-                const char *v = remoteServerVersionString();
+                const char *v = SERVER_VERSION;
                 while (*v&&(*v!='-'))
                     vs.append(*(v++));
                 PROGLOG("%s: %d node%s running version %s of DAFILESRV",grpip,numok,(numok!=1)?"s":"",vs.str());
@@ -307,7 +307,7 @@ int main(int argc, char* argv[])
                 break;
             }
             if (stricmp(argv[ai],"myver")==0) {
-                const char *v = remoteServerVersionString();
+                const char *v = SERVER_VERSION;
                 StringBuffer vs;
                 if (memicmp(v,"DS V",4)==0)
                     v += 4;

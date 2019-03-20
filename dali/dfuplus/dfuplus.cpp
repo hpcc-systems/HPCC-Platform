@@ -30,6 +30,7 @@
 
 #ifdef DAFILESRV_LOCAL
 #include "rmtfile.hpp"
+#include "rmtclient.hpp"
 #include "sockfile.hpp"
 
 #include "jutil.hpp"

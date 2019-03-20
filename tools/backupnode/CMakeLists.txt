@@ -32,7 +32,7 @@ include_directories (
          ./../../system/include 
          ./../../system/jlib 
          ./../../system/mp
-         ./../../common/remote
+         ./../../fs/dafsclient
          ./../../dali/base
          ./../../system/jhtree
          ./../../rtl/include
@@ -48,7 +48,7 @@ install ( TARGETS backupnode RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries (  backupnode 
          jlib
          jhtree
-         remote
+         dafsclient
          mp
          dalibase
     )

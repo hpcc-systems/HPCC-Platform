@@ -45,7 +45,8 @@ include_directories (
          ./../../system/jlib
          ./../../system/mp
          ./../../system/libbase58
-         ./../../common/remote
+         ./../../fs/dafsclient
+         ./../../fs/dafsclient
          ./../../common/thorhelper
          ./../../dali/base
          ./../../system/security/shared
@@ -64,7 +65,7 @@ HPCC_ADD_EXECUTABLE ( unittests ${SRCS} )
 install ( TARGETS unittests RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( unittests
          jlib
-         remote
+         dafsclient
          dalibase
          deftype
          libbase58
