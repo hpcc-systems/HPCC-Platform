@@ -38,27 +38,46 @@ else()
     set(osdir "unknown")
 endif()
 
-include(ExternalProject)
-ExternalProject_Add(
-    antlr3c
-    URL "http://www.antlr3.org/download/C/libantlr3c-3.4.tar.gz"
-    DOWNLOAD_DIR ${CMAKE_CURRENT_BINARY_DIR}
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/runtime/C
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/runtime/C/configure ${ANTLRcCONFIGURE_COMMAND_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR}/antlr3c
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/antlr3c
-    BUILD_COMMAND ${CMAKE_MAKE_PROGRAM}
-    BUILD_IN_SOURCE 1
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4
+    COMMAND tar -xzf ${CMAKE_CURRENT_SOURCE_DIR}/website-antlr3/download/C/libantlr3c-3.4.tar.gz
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/website-antlr3/download
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4/Makefile
+    COMMAND ./configure ${ANTLRcCONFIGURE_COMMAND_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR}/antlr3c
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4
+    ) 
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4/.libs/${ANTLR3c_lib}
+    COMMAND ${CMAKE_MAKE_PROGRAM}
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4/Makefile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4
+    )
+
+add_custom_target(antlr3c
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4/.libs/${ANTLR3c_lib}
+    COMMENT "Building external library ${ANTLR3c_lib}"
+    )
+
+set(libantlr3c_includes
+    ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4
+    ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4/include
     )
 
 add_library(libantlr3c SHARED IMPORTED GLOBAL)
-set_property(TARGET libantlr3c PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/lib/${ANTLR3c_lib})
+set_property(TARGET libantlr3c PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4/.libs/${ANTLR3c_lib})
 add_dependencies(libantlr3c antlr3c)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/lib/${ANTLR3c_lib}
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4/.libs/${ANTLR3c_lib}
     DESTINATION ${LIB_DIR}/external
     COMPONENT Runtime
     )
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/runtime/C/COPYING
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libantlr3c-3.4/COPYING
     DESTINATION ${LIB_DIR}/external
     COMPONENT Runtime
     RENAME antlr3c-bsd-license.txt
