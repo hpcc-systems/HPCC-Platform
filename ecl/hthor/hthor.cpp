@@ -32,6 +32,8 @@
 #include "jfile.hpp"
 #include "keybuild.hpp"
 
+#include "rmtclient.hpp"
+
 #include "hrpc.hpp"
 #include "hrpcsock.hpp"
 

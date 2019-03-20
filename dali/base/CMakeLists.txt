@@ -56,15 +56,15 @@ set (    INCLUDES
     )   
 
 include_directories ( 
-         ./../../common/deftype 
-         ./../../common/remote 
-         ./../server 
-         ./../../system/mp 
-         ./../../system/include 
-         ./../../system/jlib 
-         ./../../rtl/include 
-         ./../../system/security/shared
-         ./../../system/security/cryptohelper
+         ${HPCC_SOURCE_DIR}/common/deftype 
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
+         ${HPCC_SOURCE_DIR}/dali/server 
+         ${HPCC_SOURCE_DIR}/system/mp 
+         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/jlib 
+         ${HPCC_SOURCE_DIR}/rtl/include 
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/system/security/cryptohelper
     )
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=3 -D_USRDLL -DDALI_EXPORTS )
@@ -75,11 +75,13 @@ if(NOT PLUGIN)
     install(
         TARGETS dalibase
         RUNTIME DESTINATION ${EXEC_DIR}
-        LIBRARY DESTINATION ${LIB_DIR})
+        LIBRARY DESTINATION ${LIB_DIR}
+    )
     target_link_libraries(
         dalibase 
         jlib
         mp 
         hrpc 
-        remote)
+        dafsclient
+    )
 endif()

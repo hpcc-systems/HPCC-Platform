@@ -24,7 +24,6 @@
 #include "jmisc.hpp"
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
-#include "sockfile.hpp"
 
 #include "daclient.hpp"
 #include "dadfs.hpp"
@@ -34,6 +33,7 @@
 #include "dautils.hpp"
 #include "dasess.hpp"
 #include "mplog.hpp"
+#include "rmtclient.hpp"
 
 #include "rtlformat.hpp"
 
@@ -2240,8 +2240,6 @@ void TestSDS1()
 
 void testDfuStreamRead(const char *fname)
 {
-    configureRemoteCreateFileDescriptorCB(queryFileDescriptorFactory());
-
     // reads a DFS file
     try
     {
@@ -2291,8 +2289,6 @@ void testDfuStreamRead(const char *fname)
 
 void testDfuStreamWrite(const char *fname)
 {
-    configureRemoteCreateFileDescriptorCB(queryFileDescriptorFactory());
-
     // reads a DFS file and writes it to <filename>_copy
     try
     {
@@ -2397,8 +2393,6 @@ void testDfuStreamWrite(const char *fname)
 
 void testDfuStreamCopy(const char *srcFileName)
 {
-    configureRemoteCreateFileDescriptorCB(queryFileDescriptorFactory());
-
     // reads a DFS file and writes it to <filename>_copy
     try
     {

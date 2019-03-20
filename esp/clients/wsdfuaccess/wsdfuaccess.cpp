@@ -29,8 +29,8 @@
 #include "dadfs.hpp"
 #include "dasess.hpp"
 #include "thorcommon.hpp"
-#include "sockfile.hpp"
 #include "digisign.hpp"
+#include "rmtclient.hpp"
 
 #include "eclwatch_errorlist.hpp" // only for ECLWATCH_FILE_NOT_EXIST
 #include "soapmessage.hpp"
@@ -639,8 +639,6 @@ protected:
     }
     void testDaFsStreaming(bool compressed, bool grouped)
     {
-        configureRemoteCreateFileDescriptorCB(queryFileDescriptorFactory());
-
         const char *thorInstance = "mythor";
         const char *groupName = thorInstance;
         const char *fname = ".::dfuaccess::testfname1";

@@ -29,7 +29,7 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../common/remote 
+         ./../../fs/dafsclient 
          ./../server 
          ./../base 
          ./../../system/mp 
@@ -49,7 +49,7 @@ install ( TARGETS daliadmin RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( daliadmin  
          jlib
          mp 
-         remote 
+         dafsclient 
          dalibase 
          workunit
          dllserver

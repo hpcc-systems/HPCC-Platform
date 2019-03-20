@@ -18,17 +18,18 @@
 #include "jlib.hpp"
 #include "jlzw.hpp"
 #include "jhtree.hpp"
+#include "rmtfile.hpp"
 #include "daclient.hpp"
 #include "commonext.hpp"
 #include "thorplugin.hpp"
 #include "thcodectx.hpp"
 #include "thmem.hpp"
 #include "thorport.hpp"
-#include "sockfile.hpp"
 #include "slwatchdog.hpp"
 #include "thgraphslave.hpp"
 #include "thcompressutil.hpp"
 #include "enginecontext.hpp"
+#include "rmtclient.hpp"
 
 //////////////////////////////////
 

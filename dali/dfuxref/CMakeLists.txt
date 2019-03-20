@@ -29,7 +29,7 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../common/remote 
+         ./../../fs/dafsclient
          ./../server 
          ./../../system/mp 
          . 
@@ -50,7 +50,7 @@ target_link_libraries ( dfuxref
          jlib
          mp 
          hrpc 
-         remote 
+         dafsclient
          dalibase 
          environment 
          dfuXRefLib 

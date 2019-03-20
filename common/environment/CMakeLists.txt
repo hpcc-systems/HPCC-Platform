@@ -38,6 +38,7 @@ include_directories (
          ./../../common/remote 
          ./../../system/mp 
          ./../../system/include 
+         ./../../fs/dafsclient
          ./../../dali/base 
          ./../../system/jlib
          ./../../system/security/shared

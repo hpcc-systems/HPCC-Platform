@@ -36,7 +36,6 @@
 #include "dautils.hpp"
 #include "danqs.hpp"
 #include "mputil.hpp"
-#include "rmtfile.hpp"
 #include "dadfs.hpp"
 #include "eclhelper.hpp"
 #include "seclib.hpp"

@@ -37,7 +37,8 @@
 #include "rtldynfield.hpp"
 #include "eclhelper_dyn.hpp"
 
-#include "sockfile.hpp"
+#include "rmtclient.hpp"
+
 #include "dafscommon.hpp"
 #include "dafsstream.hpp"
 
@@ -188,7 +189,7 @@ public:
                 ClusterPartDiskMapSpec mspec;
                 mspec.defaultCopies = replicated?DFD_DefaultCopies:DFD_NoCopies;
 
-                fileDesc.setown(queryRemoteCreateFileDescriptorCB()(nullptr));
+                fileDesc.setown(createFileDescriptor());
                 fileDesc->setDefaultDir(dir.str());
                 fileDesc->setNumParts(numParts);
                 fileDesc->setPartMask(partMask);
@@ -197,7 +198,7 @@ public:
             }
             case 2: // serialized compact IFileDescriptor
             {
-                fileDesc.setown(queryRemoteCreateFileDescriptorCB()(fileInfo));
+                fileDesc.setown(deserializeFileDescriptorTree(fileInfo));
                 break;
             }
         }

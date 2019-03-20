@@ -21,6 +21,11 @@
 #include "portlist.h"
 
 
+/* NB: error numbers/text are currently in remoteerr.hpp 
+ * Which mainly contains error codes used by dafilesrv and clients
+ * This is not really related, but for legacy reasons, the error code
+ * numbers remain the same, and remain within the same header file.
+ */
 #include "remoteerr.hpp"
 
 #include "rmtspawn.hpp"
