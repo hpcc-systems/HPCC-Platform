@@ -36,7 +36,7 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../common/remote 
+         ./../../fs/dafsclient
          ./../../system/mp 
          ./../base 
          ./../../system/include 
@@ -55,7 +55,7 @@ target_link_libraries ( dalift
          jlib
          mp 
          hrpc 
-         remote 
+         dafsclient
          dalibase 
          environment 
     )

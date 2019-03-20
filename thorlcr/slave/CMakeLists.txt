@@ -32,7 +32,7 @@ set (    SRCS
 
 include_directories ( 
          ./../thorutil 
-         ./../../common/remote 
+         ./../../fs/dafsclient 
          ./../../system/jhtree 
          ./../../system/mp 
          ./../../common/workunit 
@@ -66,7 +66,7 @@ HPCC_ADD_EXECUTABLE ( thorslave_lcr ${SRCS} )
 install ( TARGETS thorslave_lcr RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries (  thorslave_lcr 
          jlib
-         remote 
+         dafsclient 
          dalibase 
          environment 
          dllserver 

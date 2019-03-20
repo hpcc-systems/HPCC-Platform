@@ -31,7 +31,7 @@ set (    SRCS
 include_directories ( 
          ./../dfu 
          ./../base 
-         ./../../common/remote 
+         ./../../fs/dafsclient 
          ./../../system/mp 
          . 
          ./../../system/include 
@@ -47,7 +47,7 @@ target_link_libraries ( dfuwutest
          jlib
          mp 
          hrpc 
-         remote 
+         dafsclient 
          dalibase 
          dfuwu 
          environment 

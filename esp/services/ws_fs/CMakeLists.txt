@@ -57,7 +57,7 @@ include_directories (
          ./../../bindings 
          ./../../smc/SMCLib 
          ./../../bindings/SOAP/xpp 
-         ./../../../common/remote 
+         ./../../../fs/dafsclient 
          ./../../../common/workunit
     )
 

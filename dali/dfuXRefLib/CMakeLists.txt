@@ -35,7 +35,7 @@ set (    SRCS
 
 include_directories ( 
          ./../../esp/bindings/SOAP/xpp 
-         ./../../common/remote 
+         ./../../fs/dafsclient
          ./../server 
          ./../../system/mp 
          . 
@@ -56,7 +56,7 @@ target_link_libraries ( dfuXRefLib
          jlib
          mp 
          hrpc 
-         remote 
+         dafsclient 
          dalibase 
          environment 
     )

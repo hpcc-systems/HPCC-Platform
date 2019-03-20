@@ -44,7 +44,7 @@ include_directories (
          ./../../rtl/include 
          ./../../rtl/eclrtl 
          ./../../system/jlib 
-         ./../../common/remote
+         ./../../fs/dafsclient
          ./../../system/security/shared
          ./../../system/security/zcrypt
     )
@@ -63,7 +63,7 @@ target_link_libraries ( eclcc
          nbcd 
          eclrtl 
          deftype 
-         remote 
+         dafsclient 
          dalibase 
          workunit 
          thorhelper 

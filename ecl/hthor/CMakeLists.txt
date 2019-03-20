@@ -65,6 +65,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/ecl/schedulectrl
          ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
          ${HPCC_SOURCE_DIR}/dali/ft
@@ -79,7 +80,7 @@ target_link_libraries ( hthor
          jlib
          mp
          hrpc
-         remote
+         dafsclient
          dalibase
          environment
          dllserver

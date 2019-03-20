@@ -14,7 +14,6 @@
 #    limitations under the License.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (base)
-HPCC_ADD_SUBDIRECTORY (dafilesrv  "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (dalidiag "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (dalistop "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (datest "PLATFORM")
