@@ -915,6 +915,18 @@ margin-left:-20px;
     height: 16px;
 }
 
+.iconCopy {
+    background-image: url("../img/copy.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconCopyDisabled {
+    background-image: url("../img/copy_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
 .iconAutoRefresh {
     background-image: url("../img/autoRefresh.png");
     width: 16px;

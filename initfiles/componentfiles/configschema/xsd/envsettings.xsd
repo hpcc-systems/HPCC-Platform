@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/EnvSettings">
+        <xs:element name="additionalPlugins" hpcc:displayName="Additional Plugins" type="xs:string" hpcc:forcedConfigValue="python2" hpcc:class="setting"/>
+        <xs:element name="allow_pgcache_flush" hpcc:displayName="Allow PG Cache Flush" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
+        <xs:element name="blockname" hpcc:displayName="HPCC" type="xs:boolean" hpcc:forcedConfigValue="HPCCSystems" hpcc:class="setting"/>
+        <xs:element name="classpath" hpcc:displayName="Class Path" type="absolutePath" hpcc:forcedConfigValue="${INSTALL_DIR}/classes" hpcc:class="setting"/>
+        <xs:element name="configs" hpcc:displayName="Configs" type="absolutePath" hpcc:forcedConfigValue="${CONFIG_DIR}" hpcc:class="setting"/>
+        <xs:element name="environment" hpcc:displayName="Environment File" type="xs:string" hpcc:forcedConfigValue="${ENV_XML_FILE}" hpcc:class="setting"/>
+        <xs:element name="group" hpcc:displayName="Group" type="xs:string" hpcc:forcedConfigValue="${RUNTIME_USER}" hpcc:class="setting"/>
+        <xs:element name="home" hpcc:displayName="Home" type="xs:string" hpcc:forcedConfigValue="${HOME_DIR}" hpcc:class="setting"/>
+        <xs:element name="interface" hpcc:displayName="Interface" type="xs:string" hpcc:forcedConfigValue="*" hpcc:class="setting"/>
+        <xs:element name="jvmoptions" hpcc:displayName="JVM Options" type="xs:string" hpcc:forcedConfigValue="XX:-UsePerfData" hpcc:class="setting"/>
+        <xs:element name="lock" hpcc:displayName="Lock" type="xs:string" hpcc:forcedConfigValue="${LOCK_PATH}" hpcc:class="setting"/>
+        <xs:element name="log" hpcc:displayName="Log" type="xs:string" hpcc:forcedConfigValue="${LOG_PATH}" hpcc:class="setting"/>
+        <xs:element name="logfields" hpcc:displayName="Log Fields" type="xs:string" hpcc:forcedConfigValue="TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX" hpcc:class="setting"/>
+        <xs:element name="mpStart" hpcc:displayName="MP Start" type="xs:unsignedInt" hpcc:forcedConfigValue="7101" hpcc:class="setting"/>
+        <xs:element name="mpEnd" hpcc:displayName="MP End" type="xs:unsignedInt" hpcc:forcedConfigValue="7500" hpcc:class="setting"/>
+        <xs:element name="mpSoMaxConn" hpcc:displayName="MP Do Max Connections" type="xs:unsignedInt" hpcc:forcedConfigValue="128" hpcc:class="setting"/>
+        <xs:element name="mpTraceLevel" hpcc:displayName="MP Trace Level" type="xs:unsignedInt" hpcc:forcedConfigValue="0" hpcc:class="setting"/>
+        <xs:element name="path" hpcc:displayName="Path" type="absolutePath" hpcc:forcedConfigValue="${INSTALL_DIR}" hpcc:class="setting"/>
+        <xs:element name="pid" hpcc:displayName="PID Path" type="absolutePath" hpcc:forcedConfigValue="${PID_PATH}" hpcc:class="setting"/>
+        <xs:element name="runtime" hpcc:displayName="Runtime Path" type="absolutePath" hpcc:forcedConfigValue="${RUNTIME_PATH}" hpcc:class="setting"/>
+        <xs:element name="skipPythonCleanup" hpcc:displayName="Skip Python Cleanup" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
+        <xs:element name="sourcedir" hpcc:displayName="Source Path" type="absolutePath" hpcc:forcedConfigValue="${CONFIG_SOURCE_PATH}" hpcc:class="setting"/>
+        <xs:element name="udp_stats" hpcc:displayName="UDP Stats" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
+        <xs:element name="use_epoll" hpcc:displayName="Use EPoll" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
+        <xs:element name="useDropZoneRestriction" hpcc:displayName="Use Drop Zone Restriction" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
+        <xs:element name="user" hpcc:displayName="User" type="xs:string" hpcc:forcedConfigValue="${RUNTIME_USER}" hpcc:class="setting"/>
+        <xs:element name="Keys" hpcc:displayName="Keys" type="xs:string" minOccurs="0" hpcc:class="component">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="KeyPair" hpcc:displayName="Key Pair" hpcc:itemType="keypair" hpcc:class="valueSet">
+                        <xs:complexType>
+                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Key Name" use="required" hpcc:uniqueKey="keypair_name" hpcc:tooltip=""/>
+                            <xs:attribute name="publicKey" type="absolutePath" hpcc:displayName="Public Key Filepath" use="required" hpcc:tooltip=""/>
+                            <xs:attribute name="privateKey" type="absolutePath" hpcc:displayName="Private Key Filepath" use="required" hpcc:tooltip=""/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="ClusterGroup" hpcc:displayName="Cluster Group" hpcc:itemType="keypair_clustergroup" hpcc:class="valueSet">
+                        <xs:complexType>
+                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Cluster Group Name" use="required" hpcc:sourceKey="topology_name" hpcc:tooltip=""/>
+                            <xs:attribute name="keyPairName" type="xs:string" hpcc:displayName="Key Pair name" use="required" hpcc:sourceKey="keypair_name" hpcc:tooltip=""/>
+                        </xs:complexType>
+                    </xs:element>
+                </xs:sequence>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>
