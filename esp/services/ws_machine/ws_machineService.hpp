@@ -721,7 +721,7 @@ public:
     }
 };
 
-const unsigned MACHINE_USAGE_CACHE_SIZE = 8;
+const unsigned MACHINE_USAGE_MAX_CACHE_SIZE = 8;
 const unsigned MACHINE_USAGE_CACHE_SECONDS = 10;
 
 struct MachineUsageCacheElement: public CInterface, implements IInterface
@@ -784,7 +784,7 @@ struct CompareMachines
 struct MachineUsageCache: public CInterface, implements IInterface
 {
     IMPLEMENT_IINTERFACE;
-    MachineUsageCache(size32_t _cacheSize=0) : cacheSize(_cacheSize){}
+    MachineUsageCache(size32_t _maxCacheSize=0) : maxCacheSize(_maxCacheSize){}
 
     MachineUsageCacheElement* lookup(IEspContext &context, const char* id, unsigned timeOutSeconds)
     {
@@ -843,16 +843,16 @@ struct MachineUsageCache: public CInterface, implements IInterface
 
     std::list<Linked<MachineUsageCacheElement> > cache;
     CriticalSection crit;
-    size32_t cacheSize;
+    size32_t maxCacheSize;
 
 private:
     void addUsageCacheElement(MachineUsageCacheElement* _e)
     {
         Owned<MachineUsageCacheElement> e = _e;
-        if (cacheSize == 0)
+        if (maxCacheSize == 0)
             return;
 
-        if (cache.size() >= cacheSize)
+        if (cache.size() >= maxCacheSize)
             cache.pop_front();
 
         cache.push_back(e.get());

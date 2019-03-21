@@ -157,7 +157,7 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
         pEnvSettings->getProp("user", environmentConfData.m_user.clear());
     }
 
-    machineUsageCache.setown(new MachineUsageCache(MACHINE_USAGE_CACHE_SIZE));
+    machineUsageCache.setown(new MachineUsageCache(MACHINE_USAGE_MAX_CACHE_SIZE));
     machineUsageCacheSeconds = pServiceNode->getPropInt("MachineUsageCacheSeconds", MACHINE_USAGE_CACHE_SECONDS);
 
     m_threadPoolSize = pServiceNode->getPropInt("ThreadPoolSize", THREAD_POOL_SIZE);
