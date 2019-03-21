@@ -1699,6 +1699,9 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
             m_defaultSvcVersion.set(verstr);
     }
 
+    if(m_defaultSvcVersion.length() > 0)
+        setWsdlVersion(atof(m_defaultSvcVersion.str()));
+
     m_staticNamespace.set(srvdef.queryStaticNamespace());
 
     //superclass binding sets up wsdladdress
