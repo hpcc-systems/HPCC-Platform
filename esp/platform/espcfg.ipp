@@ -156,8 +156,8 @@ private:
     HINSTANCE hsami_;
     CSDSServerStatus *serverstatus;
     bool useDali;
-    bool m_detachedFromDali;
-    bool m_subscribedToDali;
+    bool m_detachedFromDali = false;
+    bool m_subscribedToDali = false;
     StringBuffer m_daliAttachStateFileName;
 
 private:
