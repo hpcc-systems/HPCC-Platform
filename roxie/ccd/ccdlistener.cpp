@@ -1393,6 +1393,13 @@ public:
             throw MakeStringException(ROXIE_NO_PACKAGES_ACTIVE, "Unknown query %s (no packages active)", queryName.get());
         }
         queryFactory->checkSuspended();
+        IConstWorkUnit *workunit = queryFactory->queryWorkUnit();
+        if (workunit && workunit->getDebugValueBool("generateGlobalId", false) && isEmptyString(logctx->queryGlobalId()))
+        {
+            StringBuffer gen_id;
+            appendGloballyUniqueId(gen_id);
+            setTransactionId(gen_id.str(), nullptr, true);
+        }
     }
     virtual void noteQueryActive()
     {

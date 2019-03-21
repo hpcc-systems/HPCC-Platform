@@ -92,6 +92,7 @@ set (    SRCS
          jtime.cpp 
          junicode.cpp 
          jutil.cpp 
+         ${HPCC_SOURCE_DIR}/system/globalid/lnuid.cpp
          sourcedoc.xml
     )
 
@@ -188,7 +189,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/system/lzma
          ${HPCC_SOURCE_DIR}/system/lz4_sm/lz4/lib
-         ${HPCC_SOURCE_DIR}/system/libbase58
+         ${HPCC_SOURCE_DIR}/system/globalid
          ${HPCC_SOURCE_DIR}/system/security/cryptohelper
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
          ${CMAKE_BINARY_DIR}

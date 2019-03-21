@@ -20,6 +20,8 @@
 
 //version targetIP='127.0.0.1',goodPort='9876',blacListedPort='9875'
 
+#option('generateGlobalId', true);
+
 string targetIP := '.' : stored('targetIP');
 string goodPort := '9876' : stored('goodPort');
 string blacListedPort := '9875' : stored('blacListedPort');

@@ -1899,9 +1899,8 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
             workunit->setDebugValue("GlobalId", globalId.str(), true);
             workunit->setDebugValue("GlobalIdHeader", globalIdHeader.str(), true);  //use same header received
 
-            SocketEndpoint ep;
             StringBuffer localId;
-            appendLocalId(localId, httpreq->getSocket()->getEndpoint(ep), 0);
+            appendGloballyUniqueId(localId);
             workunit->setDebugValue("CallerId", localId.str(), true); //our localId becomes caller id for the next hop
             workunit->setDebugValue("CallerIdHeader", callerIdHeader.str(), true); //use same header received
             DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s, Wuid: %s", globalId.str(), callerId.str(), localId.str(), wuid.str());
@@ -1998,9 +1997,8 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
                 headers.setown(createProperties());
                 headers->setProp(globalIdHeader, globalId);
 
-                SocketEndpoint ep;
                 StringBuffer localId;
-                appendLocalId(localId, httpreq->getSocket()->getEndpoint(ep), 0);
+                appendGloballyUniqueId(localId);
                 if (localId.length())
                     headers->setProp(callerIdHeader, localId);
                 DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s", globalId.str(), callerId.str(), localId.str());
