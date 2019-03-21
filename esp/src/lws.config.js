@@ -1,8 +1,6 @@
 const CLUSTER_MV = "192.168.99.103";
 const CLUSTER_GJS = "192.168.3.22";
-const CLUSTER_160 = "10.173.160.101";
 const debugServerIP = CLUSTER_MV ;
-const debugHPCC_JS = false; //  Should never be TRUE in a PR  ---
 
 let rewrite = [
     { from: "/esp/files/Login.html", to: "http://" + debugServerIP + ":8010/esp/files/Login.html" },
@@ -18,6 +16,7 @@ let rewrite = [
     { from: "/esp/files/esp/logout", to: "http://" + debugServerIP + ":8010/esp/logout" },
     { from: "/ws_elk/*", to: "http://" + debugServerIP + ":8010/ws_elk/$1" },
     { from: "/esp/files/esp/reset_session_timeout", to: "http://" + debugServerIP + ":8010/esp/reset_session_timeout" },
+    { from: "/esp/files/node_modules/@hpcc-js/*/dist/index.min.js", to: "/node_modules/@hpcc-js/$1/dist/index.js" },
     { from: "/esp/files/dist/*", to: "/build/dist/$1" },
     { from: "/esp/files/*", to: "/$1" },
     { from: "/ws_elk/*", to: "http://" + debugServerIP + ":8010/ws_elk/$1" },
@@ -36,12 +35,6 @@ let rewrite = [
     { from: "/WsPackageProcess/*", to: "http://" + debugServerIP + ":8010/WsPackageProcess/$1" },
     { from: "/*", to: "/$1" }
 ];
-
-if (debugHPCC_JS) {
-    rewrite = [
-        { from: "/esp/files/node_modules/@hpcc-js/*/dist/index.min.js", to: "/node_modules/@hpcc-js/$1/dist/index.js" }
-    ].concat(rewrite);
-}
 
 module.exports = {
     port: 8080,
