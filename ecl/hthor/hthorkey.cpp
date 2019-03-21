@@ -28,6 +28,7 @@
 #include "rtldynfield.hpp"
 
 #define MAX_FETCH_LOOKAHEAD 1000
+#define MAX_FILE_READ_FAIL_COUNT 3
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
@@ -36,10 +37,11 @@ using roxiemem::OwnedRoxieString;
 
 static IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
 {
+    unsigned failcount = 0;
     unsigned numCopies = keyFile.numCopies();
     assertex(numCopies);
     Owned<IException> exc;
-    for (unsigned copy=0; copy < numCopies; copy++)
+    for (unsigned copy=0; copy < numCopies && failcount < MAX_FILE_READ_FAIL_COUNT; copy++)
     {
         RemoteFilename rfn;
         try
@@ -62,6 +64,7 @@ static IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
                 E->Release();
             else
                 exc.setown(E);
+            failcount++;
         }
     }
     if (exc)
