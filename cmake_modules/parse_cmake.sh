@@ -95,7 +95,7 @@ function parse_cmake()
     extract $VERSIONFILE HPCC_MATURITY
     extract $VERSIONFILE HPCC_SEQUENCE
 
-    if [ -z $HPCC_NAME ] ; then
+    if [ -z "$HPCC_NAME" ] ; then
       if [ "$HPCC_PROJECT" == "community" ] ; then
         HPCC_NAME="Community Edition"
       else
