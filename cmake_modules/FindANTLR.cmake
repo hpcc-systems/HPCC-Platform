@@ -23,33 +23,19 @@
 
 include(UseJava)
 
-set(ANTLR_BUILDTIME_DEP_URL "https://github.com/antlr/website-antlr3/raw/gh-pages/download/antlr-3.4-complete.jar" CACHE STRING "Antlr3 Buildtime dependency url")
-set(ANTLR_RUNTIME_DEP_URL   "https://github.com/antlr/website-antlr3/raw/gh-pages/download/antlr-runtime-3.4.jar" CACHE STRING "Antlr3 Buildtime dependency url")
 set(ANTLR_BUILDTIME_DEP "antlr-3.4-complete" CACHE STRING "ANTLR buildtime jar file name.")
 set(ANTLR_RUNTIME_DEP "antlr-runtime-3.4" CACHE STRING "ANTLR runtime jar file name.")
-set(ANTLR_PATH "/usr/local/ANTLR/3.4" CACHE PATH "Location of ANTLR runtime and buildtime jar files.")
+set(ANTLR_PATH "${HPCC_SOURCE_DIR}/esp/services/ws_sql/website-antlr3/download" CACHE PATH "Location of ANTLR jar files.")
+set(ANTLR_PKG_FIND_ERROR_MSG "Could not locate jars.\nPlease run `git submodules update --init --recursive`\n")
+
 
 find_jar(ANTLR_BUILDTIME_JAR ${ANTLR_BUILDTIME_DEP} PATHS ${ANTLR_PATH})
-if(ANTLR_BUILDTIME_JAR STREQUAL "ANTLR_BUILDTIME_JAR-NOTFOUND")
-    file(DOWNLOAD ${ANTLR_BUILDTIME_DEP_URL}
-        ${CMAKE_BINARY_DIR}/downloads/antlr-3.4-complete.jar
-        TIMEOUT 20
-        INACTIVITY_TIMEOUT 5)
-    find_jar(ANTLR_BUILDTIME_JAR antlr-3.4-complete PATHS ${CMAKE_BINARY_DIR}/downloads)
-endif()
-
 find_jar(ANTLR_RUNTIME_JAR ${ANTLR_RUNTIME_DEP} PATHS ${ANTLR_PATH})
-if(ANTLR_RUNTIME_JAR STREQUAL "ANTLR_RUNTIME_JAR-NOTFOUND")
-    file(DOWNLOAD ${ANTLR_RUNTIME_DEP_URL}
-        ${CMAKE_BINARY_DIR}/downloads/antlr-runtime-3.4.jar
-        TIMEOUT 20
-        INACTIVITY_TIMEOUT 5)
-    find_jar(ANTLR_RUNTIME_JAR antlr-runtime-3.4 PATHS ${CMAKE_BINARY_DIR}/downloads)
-endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
-    ANTLR DEFAULT_MSG
+    ANTLR
+    ${ANTLR_PKG_FIND_ERROR_MSG}
     ANTLR_BUILDTIME_JAR
     ANTLR_RUNTIME_JAR
     )
