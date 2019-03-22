@@ -8065,17 +8065,17 @@ void CHThorDiskReadBaseActivity::ready()
     IDistributedFile *dFile = nullptr;
     if (ldFile)
         dFile = ldFile->queryDistributedFile();  // Null for local file usage
+
+    Linked<IOutputMetaData> publishedMeta = actualDiskMeta;
+    unsigned publishedCrc = actualCrc;
     if (dFile)
     {
         IPropertyTree &props = dFile->queryAttributes();
-        Owned<IOutputMetaData> publishedMeta = getDaliLayoutInfo(props);
+        publishedMeta.setown(getDaliLayoutInfo(props));
         if (publishedMeta)
-        {
-            actualDiskMeta.setown(publishedMeta.getClear());
-            actualCrc = props.getPropInt("@formatCrc");
-        }
+            publishedCrc = props.getPropInt("@formatCrc");
     }
-    translators.setown(::getTranslators("hthor-diskread", expectedCrc, expectedDiskMeta, actualCrc, actualDiskMeta, projectedCrc, projectedDiskMeta, getLayoutTranslationMode()));
+    translators.setown(::getTranslators("hthor-diskread", expectedCrc, expectedDiskMeta, publishedCrc, publishedMeta, projectedCrc, projectedDiskMeta, getLayoutTranslationMode()));
     if (translators)
     {
         translator = &translators->queryTranslator();
@@ -8357,7 +8357,9 @@ bool CHThorDiskReadBaseActivity::openNext()
                             }
                             catch (IException *e)
                             {
+#ifdef _DEBUG
                                 EXCLOG(e, nullptr);
+#endif
                                 e->Release();
                                 continue; // try next copy and ultimately failover to local when no more copies
                             }
