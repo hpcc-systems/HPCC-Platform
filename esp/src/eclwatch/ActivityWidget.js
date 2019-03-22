@@ -21,6 +21,7 @@ define([
     "src/ESPUtil",
     "src/Utility",
     "src/DiskUsage",
+    "src/Clippy",
 
     "dojo/text!../templates/ActivityPageWidget.html",
 
@@ -34,7 +35,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, domAttr,
     registry, Button, ToggleButton, ToolbarSeparator, Tooltip,
     selector, tree,
-    GridDetailsWidget, ESPActivity, DelayLoadWidget, ESPUtil, Utility, DiskUsage,
+    GridDetailsWidget, ESPActivity, DelayLoadWidget, ESPUtil, Utility, DiskUsage, Clippy,
     template
 ) {
         var DelayedRefresh = declare("DelayedRefresh", [], {
@@ -282,6 +283,9 @@ define([
                 ESPUtil.MonitorVisibility(this.gridTab, function (visibility) {
                     if (visibility) {
                         context.refreshGrid();
+                        if (!context._diskUsage.renderCount()) {
+                            context._diskUsage.lazyRender();
+                        }
                     }
                 });
                 this.createStackControllerTooltip(this.id + "AutoRefresh", this.i18n.AutoRefresh + ": " + this.autoRefreshButton.get("checked"));
@@ -404,6 +408,21 @@ define([
                         context._onWUPause(event);
                     }
                 }).placeAt(this.openButton.domNode, "after");
+                this.wuCopyButton = new Button({
+                    id: this.id + "WUCopyButton",
+                    showLabel: false,
+                    iconClass: 'iconCopy',
+                    title: this.i18n.CopyWUIDs
+                }).placeAt(this.openButton.domNode, "before");
+                Clippy.attachDomNode(this.wuCopyButton.domNode, function () {
+                    var wuids = [];
+                    arrayUtil.forEach(context.grid.getSelected(), function (item, idx) {
+                        if (context.activity.isInstanceOfWorkunit(item)) {
+                            wuids.push(item.Wuid);
+                        }
+                    });
+                    return wuids.join("\n");
+                });
 
                 this.activity = ESPActivity.Get();
                 var retVal = new declare([ESPUtil.Grid(false, true)])({
@@ -644,6 +663,8 @@ define([
                     }
                 });
 
+                this.wuCopyButton.set("disabled", !wuSelected)
+                this.wuCopyButton.set("iconClass", !wuSelected ? "iconCopyDisabled" : "iconCopy")
                 this.clusterPauseButton.set("disabled", !clusterNotPausedSelected);
                 this.clusterResumeButton.set("disabled", !clusterPausedSelected);
                 this.clusterClearButton.set("disabled", !clusterHasItems);

@@ -78,6 +78,7 @@ static const char XMLHEADER[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 #define ABORT_CHECK_INTERVAL 30     // seconds
 #define ABORT_DEADMAN_INTERVAL (60*5)  // seconds
+#define MAX_FILE_READ_FAIL_COUNT 3
 
 typedef IEclProcess* (* EclProcessFactory)();
 
@@ -2973,11 +2974,12 @@ char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
     if (!dFile)
         return NULL;
 
+    unsigned failcount = 0;
     Owned<IDistributedFilePart> part = dFile->getPart(dFile->numParts()-1);
     unsigned numCopies = part->numCopies();
     Owned<IException> exc;
     Owned<IKeyIndex> key;
-    for(unsigned copy=0; copy<numCopies; ++copy)
+    for(unsigned copy=0; copy<numCopies && failcount < MAX_FILE_READ_FAIL_COUNT; ++copy)
     {
         RemoteFilename rfn;
         try
@@ -3001,6 +3003,7 @@ char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
                 e->Release();
             else
                 exc.setown(e);
+            failcount++;
         }
     }
 

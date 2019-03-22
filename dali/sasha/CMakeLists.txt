@@ -51,7 +51,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/mp 
          ${HPCC_SOURCE_DIR}/system/include 
          ${HPCC_SOURCE_DIR}/system/jlib 
-         ${HPCC_SOURCE_DIR}/common/remote 
+         ${HPCC_SOURCE_DIR}/fs/dafsclient 
          ${HPCC_SOURCE_DIR}/plugins/workunitservices 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
@@ -78,7 +78,7 @@ endif ( ${HAVE_LIBCRYPT} )
 
 target_link_libraries ( saserver 
          jlib 
-         remote 
+         dafsclient 
          dalibase 
          environment 
          dllserver 
@@ -98,7 +98,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/mp 
          ${HPCC_SOURCE_DIR}/system/include 
          ${HPCC_SOURCE_DIR}/system/jlib 
-         ${HPCC_SOURCE_DIR}/common/remote 
+         ${HPCC_SOURCE_DIR}/fs/dafsclient 
     )
 
 ADD_DEFINITIONS ( -D_CONSOLE )

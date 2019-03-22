@@ -1002,7 +1002,7 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual const char *queryCallerId() const = 0;
 };
 
-extern jlib_decl StringBuffer &appendLocalId(StringBuffer &s, const SocketEndpoint &ep, unsigned pid);
+extern jlib_decl StringBuffer &appendGloballyUniqueId(StringBuffer &s);
 
 extern jlib_decl const IContextLogger &queryDummyContextLogger();
 extern jlib_decl IContextLogger &updateDummyContextLogger();

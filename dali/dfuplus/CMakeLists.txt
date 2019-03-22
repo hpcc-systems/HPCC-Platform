@@ -47,7 +47,8 @@ include_directories (
          ./../../system/jlib
          ./../../esp/bindings
          ./../../common/workunit
-         ./../../common/remote
+         ./../../fs/dafsclient
+         ./../../fs/dafsserver
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
@@ -61,7 +62,8 @@ add_dependencies ( dfuplus espscm )
 install ( TARGETS dfuplus RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( dfuplus
          jlib
-         remote
+         dafsclient
+         dafsserver
          xmllib
          esphttp
     )

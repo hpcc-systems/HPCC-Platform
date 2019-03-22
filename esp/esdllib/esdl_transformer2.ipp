@@ -135,11 +135,11 @@ protected:
     StringAttr param_group;
 
     Esdl2Base* data_for; // only support one for now.
-    bool m_hasDataFrom;
+    bool m_hasDataFrom = false;
 
     bool might_skip_root;
-    bool count_output;
-    bool count_value;
+    bool count_output = false;
+    bool count_value = false;
 
 public:
     Esdl2Base(Esdl2Transformer *xformer, IEsdlDefObject* def, EsdlBasicElementType t=ESDLT_UNKOWN, bool might_skip_root_=false);

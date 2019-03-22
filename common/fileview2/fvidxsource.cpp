@@ -27,12 +27,15 @@
 #include "rtlrecord.hpp"
 #include "rtldynfield.hpp"
 
+#define MAX_FILE_READ_FAIL_COUNT 3
+
 //cloned from hthor - a candidate for commoning up.
 static IKeyIndex *openKeyFile(IDistributedFilePart *keyFile)
 {
+    unsigned failcount = 0;
     unsigned numCopies = keyFile->numCopies();
     assertex(numCopies);
-    for (unsigned copy=0; copy < numCopies; copy++)
+    for (unsigned copy=0; copy < numCopies && failcount < MAX_FILE_READ_FAIL_COUNT; copy++)
     {
         RemoteFilename rfn;
         try
@@ -52,6 +55,7 @@ static IKeyIndex *openKeyFile(IDistributedFilePart *keyFile)
         {
             EXCLOG(E, "While opening index file");
             E->Release();
+            failcount++;
         }
     }
     RemoteFilename rfn;

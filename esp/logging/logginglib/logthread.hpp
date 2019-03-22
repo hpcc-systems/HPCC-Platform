@@ -59,6 +59,7 @@ class CLogThread : public Thread , implements IUpdateLogThread
     bool enqueue(IEspUpdateLogRequestWrap* logRequest);
     void writeJobQueue(IEspUpdateLogRequestWrap* jobToWrite);
     IEspUpdateLogRequestWrap* readJobQueue();
+    IEspUpdateLogRequestWrap* checkAndReadLogRequestFromSharedTankFile(IEspUpdateLogRequestWrap* logRequest);
 
 public:
     IMPLEMENT_IINTERFACE;

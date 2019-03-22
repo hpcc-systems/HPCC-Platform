@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
@@ -13,10 +15,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+-->
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>fs</title>
 
-
-
-include (dafilesrv.cmake)
-if ( PLATFORM )
-    include (dafscontrol.cmake)
-endif()
+    <para>
+        The fs directory contains the subdirectories for dafilsrv related components and libraries
+    </para>
+</section>

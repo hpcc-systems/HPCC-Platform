@@ -32,7 +32,7 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../common/remote 
+         ./../../fs/dafsclient 
          ./../../system/mp 
          ./../base 
          ./../../system/include 
@@ -60,7 +60,7 @@ target_link_libraries ( daserver
          jlib
          mp 
          hrpc 
-         remote 
+         dafsclient 
          dalibase 
     )
 IF (USE_OPENLDAP)

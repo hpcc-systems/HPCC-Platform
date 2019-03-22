@@ -61,12 +61,12 @@ export class Summary extends FlexGrid {
                 ;
         }
         if (!hasGauge) {
-            this._loadingMsg
+            this._loadingMsg && this._loadingMsg
                 .text(nlsHPCC.loadingMessage)
                 ;
         }
         this._connection.GetTargetClusterUsageEx().then(response => {
-            this._loadingMsg
+            this._loadingMsg && this._loadingMsg
                 .html(`<i class="fa fa-database"></i>`)
                 ;
             response.forEach(details => {

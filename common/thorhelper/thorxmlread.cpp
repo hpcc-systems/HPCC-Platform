@@ -112,6 +112,11 @@ __int64 XmlDatasetColumnProvider::getInt(const char * name)
     return row->getPropInt64(name, 0);
 }
 
+__uint64 XmlDatasetColumnProvider::getUInt(const char * name)
+{
+    return readUInt(name, 0);
+}
+
 void XmlDatasetColumnProvider::getData(size32_t len, void * target, const char * name)
 {
     const char *hexPairSequence = row->queryProp(name);
@@ -263,6 +268,15 @@ __int64 XmlDatasetColumnProvider::readInt(const char * path, __int64 _default)
     return row->getPropInt64(path, _default);
 }
 
+__uint64 XmlDatasetColumnProvider::readUInt(const char * path, __uint64 _default)
+{
+    const char *val = row->queryProp(path);
+    if (val && *val)
+        return strtoull(val, nullptr, 10);
+    else
+        return _default;
+}
+
 void XmlDatasetColumnProvider::readQString(size32_t len, char * target, const char * path, size32_t _lenDefault, const char * _default)
 {
     const char * value = row->queryProp(path);
@@ -331,6 +345,14 @@ __int64 XmlSetColumnProvider::getInt(const char * name)
     assertex(stricmp(name, "value")==0);
 #endif
     return row->getPropInt64(NULL, 0);
+}
+
+__uint64 XmlSetColumnProvider::getUInt(const char * name)
+{
+#ifdef _DEBUG
+    assertex(stricmp(name, "value")==0);
+#endif
+    return readUInt(name, 0);
 }
 
 void XmlSetColumnProvider::getData(size32_t len, void * target, const char * name)
@@ -506,6 +528,15 @@ void XmlSetColumnProvider::readDataRawX(size32_t & len, void * & target, const c
 __int64 XmlSetColumnProvider::readInt(const char * path, __int64 _default)
 {
     return row->getPropInt64(NULL, _default);
+}
+
+__uint64 XmlSetColumnProvider::readUInt(const char * path, __uint64 _default)
+{
+    const char *val = row->queryProp(path);
+    if (val && *val)
+        return strtoull(val, nullptr, 10);
+    else
+        return _default;
 }
 
 void XmlSetColumnProvider::readQString(size32_t len, char * target, const char * path, size32_t _lenDefault, const char * _default)
@@ -1311,6 +1342,10 @@ public:
     {
         return readInt(path, 0);
     }
+    __uint64 getUInt(const char * path)
+    {
+        return readUInt(path, 0);
+    }
     void getQString(size32_t len, char * text, const char * path)
     {
         readQString(len, text, path, 0, NULL);
@@ -1459,6 +1494,17 @@ public:
         const char *str = queryProp(path);
         if (!str) return _default;
         return _atoi64(str);
+    }
+    virtual __uint64 readUInt(const char * path, __uint64 _default)
+    {
+        size32_t offset = 0;
+        size32_t length = 0;
+        if (contentRequest(path, offset, length))
+            throw MakeStringException(0, "Attempting to extract xml content text as integer");
+
+        const char *str = queryProp(path);
+        if (!str) return _default;
+        return strtoull(str, nullptr, 10);
     }
     virtual void readQString(size32_t len, char * text, const char * path, size32_t _lenDefault, const char * _default)
     {

@@ -16,7 +16,7 @@
 #include "sautil.hpp"
 #include "dautils.hpp"
 #include "rmtfile.hpp"
-#include "sockfile.hpp"
+#include "rmtclient.hpp"
 
 //#define TESTING
 

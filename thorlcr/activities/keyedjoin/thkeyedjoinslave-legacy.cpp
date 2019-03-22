@@ -31,8 +31,6 @@
 
 #include "jhtree.hpp"
 
-#include "sockfile.hpp"
-
 #include "thorxmlwrite.hpp"
 
 #include "thorport.hpp"

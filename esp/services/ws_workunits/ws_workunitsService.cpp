@@ -153,7 +153,9 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
 
                     StringBuffer s;
                     if (!cmd->send(node, 1*60*1000))
-                        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to Archive server at %s.", ep.getUrlStr(s).str());
+                        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
+                            "Sasha (%s) took too long to respond from: Restore workunit %s.",
+                            ep.getUrlStr(s).str(), wuid);
 
                     if (cmd->numIds()==0)
                         throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Could not Archive/restore %s",wuid);
@@ -1459,8 +1461,9 @@ bool getWsWuInfoFromSasha(IEspContext &context, SocketEndpoint &ep, const char* 
     if (!cmd->send(node, 1*60*1000))
     {
         StringBuffer url;
-        DBGLOG("Could not connect to Sasha server at %s", ep.getUrlStr(url).str());
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to archive server at %s.", url.str());
+        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
+            "Sasha (%s) took too long to respond from: Get information for %s.",
+            ep.getUrlStr(url).str(), wuid);
     }
 
     if (cmd->numIds()==0)
@@ -2416,9 +2419,10 @@ public:
             setSashaCommandLW(reqLW, cmd);
         if (!cmd->send(sashaserver))
         {
-            StringBuffer msg("Cannot connect to archive server at ");
-            sashaserver->endpoint().getUrlStr(msg);
-            throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
+            StringBuffer url;
+            throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
+                "Sasha (%s) took too long to respond from: Get archived workUnits.",
+                ep.getUrlStr(url).str());
         }
 
         numberOfWUsReturned = cmd->numIds();
@@ -3103,7 +3107,9 @@ IPropertyTree *getArchivedWorkUnitProperties(const char *wuid, bool dfuWU)
     if (dfuWU)
         cmd->setDFU(true);
     if (!cmd->send(node, 1*60*1000))
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to Archive server at %s.", ep.getUrlStr(tmp).str());
+        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
+            "Sasha (%s) took too long to respond from: Get workUnit properties for %s.",
+            ep.getUrlStr(tmp).str(), wuid);
 
     if ((cmd->numIds() < 1) || (cmd->numResults() < 1))
         return nullptr;

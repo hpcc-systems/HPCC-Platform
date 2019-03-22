@@ -32,6 +32,8 @@
 #include "jfile.hpp"
 #include "keybuild.hpp"
 
+#include "rmtclient.hpp"
+
 #include "hrpc.hpp"
 #include "hrpcsock.hpp"
 
@@ -8485,6 +8487,7 @@ bool CHThorDiskReadBaseActivity::openNext()
         partNum++;
         if (checkOpenedFile(file.str(), NULL))
         {
+            actualFilter.appendFilters(fieldFilters);
             opened = true;
             return true;
         }
