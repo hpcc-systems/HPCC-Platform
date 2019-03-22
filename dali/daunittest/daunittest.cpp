@@ -21,7 +21,6 @@
 
 
 #include "mpcomm.hpp"
-#include "sockfile.hpp"
 
 #include "daclient.hpp"
 #include "dadfs.hpp"

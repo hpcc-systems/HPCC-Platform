@@ -31,7 +31,7 @@
 #include "eclhelper.hpp" // tmp for IHThor..Arg interfaces.
 
 #include "rmtfile.hpp"
-#include "sockfile.hpp"
+#include "rmtclient.hpp"
 
 #include "thormisc.hpp"
 #include "thmfilemanager.hpp"

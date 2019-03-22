@@ -155,7 +155,7 @@ define([
             refreshState: function () {
                 if (this.exists()) {
                     this.iconFilter.src = Utility.getImageURL("filter1.png");
-                    dom.byId(this.id + "FilterDropDown_label").innerHTML = this.params.ownLabel !== null ? this.params.ownLabel : this.i18n.FilterSet;
+                    dom.byId(this.id + "FilterDropDown_label").innerHTML = this.params.ownLabel !== undefined && this.params.ownLabel !== null ? this.params.ownLabel : this.i18n.FilterSet;
                     domStyle.set(this.id + "FilterDropDown_label", {
                         "font-weight": "bold"
                     });

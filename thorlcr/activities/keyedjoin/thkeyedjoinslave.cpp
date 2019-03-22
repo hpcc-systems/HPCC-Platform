@@ -35,8 +35,6 @@
 
 #include "rtlcommon.hpp"
 
-#include "sockfile.hpp"
-
 #include "thorxmlwrite.hpp"
 
 #include "thorport.hpp"

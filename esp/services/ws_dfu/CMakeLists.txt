@@ -63,7 +63,8 @@ include_directories (
          ./../../../system/security/cryptohelper 
          ./../../../system/include 
          ./../../../common/workunit 
-         ./../../../common/remote 
+         ./../../../fs/dafsclient 
+         ./../../../fs/dafsstream
          ./../../../common/roxiecommlib
          ./../../clients 
          ./../../../dali/base 
@@ -84,7 +85,8 @@ target_link_libraries ( ws_dfu
          jlib
          mp 
          hrpc 
-         remote 
+         dafsclient
+         dafsclient 
          nbcd 
          eclrtl 
          jhtree 

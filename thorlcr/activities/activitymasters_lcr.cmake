@@ -75,7 +75,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
          ./../thorutil 
-         ./../../common/remote 
+         ./../../fs/dafsclient 
          ./../../system/jhtree 
          ./../../system/mp 
          ./../master 
@@ -106,7 +106,7 @@ set_target_properties(activitymasters_lcr PROPERTIES
 install ( TARGETS activitymasters_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( activitymasters_lcr
          jlib
-         remote 
+         dafsclient 
          hql
          thorsort_lcr 
          jhtree 

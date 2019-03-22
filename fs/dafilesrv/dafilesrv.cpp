@@ -25,7 +25,6 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include "jmisc.hpp"
-#include "rmtfile.hpp"
 #include "dalienv.hpp"
 #include "dafdesc.hpp"
 
@@ -40,7 +39,8 @@ static const char* defaultRowSericeConfiguration = "RowSvc";
 
 #include "remoteerr.hpp"
 #include "dafscommon.hpp"
-#include "sockfile.hpp"
+#include "rmtclient.hpp"
+#include "dafsserver.hpp"
 
 void usage()
 {
@@ -341,13 +341,6 @@ int main(int argc,char **argv)
 {
     InitModuleObjects();
 
-    /* The dafilesrv hook is installed via the MODULE_INIT process
-     * but it is not wanted in dafilesrv itself, so remove it now.
-    */
-    IDaFileSrvHook *remoteHook = queryDaFileSrvHook();
-    if (remoteHook)
-        removeIFileCreateHook(remoteHook);
-
     EnableSEHtoExceptionMapping();
 #ifndef __64BIT__
     // Restrict stack sizes on 32-bit systems
@@ -516,7 +509,7 @@ int main(int argc,char **argv)
         }
         else if ((argv[i][0]=='-')&&(toupper(argv[i][1])=='T')&&(!argv[i][2]||isdigit(argv[i][2]))) {
             if (argv[i][2])
-                setDafsTrace(NULL,(byte)atoi(argv[i]+2));
+                setDaliServerTrace((byte)atoi(argv[i]+2));
             i++;
             isdaemon = false;
         }
@@ -861,7 +854,6 @@ int main(int argc,char **argv)
     server.setown(createRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy, keyPairInfo));
     server->setThrottle(ThrottleStd, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
     server->setThrottle(ThrottleSlow, parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
-    configureRemoteCreateFileDescriptorCB(queryFileDescriptorFactory());
 
     class CPerfHook : public CSimpleInterfaceOf<IPerfMonHook>
     {

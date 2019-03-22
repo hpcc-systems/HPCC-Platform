@@ -18,13 +18,14 @@
 #ifndef DAFSCLIENT_HPP
 #define DAFSCLIENT_HPP
 
-#ifdef REMOTE_EXPORTS
-#define REMOTE_API DECL_EXPORT
+#ifdef DAFSCLIENT_EXPORTS
+#define DAFSCLIENT_API DECL_EXPORT
 #else
-#define REMOTE_API DECL_IMPORT
+#define DAFSCLIENT_API DECL_IMPORT
 #endif
 
 #include "seclib.hpp"
+
 
 interface IOutputMetaData;
 namespace dafsstream
@@ -51,14 +52,14 @@ interface IDaFsException : extends IException
 {
 };
 
-interface REMOTE_API IDFUFilePartBase : extends IInterface
+interface DAFSCLIENT_API IDFUFilePartBase : extends IInterface
 {
     virtual void start() = 0;
     virtual void finalize() = 0;
     virtual IOutputMetaData *queryMeta() const = 0;
 };
 
-interface REMOTE_API IDFUFilePartReader : extends IDFUFilePartBase
+interface DAFSCLIENT_API IDFUFilePartReader : extends IDFUFilePartBase
 {
     virtual const void *nextRow(size32_t &sz) = 0;
     virtual const void *getRows(size32_t min, size32_t &got) = 0; // will read at least min, and returned data will contain whole rows only
@@ -70,13 +71,13 @@ interface REMOTE_API IDFUFilePartReader : extends IDFUFilePartBase
     virtual void addVirtualFieldMapping(const char *fieldName, const char *fieldValue) = 0;
 };
 
-interface REMOTE_API IDFUFilePartWriter : extends IDFUFilePartBase
+interface DAFSCLIENT_API IDFUFilePartWriter : extends IDFUFilePartBase
 {
     virtual void write(size32_t sz, const void *rowData) = 0; // NB: can be multiple rows
 };
 
 
-interface REMOTE_API IDFUFileAccessExt : extends IInterface
+interface DAFSCLIENT_API IDFUFileAccessExt : extends IInterface
 {
     virtual IOutputMetaData *queryMeta() const = 0;
     virtual IFileDescriptor &queryFileDescriptor() const = 0;
@@ -85,7 +86,7 @@ interface REMOTE_API IDFUFileAccessExt : extends IInterface
 };
 
 enum DFUFileOption { dfo_null=0, dfo_compressedRemoteStreams=1 }; // NB: will be used in bit field
-interface REMOTE_API IDFUFileAccess : extends IInterface
+interface DAFSCLIENT_API IDFUFileAccess : extends IInterface
 {
     virtual const char *queryName() const = 0;
     virtual const char *queryFileId() const = 0;
@@ -129,10 +130,10 @@ interface REMOTE_API IDFUFileAccess : extends IInterface
 };
 
 // NB: fileId, supplied/only needed by older esp's at publish time
-REMOTE_API IDFUFileAccess *createDFUFileAccess(const char *metaInfoBlobB64, const char *fileId=nullptr);
-REMOTE_API IRowWriter *createRowWriter(IDFUFilePartWriter *partWriter);
+DAFSCLIENT_API IDFUFileAccess *createDFUFileAccess(const char *metaInfoBlobB64, const char *fileId=nullptr);
+DAFSCLIENT_API IRowWriter *createRowWriter(IDFUFilePartWriter *partWriter);
 
-REMOTE_API void setDefaultCommCompression(const char *compType);
+DAFSCLIENT_API void setDefaultCommCompression(const char *compType);
 
 } // end of namespace dafsstream
 

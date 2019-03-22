@@ -26,7 +26,7 @@
 #include "jptree.hpp"
 #include "jlzw.hpp"
 #include "dafdesc.hpp"
-#include "rmtfile.hpp"
+#include "rmtclient.hpp"
 #include "dautils.hpp"
 #include "dasds.hpp"
 
@@ -3107,18 +3107,5 @@ void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file)
             copyTree->setProp("@host", rfn.queryEndpoint().getUrlStr(host.clear()));
         }
     }
-}
-
-static IFileDescriptor *factoryForRemoteFileDescriptor(IPropertyTree *fileInfo)
-{
-    if (fileInfo)
-        return deserializeFileDescriptorTree(fileInfo);
-    else
-        return createFileDescriptor();
-}
-
-extern da_decl FileDescriptorFactoryType queryFileDescriptorFactory()
-{
-    return factoryForRemoteFileDescriptor;
 }
 

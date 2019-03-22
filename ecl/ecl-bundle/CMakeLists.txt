@@ -42,7 +42,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/common/workunit
-         ${HPCC_SOURCE_DIR}/common/remote
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
          ${HPCC_SOURCE_DIR}/esp/clients
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp

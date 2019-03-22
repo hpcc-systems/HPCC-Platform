@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,41 +14,53 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: dafilesrv 
+
+# Component: dafsstream 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for dafilesrv
+#    Cmake Input File for dafsstream
 #####################################################
 
-project( dafilesrv ) 
+project( dafsstream ) 
 
 set (    SRCS 
-         dafilesrv.cpp 
+         dafsstream.cpp
     )
 
-include_directories ( 
+include_directories (
          ${HPCC_SOURCE_DIR}/system/hrpc 
-         ${HPCC_SOURCE_DIR}/common/remote 
+         ${HPCC_SOURCE_DIR}/system/mp 
          ${HPCC_SOURCE_DIR}/system/include 
-         ${HPCC_SOURCE_DIR}/system/jhtree
          ${HPCC_SOURCE_DIR}/system/jlib 
+         ${HPCC_SOURCE_DIR}/system/jhtree
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/system/security/securesocket
+         ${HPCC_SOURCE_DIR}/system/security/cryptohelper
+         ${HPCC_SOURCE_DIR}/testing/unittests
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/common/deftype
+         ${HPCC_SOURCE_DIR}/dali/base
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
 
-if (WIN32)
-    set (CMAKE_EXE_LINKER_FLAGS "/STACK:65536 ${CMAKE_EXE_LINKER_FLAGS}")
-endif()
+ADD_DEFINITIONS( -D_USRDLL -DDAFSCLIENT_EXPORTS )
 
-HPCC_ADD_EXECUTABLE ( dafilesrv ${SRCS} )
-set_target_properties (dafilesrv PROPERTIES COMPILE_FLAGS -D_CONSOLE)
-install ( TARGETS dafilesrv RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( dafilesrv
-         jlib
-         remote
-         dalibase
+HPCC_ADD_LIBRARY( dafsstream SHARED ${SRCS}  )
+install ( TARGETS dafsstream RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+
+target_link_libraries ( dafsstream 
+    eclrtl
+    jlib
+    jhtree 
+    hql   
+    mp
+    dalibase
+    remote
+    dafsclient
     )
-
