@@ -60,6 +60,7 @@ class CLogFailSafe : implements ILogFailSafe, public CInterface
     StringArray m_UnsentLogs;
     StringBuffer m_logsdir;
     StringBuffer m_LogService;//
+    StringArray oldLogs;
 
     CriticalSection m_critSec;//
     GuidMap m_PendingLogs;//
