@@ -780,9 +780,10 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
 
     if (!cmd->send(sashaserver))
     {
-        StringBuffer msg;
-        msg.appendf("Cannot connect to archive server at %s",sashaAddress.str());
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
+        StringBuffer url;
+        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
+            "Sasha (%s) took too long to respond from: Get archived workUnits.",
+            ep.getUrlStr(url).str());
     }
 
     IArrayOf<IEspDFUWorkunit> results;
@@ -1249,8 +1250,10 @@ void CFileSprayEx::getInfoFromSasha(IEspContext &context, const char *sashaServe
     Owned<INode> node = createINode(ep);
     if (!cmd->send(node,1*60*1000))
     {
-        DBGLOG("Cannot connect to Sasha server at %s",sashaServer);
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to archive server at %s.",sashaServer);
+        StringBuffer url;
+        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
+            "Sasha (%s) took too long to respond from: Get information for %s.",
+            ep.getUrlStr(url).str(), wuid);
     }
     if (cmd->numIds()==0)
     {
@@ -1626,7 +1629,9 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 case CDFUWUActions_Restore:
                     cmd->addId(wuid);
                     if (!cmd->send(node,1*60*1000))
-                        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to archive server at %s.",sashaAddress.str());
+                        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
+                            "Sasha (%s) took too long to respond from: Restore workunit %s.",
+                            sashaAddress.str(), wuid);
                     {
                         StringBuffer reply = "Restore ID: ";
                         if (!cmd->getId(0, reply))
