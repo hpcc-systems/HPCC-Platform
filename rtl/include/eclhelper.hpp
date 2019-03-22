@@ -814,6 +814,9 @@ interface IColumnProvider : extends IInterface
     virtual void        readDataRaw(size32_t len, void * text, const char * path, size32_t _lenDefault, const void * _default) = 0;
     virtual void        readDataRawX(size32_t & len, void * & text, const char * path, size32_t _lenDefault, const void * _default) = 0;
 
+//V4
+    virtual __uint64    getUInt(const char * path) = 0;
+    virtual __uint64    readUInt(const char * path, __uint64 _default) = 0;
 };
 
 //Member - can extend if new accessor function defined.

@@ -15,14 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include <sys/time.h>
 #elif _WIN32
 #include <windows.h>
 #include <wincrypt.h>
 #include <chrono>
-#else
-
 #endif
 
 /**
@@ -62,7 +60,7 @@ namespace ln_uid {
 
     ln_uid_t &createUniqueId(ln_uid_t &out)
     {
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
         struct timeval tv;
         gettimeofday(&tv, NULL);
 
@@ -74,7 +72,7 @@ namespace ln_uid {
         unsigned long long  int millisecondsSinceEpochTrim =
             std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1);
 #else
-
+       #error "Unimplemented"
 #endif
         unsigned char timedata[time_byte_count];
 
@@ -86,7 +84,7 @@ namespace ln_uid {
 
         unsigned char randomdata[random_byte_count];
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
         FILE *fp;
         fp = fopen("/dev/urandom", "r");
         fread(&randomdata, 1, random_byte_count, fp);
@@ -96,6 +94,8 @@ namespace ln_uid {
 
         CryptAcquireContext(&hProvider, 0, 0, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);
         CryptGenRandom(hProvider, random_byte_count, randomdata);
+#else
+       #error "Unimplemented"
 #endif
 
         for(unsigned int i=0; i <time_byte_count; i++)
@@ -288,7 +288,7 @@ namespace ln_uid {
         t1 = time(NULL);
         t2 = time(NULL);
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
         localtime_r(&t1, &startDateTime);
         strptime(start, "%Y-%m-%d %H:%M:%S", &startDateTime);
 
@@ -303,9 +303,11 @@ namespace ln_uid {
         startDateTime.tm_hour = H1;
         startDateTime.tm_min = M1;
         startDateTime.tm_sec = S1;
+#else
+       #error "Unimplemented"
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
         localtime_r(&t2, &endDateTime);
         strptime(end, "%Y-%m-%d %H:%M:%S", &endDateTime);
 
@@ -319,6 +321,8 @@ namespace ln_uid {
         endDateTime.tm_hour = H2;
         endDateTime.tm_min = M2;
         endDateTime.tm_sec = S2;
+#else
+       #error "Unimplemented"
 #endif
 
         start_time = mktime(&startDateTime) ;
@@ -328,7 +332,7 @@ namespace ln_uid {
 
         struct tm tm;
         char sb[100];
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
         localtime_r(&start_time, &tm);
         sprintf(sb, "now: %4d-%02d-%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
             tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -337,7 +341,7 @@ namespace ln_uid {
         sprintf_s(sb, "now: %4d-%02d-%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
             tm.tm_hour, tm.tm_min, tm.tm_sec);
 #else
-
+       #error "Unimplemented"
 #endif
         cout << "DateTime is " << sb << endl;
 
@@ -365,10 +369,12 @@ namespace ln_uid {
         int gmtime_hours;
 
         /* get the local time for Jan 2, 1900 00:00 UTC */
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
         localtime_r(&zero, &timeptr);
 #elif _WIN32
         localtime_s(&timeptr, &zero);
+#else
+       #error "Unimplemented"
 #endif
 
         gmtime_hours = timeptr.tm_hour;

@@ -2778,7 +2778,7 @@ static IIdAtom * getXmlReadFunction(ITypeInfo * type, bool hasDefault)
         case type_int:
         case type_swapint:
         case type_packedint:
-            return columnReadIntId;
+            return type->isSigned() ? columnReadIntId : columnReadUIntId;
         case type_data:
             return columnReadDataXId;
         case type_boolean:
@@ -2799,7 +2799,7 @@ static IIdAtom * getXmlReadFunction(ITypeInfo * type, bool hasDefault)
         case type_int:
         case type_swapint:
         case type_packedint:
-            return columnGetIntId;
+            return type->isSigned() ? columnGetIntId : columnGetUIntId;
         case type_data:
             return columnGetDataXId;
         case type_boolean:

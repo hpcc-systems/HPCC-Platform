@@ -48,6 +48,7 @@ public:
     virtual void        getData(size32_t len, void * text, const char * name);
     virtual void        getDataX(size32_t & len, void * & text, const char * name);
     virtual __int64     getInt(const char * name);
+    virtual __uint64    getUInt(const char * name);
     virtual void        getQString(size32_t len, char * text, const char * name);
     virtual void        getString(size32_t len, char * text, const char * name);
     virtual void        getStringX(size32_t & len, char * & text, const char * name);
@@ -60,6 +61,7 @@ public:
     virtual void        readData(size32_t len, void * text, const char * path, size32_t _lenDefault, const void * _default);
     virtual void        readDataX(size32_t & len, void * & text, const char * path, size32_t _lenDefault, const void * _default);
     virtual __int64     readInt(const char * path, __int64 _default);
+    virtual __uint64    readUInt(const char * path, __uint64 _default);
     virtual void        readQString(size32_t len, char * text, const char * path, size32_t _lenDefault, const char * _default);
     virtual void        readString(size32_t len, char * text, const char * path, size32_t _lenDefault, const char * _default);
     virtual void        readStringX(size32_t & len, char * & text, const char * path, size32_t _lenDefault, const char * _default);
@@ -99,6 +101,7 @@ public:
     virtual void        getData(size32_t len, void * text, const char * name);
     virtual void        getDataX(size32_t & len, void * & text, const char * name);
     virtual __int64     getInt(const char * name);
+    virtual __uint64    getUInt(const char * name);
     virtual void        getQString(size32_t len, char * text, const char * name);
     virtual void        getString(size32_t len, char * text, const char * name);
     virtual void        getStringX(size32_t & len, char * & text, const char * name);
@@ -111,6 +114,7 @@ public:
     virtual void        readData(size32_t len, void * text, const char * path, size32_t _lenDefault, const void * _default);
     virtual void        readDataX(size32_t & len, void * & text, const char * path, size32_t _lenDefault, const void * _default);
     virtual __int64     readInt(const char * path, __int64 _default);
+    virtual __uint64    readUInt(const char * path, __uint64 _default);
     virtual void        readQString(size32_t len, char * text, const char * path, size32_t _lenDefault, const char * _default);
     virtual void        readString(size32_t len, char * text, const char * path, size32_t _lenDefault, const char * _default);
     virtual void        readStringX(size32_t & len, char * & text, const char * path, size32_t _lenDefault, const char * _default);
