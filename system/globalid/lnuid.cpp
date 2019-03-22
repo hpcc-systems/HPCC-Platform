@@ -42,6 +42,8 @@
 #include "lnuid.h"
 using namespace std;
 
+#define IGNORE_RETURN_VALUE(x) { if (x) {} }
+
 namespace ln_uid {
 
     /** All alphanumeric characters except for "0", "I", "O", and "l" */
@@ -87,7 +89,7 @@ namespace ln_uid {
 #if defined(__linux__) || defined(__APPLE__)
         FILE *fp;
         fp = fopen("/dev/urandom", "r");
-        fread(&randomdata, 1, random_byte_count, fp);
+        IGNORE_RETURN_VALUE(fread(&randomdata, 1, random_byte_count, fp));
         fclose(fp);
 #elif _WIN32
         HCRYPTPROV hProvider;
