@@ -506,6 +506,18 @@ public:
         }
         return ret;
     }
+    virtual __uint64    getUInt(const char * path)
+    {
+        __uint64 ret = base->getUInt(path);
+        if((ret==0) && path && *path=='_')
+        {
+            if (stricmp(path, "_call_latency_ms")==0)
+                ret = callLatencyMs;
+            else if (stricmp(path, "_call_latency")==0)
+                ret = (callLatencyMs + 500) / 1000;
+        }
+        return ret;
+    }
     virtual void        getQString(size32_t len, char * text, const char * path) { base->getQString(len, text, path); }
     virtual void        getString(size32_t len, char * text, const char * path) { base->getString(len, text, path); }
     virtual void        getStringX(size32_t & len, char * & text, const char * path) { base->getStringX(len, text, path); }
@@ -527,6 +539,17 @@ public:
                 return (callLatencyMs + 500) / 1000;
         }
         return base->readInt(path, _default);
+    }
+    virtual __uint64    readUInt(const char * path, __uint64 _default)
+    {
+        if(path && *path=='_')
+        {
+            if (stricmp(path, "_call_latency_ms")==0)
+                return callLatencyMs;
+            else if (stricmp(path, "_call_latency")==0)
+                return (callLatencyMs + 500) / 1000;
+        }
+        return base->readUInt(path, _default);
     }
     virtual void        readQString(size32_t len, char * text, const char * path, size32_t _lenDefault, const char * _default) { base->readQString(len, text, path, _lenDefault, _default); }
     virtual void        readString(size32_t len, char * text, const char * path, size32_t _lenDefault, const char * _default) { base->readString(len, text, path, _lenDefault, _default); }

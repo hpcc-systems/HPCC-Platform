@@ -740,11 +740,13 @@ const char * cppSystemText[]  = {
     "   string columnGetStringX(const varstring name) : method,pure,entrypoint='getStringX';",
     "   unicode columnGetUnicodeX(const varstring name) : method,pure,entrypoint='getUnicodeX';",
     "   utf8 columnGetUtf8X(const varstring name) : method,pure,entrypoint='getUtf8X';",
+    "   unsigned integer columnGetUInt(const varstring name) : method,pure,entrypoint='getUInt';",
 
     "   boolean columnReadBool(const varstring name, boolean _default) : method,pure,entrypoint='readBool';",
     "   columnReadData(noconst data result, const varstring name, const data _default) : method,pure,entrypoint='readData';",
     "   data columnReadDataX(const varstring name, const data _default) : method,pure,entrypoint='readDataX';",
     "   integer columnReadInt(const varstring name, integer _default) : method,pure,entrypoint='readInt';",
+    "   unsigned integer columnReadUInt(const varstring name, unsigned integer _default) : method,pure,entrypoint='readUInt';",
     "   boolean columnReadSetIsAll(const varstring name, boolean _default) : method,pure,entrypoint='readIsSetAll';",
     "   columnReadQString(noconst qstring result, const varstring name, const qstring _default) : method,pure,entrypoint='readQString';",
     "   columnReadString(noconst string result, const varstring name, const string _default) : method,pure,entrypoint='readString';",
