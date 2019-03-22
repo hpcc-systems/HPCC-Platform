@@ -466,6 +466,8 @@ public:
 
     void resourceGraph(IHqlExpression * expr, HqlExprArray & transformed);
     void resourceRemoteGraph(IHqlExpression * expr, HqlExprArray & transformed);
+    void setContext(BuildCtx * _ctx) { ctx = _ctx; }
+
     void setSequential(bool _sequential) { sequential = _sequential; }
     void tagActiveCursors(HqlExprCopyArray * activeRows);
     inline unsigned numGraphResults() { return options.nextResult; }
@@ -578,6 +580,7 @@ protected:
     CResourceOptions & options;
     HqlExprArray rootConditions;
     HqlExprCopyArray activeSelectors;
+    BuildCtx * ctx = nullptr;
 };
 
 #endif

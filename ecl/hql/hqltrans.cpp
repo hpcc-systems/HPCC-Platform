@@ -1509,7 +1509,7 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
             same = transformChildren(expr, children);
             IHqlExpression & ds = children.item(0);
             node_operator dsOp = ds.getOperator();
-            if (dsOp == no_activetable)
+            if (dsOp == no_activerow)
             {
                 children.replace(*LINK(ds.queryChild(0)), 0);
                 removeAttribute(children, newAtom);
@@ -1611,29 +1611,28 @@ IHqlExpression * NewHqlTransformer::transformSelector(IHqlExpression * expr)
 #ifdef TRANSFORM_STATS_DETAILS
     stats.numTransformSelects++;
 #endif
-
-    expr = expr->queryNormalizedSelector();
-    IHqlExpression * transformed = queryAlreadyTransformedSelector(expr);
-    if (transformed)
+    IHqlExpression * normalized = expr->queryNormalizedSelector();
+    IHqlExpression * transformedSelector = queryAlreadyTransformedSelector(normalized);
+    if (transformedSelector)
     {
 #ifdef TRANSFORM_STATS_DETAILS
-        if (expr ==  transformed)
+        if (expr ==  transformedSelector)
             stats.numTransformSelectsSame++;
 #endif
-        if (transformed->getOperator() == no_activerow)
-            return LINK(transformed->queryChild(0));
-        return LINK(transformed);
+        if (transformedSelector->getOperator() == no_activerow)
+            return LINK(transformedSelector->queryChild(0));
+        return LINK(transformedSelector);
     }
-    transformed = queryAlreadyTransformed(expr);
+    IHqlExpression * transformed = queryAlreadyTransformed(normalized);
     if (transformed)
         transformed = LINK(transformed->queryNormalizedSelector());
     else
-        transformed = createTransformedSelector(expr);
+        transformed = createTransformedSelector(normalized);
 #ifdef TRANSFORM_STATS_DETAILS
-    if (expr ==  transformed)
+    if (normalized == transformed)
         stats.numTransformSelectsSame++;
 #endif
-    setTransformedSelector(expr, transformed);
+    setTransformedSelector(normalized, transformed);
     return transformed;
 }
 
@@ -1673,9 +1672,7 @@ IHqlExpression * NewHqlTransformer::createTransformedActiveSelect(IHqlExpression
     if (newLeft->getOperator() == no_newrow)
         return createNewSelectExpr(LINK(newLeft->queryChild(0)), LINK(newRight));
 
-    //NOTE: In very obscure situations: ds[1].x.ds<new>.y -> z.ds<new>.y (newLeft != normalizeSelector)
-    //NB: newLeft.get() == newLeft->queryNormalizedSelector() - asserted above
-    return createSelectExpr(LINK(newLeft->queryNormalizedSelector()), LINK(newRight));
+    return createSelectExpr(LINK(newLeft), LINK(newRight));
 }
 
 
@@ -1837,7 +1834,7 @@ void NewHqlTransformer::setTransformedSelector(IHqlExpression * expr, IHqlExpres
 {
     assertex(expr == expr->queryNormalizedSelector());
     //in rare situations a selector could get converted to a non-selector e.g, when replace self-ref with a new dataset.
-    assertex(!transformed || transformed == transformed->queryNormalizedSelector() || transformed->hasAttribute(newAtom));
+    assertex(!transformed || transformed == transformed->queryNormalizedSelector() || (transformed->getOperator() == no_select && isNewSelector(transformed)));
     queryTransformExtra(expr)->setTransformedSelector(transformed);
 }
 
@@ -4178,6 +4175,12 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
             }
             if (expr->isDataset())
                 restoreScope();
+            if (op == no_libraryscopeinstance)
+            {
+                IHqlExpression * oldFunction = expr->queryDefinition();
+                OwnedHqlExpr newFunction = transform(oldFunction);
+                return createLibraryInstance(newFunction.getClear(), children);
+            }
             break;
         }
     default:

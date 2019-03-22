@@ -3578,7 +3578,7 @@ extern HQL_API bool allFieldsAreSorted(IHqlExpression * record, IHqlExpression *
     markValidSelectors(sortOrder, dsSelector);
 
     //Now expand all the selectors from the record, and check that they have been tagged
-    RecordSelectIterator iter(record, dsSelector);
+    RecordSelectIterator iter(record, dsSelector, false);
     ForEach(iter)
     {
         IHqlExpression * select = iter.query();

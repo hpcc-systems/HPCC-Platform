@@ -8270,7 +8270,7 @@ simpleDataSet
                             OwnedHqlExpr active = ensureActiveRow(ds);
                             //Expand row components (see parser->processSortList() for similar code for hash)
                             HqlExprArray components;
-                            RecordSelectIterator iter(active->queryRecord(), active);
+                            RecordSelectIterator iter(active->queryRecord(), active, false);
                             ForEach(iter)
                                 components.append(*iter.get());
                             OwnedHqlExpr sortlist = createSortList(components);
