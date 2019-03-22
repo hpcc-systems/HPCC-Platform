@@ -328,7 +328,7 @@ export class Timings {
             };
         });
         this._metricSelectValues.forEach(metric => {
-            var max = d3Max(data.map(row => row[metric]));
+            var max = d3Max<number>(data.map(row => row[metric]));
             var scale = d3ScaleLinear().domain([0, max]).range([0, 1]);
             normalizedData.forEach(row => {
                 row[metric] = scale(row[metric]);
