@@ -1876,7 +1876,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults, isInsideChildQuery, unlimitedResources));
     }
     else
-        resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
+        resourced.setown(resourceNewChildGraph(ctx, *this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
 
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcing Child", resourced);
@@ -4584,7 +4584,8 @@ void HqlCppTranslator::doBuildRowAssignProjectRow(BuildCtx & ctx, IReferenceSele
     BuildCtx subctx(ctx);
 
     OwnedHqlExpr leftSelect = createSelector(no_left, srcRow, querySelSeq(expr));
-    OwnedHqlExpr newTransform = replaceSelector(transform, leftSelect, srcRow);
+    OwnedHqlExpr newRow = srcRow->getOperator() == no_select ? LINK(srcRow) : createRow(no_newrow, LINK(srcRow));
+    OwnedHqlExpr newTransform = replaceSelector(transform, leftSelect, newRow);
 
     Owned<BoundRow> selfCursor = target->getRow(subctx);
     doTransform(subctx, newTransform, selfCursor);

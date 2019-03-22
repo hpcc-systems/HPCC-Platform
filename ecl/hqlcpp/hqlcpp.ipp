@@ -1894,7 +1894,7 @@ protected:
     void expandSimpleOrder(IHqlExpression * left, IHqlExpression * right, HqlExprArray & leftValues, HqlExprArray & rightValues);
     void expandOrder(IHqlExpression * expr, HqlExprArray & leftValues, HqlExprArray & rightValues, SharedHqlExpr & defaultValue);
     void optimizeOrderValues(HqlExprArray & leftValues, HqlExprArray & rightValues, bool isEqualityCompare);
-    IHqlExpression * querySimpleOrderSelector(IHqlExpression * expr);
+    IHqlExpression * querySimpleOrderSelector(IHqlExpression * expr, bool & isNew);
 
     unsigned doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpression * expr, SubGraphType kind, unsigned thisId=0, IHqlExpression * represents=NULL);
     unsigned doBuildThorSubGraph(BuildCtx & ctx, IHqlExpression * expr, SubGraphType kind, unsigned thisId=0, IHqlExpression * represents=NULL);

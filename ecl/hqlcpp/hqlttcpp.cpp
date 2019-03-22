@@ -8320,6 +8320,7 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
         return ret;
 
     OwnedHqlExpr transformed = HoistingHqlTransformer::createTransformed(expr);
+    updateOrphanedSelectors(transformed, expr);
 
     ScopeMigrateInfo * extra = queryBodyExtra(expr);
     node_operator op = expr->getOperator();

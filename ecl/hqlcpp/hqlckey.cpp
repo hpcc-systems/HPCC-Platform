@@ -346,9 +346,9 @@ void KeyedJoinInfo::buildClearRightFunction(BuildCtx & classctx)
         
         BoundRow * selfCursor = translator.bindSelf(func.ctx, rawKey, "crSelf");
         IHqlExpression * rawSelf = selfCursor->querySelector();
-        RecordSelectIterator rawIter(rawKey->queryRecord(), rawSelf);
+        RecordSelectIterator rawIter(rawKey->queryRecord(), rawSelf, false);
 
-        RecordSelectIterator keyIter(key->queryRecord(), key);
+        RecordSelectIterator keyIter(key->queryRecord(), key, false);
         buildClearRecord(func.ctx, rawIter, keyIter);
         translator.buildReturnRecordSize(func.ctx, selfCursor);
     }

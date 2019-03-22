@@ -6085,7 +6085,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
         {
             //Expanding the row selectors at this point generates better code if the hash is done inside a compound read activity
             LinkedHqlExpr row = &e;
-            RecordSelectIterator iter(e.queryRecord(), row);
+            RecordSelectIterator iter(e.queryRecord(), row, false);
             items.remove(idx);
             unsigned i=0;
             ForEach(iter)

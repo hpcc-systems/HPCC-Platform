@@ -2825,7 +2825,10 @@ IReferenceSelector * DatasetSelector::select(BuildCtx & ctx, IHqlExpression * se
     else if (selectExpr->queryChild(0) == path)
         selected.set(selectExpr);
     else
-        selected.setown(createSelectExpr(LINK(path), LINK(selectExpr->queryChild(1))));
+    {
+        bool isNew = selectExpr->hasAttribute(newAtom);
+        selected.setown(createSelectExpr(LINK(path), LINK(selectExpr->queryChild(1)), isNew));
+    }
 
     IHqlExpression * selectedField = selected->queryChild(1);
     AColumnInfo * newColumn = resolveField(selectedField);
@@ -6521,11 +6524,15 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityKeyedDistribute(ctx, expr);
                 break;
             case no_select:
-                if (isNewSelector(expr))
+            {
+                bool isNew;
+                IHqlExpression * ds = querySelectorDataset(expr, isNew);
+                if (isNew && (ds->getOperator() != no_translated) && !ctx.queryAssociation(ds, AssocRow, nullptr))
                     result = doBuildActivitySelectNew(ctx, expr);
                 else
                     result = doBuildActivityChildDataset(ctx, expr);
                 break;
+            }
                 //Items in this list need to also be in the list inside doBuildActivityChildDataset
             case no_call:
             case no_externalcall:
@@ -14248,7 +14255,7 @@ static void gatherDedupCompareExpr(HqlExprArray & equalities, HqlExprArray & com
 
 void optimizeGroupOrder(HqlExprArray & optimized, IHqlExpression * dataset, HqlExprArray & exprs)
 {
-    RecordSelectIterator iter(dataset->queryRecord(), dataset->queryNormalizedSelector());
+    RecordSelectIterator iter(dataset->queryRecord(), dataset->queryNormalizedSelector(), false);
     ForEach(iter)
     {
         IHqlExpression * select = iter.query();
@@ -15310,7 +15317,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySelectNew(BuildCtx & ctx, IHql
         bindTableCursor(func.ctx, anon->queryNormalizedSelector(), "left");
 
         OwnedHqlExpr activeAnon = ensureActiveRow(anon);
-        OwnedHqlExpr value = replaceSelectorDataset(expr, activeAnon);
+        OwnedHqlExpr value = replaceExpression(expr, dataset, activeAnon);
         buildAssign(func.ctx, selfCursor->querySelector(), value);
 
         buildReturnRecordSize(func.ctx, selfCursor);

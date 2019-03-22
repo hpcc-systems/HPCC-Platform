@@ -1462,7 +1462,7 @@ IHqlExpression * JoinSortInfo::getContiguousJoinCondition(unsigned numRhsFields)
     //Ensure that numRhsFields from RIGHT are joined, and if so return the join condition
     IHqlExpression * rightRecord = rhs->queryRecord();
     HqlExprCopyArray leftMatches, rightMatches;
-    RecordSelectIterator iter(rightRecord, queryActiveTableSelector());
+    RecordSelectIterator iter(rightRecord, queryActiveTableSelector(), false);
     unsigned numMatched = 0;
     ForEach(iter)
     {
@@ -2137,7 +2137,7 @@ void expandRowSelectors(HqlExprArray & target, HqlExprArray const & source)
         IHqlExpression & cur = source.item(i);
         if (cur.isDatarow())
         {
-            RecordSelectIterator iter(cur.queryRecord(), &cur);
+            RecordSelectIterator iter(cur.queryRecord(), &cur, false);
             ForEach(iter)
                 target.append(*iter.get());
         }
@@ -3320,7 +3320,7 @@ extern HQL_API bool introducesNewDependencies(IHqlExpression * oldExpr, IHqlExpr
 //---------------------------------------------------------------------------
 
 
-RecordSelectIterator::RecordSelectIterator(IHqlExpression * record, IHqlExpression * selector)
+RecordSelectIterator::RecordSelectIterator(IHqlExpression * record, IHqlExpression * selector, bool newSelect) : rootNewSelect(newSelect)
 {
     rootRecord.set(record);
     rootSelector.set(selector);
@@ -3351,18 +3351,21 @@ bool RecordSelectIterator::doNext()
                 beginRecord(cur);
                 break;
             case no_field:
+            {
+                bool isNew = (rootNewSelect && (nestingDepth == 0));
                 switch (cur->queryType()->getTypeCode())
                 {
                 case type_row:
                     beginRecord(cur->queryRecord());
-                    selector.setown(createSelectExpr(LINK(selector), LINK(cur)));
+                    selector.setown(createSelectExpr(LINK(selector), LINK(cur), isNew));
                     nestingDepth++;
                     break;
                 default:
-                    curSelector.setown(createSelectExpr(LINK(selector), LINK(cur)));
+                    curSelector.setown(createSelectExpr(LINK(selector), LINK(cur), isNew));
                     return true;
                 }
                 break;
+            }
             case no_ifblock:
                 beginRecord(cur->queryChild(1));
                 ifblockDepth++;

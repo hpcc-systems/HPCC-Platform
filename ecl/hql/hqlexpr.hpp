@@ -1603,7 +1603,6 @@ extern HQL_API IHqlExpression * createSelectorSequence(unsigned __int64 seq);
 extern HQL_API IHqlExpression * createDummySelectorSequence();
 extern HQL_API IHqlExpression * expandBetween(IHqlExpression * expr);
 extern HQL_API bool isAlwaysActiveRow(IHqlExpression * expr);
-extern HQL_API bool isAlwaysNewRow(IHqlExpression * expr);
 extern HQL_API IHqlExpression * ensureActiveRow(IHqlExpression * expr);
 extern HQL_API bool isRedundantGlobalScope(IHqlExpression * expr);
 extern HQL_API bool isIndependentOfScope(IHqlExpression * expr);
