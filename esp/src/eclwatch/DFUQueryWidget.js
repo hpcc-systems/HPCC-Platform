@@ -77,6 +77,7 @@ define([
             pathSepCharG: "/",
             updatedFilter: null,
             username: null,
+            warningIssued: false,
 
             postCreate: function (args) {
                 this.inherited(arguments);
@@ -387,7 +388,10 @@ define([
                 }
 
                 this.updatedFilter = JSON.parse(JSON.stringify(retVal));    // Deep copy as checkIfWarning will append _rawxml to it  ---
-                this.checkIfWarning();
+                
+                if (!this.warningIssued) {
+                    this.checkIfWarning();
+                }
 
                 return retVal;
             },
@@ -395,6 +399,7 @@ define([
             checkIfWarning: function () {
                 var context = this;
 
+                this.warningIssued = true;
                 WsDfu.DFUQuery({
                     request: this.updatedFilter
                 }).then(function (response) {
