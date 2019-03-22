@@ -325,7 +325,9 @@ void CDiskRecordPartHandler::open()
                 }
                 catch (IException *e)
                 {
+#ifdef _DEBUG
                     EXCLOG(e, nullptr);
+#endif
                     e->Release();
                     continue; // try next copy and ultimately failover to local when no more copies
                 }

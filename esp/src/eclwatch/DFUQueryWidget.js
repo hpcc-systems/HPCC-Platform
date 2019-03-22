@@ -387,7 +387,6 @@ define([
                 }
 
                 this.updatedFilter = JSON.parse(JSON.stringify(retVal));    // Deep copy as checkIfWarning will append _rawxml to it  ---
-                this.checkIfWarning();
 
                 return retVal;
             },
@@ -442,6 +441,7 @@ define([
                 });
 
                 this.initWorkunitsGrid();
+                this.checkIfWarning();
 
                 this.filter.on("clear", function (evt) {
                     context.refreshHRef();

@@ -386,7 +386,7 @@ bool HqlDllGenerator::generateFullFieldUsageStatistics(HqlCppTranslator & transl
     //Now project the output dataset down to a single field, and generate the file/field dependencies for each of those
     OwnedHqlExpr selSeq = createUniqueSelectorSequence();
     OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
-    RecordSelectIterator iter(dataset->queryRecord(), left);
+    RecordSelectIterator iter(dataset->queryRecord(), left, false);
     ForEach(iter)
     {
         IHqlExpression * cur = iter.query();

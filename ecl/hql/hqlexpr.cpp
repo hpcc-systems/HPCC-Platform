@@ -6343,10 +6343,7 @@ CHqlRow::CHqlRow(node_operator op, ITypeInfo * type, HqlExprArray & _ownedOperan
     switch (op)
     {
     case no_select: 
-        if (!hasAttribute(newAtom))
-        {
-            normalized.setown(calcNormalizedSelector());
-        }
+        normalized.setown(calcNormalizedSelector());
         break;
     }
 
@@ -13132,14 +13129,6 @@ inline IHqlExpression * normalizeSelectLhs(IHqlExpression * lhs, bool & isNew)
             if (isNew && isAlwaysActiveRow(lhs))
                 isNew = false;
             return lhs;
-        case no_selectnth:
-        case no_createrow:
-            assertex(isAlwaysNewRow(lhs));
-            //Ensure selects of these expressions always have new set - it saves problems when an
-            //unnormalized tree is walked or transformed.
-            //IF/PROJECTROW are not includes since they could be folded to an active selector
-            isNew = true;
-            return lhs;
         default:
             return lhs;
         }
@@ -13224,17 +13213,6 @@ IHqlExpression * ensureDataset(IHqlExpression * expr)
     throwUnexpected();
 }
 
-
-extern bool isAlwaysNewRow(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_createrow:
-    case no_selectnth:
-        return true;
-    }
-    return false;
-}
 
 extern bool isAlwaysActiveRow(IHqlExpression * expr)
 {
