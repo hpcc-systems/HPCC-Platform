@@ -26,7 +26,7 @@
 #include "jfile.hpp"
 #include "jdebug.hpp"
 #include "jset.hpp"
-#include "sockfile.hpp"
+#include "rmtfile.hpp"
 #include "jqueue.hpp"
 #include "jregexp.hpp"
 

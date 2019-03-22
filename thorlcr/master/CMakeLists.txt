@@ -32,7 +32,7 @@ set (    SRCS
 
 include_directories ( 
          ./../thorutil 
-         ./../../common/remote 
+         ./../../fs/dafsclient 
          ./../../system/jhtree 
          ./../../system/mp 
          ./../../common/workunit 
@@ -70,7 +70,7 @@ install ( TARGETS thormaster_lcr RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries (  thormaster_lcr 
          jlib
          jhtree 
-         remote 
+         dafsclient 
          dalibase 
          environment 
          dllserver 

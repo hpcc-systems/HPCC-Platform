@@ -14,40 +14,46 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: dafscontrol 
-
+# Component: dafilesrv 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for dafscontrol
+#    Cmake Input File for dafilesrv
 #####################################################
 
-
-project( dafscontrol ) 
+project( dafilesrv ) 
 
 set (    SRCS 
-         dafscontrol.cpp 
+         dafilesrv.cpp 
     )
 
 include_directories ( 
-         ./../../system/hrpc 
-         ./../../common/remote 
-         ./../../system/mp 
-         ./../../system/include 
-         ./../../dali/base 
-         ./../../system/jlib 
-         ./../../common/environment 
+         ${HPCC_SOURCE_DIR}/system/hrpc 
+         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/jhtree
+         ${HPCC_SOURCE_DIR}/system/jlib 
+         ${HPCC_SOURCE_DIR}/system/mp
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
+         ${HPCC_SOURCE_DIR}/fs/dafsserver
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/common/environment 
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
     )
 
-HPCC_ADD_EXECUTABLE ( dafscontrol ${SRCS} )
-set_target_properties (dafscontrol PROPERTIES COMPILE_FLAGS -D_CONSOLE)
-install ( TARGETS dafscontrol RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( dafscontrol  
+if (WIN32)
+    set (CMAKE_EXE_LINKER_FLAGS "/STACK:65536 ${CMAKE_EXE_LINKER_FLAGS}")
+endif()
+
+HPCC_ADD_EXECUTABLE ( dafilesrv ${SRCS} )
+set_target_properties (dafilesrv PROPERTIES COMPILE_FLAGS -D_CONSOLE)
+install ( TARGETS dafilesrv RUNTIME DESTINATION ${EXEC_DIR} )
+target_link_libraries ( dafilesrv
          jlib
-         mp 
-         hrpc 
-         remote 
-         dalibase 
-         environment 
+         remote
+         dalibase
+         dafsserver
     )
 

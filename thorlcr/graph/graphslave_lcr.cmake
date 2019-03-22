@@ -29,7 +29,7 @@ set (    SRCS
 
 include_directories ( 
          ./../thorutil 
-         ./../../common/remote 
+         ./../../fs/dafsclient 
          ./../../system/jhtree 
          ./../../system/mp 
          ./../../common/workunit 
@@ -57,7 +57,7 @@ target_link_libraries ( graphslave_lcr
          eclrtl 
          deftype 
          thorhelper 
-         remote 
+         dafsclient 
          dalibase 
          environment 
          dllserver 

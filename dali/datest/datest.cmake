@@ -34,6 +34,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/esp/clients/wsdfuaccess
+         ${HPCC_SOURCE_DIR}/fs/dafsstream
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
@@ -44,7 +45,8 @@ target_link_libraries ( datest
          jlib
          mp 
          hrpc 
-         remote
+         dafsclient
+         dafsstream
          eclrtl
          wsdfuaccess 
          dalibase 

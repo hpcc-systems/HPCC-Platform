@@ -28,7 +28,7 @@
 #include "dafdesc.hpp"
 #include "dasds.hpp"
 #include "rmtfile.hpp"
-#include "sockfile.hpp"
+#include "rmtclient.hpp"
 
 #include "dalienv.hpp"
 
@@ -172,7 +172,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
                 case AMcheckvermajor: {
                     // compares versions up to the '-'
                         const char *rv = verstr.str();
-                        const char *v = remoteServerVersionString();
+                        const char *v = DAFILESRV_VERSIONSTRING;
                         if (mode!=AMcheckvermajor) {
                             while (*v&&(*v!='-')&&(*v==*rv)) {
                                 v++;
@@ -232,10 +232,10 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
             }
             unsigned numok = eps.ordinality()-result.ordinality();
             if (mode==AMcheckvermajor)
-                PROGLOG("%s: %d node%s running version %.1f of DAFILESRV",grpip,numok,(numok!=1)?"s":"",((double)FILESRV_VERSION)/10.0);
+                PROGLOG("%s: %d node%s running version %.1f of DAFILESRV",grpip,numok,(numok!=1)?"s":"",((double)DAFILESRV_VERSION)/10.0);
             else {
                 StringBuffer vs;
-                const char *v = remoteServerVersionString();
+                const char *v = DAFILESRV_VERSIONSTRING;
                 while (*v&&(*v!='-'))
                     vs.append(*(v++));
                 PROGLOG("%s: %d node%s running version %s of DAFILESRV",grpip,numok,(numok!=1)?"s":"",vs.str());
@@ -307,7 +307,7 @@ int main(int argc, char* argv[])
                 break;
             }
             if (stricmp(argv[ai],"myver")==0) {
-                const char *v = remoteServerVersionString();
+                const char *v = DAFILESRV_VERSIONSTRING;
                 StringBuffer vs;
                 if (memicmp(v,"DS V",4)==0)
                     v += 4;
@@ -323,21 +323,21 @@ int main(int argc, char* argv[])
                 if (ai+1>=ac) 
                     usage(); 
                 else
-                    applyNodes(argv[ai+1], AMstop, FILESRV_VERSION,isdali,quiet);
+                    applyNodes(argv[ai+1], AMstop, DAFILESRV_VERSION,isdali,quiet);
                 break;
             }
             if (stricmp(argv[ai],"stopver")==0) {
                 if (ai+1>=ac) 
                     usage(); 
                 else
-                    applyNodes(argv[ai+1], AMstopver, FILESRV_VERSION,isdali,quiet);
+                    applyNodes(argv[ai+1], AMstopver, DAFILESRV_VERSION,isdali,quiet);
                 break;
             }
             if (stricmp(argv[ai],"check")==0) {
                 if (ai+1>=ac) 
                     usage(); 
                 else
-                    if (applyNodes(argv[ai+1], AMcheck, FILESRV_VERSION,isdali,quiet)>0)
+                    if (applyNodes(argv[ai+1], AMcheck, DAFILESRV_VERSION,isdali,quiet)>0)
                         ret = 1;
                 break;
             }
@@ -345,7 +345,7 @@ int main(int argc, char* argv[])
                 if (ai+1>=ac) 
                     usage();
                 else
-                    if (applyNodes(argv[ai+1], AMcheckver, FILESRV_VERSION,isdali,quiet)>0)
+                    if (applyNodes(argv[ai+1], AMcheckver, DAFILESRV_VERSION,isdali,quiet)>0)
                         ret = 1;
                 break;
             }
@@ -353,7 +353,7 @@ int main(int argc, char* argv[])
                 if (ai+1>=ac) 
                     usage();
                 else
-                    if (applyNodes(argv[ai+1], AMcheckvermajor, FILESRV_VERSION,isdali,quiet)>0)
+                    if (applyNodes(argv[ai+1], AMcheckvermajor, DAFILESRV_VERSION,isdali,quiet)>0)
                         ret = 1;
                 break;
             }
@@ -361,7 +361,7 @@ int main(int argc, char* argv[])
                 if (ai+1>=ac) 
                     usage(); 
                 else
-                    applyNodes(argv[ai+1], AMver, FILESRV_VERSION,isdali,quiet);
+                    applyNodes(argv[ai+1], AMver, DAFILESRV_VERSION,isdali,quiet);
                 break;
             }
             if (stricmp(argv[ai],"trace")==0) {
