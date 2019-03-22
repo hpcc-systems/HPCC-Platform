@@ -133,8 +133,8 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
         libs = LIB_DIR[targetCompiler];
     if (verbose)
     {
-        PrintLog("Include directory set to %s", includes);
-        PrintLog("Library directory set to %s", libs);
+        DBGLOG("Include directory set to %s", includes);
+        DBGLOG("Library directory set to %s", libs);
     }
     compilerRoot.set(path ? path : targetCompiler==GccCppCompiler ? "/usr" : ".\\CL");
     stdIncludes.set(includes);
@@ -188,7 +188,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
         fname.replaceString("#",NULL);
     }
     if (verbose)
-        PrintLog("Compiler path set to %s", fname.str());
+        LOG(MCoperatorInfo, "Compiler path set to %s", fname.str());
 
     dequote(fname);
 #ifdef _WIN32
@@ -206,7 +206,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
 #endif
 #endif
         if (verbose)
-            PrintLog("SetCompilerPath - no compiler found");
+            LOG(MCoperatorInfo, "SetCompilerPath - no compiler found");
         throw makeOsExceptionV(GetLastError(), "setCompilerPath could not locate compiler %s", fname.str());
     }
 
@@ -302,7 +302,7 @@ void CppCompiler::addDefine(const char * symbolName, const char * value)
 void CppCompiler::addLibrary(const char * libName)
 {
     if (verbose)
-        PrintLog("addLibrary %s", libName);
+        LOG(MCuserInfo, "addLibrary %s", libName);
 
     const char* lname = libName;
     const char * quote;
@@ -421,10 +421,10 @@ bool CppCompiler::compile()
             {
                 if (abortChecker && abortChecker->abortRequested())
                 {
-                    PrintLog("Aborting compilation");
+                    UERRLOG("Aborting compilation");
                     pool->stopAll(true);
                     if (!pool->joinAll(true, 10*1000))
-                        WARNLOG("CCompilerWorker; timed out waiting for threads in pool");
+                        IWARNLOG("CCompilerWorker; timed out waiting for threads in pool");
                     return false;
                 }
             }
@@ -531,7 +531,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, const c
 
     Owned<CCompilerThreadParam> parm;
     if (verbose)
-        PrintLog("%s", expanded.str());
+        DBGLOG("%s", expanded.str());
     parm.setown(new CCompilerThreadParam(expanded, finishedCompiling, logFile));
     pool->start(parm.get());
 
@@ -709,7 +709,7 @@ bool CppCompiler::doLink()
 
     DWORD runcode = 0;
     if (verbose)
-        PrintLog("%s", expanded.str());
+        UERRLOG("%s", expanded.str());
     StringBuffer logFile = StringBuffer(coreName).append("_link.log.tmp");
     logFiles.append(logFile);
 
@@ -949,11 +949,8 @@ public:
         }
         catch(IException* e)
         {
-            StringBuffer sb;
-            e->errorMessage(sb);
             error.setown(e);
-            if (sb.length())
-                PrintLog("%s", sb.str());
+            EXCLOG(e, "CCompilerWorker::threadmain()");
             success = false;
         }
         handle = 0;

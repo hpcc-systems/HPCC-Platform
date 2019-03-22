@@ -1726,27 +1726,27 @@ long Cla$MATCH(/* STRING s, STRING p, */ unsigned char flags)
 
 void tr (RegExpr &RE,const char *s,const char *p,const char *r=NULL,size32_t n=0,bool nocase=false)
 {
-  PrintLog("Test '%s','%s','%s',%d,%s\r\n",s,p,r?r:"-",n,nocase?"NOCASE":"");
+  DBGLOG("Test '%s','%s','%s',%d,%s\r\n",s,p,r?r:"-",n,nocase?"NOCASE":"");
   char l[256];
   strcpy(l,s);
   StringBuffer ds;
   RE.init(p,nocase);
   const char * f = RE.find(l,0,RE_ALL);
   if (!f)
-    PrintLog("Not Found\r\n");
+    DBGLOG("Not Found\r\n");
   else {
-    PrintLog("Found '%s'\r\n",RE.findstr(ds));
+    DBGLOG("Found '%s'\r\n",RE.findstr(ds));
     for (int i = 1;i<=9;i++) {
       size32_t s = RE.findlen(i);
       if (s) {
         ds.clear();
-        PrintLog("Found Sub %d,%d,'%s'\r\n",i,s,RE.findstr(ds,i));
+        DBGLOG("Found Sub %d,%d,'%s'\r\n",i,s,RE.findstr(ds,i));
       }
     }
   }
   if (r) {
     RE.replace(r,sizeof(l));
-    PrintLog("Replace to '%s'\r\n",l);
+    DBGLOG("Replace to '%s'\r\n",l);
   }
 }
 
@@ -1813,12 +1813,12 @@ void RE$Test()
   RE.init("^{|{.+}@}{[^@]+}$");
   RE.find(str);
   StringBuffer t;
-  PrintLog("Substitute to '%s'\r\n",RE.substitute(t,"#'#3###2'#"));
+  DBGLOG("Substitute to '%s'\r\n",RE.substitute(t,"#'#3###2'#"));
   t.clear();
   RE.replace(RE.findstr(t,2),sizeof(str),3);
   t.clear();
   RE.replace(RE.findstr(t,3),sizeof(str),2);
-  PrintLog("Replace to '%s'\r\n",str);
+  DBGLOG("Replace to '%s'\r\n",str);
 }
 
 void FixDate(char *buff,size32_t max)

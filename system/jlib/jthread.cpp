@@ -334,7 +334,7 @@ void Thread::init(const char *_name)
 void Thread::start()
 {
     if (alive) {
-        WARNLOG("Thread::start(%s) - Thread already started!",getName());
+        IWARNLOG("Thread::start(%s) - Thread already started!",getName());
         PrintStackReport();
 #ifdef _DEBUG
         throw MakeStringException(-1,"Thread::start(%s) - Thread already started!",getName());
@@ -381,7 +381,7 @@ void Thread::startRelease()
         if ((status==EAGAIN)||(status==EINTR)) {
             if (numretrys--==0)
                 break;
-            WARNLOG("pthread_create(%d): Out of threads, retrying...",status);
+            IWARNLOG("pthread_create(%d): Out of threads, retrying...",status);
             Sleep(delay);
             delay *= 2;
         }
@@ -391,12 +391,12 @@ void Thread::startRelease()
     if (status) {
         threadid = 0;
         Release();
-        ERRLOG("pthread_create returns %d",status);
+        IERRLOG("pthread_create returns %d",status);
         PrintStackReport();
         PrintMemoryReport();
         StringBuffer s;
         getThreadList(s);
-        ERRLOG("Running threads:\n %s",s.str());
+        IERRLOG("Running threads:\n %s",s.str());
         throw makeOsException(status);
     }
     unsigned retryCount = 10;
@@ -406,7 +406,7 @@ void Thread::startRelease()
             break;
         else if (0 == --retryCount)
             throw MakeStringException(-1, "Thread::start(%s) failed", getName());
-        WARNLOG("Thread::start(%s) stalled, waiting to start, retrying", getName());
+        IWARNLOG("Thread::start(%s) stalled, waiting to start, retrying", getName());
     }
 #endif
     alive = true;
@@ -589,7 +589,7 @@ void CThreadedPersistent::start()
     if (!state.compare_exchange_strong(expected, s_running))
     {
         VStringBuffer msg("CThreadedPersistent::start(%s) - not ready", athread.getName());
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         PrintStackReport();
         throw MakeStringExceptionDirect(-1, msg.str());
     }
@@ -1025,7 +1025,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
                 if (!availsem.wait(0)) {  // make sure take allocated sem if has become available
                     if (noBlock || timeout > 0)
                         throw MakeStringException(0, "No threads available in pool %s", poolname.get());
-                    WARNLOG("Pool limit exceeded for %s", poolname.get());
+                    IWARNLOG("Pool limit exceeded for %s", poolname.get());
                 }
                 else
                     timedout = false;
@@ -1083,7 +1083,7 @@ public:
     {
         stopAll(true);
         if (!joinAll(true, timeoutOnRelease))
-            WARNLOG("%s; timedout[%d] waiting for threads in pool", poolname.get(), timeoutOnRelease);
+            IWARNLOG("%s; timedout[%d] waiting for threads in pool", poolname.get(), timeoutOnRelease);
         CriticalBlock block(crit);
         bool first=true;
         ForEachItemIn(i,threadwrappers)
@@ -1093,7 +1093,7 @@ public:
             {
                 if (first)
                 {
-                    WARNLOG("Threads still active: ");
+                    IWARNLOG("Threads still active: ");
                     first = false;
                 }
                 StringBuffer threadInfo;
@@ -1322,7 +1322,7 @@ static void CheckAllowedProgram(const char *prog,const char *allowed)
         if (WildMatch(head.str(),list.item(i)))
             return;
     }
-    ERRLOG("Unauthorized pipe program(%s)",head.str());
+    AERRLOG("Unauthorized pipe program(%s)",head.str());
     throw MakeStringException(-1,"Unauthorized pipe program(%s)",head.str());
 }
 
@@ -1444,7 +1444,7 @@ public:
             if (_title) {
                 StringBuffer errstr;
                 formatSystemError(errstr, GetLastError());
-                ERRLOG("%s: PIPE process '%s' failed: %s", title.get(), prog, errstr.str());
+                OERRLOG("%s: PIPE process '%s' failed: %s", title.get(), prog, errstr.str());
             }
             return false;
         }
@@ -1730,7 +1730,7 @@ static unsigned dowaitpid(HANDLE pid, int mode)
                 return WEXITSTATUS(stat);
             else if (WIFSIGNALED(stat))
             {
-                ERRLOG("Program was terminated by signal %u", (unsigned) WTERMSIG(stat));
+                OERRLOG("Program was terminated by signal %u", (unsigned) WTERMSIG(stat));
                 if (WTERMSIG(stat)==SIGPIPE)
                     return 0;
                 return 254;
@@ -1746,7 +1746,7 @@ static unsigned dowaitpid(HANDLE pid, int mode)
         if (err == ECHILD) 
             break;
         if (err!=EINTR) {
-            ERRLOG("dowait failed with errcode %d",err);
+            OERRLOG("dowait failed with errcode %d",err);
             return (unsigned)-1;
         }       
     }
@@ -1811,7 +1811,7 @@ class CLinuxPipeProcess: implements IPipeProcess, public CInterface
                             totsz+=sz;
                         }
                         if (totsz)
-                            WARNLOG("Lost %d bytes of stderr output",totsz);
+                            IWARNLOG("Lost %d bytes of stderr output",totsz);
                     }
                 }
 
