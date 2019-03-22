@@ -30,6 +30,8 @@
  */
 
 #define TRACE_INTERVAL 100
+const char* const logFileExt = ".log";
+const char* const rolloverFileExt = ".old";
 
 CLogSerializer::CLogSerializer()
 {
@@ -203,6 +205,76 @@ void CLogSerializer::splitLogRecord(MemoryBuffer& rawdata, StringBuffer& GUID, S
     }
 }
 
+bool CLogSerializer::readLogRequest(CLogRequestInFile* logRequestInFile, StringBuffer& logRequest)
+{
+    //Open the file if exists.
+    StringBuffer fileName = logRequestInFile->getFileName();
+    Owned<IFile> file = createIFile(fileName);
+    Owned<IFileIO> fileIO = file->open(IFOread);
+    if (!fileIO)
+    {
+        //The file may be renamed from .log to .old.
+        fileName.replaceString(logFileExt, rolloverFileExt);
+        file.setown(createIFile(fileName));
+        fileIO.setown(file->open(IFOread));
+        if (!fileIO)
+        {
+            ERRLOG("Unable to open logging file %s", fileName.str());
+            return false;
+        }
+    }
+
+    //Read data size
+    char dataSize[9];
+    memset(dataSize, 0, 9);
+    offset_t finger = logRequestInFile->getPos();
+    size32_t bytesRead = fileIO->read(finger, 9, dataSize);
+    if (bytesRead < 9)
+    {
+        ERRLOG("Failed to read logging file %s: not enough data for dataSize", fileName.str());
+        return false;
+    }
+    if (dataSize[8] != ' ')
+    {
+        ERRLOG("Failed to read logging file %s: incorrect data format for dataSize.", fileName.str());
+        return false;
+    }
+    dataSize[8] = 0;
+
+    char* eptr = nullptr;
+    int dataLen = (int)strtol(dataSize, &eptr, 8);
+    if (*eptr != '\0')
+    {
+        ERRLOG("Failed to read logging file %s: incorrect data format for dataSize.", fileName.str());
+        return false;
+    }
+
+    if (dataLen + 9 != logRequestInFile->getSize())
+    {
+        ERRLOG("Failed to read logging file %s: incorrect dataSize", fileName.str());
+        return false;
+    }
+
+    //Read other data
+    MemoryBuffer data;
+    finger += 9;
+    bytesRead = fileIO->read(finger, dataLen, data.reserveTruncate(dataLen));
+    if (bytesRead < dataLen)
+    {
+        ERRLOG("Failed to read logging file %s: dataSize = %d, bytesRead = %d", fileName.str(), dataLen, bytesRead);
+        return false;
+    }
+
+    //Find GUID and log request
+    StringBuffer GUID;
+    splitLogRecord(data, GUID, logRequest);
+    if (strieq(GUID, logRequestInFile->getGUID()))
+        return true;
+
+    ERRLOG("Failed to read logging file %s: GUID read (%s) is not same as GUID (%s)", fileName.str(), GUID.str(), logRequestInFile->getGUID());
+    return false;
+}
+
 void CLogSerializer::loadSendLogs(GuidSet& ackSet, GuidMap& missedLogs, unsigned long& total_missed)//
 {
     try
@@ -311,7 +383,7 @@ void CLogSerializer::loadAckedLogs(GuidSet& ackedLogs)//
 StringBuffer& CLogSerializer::GetRolloverFileName(StringBuffer& oldFile, StringBuffer& newfile, const char* newExtension)
 {
     newfile.append(oldFile);
-    newfile.replaceString(".log",newExtension);
+    newfile.replaceString(logFileExt, newExtension);
     return newfile;
 }
 
