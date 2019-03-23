@@ -464,7 +464,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
         if (h == NULL)
         {
             StringBuffer dlErrorMsg(dlerror());
-            DBGLOG("Warning: Could not load %s: %s", name, dlErrorMsg.str());
+            OWARNLOG("Warning: Could not load %s: %s", name, dlErrorMsg.str());
             if (raiseOnError)
             {
                 if (isCorruptDll(dlErrorMsg.str()))
@@ -2554,11 +2554,11 @@ StringBuffer &getFileAccessUrl(StringBuffer &out)
             const char *host = secureFileAccessInfo->queryProp("@host");
             unsigned port = secureFileAccessInfo->getPropInt("@port", (unsigned)-1);
             if (isEmptyString(protocol))
-                WARNLOG("Missing protocol from secure file access definition");
+                OWARNLOG("Missing protocol from secure file access definition");
             else if (isEmptyString(host))
-                WARNLOG("Missing host from secure file access definition");
+                OWARNLOG("Missing host from secure file access definition");
             else if ((unsigned)-1 == port)
-                WARNLOG("Missing port from secure file access definition");
+                OWARNLOG("Missing port from secure file access definition");
             else
                 out.appendf("%s://%s:%u/WsDfu", protocol, host, port);
         }

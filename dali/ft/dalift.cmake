@@ -36,6 +36,7 @@ set (    SRCS
     )
 
 include_directories ( 
+         ./../../common/remote 
          ./../../fs/dafsclient
          ./../../system/mp 
          ./../base 

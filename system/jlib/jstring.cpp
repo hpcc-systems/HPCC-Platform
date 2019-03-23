@@ -455,7 +455,7 @@ StringBuffer & StringBuffer::limited_valist_appendf(size_t szLimit, const char *
             if (0 != szLimit && size>szLimit) size = szLimit; // if so, will be last attempt
             if (size>MAX_BUF_SIZE)
             {
-                WARNLOG("StringBuffer::valist_appendf(\"%s\"): vsnprintf exceeds limit (%zu)", format, size);
+                IWARNLOG("StringBuffer::valist_appendf(\"%s\"): vsnprintf exceeds limit (%zu)", format, size);
                 size = szLimit = MAX_BUF_SIZE;
             }
             try { ensureCapacity(size); }

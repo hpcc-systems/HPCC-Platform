@@ -40,6 +40,8 @@
 #include <sstream>
 #include <ctime>
 #include "lnuid.h"
+#include "jlog.hpp"
+
 using namespace std;
 
 namespace ln_uid {
@@ -87,8 +89,13 @@ namespace ln_uid {
 #if defined(__linux__) || defined(__APPLE__)
         FILE *fp;
         fp = fopen("/dev/urandom", "r");
-        fread(&randomdata, 1, random_byte_count, fp);
-        fclose(fp);
+        if (!fp || fread(&randomdata, 1, random_byte_count, fp) != random_byte_count)
+        {
+            // Should never happen, but if it does log it and ignore
+            OERRLOG("Could not read data from /dev/urandom");
+        }
+        if (fp)
+            fclose(fp);
 #elif _WIN32
         HCRYPTPROV hProvider;
 

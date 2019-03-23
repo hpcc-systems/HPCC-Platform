@@ -77,7 +77,7 @@ void Allocator::_reallocate(aindex_t newLen, size32_t itemSize)
         newMax = (newLen + DOUBLE_LIMIT) & ~(DOUBLE_LIMIT-1);
         if (newLen >= newMax) // wraparound
         {
-            PrintLog("Out of memory (overflow) in Array allocator: itemSize = %d, trying to allocate %d items", itemSize, newLen);
+            IERRLOG("Out of memory (overflow) in Array allocator: itemSize = %d, trying to allocate %d items", itemSize, newLen);
             throw MakeStringException(0, "Out of memory (overflow) in Array allocator: itemSize = %d, trying to allocate %d items",itemSize, newLen);
         }
     }
@@ -89,13 +89,13 @@ void Allocator::_reallocate(aindex_t newLen, size32_t itemSize)
     size_t allocSize = (size_t)itemSize * newMax;
     if (allocSize < newMax)
     {
-        PrintLog("Out of memory (overflow) in Array allocator: itemSize = %d, trying to allocate %d items", itemSize, newLen);
+        IERRLOG("Out of memory (overflow) in Array allocator: itemSize = %d, trying to allocate %d items", itemSize, newLen);
         throw MakeStringException(0, "Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, newLen);
     }
     void *newhead = realloc(_head, allocSize);
     if (!newhead) 
     {
-        PrintLog("Out of memory in Array allocator: itemSize = %d, trying to allocate %d items", itemSize, max);
+        IERRLOG("Out of memory in Array allocator: itemSize = %d, trying to allocate %d items", itemSize, max);
         throw MakeStringException(0, "Out of memory in Array allocator: itemSize = %d, trying to allocate %d items",itemSize, max);
     }
     max = newMax;
