@@ -28,6 +28,7 @@
 #include "Exceptions.hpp"
 #include "mod_template_support/EnvModTemplate.hpp"
 #include "mod_template_support/TemplateExecutionException.hpp"
+#include "jutil.hpp"
 
 //
 // Inputs file format (json)
@@ -47,10 +48,11 @@ std::vector<std::string> splitString(const std::string &input, const std::string
 // Default configuration directories
 EnvironmentType envType = XML;
 std::string masterSchemaFile = "environment.xsd";
-std::string configSchemaDir = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
+std::string configSchemaDir = "";
+std::string configSchemaRelativeDir = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
 std::string modTemplateFile;
 std::string modTemplateSchemaFile = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "templates" PATHSEPSTR "schema" PATHSEPSTR "ModTemplateSchema.json";
-std::string configSchemaPluginsDir = "xsd" PATHSEPSTR "plugins" PATHSEPSTR;
+std::string configSchemaPluginsDir = "";
 std::string envFile, envOutputFile;
 struct InputDef {
     std::string inputName;
@@ -113,6 +115,11 @@ void usage()
 
 int main(int argc, char *argv[])
 {
+    //
+    // Build the default directory for the schema files
+    std::string processPath(queryCurrentProcessPath());
+    configSchemaDir = processPath.substr(0, processPath.find_last_of(PATHSEPSTR)) + PATHSEPSTR + configSchemaRelativeDir;
+
     if (argc == 1)
     {
         usage();
