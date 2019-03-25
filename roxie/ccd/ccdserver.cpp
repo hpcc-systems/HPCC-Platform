@@ -11685,7 +11685,8 @@ public:
         diskmeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
         if (grouped)
             diskmeta.setown(createDeltaRecordSize(diskmeta, +1));
-        blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && (diskmeta->getFixedSize() >= MIN_ROWCOMPRESS_RECSIZE))); //always use new compression
+        size32_t fixedSize = diskmeta->getFixedSize();
+        blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && ((0 == fixedSize) || (fixedSize >= MIN_ROWCOMPRESS_RECSIZE)))); //always use new compression
         encrypted = false; // set later
         tallycrc = true;
         uncompressedBytesWritten = 0;
