@@ -23,6 +23,7 @@
 #endif
 
 #include "jiface.hpp"
+#include "jptree.hpp"
 #include "mpbase.hpp"
 class RemoteFilename;
 class RemoteFilenameArray;
@@ -371,5 +372,7 @@ inline DFD_OS SepCharBaseOs(char c)
 
 extern da_decl void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file);
 
+inline const char *queryFileKind(IPropertyTree &pt) { return pt.queryProp("@kind"); }
+inline const char *queryFileKind(IFileDescriptor *f) { return queryFileKind(f->queryProperties()); }
 
 #endif
