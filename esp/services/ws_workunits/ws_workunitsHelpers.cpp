@@ -39,8 +39,6 @@
 #include "zcrypt.hpp"
 #endif
 
-static const int THREAD_POOL_SIZE = 40;
-
 namespace ws_workunits {
 
 const char * const timerFilterText = "measure[time],source[global],depth[1,]"; // Does not include hthor subgraph timings
@@ -1848,7 +1846,7 @@ unsigned WsWuInfo::getResourceURLCount()
     return 0;
 }
 
-void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownload, const char *outFile = nullptr)
+void appendIOStreamContent(MemoryBuffer &mb, IBufferedFileIOStream *ios, bool forDownload, const char *outFile = nullptr)
 {
     Owned<IFileIOStream> outIOS;
     if (!isEmptyString(outFile))
@@ -1861,19 +1859,9 @@ void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownloa
     while (!eof)
     {
         line.clear();
-        for (;;)
-        {
-            char c;
-            size32_t numRead = ios->read(1, &c);
-            if (!numRead)
-            {
-                eof = true;
-                break;
-            }
-            line.append(c);
-            if (c=='\n')
-                break;
-        }
+        eof = ios->readLine(true, line);
+        if (line.isEmpty())
+            continue;
 
         if (outIOS)
             outIOS->write(line.length(), line.str());
@@ -1896,7 +1884,7 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
     if(!rIO)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Cannot read file %s.", fileName);
-    OwnedIFileIOStream ios = createBufferedIOStream(rIO);
+    Owned<IBufferedFileIOStream> ios = createBufferedFileIOStream(rIO);
 
     Owned<IFileIOStream> outIOS;
     if (!isEmptyString(outFile))
@@ -1930,19 +1918,9 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     while(!eof)
     {
         line.clear();
-        for (;;)
-        {
-            char c;
-            size32_t numRead = ios->read(1, &c);
-            if (!numRead)
-            {
-                eof = true;
-                break;
-            }
-            line.append(c);
-            if (c=='\n')
-                break;
-        }
+        eof = ios->readLine(true, line);
+        if (line.isEmpty())
+            continue;
 
         //Retain all rows that match a unique program instance - by retaining all rows that match a pid
         const char * pPid = strstr(line.str() + pidOffset, pidchars);
@@ -1988,7 +1966,8 @@ void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf, const
     if (!rIO)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read file %s.",fileName);
 
-    readWorkunitLog(createBufferedIOStream(rIO), buf, outFile);
+    Owned<IBufferedFileIOStream> ios = createBufferedFileIOStream(rIO);
+    readWorkunitLog(ios.get(), buf, outFile);
 }
 
 void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char *ipAddress, const char* logDate,
@@ -2052,7 +2031,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char *ipAddr
     if (!rIO)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read file %s.",logName.str());
 
-    OwnedIFileIOStream ios = createBufferedIOStream(rIO);
+    Owned<IBufferedFileIOStream> ios = createBufferedFileIOStream(rIO);
     if (slaveNum > 0)
     {
         readWorkunitLog(ios.get(), buf, outFile);
@@ -2063,65 +2042,60 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char *ipAddr
     }
 }
 
-void WsWuInfo::readWorkunitLog(OwnedIFileIOStream ios, MemoryBuffer& buf, const char* outFile)
+void WsWuInfo::readWorkunitLog(IBufferedFileIOStream* ios, MemoryBuffer& buf, const char* outFile)
 {
     VStringBuffer startwuid("Started wuid=%s", wuid.str());
     VStringBuffer endwuid("Finished wuid=%s", wuid.str());
 
-    const char *sw = startwuid.str();
-    const char *ew = endwuid.str();
-
     bool eof = false;
     bool outputThisLine = false;
+    unsigned processID = 0;
 
+    StringBuffer line;
     CWsWuFileHelper helper(nullptr);
     Owned<IFileIOStream> outIOS = helper.createIOStreamWithFileName(outFile, IFOcreate);
     while (!eof)
     {
-        StringBuffer line;
-        for (;;)
-        {
-            char c;
-            size32_t numRead = ios->read(1, &c);
-            if (!numRead)
-            {
-                eof = true;
-                break;
-            }
-            line.append(c);
-            if (c=='\n')
-                break;
-        }
-        if (strstr(line.str(), sw))
+        line.clear();
+        eof = ios->readLine(true, line);
+        if (line.isEmpty())
+            continue;
+
+        if (strstr(line, startwuid))
         {
             outputThisLine = true;
             outputALine(line.length(), line.str(), buf, outIOS);
+            processID = readLogProcessID(line);
         }
         else if (outputThisLine)
         {
-            outputALine(line.length(), line.str(), buf, outIOS);
-
             //If the slave is restarted before WU is finished, we cannot find out the "Finished wuid=...".
             //So, we should check whether the slave is restarting or not.
-            //If restarting, the row ID will be reset to a small number (assume < 5: I saw 0, 1, and 2).
-            unsigned long rowID;
-            if (readLogLineID((char*)line.str(), rowID) && (rowID < 5))
+            unsigned pID = readLogProcessID(line);
+            if ((pID > 0) && (pID != processID))
                 break;
+
+            outputALine(line.length(), line.str(), buf, outIOS);
         }
 
-        if (strstr(line.str(), ew))
+        if (strstr(line, endwuid))
             break;
     }
 }
 
-bool  WsWuInfo::readLogLineID(char* linePtr, unsigned long& lineID)
+unsigned WsWuInfo::readLogProcessID(const char* line)
 {
-    char *ep;
-    lineID = strtoul(linePtr, &ep, 16);
-    if (ep - linePtr < 8)  //LineID is the first 8 bytes of a log line
-        return false;
+    StringArray items;
+    items.appendList(line, " ", true, 4);
+    if (items.ordinality() < 4)
+        return 0; //no processID in this line
 
-    return true;
+    char* eptr = nullptr;
+    const char* ids = items.item(3);
+    unsigned processID = (unsigned)strtol(ids, &eptr, 10);
+    if (*eptr != '\0')
+        return 0; //no processID in this line
+    return processID;
 }
 
 void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
@@ -2244,7 +2218,7 @@ void WsWuInfo::getWorkunitCpp(const char* cppname, const char* description, cons
     OwnedIFileIO rIO = cppfile->openShared(IFOread,IFSHfull);
     if (!rIO)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
-    OwnedIFileIOStream ios = createBufferedIOStream(rIO);
+    Owned<IBufferedFileIOStream> ios = createBufferedFileIOStream(rIO);
     if (!ios)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
 
@@ -2272,7 +2246,7 @@ void WsWuInfo::getWorkunitAssociatedXml(const char* name, const char* ipAddress,
     OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
     if (!rIO)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
-    OwnedIFileIOStream ios = createBufferedIOStream(rIO);
+    Owned<IBufferedFileIOStream> ios = createBufferedFileIOStream(rIO);
     if (!ios)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
 
@@ -3462,11 +3436,10 @@ void CWsWuFileHelper::createThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInf
 
     Owned<IThreadFactory> threadFactory = new CGetThorSlaveLogToFileThreadFactory();
     Owned<IThreadPool> threadPool = createThreadPool("WsWuFileHelper GetThorSlaveLogToFile Thread Pool",
-            threadFactory, NULL, THREAD_POOL_SIZE, INFINITE);
+            threadFactory, NULL, getThorSlaveLogThreadPoolSize, INFINITE);
 
     unsigned numberOfSlaveLogs = clusterInfo->getNumberOfSlaveLogs();
     BoolHash uniqueProcesses;
-    UnsignedArray threadHandles;
     Owned<IStringIterator> thorInstances = cwu->getProcesses("Thor");
     ForEach (*thorInstances)
     {
@@ -3507,17 +3480,13 @@ void CWsWuFileHelper::createThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInf
             for (unsigned i = 0; i < numberOfSlaveLogs; i++)
             {
                 VStringBuffer fileName("%s%c%s_thorslave.%u.%s.log", path, PATHSEPCHAR, processName.str(), i+1, logDate.str());
-                Owned<CThorSlaveLogFileItem> logFile = new CThorSlaveLogFileItem(groupName,
-                    logDate, logDir, i+1, fileName);
                 Owned<CGetThorSlaveLogToFileThreadParam> threadParam = new CGetThorSlaveLogToFileThreadParam(
-                    &winfo, logFile.getClear());
-                PooledThreadHandle handle = threadPool->start( threadParam.getClear());
-                threadHandles.append(handle);
+                    &winfo, groupName, logDate, logDir, i+1, fileName);
+                threadPool->start(threadParam.getClear());
             }
         }
     }
-    ForEachItemIn(i, threadHandles)
-        threadPool->join(threadHandles.item(i));
+    threadPool->joinAll();
 }
 
 void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* espIP, const char* thorIP, const char* problemDesc,
@@ -3700,11 +3669,13 @@ int CWsWuFileHelper::zipAFolder(const char* folder, bool gzip, const char* zipFi
 }
 
 void CWsWuFileHelper::createWUZAPFile(IEspContext& context, Owned<IConstWorkUnit>& cwu, CWsWuZAPInfoReq& request,
-    StringBuffer& zipFileName, StringBuffer& zipFileNameWithPath)
+    StringBuffer& zipFileName, StringBuffer& zipFileNameWithPath, unsigned _getThorSlaveLogThreadPoolSize)
 {
     StringBuffer zapReportNameStr, folderToZIP, inFileNamePrefixWithPath;
     Owned<IFile> zipDir = createWorkingFolder(context, request.wuid.str(), "ZAPReport_", zapReportNameStr, folderToZIP);
     setZAPFile(request.zapFileName.str(), zapReportNameStr.str(), zipFileName, zipFileNameWithPath);
+
+    getThorSlaveLogThreadPoolSize = _getThorSlaveLogThreadPoolSize;
 
     //create WU ZAP files
     inFileNamePrefixWithPath.set(folderToZIP.str()).append(PATHSEPCHAR).append(zapReportNameStr.str());
@@ -3773,10 +3744,11 @@ IFile* CWsWuFileHelper::createWorkingFolder(IEspContext& context, const char* wu
     return workingDir.getClear();
 }
 
-IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, Owned<IConstWorkUnit>& cwu, CWsWuZAPInfoReq& request)
+IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, Owned<IConstWorkUnit>& cwu,
+    CWsWuZAPInfoReq& request, unsigned getThorSlaveLogThreadPoolSize)
 {
     StringBuffer zapFileName, zapFileNameWithPath;
-    createWUZAPFile(context, cwu, request, zapFileName, zapFileNameWithPath);
+    createWUZAPFile(context, cwu, request, zapFileName, zapFileNameWithPath, getThorSlaveLogThreadPoolSize);
 
     if (request.sendEmail)
     {

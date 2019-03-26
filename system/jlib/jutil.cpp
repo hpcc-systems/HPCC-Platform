@@ -1466,7 +1466,7 @@ void JBASE32_Decode(const char *bi,StringBuffer &out)
 }
 
 
-static void DelimToStringArray(const char *csl, StringArray &dst, const char *delim, bool deldup, bool trimSpaces)
+static void DelimToStringArray(const char *csl, StringArray &dst, const char *delim, bool deldup, bool trimSpaces, unsigned maxNumItems)
 {
     if (!csl)
         return;
@@ -1511,20 +1511,22 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
         }
         else
             dst.append(str.str());
+        if ((maxNumItems > 0) && (maxNumItems == dst.ordinality()))
+            break;
         if (!*e)
             break;
         s = e+1;
     }
 }
 
-void StringArray::appendList(const char *list, const char *delim, bool trimSpaces)
+void StringArray::appendList(const char *list, const char *delim, bool trimSpaces, unsigned maxNumItems)
 {
-    DelimToStringArray(list, *this, delim, false, trimSpaces);
+    DelimToStringArray(list, *this, delim, false, trimSpaces, maxNumItems);
 }
 
-void StringArray::appendListUniq(const char *list, const char *delim, bool trimSpaces)
+void StringArray::appendListUniq(const char *list, const char *delim, bool trimSpaces, unsigned maxNumItems)
 {
-    DelimToStringArray(list, *this, delim, true, trimSpaces);
+    DelimToStringArray(list, *this, delim, true, trimSpaces, maxNumItems);
 }
 
 StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim)

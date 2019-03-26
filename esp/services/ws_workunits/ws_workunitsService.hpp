@@ -342,6 +342,7 @@ private:
     Owned<IPropertyTree> directories;
     int maxRequestEntityLength;
     Owned<IThreadPool> clusterQueryStatePool;
+    unsigned getThorSlaveLogThreadPoolSize = GET_THOR_SLAVE_LOG_THREAD_POOL_SIZE;
 
 public:
     QueryFilesInUse filesInUse;
@@ -361,6 +362,12 @@ public:
         VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspBinding[@name=\"%s\"]/BatchWatch", process, name);
         batchWatchFeaturesOnly = cfg->getPropBool(xpath.str(), false);
         directories.set(cfg->queryPropTree("Software/Directories"));
+
+        xpath.setf("Software/EspProcess[@name=\"%s\"]/EspBinding[@name=\"%s\"]/service", process, name);
+        const char *service = cfg->queryProp(xpath);
+
+        xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/GetThorSlaveLogThreadPoolSize", process, service);
+        getThorSlaveLogThreadPoolSize = cfg->getPropInt(xpath, GET_THOR_SLAVE_LOG_THREAD_POOL_SIZE);
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
@@ -392,6 +399,7 @@ private:
     bool batchWatchFeaturesOnly;
     CWsWorkunitsEx *wswService;
     Owned<IPropertyTree> directories;
+    unsigned getThorSlaveLogThreadPoolSize = GET_THOR_SLAVE_LOG_THREAD_POOL_SIZE;
 };
 
 void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);

@@ -437,6 +437,9 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     Owned<CClusterQueryStateThreadFactory> threadFactory = new CClusterQueryStateThreadFactory();
     clusterQueryStatePool.setown(createThreadPool("CheckAndSetClusterQueryState Thread Pool", threadFactory, NULL,
             cfg->getPropInt(xpath.str(), CHECK_QUERY_STATUS_THREAD_POOL_SIZE)));
+
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/GetThorSlaveLogThreadPoolSize", process, service);
+    getThorSlaveLogThreadPoolSize = cfg->getPropInt(xpath, GET_THOR_SLAVE_LOG_THREAD_POOL_SIZE);
 }
 
 void CWsWorkunitsEx::refreshValidClusters()
@@ -4716,7 +4719,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         StringBuffer zipFileName, zipFileNameWithPath;
         //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
         CWsWuFileHelper helper(directories);
-        helper.createWUZAPFile(context, cwu, zapInfoReq, zipFileName, zipFileNameWithPath);
+        helper.createWUZAPFile(context, cwu, zapInfoReq, zipFileName, zipFileNameWithPath, getThorSlaveLogThreadPoolSize);
 
         //Download ZIP file to user
         Owned<IFile> f = createIFile(zipFileNameWithPath.str());

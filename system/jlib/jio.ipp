@@ -99,6 +99,80 @@ protected:
         curBufferOffset += sizeGot;
         return sizeGot;
     }
+    inline bool readLineFromBuffer(bool keepCRLF, StringBuffer & outBuffer) 
+    {
+        if ((numInBuffer == curBufferOffset) && !fillBuffer())
+            return true;
+
+        bool eof = false;
+        bool foundCRLF = false;
+        while (true)
+        {
+            size32_t outLength = 0;
+            char * outStartFrom = (char *) buffer+curBufferOffset;
+            size32_t tempOffset = curBufferOffset;
+            while (tempOffset < numInBuffer)
+            {
+                if (buffer[tempOffset] == '\r') // standard case, \r\n marks a new header line.
+                {
+                    foundCRLF = true;
+                    tempOffset++;
+                    if(keepCRLF)
+                        outLength++;
+
+                    //check \n
+                    if (tempOffset < numInBuffer)
+                    {
+                        if(buffer[tempOffset] == '\n')
+                        {
+                            tempOffset++;
+                            if(keepCRLF)
+                                outLength++;
+                        }
+
+                        outBuffer.append(outLength, outStartFrom);
+                        curBufferOffset = tempOffset;
+                    }
+                    else
+                    {
+                        outBuffer.append(outLength, outStartFrom);
+                        eof = !fillBuffer();
+                        if (!eof && (buffer[0] == '\n'))
+                        {
+                            if(keepCRLF)
+                                outBuffer.append(buffer[0]);
+                            curBufferOffset++;
+                        }
+                    }
+                    break;
+                }
+                else if (buffer[tempOffset] == '\n') // deal with non-standard case, when only a \n marks a new line.
+                {
+                    foundCRLF = true;
+                    tempOffset++;
+                    if (keepCRLF)
+                        outLength++;
+
+                    outBuffer.append(outLength, outStartFrom);
+                    curBufferOffset = tempOffset;
+                    break;
+                }
+
+                outLength++;
+                tempOffset++;
+            }
+
+            if(foundCRLF)
+                break;
+
+            outBuffer.append(outLength, outStartFrom);
+            eof = !fillBuffer();
+            if (eof)
+                break;
+        }
+
+        return eof;
+    }
 
     virtual bool fillBuffer()=0;
     virtual size32_t directRead(size32_t len, void * data)=0;

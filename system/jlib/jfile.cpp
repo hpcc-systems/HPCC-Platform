@@ -2535,7 +2535,7 @@ size32_t CFileIOStream::write(size32_t len, const void * data)
 //---------------------------------------------------------------------------
 
 
-class CBufferedFileIOStreamBase : public CBufferedIOStreamBase, implements IFileIOStream
+class CBufferedFileIOStreamBase : public CBufferedIOStreamBase, implements IBufferedFileIOStream
 {
 protected:
     virtual offset_t directSize() = 0;
@@ -2611,6 +2611,11 @@ public:
     size32_t read(size32_t len, void * data)
     {
         return CBufferedIOStreamBase::doread(len, data);
+    }
+
+    bool readLine(bool keepCRLF, StringBuffer & outBuffer)
+    {
+        return CBufferedIOStreamBase::readLineFromBuffer(keepCRLF, outBuffer);
     }
 
     size32_t write(size32_t len, const void * data)
@@ -4202,6 +4207,13 @@ IFileIOStream * createBufferedAsyncIOStream(IFileAsyncIO * io, unsigned bufsize)
     if (bufsize == (unsigned)-1)
         bufsize = DEFAULT_BUFFER_SIZE*2;
     return new CBufferedAsyncIOStream(io, bufsize);
+}
+
+IBufferedFileIOStream * createBufferedFileIOStream(IFileIO * io, unsigned bufsize)
+{
+    if (bufsize == (unsigned)-1)
+        bufsize = DEFAULT_BUFFER_SIZE;
+    return new CBufferedFileIOStream(io, bufsize);
 }
 
 IReadSeq *createReadSeq(IFileIOStream * stream, offset_t offset, size32_t size)
