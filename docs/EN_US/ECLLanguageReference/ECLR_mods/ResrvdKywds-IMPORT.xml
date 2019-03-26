@@ -43,7 +43,8 @@
         <row>
           <entry><emphasis>folder</emphasis></entry>
 
-          <entry>A folder or file name in the repository.</entry>
+          <entry>A folder (or file name containing an EXPORTed MODULE
+          structure) in the repository.</entry>
         </row>
 
         <row>
@@ -113,7 +114,8 @@ IMPORT $.^.MyOtherModule       //makes available the definitions from MyOtherMod
 IMPORT $.^.^.SomeOtherModule   //makes available the definitions from SomeOtherModule folder,
                                //which is located in the grandparent folder of current folder
 
-IMPORT SomeFolder.SomeFile;    //make the specific file available
+IMPORT SomeFolder.SomeFile;    // make available a specific file
+                               // containing an EXPORTed MODULE
 
 IMPORT SomeReallyLongFolderName AS SN;  //alias the long name as "SN"
 
