@@ -146,7 +146,7 @@ WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(0), function(_func
     assertex(body->getOperator() == no_outofline);
     IHqlExpression * ecl = body->queryChild(0);
     exprs.append(*createValue(no_return_stmt, makeVoidType(), LINK(ecl)));
-    label.append(function->queryId());
+    label.append(function->queryId()->queryStr());
 }
 
 IHqlExpression * WorkflowItem::getFunction() const
