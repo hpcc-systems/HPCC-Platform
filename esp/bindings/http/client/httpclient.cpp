@@ -29,6 +29,19 @@
 #include "espplugin.ipp"
 #include "SOAP/Platform/soapmessage.hpp"
 
+static Owned<CHttpClientContext> theHttpClientContext;
+static CriticalSection httpCrit;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    theHttpClientContext.clear();
+}
+
 /*************************************************************************
      CHttpClient Implementation
 **************************************************************************/
@@ -68,6 +81,8 @@ void CHttpClientContext::initPersistentHandler()
 
 CHttpClientContext::~CHttpClientContext()
 {
+    if (m_persistentHandler.get())
+        m_persistentHandler->stop(true);
 }
 
 IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char* url)
@@ -983,9 +998,6 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
     return HttpClientErrCode::OK;
 }
 
-static Owned<CHttpClientContext> theHttpClientContext;
-static CriticalSection httpCrit;
-
 IHttpClientContext* getHttpClientContext()
 {
     CriticalBlock b(httpCrit);
@@ -1000,4 +1012,3 @@ IHttpClientContext* createHttpClientContext(IPropertyTree* config)
 {
     return new CHttpClientContext(config);
 }
-
