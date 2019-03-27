@@ -146,10 +146,14 @@ IPropertyTree *CEsdlSvcEngine::createTargetContext(IEspContext &context, IProper
     if (!skipContextConfig(tgtcfg))
     {
         Owned<IPropertyTree> config = createContextMethodConfig(tgtcfg);
-        if (config && (config->hasChildren() || config->getAttributes()->count()>0))
+        if (config)
         {
-            ensurePTree(localCtx, "Row/Common/ESP/Config");
-            localCtx->addPropTree("Row/Common/ESP/Config/Method", config.getClear());
+            Owned<IAttributeIterator> ai = config->getAttributes();
+            if (config->hasChildren() || ai->count()>0)
+            {
+                ensurePTree(localCtx, "Row/Common/ESP/Config");
+                localCtx->addPropTree("Row/Common/ESP/Config/Method", config.getClear());
+            }
         }
     }
     return localCtx.getLink();
