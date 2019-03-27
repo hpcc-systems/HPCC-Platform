@@ -110,10 +110,10 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="MachineUsageCacheSeconds" type="xs:nonNegativeInteger" use="optional" default="10">
+            <xs:attribute name="MachineUsageCacheMinutes" type="xs:nonNegativeInteger" use="optional" default="3">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>timeout for Component/TargerCluster/NodeGroup usage cache (in seconds).</tooltip>
+                        <tooltip>timeout for Component/TargerCluster/NodeGroup usage cache (in minutes).</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>

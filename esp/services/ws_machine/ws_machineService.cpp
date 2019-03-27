@@ -158,7 +158,7 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
     }
 
     machineUsageCache.setown(new MachineUsageCache(MACHINE_USAGE_MAX_CACHE_SIZE));
-    machineUsageCacheSeconds = pServiceNode->getPropInt("MachineUsageCacheSeconds", MACHINE_USAGE_CACHE_SECONDS);
+    machineUsageCacheMinutes = pServiceNode->getPropInt("MachineUsageCacheMinutes", MACHINE_USAGE_CACHE_MINUTES);
 
     m_threadPoolSize = pServiceNode->getPropInt("ThreadPoolSize", THREAD_POOL_SIZE);
     m_threadPoolStackSize = pServiceNode->getPropInt("ThreadPoolStackSize", THREAD_POOL_STACK_SIZE);
@@ -3094,7 +3094,7 @@ bool Cws_machineEx::readComponentUsageCache(IEspContext& context, const char* ca
     IEspGetComponentUsageResponse& resp)
 {
     Owned<MachineUsageCacheElement> cachedUsage = machineUsageCache->lookup(context,
-        cacheID, machineUsageCacheSeconds);
+        cacheID, machineUsageCacheMinutes);
     if (!cachedUsage)
         return false;
 
@@ -3109,7 +3109,7 @@ bool Cws_machineEx::readTargetClusterUsageCache(IEspContext& context, const char
     IEspGetTargetClusterUsageResponse& resp)
 {
     Owned<MachineUsageCacheElement> cachedUsage = machineUsageCache->lookup(context,
-        cacheID, machineUsageCacheSeconds);
+        cacheID, machineUsageCacheMinutes);
     if (!cachedUsage)
         return false;
 
@@ -3124,7 +3124,7 @@ bool Cws_machineEx::readNodeGroupUsageCache(IEspContext& context, const char* ca
     IEspGetNodeGroupUsageResponse& resp)
 {
     Owned<MachineUsageCacheElement> cachedUsage = machineUsageCache->lookup(context,
-        cacheID, machineUsageCacheSeconds);
+        cacheID, machineUsageCacheMinutes);
     if (!cachedUsage)
         return false;
 

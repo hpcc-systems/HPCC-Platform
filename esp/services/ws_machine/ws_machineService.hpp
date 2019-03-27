@@ -722,7 +722,7 @@ public:
 };
 
 const unsigned MACHINE_USAGE_MAX_CACHE_SIZE = 8;
-const unsigned MACHINE_USAGE_CACHE_SECONDS = 10;
+const unsigned MACHINE_USAGE_CACHE_MINUTES = 3;
 
 struct MachineUsageCacheElement: public CInterface, implements IInterface
 {
@@ -786,7 +786,7 @@ struct MachineUsageCache: public CInterface, implements IInterface
     IMPLEMENT_IINTERFACE;
     MachineUsageCache(size32_t _maxCacheSize=0) : maxCacheSize(_maxCacheSize){}
 
-    MachineUsageCacheElement* lookup(IEspContext &context, const char* id, unsigned timeOutSeconds)
+    MachineUsageCacheElement* lookup(IEspContext &context, const char* id, unsigned timeOutMinutes)
     {
         CriticalBlock block(crit);
 
@@ -796,7 +796,7 @@ struct MachineUsageCache: public CInterface, implements IInterface
         //erase data if it should be
         CDateTime timeNow;
         timeNow.setNow();
-        timeNow.adjustTimeSecs(-timeOutSeconds);
+        timeNow.adjustTimeSecs(-timeOutMinutes*60);
         while (true)
         {
             std::list<Linked<MachineUsageCacheElement> >::iterator list_iter = cache.begin();
@@ -1002,7 +1002,7 @@ private:
     BoolHash                    m_legacyFilters;
     Mutex                       mutex_machine_info_table;
     Owned<MachineUsageCache>    machineUsageCache;
-    unsigned                    machineUsageCacheSeconds;
+    unsigned                    machineUsageCacheMinutes;
 };
 
 //---------------------------------------------------------------------------------------------

@@ -469,8 +469,8 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
             <xsl:copy-of select="@monitorDaliFileServer|@excludePartitions"/>
             <xsl:apply-templates select="Properties/ProcessFilters" mode="copy"/>
-            <xsl:if test="string(@MachineUsageCacheSeconds) != ''">
-                <MachineUsageCacheSeconds><xsl:value-of select="@MachineUsageCacheSeconds"/></MachineUsageCacheSeconds>
+            <xsl:if test="string(@MachineUsageCacheMinutes) != ''">
+                <MachineUsageCacheMinutes><xsl:value-of select="@MachineUsageCacheMinutes"/></MachineUsageCacheMinutes>
             </xsl:if>
         </EspService>
         
