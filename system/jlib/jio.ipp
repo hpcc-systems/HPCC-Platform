@@ -108,34 +108,36 @@ protected:
         bool foundCRLF = false;
         while (true)
         {
-            size32_t outLength = 0;
-            char * outStartFrom = (char *) buffer+curBufferOffset;
-            size32_t tempOffset = curBufferOffset;
-            while (tempOffset < numInBuffer)
+            const char * bufStartFrom = (const char *) buffer;
+            const char * outStartFrom = bufStartFrom + curBufferOffset;
+            const char * ptr = outStartFrom;
+            while (ptr - bufStartFrom < numInBuffer)
             {
-                if (buffer[tempOffset] == '\r') // standard case, \r\n marks a new header line.
+                if (*ptr == '\r') // standard case, \r\n marks a new header line.
                 {
                     foundCRLF = true;
-                    tempOffset++;
-                    if(keepCRLF)
-                        outLength++;
+                    ptr++;
 
                     //check \n
-                    if (tempOffset < numInBuffer)
+                    if (ptr - bufStartFrom < numInBuffer)
                     {
-                        if(buffer[tempOffset] == '\n')
+                        if (*ptr == '\n')
                         {
-                            tempOffset++;
+                            ptr++;
                             if(keepCRLF)
-                                outLength++;
+                                outBuffer.append(ptr - outStartFrom, outStartFrom);
+                            else
+                                outBuffer.append(ptr - outStartFrom - 2, outStartFrom);
                         }
-
-                        outBuffer.append(outLength, outStartFrom);
-                        curBufferOffset = tempOffset;
+                        curBufferOffset = ptr - bufStartFrom;
                     }
                     else
                     {
-                        outBuffer.append(outLength, outStartFrom);
+                        if(keepCRLF)
+                            outBuffer.append(ptr - outStartFrom, outStartFrom);
+                        else
+                            outBuffer.append(ptr - outStartFrom - 1, outStartFrom);
+
                         eof = !fillBuffer();
                         if (!eof && (buffer[0] == '\n'))
                         {
@@ -146,26 +148,26 @@ protected:
                     }
                     break;
                 }
-                else if (buffer[tempOffset] == '\n') // deal with non-standard case, when only a \n marks a new line.
+                else if (*ptr == '\n') // deal with non-standard case, when only a \n marks a new line.
                 {
                     foundCRLF = true;
-                    tempOffset++;
-                    if (keepCRLF)
-                        outLength++;
+                    ptr++;
 
-                    outBuffer.append(outLength, outStartFrom);
-                    curBufferOffset = tempOffset;
+                    if(keepCRLF)
+                        outBuffer.append(ptr - outStartFrom, outStartFrom);
+                    else
+                        outBuffer.append(ptr - outStartFrom - 1, outStartFrom);
+                    curBufferOffset = ptr - bufStartFrom;
                     break;
                 }
 
-                outLength++;
-                tempOffset++;
+                ptr++;
             }
 
             if(foundCRLF)
                 break;
 
-            outBuffer.append(outLength, outStartFrom);
+            outBuffer.append(ptr - outStartFrom, outStartFrom);
             eof = !fillBuffer();
             if (eof)
                 break;
