@@ -1012,7 +1012,7 @@ ISocket* CSocket::accept(bool allowcancel)
         return NULL;
     }
     if (state != ss_open) {
-        ERRLOG("invalid accept, state = %d",(int)state);
+        IERRLOG("invalid accept, state = %d",(int)state);
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
     }
     if (connectionless()) {
@@ -1069,7 +1069,7 @@ void CSocket::set_linger(int lingertime)
     l.l_onoff = (lingertime>=0)?1:0;
     l.l_linger = (lingertime>=0)?lingertime:0;
     if (setsockopt(sock, SOL_SOCKET, SO_LINGER, (char*)&l, sizeof(l)) != 0) {
-        WARNLOG("Linger not set");
+        IWARNLOG("Linger not set");
     }
 }
 
@@ -1077,7 +1077,7 @@ void CSocket::set_keep_alive(bool set)
 {
     int on=set?1:0;
     if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&on, sizeof(on)) != 0) {
-        WARNLOG("KeepAlive not set");
+        IWARNLOG("KeepAlive not set");
     }
 }
 
@@ -1362,7 +1362,7 @@ void CSocket::connect_wait(unsigned timems)
                 unsigned sleeptime = getRandom() % 1000;
                 StringBuffer s;
                 ep.getIpText(s);
-                PrintLog("Connection to central node %s - sleeping %d milliseconds", s.str(), sleeptime);
+                DBGLOG("Connection to central node %s - sleeping %d milliseconds", s.str(), sleeptime);
                 Sleep(sleeptime);           
                 break;
             }
@@ -2062,7 +2062,7 @@ size32_t CSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
 
     if (nwritten < size)
     {
-        ERRLOG("writetms timed out; timeout: %u, nwritten: %u, size: %u", timeoutms, nwritten, size);
+        IERRLOG("writetms timed out; timeout: %u, nwritten: %u, size: %u", timeoutms, nwritten, size);
         THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
     }
 
@@ -2335,7 +2335,7 @@ bool CSocket::send_block(const void *blk,size32_t sz)
     }
 #ifdef TRACE_SLOW_BLOCK_TRANSFER
     if (elapsed>1000000*60)  // over 1min
-        WARNLOG("send_block took %ds to %s  (%d,%d,%d)",elapsed/1000000,tracename,startt2-startt,startt3-startt2,nowt-startt3);
+        IWARNLOG("send_block took %ds to %s  (%d,%d,%d)",elapsed/1000000,tracename,startt2-startt,startt3-startt2,nowt-startt3);
 #endif
     return true;
 }
@@ -2397,7 +2397,7 @@ size32_t CSocket::receive_block_size()
 #ifdef USERECVSEM
             CSemProtect semprot; // this will catch exception in write
             while (!semprot.wait(&receiveblocksem,&receiveblocksemowned,60*1000*5))
-                WARNLOG("Receive block stalled");
+                IWARNLOG("Receive block stalled");
 #endif
             bool eof=false;
             write(&eof,sizeof(eof));
@@ -2570,7 +2570,7 @@ void CSocket::set_send_buffer_size(size32_t maxsend)
         LOGERR2(ERRNO(),1,"getsockopt(SO_SNDBUF)");
     }
     if (v!=maxsend) 
-        WARNLOG("set_send_buffer_size requested %d, got %d",maxsend,v);
+        IWARNLOG("set_send_buffer_size requested %d, got %d",maxsend,v);
 #endif
 }
 
@@ -2595,7 +2595,7 @@ void CSocket::set_receive_buffer_size(size32_t max)
         LOGERR2(ERRNO(),1,"getsockopt(SO_RCVBUF)");
     }
     if (v<max) 
-        WARNLOG("set_receive_buffer_size requested %d, got %d",max,v);
+        IWARNLOG("set_receive_buffer_size requested %d, got %d",max,v);
 #endif
 }
 
@@ -2938,7 +2938,7 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
             {
                 if (!recursioncheck) {
                     recursioncheck = true;
-                    DBGLOG("Error retrieving interface flags for interface %s", item->ifr_name);
+                    IERRLOG("Error retrieving interface flags for interface %s", item->ifr_name);
                     recursioncheck = false;
                 }
                 continue;
@@ -4069,7 +4069,7 @@ class CSocketSelectThread: public CSocketBaseThread
         if (!dummysockopen) { 
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
             if(pipe(dummysock)) {
-                WARNLOG("CSocketSelectThread: create pipe failed %d",ERRNO());
+                IWARNLOG("CSocketSelectThread: create pipe failed %d",ERRNO());
                 return;
             }
             for (unsigned i=0;i<2;i++) {
@@ -4717,7 +4717,7 @@ class CSocketEpollThread: public CSocketBaseThread
         // if another thread closed fd before here don't fail
         if ( (srtn < 0) && (op != EPOLL_CTL_DEL) ){
             int err = ERRNO();
-            WARNLOG("epoll_ctl failed op:%d, fd:%d, err=%d", op, fd, err);
+            IWARNLOG("epoll_ctl failed op:%d, fd:%d, err=%d", op, fd, err);
         }
     }
 
@@ -4734,7 +4734,7 @@ class CSocketEpollThread: public CSocketBaseThread
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
             if(pipe(dummysock))
             {
-                WARNLOG("CSocketEpollThread: create pipe failed %d",ERRNO());
+                IWARNLOG("CSocketEpollThread: create pipe failed %d",ERRNO());
                 return;
             }
             for (unsigned i=0;i<2;i++)
@@ -4952,7 +4952,7 @@ public:
         if ( !sock || !nfy ||
              !(mode & (SELECTMODE_READ|SELECTMODE_WRITE|SELECTMODE_EXCEPT)) )
         {
-            WARNLOG("EPOLL: adding fd but sock or nfy is NULL or mode is empty");
+            IWARNLOG("EPOLL: adding fd but sock or nfy is NULL or mode is empty");
             dbgassertex(false);
             return 0;
         }
@@ -5001,7 +5001,7 @@ public:
             if (!checkSocks())
             {
                 // bad socket not found
-                WARNLOG("CSocketEpollThread::updateEpollVars cannot find socket error");
+                IWARNLOG("CSocketEpollThread::updateEpollVars cannot find socket error");
                 if (validateerrcount>10)
                     throw MakeStringException(-1,"CSocketEpollThread:Socket epoll error %d",validateselecterror);
             }

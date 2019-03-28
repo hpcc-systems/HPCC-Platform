@@ -235,7 +235,7 @@ static void calibrate_timing()
                 return;
             }
         }
-        ERRLOG("calibrate_timing failed using RDTSC");
+        DBGLOG("calibrate_timing failed using RDTSC");
         useRDTSC = false;
     }
 
@@ -348,7 +348,7 @@ void calibrate_timing()
                 return;
             }
         }
-        ERRLOG("calibrate_timing failed using RDTSC");
+        IERRLOG("calibrate_timing failed using RDTSC");
         useRDTSC = false;
     }
 #endif
@@ -571,7 +571,7 @@ public:
         if (numSections())
         {
             StringBuffer str;
-            PrintLog(getTimings(str).str());
+            LOG(MCuserInfo, "%s", getTimings(str).str());
         }
     }
     virtual void mergeTiming(const char * scope, cycle_t totalcycles, cycle_t maxcycles, const unsigned count)
@@ -1417,7 +1417,7 @@ void getDiskUsage(char const * path, unsigned __int64 & total, unsigned __int64 
     struct statfs stfs;
     if(statfs(path, &stfs) < 0)
     {
-        //PrintLog("statfs error for filesystem '%s'", path);
+        //IERRLOG("statfs error for filesystem '%s'", path);
         total = inUse = 0;
     }
     else
@@ -1425,7 +1425,7 @@ void getDiskUsage(char const * path, unsigned __int64 & total, unsigned __int64 
         struct stat st;
         if(stat(path, &st) < 0)
         {
-            //PrintLog("stat error for filesystem '%s'", path);
+            //IERRLOG("stat error for filesystem '%s'", path);
             total = inUse = 0;
         }
         else
@@ -2189,7 +2189,7 @@ class CExtendedStats  // Disk network and cpu stats
             {
                 if (kbadcnt < 5)
                 {
-                    ERRLOG("klogctl SYSLOG_ACTION_READ_ALL error %d", errno);
+                    IERRLOG("klogctl SYSLOG_ACTION_READ_ALL error %d", errno);
                     kbadcnt++;
                 }
                 else
@@ -3223,7 +3223,7 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
                 else if (strcmp(perms,"r--p")==0)
                         t = segtype_const;
                 else {
-                    ERRLOG("%s - unknown perms",perms);
+                    IERRLOG("%s - unknown perms",perms);
                     continue;
                 }
                 recs[t].n++;
