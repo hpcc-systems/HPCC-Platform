@@ -90,7 +90,7 @@ if(WSSQL_SERVICE)
         ${HPCC_SOURCE_DIR}/common/dllserver
         ${HPCC_SOURCE_DIR}/common/deftype
         ${HPCC_SOURCE_DIR}/ecl/hql
-        ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/include
+        ${libantlr3c_includes}
         ${ESPSCM_GENERATED_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/SQL2ECL
         )
