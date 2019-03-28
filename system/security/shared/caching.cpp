@@ -567,7 +567,7 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
         {
             removeAllManagedFileScopes();
             IArrayOf<ISecResource> scopes;
-            aindex_t count = m_secMgr->getManagedFileScopes(scopes);
+            aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
             if (count)
                 addManagedFileScopes(scopes);
             m_defaultPermission = SecAccess_Unknown;//trigger refresh

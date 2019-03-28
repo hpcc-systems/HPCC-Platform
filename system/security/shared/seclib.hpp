@@ -339,7 +339,7 @@ interface ISecManager : extends IInterface
     virtual const char * getDescription() = 0;
     virtual unsigned getPasswordExpirationWarningDays() = 0;
     virtual bool createUserScopes() = 0;
-    virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) = 0;
+    virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes) = 0;
     virtual SecAccessFlags queryDefaultPermission(ISecUser& user) = 0;
     virtual bool clearPermissionsCache(ISecUser & user) = 0;
     virtual bool authenticateUser(ISecUser & user, bool * superUser) = 0;

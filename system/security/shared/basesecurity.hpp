@@ -240,7 +240,7 @@ public:
         throwUnexpected();
     }
 
-    aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes)
+    aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes)
     {
         throwUnexpected();
     }
