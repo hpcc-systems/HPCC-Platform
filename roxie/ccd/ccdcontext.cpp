@@ -1742,6 +1742,7 @@ public:
     virtual char *getJobOwner() { throwUnexpected(); }
     virtual char *getClusterName() { throwUnexpected(); }
     virtual char *getGroupName() { throwUnexpected(); }
+    virtual char *getClusterGroupNames() { throwUnexpected(); }
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
     virtual unsigned getPriority() const { throwUnexpected(); }
     virtual char *getPlatform() { throwUnexpected(); }

@@ -524,6 +524,10 @@ public:
     {
         return ctx->getGroupName();
     }
+    virtual char *getClusterGroupNames()
+    {
+        return ctx->getClusterGroupNames();
+    }
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath)
     {
         return ctx->queryIndexMetaData(lfn, xpath);

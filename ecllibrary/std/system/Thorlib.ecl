@@ -18,6 +18,7 @@ varstring daliServer() : once, ctxmethod, entrypoint='getDaliServers';
 varstring cluster() : once, ctxmethod, entrypoint='getClusterName';
 varstring getExpandLogicalName(const varstring name) : pure, ctxmethod, entrypoint='getExpandLogicalName';
 varstring group() : once, ctxmethod, entrypoint='getGroupName';
+varstring clusterGroups() : once, ctxmethod, entrypoint='getClusterGroupNames';
 varstring platform() : pure ,ctxmethod, entrypoint='getPlatform';
     END;
 
@@ -55,6 +56,12 @@ export daliServer() := externals.daliServer();
  */
  
 export group() := externals.group();
+
+/*
+ * Returns all Thor group names in the current logical cluster
+ */
+ 
+export clusterGroups() := externals.clusterGroups();
 
 /*
  * Converts a logical filename to a physical filename.

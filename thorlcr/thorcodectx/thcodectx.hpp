@@ -100,6 +100,7 @@ public:
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) override { UNIMPLEMENTED; }
 
     virtual char *getGroupName() override; // thorlib.group()
+    virtual char *getClusterGroupNames() override; // thorlib.clusterGroups()
     virtual char *queryIndexMetaData(char const * lfn, char const * xpath) override { UNIMPLEMENTED; }
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const override;
     virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const override;

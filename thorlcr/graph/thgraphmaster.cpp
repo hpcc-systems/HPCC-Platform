@@ -1230,6 +1230,10 @@ public:
             globals->getProp("@nodeGroup",out); 
         return out.detach();
     }
+    virtual char *getClusterGroupNames() override
+    {
+        return getGroupName();
+    }
 // ICodeContextExt impl.
     virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) override
     {

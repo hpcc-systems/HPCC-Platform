@@ -445,6 +445,7 @@ public:
     void setBlockedOnPersist(const char * logicalName);
     void setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkunit, bool _resolveFilesLocally, bool _writeResultsToStdout, outputFmts _outputFmt, IUserDescriptor *_standAloneUDesc);
     inline bool needToLockWorkunit() { return !isStandAloneExe; }           //If standalone exe then either no dali, or a unique remote workunit.
+    void getClusterGroups(StringArray &groupNames);
 
     virtual void setResultInt(const char * stepname, unsigned sequence, __int64, unsigned size);
     virtual void setResultReal(const char * stepname, unsigned sequence, double);
@@ -480,6 +481,7 @@ public:
     virtual char *getJobOwner();
     virtual char *getClusterName();
     virtual char *getGroupName();
+    virtual char *getClusterGroupNames();
     virtual char *queryIndexMetaData(char const * lfn, char const * xpath);
     virtual void  abort();
     virtual int getRetcode();

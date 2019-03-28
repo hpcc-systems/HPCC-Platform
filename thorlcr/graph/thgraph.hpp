@@ -530,6 +530,7 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
         virtual char *getJobOwner() { return ctx->getJobOwner(); }
         virtual char *getClusterName() { return ctx->getClusterName(); }
         virtual char *getGroupName() { return ctx->getGroupName(); }
+        virtual char *getClusterGroupNames() { return ctx->getClusterGroupNames(); }
         virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { return ctx->queryIndexMetaData(lfn, xpath); }
         virtual unsigned getPriority() const { return ctx->getPriority(); }
         virtual char *getPlatform() { return ctx->getPlatform(); }

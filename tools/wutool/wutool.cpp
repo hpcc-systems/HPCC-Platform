@@ -2004,6 +2004,7 @@ protected:
             virtual char *getClusterName() { throwUnexpected(); } // caller frees return string.
             virtual char *getEnv(const char *name, const char *defaultValue) const { throwUnexpected(); }
             virtual char *getGroupName() { throwUnexpected(); } // caller frees return string.
+            virtual char *getClusterGroupNames() { throwUnexpected(); } // caller frees return string.
             virtual char *getJobName() { throwUnexpected(); } // caller frees return string.
             virtual char *getJobOwner() { throwUnexpected(); } // caller frees return string.
             virtual unsigned getNodeNum() { throwUnexpected(); }

@@ -33,5 +33,6 @@ varstring getenv(const varstring name, const varstring defaultValue) : library='
 varstring getExpandLogicalName(const varstring name) : library='graph', pure, ctxmethod, entrypoint='getExpandLogicalName';
 unsigned integer4 logString(const varstring text) : library='graph', ctxmethod, entrypoint='logString';
 varstring group() : library='graph', once, ctxmethod, entrypoint='getGroupName';
+varstring clusterGroups() : library='graph', once, ctxmethod, entrypoint='getClusterGroupNames';
 
     END;

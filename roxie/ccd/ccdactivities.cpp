@@ -572,6 +572,7 @@ public:
     virtual char *getJobOwner() { throwUnexpected(); } // caller frees return string.
     virtual char *getClusterName() { throwUnexpected(); } // caller frees return str.
     virtual char *getGroupName() { throwUnexpected(); } // caller frees return string.
+    virtual char *getClusterGroupNames() { throwUnexpected(); } // caller frees return string.
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
     virtual char *getDaliServers() { return queryContext->queryCodeContext()->getDaliServers(); }
 

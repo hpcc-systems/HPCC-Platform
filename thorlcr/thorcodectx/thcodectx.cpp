@@ -67,6 +67,12 @@ char *CThorCodeContextBase::getGroupName()
     return NULL;
 }
 
+char *CThorCodeContextBase::getClusterGroupNames()
+{
+    throwUnexpected();
+    return NULL;
+}
+
 const char *CThorCodeContextBase::loadResource(unsigned id)
 {
     return (const char *) querySo.getResource(id);

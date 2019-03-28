@@ -2920,9 +2920,8 @@ char * EclAgent::getClusterName()
     return strdup(queryWorkUnit()->queryClusterName());
 }
 
-char * EclAgent::getGroupName()
+void EclAgent::getClusterGroups(StringArray &groupNames)
 {
-    StringBuffer groupName;
     if (!isStandAloneExe)
     {
         const char * cluster = clusterNames.tos();
@@ -2942,13 +2941,8 @@ char * EclAgent::getGroupName()
                     if (strieq(thorName, envClusters.item(j)))
                     {
                         const char *envGroup = envGroups.item(j);
-                        if (groupName.length())
-                        {
-                            if (!strieq(groupName, envGroup))
-                                throw MakeStringException(-1, "getGroupName(): ambiguous groups %s, %s", groupName.str(), envGroup);
-                        }
-                        else
-                            groupName.append(envGroup);
+                        if (!groupNames.contains(envGroup))
+                            groupNames.append(envGroup);
                         break;
                     }
                 }
@@ -2961,10 +2955,37 @@ char * EclAgent::getGroupName()
             SocketEndpoint ep = queryMyNode()->endpoint();
             ep.port = 0;
             Owned<IGroup> grp = createIGroup(1,&ep);
+            StringBuffer groupName;
             queryNamedGroupStore().find(grp, groupName);
+            groupNames.append(groupName);
         }
     }
+}
+
+char * EclAgent::getGroupName()
+{
+    StringBuffer groupName;
+    if (!isStandAloneExe)
+    {
+        StringArray groupArray;
+        getClusterGroups(groupArray);
+        groupArray.getString(groupName, ",");
+        if (groupArray.ordinality()>1)
+            throw MakeStringException(-1, "getGroupName(): ambiguous groups %s", groupName.str());
+    }
     return groupName.detach();
+}
+
+char * EclAgent::getClusterGroupNames()
+{
+    StringBuffer clusterGroupNames;
+    if (!isStandAloneExe)
+    {
+        StringArray groupArray;
+        getClusterGroups(groupArray);
+        groupArray.getString(clusterGroupNames, ",");
+    }
+    return clusterGroupNames.detach();
 }
 
 char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
