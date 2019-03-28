@@ -13,6 +13,7 @@
     </indexterm>(</emphasis> <emphasis>filename </emphasis> <emphasis
   role="bold">[,</emphasis> <emphasis>foreigndali </emphasis> <emphasis
   role="bold">] [,</emphasis> <emphasis>absolutepath</emphasis> <emphasis
+  role="bold">] [,</emphasis> <emphasis>omitClusterPrefix</emphasis> <emphasis
   role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -44,6 +45,14 @@
           <entry>Optional. A boolean TRUE/FALSE to indicate whether to prepend
           a tilde (~) to the resulting foreign logical file name. If omitted,
           the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>omitClusterPreifx</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE/FALSE to indicate whether the target
+          cluster's prefix should automatically be added if 'filename' is a
+          relative logical file name. If omitted, the default is FALSE.</entry>
         </row>
 
         <row>

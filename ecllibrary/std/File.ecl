@@ -149,8 +149,8 @@ EXPORT RenameLogicalFile(varstring oldname, varstring newname, boolean allowOver
  * @param abspath       Should a tilde (~) be prepended to the resulting logical file name.  Defaults to FALSE.
  */
 
-EXPORT varstring ForeignLogicalFileName(varstring name, varstring foreigndali='', boolean abspath=FALSE) :=
-    lib_fileservices.FileServices.ForeignLogicalFileName(name, foreigndali, abspath);
+EXPORT varstring ForeignLogicalFileName(varstring name, varstring foreigndali='', boolean abspath=FALSE, boolean omitClusterPrefix=FALSE) :=
+    lib_fileservices.FileServices.ForeignLogicalFileName(name, foreigndali, abspath, omitClusterPrefix);
 
 /**
  * Returns an encoded logical filename that can be used to refer to a external file.  Examples include directly

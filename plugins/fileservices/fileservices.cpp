@@ -92,7 +92,7 @@ static const char * EclDefinition =
 "  SwapSuperFile(const varstring lsuperfn1,const varstring lsuperfn2) : c,action,globalcontext,entrypoint='fsSwapSuperFile'; \n"
 "  ReplaceSuperFile(const varstring lsuperfn,const varstring lfn,const varstring bylfn) : c,action,globalcontext,entrypoint='fsReplaceSuperFile'; \n"
 "  FinishSuperFileTransaction(boolean rollback=false) : c,action,globalcontext,entrypoint='fsFinishSuperFileTransaction'; \n"
-"  varstring ForeignLogicalFileName(const varstring name, const varstring foreigndali='', boolean abspath=false) : c,context,entrypoint='fsForeignLogicalFileName'; \n"
+"  varstring ForeignLogicalFileName(const varstring name, const varstring foreigndali='', boolean abspath=false, boolean omitClusterPrefix=false) : c,context,entrypoint='fsForeignLogicalFileName_v2'; \n"
 "  varstring WaitDfuWorkunit(const varstring wuid, integer4 timeOut=-1,const varstring espServerIpPort=GETENV('ws_fs_server')) : c,action,globalcontext,entrypoint='fsWaitDfuWorkunit'; \n"
 "  AbortDfuWorkunit(const varstring wuid,const varstring espServerIpPort=GETENV('ws_fs_server')) : c,action,globalcontext,entrypoint='fsAbortDfuWorkunit'; \n"
 "  MonitorLogicalFileName(const varstring event_name, const varstring name, integer4 shotcount=1,const varstring espServerIpPort=GETENV('ws_fs_server')) : c,action,context,entrypoint='fsMonitorLogicalFileName'; \n"
@@ -1611,10 +1611,14 @@ FILESERVICES_API void FILESERVICES_CALL fslFinishSuperFileTransaction(ICodeConte
 }
 
 
-FILESERVICES_API char *  FILESERVICES_CALL fsForeignLogicalFileName(ICodeContext *ctx, const char *_lfn,const char *foreigndali,bool abspath)
+static char * implementForeignLogicalFileName(ICodeContext *ctx, const char *_lfn, const char *foreigndali, bool abspath, bool omitClusterPrefix)
 {
     StringBuffer lfns;
-    constructLogicalName(ctx, _lfn, lfns);
+
+    Owned<IConstWorkUnit> wu;
+    if (!omitClusterPrefix && _lfn&&(*_lfn != '~'))
+        wu.setown(getWorkunit(ctx));
+    constructLogicalName(wu, _lfn, lfns);
     CDfsLogicalFileName lfn;
     lfn.set(lfns.str());
     if (foreigndali&&*foreigndali) {
@@ -1628,6 +1632,16 @@ FILESERVICES_API char *  FILESERVICES_CALL fsForeignLogicalFileName(ICodeContext
         ret.append('~');
     lfn.get(ret);
     return ret.detach();
+}
+
+FILESERVICES_API char *  FILESERVICES_CALL fsForeignLogicalFileName(ICodeContext *ctx, const char *lfn, const char *foreigndali, bool abspath)
+{
+    return implementForeignLogicalFileName(ctx, lfn, foreigndali, abspath, false);
+}
+
+FILESERVICES_API char *  FILESERVICES_CALL fsForeignLogicalFileName_v2(ICodeContext *ctx, const char *lfn, const char *foreigndali, bool abspath, bool omitClusterPrefix)
+{
+    return implementForeignLogicalFileName(ctx, lfn, foreigndali, abspath, omitClusterPrefix);
 }
 
 
