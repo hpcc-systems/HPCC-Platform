@@ -173,8 +173,11 @@ define([
                 if (this._timelineData && this._graphsData) {
                     var context = this;
                     this.store.setData(this._graphsData.map(function (row) {
-                        row.WhenStarted = context._timelineData[row.Name].started;
-                        row.WhenFinished = context._timelineData[row.Name].finished;
+                        var timelineData = context._timelineData[row.Name];
+                        if (timelineData) {
+                            row.WhenStarted = timelineData.started;
+                            row.WhenFinished = timelineData.finished;
+                        }
                         return row;
                     }));
                     this.grid.refresh();

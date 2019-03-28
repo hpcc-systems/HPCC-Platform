@@ -188,30 +188,65 @@ ECL_H3_API void ECL_H3_CALL uncompact(ICodeContext *_ctx, bool &__isAllResult, s
 }
 
 //  Regions  ---
+
+uint32_t initPolygon(GeoCoord *verts, size32_t numVerts, uint32_t resolution, GeoPolygon &polygon)
+{
+    polygon.geofence.numVerts = numVerts;
+    polygon.geofence.verts = verts;
+    polygon.numHoles = 0;
+    polygon.holes = NULL;
+    return ::maxPolyfillSize(&polygon, resolution);
+}
+
 ECL_H3_API void ECL_H3_CALL polyfill(ICodeContext *_ctx, bool &__isAllResult, size32_t &__lenResult, void *&__result, size32_t countBoundary, const byte **boundary, uint32_t resolution)
 {
-    GeoCoord *verts = static_cast<GeoCoord *>(rtlCalloc(countBoundary, sizeof(GeoCoord)));
+    //  Check for special case when points exceed 180 degrees (longtitude)
+    //   - https://github.com/uber/h3/issues/210
+    GeoCoord *poly = static_cast<GeoCoord *>(rtlCalloc(countBoundary, sizeof(GeoCoord)));
+    GeoCoord *wPoly = static_cast<GeoCoord *>(rtlCalloc(countBoundary, sizeof(GeoCoord)));
+    GeoCoord *ePoly = static_cast<GeoCoord *>(rtlCalloc(countBoundary, sizeof(GeoCoord)));
+    double west = 0;
+    double east = 0;
     for (int i = 0; i < countBoundary; ++i)
     {
-        GeoCoord *row = (GeoCoord *)boundary[i];
-        verts[i].lat = ::degsToRads(row->lat);
-        verts[i].lon = ::degsToRads(row->lon);
+        const GeoCoord *row = (GeoCoord *)boundary[i];
+        double lat = ::degsToRads(row->lat);
+        double lon = ::degsToRads(row->lon);
+        poly[i].lat = lat;
+        poly[i].lon = lon;
+        wPoly[i].lat = lat;
+        wPoly[i].lon = lon > 0 ? 0 : lon;
+        ePoly[i].lat = lat;
+        ePoly[i].lon = lon <= 0 ? 0 : lon;
+
+        if (i == 0)
+            west = east = row->lon;
+        else if (west > row->lon)
+            west = lon;
+        else if (east < row->lon)
+            east = lon;
     }
-
-    Geofence geofence;
-    geofence.numVerts = countBoundary;
-    geofence.verts = verts;
-
-    GeoPolygon polygon;
-    polygon.geofence = geofence;
-    polygon.numHoles = 0;
-
-    int maxBuff = ::maxPolyfillSize(&polygon, resolution);
-    H3Index *buff = static_cast<H3Index *>(rtlCalloc(maxBuff, sizeof(H3Index)));
-    ::polyfill(&polygon, resolution, buff);
-    toSetOf(__isAllResult, __lenResult, __result, buff, maxBuff);
-
-    rtlFree(verts);
+    if (east - west >= 180)
+    {
+        GeoPolygon wPolygon, ePolygon;
+        int wMaxBuff = initPolygon(wPoly, countBoundary, resolution, wPolygon);
+        int eMaxBuff = initPolygon(ePoly, countBoundary, resolution, ePolygon);
+        H3Index *buff = static_cast<H3Index *>(rtlCalloc(wMaxBuff + eMaxBuff, sizeof(H3Index)));
+        ::polyfill(&wPolygon, resolution, buff);
+        ::polyfill(&ePolygon, resolution, buff + wMaxBuff);
+        toSetOf(__isAllResult, __lenResult, __result, buff, wMaxBuff + eMaxBuff);
+    }
+    else
+    {
+        GeoPolygon polygon;
+        int maxBuff = initPolygon(poly, countBoundary, resolution, polygon);
+        H3Index *buff = static_cast<H3Index *>(rtlCalloc(maxBuff, sizeof(H3Index)));
+        ::polyfill(&polygon, resolution, buff);
+        toSetOf(__isAllResult, __lenResult, __result, buff, maxBuff);
+    }
+    rtlFree(ePoly);
+    rtlFree(wPoly);
+    rtlFree(poly);
 }
 
 //  Misc  ---
