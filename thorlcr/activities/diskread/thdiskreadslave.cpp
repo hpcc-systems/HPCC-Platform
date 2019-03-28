@@ -68,14 +68,25 @@ protected:
     // return a ITranslator based on published format in part and expected/format
     ITranslator *getTranslators(IPartDescriptor &partDesc)
     {
-        unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
-        IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
-        IPropertyTree const &props = partDesc.queryOwner().queryProperties();
-        Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-        unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
         RecordTranslationMode translationMode = getTranslationMode(*this);
+
         unsigned expectedFormatCrc = helper->getDiskFormatCrc();
         IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
+
+        Linked<IOutputMetaData> publishedFormat;
+        unsigned publishedFormatCrc = 0;
+
+        const char *kind = queryFileKind(&partDesc.queryOwner());
+        if (strisame(kind, "flat") || (RecordTranslationMode::AlwaysDisk == translationMode))
+        {
+            IPropertyTree const &props = partDesc.queryOwner().queryProperties();
+            publishedFormat.setown(getDaliLayoutInfo(props));
+            if (publishedFormat)
+                publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
+        }
+
+        unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
+        IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
         return ::getTranslators("rowstream", expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
     }
 public:
