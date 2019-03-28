@@ -27,6 +27,7 @@
 #include "EnvironmentMgr.hpp"
 #include "Exceptions.hpp"
 #include "Status.hpp"
+#include "jutil.hpp"
 
 //
 // Inputs file format (json)
@@ -47,8 +48,9 @@ void outputStatus(Status &status, enum statusMsg::msgLevel);
 // Default configuration directories
 EnvironmentType envType = XML;
 std::string masterSchemaFile = "environment.xsd";
-std::string configSchemaDir = ".." PATHSEPSTR "componentfiles"  PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
-std::string configSchemaPluginsDir = "xsd" PATHSEPSTR "plugins" PATHSEPSTR;
+std::string configSchemaRelativeDir = ".." PATHSEPSTR "componentfiles"  PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
+std::string configSchemaDir = "";
+std::string configSchemaPluginsDir = "";
 std::string envFile;
 enum statusMsg::msgLevel outputLevel = statusMsg::warning;
 bool verbose = false;
@@ -92,6 +94,14 @@ void usage()
 int main(int argc, char *argv[])
 {
     int rc = 0;
+
+    //
+    // Build the default directory for the schema files
+    std::string processPath(queryCurrentProcessPath());
+    configSchemaDir = processPath.substr(0, processPath.find_last_of(PATHSEPSTR)) + PATHSEPSTR + configSchemaRelativeDir;
+
+    //
+    // Print usage?
     if (argc == 1)
     {
         usage();
@@ -122,7 +132,6 @@ int main(int argc, char *argv[])
         // note that these are hardcoded for HPCC at this time, but could be made into options
         std::map<std::string, std::string> cfgParms;
         cfgParms["buildset"] = "buildset.xml";  // Not used right now, and probably never will be
-        //cfgParms["support_libs"] = "libcfgsupport_addrequiredinstances";
         std::string pluginsPath = configSchemaPluginsDir;
 
         if (!pEnvMgr->loadSchema(configSchemaDir, masterSchemaFile, cfgParms))
@@ -271,7 +280,7 @@ bool validate()
         return false;
     }
 
-    if (!dirExists(configSchemaPluginsDir))
+    if (!configSchemaPluginsDir.empty() && !dirExists(configSchemaPluginsDir))
     {
         std::cout << "Schema plugins directory " << configSchemaPluginsDir << " does not exist" << std::endl;
         return false;
