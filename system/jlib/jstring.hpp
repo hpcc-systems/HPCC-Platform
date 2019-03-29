@@ -41,7 +41,7 @@ public:
     StringBuffer(StringBuffer && value);
     StringBuffer(size_t len, const char *value);
     StringBuffer(const StringBuffer & value);
-    StringBuffer(bool useInternal);
+    explicit StringBuffer(bool useInternal);
     StringBuffer(char value);
     ~StringBuffer();
 
