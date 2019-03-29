@@ -6482,7 +6482,7 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
 
     s.appendf("AutoWorkflow: Spotted %s ", getOpString(expr->getOperator()));
     if (expr->queryId())
-        s.append("[").append(expr->queryId()).append("] ");
+        s.append("[").append(expr->queryId()->queryStr()).append("] ");
     s.append(" to common up between workflow items [").append(wfid).append("]");
     DBGLOG("%s", s.str());
     translator.addWorkunitException(SeverityInformation, 0, s.str(), location);

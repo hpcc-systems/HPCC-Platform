@@ -3457,14 +3457,20 @@ public:
 
     virtual bool getResources(LDAP* ld, SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources)
     {
+        if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
+        {
+            assertex(isEmptyString(prefix));
+
+            getManagedScopeTree(rtype, basedn, resources);
+            return true;
+        }
+
         char        *attribute;
         LDAPMessage *message;
 
         StringBuffer basednbuf;
         LdapUtils::normalizeDn(basedn, m_ldapconfig->getBasedn(), basednbuf);
-        StringBuffer filter("objectClass=*");
 
-        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
         const char* fldname;
         LdapServerType servertype = m_ldapconfig->getServerType();
         if(servertype == ACTIVE_DIRECTORY && (rtype == RT_DEFAULT || rtype == RT_MODULE || rtype == RT_SERVICE))
@@ -3473,7 +3479,7 @@ public:
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
 
-        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, "objectClass=*", attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
             // Go through the search results by checking message types
@@ -3511,16 +3517,6 @@ public:
                 CLdapSecResource* resource = new CLdapSecResource(resourcename.str());
                 resource->setDescription(descbuf.str());
                 resources.append(*resource);
-                if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
-                {
-                    StringBuffer nextbasedn;
-                    nextbasedn.append("ou=").append(curname.str()).append(",").append(basedn);
-                    StringBuffer nextprefix;
-                    if(prefix != NULL && *prefix != '\0')
-                        nextprefix.append(prefix);
-                    nextprefix.append(curname.str()).append("::");
-                    getResources(ld, rtype, nextbasedn.str(), nextprefix.str(), resources);
-                }
             }
         }
 
@@ -3529,19 +3525,27 @@ public:
 
     virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char* prefix, const char* searchstr, IArrayOf<ISecResource>& resources)
     {
+        if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
+        {
+            assertex(isEmptyString(searchstr));
+            assertex(isEmptyString(prefix));
+
+            getManagedScopeTree(rtype, basedn, resources);
+            return true;
+        }
+
         char        *attribute;
         LDAPMessage *message;
 
         StringBuffer basednbuf;
         LdapUtils::normalizeDn(basedn, m_ldapconfig->getBasedn(), basednbuf);
         StringBuffer filter("objectClass=*");
+
         if(searchstr && *searchstr && strcmp(searchstr, "*") != 0)
         {
             filter.insert(0, "(&(");
             filter.appendf(")(|(%s=*%s*)))", "uNCName", searchstr);
         }
-
-        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -3582,6 +3586,7 @@ public:
                     }
                 }
             }
+
             if(curname.length() == 0)
                 continue;
             StringBuffer resourcename;
@@ -3591,16 +3596,6 @@ public:
             CLdapSecResource* resource = new CLdapSecResource(resourcename.str());
             resource->setDescription(descbuf.str());
             resources.append(*resource);
-            if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
-            {
-                StringBuffer nextbasedn;
-                nextbasedn.append("ou=").append(curname.str()).append(",").append(basedn);
-                StringBuffer nextprefix;
-                if(prefix != NULL && *prefix != '\0')
-                    nextprefix.append(prefix);
-                nextprefix.append(curname.str()).append("::");
-                getResources(ld, rtype, nextbasedn.str(), nextprefix.str(), resources);
-            }
         }
 
         return true;
@@ -6173,20 +6168,20 @@ private:
         return addResource(RT_FILE_SCOPE, user, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE));
     }
 
-    virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes)
+    virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes)
     {
         //Get array of all file scopes listed in files baseDN
         StringBuffer basednbuf;
-        LdapUtils::normalizeDn(m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), m_ldapconfig->getBasedn(), basednbuf);
+        LdapUtils::normalizeDn(basedn ? basedn : m_ldapconfig->getResourceBasedn(rtype), m_ldapconfig->getBasedn(), basednbuf);
         basednbuf.toLowerCase();//Will look something like "ou=files,ou=dataland_ecl,dc=internal,dc=sds". Lowercase ensures proper strstr with StringArray elements below
 
-        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         char *attrs[] = {"canonicalName", NULL};
 
         //Call LDAP to get the complete OU tree underneath basdnbuf
         CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_SUBTREE, "objectClass=*", attrs);
+        StringArray arrScopes;
         for (LDAPMessage *message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
             CLDAPGetAttributesWrapper   atts(ld, message);
@@ -6224,14 +6219,26 @@ private:
 
                         if (!sb.isEmpty())
                         {
-                            CLdapSecResource* resource = new CLdapSecResource(sb);
-                            scopes.append(*resource);
+                            arrScopes.append(sb);
                         }
                     }
                 }
             }
         }
-        DBGLOG("getManagedFileScopes() found %d scopes under '%s'", scopes.length(), basednbuf.str());
+
+        //Build sorted IArrayOf<ISecResource> from arrScopes
+        if (arrScopes.length())
+        {
+            arrScopes.sortAscii(false);
+            ForEachItemIn(i, arrScopes)
+            {
+                const char * scope= arrScopes.item(i);
+                CLdapSecResource* resource = new CLdapSecResource(scope);
+                scopes.append(*resource);
+            }
+        }
+
+        DBGLOG("getManagedScopeTree() found %d scopes under '%s'", scopes.length(), basednbuf.str());
         return scopes.length();
     }
 
