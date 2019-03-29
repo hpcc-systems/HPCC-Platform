@@ -36,8 +36,11 @@ public class HpccUtils  implements Iterator
     {
         return _hasNext(handle);
     }
-    public java.lang.Object next()
+    public java.lang.Object next() throws NoSuchElementException
     {
-        return _next(handle);
+        java.lang.Object ret = _next(handle);
+        if (ret == null)
+           throw new NoSuchElementException();
+        return ret;
     }
 }
