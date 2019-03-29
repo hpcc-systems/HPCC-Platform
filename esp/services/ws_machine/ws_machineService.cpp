@@ -157,6 +157,9 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
         pEnvSettings->getProp("user", environmentConfData.m_user.clear());
     }
 
+    machineUsageCache.setown(new MachineUsageCache(MACHINE_USAGE_MAX_CACHE_SIZE));
+    machineUsageCacheMinutes = pServiceNode->getPropInt("MachineUsageCacheMinutes", MACHINE_USAGE_CACHE_MINUTES);
+
     m_threadPoolSize = pServiceNode->getPropInt("ThreadPoolSize", THREAD_POOL_SIZE);
     m_threadPoolStackSize = pServiceNode->getPropInt("ThreadPoolStackSize", THREAD_POOL_STACK_SIZE);
 
@@ -2724,6 +2727,12 @@ bool Cws_machineEx::onGetComponentUsage(IEspContext& context, IEspGetComponentUs
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Machine Information. Permission denied.");
 
+        StringBuffer cacheID;
+        buildComponentUsageCacheID(cacheID, req.getComponents());
+
+        if (!req.getBypassCachedResult() && readComponentUsageCache(context, cacheID, resp))
+            return true;
+
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
 
@@ -2735,6 +2744,7 @@ bool Cws_machineEx::onGetComponentUsage(IEspContext& context, IEspGetComponentUs
 
         IArrayOf<IEspComponentUsage> componentUsages;
         readComponentUsageResult(context, usageReq, uniqueUsages, componentUsages);
+        machineUsageCache->add(cacheID, componentUsages);
         resp.setComponentUsages(componentUsages);
     }
     catch(IException* e)
@@ -2832,6 +2842,12 @@ bool Cws_machineEx::onGetTargetClusterUsage(IEspContext& context, IEspGetTargetC
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Machine Information. Permission denied.");
 
+        StringBuffer cacheID;
+        buildUsageCacheID(cacheID, req.getTargetClusters(), "AllTargetClusters");
+
+        if (!req.getBypassCachedResult() && readTargetClusterUsageCache(context, cacheID, resp))
+            return true;
+
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
 
@@ -2843,6 +2859,7 @@ bool Cws_machineEx::onGetTargetClusterUsage(IEspContext& context, IEspGetTargetC
 
         IArrayOf<IEspTargetClusterUsage> targetClusterUsages;
         readTargetClusterUsageResult(context, usageReq, uniqueUsages, targetClusterUsages);
+        machineUsageCache->add(cacheID, targetClusterUsages);
         resp.setTargetClusterUsages(targetClusterUsages);
     }
     catch(IException* e)
@@ -3012,6 +3029,12 @@ bool Cws_machineEx::onGetNodeGroupUsage(IEspContext& context, IEspGetNodeGroupUs
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Machine Information. Permission denied.");
 
+        StringBuffer cacheID;
+        buildUsageCacheID(cacheID, req.getNodeGroups(), "AllNodeGroups");
+
+        if (!req.getBypassCachedResult() && readNodeGroupUsageCache(context, cacheID, resp))
+            return true;
+
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
 
@@ -3023,6 +3046,7 @@ bool Cws_machineEx::onGetNodeGroupUsage(IEspContext& context, IEspGetNodeGroupUs
 
         IArrayOf<IEspNodeGroupUsage> nodeGroupUsages;
         readNodeGroupUsageResult(context, usageReq, uniqueUsages, nodeGroupUsages);
+        machineUsageCache->add(cacheID, nodeGroupUsages);
         resp.setNodeGroupUsages(nodeGroupUsages);
     }
     catch(IException* e)
@@ -3030,6 +3054,84 @@ bool Cws_machineEx::onGetNodeGroupUsage(IEspContext& context, IEspGetNodeGroupUs
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
+    return true;
+}
+
+void Cws_machineEx::buildComponentUsageCacheID(StringBuffer& id, IArrayOf<IConstComponent>& componentList)
+{
+    if (!componentList.ordinality())
+    {
+        id.set("AllComponents");
+        return;
+    }
+
+    StringArray componentNames;
+    ForEachItemIn(i, componentList)
+    {
+        IConstComponent& component = componentList.item(i);
+        StringBuffer str = component.getType();
+        if (str.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Empty Component Type");
+        str.append(":").append(component.getName());
+        componentNames.append(str);
+    }
+    componentNames.sortAscii();
+    componentNames.getString(id, ",");
+}
+
+void Cws_machineEx::buildUsageCacheID(StringBuffer& id, StringArray& names, const char* defaultID)
+{
+    if (names.ordinality())
+    {
+        names.sortAscii();
+        names.getString(id, ",");
+    }
+    else
+        id.set(defaultID);
+}
+
+bool Cws_machineEx::readComponentUsageCache(IEspContext& context, const char* cacheID,
+    IEspGetComponentUsageResponse& resp)
+{
+    Owned<MachineUsageCacheElement> cachedUsage = machineUsageCache->lookup(context,
+        cacheID, machineUsageCacheMinutes);
+    if (!cachedUsage)
+        return false;
+
+    IArrayOf<IEspComponentUsage> componentUsages;
+    ForEachItemIn(i, cachedUsage->componentUsages)
+        componentUsages.append(*LINK(&cachedUsage->componentUsages.item(i)));
+    resp.setComponentUsages(componentUsages);
+    return true;
+}
+
+bool Cws_machineEx::readTargetClusterUsageCache(IEspContext& context, const char* cacheID,
+    IEspGetTargetClusterUsageResponse& resp)
+{
+    Owned<MachineUsageCacheElement> cachedUsage = machineUsageCache->lookup(context,
+        cacheID, machineUsageCacheMinutes);
+    if (!cachedUsage)
+        return false;
+
+    IArrayOf<IEspTargetClusterUsage> targetClusterUsages;
+    ForEachItemIn(i, cachedUsage->tcUsages)
+        targetClusterUsages.append(*LINK(&cachedUsage->tcUsages.item(i)));
+    resp.setTargetClusterUsages(targetClusterUsages);
+    return true;
+}
+
+bool Cws_machineEx::readNodeGroupUsageCache(IEspContext& context, const char* cacheID,
+    IEspGetNodeGroupUsageResponse& resp)
+{
+    Owned<MachineUsageCacheElement> cachedUsage = machineUsageCache->lookup(context,
+        cacheID, machineUsageCacheMinutes);
+    if (!cachedUsage)
+        return false;
+
+    IArrayOf<IEspNodeGroupUsage> nodeGroupUsages;
+    ForEachItemIn(i, cachedUsage->ngUsages)
+        nodeGroupUsages.append(*LINK(&cachedUsage->ngUsages.item(i)));
+    resp.setNodeGroupUsages(nodeGroupUsages);
     return true;
 }
 

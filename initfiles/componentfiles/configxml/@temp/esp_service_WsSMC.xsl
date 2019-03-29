@@ -467,9 +467,12 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         </xsl:variable>
 
         <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
-        <xsl:copy-of select="@monitorDaliFileServer|@excludePartitions"/>
-        <xsl:apply-templates select="Properties/ProcessFilters" mode="copy"/>
-     </EspService>
+            <xsl:copy-of select="@monitorDaliFileServer|@excludePartitions"/>
+            <xsl:apply-templates select="Properties/ProcessFilters" mode="copy"/>
+            <xsl:if test="string(@MachineUsageCacheMinutes) != ''">
+                <MachineUsageCacheMinutes><xsl:value-of select="@MachineUsageCacheMinutes"/></MachineUsageCacheMinutes>
+            </xsl:if>
+        </EspService>
         
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
             <xsl:call-template name="bindAuthentication">

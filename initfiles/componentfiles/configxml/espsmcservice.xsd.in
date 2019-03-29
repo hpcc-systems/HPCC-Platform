@@ -110,6 +110,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="MachineUsageCacheMinutes" type="xs:nonNegativeInteger" use="optional" default="3">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>timeout for Component/TargerCluster/NodeGroup usage cache (in minutes).</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="serverForArchivedECLWU" type="sashaServerType" use="optional">
                 <xs:annotation>
                     <xs:appinfo>
