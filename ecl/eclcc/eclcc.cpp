@@ -1553,7 +1553,10 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     //Items first in the list have priority -Dxxx=y overrides all
     processDefinitions(repositories);
     repositories.append(*LINK(pluginsRepository));
-    if (archiveTree->getPropBool("@useLocalSystemLibraries", false)) // Primarily for testing.
+
+    //Default to using the local system libraries so that updates are kept in sync with the plugins
+    bool useLocalSystemLibraries = archiveTree->getPropBool("@useLocalSystemLibraries", true);
+    if (useLocalSystemLibraries)
         repositories.append(*LINK(libraryRepository));
 
     Owned<IFileContents> contents;
