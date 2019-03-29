@@ -24,6 +24,7 @@
 #include "environment.hpp"
 #include <set>
 #include <map>
+#include <list>
 
 class CMachineInfoThreadParam;
 class CRoxieStateInfoThreadParam;
@@ -720,6 +721,144 @@ public:
     }
 };
 
+const unsigned MACHINE_USAGE_MAX_CACHE_SIZE = 8;
+const unsigned MACHINE_USAGE_CACHE_MINUTES = 3;
+
+struct MachineUsageCacheElement: public CInterface, implements IInterface
+{
+    IMPLEMENT_IINTERFACE;
+    MachineUsageCacheElement(const char* _id, IArrayOf<IEspComponentUsage>& _usages) : id(_id)
+    {
+        ForEachItemIn(i, _usages)
+        {
+            Owned<IEspComponentUsage> usage= createComponentUsage("","");
+            IEspComponentUsage& _usage = _usages.item(i);
+            usage->copy(_usage);
+
+            componentUsages.append(*usage.getClear());
+        }
+        timeCached.setNow();
+    }
+    MachineUsageCacheElement(const char* _id, IArrayOf<IEspTargetClusterUsage>& _usages) : id(_id)
+    {
+        ForEachItemIn(i, _usages)
+        {
+            Owned<IEspTargetClusterUsage> usage= createTargetClusterUsage("","");
+            IEspTargetClusterUsage& _usage = _usages.item(i);
+            usage->copy(_usage);
+
+            tcUsages.append(*usage.getClear());
+        }
+        timeCached.setNow();
+    }
+    MachineUsageCacheElement(const char* _id, IArrayOf<IEspNodeGroupUsage>& _usages) : id(_id)
+    {
+        ForEachItemIn(i, _usages)
+        {
+            Owned<IEspNodeGroupUsage> usage= createNodeGroupUsage("","");
+            IEspNodeGroupUsage& _usage = _usages.item(i);
+            usage->copy(_usage);
+
+            ngUsages.append(*usage.getClear());
+        }
+        timeCached.setNow();
+    }
+
+    CDateTime timeCached;
+    std::string id;
+    IArrayOf<IEspComponentUsage> componentUsages;
+    IArrayOf<IEspTargetClusterUsage> tcUsages;
+    IArrayOf<IEspNodeGroupUsage> ngUsages;
+};
+
+struct CompareMachines
+{
+    CompareMachines(const char* _id): id(_id) {}
+    bool operator()(const Linked<MachineUsageCacheElement>& e) const
+    {
+        return streq(e->id.c_str(), id.c_str());
+    }
+    std::string id;
+};
+
+struct MachineUsageCache: public CInterface, implements IInterface
+{
+    IMPLEMENT_IINTERFACE;
+    MachineUsageCache(size32_t _maxCacheSize=0) : maxCacheSize(_maxCacheSize){}
+
+    MachineUsageCacheElement* lookup(IEspContext &context, const char* id, unsigned timeOutMinutes)
+    {
+        CriticalBlock block(crit);
+
+        if (cache.size() == 0)
+            return nullptr;
+
+        //erase data if it should be
+        CDateTime timeNow;
+        timeNow.setNow();
+        timeNow.adjustTimeSecs(-timeOutMinutes*60);
+        while (true)
+        {
+            std::list<Linked<MachineUsageCacheElement> >::iterator list_iter = cache.begin();
+            if (list_iter == cache.end())
+                break;
+
+            MachineUsageCacheElement* cachedElement = list_iter->get();
+            if (!cachedElement || (cachedElement->timeCached > timeNow))
+                break;
+
+            cache.pop_front();
+        }
+
+        if (cache.size() == 0)
+            return nullptr;
+
+        //Check whether we have usage cache for those machines.
+        std::list<Linked<MachineUsageCacheElement> >::iterator it = std::find_if(cache.begin(), cache.end(), CompareMachines(id));
+        if (it!=cache.end())
+        {
+            return it->getLink();
+        }
+
+        return nullptr;
+    }
+
+    void add(const char* id, IArrayOf<IEspComponentUsage>& usages)
+    {
+        CriticalBlock block(crit);
+        addUsageCacheElement(new MachineUsageCacheElement(id, usages));
+    }
+
+    void add(const char* id, IArrayOf<IEspTargetClusterUsage>& usages)
+    {
+        CriticalBlock block(crit);
+        addUsageCacheElement(new MachineUsageCacheElement(id, usages));
+    }
+
+    void add(const char* id, IArrayOf<IEspNodeGroupUsage>& usages)
+    {
+        CriticalBlock block(crit);
+        addUsageCacheElement(new MachineUsageCacheElement(id, usages));
+    }
+
+    std::list<Linked<MachineUsageCacheElement> > cache;
+    CriticalSection crit;
+    size32_t maxCacheSize;
+
+private:
+    void addUsageCacheElement(MachineUsageCacheElement* _e)
+    {
+        Owned<MachineUsageCacheElement> e = _e;
+        if (maxCacheSize == 0)
+            return;
+
+        if (cache.size() >= maxCacheSize)
+            cache.pop_front();
+
+        cache.push_back(e.get());
+    }
+};
+
 //---------------------------------------------------------------------------------------------
 
 class Cws_machineEx : public Cws_machine
@@ -839,6 +978,11 @@ private:
     void readComponentUsageResult(IEspContext& context, IPropertyTree* usageReq, IPropertyTree* uniqueUsages,
         IArrayOf<IEspComponentUsage>& componentUsages);
     bool readDiskSpaceResponse(const char* buf, __int64& free, __int64& used, int& percentAvail, StringBuffer& pathUsed);
+    void buildUsageCacheID(StringBuffer& id, StringArray& names, const char* defaultID);
+    void buildComponentUsageCacheID(StringBuffer& id, IArrayOf<IConstComponent>& componentList);
+    bool readComponentUsageCache(IEspContext& context, const char* id, IEspGetComponentUsageResponse& resp);
+    bool readTargetClusterUsageCache(IEspContext& context, const char* id, IEspGetTargetClusterUsageResponse& resp);
+    bool readNodeGroupUsageCache(IEspContext& context, const char* id, IEspGetNodeGroupUsageResponse& resp);
 
     //Still used in StartStop/Rexec, so keep them for now.
     enum OpSysType { OS_Windows, OS_Solaris, OS_Linux };
@@ -857,6 +1001,8 @@ private:
     StringBuffer                m_machineInfoFile;
     BoolHash                    m_legacyFilters;
     Mutex                       mutex_machine_info_table;
+    Owned<MachineUsageCache>    machineUsageCache;
+    unsigned                    machineUsageCacheMinutes;
 };
 
 //---------------------------------------------------------------------------------------------

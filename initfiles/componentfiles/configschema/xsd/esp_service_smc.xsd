@@ -224,6 +224,9 @@
                 <xs:attribute name="ActivityInfoCacheSeconds" type="xs:nonNegativeInteger"
                               hpcc:presetValue="10" hpcc:displayName="Activity Info Cache Sectonds"
                               hpcc:tooltip="timeout for activity info cache (in seconds)"/>
+                <xs:attribute name="MachineUsageCacheMinutes" type="xs:nonNegativeInteger"
+                              hpcc:presetValue="3" hpcc:displayName="Machine Usage Cache Minutes"
+                              hpcc:tooltip="timeout for Component/TargetCluster/NodeGroup usage cache (in minutes)"/>
                 <xs:attribute name="serverForArchivedECLWU" type="xs:string"
                               hpcc:displayName="Server For Archived ECLWU"
                               hpcc:tooltip="Specify Sasha server for archiving ECL workunits"/>
