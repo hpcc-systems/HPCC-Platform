@@ -469,7 +469,7 @@ public:
     }
 
     virtual bool createUserScopes();
-    virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes);
+    virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes);
     virtual SecAccessFlags queryDefaultPermission(ISecUser& user);
     virtual bool clearPermissionsCache(ISecUser &user);
     virtual bool authenticateUser(ISecUser & user, bool * superUser);

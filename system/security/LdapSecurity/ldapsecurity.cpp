@@ -1468,9 +1468,9 @@ bool CLdapSecManager::createUserScopes()
 }
 
 
-aindex_t CLdapSecManager::getManagedFileScopes(IArrayOf<ISecResource>& scopes)
+aindex_t CLdapSecManager::getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes)
 {
-    return m_ldap_client->getManagedFileScopes(scopes);
+    return m_ldap_client->getManagedScopeTree(rtype, basedn, scopes);
 }
 
 SecAccessFlags CLdapSecManager::queryDefaultPermission(ISecUser& user)
