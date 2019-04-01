@@ -84,7 +84,7 @@ define([
             //  Hitched actions  ---
             _onRefresh: function (event) {
                 this.inherited(arguments);
-                this.refreshUsage();
+                this.refreshUsage(true);
             },
 
             _onPause: function (event, params) {
@@ -602,9 +602,9 @@ define([
                 return null;
             },
 
-            refreshUsage: function () {
+            refreshUsage: function (bypassCachedResult) {
                 this._diskUsage
-                    .refresh()
+                    .refresh(bypassCachedResult)
                     ;
             },
 
