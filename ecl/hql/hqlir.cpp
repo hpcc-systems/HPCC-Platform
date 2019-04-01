@@ -2028,6 +2028,9 @@ id_t ExpressionIRPlayer::doProcessExpr(IHqlExpression * expr)
     case no_call:
         info.special.append(processExpr(expr->queryBody()->queryFunctionDefinition()));
         break;
+    case no_libraryscopeinstance:
+        info.special.append(processExpr(expr->queryDefinition()));
+        break;
     case no_virtualscope:
     case no_concretescope:
         {

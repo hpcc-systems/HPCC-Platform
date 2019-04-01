@@ -416,6 +416,7 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] UpdateComponentStatusResp
 ESPrequest [nil_remove] GetComponentUsageRequest
 {
     ESParray<ESPstruct Component> Components;
+    [min_ver("1.15")] bool BypassCachedResult(false);
 };
 
 ESPresponse [encode(0), nil_remove, exceptions_inline] GetComponentUsageResponse 
@@ -426,6 +427,7 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] GetComponentUsageResponse
 ESPrequest [nil_remove] GetTargetClusterUsageRequest
 {
     ESParray<string> TargetClusters;
+    [min_ver("1.15")] bool BypassCachedResult(false);
 };
 
 ESPresponse [encode(0), nil_remove, exceptions_inline] GetTargetClusterUsageResponse 
@@ -436,6 +438,7 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] GetTargetClusterUsageResp
 ESPrequest [nil_remove] GetNodeGroupUsageRequest
 {
     ESParray<string> NodeGroups;
+    [min_ver("1.15")] bool BypassCachedResult(false);
 };
 
 ESPresponse [encode(0), nil_remove, exceptions_inline] GetNodeGroupUsageResponse 
@@ -444,7 +447,7 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] GetNodeGroupUsageResponse
 };
 
 //-------- service ---------
-ESPservice [auth_feature("DEFERRED"), version("1.14")] ws_machine
+ESPservice [auth_feature("DEFERRED"), version("1.15")] ws_machine
 {
     ESPmethod [resp_xsl_default("./smc_xslt/clusterprocesses.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetTargetClusterInfo(GetTargetClusterInfoRequest, GetTargetClusterInfoResponse);

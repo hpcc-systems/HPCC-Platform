@@ -96,6 +96,14 @@ inline void writeCharToStream(IIOStream &out, char c) { out.write(1, &c); }
 extern jlib_decl IIOStream *createBufferedIOStream(IIOStream *io, unsigned _bufsize=(unsigned)-1);
 
 
+interface IStreamLineReader : extends IInterface
+{
+    virtual bool readLine(StringBuffer &out) = 0; // returns true if end-of-stream
+};
+extern jlib_decl IStreamLineReader *createLineReader(ISimpleReadStream *stream, bool preserveEols, size32_t chunkSize=8192);
+
+
+
 interface IReceiver : public IInterface
 {
     virtual bool takeRecord(offset_t pos) = 0;

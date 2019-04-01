@@ -4329,6 +4329,9 @@ protected:
         ret.append(classname).append('.');
         switch (persistMode)
         {
+        case persistThread:
+            ret.append(__uint64(GetCurrentThreadId()));
+            break;
         case persistGlobal:
             ret.append("global");
             break;

@@ -1208,7 +1208,7 @@ void CEspHttpServer::verifyESPUserNameCookie(EspAuthRequest& authReq, CESPCookie
         return;
 
     if (!cookie.cookieValue.get())
-        cookie.cookieValue.set(m_request->queryCookie(USER_NAME_COOKIE));
+        cookie.cookieValue.set(m_request->queryCookie(USER_NAME_COOKIE)->getValue());
     if (cookie.cookieValue.get())
         cookie.valid.set("true");
 }
@@ -1248,7 +1248,7 @@ bool CEspHttpServer::verifyESPSessionIDCookie(EspAuthRequest& authReq)
 void CEspHttpServer::verifyESPAuthenticatedCookie(EspAuthRequest& authReq, CESPCookieVerification& cookie)
 {
     if (!cookie.cookieValue.get())
-        cookie.cookieValue.set(m_request->queryCookie(SESSION_AUTH_OK_COOKIE));
+        cookie.cookieValue.set(m_request->queryCookie(SESSION_AUTH_OK_COOKIE)->getValue());
     if (!cookie.cookieValue.get())
     {
         cookie.verificationDetails.set("Cookie value not found.");

@@ -1344,6 +1344,106 @@ IRowStream *createConcatRowStream(unsigned numstreams,IRowStream** streams,bool 
     }
 }
 
+class CStreamLineReader : public CSimpleInterfaceOf<IStreamLineReader>
+{
+    Linked<ISimpleReadStream> stream;
+    bool preserveEols;
+    size32_t chunkSize = 8192;
+    MemoryBuffer buffer;
+    const char *startPtr = nullptr;
+    const char *endPtr = nullptr;
+    const char *currentPtr = nullptr;
+
+    bool refill()
+    {
+        size32_t r = stream->read(chunkSize, buffer.bufferBase());
+        startPtr = (const char *)buffer.bufferBase();
+        endPtr = startPtr+r;
+        currentPtr = startPtr;
+        return r>0;
+    }
+public:
+    CStreamLineReader(ISimpleReadStream *_stream, bool _preserveEols, size32_t _chunkSize) : stream(_stream), preserveEols(_preserveEols), chunkSize(_chunkSize)
+    {
+        buffer.reserveTruncate(chunkSize);
+        startPtr = (const char *)buffer.bufferBase();
+        endPtr = currentPtr = startPtr;
+    }
+// IStreamLineReader impl.
+    virtual bool readLine(StringBuffer &out) override // returns true if end-of-stream
+    {
+        if (currentPtr == endPtr)
+        {
+            if (!refill())
+                return true; // eos
+        }
+
+        startPtr = currentPtr; // mark start of line in current buffer
+        while (true)
+        {
+            switch (*currentPtr)
+            {
+                case '\n':
+                {
+                    ++currentPtr;
+                    out.append(currentPtr-startPtr-(preserveEols?0:1), startPtr);
+                    if (currentPtr == endPtr)
+                        return !refill();
+                    return false;
+                }
+                case '\r':
+                {
+                    ++currentPtr;
+                    // check for \n
+                    if (currentPtr < endPtr)
+                    {
+                        if ('\n' == *currentPtr) // i.e. \r\n
+                        {
+                            ++currentPtr;
+                            out.append(currentPtr-startPtr-(preserveEols?0:2), startPtr);
+                        }
+                        else // i.e. \r only
+                            out.append(currentPtr-startPtr-(preserveEols?0:1), startPtr);
+                        if (currentPtr == endPtr)
+                            return !refill();
+                        return false;
+                    }
+                    else // must output what we have and read 1 more byte to check for \n
+                    {
+                        out.append(currentPtr-startPtr-(preserveEols?0:1), startPtr);
+                        if (!refill())
+                            return true;
+                        else if ('\n' != *currentPtr)
+                            return false;
+                        ++currentPtr;
+
+                        if (preserveEols)
+                            out.append('\n');
+
+                        // it's possible that refill found 1 char (the \n), if so, we have now hit eos
+                        return currentPtr == endPtr; // condition is same as eos
+                    }
+                }
+                default:
+                {
+                    ++currentPtr;
+                    if (currentPtr == endPtr)
+                    {
+                        out.append(currentPtr-startPtr, startPtr); // output what we have so far
+                        if (!refill())
+                            return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+};
+
+IStreamLineReader *createLineReader(ISimpleReadStream *stream, bool preserveEols, size32_t chunkSize)
+{
+    return new CStreamLineReader(stream, preserveEols, chunkSize);
+}
 
 #ifdef  __x86_64__
 void writeStringToStream(IIOStream &out, const char *s) { out.write((size32_t)strlen(s), s); }

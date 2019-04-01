@@ -8066,16 +8066,21 @@ void CHThorDiskReadBaseActivity::ready()
     if (ldFile)
         dFile = ldFile->queryDistributedFile();  // Null for local file usage
 
-    Linked<IOutputMetaData> publishedMeta = actualDiskMeta;
-    unsigned publishedCrc = actualCrc;
+    Owned<IOutputMetaData> publishedMeta;
+    unsigned publishedCrc = 0;
+    RecordTranslationMode translationMode = getLayoutTranslationMode();
     if (dFile)
     {
-        IPropertyTree &props = dFile->queryAttributes();
-        publishedMeta.setown(getDaliLayoutInfo(props));
-        if (publishedMeta)
-            publishedCrc = props.getPropInt("@formatCrc");
+        const char *kind = queryFileKind(dFile);
+        if (strisame(kind, "flat") || (RecordTranslationMode::AlwaysDisk == translationMode))
+        {
+            IPropertyTree &props = dFile->queryAttributes();
+            publishedMeta.setown(getDaliLayoutInfo(props));
+            if (publishedMeta)
+                publishedCrc = props.getPropInt("@formatCrc");
+        }
     }
-    translators.setown(::getTranslators("hthor-diskread", expectedCrc, expectedDiskMeta, publishedCrc, publishedMeta, projectedCrc, projectedDiskMeta, getLayoutTranslationMode()));
+    translators.setown(::getTranslators("hthor-diskread", expectedCrc, expectedDiskMeta, publishedCrc, publishedMeta, projectedCrc, projectedDiskMeta, translationMode));
     if (translators)
     {
         translator = &translators->queryTranslator();

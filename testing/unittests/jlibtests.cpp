@@ -1672,4 +1672,69 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(MachineInfoTimingTest, "MachineInfoTimingT
 
 
 
+
+class JlibIOTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibIOTest);
+        CPPUNIT_TEST(test);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void test()
+    {
+        unsigned numTestLines = 1000;
+
+        const char *newlines[] = { "\n", "\r\n" };
+
+        for (unsigned pEol=0; pEol<2; pEol++) // twice, once for preserveEols=false, once for preserveEols=true
+        {
+            for (unsigned nl=0; nl<2; nl++) // twice, once for each type of newline
+            {
+                const char *testTxt = " : Some random text for test line";
+                OwnedIFile iFile = createIFile("JlibIOTest.txt");
+                CRC32 writeCrc;
+                {
+                    OwnedIFileIO iFileIO = iFile->open(IFOcreate);
+                    OwnedIFileIOStream stream = createIOStream(iFileIO);
+                    for (unsigned l=0; l<numTestLines; l++)
+                    {
+                        VStringBuffer line("%u%s%s", l+1, testTxt, newlines[nl]);
+                        stream->write(line.length(), line.str());
+                        writeCrc.tally(line.length(), line.str());
+                    }
+                }
+
+                {
+                    OwnedIFileIO iFileIO = iFile->open(IFOread);
+                    OwnedIFileIOStream stream = createIOStream(iFileIO); // NB: unbuffered
+                    Owned<IStreamLineReader> lineReader = createLineReader(stream, 0==pEol, strlen(testTxt)); // NB: deliberately make chunkSize small so will end up having to read more
+                    CRC32 crc;
+                    while (true)
+                    {
+                        StringBuffer line;
+                        bool eos = lineReader->readLine(line);
+                        CPPUNIT_ASSERT(line.length() != 0);
+    #ifdef _DEBUG
+                        printf("%s\n", line.str());
+    #endif
+                        if (pEol != 0)
+                            line.append(newlines[nl]);
+
+                        crc.tally(line.length(), line.str());
+                        if (eos)
+                            break;
+                    }
+                    CPPUNIT_ASSERT(writeCrc.get() == crc.get());
+                }
+            }
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibIOTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIOTest, "JlibIOTest");
+
+
+
+
 #endif // _USE_CPPUNIT

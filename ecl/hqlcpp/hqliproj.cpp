@@ -916,7 +916,10 @@ bool isSensibleRecord(IHqlExpression * record)
                     IHqlExpression * limit = cur->queryAttribute(countAtom);
                     if (!limit)
                         limit = cur->queryAttribute(sizeAtom);
-                    if (limit && !limit->isConstant())
+                    //Previously constant counts were allowed, but that currently causes issues with the field translation code.
+                    //reinstate the following code once that is addressed
+                    //if (limit && !limit->isConstant())
+                    if (limit)
                         return false;
                     break;
                 }

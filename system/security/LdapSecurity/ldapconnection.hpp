@@ -312,7 +312,7 @@ interface ILdapClient : extends IInterface
     virtual ILdapConfig* queryConfig() = 0;
     virtual const char* getPasswordStorageScheme() = 0;
     virtual bool createUserScope(ISecUser& user) = 0;
-    virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) = 0;
+    virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes) = 0;
     virtual SecAccessFlags queryDefaultPermission(ISecUser& user) = 0;
 
     //Data View related interfaces

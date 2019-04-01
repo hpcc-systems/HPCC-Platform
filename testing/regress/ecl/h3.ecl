@@ -63,6 +63,9 @@ h3.uncompact(compact, res);
 poly := h3.polyfill(DATASET([{40.5, -74.5}, {40.5, -64.5}, {30.5, -64.5}, {30.5, -74.5}], h3_point_t), 4);
 COUNT(poly);
 poly;
+poly2 := lib_h3.h3.polyfill(DATASET([{90, -180}, {90, 180}, {-90, 180}, {-90, -180}], h3_point_t), 0);
+COUNT(poly2);
+poly2;
 
 //  Misc  ---
 h3.radsToDegs(h3.degsToRads(42));
