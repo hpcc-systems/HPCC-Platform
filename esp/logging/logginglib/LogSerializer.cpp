@@ -30,8 +30,6 @@
  */
 
 #define TRACE_INTERVAL 100
-const char* const logFileExt = ".log";
-const char* const rolloverFileExt = ".old";
 
 CLogSerializer::CLogSerializer()
 {
@@ -175,7 +173,7 @@ void CLogSerializer::Rollover(const char* ClosedPrefix)
 void CLogSerializer::SafeRollover(const char*Directory,const char* NewFileName,const char* Prefix, const char* ClosedPrefix)
 {
     CriticalBlock b(crit);
-    Rollover(ClosedPrefix);
+    Close();
     Init();
     Open(Directory, NewFileName, Prefix);
 }
@@ -234,7 +232,7 @@ bool CLogSerializer::readLogRequest(CLogRequestInFile* logRequestInFile, StringB
         ERRLOG("Failed to read logging file %s: not enough data for dataSize", fileName.str());
         return false;
     }
-    if (dataSize[8] != ' ')
+    if (dataSize[8] != '\t')
     {
         ERRLOG("Failed to read logging file %s: incorrect data format for dataSize.", fileName.str());
         return false;
@@ -242,7 +240,7 @@ bool CLogSerializer::readLogRequest(CLogRequestInFile* logRequestInFile, StringB
     dataSize[8] = 0;
 
     char* eptr = nullptr;
-    int dataLen = (int)strtol(dataSize, &eptr, 8);
+    int dataLen = (int)strtol(dataSize, &eptr, 10);
     if (*eptr != '\0')
     {
         ERRLOG("Failed to read logging file %s: incorrect data format for dataSize.", fileName.str());

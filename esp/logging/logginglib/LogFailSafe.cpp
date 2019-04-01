@@ -34,7 +34,6 @@
 #define RECEIVING "_acked_"
 #define SENDING   "_sending_"
 
-const char* const RolloverExt=".old";
 const unsigned int TRACE_PENDING_LOGS_MIN = 10;
 const unsigned int TRACE_PENDING_LOGS_MAX = 50;
 
@@ -153,30 +152,32 @@ void CLogFailSafe::LoadOldLogs(StringArray& oldLogData)
 
 void CLogFailSafe::loadPendingLogReqsFromExistingLogFiles()
 {
-    VStringBuffer fileName("%s%s%s*.log", m_LogService.str(), m_LogType.str(), SENDING);
+    //Read acked LogReqs from all of ack files.
+    //Filter out those acked LogReqs from all of sending files.
+    //Non-acked LogReqs are added into m_PendingLogs.
+    //The LogReqs in the m_PendingLogs will be added to queue and
+    //new tank files through the enqueue() in the checkPendingLogs().
+    //After that, the oldLogs will be renamed to .old file.
+    GuidSet ackedSet;
+    VStringBuffer fileName("%s%s%s*%s", m_LogService.str(), m_LogType.str(), RECEIVING, logFileExt);
+    Owned<IDirectoryIterator> it = createDirectoryIterator(m_logsdir.str(), fileName.str());
+    ForEach (*it)
+    {
+        IFile &file = it->query();
+        CLogSerializer ackedLog(file.queryFilename());
+        ackedLog.loadAckedLogs(ackedSet);
+        oldLogs.append(file.queryFilename());
+    }
+
+    fileName.setf("%s%s%s*%s", m_LogService.str(), m_LogType.str(), SENDING, logFileExt);
     Owned<IDirectoryIterator> di = createDirectoryIterator(m_logsdir.str(), fileName.str());
     ForEach (*di)
     {
         IFile &file = di->query();
-
-        StringBuffer ackedName;
-        GuidSet ackedSet;
-        getReceiveFileName(file.queryFilename(),ackedName);
-        CLogSerializer ackedLog(ackedName.str());
-        ackedLog.loadAckedLogs(ackedSet);
-
+        oldLogs.append(file.queryFilename()); //add to the files for rollover
         CLogSerializer sendLog(file.queryFilename());
         unsigned long total_missed = 0;
-        {//scope needed for critical block below
-            CriticalBlock b(m_critSec); //since we plan to use m_PendingLogs
-            sendLog.loadSendLogs(ackedSet, m_PendingLogs, total_missed);
-        }
-
-        if (total_missed == 0)
-        {
-            ackedLog.Rollover(RolloverExt);
-            sendLog.Rollover(RolloverExt);
-        }
+        sendLog.loadSendLogs(ackedSet, m_PendingLogs, total_missed);
     }
 }
 
@@ -188,8 +189,8 @@ void CLogFailSafe::generateNewFileNames(StringBuffer& sendingFile, StringBuffer&
     StringBuffer tmp;
     tmp.append(m_LogService).append(m_LogType);
 
-    sendingFile.append(tmp).append(SENDING).append(GUID).append(".log");
-    receivingFile.append(tmp).append(RECEIVING).append(GUID).append(".log");
+    sendingFile.append(tmp).append(SENDING).append(GUID).append(logFileExt);
+    receivingFile.append(tmp).append(RECEIVING).append(GUID).append(logFileExt);
 }
 
 bool CLogFailSafe::PopPendingLogRecord(StringBuffer& GUID, StringBuffer& cache)
@@ -215,7 +216,7 @@ void CLogFailSafe::createNew(const char* logType)
 {
     StringBuffer UniqueID;
     GenerateGUID(UniqueID);
-    UniqueID.append(".log");
+    UniqueID.append(logFileExt);
 
     StringBuffer send(logType),recieve(logType);
 
@@ -229,7 +230,7 @@ void CLogFailSafe::createNew(const char* logType)
 void CLogFailSafe::loadFailed(const char* logType)
 {
     StringBuffer fileName;
-    fileName.appendf("%s_sending*.log",logType);
+    fileName.appendf("%s_sending*%s", logType, logFileExt);
 
     Owned<IDirectoryIterator> di = createDirectoryIterator(m_logsdir.str(), fileName.str());
     ForEach (*di)
@@ -317,8 +318,8 @@ void CLogFailSafe::AddACK(const char* GUID)
 
 void CLogFailSafe::RollCurrentLog()
 {
-    m_Added.Rollover(RolloverExt);
-    m_Cleared.Rollover(RolloverExt);
+    m_Added.Rollover(rolloverFileExt);
+    m_Cleared.Rollover(rolloverFileExt);
 }
 
 void CLogFailSafe::SafeRollover()
@@ -328,34 +329,28 @@ void CLogFailSafe::SafeRollover()
 
     // Rolling over m_Added first is desirable here beccause requests being written to the new tank file before
     // m_Cleared finishes rolling all haven't been sent yet (because the sending thread is here busy rolling).
-    m_Added.SafeRollover  (m_logsdir.str(), send.str(), NULL,   RolloverExt);
-    m_Cleared.SafeRollover(m_logsdir.str(), receive.str(), NULL, RolloverExt);
+    m_Added.SafeRollover  (m_logsdir.str(), send.str(), nullptr, rolloverFileExt);
+    m_Cleared.SafeRollover(m_logsdir.str(), receive.str(), nullptr, rolloverFileExt);
 }
 
+//Only rollover the files inside the oldLogs.
+//This is called only when a log agent is starting.
 void CLogFailSafe::RollOldLogs()
 {
-    StringBuffer filesToFind;
-    filesToFind.appendf("%s*.log",m_LogType.str());
-
-    Owned<IDirectoryIterator> di = createDirectoryIterator(m_logsdir.str(), filesToFind.str());
-    ForEach (*di)
+    ForEachItemIn(i, oldLogs)
     {
-        IFile &file = di->query();
-
-        StringBuffer fileName;
-        ExtractFileName(file.queryFilename(),fileName);
-        if (fileName.length() && strcmp(fileName.str(),m_Added.queryFileName()) != 0 &&  strcmp(fileName.str(),m_Cleared.queryFileName()) != 0 )
-        {
-            fileName.replaceString(".log", RolloverExt);
-            file.rename(fileName.str());
-        }
+        StringBuffer fileName = oldLogs.item(i);
+        Owned<IFile> file = createIFile(fileName);
+        fileName.replaceString(logFileExt, rolloverFileExt);
+        file->rename(fileName.str());
     }
+    oldLogs.kill();
 }
 
 //Rename existing .log files (except for current added/cleared log files) to .old files
 void CLogFailSafe::RolloverAllLogs()
 {
-    VStringBuffer filesToFind("%s%s*.log", m_LogService.str(), m_LogType.str());
+    VStringBuffer filesToFind("%s%s*%s", m_LogService.str(), m_LogType.str(), logFileExt);
     Owned<IDirectoryIterator> di = createDirectoryIterator(m_logsdir.str(), filesToFind.str());
     ForEach (*di)
     {
@@ -366,7 +361,7 @@ void CLogFailSafe::RolloverAllLogs()
         if (fileName.length() && !streq(fileName.str(), m_Added.queryFileName()) &&
             !streq(fileName.str(), m_Cleared.queryFileName()))
         {
-            fileName.replaceString(".log", RolloverExt);
+            fileName.replaceString(logFileExt, rolloverFileExt);
             file.rename(fileName.str());
         }
     }
