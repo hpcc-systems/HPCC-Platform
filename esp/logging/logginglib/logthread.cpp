@@ -127,7 +127,7 @@ bool CLogThread::queueLog(IEspUpdateLogRequest* logRequest)
         return false;
 
     Owned<IEspUpdateLogRequestWrap> logRequestWrap = new CUpdateLogRequestWrap(NULL, logRequest->getOption(), logRequest->getLogContent());
-    return enqueue(logRequestWrap);
+    return enqueue(logRequestWrap, nullptr);
 }
 
 bool CLogThread::queueLog(IEspUpdateLogRequestWrap* logRequest)
@@ -135,16 +135,19 @@ bool CLogThread::queueLog(IEspUpdateLogRequestWrap* logRequest)
     unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
     Owned<IEspUpdateLogRequestWrap> logRequestFiltered = logAgent->filterLogContent(logRequest);
     ESPLOG(LogNormal, "LThread:filterLog: %dms\n", msTick() -  startTime);
-    return enqueue(logRequestFiltered);
+    return enqueue(logRequestFiltered, nullptr);
 }
 
-bool CLogThread::enqueue(IEspUpdateLogRequestWrap* logRequest)
+bool CLogThread::enqueue(IEspUpdateLogRequestWrap* logRequest, const char* guid)
 {
     if (logFailSafe.get())
     {
         StringBuffer GUID, reqBuf;
         unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
-        logFailSafe->GenerateGUID(GUID, NULL);
+        if (isEmptyString(guid))
+            logFailSafe->GenerateGUID(GUID, nullptr);
+        else
+            GUID.set(guid);
         logRequest->setGUID(GUID.str());
         if (serializeLogRequestContent(logRequest, reqBuf))
             logFailSafe->Add(GUID, reqBuf.str(), nullptr);
@@ -418,7 +421,7 @@ void CLogThread::checkPendingLogs(bool bOneRecOnly)
             Owned<IEspUpdateLogRequestWrap> logRequest = unserializeLogRequestContent(logData.str());
             if (!logRequest)
                 ERRLOG("checkPendingLogs: failed to unserialize: %s", logData.str());
-            else if (!enqueue(logRequest))
+            else if (!enqueue(logRequest, GUID))
             {
                 ERRLOG("checkPendingLogs: failed to add a log request to queue");
                 queueLogError=true;
@@ -429,7 +432,7 @@ void CLogThread::checkPendingLogs(bool bOneRecOnly)
         }
         //if everything went ok then we should be able to rollover the old logs.
         if (!queueLogError && !bOneRecOnly)
-            logFailSafe->RolloverAllLogs();
+            logFailSafe->RollOldLogs();
     }
     catch(IException* ex)
     {

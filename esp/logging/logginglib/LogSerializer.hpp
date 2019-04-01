@@ -29,6 +29,9 @@
 typedef std::set<std::string> GuidSet;//
 typedef std::map<std::string, std::string> GuidMap;
 
+const char* const logFileExt = ".log";
+const char* const rolloverFileExt = ".old";
+
 class CLogRequestInFile : public CSimpleInterface
 {
     StringAttr fileName;
