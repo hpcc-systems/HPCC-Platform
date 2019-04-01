@@ -65,7 +65,9 @@ void getImplicitScopes(HqlScopeArray& implicitScopes, IEclRepository * repositor
     {
         IHqlScope & scope = rootScopes.item(i);
         if (scope.isImplicit())
+        {
             implicitScopes.append(OLINK(scope));
+        }
     }
 }
 
@@ -75,11 +77,13 @@ extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext
     IEclRepository * eclRepository = ctx.queryRepository();
     if (eclRepository)
     {
-        HqlScopeArray rootScopes;
-        getRootScopes(rootScopes, eclRepository, ctx);
-        ForEachItemIn(i, rootScopes)
+        HqlExprArray rootSymbols;
+        eclRepository->queryRootScope()->getSymbols(rootSymbols);
+        rootSymbols.sort(compareSymbolsByName);
+
+        ForEachItemIn(i, rootSymbols)
         {
-            IHqlScope & cur = rootScopes.item(i);
+            IHqlExpression & cur = rootSymbols.item(i);
             IIdAtom * curName = cur.queryId();
             OwnedHqlExpr resolved = eclRepository->queryRootScope()->lookupSymbol(curName, LSFpublic, ctx);
             if (resolved)
