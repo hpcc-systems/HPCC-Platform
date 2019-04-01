@@ -101,7 +101,7 @@ void * checked_calloc(size_t size, size_t num, char const * label)
 
 inline bool checkIsCompressed(unsigned int flags, size32_t fixedSize, bool grouped)
 {
-    return ((flags & TDWnewcompress) || ((flags & TDXcompress) && (fixedSize+(grouped?1:0) >= MIN_ROWCOMPRESS_RECSIZE)));
+    return ((flags & TDWnewcompress) || ((flags & TDXcompress) && ((0 == fixedSize) || (fixedSize+(grouped?1:0) >= MIN_ROWCOMPRESS_RECSIZE))));
 }
 
 //=====================================================================================================
@@ -8120,6 +8120,8 @@ void CHThorDiskReadBaseActivity::resolve()
             Owned<IFileDescriptor> fdesc;
             fdesc.setown(ldFile->getFileDescriptor());
             gatherInfo(fdesc);
+            if (ldFile->isExternal())
+                compressed = checkIsCompressed(helper.getFlags(), fixedDiskRecordSize, false);//grouped=FALSE because fixedDiskRecordSize already includes grouped
             IDistributedFile *dFile = ldFile->queryDistributedFile();
             if (dFile)  //only makes sense for distributed (non local) files
             {
