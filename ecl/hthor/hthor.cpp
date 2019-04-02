@@ -8290,13 +8290,14 @@ bool CHThorDiskReadBaseActivity::openNext()
             else
                 actualFilter.appendFilters(fieldFilters);
 
-            bool canSerializeTypeInfo = actualDiskMeta->queryTypeInfo()->canSerialize() && projectedDiskMeta->queryTypeInfo()->canSerialize();
+            bool tryRemoteStream = actualDiskMeta->queryTypeInfo()->canInterpret() && actualDiskMeta->queryTypeInfo()->canSerialize() &&
+                                   projectedDiskMeta->queryTypeInfo()->canInterpret() && projectedDiskMeta->queryTypeInfo()->canSerialize();
 
             /* If part can potentially be remotely streamed, 1st check if any part is local,
              * then try to remote stream, and otherwise failover to legacy remote access
              */
             unsigned localCopy = NotFound;
-            if (canSerializeTypeInfo && (rt_binary == readType))
+            if (tryRemoteStream && (rt_binary == readType))
             {
                 std::vector<unsigned> remoteCandidates;
                 // scan for local part 1st
