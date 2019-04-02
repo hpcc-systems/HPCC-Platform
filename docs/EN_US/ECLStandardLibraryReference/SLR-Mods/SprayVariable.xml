@@ -14,23 +14,23 @@
       <primary>SprayDelimited</primary>
     </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
   role="bold">, </emphasis> <emphasis>sourcePath , </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceMaxrecordsize </emphasis>
+  role="bold">[</emphasis> <emphasis> sourceMaxRecordSize </emphasis>
   <emphasis role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis> sourceCSVseparate </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis> sourceCsvSeparate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceCSVterminate </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvTerminate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceCSVquote </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvQuote </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
   </emphasis> <emphasis>destinationGroup, destinationLogicalName </emphasis>,
   <emphasis role="bold">[</emphasis> <emphasis>timeout</emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>espServerIPPort</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis>espServerIpPort</emphasis> <emphasis role="bold">]</emphasis>
   ,<emphasis> </emphasis> <emphasis role="bold">[</emphasis>
   <emphasis>maxConnections</emphasis> <emphasis role="bold">]</emphasis>
   ,<emphasis role="bold"> [</emphasis> <emphasis>allowOverwrite</emphasis>
   <emphasis role="bold">] , [</emphasis> <emphasis>replicate</emphasis>
-  <emphasis role="bold">] , [</emphasis> <emphasis> compress
+  <emphasis role="bold">] , [</emphasis> <emphasis>compress
   </emphasis><emphasis role="bold">]</emphasis> , <emphasis role="bold">
   [</emphasis> <emphasis> sourceCsvEscape </emphasis> <emphasis
   role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis> <emphasis>
@@ -53,22 +53,22 @@
       <primary>fSprayDelimited</primary>
     </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
   role="bold">, </emphasis> <emphasis>sourcePath , </emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis> sourceMaxrecordsize </emphasis>
+  role="bold"> [</emphasis> <emphasis> sourceMaxRecordSize </emphasis>
   <emphasis role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceCSVseparate </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvSeparate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceCSVterminate </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvTerminate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis> sourceCSVquote </emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis> sourceCsvQuote </emphasis> <emphasis role="bold">]
   </emphasis> <emphasis>, destinationGroup, destinationLogicalName </emphasis>
   <emphasis role="bold">, [</emphasis> <emphasis>timeout</emphasis> <emphasis
-  role="bold">] , [</emphasis> <emphasis>espServerIPPort</emphasis> <emphasis
+  role="bold">] , [</emphasis> <emphasis>espServerIpPort</emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis> </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>maxConnections</emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis>
   <emphasis>allowOverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
   <emphasis>replicate</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis> compress </emphasis> <emphasis role="bold">]</emphasis> ,
+  <emphasis>compress </emphasis> <emphasis role="bold">]</emphasis> ,
   <emphasis role="bold"> [</emphasis> <emphasis> sourceCsvEscape </emphasis>
   <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
   <emphasis> failIfNoSourceFile </emphasis> <emphasis
@@ -82,7 +82,7 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="90.50pt" />
 
       <colspec />
 
@@ -102,14 +102,14 @@
         </row>
 
         <row>
-          <entry><emphasis>sourceMaxrecordsize</emphasis></entry>
+          <entry><emphasis>sourceMaxRecordSize</emphasis></entry>
 
           <entry>Optional. An integer containing the maximum size of the
           records in the file. If omitted, the default is 4096.</entry>
         </row>
 
         <row>
-          <entry><emphasis>sourceCSVseparate</emphasis></entry>
+          <entry><emphasis>sourceCsvSeparate</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV field
           separator. If omitted, the default is '\\,'</entry>
@@ -153,7 +153,7 @@
         </row>
 
         <row>
-          <entry><emphasis>espServerIPPort</emphasis></entry>
+          <entry><emphasis>espServerIpPort</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the protocol,
           IP, port, and directory, or the DNS equivalent, of the ESP server
