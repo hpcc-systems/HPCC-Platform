@@ -16,6 +16,9 @@
 ############################################################################## */
 
 #define da_decl DECL_EXPORT
+
+#include <unordered_map>
+
 #include "platform.h"
 #include "portlist.h"
 #include "jlib.hpp"
@@ -40,6 +43,7 @@
 // These are legacy and cannot be changed.
 #define SERIALIZATION_VERSION ((byte)0xd4)
 #define SERIALIZATION_VERSION2 ((byte)0xd5) // with trailing superfile info
+#define SUPEREXTRA_VERCHK 0x83866982 // aka "SVER"
 
 bool isMulti(const char *str)
 {
@@ -583,6 +587,9 @@ protected:
     PointerArray parts; // of CPartDescriptor
 
 public:
+    CFileDescriptorBase() { }
+    CFileDescriptorBase(const CFileDescriptorBase &other);
+
 
     StringAttr tracename;
     IArrayOf<IClusterInfo> clusters;
@@ -603,14 +610,14 @@ public:
 
 };
 
-class CPartDescriptor : implements IPartDescriptor
+class CPartDescriptor : public CSimpleInterfaceOf<IPartDescriptor>
 {
 protected: friend class CFileDescriptor;
 
     StringAttr overridename;    // this may be a multi path - may or not be relative to directory
                         // if not set use parent mask (and is *not* multi in this case)
     bool ismulti;       // only set if overridename set (otherwise false)
-    CFileDescriptorBase &parent; // this is for the cluster *not* for the entire file
+    CFileDescriptorBase *parent; // this is for the cluster *not* for the entire file
 
     unsigned partIndex;
     Owned<IPropertyTree> props;
@@ -619,16 +626,16 @@ public:
 
     virtual void Link(void) const
     {
-        parent.Link();
+        parent->Link();
     }
     virtual bool Release(void) const
     {
-        return parent.Release();
+        return parent->Release();
     }
 
 
     CPartDescriptor(CFileDescriptorBase &_parent,unsigned idx,IPropertyTree *pt)
-        : parent(_parent)
+        : parent(&_parent)
     {
         partIndex = idx;
         ismulti = false;
@@ -649,6 +656,11 @@ public:
             props.setown(createPTree("Part"));
     }
 
+    void setParent(CFileDescriptorBase &_parent)
+    {
+        parent = &_parent;
+    }
+
     void set(unsigned idx, const char *_tail, IPropertyTree *pt)
     {
         partIndex = idx;
@@ -657,7 +669,7 @@ public:
     }
 
     CPartDescriptor(CFileDescriptorBase &_parent, unsigned idx, MemoryBuffer &mb)
-        : parent(_parent)
+        : parent(&_parent)
     {
         partIndex = idx;
         mb.read(overridename);
@@ -674,17 +686,17 @@ public:
 
     unsigned numCopies()
     {
-        return parent.numCopies(partIndex);
+        return parent->numCopies(partIndex);
     }
 
     virtual INode *queryNode(unsigned copy)
     {
-        return parent.doQueryNode(partIndex,copy,(props&&props->hasProp("@rn"))?props->getPropInt("@rn"):(unsigned)-1);
+        return parent->doQueryNode(partIndex,copy,(props&&props->hasProp("@rn"))?props->getPropInt("@rn"):(unsigned)-1);
     }
 
     virtual unsigned queryDrive(unsigned copy)
     {
-        return parent.queryDrive(partIndex,copy);
+        return parent->queryDrive(partIndex,copy);
     }
 
     INode *getNode(unsigned copy=0)
@@ -704,11 +716,11 @@ public:
 
     bool getCrc(unsigned &crc)
     {
-        return getCrcFromPartProps(*parent.attr,*props,crc);
+        return getCrcFromPartProps(*parent->attr,*props,crc);
     }
     IFileDescriptor &queryOwner()
     {
-        return parent.querySelf();
+        return parent->querySelf();
     }
 
     RemoteFilename &getFilename(unsigned copy, RemoteFilename &rfn)
@@ -742,12 +754,12 @@ public:
 
     StringBuffer &getTail(StringBuffer &name)
     {
-        return parent.getPartTail(name,partIndex);
+        return parent->getPartTail(name,partIndex);
     }
 
     StringBuffer &getDirectory(StringBuffer &dir,unsigned copy)
     {
-        return parent.getPartDirectory(dir,partIndex,copy);
+        return parent->getPartDirectory(dir,partIndex,copy);
     }
 
     bool isMulti()
@@ -760,7 +772,7 @@ public:
         if (ismulti) {
             rmfn.setEp(queryNode(copy)->endpoint());
             StringBuffer dir;
-            parent.getPartDirectory(dir,partIndex,copy);
+            parent->getPartDirectory(dir,partIndex,copy);
             StringBuffer tmp1;
             StringBuffer tmp2;
             splitDirMultiTail(overridename,tmp1,tmp2);
@@ -804,13 +816,13 @@ public:
         }
         if (ret)
             pt->setPropInt("@num",partIndex+1);
-        if ((partIndex==0)&&(parent.numParts()==1)) {  // more legacy
+        if ((partIndex==0)&&(parent->numParts()==1)) {  // more legacy
             SocketEndpoint ep = queryNode(0)->endpoint();
             StringBuffer tmp;
             if (!ep.isNull())
                 pt->setProp("@node",ep.getUrlStr(tmp).str());
-            if (overridename.isEmpty()&&!parent.partmask.isEmpty()) {
-                expandMask(tmp.clear(), parent.partmask, 0, 1);
+            if (overridename.isEmpty()&&!parent->partmask.isEmpty()) {
+                expandMask(tmp.clear(), parent->partmask, 0, 1);
                 pt->setProp("@name",tmp.str());
             }
         }
@@ -835,12 +847,12 @@ public:
 
     void serialize(MemoryBuffer &mb)
     {
-        parent.serializePart(mb,partIndex);
+        parent->serializePart(mb,partIndex);
     }
 
     unsigned copyClusterNum(unsigned copy,unsigned *replicate=NULL)
     {
-        return parent.copyClusterNum(partIndex,copy,replicate);
+        return parent->copyClusterNum(partIndex,copy,replicate);
     }
 
     IReplicatedFile *getReplicatedFile()
@@ -928,13 +940,26 @@ void getClusterInfo(IPropertyTree &pt, INamedGroupStore *resolver, unsigned flag
     }
 }
 
+CFileDescriptorBase::CFileDescriptorBase(const CFileDescriptorBase &other)
+{
+    ForEachItemIn(p, other.parts)
+    {
+        CPartDescriptor *part = (CPartDescriptor *)other.parts.item(p);
+        parts.append(LINK(part));
+    }
+    tracename.set(other.tracename);
+    ForEachItemIn(c, other.clusters)
+        clusters.append(OLINK(other.clusters.item(c)));
+    attr.setown(createPTreeFromIPT(other.attr));
+    directory.set(other.directory);
+    partmask.set(other.partmask);
+}
 
 class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescriptor
 {
 
-    SocketEndpointArray *pending;   // for constructing cluster group
-    bool setupdone;
-    byte version;
+    SocketEndpointArray *pending = nullptr;   // for constructing cluster group
+    bool setupdone = false;
 
     IFileDescriptor &querySelf()
     {
@@ -1253,15 +1278,15 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
         }
     }
 
+protected:
+    byte version;
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CFileDescriptor(MemoryBuffer &mb, IArrayOf<IPartDescriptor> *partsret, UnsignedArray **subcounts=NULL, bool *_interleaved=NULL)
+    CFileDescriptor(MemoryBuffer &mb, IArrayOf<IPartDescriptor> *partsret)
     {
         // bit fiddly
-        if (subcounts)
-            *subcounts = NULL;
-        pending = NULL;
         setupdone = true;
         mb.read(version);
         if ((version != SERIALIZATION_VERSION) && (version != SERIALIZATION_VERSION2)) // check serialization matched
@@ -1330,25 +1355,6 @@ public:
         attr.setown(createPTree(mb));
         if (!attr)
             attr.setown(createPTree("Attr")); // doubt can happen
-        if (version == SERIALIZATION_VERSION2)
-        {
-            if (subcounts)
-                *subcounts = new UnsignedArray;
-            unsigned n;
-            mb.read(n);
-            while (n)
-            {
-                unsigned np;
-                mb.read(np);
-                if (subcounts)
-                    (*subcounts)->append(np);
-                n--;
-            }
-            bool interleaved;
-            mb.read(interleaved);
-            if (_interleaved)
-                *_interleaved = interleaved;
-        }
     }
 
     void ensureRequiredStructuresExist()
@@ -1358,12 +1364,10 @@ public:
 
     CFileDescriptor(IPropertyTree *tree, INamedGroupStore *resolver, unsigned flags)
     {
-        pending = NULL;
         if ((flags&IFDSF_ATTR_ONLY)||!tree) {
             if (tree)
                 attr.setown(tree);
             ensureRequiredStructuresExist();
-            setupdone = false;
             return;
         }
         else
@@ -1439,6 +1443,12 @@ public:
 
         if (totalsize!=(offset_t)-1)
             attr->setPropInt64("@size",totalsize);
+    }
+
+    CFileDescriptor(const CFileDescriptor &other) : CFileDescriptorBase(other)
+    {
+        setupdone = other.setupdone;
+        version = other.version;
     }
 
     void serializePart(MemoryBuffer &mb,unsigned partidx)
@@ -1578,8 +1588,7 @@ public:
 
     void delpart(unsigned idx)
     {
-        CPartDescriptor *p = (CPartDescriptor *)parts.item(idx);
-        delete p;
+        Owned<CPartDescriptor> p = (CPartDescriptor *)parts.item(idx);
         parts.remove(idx);
     }
 
@@ -1952,12 +1961,12 @@ public:
             queryPartDiskMapping(clusterIdx).ensureReplicate();
     }
 
-    ISuperFileDescriptor *querySuperFileDescriptor()
+    virtual ISuperFileDescriptor *querySuperFileDescriptor() override
     {
         return NULL;
     }
 
-    bool mapSubPart(unsigned superpartnum, unsigned &subfile, unsigned &subpartnum)
+    virtual bool mapSubPart(unsigned superpartnum, unsigned &subfile, unsigned &subpartnum) override
     {
         // shouldn't get called ever
         subpartnum = superpartnum;
@@ -1965,32 +1974,88 @@ public:
         return true;
     }
 
-    void setSubMapping(UnsignedArray &_subcounts, bool _interleaved)
+    virtual void setSubMapping(UnsignedArray &_subcounts, bool _interleaved) override
     {
         UNIMPLEMENTED_X("setSubMapping called from CFileDescriptor!");
     }
 
-    unsigned querySubFiles()
+    virtual unsigned querySubFiles() override
     {
         UNIMPLEMENTED_X("querySubFiles called from CFileDescriptor!");
     }
+
+    virtual IPropertyTree *querySubFileAttrs(unsigned subFile) override
+    {
+        UNIMPLEMENTED_X("querySubFileAttrs called from CFileDescriptor!");
+    }
 };
 
+#define SUBFILEATTRPREFIX "subAttr_"
 class CSuperFileDescriptor:  public CFileDescriptor
 {
-    UnsignedArray *subfilecounts;
-    bool interleaved;
-public:
+    UnsignedArray *subfilecounts = nullptr;
+    bool interleaved = false;
 
-    CSuperFileDescriptor(MemoryBuffer &mb, IArrayOf<IPartDescriptor> *partsret)
-        : CFileDescriptor(mb,partsret,&subfilecounts,&interleaved)
+public:
+    std::unordered_map<unsigned, Owned<CSuperFileDescriptor>> auxSuperDescMap;
+    Owned<IPropertyTree> subFileExtra;
+
+    CSuperFileDescriptor(MemoryBuffer &mb, IArrayOf<IPartDescriptor> *partsret) : CFileDescriptor(mb, partsret)
     {
+        if (version == SERIALIZATION_VERSION2)
+        {
+            subfilecounts = new UnsignedArray;
+            unsigned n;
+            mb.read(n);
+            while (n)
+            {
+                unsigned np;
+                mb.read(np);
+                if (subfilecounts)
+                    subfilecounts->append(np);
+                n--;
+            }
+            bool _interleaved;
+            mb.read(_interleaved);
+            if (_interleaved)
+                interleaved = _interleaved;
+        }
+
+        // to preserve serialization compatibility, check if more and check if has SUPEREXTRA_VERCHK header
+        unsigned versionChk;
+        if (mb.remaining() < sizeof(versionChk))
+            return;
+        unsigned pos = mb.getPos();
+        mb.read(versionChk);
+        if (SUPEREXTRA_VERCHK != versionChk)
+        {
+            mb.reset(pos);
+            return;
+        }
+        // passed check.
+        bool hasSubFileExtra;
+        mb.read(hasSubFileExtra);
+        if (hasSubFileExtra)
+            subFileExtra.setown(createPTree(mb));
     }
 
     CSuperFileDescriptor(IPropertyTree *attr)
         : CFileDescriptor(attr,NULL,IFDSF_ATTR_ONLY)    // only support attr here
     {
         subfilecounts = NULL;
+    }
+
+    CSuperFileDescriptor(const CSuperFileDescriptor &other) : CFileDescriptor(other)
+    {
+        if (other.subfilecounts)
+        {
+            subfilecounts = new UnsignedArray;
+            ForEachItemIn(c, *other.subfilecounts)
+                subfilecounts->append(other.subfilecounts->item(c));
+        }
+        interleaved = other.interleaved;
+        if (other.subFileExtra)
+            subFileExtra.setown(createPTreeFromIPT(other.subFileExtra));
     }
 
     virtual ~CSuperFileDescriptor()
@@ -2003,7 +2068,28 @@ public:
         return this;
     }
 
-    bool mapSubPart(unsigned superpartnum, unsigned &subfile, unsigned &subpartnum)
+    void serializeSuperInfo(MemoryBuffer &mb)
+    {
+        if (subfilecounts) {
+            unsigned count = subfilecounts->ordinality();
+            mb.append(count);
+            ForEachItemIn(i,*subfilecounts)
+                mb.append(subfilecounts->item(i));
+        }
+        else
+            mb.append((unsigned)0);
+        mb.append(interleaved);
+        mb.append(SUPEREXTRA_VERCHK);
+        if (subFileExtra)
+        {
+            mb.append(true);
+            subFileExtra->serialize(mb);
+        }
+        else
+            mb.append(false);
+    }
+
+    virtual bool mapSubPart(unsigned superpartnum, unsigned &subfile, unsigned &subpartnum) override
     {
         subpartnum = superpartnum;
         subfile = 0;
@@ -2044,7 +2130,7 @@ public:
         return false;
     }
 
-    void setSubMapping(UnsignedArray &_subcounts, bool _interleaved)
+    virtual void setSubMapping(UnsignedArray &_subcounts, bool _interleaved) override
     {
         interleaved = _interleaved;
         if (_subcounts.ordinality()) {
@@ -2061,24 +2147,22 @@ public:
         }
     }
 
-    unsigned querySubFiles()
+    virtual unsigned querySubFiles() override
     {
         if (!subfilecounts)  // its a file!
             return 1;
         return subfilecounts->ordinality();
     }
 
-    void serializeSub(MemoryBuffer &mb)
+    virtual IPropertyTree *querySubFileAttrs(unsigned subFile) override
     {
-        if (subfilecounts) {
-            unsigned count = subfilecounts->ordinality();
-            mb.append(count);
-            ForEachItemIn(i,*subfilecounts)
-                mb.append(subfilecounts->item(i));
-        }
-        else
-            mb.append((unsigned)0);
-        mb.append(interleaved);
+        if (!subFileExtra)
+            subFileExtra.setown(createPTree());
+        VStringBuffer subFileName(SUBFILEATTRPREFIX"%u", subFile+1);
+        IPropertyTree *subFileAttrs = subFileExtra->queryPropTree(subFileName);
+        if (!subFileAttrs)
+            subFileAttrs = subFileExtra->addPropTree(subFileName);
+        return subFileAttrs;
     }
 };
 
@@ -2118,7 +2202,7 @@ void CFileDescriptor::serializeParts(MemoryBuffer &mb,unsigned *partlist, unsign
     }
     queryProperties().serialize(mb);
     if (sdesc)
-        sdesc->serializeSub(mb);
+        sdesc->serializeSuperInfo(mb);
 }
 
 
@@ -2290,7 +2374,54 @@ static CFileDescriptor * doDeserializePartFileDescriptors(MemoryBuffer &mb,IArra
     mb.read(version);
     mb.reset(savepos);
     if (version==SERIALIZATION_VERSION2) // its super
-        return new CSuperFileDescriptor(mb,parts);
+    {
+        Owned<CSuperFileDescriptor> superDesc = new CSuperFileDescriptor(mb, parts);
+        if (superDesc->subFileExtra)
+        {
+            Owned<IPropertyTree> superAttrCopy = createPTreeFromIPT(superDesc->attr);
+
+            StringBuffer sacStr;
+            toXML(superDesc->attr, sacStr);
+            PROGLOG("\nOriginal Super Attrs:\n%s", sacStr.str());
+
+            unsigned numParts = superDesc->numParts();
+            for (unsigned p=0; p<numParts; p++)
+            {
+                CPartDescriptor *part = (CPartDescriptor *)superDesc->queryPart(p);
+                if (part)
+                {
+                    unsigned subFileNum;
+                    unsigned subPartNum;
+                    superDesc->mapSubPart(part->queryPartIndex(), subFileNum, subPartNum);
+                    CSuperFileDescriptor *subSuperDesc = nullptr;
+                    auto it = superDesc->auxSuperDescMap.find(subFileNum);
+                    if (it != superDesc->auxSuperDescMap.end())
+                        subSuperDesc = it->second;
+                    else
+                    {
+                        VStringBuffer subFilename(SUBFILEATTRPREFIX"%u", subFileNum+1);
+                        IPropertyTree *subFileAttr = superDesc->subFileExtra->queryPropTree(subFilename);
+                        if (subFileAttr)
+                        {
+                            Owned<IPropertyTree> superAttrCopy = createPTreeFromIPT(superDesc->attr);
+
+                            StringBuffer sfaStr;
+                            toXML(subFileAttr, sfaStr);
+                            PROGLOG("\nOverride attrs from sub file %u:\n%s", subFileNum, sfaStr.str());
+                            synchronizePTree(superAttrCopy, subFileAttr, false, false);
+
+                            subSuperDesc = new CSuperFileDescriptor(*superDesc);
+                            subSuperDesc->attr.setown(superAttrCopy.getClear());
+                            superDesc->auxSuperDescMap.insert({subFileNum, subSuperDesc});
+                        }
+                    }
+                    if (subSuperDesc)
+                        part->setParent(*subSuperDesc);  // kept alive in superDesc.auxSuperDescMap
+                }
+            }
+        }
+        return superDesc.getClear();
+    }
     return new CFileDescriptor(mb,parts);
 }
 

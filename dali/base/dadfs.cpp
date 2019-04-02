@@ -17,6 +17,9 @@
 
 
 #define da_decl DECL_EXPORT
+
+#include <set>
+
 #include "platform.h"
 #include "jlib.hpp"
 #include "jfile.hpp"
@@ -5414,11 +5417,13 @@ public:
         }
 
         // need common attributes
-        Owned<ISuperFileDescriptor> fdesc=createSuperFileDescriptor(at.getClear());
+        Owned<ISuperFileDescriptor> fdesc = createSuperFileDescriptor(at.getClear());
         if (interleaved&&(interleaved!=2))
             WARNLOG("getFileDescriptor: Unsupported interleave value (1)");
         fdesc->setSubMapping(subcounts,interleaved!=0);
         fdesc->setTraceName(logicalName.get());
+
+        std::set<IDistributedFile *> subFiles;
         Owned<IDistributedFilePartIterator> iter = getIterator(NULL);
         unsigned n = 0;
         SocketEndpointArray reps;
@@ -5476,6 +5481,57 @@ public:
                     }
                 }
             }
+        }
+
+        const char *props[] = { "_record_layout", "_rtlType", "ECL", nullptr };
+        IPropertyTree &superFileProps = fdesc->queryProperties();
+
+        Owned<IDistributedFileIterator> subFileIterator = getSubFileIterator(true);
+        unsigned subFileNum = 0;
+        ForEach(*subFileIterator)
+        {
+            IDistributedFile &subFile = subFileIterator->query();
+            IPropertyTree &subFileProps = subFile.queryAttributes();
+
+            IPropertyTree *subFileAttrs = nullptr;
+            unsigned i=0;
+            while (true)
+            {
+                const char *prop = props[i++];
+                if (!prop)
+                    break;
+                MemoryBuffer subFileValueMb, superFileValueMb;
+                const char *subFileValue = nullptr;
+                const char *superFileValue = nullptr;
+                if (subFileProps.hasProp(prop))
+                {
+                    bool diff = false;
+                    bool bin = subFileProps.isBinary(prop);
+                    if (bin)
+                    {
+                        subFileProps.getPropBin(prop, subFileValueMb);
+                        superFileProps.getPropBin(prop, superFileValueMb);
+                        diff = subFileValueMb.length() != superFileValueMb.length() || (0 != memcmp(subFileValueMb.bytes(), superFileValueMb.bytes(), superFileValueMb.length()));
+                    }
+                    else
+                    {
+                        subFileValue = subFileProps.queryProp(prop);
+                        superFileValue = superFileProps.queryProp(prop);
+                        diff = !superFileValue || !strsame(superFileValue, subFileValue);
+                    }
+
+                    if (diff)
+                    {
+                        if (!subFileAttrs)
+                            subFileAttrs = fdesc->querySubFileAttrs(subFileNum);
+                        if (bin)
+                            subFileAttrs->setPropBin(prop, subFileValueMb.length(), subFileValueMb.bufferBase());
+                        else
+                            subFileAttrs->setProp(prop, subFileValue);
+                    }
+                }
+            }
+            ++subFileNum;
         }
         return fdesc.getClear();
     }

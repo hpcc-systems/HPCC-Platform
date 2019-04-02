@@ -68,7 +68,6 @@ public:
                 }
             }
         }
-        checkFormatCrc(this, file, helper->getDiskFormatCrc(), helper->queryDiskRecordSize(), helper->getProjectedFormatCrc(), helper->queryProjectedDiskRecordSize(), false);
     }
 };
 

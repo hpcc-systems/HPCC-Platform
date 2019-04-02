@@ -250,8 +250,6 @@ public:
                 if (sub && 1 == sub->numParts())
                     nofilter = true;
             }
-            //MORE: Change index getFormatCrc once we support projected rows for indexes.
-            checkFormatCrc(this, index, indexBaseHelper->getDiskFormatCrc(), indexBaseHelper->queryDiskRecordSize(), indexBaseHelper->getProjectedFormatCrc(), indexBaseHelper->queryProjectedDiskRecordSize(), true);
             if ((container.queryLocalOrGrouped() || indexBaseHelper->canMatchAny()) && index->numParts())
             {
                 fileDesc.setown(getConfiguredFileDescriptor(*index));
