@@ -1022,7 +1022,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
     CHpccNativeProtocolResponse(const char *queryname, SafeSocket *_client, TextMarkupFormat _mlFmt, unsigned flags, bool _isHTTP, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_resultFilterString, const char *_rootTag) :
-        client(_client), queryName(queryname), logctx(_logctx), mlFmt(_mlFmt), xmlReadFlags(_xmlReadFlags), protocolFlags(flags), isHTTP(_isHTTP), rootTag(_rootTag)
+        client(_client), queryName(queryname), rootTag(_rootTag), logctx(_logctx), mlFmt(_mlFmt), xmlReadFlags(_xmlReadFlags), protocolFlags(flags), isHTTP(_isHTTP)
     {
         resultFilter.appendList(_resultFilterString, ".");
         if (!rootTag.length() && resultFilter.length())
@@ -1381,8 +1381,8 @@ private:
 public:
     CHttpRequestAsyncFor(const char *_queryName, IHpccProtocolMsgSink *_sink, IHpccProtocolMsgContext *_msgctx, IArrayOf<IPropertyTree> &_requestArray,
             SafeSocket &_client, HttpHelper &_httpHelper, unsigned _flags, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
-    : sink(_sink), msgctx(_msgctx), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused),
-      slaveReplyLen(_slaveReplyLen), logctx(_logctx), xmlReadFlags(_xmlReadFlags), querySetName(_querySetName), flags(_flags)
+    : querySetName(_querySetName), logctx(_logctx), requestArray(_requestArray), sink(_sink), msgctx(_msgctx), client(_client), httpHelper(_httpHelper), xmlReadFlags(_xmlReadFlags)
+      , memused(_memused), slaveReplyLen(_slaveReplyLen), flags(_flags)
     {
         queryName = _queryName;
         queryText = _queryText;

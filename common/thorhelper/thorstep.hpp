@@ -82,10 +82,10 @@ enum
 struct SmartStepExtra
 {
     inline SmartStepExtra(unsigned _flags, IMultipleStepSeekInfo * _extraSeeks)
-        : flags(_flags), extraSeeks(_extraSeeks)
+        : extraSeeks(_extraSeeks), flags(_flags)
     {}
     inline SmartStepExtra(const SmartStepExtra & other)
-        : flags(other.flags), extraSeeks(other.extraSeeks)
+        : extraSeeks(other.extraSeeks), flags(other.flags)
     {}
 
 //Input fields

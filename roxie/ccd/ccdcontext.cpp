@@ -1231,7 +1231,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
     CRoxieContextBase(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
-        : factory(_factory), logctx(_logctx), options(factory->queryOptions()), globalStats(graphStatistics)
+        : factory(_factory), options(factory->queryOptions()), logctx(_logctx), globalStats(graphStatistics)
     {
         startTime = lastWuAbortCheck = msTick();
         persists = NULL;
@@ -2830,7 +2830,7 @@ public:
     }
 
     CRoxieServerContext(IPropertyTree *_context, IHpccProtocolResponse *_protocol, const IQueryFactory *_factory, unsigned flags, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
-        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), querySetName(_querySetName), protocol(_protocol), results(NULL)
+        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), protocol(_protocol), results(NULL), querySetName(_querySetName)
     {
         init();
         if (protocol)

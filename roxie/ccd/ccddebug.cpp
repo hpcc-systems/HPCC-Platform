@@ -57,8 +57,9 @@ public:
 
     InputProbe(IFinalRoxieInput *_in, IDebuggableContext *_debugContext,
         unsigned _sourceId, unsigned _sourceIdx, unsigned _targetId, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
-        : in(_in),  debugContext(_debugContext),
-          sourceId(_sourceId), sourceIdx(_sourceIdx), targetId(_targetId), targetIdx(_targetIdx), iteration(_iteration), channel(_channel)
+        : in(_in),
+          sourceId(_sourceId), sourceIdx(_sourceIdx), targetId(_targetId), targetIdx(_targetIdx), iteration(_iteration), channel(_channel),
+          debugContext(_debugContext)
     {
         inStream = NULL;
         hasStarted = false;
@@ -1508,7 +1509,7 @@ protected:
     }
 
 public:
-    CProxyDebugContext(unsigned _channel, memsize_t _proxyId) : channel(_channel), proxyId(_proxyId)
+    CProxyDebugContext(unsigned _channel, memsize_t _proxyId) : proxyId(_proxyId), channel(_channel)
     {
         logctx.setown(new StringContextLogger("CProxyDebugContext"));
     }

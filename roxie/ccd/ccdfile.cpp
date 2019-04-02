@@ -621,7 +621,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         if (fileSize != (offset_t) -1)
         {
             // only check size if specified
-            if ( (size != -1) && !isCompressed && fileSize != size) // MORE - should be able to do better on compressed you'da thunk
+            if ( (size != (offset_t) -1) && !isCompressed && fileSize != size) // MORE - should be able to do better on compressed you'da thunk
                 return FileSizeMismatch;
             CDateTime mt;
             return (modified.isNull() || (f->getTime(NULL, &mt, NULL) &&  mt.equals(modified, false))) ? FileIsValid : FileDateMismatch;
@@ -907,7 +907,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieFileCache(bool _testMode = false) : bct(*this), hct(*this), testMode(_testMode)
+    CRoxieFileCache(bool _testMode = false) : testMode(_testMode), bct(*this), hct(*this)
     {
         aborting = false;
         closing = false;
@@ -944,7 +944,7 @@ public:
     {
         CRoxieFileCache &owner;
     public:
-        BackgroundCopyThread(CRoxieFileCache &_owner) : owner(_owner), Thread("CRoxieFileCacheBackgroundCopyThread") {}
+        BackgroundCopyThread(CRoxieFileCache &_owner) : Thread("CRoxieFileCacheBackgroundCopyThread"), owner(_owner) {}
 
         virtual int run()
         {
@@ -956,7 +956,7 @@ public:
     {
         CRoxieFileCache &owner;
     public:
-        HandleCloserThread(CRoxieFileCache &_owner) : owner(_owner), Thread("CRoxieFileCacheHandleCloserThread") {}
+        HandleCloserThread(CRoxieFileCache &_owner) : Thread("CRoxieFileCacheHandleCloserThread"), owner(_owner) {}
         virtual int run()
         {
             return owner.runHandleCloser();
@@ -1900,7 +1900,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* _daliHelper, bool isDynamic, bool cacheIt, bool writeAccess, bool _isSuperFile)
-    : daliHelper(_daliHelper), lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile)
+    : lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile), daliHelper(_daliHelper)
     {
         cached = NULL;
         fileSize = 0;
@@ -2492,7 +2492,7 @@ public:
 
 public:
     CSlaveDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal)
-        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, false, false), channel(header->channel), serverIdx(header->serverIdx), isOpt(_isOpt), isLocal(_isLocal)
+        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, false, false), isOpt(_isOpt), isLocal(_isLocal), channel(header->channel), serverIdx(header->serverIdx)
     {
         // call back to the server to get the info
         IPendingCallback *callback = ROQ->notePendingCallback(*header, lfn); // note that we register before the send to avoid a race.

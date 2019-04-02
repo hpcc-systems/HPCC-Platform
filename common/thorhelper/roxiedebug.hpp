@@ -373,9 +373,9 @@ class THORHELPER_API CBaseDebugGraphManager : public CInterface, implements IPro
             : sourceActivity(_sourceActivity),
               sourceIndex(_sourceIndex),
               controlId(_controlId),
+              sequence(_sequence),
               edgeId(_edgeId),
-              targetActivity(_targetActivity),
-              sequence(_sequence)
+              targetActivity(_targetActivity)
         {
         }
     };

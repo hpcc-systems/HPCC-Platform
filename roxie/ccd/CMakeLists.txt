@@ -95,7 +95,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DCCD_EXPORTS -DSTARTQUERY_EXPORTS )
 
     if (CMAKE_COMPILER_IS_CLANGXX)
-      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch-enum -Wno-format-security")
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch-enum -Wno-format-security -Werror=reorder")
     endif()
 
 HPCC_ADD_LIBRARY( ccd SHARED ${SRCS} )

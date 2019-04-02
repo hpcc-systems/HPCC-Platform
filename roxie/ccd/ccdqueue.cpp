@@ -1682,9 +1682,9 @@ public:
     IMPLEMENT_IINTERFACE;
 
 #ifdef ROXIE_SLA_LOGIC
-    RoxieReceiverBase(unsigned _numWorkers) : numWorkers(_numWorkers), slaQueue(headRegionSize, _numWorkers), hiQueue(headRegionSize, _numWorkers), loQueue(headRegionSize, _numWorkers)
+    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(headRegionSize, _numWorkers), hiQueue(headRegionSize, _numWorkers), loQueue(headRegionSize, _numWorkers), numWorkers(_numWorkers)
 #else
-    RoxieReceiverBase(unsigned _numWorkers) : numWorkers(_numWorkers), hiQueue(headRegionSize, _numWorkers), loQueue(headRegionSize, _numWorkers)
+    RoxieReceiverBase(unsigned _numWorkers) : hiQueue(headRegionSize, _numWorkers), loQueue(headRegionSize, _numWorkers), numWorkers(_numWorkers)
 #endif
     {
         CriticalBlock b(ccdChannelsCrit);
@@ -1984,7 +1984,7 @@ class RoxieSocketQueueManager : public RoxieReceiverBase
     {
         RoxieSocketQueueManager &parent;
     public:
-        ReceiverThread(RoxieSocketQueueManager &_parent) : parent(_parent), Thread("RoxieSocketQueueManager") {}
+        ReceiverThread(RoxieSocketQueueManager &_parent) : Thread("RoxieSocketQueueManager"), parent(_parent) {}
         int run()
         {
             // Raise the priority so ibyti's get through in a timely fashion

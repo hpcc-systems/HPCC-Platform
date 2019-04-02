@@ -46,7 +46,7 @@ class CDaliPackageWatcher : public CInterface, implements ISDSSubscription, impl
 public:
     IMPLEMENT_IINTERFACE;
     CDaliPackageWatcher(const char *_id, const char *_xpath, ISDSSubscription *_notifier)
-      : id(_id), xpath(_xpath), change(0), isExact(false)
+      : change(0), id(_id), xpath(_xpath), isExact(false)
     {
         notifier = _notifier;
     }
@@ -408,7 +408,7 @@ private:
 public:
 
     IMPLEMENT_IINTERFACE;
-    CRoxieDaliHelper() : connectWatcher(this), serverStatus(NULL)
+    CRoxieDaliHelper() : serverStatus(NULL), connectWatcher(this)
     {
         userdesc.setown(createUserDescriptor());
         const char *roxieUser = NULL;

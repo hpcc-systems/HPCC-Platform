@@ -70,7 +70,7 @@ static const char * FileMarkupTypeStr[] =
 class DALIFT_API FileFormat
 {
 public:
-    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0) : headerLength((unsigned)-1), footerLength((unsigned)-1), markup(FMTunknown)
+    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0) : markup(FMTunknown), headerLength((unsigned)-1), footerLength((unsigned)-1)
             { set(_type, _recordSize); maxRecordSize = 0; quotedTerminator = true;}
 
     void deserialize(MemoryBuffer & in);

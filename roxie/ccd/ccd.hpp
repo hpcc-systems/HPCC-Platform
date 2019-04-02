@@ -124,7 +124,7 @@ public:
     inline bool isSLAPriority() const { return (activityId & ROXIE_PRIORITY_MASK) == ROXIE_SLA_PRIORITY; }
 
     inline RemoteActivityId(unsigned _activityId, hash64_t _queryHash)
-        : activityId(_activityId), queryHash(_queryHash)
+        : queryHash(_queryHash), activityId(_activityId)
     {
     }
     inline MemoryBuffer &serialize(MemoryBuffer &out) const
@@ -397,7 +397,7 @@ class LogItem : public CInterface
 
 public:
     LogItem(TracingCategory _category, const char *_prefix, unsigned _time, unsigned _channel, const char *_text)
-        : category(_category), prefix(_prefix), time(_time), channel(_channel), text(_text)
+        : category(_category), prefix(_prefix), text(_text), time(_time), channel(_channel)
     {
     }
 
