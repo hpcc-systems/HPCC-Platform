@@ -620,7 +620,7 @@ protected:
         case TAKjsonwrite:
         case TAKmemoryspillwrite:
         case TAKspillwrite:
-            return createRoxieServerDiskWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerDiskWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKindexwrite:
             return createRoxieServerIndexWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
         case TAKenth:

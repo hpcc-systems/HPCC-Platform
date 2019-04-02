@@ -23,14 +23,14 @@
 #include "jprop.hpp"
 
 // enum BreakpointMode { BreakpointModeNone, BreakpointModeEdge, BreakpointModeNode, BreakpointModeGraph }; in header file
-static const char *BreakpointModes[] = {"none", "edge", "node", "graph", "global", NULL };
+constexpr const char *BreakpointModes[] = {"none", "edge", "node", "graph", "global", NULL };
 // enum BreakpointActionMode { BreakpointActionBreak, BreakpointActionSkip, BreakpointActionLimit, BreakpointActionContinue };
-static const char *BreakpointActionModes[] = {"break", "skip", "limit", "continue", NULL };
+constexpr const char *BreakpointActionModes[] = {"break", "skip", "limit", "continue", NULL };
 enum BreakpointConditionMode { BreakpointConditionNone, BreakpointConditionEquals, BreakpointConditionContains, BreakpointConditionStartsWith, BreakpointConditionLess, 
      BreakpointConditionGreater, BreakpointConditionLessEqual, BreakpointConditionGreaterEqual, BreakpointConditionNotEqual, BreakpointConditionEOG, BreakpointConditionEOF };
-static const char *BreakpointConditionModes[] = {"none", "equals", "contains", "startswith", "<", ">", "<=", ">=", "!=", "eog", "eof", NULL };
+constexpr const char *BreakpointConditionModes[] = {"none", "equals", "contains", "startswith", "<", ">", "<=", ">=", "!=", "eog", "eof", NULL };
 enum BreakpointCountMode { BreakpointCountNone, BreakpointCountEquals, BreakpointCountAtleast };
-static const char *BreakpointCountModes[] = { "none", "equals" , "atleast", NULL };
+constexpr const char *BreakpointCountModes[] = { "none", "equals" , "atleast", NULL };
 
 //=======================================================================================
 
@@ -311,7 +311,7 @@ protected:
     void doStandardResult(IXmlWriter *output) const;
     void _listBreakpoint(IXmlWriter *output, IBreakpointInfo &bp, unsigned idx) const;
     void _continue(WatchState watch) ;
-    static unsigned checkOption(const char *supplied, const char *name, const char *accepted[]);
+    static unsigned checkOption(const char *supplied, const char *name, const char * const *accepted);
     IBreakpointInfo *createDummyBreakpoint();
     IBreakpointInfo *_createBreakpoint(const char *modeString, const char *id, const char *action=NULL,
                                    const char *fieldName = NULL, const char *condition=NULL, const char *value=NULL, bool caseSensitive=false,

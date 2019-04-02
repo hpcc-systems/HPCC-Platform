@@ -55,27 +55,27 @@ enum SecAccessFlags : int
     SecAccess_Full = 255
 };
 
-static const char * getSecAccessFlagName(SecAccessFlags flag)
+inline const char * getSecAccessFlagName(SecAccessFlags flag)
 {
-	switch (flag)
-	{
-		case SecAccess_Unavailable:
-			return "Unavailable";
-		case SecAccess_None:
-			return "None";
-		case SecAccess_Access:
-			return "Access";
-		case SecAccess_Read:
-			return "Read";
-		case SecAccess_Write:
-			return "Write";
-		case SecAccess_Full:
-			return "Full";
-		case SecAccess_Unknown:
-		default:
-			return "Unknown";
-			break;
-	}
+    switch (flag)
+    {
+    case SecAccess_Unavailable:
+        return "Unavailable";
+    case SecAccess_None:
+        return "None";
+    case SecAccess_Access:
+        return "Access";
+    case SecAccess_Read:
+        return "Read";
+    case SecAccess_Write:
+        return "Write";
+    case SecAccess_Full:
+        return "Full";
+    case SecAccess_Unknown:
+    default:
+        return "Unknown";
+        break;
+    }
 }
 
 

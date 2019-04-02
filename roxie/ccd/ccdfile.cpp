@@ -1775,7 +1775,7 @@ public:
 template <class X> class PerChannelCacheOf
 {
     IPointerArrayOf<X> cache;
-    IntArray channels;
+    UnsignedArray channels;
 public:
     // NOTE - typically only a couple of entries (but see PerFormatCacheOf below
     void set(X *value, unsigned channel)
@@ -1910,7 +1910,7 @@ public:
             if (traceLevel > 5)
                 DBGLOG("Roxie server adding information for file %s", lfn.get());
             bool tsSet = dFile->getModificationTime(fileTimeStamp);
-            bool csSet = dFile->getFileCheckSum(fileCheckSum);
+            dFile->getFileCheckSum(fileCheckSum);
             assertex(tsSet); // per Nigel, is always set
             IDistributedSuperFile *superFile = dFile->querySuperFile();
             if (superFile)
@@ -2033,7 +2033,6 @@ public:
         UnsignedArray partNos;
         for (unsigned i = 1; i <= numParts; i++)
         {
-            IPartDescriptor *pdesc = fdesc->queryPart(i-1);
             if (getBondedChannel(i)==channel || !isLocal)
             {
                 partNos.append(i-1);

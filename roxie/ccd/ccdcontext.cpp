@@ -2398,9 +2398,9 @@ protected:
                 e->Release();
                 throw MakeStringExceptionDirect(-1, s.str());
             }
-            ThorReplyCodes replyCode;
-            reply.read((unsigned &)replyCode);
-            switch (replyCode)
+            unsigned replyCode;
+            reply.read(replyCode);
+            switch ((ThorReplyCodes) replyCode)
             {
                 case DAMP_THOR_REPLY_PAUSED:
                 {
@@ -2637,7 +2637,7 @@ public:
                 StringBuffer slaveActivityId;
                 slaveInfo.read(slaveActivityId);
                 IActivityDebugContext *slaveActivityCtx = slaveActivityId.length() ? currentGraph->lookupActivityByEdgeId(slaveActivityId.str()) : NULL;
-                BreakpointActionMode action = checkBreakpoint(slaveState, slaveActivityCtx , NULL);
+                checkBreakpoint(slaveState, slaveActivityCtx , NULL);
             }
         }
         MemoryBuffer mb;

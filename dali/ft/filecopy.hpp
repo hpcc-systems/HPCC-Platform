@@ -36,7 +36,7 @@ typedef enum
     FFTlast
  } FileFormatType;
 
-static const char * FileFormatTypeStr[] =
+constexpr const char * FileFormatTypeStr[] =
 {       "FFTunknown",
         "FFTfixed", "FFTvariable", "FFTblocked",
         "FFTcsv",
@@ -57,7 +57,7 @@ typedef enum
     FMTlast
  } FileMarkupType;
 
-static const char * FileMarkupTypeStr[] =
+constexpr const char * FileMarkupTypeStr[] =
 {
     "FMTunknown",
     "FMTxml",
@@ -121,7 +121,7 @@ typedef enum {
         dfu_transfer,
     } dfu_operation;
 
-static const char * DfuOperatonStr[] =
+constexpr const char * DfuOperationStr[] =
     {
         "DFUunknown",
         "DFUcopy",

@@ -92,11 +92,16 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/libbase58
     )
 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-delete-non-virtual-dtor -Wno-overloaded-virtual")
+endif()
+
 ADD_DEFINITIONS( -D_USRDLL -DCCD_EXPORTS -DSTARTQUERY_EXPORTS )
 
-    if (CMAKE_COMPILER_IS_CLANGXX)
-      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch-enum -Wno-format-security -Werror=reorder")
-    endif()
+if (CMAKE_COMPILER_IS_CLANGXX)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch-enum -Wno-format-security -Werror=reorder")
+endif()
+
 
 HPCC_ADD_LIBRARY( ccd SHARED ${SRCS} )
 install ( TARGETS ccd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )

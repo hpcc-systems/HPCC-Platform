@@ -321,13 +321,13 @@ private:
             throw MakeStringException(-1,"Logical name %s invalid",destfilename);
 
         StringBuffer dstpartmask;
-        getPartMask(dstpartmask,destfilename,srcfdesc->numParts());
-        dstfdesc->setPartMask(dstpartmask.str());
         unsigned np = srcfdesc->numParts();
-        dstfdesc->setNumParts(srcfdesc->numParts());
+        getPartMask(dstpartmask,destfilename, np);
+        dstfdesc->setPartMask(dstpartmask.str());
+        dstfdesc->setNumParts(np);
         dstfdesc->setDefaultDir(srcfdesc->queryProperties().queryProp("@cloneFromDir"));
 
-        for (unsigned pn=0;pn<srcfdesc->numParts();pn++) {
+        for (unsigned pn=0; pn<np; pn++) {
             offset_t sz = srcfdesc->queryPart(pn)->queryProperties().getPropInt64("@size",-1);
             if (sz!=(offset_t)-1)
                 dstfdesc->queryPart(pn)->queryProperties().setPropInt64("@size",sz);

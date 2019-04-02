@@ -2018,9 +2018,9 @@ public:
                 RecordLengthType *rowLen = (RecordLengthType *) m.readDirect(sizeof(RecordLengthType));
                 if (!*rowLen)
                     break; 
-                RecordLengthType len = *rowLen;
                 RtlDynamicRowBuilder rowBuilder(rowAllocator);
                 size_t outsize = deserializer->deserialize(rowBuilder, rowSource);
+                dbgassertex(outsize==(size_t) *rowLen);
                 if (!finalBuilder.exists())
                     finalBuilder.swapWith(rowBuilder);
                 else

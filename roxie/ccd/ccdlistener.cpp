@@ -830,7 +830,7 @@ public:
         // Note - strictly speaking not threadsafe but any race conditions are (a) unlikely and (b) harmless
         if (cpuCores)
         {
-            if (numCores > 0 && numCores < cpuCores)
+            if (numCores > 0 && numCores < (int) cpuCores)
             {
                 cpu_set_t threadMask;
                 CPU_ZERO(&threadMask);
@@ -844,7 +844,7 @@ public:
                     {
                         CPU_SET(useCore, &threadMask);
                         cores++;
-                        if (cores == numCores)
+                        if ((int) cores == numCores)
                         {
                             lastCore = useCore+1;
                             break;

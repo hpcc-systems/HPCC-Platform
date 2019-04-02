@@ -384,7 +384,7 @@ public:
 
     CRoxieQueryPacket(const void *_data, int lengthRemaining) : data((RoxiePacketHeader *) _data)
     {
-        assertex(lengthRemaining >= sizeof(RoxiePacketHeader));
+        assertex(lengthRemaining >= (int) sizeof(RoxiePacketHeader));
         data->packetlength = lengthRemaining;
         const byte *finger = (const byte *) (data + 1);
         lengthRemaining -= sizeof(RoxiePacketHeader);
@@ -401,7 +401,7 @@ public:
         {
             if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
             {
-                assertex(lengthRemaining >= sizeof(unsigned short));
+                assertex(lengthRemaining >= (int) sizeof(unsigned short));
                 continuationLength = *(unsigned short *) finger;
                 continuationData = finger + sizeof(unsigned short);
                 finger = continuationData + continuationLength;
@@ -414,7 +414,7 @@ public:
             }
             if (data->continueSequence & CONTINUE_SEQUENCE_SKIPTO)
             {
-                assertex(lengthRemaining >= sizeof(unsigned short));
+                assertex(lengthRemaining >= (int) sizeof(unsigned short));
                 smartStepInfoLength = *(unsigned short *) finger;
                 smartStepInfoData = finger + sizeof(unsigned short);
                 finger = smartStepInfoData + smartStepInfoLength;
@@ -430,7 +430,7 @@ public:
             lengthRemaining--;
             if (*finger++ & LOGGING_DEBUGGERACTIVE)
             {
-                assertex(lengthRemaining >= sizeof(unsigned short)); 
+                assertex(lengthRemaining >= (int) sizeof(unsigned short));
                 unsigned short debugLen = *(unsigned short *) finger;
                 finger += debugLen + sizeof(unsigned short);
                 lengthRemaining -= debugLen + sizeof(unsigned short);
@@ -2003,11 +2003,6 @@ public:
         int udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
         int udpSendQueueSize = topology->getPropInt("@udpSendQueueSize", UDP_SEND_QUEUE_SIZE);
         int udpMaxSlotsPerClient = topology->getPropInt("@udpMaxSlotsPerClient", 0x7fffffff);
-#ifdef _DEBUG
-        bool udpResendEnabled = topology->getPropBool("@udpResendEnabled", false);
-#else
-        const bool udpResendEnabled = false;  // As long as it is known to be broken, we don't want it accidentally enabled in any release version
-#endif
         maxPacketSize = multicastSocket->get_max_send_size();
         if ((maxPacketSize==0)||(maxPacketSize>65535))
             maxPacketSize = 65535;

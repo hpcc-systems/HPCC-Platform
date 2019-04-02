@@ -1582,7 +1582,7 @@ public:
         if (!edge)
         {
             const char *channelTail = strrchr(edgeId, '#');
-            if (channelTail && atoi(channelTail+1)==channel)
+            if (channelTail && (unsigned) atoi(channelTail+1)==channel)
             {
                 DebugRequestLookupActivityByEdgeId request(proxyId, edgeId);
                 CommonXmlWriter reply(0);
