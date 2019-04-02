@@ -35,6 +35,7 @@
 #include "xslprocessor.hpp" 
 #include "espcontext.hpp"
 #include "mplog.hpp"
+#include "rmtfile.hpp"
 
 #include <dalienv.hpp>
 
@@ -324,6 +325,10 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         StringBuffer daliservers;
         if (m_cfg->getProp("@daliServers", daliservers))
             initDali(daliservers.str()); //won't init if detached
+
+        const unsigned dafilesrvConnectTimeout = m_cfg->getPropInt("@dafilesrvConnectTimeout", 10)*1000;
+        const unsigned dafilesrvReadTimeout = m_cfg->getPropInt("@dafilesrvReadTimeout", 10)*1000;
+        setRemoteFileTimeouts(dafilesrvConnectTimeout, dafilesrvReadTimeout);
 
 #ifndef _DEBUG
         startPerformanceMonitor(m_cfg->getPropInt("@perfReportDelay", 60)*1000);

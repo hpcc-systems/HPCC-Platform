@@ -42,6 +42,7 @@ include_directories (
          ./../bindings/http/platform 
          ./../../common/environment 
          ./../../system/mp 
+         ./../../fs/dafsclient
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
