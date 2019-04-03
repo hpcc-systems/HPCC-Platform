@@ -6352,6 +6352,8 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
         //create FileId
         StringBuffer fileId;
         fileId.set(groupName).append(DFUFileIdSeparator).append(clusterName).append(DFUFileIdSeparator).append(tempFileName);
+        if (req.getCompressed())
+            fileId.append(DFUFileIdSeparator).append("true");
         resp.setFileId(fileId.str());
 
         if (requestId.isEmpty())
@@ -6424,6 +6426,9 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         const char *groupName = fileIdItems.item(0);
         const char *clusterName = fileIdItems.item(1);
         const char *tempFileName = fileIdItems.item(2);
+        bool compressed = false;
+        if (fileIdItems.ordinality()>=3)
+            compressed = strToBool(fileIdItems.item(3));
         if (isEmptyString(groupName))
              throw makeStringException(ECLWATCH_INVALID_INPUT, "DFUFilePublish: Invalid FileId: empty groupName.");
         if (isEmptyString(clusterName))
@@ -6460,6 +6465,8 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
                 throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "DFUFilePublish: Failed to find group %s.", groupName);
 
             fileDesc.setown(createFileDescriptor(normalizeTempFileName, clusterTypeEx, groupName, group));
+            if (compressed)
+                fileDesc->queryProperties().setPropBool("@blockCompressed", true);
         }
 
         StringBuffer newFileName = normalizeTempFileName;
