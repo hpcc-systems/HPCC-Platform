@@ -43,6 +43,27 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="FailSafe" type="xs:boolean" use="optional" default="true">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Enable FailSafe functionality.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="FailSafeLogsDir" type="xs:string" use="optional" default="">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Log directory where Failsafe files are stored.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="SafeRolloverThreshold" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>The threshold at which a new tank file will be started: n for number of requests, nK, nM, nG, or nT for file size.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
 
       <xs:sequence>
         <xs:element name="ESPLoggingAgent" maxOccurs="unbounded">
