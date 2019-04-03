@@ -331,6 +331,7 @@ define({root:
     JSmith: "JSmit*",
     JSON: "JSON",
     KeyFile: "Key File",
+    KeyType: "Key Type",
     Label: "Label",
     LandingZone: "Landing Zone",
     LandingZones: "Landing Zones",
