@@ -40,7 +40,7 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
         return false;
     }
 
-    oneTankFile = cfg->getPropBool("FailSafe");
+    oneTankFile = cfg->getPropBool("FailSafe", true);
     if (oneTankFile)
     {
         logFailSafe.setown(createFailSafeLogger(cfg, service, cfg->queryProp("@name")));
