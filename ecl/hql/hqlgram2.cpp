@@ -4204,7 +4204,7 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     if (a1.isDataset() || a2.isDataset())
     {
         OwnedHqlExpr right = a2.getExpr();
-        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2.pos, false));
+        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2.pos, type_table));
         ensureDataset(a1);
         ensureDataset(a2);
         return NULL;
@@ -4212,7 +4212,7 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     if (a1.isDatarow() || a2.isDatarow())
     {
         OwnedHqlExpr right = a2.getExpr();
-        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2.pos, true));
+        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2.pos, type_row));
         checkDatarow(a1);
         checkDatarow(a2);
         return NULL;
@@ -4220,7 +4220,7 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     if (a1.isDictionary() || a2.isDictionary())
     {
         OwnedHqlExpr right = a2.getExpr();
-        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2.pos, true));
+        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2.pos, type_dictionary));
         checkDictionary(a1);
         checkDictionary(a2);
         return NULL;
@@ -8899,9 +8899,17 @@ bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression 
             }
 
             if (rightExpr->isDatarow())
-                return checkRecordCreateTransform(assigns, leftRecord, leftSelected, rightRecord, rightSelected, errPos);
+            {
+                HqlExprArray childAssigns;
+                OwnedHqlExpr childSelf = getSelf(leftRecord);
+                if (!checkRecordCreateTransform(childAssigns, leftRecord, childSelf, rightRecord, rightSelected, errPos))
+                    return false;
 
-            assigns.append(*createAssign(LINK(leftSelected), checkEnsureRecordsMatch(leftSelected, rightSelected, errPos, false)));
+                IHqlExpression * transform = createValue(no_transform, makeTransformType(LINK(leftRecord->queryType())), childAssigns);
+                rightSelected.setown(createRow(no_createrow, transform));
+            }
+
+            assigns.append(*createAssign(LINK(leftSelected), checkEnsureRecordsMatch(leftSelected, rightSelected, errPos, rightSelected->queryType()->getTypeCode())));
             return true;
         }
     }
@@ -8910,12 +8918,18 @@ bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression 
 }
 
 
-IHqlExpression * HqlGram::checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const ECLlocation & errPos, bool rightIsRow)
+IHqlExpression * HqlGram::checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const ECLlocation & errPos, type_t rightType)
 {
     //Need to add a project to make the field names correct, otherwise problems occur if one the left side is optimized away,
     //because that causes the record type and fields to change.
-    if (recordTypesMatch(left, right)) 
+    if (recordTypesMatch(left, right))
         return LINK(right);
+
+    if (rightType == type_dictionary)
+    {
+        reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Dictionaries must have identical types");
+        return LINK(left);
+    }
 
     if (checkRecordTypesSimilar(left, right, errPos) != 0)
         return LINK(left); // error conditional - return something compatible with left
@@ -8933,13 +8947,13 @@ IHqlExpression * HqlGram::checkEnsureRecordsMatch(IHqlExpression * left, IHqlExp
     args.append(*transform);
     args.append(*LINK(seq));
     //args.append(*createUniqueId());
-    if (rightIsRow)
+    if (rightType == type_row)
         return createRow(no_projectrow, args);
     else
         return createDataset(no_hqlproject, args);
 }
 
-void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray & args, const attribute & errpos, bool isRow)
+void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray & args, const attribute & errpos, type_t rightType)
 {
     //The record of the final result should match the record of the first argument.
     IHqlExpression * expected = (args.ordinality() != 0) ? &args.item(0) : defaultExpr.get();
@@ -8950,7 +8964,7 @@ void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray &
         IHqlExpression * value = mapTo.queryChild(1);
         if (isGrouped(value) != isGrouped(expected))
             groupingDiffers = true;
-        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, value, errpos.pos, isRow);
+        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, value, errpos.pos, rightType);
         if (value != checked)
         {
             args.replace(*replaceChild(&mapTo, 1, checked), i);
@@ -8962,7 +8976,7 @@ void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray &
     {
         if (isGrouped(defaultExpr) != isGrouped(expected))
             groupingDiffers = true;
-        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, defaultExpr, errpos.pos, isRow);
+        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, defaultExpr, errpos.pos, rightType);
         if (defaultExpr != checked)
         {
             defaultExpr.set(checked);
@@ -9103,7 +9117,7 @@ void HqlGram::checkRegrouping(const ECLlocation & errPos, HqlExprArray & args)
     IHqlExpression * left = &args.item(0);
     ForEachItemIn(i, args)
     {
-        args.replace(*checkEnsureRecordsMatch(left, &args.item(i), errPos, false), i);
+        args.replace(*checkEnsureRecordsMatch(left, &args.item(i), errPos, type_table), i);
         IHqlExpression * cur = &args.item(i);
         if (!isGrouped(cur))
             reportError(ERR_ROLLUP_NOT_GROUPED, errPos, "Input %d to REGROUP must be grouped", i);
@@ -9206,7 +9220,7 @@ void HqlGram::createAppendFiles(attribute & targetAttr, attribute & leftAttr, at
     OwnedHqlExpr right = rightAttr.getExpr();
     if (left->isDatarow())
         left.setown(createDatasetFromRow(LINK(left)));
-    right.setown(checkEnsureRecordsMatch(left, right, rightAttr.pos, right->isDatarow()));
+    right.setown(checkEnsureRecordsMatch(left, right, rightAttr.pos, right->queryType()->getTypeCode()));
     if (right->isDatarow())
         right.setown(createDatasetFromRow(LINK(right)));
     IHqlExpression * attr = NULL;
@@ -9249,7 +9263,7 @@ void HqlGram::createAppendDictionaries(attribute & targetAttr, attribute & leftA
     assertex(left->isDictionary());
     if (!right->isDictionary())
         reportError(WRN_UNSUPPORTED_FEATURE, rightAttr, "Only dictionary may be appended to dictionary");
-    right.setown(checkEnsureRecordsMatch(left, right, rightAttr.pos, right->isDatarow()));
+    right.setown(checkEnsureRecordsMatch(left, right, rightAttr.pos, right->queryType()->getTypeCode()));
     // TODO: support for dict + row, dict + dataset
 //    if (right->isDatarow())
 //        right.setown(createDatasetFromRow(LINK(right)));
@@ -9279,7 +9293,7 @@ IHqlExpression * HqlGram::processIfProduction(attribute & condAttr, attribute & 
     }
 
     if (left->queryRecord() && falseAttr)
-        right.setown(checkEnsureRecordsMatch(left, right, falseAttr->pos, false));
+        right.setown(checkEnsureRecordsMatch(left, right, falseAttr->pos, type_row));
 
     if (lookupCtx.queryParseContext().expandCallsWhenBound && (isGrouped(left) != isGrouped(right)))
         reportError(ERR_GROUPING_MISMATCH, trueAttr, "Branches of the condition have different grouping");
