@@ -138,6 +138,7 @@ class CWsDfuEx : public CWsDfu
     std::atomic<bool> m_daliDetached{false};
     Owned<IEnvironmentFactory> factory;
     Owned<IConstEnvironment> env;
+    Owned<IPropertyTree> directories;
     static const unsigned defaultMaxFileAccessExpirySeconds=86400; // 24 hours
 
 public:

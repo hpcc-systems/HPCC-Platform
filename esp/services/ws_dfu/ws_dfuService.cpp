@@ -181,6 +181,8 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
     factory.setown(getEnvironmentFactory(true));
     env.setown(factory->openEnvironment());
     maxFileAccessExpirySeconds = serviceTree->getPropInt("@maxFileAccessExpirySeconds", defaultMaxFileAccessExpirySeconds);
+
+    directories.set(cfg->queryPropTree("Software/Directories"));
 }
 
 bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEspDFUSearchResponse & resp)
@@ -6426,7 +6428,25 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         Owned<IDistributedFile> oldFile = queryDistributedFileDirectory().createNew(fileDesc);
         oldFile->validate();
 
-        if (!oldFile->renamePhysicalPartFiles(newFileName.str(), nullptr, nullptr, fileDesc->queryDefaultDir()))
+        StringBuffer baseDir;
+        const char *typeStr = nullptr;
+        switch (groupType)
+        {
+            case grp_thor:
+                typeStr = "thor";
+                break;
+            case grp_hthor:
+                typeStr = "hthor";
+                break;
+            case grp_roxie:
+                typeStr = "roxie";
+                break;
+            default:
+                throwUnexpected();
+        }
+        getConfigurationDirectory(directories, "data", typeStr, groupName, baseDir);
+
+        if (!oldFile->renamePhysicalPartFiles(newFileName.str(), nullptr, nullptr, baseDir))
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed in renamePhysicalPartFiles %s.", newFileName.str());
 
         Owned<IFileDescriptor> newFileDesc = createFileDescriptor(newFileName, clusterTypeEx, groupName, group);
