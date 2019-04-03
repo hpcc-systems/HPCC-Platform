@@ -131,27 +131,25 @@ bool PhysicalFileInfo::readData(MemoryBuffer & out, __int64 startOffset, size32_
         cachedIO.clear();
 
         Owned<IDistributedFilePart> dfp = df->getPart(part);
-        try
-        { 
-            RemoteFilename rfn;
-            cachedFile.setown(createIFile(dfp->getFilename(rfn)));
-            cachedIO.setown(cachedFile->open(IFOread));
-        }
-        catch (IException * e)
+        for (unsigned copy=0; copy<2; copy++)
         {
-            e->Release();
+            try
+            {
+                RemoteFilename rfn;
+                cachedFile.setown(createIFile(dfp->getFilename(rfn, copy)));
+                cachedIO.setown(cachedFile->open(IFOread));
+                if (cachedIO) break;
+            }
+            catch (IException * e)
+            {
+                e->Release();
+            }
         }
         if (!cachedIO)
         {
-            RemoteFilename rfn;
-            cachedFile.setown(createIFile(dfp->getFilename(rfn,1)));
-            cachedIO.setown(cachedFile->open(IFOread));
-            if (!cachedIO)
-            {
-                StringBuffer str;
-                throwError1(FVERR_FailedOpenFile, dfp->getPartName(str).str());
-                return false;
-            }
+            StringBuffer str;
+            throwError1(FVERR_FailedOpenFile, dfp->getPartName(str).str());
+            return false;
         }
         if (df->isCompressed())
         {
