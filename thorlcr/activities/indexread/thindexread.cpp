@@ -29,7 +29,7 @@ class CIndexReadBase : public CMasterActivity
 protected:
     BoolArray performPartLookup;
     Owned<IFileDescriptor> fileDesc;
-    rowcount_t limit;
+    rowcount_t keyedLimit = RCMAX;
     IHThorIndexReadBaseArg *indexBaseHelper;
     Owned<CSlavePartMapping> mapping;
     bool nofilter = false;
@@ -57,10 +57,22 @@ protected:
             rowcount_t count;
             msg.read(count);
             total += count;
-            if (total > limit)
-                break;
         }
         return total;
+    }
+    bool processKeyedLimit()
+    {
+        rowcount_t total = aggregateToLimit();
+        CMessageBuffer msg;
+        msg.append(total);
+        ICommunicator &comm = queryJobChannel().queryJobComm();
+        unsigned slaves = container.queryJob().querySlaves();
+        unsigned s=0;
+        for (; s<slaves; s++)
+        {
+            verifyex(comm.send(msg, s+1, mpTag));
+        }
+        return total > keyedLimit;
     }
     void prepareKey(IDistributedFile *index)
     {
@@ -201,7 +213,6 @@ public:
     CIndexReadBase(CMasterGraphElement *info) : CMasterActivity(info)
     {
         indexBaseHelper = (IHThorIndexReadBaseArg *)queryHelper();
-        limit = RCMAX;
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
         progressKinds.append(StNumIndexSeeks);
@@ -252,7 +263,7 @@ public:
             }
         }
     }
-    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override
     {
         dst.append(fileName);
         if (!container.queryLocalOrGrouped())
@@ -278,7 +289,7 @@ public:
         if (partNumbers.ordinality())
             fileDesc->serializeParts(dst, partNumbers);
     }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
     {
         CMasterActivity::deserializeStats(node, mb);
         rowcount_t progress;
@@ -291,7 +302,7 @@ public:
             progressInfoArr.item(p).set(node, st);
         }
     }
-    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
+    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx) override
     {
         //This should be an activity stats
         CMasterActivity::getEdgeStats(stats, idx);
@@ -304,7 +315,7 @@ public:
             stats.addStatistic((StatisticKind)progressKinds.item(p), progress.queryTotal());
         }
     }
-    virtual void abort()
+    virtual void abort() override
     {
         CMasterActivity::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
@@ -313,12 +324,13 @@ public:
 
 class CIndexReadActivityMaster : public CIndexReadBase
 {
+    typedef CIndexReadBase PARENT;
+
     IHThorIndexReadArg *helper;
 
     void processKeyedLimit()
     {
-        rowcount_t total = aggregateToLimit();
-        if (total > limit)
+        if (PARENT::processKeyedLimit())
         {
             if (0 == (TIRkeyedlimitskips & helper->getFlags()))
             {
@@ -326,33 +338,20 @@ class CIndexReadActivityMaster : public CIndexReadBase
                     helper->onKeyedLimitExceeded(); // should throw exception
             }
         }
-        CMessageBuffer msg;
-        msg.append(total);
-        ICommunicator &comm = queryJobChannel().queryJobComm();
-        unsigned slaves = container.queryJob().querySlaves();
-        unsigned s=0;
-        for (; s<slaves; s++)
-        {
-            verifyex(comm.send(msg, s+1, mpTag));
-        }
     }
 public:
     CIndexReadActivityMaster(CMasterGraphElement *info) : CIndexReadBase(info)
     {
         helper = (IHThorIndexReadArg *)queryHelper();
     }
-    virtual void init() override
+    virtual void process() override
     {
-        CIndexReadBase::init();
-        if (!container.queryLocalOrGrouped())
-        {
-            if (helper->canMatchAny())
-                limit = (rowcount_t)helper->getKeyedLimit();
-        }
-    }
-    virtual void process()
-    {
-        if (limit != RCMAX)
+        if (container.queryLocalOrGrouped())
+            return;
+        if (!helper->canMatchAny())
+            return;
+        keyedLimit = (rowcount_t)helper->getKeyedLimit();
+        if (keyedLimit != RCMAX)
             processKeyedLimit();
     }
 };
@@ -366,36 +365,36 @@ CActivityBase *createIndexReadActivityMaster(CMasterGraphElement *info)
 
 class CIndexCountActivityMaster : public CIndexReadBase
 {
-    IHThorIndexCountArg *helper;
-    bool totalCountKnown;
-    rowcount_t totalCount;
+    typedef CIndexReadBase PARENT;
 
+    IHThorIndexCountArg *helper;
+
+    void processKeyedLimit()
+    {
+        if (PARENT::processKeyedLimit())
+        {
+            if (0 == (TIRkeyedlimitskips & helper->getFlags()))
+            {
+                if (0 == (TIRkeyedlimitcreates & helper->getFlags()))
+                    helper->onKeyedLimitExceeded(); // should throw exception
+            }
+        }
+    }
 public:
     CIndexCountActivityMaster(CMasterGraphElement *info) : CIndexReadBase(info)
     {
         helper = (IHThorIndexCountArg *)queryHelper();
-        totalCount = 0;
-        totalCountKnown = false;
     }
-    virtual void init() override
-    {
-        CIndexReadBase::init();
-        if (!container.queryLocalOrGrouped())
-        {
-            if (helper->canMatchAny())
-                limit = (rowcount_t)helper->getChooseNLimit();
-            else
-                totalCountKnown = true; // totalCount = 0
-        }
-    }
-    virtual void process()
+    virtual void process() override
     {
         if (container.queryLocalOrGrouped())
             return;
-        if (totalCountKnown) return;
+        if (!helper->canMatchAny())
+            return; // implies count will be 0
+        keyedLimit = (rowcount_t)helper->getKeyedLimit();
+        if (keyedLimit != RCMAX)
+            processKeyedLimit();
         rowcount_t total = aggregateToLimit();
-        if (limit != RCMAX && total > limit)
-            total = limit;
         CMessageBuffer msg;
         msg.append(total);
         ICommunicator &comm = queryJobChannel().queryJobComm();
@@ -410,12 +409,13 @@ CActivityBase *createIndexCountActivityMaster(CMasterGraphElement *info)
 
 class CIndexNormalizeActivityMaster : public CIndexReadBase
 {
+    typedef CIndexReadBase PARENT;
+
     IHThorIndexNormalizeArg *helper;
 
     void processKeyedLimit()
     {
-        rowcount_t total = aggregateToLimit();
-        if (total > limit)
+        if (PARENT::processKeyedLimit())
         {
             if (0 == (TIRkeyedlimitskips & helper->getFlags()))
             {
@@ -423,33 +423,20 @@ class CIndexNormalizeActivityMaster : public CIndexReadBase
                     helper->onKeyedLimitExceeded(); // should throw exception
             }
         }
-        CMessageBuffer msg;
-        msg.append(total);
-        ICommunicator &comm = queryJobChannel().queryJobComm();
-        unsigned slaves = container.queryJob().querySlaves();
-        unsigned s=0;
-        for (; s<slaves; s++)
-        {
-            verifyex(comm.send(msg, s+1, mpTag));
-        }
     }
 public:
     CIndexNormalizeActivityMaster(CMasterGraphElement *info) : CIndexReadBase(info)
     {
         helper = (IHThorIndexNormalizeArg *)queryHelper();
     }
-    virtual void init()
+    virtual void process() override
     {
-        CIndexReadBase::init();
-        if (!container.queryLocalOrGrouped())
-        {
-            if (helper->canMatchAny())
-                limit = (rowcount_t)helper->getKeyedLimit();
-        }
-    }
-    virtual void process()
-    {
-        if (limit != RCMAX)
+        if (container.queryLocalOrGrouped())
+            return;
+        if (!helper->canMatchAny())
+            return;
+        keyedLimit = (rowcount_t)helper->getKeyedLimit();
+        if (keyedLimit != RCMAX)
             processKeyedLimit();
     }
 };
@@ -468,7 +455,7 @@ public:
     {
         helper = (IHThorIndexAggregateArg *)queryHelper();
     }
-    virtual void process()
+    virtual void process() override
     {
         if (container.queryLocalOrGrouped())
             return;
