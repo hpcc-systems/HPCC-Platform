@@ -623,28 +623,30 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned ex
         verifyex(iter->first());
         f = &iter->query();
     }
-    Owned<IOutputMetaData> actualFormat;
-    Owned<const IDynamicTransform> translator;    // Translates rows from actual to projected
-    Owned<const IKeyTranslator> keyedTranslator;  // translate filter conditions from expected to actual
     unsigned prevFormatCrc = 0;
     StringBuffer kindStr(activityKindStr(activity->queryContainer().getKind()));
-    RecordTranslationMode mode = getTranslationMode(*activity);
     for (;;)
     {
         unsigned dfsCrc = 0;
-        f->getFormatCrc(dfsCrc);
-        if (!dfsCrc || ((dfsCrc==expectedFormatCrc) && (expectedFormatCrc==projectedFormatCrc)))
-            translator.clear();
-        else
+        if (f->getFormatCrc(dfsCrc)) // can't validate if missing
         {
-            if (dfsCrc != prevFormatCrc)  // Check if same translation as last subfile
+            if (prevFormatCrc && (prevFormatCrc != dfsCrc)) // NB: all subfiles must have same dfsCrc and will use same translators for now (see HPCC-21834)
             {
-                IPropertyTree &props = f->queryAttributes();
-                actualFormat.setown(getDaliLayoutInfo(props));
-                const char *subname = f->queryLogicalName();
-                translator.clear();
-                keyedTranslator.clear();
-                getTranslators(translator, keyedTranslator, subname, expectedFormatCrc, expected, dfsCrc, actualFormat, projectedFormatCrc, projected, mode);
+                StringBuffer fileStr;
+                if (super) fileStr.append("Superfile: ").append(file->queryLogicalName()).append(", subfile: ");
+                else fileStr.append("File: ");
+                fileStr.append(f->queryLogicalName());
+
+                Owned<IThorException> e = MakeActivityException(activity, TE_FormatCrcMismatch, "%s: Layout does not match published layout. %s", kindStr.str(), fileStr.str());
+                if (index && !f->queryAttributes().hasProp("_record_layout")) // Cannot verify if _true_ crc mismatch if soft layout missing anymore
+                    LOG(MCwarning, thorJob, e);
+                else
+                {
+                    if (!activity->queryContainer().queryJob().getWorkUnitValueInt("skipFileFormatCrcCheck", 0))
+                        throw LINK(e);
+                    e->setAction(tea_warning);
+                    activity->fireException(e);
+                }
             }
         }
         prevFormatCrc = dfsCrc;
