@@ -48,6 +48,25 @@ unsigned soapTraceLevel = 1;
 #define WSCBUFFERSIZE 0x10000
 #define MAXWSCTHREADS 50    //Max Web Service Call Threads
 
+void multiLog(const IContextLogger &logger, const char *format, ...) __attribute__((format(printf, 2, 3)));
+
+void multiLog(const IContextLogger &logger, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    StringBuffer log;
+    log.limited_valist_appendf(1024*1024, format, args);
+    va_end(args);
+    StringArray loglines;
+    log.replace('\r', ' ');
+    loglines.appendList(log, "\n", false);
+    ForEachItemIn(idx, loglines)
+    {
+        logger.CTXLOG("%s", loglines.item(idx));
+    }
+}
+
+
 interface DECL_EXCEPTION IReceivedRoxieException : extends IException
 {
 public:
@@ -1459,7 +1478,7 @@ private:
         content = contentDecoded;
 
         if (soapTraceLevel > 6 || master->logXML)
-            master->logctx.CTXLOG("Content decoded. Original %s %d", CONTENT_LENGTH, contentLength);
+            multiLog(master->logctx, "Content decoded. Original %s %d", CONTENT_LENGTH, contentLength);
 #else
             throw MakeStringException(-1, "_USE_ZLIB is required for Content-Encoding:%s", contentEncodingType);
 #endif
@@ -1505,9 +1524,9 @@ private:
         if (soapTraceLevel > 6 || master->logXML)
         {
             if (!contentEncoded)
-                master->logctx.CTXLOG("%s: request(%s)", master->wscCallTypeText(), request.str());
+                multiLog(master->logctx, "%s: request(%s)", master->wscCallTypeText(), request.str());
             else
-                master->logctx.CTXLOG("%s: request(%s), content encoded.", master->wscCallTypeText(), request.str());
+                multiLog(master->logctx, "%s: request(%s), content encoded.", master->wscCallTypeText(), request.str());
         }
     }
 
@@ -1523,7 +1542,7 @@ private:
         if (httpheaders && *httpheaders)
         {
             if (soapTraceLevel > 6 || master->logXML)
-                master->logctx.CTXLOG("%s: Adding HTTP Headers(%s)",  master->wscCallTypeText(), httpheaders);
+                multiLog(master->logctx, "%s: Adding HTTP Headers(%s)",  master->wscCallTypeText(), httpheaders);
             request.append(httpheaders);
         }
 
@@ -1562,7 +1581,7 @@ private:
                 StringBuffer hdr = master->httpHeaderName.get();
                 hdr.append(": ").append(master->httpHeaderValue);
                 if (soapTraceLevel > 6 || master->logXML)
-                    master->logctx.CTXLOG("SOAPCALL: Adding HTTP Header(%s)", hdr.str());
+                    multiLog(master->logctx, "SOAPCALL: Adding HTTP Header(%s)", hdr.str());
                 request.append(hdr.append("\r\n"));
             }
             if (!httpHeaderBlockContainsHeader(httpheaders, "Content-Type"))
@@ -1764,9 +1783,9 @@ private:
         if (checkContentDecoding(dbgheader, response, contentEncoding))
             decodeContent(contentEncoding.str(), response);
         if (soapTraceLevel > 6 || master->logXML)
-            master->logctx.CTXLOG("%sCALL: LEN=%d %sresponse(%s%s)", master->wscType == STsoap ? "SOAP" : "HTTP",response.length(),chunked?"CHUNKED ":"", dbgheader.str(), response.str());
+            multiLog(master->logctx, "%sCALL: LEN=%d %sresponse(%s%s)", master->wscType == STsoap ? "SOAP" : "HTTP",response.length(),chunked?"CHUNKED ":"", dbgheader.str(), response.str());
         else if (soapTraceLevel > 8)
-            master->logctx.CTXLOG("%sCALL: LEN=%d %sresponse(%s)", master->wscType == STsoap ? "SOAP" : "HTTP",response.length(),chunked?"CHUNKED ":"", response.str()); // not sure this is that useful but...
+            multiLog(master->logctx, "%sCALL: LEN=%d %sresponse(%s)", master->wscType == STsoap ? "SOAP" : "HTTP",response.length(),chunked?"CHUNKED ":"", response.str()); // not sure this is that useful but...
         return rval;
     }
 
@@ -2005,14 +2024,14 @@ public:
                 checkRoxieAbortMonitor(master->roxieAbortMonitor);
                 socket->write(request.str(), request.length());
                 if (soapTraceLevel > 4)
-                    master->logctx.CTXLOG("%sCALL: sent request (%s) to %s:%d", master->wscType == STsoap ? "SOAP" : "HTTP",master->service.str(), url.host.str(), url.port);
+                    multiLog(master->logctx, "%sCALL: sent request (%s) to %s:%d", master->wscType == STsoap ? "SOAP" : "HTTP",master->service.str(), url.host.str(), url.port);
                 checkTimeLimitExceeded(&remainingMS);
                 checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
                 int rval = readHttpResponse(response, socket);
 
                 if (soapTraceLevel > 4)
-                    master->logctx.CTXLOG("%sCALL: received response (%s) from %s:%d", master->wscType == STsoap ? "SOAP" : "HTTP",master->service.str(), url.host.str(), url.port);
+                    multiLog(master->logctx, "%sCALL: received response (%s) from %s:%d", master->wscType == STsoap ? "SOAP" : "HTTP",master->service.str(), url.host.str(), url.port);
 
                 if (rval != 200)
                 {
