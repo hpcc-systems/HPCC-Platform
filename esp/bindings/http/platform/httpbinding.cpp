@@ -1135,7 +1135,7 @@ static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, const char
         type = sp->queryElementType(name);
         if (!type)
         {
-            StringBuffer method = name;
+            StringBuffer method(name);
             if (method.length() > 7)
                 method.setLength(method.length()-7);
             type = sp->queryElementType(method);

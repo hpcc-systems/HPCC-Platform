@@ -368,7 +368,7 @@ void CEspApplicationPort::buildNavTreeXML(IPropertyTree* navtree, StringBuffer& 
         //If no one asks for this position, pick one from the itemsGroup1
         if (!foundOne && (positionInGroup1 < itemCountInGroup1))
         {
-            StringBuffer itemXML = itemsGroup1.item(positionInGroup1);
+            StringBuffer itemXML(itemsGroup1.item(positionInGroup1));
             xmlBuf.append(itemXML.str());
             positionInGroup1++;
         }
@@ -379,7 +379,7 @@ void CEspApplicationPort::buildNavTreeXML(IPropertyTree* navtree, StringBuffer& 
     //Check any item left inside the itemsGroup1 and append it into the xml
     while (positionInGroup1 < itemCountInGroup1)
     {
-        StringBuffer itemXML = itemsGroup1.item(positionInGroup1);
+        StringBuffer itemXML(itemsGroup1.item(positionInGroup1));
         xmlBuf.append(itemXML.str());
         positionInGroup1++;
     }

@@ -102,7 +102,7 @@ public:
 
         if (funcname && strlen(funcname)>0)
         {
-            StringBuffer fnnameupper = funcname;
+            StringBuffer fnnameupper(funcname);
 
             if (eclfuncstable.count(fnnameupper.toUpperCase().str()))
                 return  eclfuncstable.find(fnnameupper.toUpperCase().str())->second;

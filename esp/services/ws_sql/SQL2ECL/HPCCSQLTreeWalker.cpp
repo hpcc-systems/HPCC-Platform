@@ -766,7 +766,7 @@ void HPCCSQLTreeWalker::createAndLoadStatementTreeWalker(pANTLR3_BASE_TREE clsql
                                     sourceDataType.append((char *)sourcetypechild->toString(sourcetypechild)->chars);
                                     sourceDataType.append(" = ");
                                     sourcetypechild = (pANTLR3_BASE_TREE)(loadPartIthChild->getChild(loadPartIthChild, ++sourcetypechildindex));
-                                    StringBuffer value = (char *)sourcetypechild->toString(sourcetypechild)->chars;
+                                    StringBuffer value((char *)sourcetypechild->toString(sourcetypechild)->chars);
                                     trimSingleQuotes(value);
                                     sourceDataType.append(value.str());
 

@@ -454,7 +454,7 @@ IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target,
 
 bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp)
 {
-    StringBuffer wuid = req.getWuid();
+    StringBuffer wuid(req.getWuid());
     WsWuHelpers::checkAndTrimWorkunit("WUCopyLogicalFiles", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -811,7 +811,7 @@ bool CWsWorkunitsEx::isQuerySuspended(const char* query, IConstWUClusterInfo *cl
 
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
-    StringBuffer wuid = req.getWuid();
+    StringBuffer wuid(req.getWuid());
     WsWuHelpers::checkAndTrimWorkunit("WUPublishWorkunit", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -2471,7 +2471,7 @@ public:
     }
     void cloneQueryRemote(IPropertyTree *query, bool makeActive)
     {
-        StringBuffer wuid = query->queryProp("Wuid");
+        StringBuffer wuid(query->queryProp("Wuid"));
         if (!wuid.length())
             return;
         const char *queryName = query->queryProp("Name");
@@ -3198,7 +3198,7 @@ bool CWsWorkunitsEx::onWUUpdateQueryEntry(IEspContext& context, IEspWUUpdateQuer
         if (!tree)
             throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Query %s not found", query.str());
 
-        StringBuffer comment = req.getComment();
+        StringBuffer comment(req.getComment());
         if (comment.isEmpty())
             tree->removeProp("@comment");
         else
@@ -3251,7 +3251,7 @@ bool CWsWorkunitsEx::onWUGetNumFileToCopy(IEspContext& context, IEspWUGetNumFile
 
     try
     {
-        StringBuffer clusterName = req.getClusterName();
+        StringBuffer clusterName(req.getClusterName());
         if (clusterName.isEmpty())
             throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Cluster not specified");
 

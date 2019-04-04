@@ -63,7 +63,7 @@ public:
             if (optRecursive && hc.includes)
             {
                 StringBuffer subfile;
-                StringBuffer srcDir = hc.getSrcDir();
+                StringBuffer srcDir(hc.getSrcDir());
 
                 IncludeInfo * ii;
                 for (ii=hc.includes;ii;ii=ii->next)

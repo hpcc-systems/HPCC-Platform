@@ -235,7 +235,7 @@ void CESPServerLoggingAgent::resetTransSeed(CTransIDBuilder *builder, const char
         int statusCode = getTransactionSeed(groupName, transactionSeed, statusMessage);
         if (!transactionSeed.length() || (statusCode != 0))
         {
-            StringBuffer msg = "Failed to get Transaction Seed for ";
+            StringBuffer msg("Failed to get Transaction Seed for ");
             msg.append(groupName).append(". statusCode: ").append(statusCode);
             if (!statusMessage.isEmpty())
                 msg.append(", ").append(statusMessage.str());

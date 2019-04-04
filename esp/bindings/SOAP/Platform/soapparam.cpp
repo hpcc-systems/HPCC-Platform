@@ -353,7 +353,7 @@ void SoapAttachString::marshall(IRpcMessage &rpc_call, const char *tagname, cons
 
 void SoapAttachString::toJSON(IEspContext *ctx, StringBuffer &s, const char *tagname)
 {
-    appendJSONValue(s, tagname, value);
+    appendJSONValue(s, tagname, value.str());
 }
 
 void SoapAttachString::toXML(IEspContext *ctx, StringBuffer &s, const char *tagname, const char *prefix, bool encode)

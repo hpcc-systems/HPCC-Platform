@@ -68,7 +68,7 @@ void CWSESPControlEx::init(IPropertyTree *cfg, const char *process, const char *
     ForEach(*it)
     {
         IPropertyTree& authDomain = it->query();
-        StringBuffer name = authDomain.queryProp("@domainName");
+        StringBuffer name(authDomain.queryProp("@domainName"));
         if (name.isEmpty())
             name.set("default");
         sessionTimeoutMinutesMap.setValue(name.str(), authDomain.getPropInt("@sessionTimeoutMinutes", 0));
@@ -272,7 +272,7 @@ bool CWSESPControlEx::onSessionInfo(IEspContext& context, IEspSessionInfoRequest
         }
 #endif
 
-        StringBuffer id = req.getID();
+        StringBuffer id(req.getID());
         if (id.trim().isEmpty())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "ID not specified.");
 

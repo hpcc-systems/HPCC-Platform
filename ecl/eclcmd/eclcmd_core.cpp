@@ -1930,7 +1930,7 @@ public:
         EclCmdURL eclCmdURL("WsWorkunits", !streq(optServer, ".") ? optServer : "localhost", optPort, optSSL, urlTail.str());
 
         //Create CURL command
-        StringBuffer curlCommand = "curl -v -X post";
+        StringBuffer curlCommand("curl -v -X post");
         if (!optUsername.isEmpty())
         {
             curlCommand.append(" -u ").append(optUsername.get());

@@ -102,14 +102,14 @@ inline bool TestRwFlag(unsigned flags, RowReaderWriterFlags flag) { return 0 != 
 
 #define COMP_MASK (rw_compress|rw_compressblkcrc|rw_fastlz|rw_lzw|rw_lz4)
 #define COMP_TYPE_MASK (rw_fastlz|rw_lzw|rw_lz4)
-inline void setCompFlag(const StringBuffer compStr, unsigned &flags)
+inline void setCompFlag(const char *compStr, unsigned &flags)
 {
     flags &= ~COMP_TYPE_MASK;
-    if (compStr.length())
+    if (!isEmptyString(compStr))
     {
-        if (0 == stricmp("FLZ", compStr.str()))
+        if (0 == stricmp("FLZ", compStr))
             flags |= rw_fastlz;
-        else if (0 == stricmp("LZ4", compStr.str()))
+        else if (0 == stricmp("LZ4", compStr))
             flags |= rw_lz4;
         else // not specifically FLZ or LZ4 so set to LZW (or rowdif)
             flags |= rw_lzw;
@@ -130,14 +130,14 @@ inline unsigned getCompMethod(unsigned flags)
     return compMethod;
 }
 
-inline unsigned getCompMethod(const StringBuffer compStr)
+inline unsigned getCompMethod(const char *compStr)
 {
     unsigned compMethod = COMPRESS_METHOD_LZW;
-    if (compStr.length())
+    if (!isEmptyString(compStr))
     {
-        if (0 == stricmp("FLZ", compStr.str()))
+        if (0 == stricmp("FLZ", compStr))
             compMethod = COMPRESS_METHOD_FASTLZ;
-        else if (0 == stricmp("LZ4", compStr.str()))
+        else if (0 == stricmp("LZ4", compStr))
             compMethod = COMPRESS_METHOD_LZ4;
     }
     else // default is LZ4

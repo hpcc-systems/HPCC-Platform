@@ -343,7 +343,11 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
 void CConfigGenEngine::deployInstance(IPropertyTree& instanceNode, bool useTempDir)
 {
     StringAttr hostDir(m_outDir);
-    StringAttr destDir(useTempDir ? getDeployDir(instanceNode).str() : hostDir.get());
+    StringBuffer destDir;
+    if (useTempDir)
+        getDeployDir(destDir, instanceNode);
+    else
+        destDir.set(hostDir.get());
     
     const char* pszHostDir = hostDir.get();
     if (pszHostDir && *pszHostDir==PATHSEPCHAR && *(pszHostDir+1)==PATHSEPCHAR)

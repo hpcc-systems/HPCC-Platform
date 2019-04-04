@@ -179,7 +179,7 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
     if (!pFarm->hasProp("@aclName"))
       pFarm->addProp("@aclName", "");
 
-    StringBuffer dataDir = pFarm->queryProp(XML_ATTR_LEVEL);
+    StringBuffer dataDir(pFarm->queryProp(XML_ATTR_LEVEL)); // MORE - this is dead code - variable never used
   }
   else
   {

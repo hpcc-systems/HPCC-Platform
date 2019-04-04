@@ -710,7 +710,8 @@ bool CppCompiler::doLink()
     DWORD runcode = 0;
     if (verbose)
         UERRLOG("%s", expanded.str());
-    StringBuffer logFile = StringBuffer(coreName).append("_link.log.tmp");
+    StringBuffer logFile(coreName);
+    logFile.append("_link.log.tmp");
     logFiles.append(logFile);
 
     bool ret;

@@ -170,7 +170,7 @@ static void LoadMethodMappings()
                 printf( "Syntax error in EspMethods.txt at line %d: ", lineno++);
             else
             {
-                StringBuffer method = strArray.item(0);
+                StringBuffer method(strArray.item(0));
                 method.trim();
 
                 if (ord > 1)

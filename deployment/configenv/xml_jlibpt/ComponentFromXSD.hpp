@@ -37,9 +37,9 @@ class ComponentFromXSD
    ~ComponentFromXSD();
 
   void CreateAttributeFromSchema(IPropertyTree& attr,
-         StringBuffer compName, const char* childElementName);
+         const char * compName, const char* childElementName);
   void AddAttributeFromSchema(IPropertyTree& schemaNode,
-         StringBuffer elemName, StringBuffer& compName, const char* childElementName);
+         const char *elemName, StringBuffer& compName, const char* childElementName);
   void AddAttributesFromSchema(IPropertyTree* pSchema,
          StringBuffer& compName, const char* childElementName);
   void ProcessElementSchemaNode(IPropertyTree* pElement,
@@ -50,7 +50,7 @@ class ComponentFromXSD
   void setCompTree(const char* buildSetName,  IPropertyTree* pTree, IPropertyTree* schemaTree, bool allSubTypes);
   void setWizardFlag(bool flag) { m_wizFlag = flag; }
   void setGenerateOptional(bool flag) { m_genOptional = flag; }
-  void getValueForTypeInXSD(IPropertyTree& attr, StringBuffer compName, StringBuffer& wizDefVal);
+  void getValueForTypeInXSD(IPropertyTree& attr, const char *compName, StringBuffer& wizDefVal);
 
 private:
 

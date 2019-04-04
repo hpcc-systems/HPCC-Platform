@@ -82,7 +82,7 @@ namespace KafkaPlugin
 
             ForEach(*props)
             {
-                StringBuffer key = props->getPropKey();
+                StringBuffer key(props->getPropKey());
 
                 key.trim();
 
@@ -612,10 +612,8 @@ namespace KafkaPlugin
         return new KafkaStreamedDataset(this, allocator, traceLevel, maxRecords);
     }
 
-    StringBuffer Consumer::offsetFilePath() const
+    StringBuffer &Consumer::offsetFilePath(StringBuffer &offsetPath) const
     {
-        StringBuffer offsetPath;
-
         offsetPath.append(topic.c_str());
         offsetPath.append("-");
         offsetPath.append(partitionNum);
@@ -641,7 +639,8 @@ namespace KafkaPlugin
             // we left off; NOTE:  librdkafka does not clean the topic name
             // or consumer group name when constructing this path
             // (which is actually a security concern), so we can't clean, either
-            StringBuffer offsetPath = offsetFilePath();
+            StringBuffer offsetPath;
+            offsetFilePath(offsetPath);
 
             std::ofstream outFile(offsetPath.str(), std::ofstream::trunc);
             outFile << offset;
@@ -655,7 +654,8 @@ namespace KafkaPlugin
 
     void Consumer::initFileOffsetIfNotExist() const
     {
-        StringBuffer offsetPath = offsetFilePath();
+        StringBuffer offsetPath;
+        offsetFilePath(offsetPath);
 
         if (!checkFileExists(offsetPath.str()))
         {

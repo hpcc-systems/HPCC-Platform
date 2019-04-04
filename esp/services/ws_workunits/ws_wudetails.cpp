@@ -76,7 +76,8 @@ private:
     public:
         void add(WuAttr attr, const char *value)
         {
-            AttribValuePair tmp(attr,"");
+            AttribValuePair tmp;
+            tmp.first = attr;
 
             auto cur = find(attribValuePairs.begin(), attribValuePairs.end(), tmp);
             if (cur!=attribValuePairs.end())

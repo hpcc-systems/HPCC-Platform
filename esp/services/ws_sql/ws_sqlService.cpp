@@ -895,7 +895,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
         }
 
         StringBuffer xmlparams;
-        StringBuffer normalizedSQL = parsedSQL->getNormalizedSQL();
+        StringBuffer normalizedSQL(parsedSQL->getNormalizedSQL());
 
         normalizedSQL.append(" | --TC=").append(cluster);
         if (username.length() > 0)
@@ -1373,7 +1373,7 @@ bool CwssqlEx::onPrepareSQL(IEspContext &context, IEspPrepareSQLRequest &req, IE
         }
 
         StringBuffer xmlparams;
-        StringBuffer normalizedSQL = parsedSQL->getNormalizedSQL();
+        StringBuffer normalizedSQL(parsedSQL->getNormalizedSQL());
         normalizedSQL.append(" | --TC=").append(cluster);
         if (username.length() > 0)
             normalizedSQL.append("--USER=").append(username.str());
@@ -1690,7 +1690,7 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
         if (!lzIP || !*lzIP)
             throw MakeStringException(-1, "WsSQL::CreateTableAndLoad: Error: LandingZone IP cannot be empty if targeting a landing zone file.");
 
-        StringBuffer lzPath = datasource.getLandingZonePath();
+        StringBuffer lzPath(datasource.getLandingZonePath());
 
         if (!lzPath.length())
             throw MakeStringException(-1, "WsSQL::CreateTableAndLoad: Error: Landingzone path cannot be empty.");
@@ -1813,7 +1813,7 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
 
     bool overwrite = req.getOverwrite();
 
-    StringBuffer formatnamefull = formatname;
+    StringBuffer formatnamefull(formatname);
     IArrayOf<IConstDataTypeParam> & formatparams = format.getParams();
     int formatparamscount = formatparams.length();
     if (formatparamscount > 0 )

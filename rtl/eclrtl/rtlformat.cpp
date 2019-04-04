@@ -1251,7 +1251,7 @@ void CommonCSVWriter::outputBeginNested(const char* fieldName, bool simpleNested
             unsigned rowCount = item->getRowCount();
             if (rowCount > 0)
             {//Starting from the second result row, the NextRowIDs of every children are reset based on the last result row.
-                StringBuffer path = currentParentXPath;
+                StringBuffer path(currentParentXPath);
                 path.setLength(path.length() - 1);
                 setChildrenNextRowID(path.str(), getChildrenMaxNextRowID(path.str()));
             }
@@ -1375,13 +1375,13 @@ void CommonCSVWriter::outputHeadersToBuffer()
 //Go through every children to find out MaxColumnID.
 unsigned CommonCSVWriter::getChildrenMaxColumnID(CCSVItem* item, unsigned& maxColumnID)
 {
-    StringBuffer path = item->getParentXPath();
+    StringBuffer path(item->getParentXPath());
     path.append(item->getName());
 
     StringArray& names = item->getChildrenNames();
     ForEachItemIn(i, names)
     {
-        StringBuffer childPath = path;
+        StringBuffer childPath(path);
         childPath.append("/").append(names.item(i));
         CCSVItem* childItem = csvItems.getValue(childPath.str());
         if (!childItem)
@@ -1419,7 +1419,7 @@ CCSVItem* CommonCSVWriter::getParentCSVItem()
     if (currentParentXPath.isEmpty())
         return NULL;
 
-    StringBuffer path = currentParentXPath;
+    StringBuffer path(currentParentXPath);
     path.setLength(path.length() - 1);
     return csvItems.getValue(path.str());
 }
@@ -1494,7 +1494,7 @@ void CommonCSVWriter::addColumnToRow(CIArrayOf<CCSVRow>& rows, unsigned rowID, u
 void CommonCSVWriter::setParentItemRowEmpty(CCSVItem* item, bool empty)
 {
     item->setCurrentRowEmpty(empty);
-    StringBuffer parentXPath = item->getParentXPath();
+    StringBuffer parentXPath(item->getParentXPath());
     if (parentXPath.isEmpty())
         return;
     //If this item is not empty, its parent is not empty.
@@ -1515,7 +1515,7 @@ void CommonCSVWriter::addCSVHeader(const char* name, const char* type, bool isNe
     headerItem->setColumnID(headerColumnID);
     headerItem->setNestedLayer(nestedHeaderLayerID);
     headerItem->setParentXPath(currentParentXPath.str());
-    StringBuffer xPath = currentParentXPath;
+    StringBuffer xPath(currentParentXPath);
     xPath.append(name);
     csvItems.setValue(xPath.str(), headerItem);
 
@@ -1555,12 +1555,12 @@ unsigned CommonCSVWriter::getChildrenMaxNextRowID(const char* path)
         return item->getNextRowID();
 
     unsigned maxRowID = item->getNextRowID();
-    StringBuffer basePath = path;
+    StringBuffer basePath(path);
     basePath.append("/");
     StringArray& names = item->getChildrenNames();
     ForEachItemIn(i, names)
     {
-        StringBuffer childPath = basePath;
+        StringBuffer childPath(basePath);
         childPath.append(names.item(i));
         unsigned rowID = getChildrenMaxNextRowID(childPath.str());
         if (rowID > maxRowID)
@@ -1584,7 +1584,7 @@ void CommonCSVWriter::setChildrenNextRowID(const char* path, unsigned rowID)
     StringArray& names = item->getChildrenNames();
     ForEachItemIn(i, names)
     {
-        StringBuffer childPath = path;
+        StringBuffer childPath(path);
         childPath.append("/").append(names.item(i));
         CCSVItem* childItem = csvItems.getValue(childPath.str());
         if (!childItem)

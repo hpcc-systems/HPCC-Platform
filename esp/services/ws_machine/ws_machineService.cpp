@@ -495,7 +495,7 @@ void Cws_machineEx::addProcessData(CMachineData* machine, const char* processTyp
     if (!machine)
         return;
 
-    StringBuffer pathStr = path;
+    StringBuffer pathStr(path);
     if (pathStr.length() > 0)
     {
         char pathSep = machine->getPathSep();
@@ -531,7 +531,7 @@ void Cws_machineEx::addProcessData(CMachineData* machine, const char* processTyp
         if (!name || streq(name, "."))
             continue;
 
-        StringBuffer processName = name;
+        StringBuffer processName(name);
         processName.toLowerCase().replaceString(".exe", "");
         if (processName.length() < 1)
             continue;
@@ -814,10 +814,11 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
                 continue;
             }
 
-            StringBuffer netAddress, configNetAddress = ip;
+            StringBuffer netAddress;
+            StringBuffer configNetAddress(ip);
             if (!streq(ip, "."))
             {
-                netAddress.append(ip);
+                netAddress.set(ip);
             }
             else
             {
@@ -1581,7 +1582,7 @@ void Cws_machineEx::setMachineInfo(IEspContext& context, CMachineInfoThreadParam
         int len = additionalProcessFilters.length();
         for (int i=0; i<len; i++)
         {
-            StringBuffer processName = additionalProcessFilters.item(i);
+            StringBuffer processName(additionalProcessFilters.item(i));
             processName.toLowerCase().replaceString(".exe", "");
             if (processName.length() > 0)
                 additionalProcesses.insert(processName.str());
@@ -1810,7 +1811,7 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam, C
         const char* pName = processInfo.getDescription();
         if (pParam->m_machineData.getOS() == MachineOsW2K)
         {
-            StringBuffer sName = pName;
+            StringBuffer sName(pName);
             pName = sName.toLowerCase().replaceString(".exe", "").str();
             if (!dependencies.empty())
                 dependencies.erase(pName);
@@ -1840,7 +1841,7 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam, C
                     const char* pch = strchr(pPath, ' ');
                     if (pch)
                     {
-                        StringBuffer sPath = pPath;
+                        StringBuffer sPath(pPath);
                         sPath.setLength( pch - pPath );
                         pPath = sPath.str();
                     }
@@ -3069,7 +3070,7 @@ void Cws_machineEx::buildComponentUsageCacheID(StringBuffer& id, IArrayOf<IConst
     ForEachItemIn(i, componentList)
     {
         IConstComponent& component = componentList.item(i);
-        StringBuffer str = component.getType();
+        StringBuffer str(component.getType());
         if (str.isEmpty())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Empty Component Type");
         str.append(":").append(component.getName());
