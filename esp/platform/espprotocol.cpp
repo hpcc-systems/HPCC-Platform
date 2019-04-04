@@ -45,7 +45,7 @@ void ActiveRequests::dec()
     atomic_dec(&gActiveRequests);
 }
 
-CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : bindingCount(0), defBinding(-1), viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false), protocol(prot)
+CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false), protocol(prot)
 {
     build_ver = getBuildVersion();
 
@@ -65,12 +65,9 @@ CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : bin
 void CEspApplicationPort::appendBinding(CEspBindingEntry* entry, bool isdefault)
 {
     WriteLockBlock wblock(rwLock);
-    if (bindingCount + 1 == MAX_ESP_BINDINGS)
-        throw MakeStringException(0,"Error - reached maximum number of bindings allowed.");
-    bindings[bindingCount]=entry;
+    bindings.append(*entry);
     if (isdefault)
-        defBinding=bindingCount;
-    bindingCount++;
+        defBinding = entry;
     EspHttpBinding *httpbind = dynamic_cast<EspHttpBinding *>(entry->queryBinding());
     if (httpbind)
     {
@@ -94,27 +91,18 @@ void CEspApplicationPort::removeBinding(IEspRpcBinding* binding)
     CEspBindingEntry* targetEntry = nullptr;
     {
         WriteLockBlock wblock(rwLock);
-        for (int i = 0; i < bindingCount; i++)
+        ForEachItemInRev(i, bindings)
         {
-            if (!bindings[i])
-                continue;
-            IEspRpcBinding* currentBinding = bindings[i]->queryBinding();
+            IEspRpcBinding* currentBinding = bindings.item(i).queryBinding();
             if (currentBinding && currentBinding == binding)
             {
-                targetEntry = bindings[i];
-                bindings[i] = nullptr;
-                if (i != bindingCount-1)
-                {
-                    bindings[i] = bindings[bindingCount-1];
-                    bindings[bindingCount-1] = nullptr;
-                }
-                bindingCount--;
+                if (defBinding == &bindings.item(i))
+                    defBinding = nullptr;
+                bindings.remove(i);
                 break;
             }
         }
     }
-    if(targetEntry != nullptr)
-        targetEntry->Release();
 }
 
 const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const char *inner, StringBuffer &html, IEspContext* ctx)
@@ -213,9 +201,8 @@ const StringBuffer &CEspApplicationPort::getNavBarContent(IEspContext &context, 
         Owned<IPropertyTree> navtree=createPTree("EspNavigationData");
         {
             ReadLockBlock rblock(rwLock);
-            int count = getBindingCount();
-            for (int idx = 0; idx<count; idx++)
-                bindings[idx]->queryBinding()->getNavigationData(context, *navtree.get());
+            ForEachItemIn(idx, bindings)
+                bindings.item(idx).queryBinding()->getNavigationData(context, *navtree.get());
         }
 
         StringBuffer xml;
@@ -259,9 +246,8 @@ const StringBuffer &CEspApplicationPort::getDynNavData(IEspContext &context, IPr
     bVolatile = false;
     {
         ReadLockBlock rblock(rwLock);
-        int count = getBindingCount();
-        for (int idx = 0; idx<count; idx++)
-            bindings[idx]->queryBinding()->getDynNavData(context, params, *navtree.get());
+        ForEachItemIn(idx, bindings)
+            bindings.item(idx).queryBinding()->getDynNavData(context, params, *navtree.get());
     }
 
     if (!bVolatile)
@@ -274,27 +260,14 @@ int CEspApplicationPort::onGetNavEvent(IEspContext &context, IHttpMessage* reque
 {
     int handled=0;
     ReadLockBlock rblock(rwLock);
-    int count = getBindingCount();
-    for (int idx = 0; !handled && idx<count; idx++)
-    {
-        handled = bindings[idx]->queryBinding()->onGetNavEvent(context, request, response);
-    }
+    for (int idx = 0; !handled && idx < bindings.length(); idx++)
+        handled = bindings.item(idx).queryBinding()->onGetNavEvent(context, request, response);
     return handled;
 }
 
 int CEspApplicationPort::onBuildSoapRequest(IEspContext &context, IHttpMessage* ireq, IHttpMessage* iresp)
 {
-    CHttpRequest *request=dynamic_cast<CHttpRequest*>(ireq);
-    CHttpResponse *response=dynamic_cast<CHttpResponse*>(iresp);
-
-    int handled=0;
-    ReadLockBlock rblock(rwLock);
-    int count = getBindingCount();
-    for (int idx = 0; !handled && idx<count; idx++)
-    {
-        //if (bindings[idx]->queryBinding()->isValidServiceName(context, ))
-    }
-    return handled;
+    return 0;
 }
 
 void CEspApplicationPort::buildNavTreeXML(IPropertyTree* navtree, StringBuffer& xmlBuf, bool insideFolder)
@@ -763,7 +736,7 @@ int CEspProtocol::removeBindingMap(int port, IEspRpcBinding* binding)
     {
         CEspApplicationPort* apport = (*apport_it).second;
         apport->removeBinding(binding);
-        left = apport->countBindings();
+        left = apport->getBindingCount();
         if (left == 0)
         {
             delete apport;
@@ -780,5 +753,5 @@ int CEspProtocol::countBindings(int port)
     if (!apport)
         return 0;
     else
-        return apport->countBindings();
+        return apport->getBindingCount();
 }

@@ -47,7 +47,7 @@ public:
     static long getCount();
 };
 
-class CEspBindingEntry : public CInterface
+class CEspBindingEntry : public CInterface, implements IInterface
 {
 private:
     Owned<ISocket> sock_;
@@ -84,12 +84,10 @@ public:
 
 class CEspProtocol;
 
-#define MAX_ESP_BINDINGS 512
 class CEspApplicationPort
 {
-    CEspBindingEntry* bindings[512];
-    int bindingCount;
-    int defBinding;
+    IArrayOf<CEspBindingEntry> bindings;
+    CEspBindingEntry* defBinding = nullptr;
 
     StringBuffer titleBarHtml;
     StringBuffer appFrameHtml;
@@ -109,8 +107,6 @@ public:
 
     ~CEspApplicationPort()
     {
-        while (bindingCount)
-            bindings[--bindingCount]->Release();
         if (hxsl)
             FreeSharedObject(hxsl);
     }
@@ -125,7 +121,7 @@ public:
     int onGetNavEvent(IEspContext &context, IHttpMessage* request, IHttpMessage* response);
     int onBuildSoapRequest(IEspContext &context, IHttpMessage* request, IHttpMessage* response);
 
-    int getBindingCount(){return bindingCount;}
+    int getBindingCount(){return bindings.length();}
     void appendBinding(CEspBindingEntry* entry, bool isdefault);
     void removeBinding(IEspRpcBinding* binding);
 
@@ -134,11 +130,18 @@ public:
     CEspBindingEntry* queryBindingItem(int item)
     {
         ReadLockBlock rblock(rwLock);
-        return (item<bindingCount) ? bindings[item] : nullptr;
+        return (item<bindings.length()) ? &bindings.item(item) : nullptr;
     }
-    CEspBindingEntry* getDefaultBinding(){return bindings[(defBinding>=0) ? defBinding : 0];}
+    CEspBindingEntry* getDefaultBinding()
+    {
+        ReadLockBlock rblock(rwLock);
+        if (defBinding)
+            return defBinding;
+        if (bindings.length() > 0)
+            return &bindings.item(0);
+        return nullptr;
+    }
     CEspProtocol* queryProtocol() { return protocol; }
-    int countBindings() { return bindingCount; }
 #ifdef _USE_OPENLDAP
     unsigned updatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& message);
     void onUpdatePasswordInput(IEspContext &context, StringBuffer &html);
