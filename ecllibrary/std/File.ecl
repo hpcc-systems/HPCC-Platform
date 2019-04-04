@@ -460,6 +460,9 @@ EXPORT SprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMa
  * @param recordStructurePresent If TRUE derives the record structure from the header of the file.
  * @param quotedTerminator Can the terminator character be included in a quoted field.  Defaults to TRUE.
  *                      If FALSE it allows quicker partitioning of the file (avoiding a complete file scan).
+ * @param encoding      A null-terminated string containing the encoding. 
+ *                      Can be set to one of the following: 
+ *                      ascii, utf8, utf8n, utf16, utf16le, utf16be, utf32, utf32le,utf32be. If omitted, the default is ascii.
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
  * @return              The DFU workunit id for the job.
  */
