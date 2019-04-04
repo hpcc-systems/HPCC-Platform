@@ -109,6 +109,8 @@ if(WSSQL_SERVICE)
         wuwebview
         )
 
+    SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "antlr3c")
+
 IF (USE_OPENSSL)
     target_link_libraries ( ws_sql
     	securesocket
