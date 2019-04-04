@@ -6372,7 +6372,8 @@ public:
         }
 #elif defined (__linux__)
         ptr = (byte *) mmap(NULL, mapsz, writeaccess?(PROT_READ|PROT_WRITE):PROT_READ, MAP_SHARED|MAP_NORESERVE, hfile, realofs);
-            // error checking TBD
+        if (ptr == MAP_FAILED)
+            throw makeOsException(errno, "CMemoryMappedFile::reinit");
 #else
         UNIMPLEMENTED;
 #endif

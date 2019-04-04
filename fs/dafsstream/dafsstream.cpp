@@ -248,6 +248,8 @@ public:
             //create FileId
             StringBuffer tmp;
             tmp.set(groupName.str()).append(DFUFileIdSeparator).append(clusterName).append(DFUFileIdSeparator).append(name);
+            if (queryIsCompressed())
+                tmp.append(DFUFileIdSeparator).append("true");
             fileId.set(tmp);
         }
     }

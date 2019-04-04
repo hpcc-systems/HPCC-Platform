@@ -24723,7 +24723,7 @@ public:
         }
         else
         {
-            if (indexHelper.getFlags() & (TIRlimitskips||TIRlimitcreates))
+            if (indexHelper.getFlags() & (TIRlimitskips|TIRlimitcreates))
             {
                 if (ctx->queryDebugContext())
                     ctx->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));

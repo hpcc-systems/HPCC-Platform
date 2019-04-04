@@ -39,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -684,6 +684,14 @@
       displays the Activity tab. To access the Activity tab from any other
       page in ECL Watch click on the <emphasis role="bold">ECL
       Watch</emphasis> image at the top of any page, as shown above.</para>
+
+      <sect2>
+        <title>Cluster Disk Usage</title>
+
+        <para>The Cluster Activity page displays graphs along the top showing
+        cluster disk usage. Clicking on each of the images displays more
+        information about the individual disk usage activity.</para>
+      </sect2>
 
       <sect2 id="ECLWatch_ClusterActivity">
         <title>Cluster Activity</title>
