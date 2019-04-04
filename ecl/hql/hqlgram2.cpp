@@ -3174,6 +3174,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
 
     unsigned endNesting = 0;
     unsigned braNesting = 0;
+    bool inEmbed = false;
     IIdAtom * prevId = NULL;
     IIdAtom * sharedSymbolName  = NULL;
     int sharedSymbolKind = 0;
@@ -3211,6 +3212,8 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
                         endNesting++;
                     }
                 }
+                else if (name == embedAtom && braNesting == 0)
+                    next = EMBED;  // A bit iffy - a field called embed might throw us out?
                 break;
             }
         case SHARED:
@@ -3225,10 +3228,21 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
             //Functional version of IF, and inline version of transform doesn't have END
             if ((prev == IF) || (prev == TRANSFORM))
                 endNesting--;
+            if (prev == EMBED)
+                inEmbed = true;
             braNesting++;
             break;
         case ')':
             braNesting--;
+            if (inEmbed && braNesting == 0)
+            {
+                getLexer()->enterEmbeddedMode();
+                inEmbed = false;
+            }
+            break;
+        case ',':
+            if (inEmbed && braNesting==1)
+                inEmbed = false;
             break;
         case ';':
             if (sharedSymbolName && braNesting == 0 && endNesting == 0)
