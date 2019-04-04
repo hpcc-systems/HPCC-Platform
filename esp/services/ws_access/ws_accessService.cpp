@@ -583,6 +583,7 @@ bool Cws_accessEx::onUserEdit(IEspContext &context, IEspUserEditRequest &req, IE
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
         CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
         resp.setUsername(req.getUsername());
+        resp.setIsLDAPAdmin(ldapsecmgr->isSuperUser(context.queryUser()));
 
         StringArray groupnames;
         ldapsecmgr->getGroups(req.getUsername(), groupnames);
