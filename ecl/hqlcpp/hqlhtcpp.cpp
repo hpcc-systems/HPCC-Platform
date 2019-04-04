@@ -18608,7 +18608,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetResult(BuildCtx & ctx, IHql
     if (expr->getOperator() == no_extractresult)
     {
         row.set(expr->queryChild(0));
-        dataset.set(row->queryNormalizedSelector(true));
+        dataset.set(row->queryNormalizedSelector());
         attribute.set(expr->queryChild(1));
     }
     else

@@ -4335,7 +4335,7 @@ void ScopedTransformer::pushEvaluateScope(IHqlExpression * dataset, IHqlExpressi
     innerScope = new ScopeInfo(dataset);
     scopeStack.append(*innerScope);
 
-    innerScope->setDataset(dataset->queryNormalizedSelector(true), transformed);
+    innerScope->setDataset(dataset->queryNormalizedSelector(), transformed);
     //MORE: Need to correctly translate the dataset....  Not sure what we want to do really.
 //  innerScope->evaluateScope.setown(getEvaluateScope(dataset));
 }
@@ -4451,11 +4451,11 @@ bool ScopedTransformer::checkInScope(IHqlExpression * selector, bool allowCreate
     if (scopeStack.ordinality() == 0)
         return false;
 
-    IHqlExpression * normalized = selector->queryNormalizedSelector(false);
+    IHqlExpression * normalized = selector->queryNormalizedSelector();
     ForEachItemInRev(idx, scopeStack)
     {
         ScopeInfo & cur = scopeStack.item(idx);
-        if (cur.dataset && cur.dataset->queryNormalizedSelector(false) == normalized)
+        if (cur.dataset && cur.dataset->queryNormalizedSelector() == normalized)
             return true;
 
         if (isInImplictScope(cur.dataset, normalized))
@@ -4616,7 +4616,7 @@ bool ScopedDependentTransformer::setTopLeftRight(IHqlExpression * ds, IHqlExpres
 void ScopedDependentTransformer::pushEvaluateScope(IHqlExpression * scope, IHqlExpression * transformedScope)
 {
     ScopedTransformer::pushEvaluateScope(scope, transformedScope);
-    pushChildContext(scope->queryNormalizedSelector(true), transformedScope->queryNormalizedSelector(true));
+    pushChildContext(scope->queryNormalizedSelector(), transformedScope->queryNormalizedSelector());
 }
 
 void ScopedDependentTransformer::popEvaluateScope()
@@ -4645,7 +4645,7 @@ void ScopedDependentTransformer::noteTransformedOnce(IHqlExpression * expr)
 void ScopedDependentTransformer::pushChildContext(IHqlExpression * expr, IHqlExpression * transformed)
 {
     //NB: For this transformer it is the tables that are in scope that matter
-    IHqlExpression * scope = expr->queryNormalizedSelector(false);
+    IHqlExpression * scope = expr->queryNormalizedSelector();
     bool identical = false;
     if (childScope)
     {

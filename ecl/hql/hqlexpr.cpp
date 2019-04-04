@@ -6149,7 +6149,7 @@ void CHqlSelectBaseExpression::gatherTablesUsed(HqlExprCopyArray & inScope)
 
 //==============================================================================================================
 
-IHqlExpression * CHqlNormalizedSelectExpression::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlNormalizedSelectExpression::queryNormalizedSelector()
 {
     return this;
 }
@@ -6162,7 +6162,7 @@ void CHqlNormalizedSelectExpression::calcNormalized()
 #endif
 }
 
-IHqlExpression * CHqlSelectExpression::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlSelectExpression::queryNormalizedSelector()
 {
     if (normalized)
         return normalized;
@@ -6386,11 +6386,9 @@ IAtom * CHqlRow::queryName() const
     return NULL;
 }
 
-IHqlExpression *CHqlRow::queryNormalizedSelector(bool skipIndex)
+IHqlExpression *CHqlRow::queryNormalizedSelector()
 {
-    if (!skipIndex || (op != no_selectnth))
-        return normalized.get() ? normalized.get() : this;
-    return queryChild(0)->queryNormalizedSelector(skipIndex);
+    return normalized.get() ? normalized.get() : this;
 }
 
 IHqlSimpleScope *CHqlRow::querySimpleScope()
@@ -6565,13 +6563,11 @@ IHqlExpression *CHqlDictionary::clone(HqlExprArray &newkids)
     return createDictionary(op, newkids);
 }
 
-IHqlExpression * CHqlDictionary::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlDictionary::queryNormalizedSelector()
 {
     if (!normalized)
         return this;
-    if (!skipIndex)
-        return normalized;
-    return normalized->queryNormalizedSelector(skipIndex);
+    return normalized;
 }
 
 
@@ -6800,7 +6796,7 @@ void CHqlDataset::cacheParent()
             rootTable = this;
             normalized.setown(calcNormalizedSelector());
             IHqlExpression * ds = queryChild(0);
-            container = LINK(queryDatasetCursor(ds)->queryNormalizedSelector(false));
+            container = LINK(queryDatasetCursor(ds)->queryNormalizedSelector());
 #ifdef _DEBUG
             assertex(!hasAttribute(newAtom) || !isAlwaysActiveRow(ds));
 #endif
@@ -6846,13 +6842,11 @@ bool CHqlDataset::isAggregate()
     return isAggregateDataset(this);
 }
 
-IHqlExpression * CHqlDataset::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlDataset::queryNormalizedSelector()
 {
     if (!normalized)
         return this;
-    if (!skipIndex)
-        return normalized;
-    return normalized->queryNormalizedSelector(skipIndex);
+    return normalized;
 }
 
 
@@ -7244,9 +7238,9 @@ IHqlExpression * CHqlAnnotation::queryProperty(ExprPropKind kind)
     return body->queryProperty(kind);
 }
 
-IHqlExpression * CHqlAnnotation::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlAnnotation::queryNormalizedSelector()
 {
-    return body->queryNormalizedSelector(skipIndex);
+    return body->queryNormalizedSelector();
 }
 
 IHqlExpression * CHqlAnnotation::queryExternalDefinition() const 

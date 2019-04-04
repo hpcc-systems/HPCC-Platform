@@ -1192,7 +1192,7 @@ interface IHqlExpression : public IInterface
     virtual IHqlSimpleScope *querySimpleScope() = 0;
     virtual IHqlExpression *queryFunctionDefinition() const = 0;
     virtual IHqlExpression *queryExternalDefinition() const = 0;
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex=false) = 0;
+    virtual IHqlExpression *queryNormalizedSelector() = 0;
 
     virtual IHqlExpression *queryAttribute(IAtom * propName) const = 0;
     virtual IHqlExpression *queryProperty(ExprPropKind kind) = 0;
