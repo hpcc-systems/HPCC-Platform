@@ -103,14 +103,16 @@ class CDaliUidAllocator: public CInterface
 public:
     CriticalSection crit;
 
-    CDaliUidAllocator(const SocketEndpoint &_node)
+    CDaliUidAllocator()
     {
-        node = _node;
         uidsremaining = 0;
         uidnext = 0;
         banksize = 1024;
     }
-
+    CDaliUidAllocator(const SocketEndpoint &_node) : CDaliUidAllocator()
+    {
+        node = _node;
+    }
     bool allocUIDs(DALI_UID &uid,unsigned num)
     {
         // called in crit
@@ -139,22 +141,7 @@ public:
         }
     }
 
-
-    static CDaliUidAllocator &find(CIArrayOf<CDaliUidAllocator> &uidallocators,const SocketEndpoint &foreignnode)
-    {
-        // called in crit
-        ForEachItemIn(i,uidallocators) {
-            if (uidallocators.item(i).node.equals(foreignnode)) 
-                return uidallocators.item(i);
-        }
-        CDaliUidAllocator &ret = *new CDaliUidAllocator(foreignnode);
-        uidallocators.append(ret);
-        if (uidallocators.ordinality()>1) {
-            StringBuffer eps;
-            PROGLOG("Added foreign UID allocator for %s",ret.node.getUrlStr(eps).str());
-        }
-        return ret;
-    }
+    static CDaliUidAllocator &find(CIArrayOf<CDaliUidAllocator> &uidallocators,const SocketEndpoint &foreignnode);
 
     unsigned getBankSize()
     {
@@ -180,7 +167,8 @@ protected:
 
 public:
     static CriticalSection uidcrit;
-    static CIArrayOf<CDaliUidAllocator> uidallocators;
+    static CIArrayOf<CDaliUidAllocator> foreginUidallocators;
+    static CDaliUidAllocator localUidAlloctor;
     
     IMPLEMENT_IINTERFACE;
     CCovenBase(IGroup *grp,bool server)
@@ -337,7 +325,28 @@ public:
 
 
 CriticalSection CCovenBase::uidcrit;
-CIArrayOf<CDaliUidAllocator> CCovenBase::uidallocators;
+CIArrayOf<CDaliUidAllocator> CCovenBase::foreginUidallocators;
+CDaliUidAllocator CCovenBase::localUidAlloctor;
+
+
+CDaliUidAllocator &CDaliUidAllocator::find(CIArrayOf<CDaliUidAllocator> &uidallocators,const SocketEndpoint &foreignnode)
+{
+    CDaliUidAllocator *ret = nullptr;
+    {
+        CriticalBlock block(CCovenBase::uidcrit);
+        ForEachItemIn(i,uidallocators)
+        {
+            if (uidallocators.item(i).node.equals(foreignnode))
+                return uidallocators.item(i);
+        }
+        ret = new CDaliUidAllocator(foreignnode);
+        uidallocators.append(*ret);
+    }
+    StringBuffer eps;
+    DBGLOG("Added foreign UID allocator for %s", ret->node.getUrlStr(eps).str());
+    return *ret;
+}
+
 
 
 
@@ -581,23 +590,27 @@ public:
     {
         if (num==0)
             return 0;
+
+        CDaliUidAllocator *uidAllocator = nullptr;
+
         SocketEndpoint foreignnode;
         if (_foreignnode&&!_foreignnode->isNull()) {
             foreignnode.set(*_foreignnode);
             if (foreignnode.port==0)
                 foreignnode.port = DALI_SERVER_PORT;
+            uidAllocator = &CDaliUidAllocator::find(foreginUidallocators,foreignnode);
         }
+        else // NB: most common case
+            uidAllocator = &localUidAlloctor;
+
         DALI_UID uid;
-        uidcrit.enter();
-        CDaliUidAllocator &uidAllocator = CDaliUidAllocator::find(uidallocators,foreignnode);
-        uidcrit.leave();
-        CriticalBlock block(uidAllocator.crit);
-        while (!uidAllocator.allocUIDs(uid,num)) {
+        CriticalBlock block(uidAllocator->crit);
+        while (!uidAllocator->allocUIDs(uid,num)) {
             rank_t primary=getPrimary(0);
             if ((primary==myrank)&&foreignnode.isNull()) {
                 CriticalBlock block2(updatestorecrit);
                 unsigned next = (unsigned)store->getPropInt("UIDbase");
-                uidAllocator.addUIDs(((__uint64)next)<<32,UUID_BLOCK_SIZE_SERVER);
+                uidAllocator->addUIDs(((__uint64)next)<<32,UUID_BLOCK_SIZE_SERVER);
                 next++;
                 if (!next) {
                     next++;
@@ -624,7 +637,7 @@ public:
                 comm->sendRecv(mb,primary,MPTAG_DALI_COVEN_REQUEST);
                 DALI_UID next;
                 mb.read(next);
-                uidAllocator.addUIDs((__uint64)next,n);
+                uidAllocator->addUIDs((__uint64)next,n);
             }
         }
         return uid;
@@ -768,6 +781,9 @@ public:
     {
         if (num==0)
             return 0;
+
+        CDaliUidAllocator *uidAllocator = nullptr;
+
         SocketEndpoint foreignnode;
         if (_foreignnode&&!_foreignnode->isNull()) {
             foreignnode.set(*_foreignnode);
@@ -775,14 +791,15 @@ public:
                 foreignnode.port=DALI_SERVER_PORT;
             if (CCovenBase::inCoven(foreignnode))
                 foreignnode.set(NULL,0);
+            uidAllocator = &CDaliUidAllocator::find(foreginUidallocators,foreignnode);
         }
-        uidcrit.enter();
-        CDaliUidAllocator &uidAllocator = CDaliUidAllocator::find(uidallocators,foreignnode);
-        uidcrit.leave();
+        else // NB: most common case
+            uidAllocator = &localUidAlloctor;
+
         DALI_UID uid;
-        CriticalBlock block(uidAllocator.crit);
-        while (!uidAllocator.allocUIDs(uid,num)) {
-            unsigned n = uidAllocator.getBankSize();
+        CriticalBlock block(uidAllocator->crit);
+        while (!uidAllocator->allocUIDs(uid,num)) {
+            unsigned n = uidAllocator->getBankSize();
             if (n<num) 
                 n = num*2;
             DALI_UID next;
@@ -795,7 +812,7 @@ public:
             mb.read(next);
             if ((next==0)&&mb.remaining())  // server exception
                 throw deserializeException(mb);
-            uidAllocator.addUIDs((__uint64)next,n);
+            uidAllocator->addUIDs((__uint64)next,n);
         }
         return uid;
     }
@@ -1008,9 +1025,7 @@ DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
     foreignnode.set(*_foreignnode);
     if (foreignnode.port==0)
         foreignnode.port=DALI_SERVER_PORT;
-    CCovenBase::uidcrit.enter();
-    CDaliUidAllocator &uidAllocator = CDaliUidAllocator::find(CCovenBase::uidallocators,foreignnode);
-    CCovenBase::uidcrit.leave();
+    CDaliUidAllocator &uidAllocator = CDaliUidAllocator::find(CCovenBase::foreginUidallocators,foreignnode);
     DALI_UID uid;
     CriticalBlock block(uidAllocator.crit);
     while (!uidAllocator.allocUIDs(uid,num)) {
