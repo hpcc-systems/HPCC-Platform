@@ -1048,7 +1048,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 Owned<const ITranslator> translator = getTranslators(fname, expectedFormatCrc, helper->queryIndexRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
                 if (translator)
                 {
-                    if (!publishedFormat->queryTypeInfo()->canSerialize() || !projectedFormat->queryTypeInfo()->canSerialize())
+                    bool canRemoteTranslate = publishedFormat->queryTypeInfo()->canInterpret() && publishedFormat->queryTypeInfo()->canSerialize() &&
+                                              projectedFormat->queryTypeInfo()->canInterpret() && projectedFormat->queryTypeInfo()->canSerialize();
+                    if (!canRemoteTranslate)
                         throw MakeActivityException(&activity, 0, "CKeyLookupRemoteHandler - translation required, but formats unserializable");
                     msg.append(static_cast<std::underlying_type<RecordTranslationMode>::type>(translationMode));
                     msg.append(publishedFormatCrc);
@@ -1343,7 +1345,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 Owned<const ITranslator> translator = getTranslators(fname, expectedFormatCrc, helper->queryDiskRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
                 if (translator)
                 {
-                    if (!publishedFormat->queryTypeInfo()->canSerialize() || !projectedFormat->queryTypeInfo()->canSerialize())
+                    bool canRemoteTranslate = publishedFormat->queryTypeInfo()->canInterpret() && publishedFormat->queryTypeInfo()->canSerialize() &&
+                                              projectedFormat->queryTypeInfo()->canInterpret() && projectedFormat->queryTypeInfo()->canSerialize();
+                    if (!canRemoteTranslate)
                         throw MakeActivityException(&activity, 0, "CFetchRemoteLookupHandler - translation required, but formats unserializable");
                     msg.append(static_cast<std::underlying_type<RecordTranslationMode>::type>(translationMode));
                     msg.append(publishedFormatCrc);

@@ -158,7 +158,8 @@ public:
 
                 Owned<ITranslator> translator = getTranslators(part);
                 IOutputMetaData *actualFormat = translator ? &translator->queryActualFormat() : expectedFormat;
-                bool canSerializeTypeInfo = actualFormat->queryTypeInfo()->canSerialize() && projectedFormat->queryTypeInfo()->canSerialize();
+                bool tryRemoteStream = actualFormat->queryTypeInfo()->canInterpret() && actualFormat->queryTypeInfo()->canSerialize() &&
+                                       projectedFormat->queryTypeInfo()->canInterpret() && projectedFormat->queryTypeInfo()->canSerialize();
                 bool usesBlobs = 0 != (helper->getFlags() & TIRusesblob);
 
                 unsigned crc=0;
@@ -167,7 +168,7 @@ public:
                 /* If part can potentially be remotely streamed, 1st check if any part is local,
                  * then try to remote stream, and otherwise failover to legacy remote access
                  */
-                if (canSerializeTypeInfo && !usesBlobs && !localMerge)
+                if (tryRemoteStream && !usesBlobs && !localMerge)
                 {
                     std::vector<unsigned> remoteCandidates;
                     for (unsigned copy=0; copy<part.numCopies(); copy++)
