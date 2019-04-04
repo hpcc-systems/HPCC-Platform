@@ -984,7 +984,7 @@ public:
                     IPropertyTree *querynode = ensurePTree(filetree, info.item(0));
                     if (querynode)
                     {
-                        StringBuffer category = (info.length()>=3) ? info.item(2) : "required";
+                        StringBuffer category((info.length()>=3) ? info.item(2) : "required");
                         IPropertyTree *cat = ensurePTree(querynode, category.toLowerCase());
                         if (cat)
                             ensurePTree(cat, info.item(1));

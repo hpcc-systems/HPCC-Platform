@@ -1130,7 +1130,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
                 }
 
                 ppStr += 12;
-                StringBuffer logDate = ppStr;
+                StringBuffer logDate(ppStr);
                 logDate.setLength(10);
 
                 Owned<IEspThorLogInfo> thorLog = createThorLogInfo("","");
@@ -1202,7 +1202,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
 
                 const char* pProcessName = ppStr + logDir.length();
                 char sep = pProcessName[0];
-                StringBuffer processName = pProcessName + 1;
+                StringBuffer processName(pProcessName + 1);
                 ppStr = strchr(pProcessName + 1, sep);
                 if (!ppStr)
                 {
@@ -1214,7 +1214,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
                 StringBuffer groupName;
                 getClusterThorGroupName(groupName, processName.str());
 
-                StringBuffer logDate = ppStr + 12;
+                StringBuffer logDate(ppStr + 12);
                 logDate.setLength(10);
 
                 Owned<IEspThorLogInfo> thorLog = createThorLogInfo("","");
@@ -2064,7 +2064,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char *ipAddr
             slaveIPAddress.append(ipAddress);
         else
         {
-            StringBuffer ipAddressStr = ipAddress;
+            StringBuffer ipAddressStr(ipAddress);
             ipAddressStr.setLength(portPtr - ipAddress);
             slaveIPAddress.append(ipAddressStr.str());
         }
@@ -3267,7 +3267,7 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, const char *wuid, const
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
     if(!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
-    return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs, applications);
+    submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs, applications);
 }
 
 
@@ -3510,7 +3510,7 @@ void CWsWuFileHelper::createThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInf
                 continue;
             }
             ppStr += 12;
-            StringBuffer logDate = ppStr;
+            StringBuffer logDate(ppStr);
             logDate.setLength(10);
 
             for (unsigned i = 0; i < numberOfSlaveLogs; i++)
@@ -3785,7 +3785,7 @@ IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, Ow
     {
         CWsWuEmailHelper emailHelper(request.emailFrom.str(), request.emailTo.str(), request.emailServer.str(), request.port);
 
-        StringBuffer subject = request.emailSubject.str();
+        StringBuffer subject(request.emailSubject.str());
         if (subject.isEmpty())
             subject.append(request.wuid.str()).append(" ZAP Report");
         emailHelper.setSubject(subject.str());
@@ -3957,7 +3957,7 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         break;
     case CWUFileType_XML:
     {
-        StringBuffer name  = item.getName();
+        StringBuffer name(item.getName());
         if (!name.isEmpty())
         {
             const char *tail=pathTail(name.str());

@@ -248,10 +248,10 @@ protected:
    virtual void siteCertificate(IPropertyTree& process, const char *instanceName, const char *outputFile);
 #endif
 
-   StringBuffer getHostRoot(const char* computer, const char* dir, bool bIgnoreDepToFolder=false) const;
-   StringBuffer getHostDir(IPropertyTree& node, bool bIgnoreDepToFolder=false);
-   StringBuffer getDeployDir(IPropertyTree& node);
-   StringBuffer getLocalDir(IPropertyTree& node) const;
+   StringBuffer &getHostRoot(StringBuffer &hostRoot, const char* computer, const char* dir, bool bIgnoreDepToFolder=false) const;
+   StringBuffer &getHostDir(StringBuffer &hostDir, IPropertyTree& node, bool bIgnoreDepToFolder=false);
+   StringBuffer &getDeployDir(StringBuffer &deployDir, IPropertyTree& node);
+   StringBuffer &getLocalDir(StringBuffer &localDir, IPropertyTree& node) const;
    const char *queryDirectory(IPropertyTree& node, StringBuffer& dir) const;
 
    void connectToHost(IPropertyTree& node, const char* dir=NULL);

@@ -51,7 +51,7 @@ ComponentFromXSD::~ComponentFromXSD()
 }
 
 void ComponentFromXSD::CreateAttributeFromSchema(IPropertyTree& attr,
-     StringBuffer compName, const char* childElementName)
+     const char *compName, const char* childElementName)
 {
   StringBuffer attrname;
   StringBuffer strBuf;
@@ -128,7 +128,7 @@ void ComponentFromXSD::CreateAttributeFromSchema(IPropertyTree& attr,
 }
 
 void ComponentFromXSD::AddAttributeFromSchema(IPropertyTree& schemaNode,
-       StringBuffer elemName, StringBuffer& compName, const char* childElementName)
+       const char *elemName, StringBuffer& compName, const char* childElementName)
 {
   CreateAttributeFromSchema(schemaNode, compName,  childElementName);
 }
@@ -422,7 +422,7 @@ void ComponentFromXSD::setCompTree(const char* buildSetName, IPropertyTree* pTre
 }
 
 void ComponentFromXSD::getValueForTypeInXSD(IPropertyTree& attr,
-       StringBuffer compName, StringBuffer& wizDefVal)
+       const char *compName, StringBuffer& wizDefVal)
 {
   StringBuffer tempPath;
   const char* type = attr.queryProp("@type");
@@ -449,7 +449,7 @@ void ComponentFromXSD::getValueForTypeInXSD(IPropertyTree& attr,
     }
     else if (!strcmp(attr.queryProp(tempPath.str()), "$processname"))
     {
-      tempPath.clear().appendf("Software/%s[1]/@name",compName.str());
+      tempPath.clear().appendf("Software/%s[1]/@name",compName);
       wizDefVal.clear().append(m_pEnv->queryProp(tempPath.str()));
     }
     else if(!strcmp(attr.queryProp(tempPath.str()), "$hthorcluster"))
@@ -473,7 +473,7 @@ void ComponentFromXSD::getValueForTypeInXSD(IPropertyTree& attr,
     else
     {
       wizDefVal.clear().append(attr.queryProp(tempPath.str()));
-      tempPath.clear().appendf("Software/%s[1]/@buildSet", compName.str());
+      tempPath.clear().appendf("Software/%s[1]/@buildSet", compName);
       if (m_pEnv->queryProp(tempPath.str()))
       {
         SWProcess * swp = (SWProcess *)m_eh->getEnvSWComp(m_buildSetName.str());

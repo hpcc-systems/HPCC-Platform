@@ -497,7 +497,7 @@ public:
         unsigned numItems = 0;
         ForEach(*attrs)
         {
-            StringBuffer key = attrs->queryName();
+            StringBuffer key(attrs->queryName());
             key.append('@');
             if (strstr(name, key) == NULL)
                 numItems++;
@@ -509,7 +509,7 @@ public:
                 CassandraCollection collection(cass_collection_new(CASS_COLLECTION_TYPE_MAP, numItems));
                 ForEach(*attrs)
                 {
-                    StringBuffer key = attrs->queryName();
+                    StringBuffer key(attrs->queryName());
                     key.append('@');
                     if (strstr(name, key) == NULL)
                     {
@@ -3526,6 +3526,7 @@ public:
                         merger->addPostFilter(*new PostFilter(field, fv, true)); // Wildcards on ECL are trailing and leading - no way to do remotely
                     else
                         goodFilters.append(*new PostFilter(field, fv, false)); // A hard filter on exact ecl match is possible but very unlikely
+                    break;
                 default:
                     UNSUPPORTED("Workunit filter criteria");
                 }

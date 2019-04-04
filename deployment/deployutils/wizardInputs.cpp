@@ -30,7 +30,7 @@
 #define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml/"
 #define STANDARD_CONFIG_DIR CONFIG_DIR
 
-CInstDetails::CInstDetails(StringBuffer compName, const StringArray &ipAssigned) : m_compName(compName)
+CInstDetails::CInstDetails(const char * compName, const StringArray &ipAssigned) : m_compName(compName)
 {
     m_ipAssigned.clear();
 
@@ -45,7 +45,7 @@ CInstDetails::CInstDetails(StringBuffer compName, const StringArray &ipAssigned)
 //---------------------------------------------------------------------------
 CWizardInputs::CWizardInputs(const char* xmlArg,const char *service, 
                              IPropertyTree * cfg, 
-                             MapStringTo<StringBuffer>* dirMap,
+                             MapStringTo<StringAttr, const char *>* dirMap,
                              StringArray &arrBuildSetsWithAssignedIPs,
                              StringArray &arrAssignedIPs): m_service(service),
                              m_cfg(cfg), m_overrideDirs(dirMap), m_roxieOnDemand(true),
@@ -457,7 +457,7 @@ bool CWizardInputs::applyOverlappingRules(const char* compName,const char* build
   return assignedIP;
 }
 
-count_t CWizardInputs::getNumOfInstForIP(StringBuffer ip)
+count_t CWizardInputs::getNumOfInstForIP(const char * ip)
 {
   count_t cnt = 0;
   HashIterator ips(m_compIpMap);
@@ -620,7 +620,7 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
       ForEach(iter)
       {
         IMapping &cur = iter.query();
-        StringBuffer* dirvalue = m_overrideDirs->mapToValue(&cur);
+        StringAttr* dirvalue = m_overrideDirs->mapToValue(&cur);
         const char * key = (const char*)cur.getKey();
         xpath.clear().appendf(XML_TAG_SOFTWARE"/Directories/Category[@name='%s']", key);
         if (!strcmp(key, "log"))
@@ -673,10 +673,10 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
   }
 }
 
-void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, StringBuffer attrName, const char* processName, const char* buildSetName, const char* instName)
+void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, const char * attrName, const char* processName, const char* buildSetName, const char* instName)
 {
   StringBuffer sb, sbl, compName, xpath, nodeName;
-  xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, attrName.str());
+  xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, attrName);
   IPropertyTree* pHardTemp = pNewEnvTree->queryPropTree(xpath.str());
   if(pHardTemp)
     nodeName.clear().append(pHardTemp->queryProp("./" XML_ATTR_NAME));//NodeName
@@ -1210,7 +1210,7 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
   const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
   const char* xsdFileName = pBuildSet->queryProp(XML_ATTR_SCHEMA);
   const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
-  StringBuffer deployable = pBuildSet->queryProp("@" TAG_DEPLOYABLE);
+  StringBuffer deployable(pBuildSet->queryProp("@" TAG_DEPLOYABLE));
   unsigned numOfIpNeeded = 1;
 
  if (!hasBaseInstantRequested())

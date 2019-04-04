@@ -206,7 +206,7 @@ int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
     command.append("start_eclagent");
 #endif
 
-    StringBuffer cmdLine = command;
+    StringBuffer cmdLine(command);
     cmdLine.append(" WUID=").append(wuid).append(" DALISERVERS=").append(daliServers);
 
     DWORD runcode;

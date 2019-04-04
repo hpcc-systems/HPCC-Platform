@@ -150,9 +150,8 @@ public:
 #endif
     }
 
-    StringBuffer toEclRecString()
+    StringBuffer &toEclRecString(StringBuffer &result)
     {
-        StringBuffer result;
         result.append(this->columnType.str());
         result.append(" ");
         result.append(this->columnName.str());

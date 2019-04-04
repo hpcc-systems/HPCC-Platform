@@ -45,17 +45,17 @@ class CInstDetails : public CInterface, implements IInterface
 {
   public: 
     CInstDetails(){};
-    CInstDetails(StringBuffer compName, StringBuffer ipAssigned):m_compName(compName)
+    CInstDetails(const char * compName, const char * ipAssigned):m_compName(compName)
     {
-      m_ipAssigned.append(ipAssigned.str());
+      m_ipAssigned.append(ipAssigned);
     }
-    CInstDetails(StringBuffer compName, const StringArray &ipAssigned);
+    CInstDetails(const char * compName, const StringArray &ipAssigned);
 
     virtual ~CInstDetails(){};
 
     IMPLEMENT_IINTERFACE;
     StringArray& getIpAssigned() { return m_ipAssigned;}
-    StringBuffer getCompName() { return m_compName; }
+    StringBuffer &getCompName() { return m_compName; }
     void setParams(const char* compName, const char* value)
     {
       m_compName.clear().append(compName);
@@ -79,7 +79,7 @@ class CWizardInputs : public CInterface, implements IInterface
 {
 // Construction
 public:
-  CWizardInputs(const char* xmlArg, const char* service, IPropertyTree* cfg, MapStringTo<StringBuffer>* dirMap, StringArray &arrBuildSetsWithAssignedIPs, StringArray &arrAssignedIPs);
+  CWizardInputs(const char* xmlArg, const char* service, IPropertyTree* cfg, MapStringTo<StringAttr, const char *>* dirMap, StringArray &arrBuildSetsWithAssignedIPs, StringArray &arrAssignedIPs);
   virtual ~CWizardInputs(); 
   
   void setEnvironment();
@@ -87,9 +87,9 @@ public:
   void setWizardRules();
   CInstDetails* getServerIPMap(const char* compName, const char* buildSetName,const IPropertyTree* pEnvTree, unsigned numOfNode = 1);
   bool applyOverlappingRules(const char* compName, const char* buildSetName, unsigned startpos, StringArray* pIpAddrMap);
-  count_t getNumOfInstForIP(StringBuffer ip);
+  count_t getNumOfInstForIP(const char * ip);
   void generateSoftwareTree(IPropertyTree* pTree);
-  void addInstanceToTree(IPropertyTree* pTree, StringBuffer attrName, const char* processName, const char* buildSetName, const char* instName);
+  void addInstanceToTree(IPropertyTree* pTree, const char *attrName, const char* processName, const char* buildSetName, const char* instName);
   void getDefaultsForWizard(IPropertyTree* pTree);
   void addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDetails* pInstDetails, const char* buildSetName, bool genRoxieOnDemand = false);
   unsigned getCntForAlreadyAssignedIPS(const char* buildsetName);
@@ -152,6 +152,6 @@ private:
    StringBuffer m_roxieAgentRedType;
    Owned<IPropertyTree> m_buildSetTree;
    Owned<IProperties> m_algProp;
-   MapStringTo<StringBuffer>* m_overrideDirs;
+   MapStringTo<StringAttr, const char *>* m_overrideDirs;
 };
 #endif // !defined(WIZARDINPUTS_HPP__INCLUDED_)

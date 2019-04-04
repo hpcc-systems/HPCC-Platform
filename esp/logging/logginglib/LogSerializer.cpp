@@ -206,7 +206,7 @@ void CLogSerializer::splitLogRecord(MemoryBuffer& rawdata, StringBuffer& GUID, S
 bool CLogSerializer::readLogRequest(CLogRequestInFile* logRequestInFile, StringBuffer& logRequest)
 {
     //Open the file if exists.
-    StringBuffer fileName = logRequestInFile->getFileName();
+    StringBuffer fileName(logRequestInFile->getFileName());
     Owned<IFile> file = createIFile(fileName);
     Owned<IFileIO> fileIO = file->open(IFOread);
     if (!fileIO)

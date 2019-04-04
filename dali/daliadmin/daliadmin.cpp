@@ -3031,7 +3031,7 @@ static void migrateFiles(const char *srcGroup, const char *tgtGroup, const char 
             try
             {
                 bool doCommit = false;
-                StringBuffer _tgtClusterGroupText = tgtClusterGroupText;
+                StringBuffer _tgtClusterGroupText(tgtClusterGroupText);
 
                 Owned<IFileDescriptor> fileDesc = deserializeFileDescriptorTree(&root, &queryNamedGroupStore());
                 unsigned numClusters = fileDesc->numClusters();

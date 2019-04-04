@@ -70,7 +70,7 @@ int main( int argc, char *argv[] )
         const StringArray & strArray = runssh->getReplyText();
         const UnsignedArray & unsArray = runssh->getReply();
         for(unsigned i = 0;i < unsArray.ordinality();i++) {
-            StringBuffer buf = strArray.item(i);
+            StringBuffer buf(strArray.item(i));
             // strip newlines off end of string buf
             if (buf.length() && (buf.charAt(buf.length()-1)) == '\n') {
                 buf.setLength(buf.length()-1);

@@ -295,7 +295,7 @@ bool Cws_accessEx::getNewFileScopePermissions(ISecManager* secmgr, IEspResourceA
     CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
     while (newResources.ordinality())
     {
-        StringBuffer namebuf = newResources.item(0);
+        StringBuffer namebuf(newResources.item(0));
         try
         {
             IArrayOf<CPermission> permissions;
@@ -382,7 +382,7 @@ bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspResourceA
 
         ForEachItemIn(y, newResources)
         {
-            StringBuffer namebuf = newResources.item(y);
+            StringBuffer namebuf(newResources.item(y));
             paction.m_rname.clear().append(namebuf.str());
             ldapsecmgr->changePermission(paction);
         }
@@ -1819,7 +1819,7 @@ bool Cws_accessEx::onResourceQuery(IEspContext &context, IEspResourceQueryReques
             }
         }
 
-        StringBuffer nameReq = req.getName();
+        StringBuffer nameReq(req.getName());
         const char* prefix = req.getPrefix();
         if (!nameReq.length() && req.getRtitle() && !stricmp(req.getRtitle(), "CodeGenerator Permission"))
             nameReq.set(prefix);
@@ -1997,7 +1997,7 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
                 StringBuffer retmsg;
                 ForEachItemIn(y, newResources)
                 {
-                    StringBuffer namebuf = newResources.item(y);
+                    StringBuffer namebuf(newResources.item(y));
                     if (retmsg.length() < 1)
                         retmsg.append(namebuf);
                     else
@@ -2129,7 +2129,7 @@ void Cws_accessEx::addResourcePermission(const char *name, int type, int allows,
     if (isEmptyString(name))
         return;
 
-    StringBuffer nameIn = name;
+    StringBuffer nameIn(name);
     Owned<IEspResourcePermission> permission = createResourcePermission();
     permission->setAccount_name(name);
     permission->setEscaped_account_name(nameIn.replaceString("\'", "\\\'").str());
@@ -4385,7 +4385,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                 access = SecAccess_None;
                 ForEachItemIn(y, scopes)
                 {
-                    StringBuffer namebuf = scopes.item(y);
+                    StringBuffer namebuf(scopes.item(y));
                     try
                     {
                         IArrayOf<CPermission> permissions;

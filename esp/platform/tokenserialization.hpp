@@ -46,12 +46,6 @@
 class TokenSerializer
 {
 public:
-    // Produce a buffer suitable for use by the serialize method. Used by
-    // template methods that do not inherently know the buffer type.
-    StringBuffer makeBuffer() const
-    {
-        return StringBuffer();
-    }
 
     // Write any type of data to a given text buffer. There must be an
     // overloaded operator << to insert the value type into the buffer type.

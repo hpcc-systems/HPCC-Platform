@@ -1596,7 +1596,7 @@ void CEspHttpServer::sendLockResponse(bool lock, bool error, const char* msg)
 
 void CEspHttpServer::sendGetAuthTypeResponse(EspAuthRequest& authReq, const char* authType)
 {
-    StringBuffer authTypeStr = authType;
+    StringBuffer authTypeStr(authType);
     if (authTypeStr.isEmpty())
     {
         switch (authReq.authBinding->getDomainAuthType())
@@ -2035,7 +2035,7 @@ void CEspHttpServer::askUserLogin(EspAuthRequest& authReq, const char* msg)
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
     if (urlCookie.isEmpty())
     {
-        StringBuffer sessionStartURL = authReq.httpPath;
+        StringBuffer sessionStartURL(authReq.httpPath);
         if (authReq.requestParams && authReq.requestParams->hasProp("__querystring"))
             sessionStartURL.append("?").append(authReq.requestParams->queryProp("__querystring"));
         if (!sessionStartURL.isEmpty() && streq(sessionStartURL.str(), "/WsSMC/"))
@@ -2178,7 +2178,7 @@ unsigned CEspHttpServer::readCookie(const char* cookieName)
     CEspCookie* sessionIDCookie = m_request->queryCookie(cookieName);
     if (sessionIDCookie)
     {
-        StringBuffer sessionIDStr = sessionIDCookie->getValue();
+        StringBuffer sessionIDStr(sessionIDCookie->getValue());
         if (sessionIDStr.length())
             return atoi(sessionIDStr.str());
     }

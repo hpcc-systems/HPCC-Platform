@@ -350,7 +350,7 @@ public:
     const char* str() { return m_buffer.str(); }
 };
 
-extern jlib_decl StringBuffer passwordInput(const char* prompt, StringBuffer& passwd);
+extern jlib_decl StringBuffer & passwordInput(const char* prompt, StringBuffer& passwd);
 
 /**
  * Return a reference to a shared IProperties object representing the environment.conf settings.

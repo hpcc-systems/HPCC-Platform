@@ -4635,7 +4635,7 @@ restart:
             if ('<' == nextChar)
                 error("Unmatched close tag encountered");
         }
-        StringBuffer completeTagname = tagName;
+        StringBuffer completeTagname(tagName);
         if (ignoreNameSpaces)
         {
             const char *colon;
@@ -7507,7 +7507,7 @@ IPropertyTree *createPTreeFromHttpParameters(const char *nameWithAttrs, IPropert
     Owned<IPropertyIterator> iter = parameters->getIterator();
     ForEach(*iter)
     {
-        StringBuffer key = iter->getPropKey();
+        StringBuffer key(iter->getPropKey());
         if (!key.length() || key.charAt(key.length()-1)=='!')
             continue;
         if (skipLeadingDotParameters && key.charAt(0)=='.')

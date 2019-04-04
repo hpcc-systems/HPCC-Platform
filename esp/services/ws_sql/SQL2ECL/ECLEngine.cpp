@@ -150,10 +150,10 @@ void ECLEngine::generateCreateAndLoad(HPCCSQLTreeWalker * sqlobj, StringBuffer &
         StringBuffer sourceFileName;
         sourceFileName.set(sqlobj->getSourceDataTableName()).trim();
 
-        StringBuffer landingZoneIP = sqlobj->getLandingZoneIp();
+        StringBuffer landingZoneIP(sqlobj->getLandingZoneIp());
         if (landingZoneIP.length())
         {
-            StringBuffer landingZonePath = sqlobj->getLandingZonePath();
+            StringBuffer landingZonePath(sqlobj->getLandingZonePath());
             if (landingZonePath.length())
             {
                 addPathSepChar(landingZonePath);
@@ -182,7 +182,7 @@ void ECLEngine::generateCreateAndLoad(HPCCSQLTreeWalker * sqlobj, StringBuffer &
 
 void ECLEngine::generateSelectECL(HPCCSQLTreeWalker * selectsqlobj, StringBuffer & out)
 {
-    StringBuffer latestDS = "TblDS0";
+    StringBuffer latestDS("TblDS0");
 
     Owned<IProperties> eclEntities = createProperties(true);
     Owned<IProperties> eclDSSourceMapping = createProperties(true);
@@ -461,7 +461,7 @@ void ECLEngine::generateSelectECL(HPCCSQLTreeWalker * selectsqlobj, StringBuffer
 
 void ECLEngine::generateConstSelectDataset(HPCCSQLTreeWalker * selectsqlobj, IProperties* eclEntities,  const IArrayOf<ISQLExpression> & expectedcolumns, const char * datasource)
 {
-    StringBuffer datasetStructSB = "DATASET([{ ";
+    StringBuffer datasetStructSB("DATASET([{ ");
 
     ForEachItemIn(i, expectedcolumns)
     {
@@ -478,7 +478,7 @@ void ECLEngine::generateConstSelectDataset(HPCCSQLTreeWalker * selectsqlobj, IPr
 
 void ECLEngine::generateSelectStruct(HPCCSQLTreeWalker * selectsqlobj, IProperties* eclEntities,  const IArrayOf<ISQLExpression> & expectedcolumns, const char * datasource)
 {
-    StringBuffer selectStructSB = "SelectStruct := RECORD\n";
+    StringBuffer selectStructSB("SelectStruct := RECORD\n");
 
     ForEachItemIn(i, expectedcolumns)
     {
@@ -560,7 +560,7 @@ void ECLEngine::generateSelectStruct(HPCCSQLTreeWalker * selectsqlobj, IProperti
 
                         for (int j = 0; j < funccols->length(); j++)
                         {
-                            StringBuffer paramname = funccols->item(j).getName();
+                            StringBuffer paramname(funccols->item(j).getName());
                             selectStructSB.append(", ");
                             selectStructSB.append(paramname);
                         }

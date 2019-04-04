@@ -66,18 +66,15 @@ LOGGING_API void LOGGING_CALL logDbgLog(unsigned srcLen, const char * src)
 
 LOGGING_API char *  LOGGING_CALL logGetGlobalId(ICodeContext *ctx)
 {
-    StringBuffer ret = ctx->queryContextLogger().queryGlobalId();
-    return ret.detach();
+    return strdup(ctx->queryContextLogger().queryGlobalId());
 }
 
 LOGGING_API char *  LOGGING_CALL logGetLocalId(ICodeContext *ctx)
 {
-    StringBuffer ret = ctx->queryContextLogger().queryLocalId();
-    return ret.detach();
+    return strdup(ctx->queryContextLogger().queryLocalId());
 }
 
 LOGGING_API char *  LOGGING_CALL logGetCallerId(ICodeContext *ctx)
 {
-    StringBuffer ret = ctx->queryContextLogger().queryCallerId();
-    return ret.detach();
+    return strdup(ctx->queryContextLogger().queryCallerId());
 }

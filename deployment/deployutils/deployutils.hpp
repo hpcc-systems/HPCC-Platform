@@ -73,12 +73,12 @@ extern DEPLOYUTILS_API bool handleThorTopologyOp(IPropertyTree* pEnv, const char
 extern DEPLOYUTILS_API void addComponentToEnv(IPropertyTree* pEnv, const char* buildSet, StringBuffer& sbNewName, IPropertyTree* pCompTree);
 extern DEPLOYUTILS_API bool onChangeAttribute(const IPropertyTree* pEnv, IConstEnvironment* pConstEnv, const char* attrName, IPropertyTree* pOnChange, IPropertyTree*& pNode, IPropertyTree* pParentNode, 
                                               int position, const char* szNewValue, const char* prevValue, const char* buildset);
-extern DEPLOYUTILS_API bool xsltTransform(const StringBuffer& xml, const char* sheet, IProperties *params, StringBuffer& ret);
+extern DEPLOYUTILS_API bool xsltTransform(const char *xml, const char* sheet, IProperties *params, StringBuffer& ret);
 extern DEPLOYUTILS_API void UpdateRefAttributes(IPropertyTree* pEnv, const char* szPath, const char* szAttr, const char* szOldVal, const char* szNewVal);
 extern DEPLOYUTILS_API bool ensureUniqueName(const IPropertyTree* pEnv, IPropertyTree* pParentNode, const char* szText);
 extern DEPLOYUTILS_API void addInstanceToCompTree(const IPropertyTree* pEnvRoot,const IPropertyTree* pInstance,StringBuffer& dups,StringBuffer& resp, IConstEnvironment* pConstEnv);
 extern DEPLOYUTILS_API void formIPList(const char* ip, StringArray& formattedIpList);
-extern DEPLOYUTILS_API void buildEnvFromWizard(const char * xml, const char* service,IPropertyTree* cfg, StringBuffer& envXml, StringArray& arrBuildSetWithAssignedIPs, StringArray& arrAssignedIPs, MapStringTo<StringBuffer>* dirMap=NULL);
+extern DEPLOYUTILS_API void buildEnvFromWizard(const char * xml, const char* service,IPropertyTree* cfg, StringBuffer& envXml, StringArray& arrBuildSetWithAssignedIPs, StringArray& arrAssignedIPs, MapStringTo<StringAttr, const char *>* dirMap=NULL);
 extern DEPLOYUTILS_API void runScript(StringBuffer& output, StringBuffer& errMsg, const char* pathToScript);
 extern DEPLOYUTILS_API bool validateIPS(const char* ipAddressList);
 extern DEPLOYUTILS_API void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr , bool prepareLink);

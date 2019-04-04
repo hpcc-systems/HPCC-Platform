@@ -1938,12 +1938,12 @@ public:
    virtual IDeploymentCallback& getCallback() const { return *m_pCallback; }
 
 private:
-  char* getMD5Checksum(StringBuffer filename, char* digestStr)
+  char* getMD5Checksum(const char *filename, char* digestStr)
   {
-      if (filename.length() < 1)
+      if (isEmptyString(filename) < 1)
           return NULL;
 
-    if (!checkFileExists(filename.str()))
+      if (!checkFileExists(filename))
           return NULL;
 
       OwnedIFile ifile = createIFile(filename);

@@ -170,7 +170,7 @@ protected:
 		if (!apr_initialized)
 			initAPR();
 		loadPwds();//reload password file if modified
-		StringBuffer *encPW = userMap.getValue(user.str());
+		StringAttr *encPW = userMap.getValue(user.str());
 		if (encPW && encPW->length())
 		{
 			apr_status_t rc = apr_password_validate(sec_user.credentials().getPassword(), encPW->str());
@@ -301,7 +301,7 @@ private:
 					if (NULL == colon)
 						throw MakeStringException(-1, "htpasswd Password file appears malformed");
 					*colon = (char)NULL;
-					userMap.setValue(next, colon+1);//username, enctypted password
+					userMap.setValue(next, colon+1);//username, encrypted password
 					next = strtok_r(NULL, seps, &saveptr);
 				} while (next);
 			}
@@ -322,7 +322,7 @@ private:
 	StringBuffer    pwFile;
 	CDateTime       pwFileLastMod;
 	bool            apr_initialized;
-	MapStringTo<StringBuffer> userMap;
+    MapStringTo<StringAttr, const char *> userMap;
 	apr_md5_ctx_t 	md5_ctx;
 };
 

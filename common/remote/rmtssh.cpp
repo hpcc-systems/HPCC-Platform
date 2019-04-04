@@ -64,7 +64,7 @@ class CFRunSSH: public CInterface, implements IFRunSSH
 
 
 
-    StringBuffer expandCmd(StringBuffer &cmdbuf, unsigned nodenum, unsigned treefrom)
+    StringBuffer &expandCmd(StringBuffer &cmdbuf, unsigned nodenum, unsigned treefrom)
     {
         const char *cp=cmd.get();
         if (!cp)
