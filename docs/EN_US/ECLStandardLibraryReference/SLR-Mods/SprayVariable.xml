@@ -13,34 +13,34 @@
     </indexterm><indexterm>
       <primary>SprayDelimited</primary>
     </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
-  role="bold">, </emphasis> <emphasis>sourcepath , </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
+  role="bold">, </emphasis> <emphasis>sourcePath , </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceMaxRecordSize </emphasis>
+  <emphasis role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis> sourceCsvSeparate </emphasis> <emphasis
+  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvTerminate </emphasis> <emphasis
+  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvQuote </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis> srcCSVseparate </emphasis> <emphasis role="bold">]
-  </emphasis> <emphasis>, </emphasis> <emphasis role="bold">[</emphasis>
-  <emphasis> srcCSVterminate </emphasis> <emphasis role="bold">] </emphasis>
-  <emphasis>, </emphasis> <emphasis role="bold">[</emphasis> <emphasis>
-  srcCSVquote </emphasis> <emphasis role="bold">] </emphasis> <emphasis>,
-  </emphasis> <emphasis role="bold"> </emphasis> <emphasis>destinationgroup,
-  destinationlogicalname </emphasis>, <emphasis role="bold">[</emphasis>
-  <emphasis>timeout</emphasis> <emphasis role="bold">]</emphasis> ,<emphasis
-  role="bold"> [</emphasis> <emphasis>espserverIPport</emphasis> <emphasis
-  role="bold">]</emphasis> ,<emphasis> </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>maxConnections</emphasis> <emphasis
+  </emphasis> <emphasis>destinationGroup, destinationLogicalName </emphasis>,
+  <emphasis role="bold">[</emphasis> <emphasis>timeout</emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis>replicate</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis> compress </emphasis><emphasis role="bold">]</emphasis> ,
-  <emphasis role="bold"> [</emphasis> <emphasis> sourceCsvEscape </emphasis>
-  <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
-  <emphasis> failIfNoSourceFile </emphasis> <emphasis
+  <emphasis>espServerIpPort</emphasis> <emphasis role="bold">]</emphasis>
+  ,<emphasis> </emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis>maxConnections</emphasis> <emphasis role="bold">]</emphasis>
+  ,<emphasis role="bold"> [</emphasis> <emphasis>allowOverwrite</emphasis>
+  <emphasis role="bold">] , [</emphasis> <emphasis>replicate</emphasis>
+  <emphasis role="bold">] , [</emphasis> <emphasis>compress
+  </emphasis><emphasis role="bold">]</emphasis> , <emphasis role="bold">
+  [</emphasis> <emphasis> sourceCsvEscape </emphasis> <emphasis
   role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis> <emphasis>
-  recordStructurePresent </emphasis> <emphasis role="bold">]</emphasis>,
-  <emphasis role="bold"> [</emphasis> <emphasis> quotedTerminator </emphasis>
+  failIfNoSourceFile </emphasis> <emphasis role="bold">]</emphasis>, <emphasis
+  role="bold"> [</emphasis> <emphasis> recordStructurePresent </emphasis>
   <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
-  <emphasis> encoding </emphasis> <emphasis role="bold">]</emphasis><emphasis
-  role="bold">[</emphasis> <emphasis>expireDays</emphasis> <emphasis
-  role="bold">])</emphasis></para>
+  <emphasis> quotedTerminator </emphasis> <emphasis role="bold">]</emphasis>,
+  <emphasis role="bold"> [</emphasis> <emphasis> encoding </emphasis>
+  <emphasis role="bold">]</emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>expireDays</emphasis> <emphasis role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayDelimited<indexterm>
@@ -52,23 +52,23 @@
     </indexterm><indexterm>
       <primary>fSprayDelimited</primary>
     </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
-  role="bold">, </emphasis> <emphasis>sourcepath , </emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
+  role="bold">, </emphasis> <emphasis>sourcePath , </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis> sourceMaxRecordSize </emphasis>
+  <emphasis role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvSeparate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> srcCSVseparate </emphasis> <emphasis
-  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> srcCSVterminate </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvTerminate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis> srcCSVquote </emphasis> <emphasis role="bold">]
-  </emphasis> <emphasis>, destinationgroup, destinationlogicalname </emphasis>
+  [</emphasis> <emphasis> sourceCsvQuote </emphasis> <emphasis role="bold">]
+  </emphasis> <emphasis>, destinationGroup, destinationLogicalName </emphasis>
   <emphasis role="bold">, [</emphasis> <emphasis>timeout</emphasis> <emphasis
-  role="bold">] , [</emphasis> <emphasis>espserverIPport</emphasis> <emphasis
+  role="bold">] , [</emphasis> <emphasis>espServerIpPort</emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis> </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>maxConnections</emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
+  <emphasis>allowOverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
   <emphasis>replicate</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis> compress </emphasis> <emphasis role="bold">]</emphasis> ,
+  <emphasis>compress </emphasis> <emphasis role="bold">]</emphasis> ,
   <emphasis role="bold"> [</emphasis> <emphasis> sourceCsvEscape </emphasis>
   <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
   <emphasis> failIfNoSourceFile </emphasis> <emphasis
@@ -82,7 +82,7 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="90.50pt" />
 
       <colspec />
 
@@ -95,49 +95,49 @@
         </row>
 
         <row>
-          <entry><emphasis>sourcepath</emphasis></entry>
+          <entry><emphasis>sourcePath</emphasis></entry>
 
           <entry>A null-terminated string containing the path and name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>maxrecordsize</emphasis></entry>
+          <entry><emphasis>sourceMaxRecordSize</emphasis></entry>
 
           <entry>Optional. An integer containing the maximum size of the
           records in the file. If omitted, the default is 4096.</entry>
         </row>
 
         <row>
-          <entry><emphasis>srcCSVseparate</emphasis></entry>
+          <entry><emphasis>sourceCsvSeparate</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV field
           separator. If omitted, the default is '\\,'</entry>
         </row>
 
         <row>
-          <entry><emphasis>srcCSVterminate</emphasis></entry>
+          <entry><emphasis>sourceCSVterminate</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV record
           separator. If omitted, the default is '\\n,\\r\\n'</entry>
         </row>
 
         <row>
-          <entry><emphasis>srcCSVquote</emphasis></entry>
+          <entry><emphasis>sourceCSVquote</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV quoted
           field delimiter. If omitted, the default is '\"'</entry>
         </row>
 
         <row>
-          <entry><emphasis>destinationgroup</emphasis></entry>
+          <entry><emphasis>destinationGroup</emphasis></entry>
 
           <entry>A null-terminated string containing the name of the specific
           supercomputer within the target cluster.</entry>
         </row>
 
         <row>
-          <entry><emphasis>destinationlogicalname</emphasis></entry>
+          <entry><emphasis>destinationLogicalName</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
@@ -153,7 +153,7 @@
         </row>
 
         <row>
-          <entry><emphasis>espserverIPport</emphasis></entry>
+          <entry><emphasis>espServerIpPort</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the protocol,
           IP, port, and directory, or the DNS equivalent, of the ESP server
@@ -170,7 +170,7 @@
         </row>
 
         <row>
-          <entry><emphasis>allowoverwrite</emphasis></entry>
+          <entry><emphasis>allowOverwrite</emphasis></entry>
 
           <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
           allow the new file to overwrite an existing file of the same name.
