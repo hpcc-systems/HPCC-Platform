@@ -237,7 +237,10 @@ int CEspHttpServer::processRequest()
 
         StringBuffer peerStr, pathStr;
         const char *userid=ctx->queryUserId();
-        ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), (userid) ? userid : "unknown", m_request->getPeer(peerStr).str());
+        if (isEmptyString(userid))
+            ESPLOG(LogMin, "%s %s, from %s", method.str(), m_request->getPath(pathStr).str(), m_request->getPeer(peerStr).str());
+        else //user ID is in HTTP header
+            ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
 
         authState = checkUserAuth();
         if ((authState == authTaskDone) || (authState == authFailed))
