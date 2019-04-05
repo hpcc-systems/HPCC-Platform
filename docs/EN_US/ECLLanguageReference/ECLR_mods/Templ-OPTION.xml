@@ -318,6 +318,18 @@
             </row>
 
             <row>
+              <entry><emphasis>diskReadsAreSimple</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, modifies the behavior of the pickBestEngine
+              option so disk read operations are regarded the same as index
+              read operations when deciding whether Thor is needed. The
+              benefit is that simple jobs can run on hthor reading/filtering
+              data remotely using dafilesrv.</entry>
+            </row>
+
+            <row>
               <entry><emphasis>targetClusterType</emphasis></entry>
 
               <entry>hthor|Thor|roxie</entry>
