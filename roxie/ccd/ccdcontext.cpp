@@ -2101,7 +2101,7 @@ protected:
                 if (!workUnit)
                 	return factory->queryOnceContext(logctx);
             }
-            // fall into...
+            //fall through
         case ResultSequenceInternal:
             {
                 CriticalBlock b(contextCrit);
@@ -2127,7 +2127,7 @@ protected:
         case ResultSequenceOnce:
             if (!workUnit)
                 return factory->queryOnceResultStore();
-            // fall into...
+            //fall through
         default:
             // No need to have separate stores for other temporaries...
             CriticalBlock b(contextCrit);
