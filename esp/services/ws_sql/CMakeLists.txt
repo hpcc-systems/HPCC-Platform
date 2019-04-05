@@ -95,6 +95,10 @@ if(WSSQL_SERVICE)
         ${CMAKE_CURRENT_SOURCE_DIR}/SQL2ECL
         )
 
+    if (CMAKE_COMPILER_IS_CLANG)
+      set_source_files_properties(${ANTLR_sql2ecl_SOURCES} PROPERTIES COMPILE_FLAGS -Wno-parentheses-equality)
+    endif()
+    
     add_definitions(-D_USRDLL)
     HPCC_ADD_LIBRARY(ws_sql SHARED ${SRCS})
     add_dependencies(ws_sql espscm sql2ecl)
