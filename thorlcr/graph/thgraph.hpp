@@ -1164,7 +1164,7 @@ interface IDelayedFile;
 interface IExpander;
 interface IThorFileCache : extends IInterface
 {
-    virtual bool remove(const char *filename) = 0;
+    virtual bool remove(const char *filename, unsigned crc) = 0;
     virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilenae, IPartDescriptor &partDesc, IExpander *expander=nullptr) = 0;
 };
 
