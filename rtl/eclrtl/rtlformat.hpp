@@ -398,7 +398,7 @@ class CCSVItem : public CInterface, implements IInterface
     MapStringTo<bool> childNameMap;
     bool isNestedItem, simpleNested, currentRowEmpty, outputHeader = false;
 public:
-    CCSVItem() : columnID(0), nestedLayer(0), nextRowID(0), rowCount(0), isNestedItem(false),
+    CCSVItem() : columnID(0), nextRowID(0), rowCount(0), nestedLayer(0), isNestedItem(false),
         simpleNested(false), currentRowEmpty(true) { };
 
     IMPLEMENT_IINTERFACE;
@@ -476,7 +476,7 @@ class ECLRTL_API CommonCSVWriter: public CInterface, implements IXmlWriterExt
         bool isArray;
         StringAttr path;
     public:
-        CXPathItem(const char* _path, bool _isArray) : path(_path), isArray(_isArray) { };
+        CXPathItem(const char* _path, bool _isArray) : isArray(_isArray), path(_path) { };
 
         IMPLEMENT_IINTERFACE;
         inline const char* getPath() const { return path.get(); };

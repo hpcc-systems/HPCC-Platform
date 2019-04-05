@@ -351,10 +351,7 @@ static void roxie_common_usage(const char * progName)
 
 class MAbortHandler : implements IExceptionHandler
 {
-    unsigned dummy; // to avoid complaints about an empty class...
 public:
-    MAbortHandler() : dummy(0) {};
-
     virtual bool fireException(IException *e)
     {
         ForEachItemIn(idx, socketListeners)
@@ -962,7 +959,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (traceLevel > 3)
                 DBGLOG("Roxie server %u is at %s", nodeIndex, iptext);
         }
-        if (myNodeIndex == -1)
+        if (myNodeIndex == (unsigned) -1)
             throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - current node is not in server list");
 
         // Set multicast base addresses - must be done before generating slave channels
@@ -1120,7 +1117,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     unsigned listenQueue = roxieFarm.getPropInt("@listenQueue", DEFAULT_LISTEN_QUEUE_SIZE);
                     unsigned numThreads = roxieFarm.getPropInt("@numThreads", numServerThreads);
                     unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
-                    unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
+                    //unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
                     // NOTE: farmer name [@name=] is not copied into topology
                     const IpAddress &ip = getNodeAddress(myNodeIndex);
                     if (!roxiePort)

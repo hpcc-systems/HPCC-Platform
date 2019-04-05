@@ -605,7 +605,7 @@ class THORHELPER_API CRawRowSerializer : implements IRowSerializerTarget
 {
 public:
     CRawRowSerializer(size32_t _len, byte *_buf)
-    : maxSize(_len), buffer(_buf)
+    : buffer(_buf), maxSize(_len)
     {
         pos = 0;
         nesting = 0;

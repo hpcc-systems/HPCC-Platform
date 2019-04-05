@@ -63,7 +63,7 @@ private:
     void parseURL();
 
 public:
-    HttpHelper(StringArray *_validTargets) : validTargets(_validTargets), method(HttpMethod::NONE) {parameters.setown(createProperties(true));}
+    HttpHelper(StringArray *_validTargets) : method(HttpMethod::NONE), validTargets(_validTargets)  {parameters.setown(createProperties(true));}
     inline bool isHttp() { return method!=HttpMethod::NONE; }
     inline bool isHttpGet(){ return method==HttpMethod::GET; }
     inline bool allowKeepAlive()

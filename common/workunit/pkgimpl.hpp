@@ -312,7 +312,7 @@ public:
 public:
     IMPLEMENT_IINTERFACE;
     CPackageMapOf(const char *_packageId, const char *_querySet, bool _active)
-        : packageId(_packageId), querySet(_querySet), active(_active), packages(true), compulsory(false)
+        : packages(true), packageId(_packageId), querySet(_querySet), active(_active), compulsory(false)
     {
     }
 

@@ -1231,7 +1231,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
     CRoxieContextBase(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
-        : factory(_factory), logctx(_logctx), options(factory->queryOptions()), globalStats(graphStatistics)
+        : factory(_factory), options(factory->queryOptions()), logctx(_logctx), globalStats(graphStatistics)
     {
         startTime = lastWuAbortCheck = msTick();
         persists = NULL;
@@ -2398,9 +2398,9 @@ protected:
                 e->Release();
                 throw MakeStringExceptionDirect(-1, s.str());
             }
-            ThorReplyCodes replyCode;
-            reply.read((unsigned &)replyCode);
-            switch (replyCode)
+            unsigned replyCode;
+            reply.read(replyCode);
+            switch ((ThorReplyCodes) replyCode)
             {
                 case DAMP_THOR_REPLY_PAUSED:
                 {
@@ -2637,7 +2637,7 @@ public:
                 StringBuffer slaveActivityId;
                 slaveInfo.read(slaveActivityId);
                 IActivityDebugContext *slaveActivityCtx = slaveActivityId.length() ? currentGraph->lookupActivityByEdgeId(slaveActivityId.str()) : NULL;
-                BreakpointActionMode action = checkBreakpoint(slaveState, slaveActivityCtx , NULL);
+                checkBreakpoint(slaveState, slaveActivityCtx , NULL);
             }
         }
         MemoryBuffer mb;
@@ -2830,7 +2830,7 @@ public:
     }
 
     CRoxieServerContext(IPropertyTree *_context, IHpccProtocolResponse *_protocol, const IQueryFactory *_factory, unsigned flags, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
-        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), querySetName(_querySetName), protocol(_protocol), results(NULL)
+        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), protocol(_protocol), results(NULL), querySetName(_querySetName)
     {
         init();
         if (protocol)

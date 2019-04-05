@@ -1286,7 +1286,7 @@ class CRoxieQueryPackageManager : public CInterface
 {
 public:
     CRoxieQueryPackageManager(unsigned _numChannels, const char *_querySet, const IRoxiePackageMap *_packages, hash64_t _xmlHash)
-        : numChannels(_numChannels), packages(_packages), querySet(_querySet), xmlHash(_xmlHash)
+        : packages(_packages), numChannels(_numChannels), xmlHash(_xmlHash), querySet(_querySet)
     {
         queryHash = 0;
     }
@@ -1554,7 +1554,7 @@ class CRoxiePackageSetWatcher : public CInterface
 {
 public:
     CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, unsigned numChannels, CRoxiePackageSetWatcher *oldPackages, bool forceReload)
-    : stateHash(0), daliHelper(_daliHelper)
+    : daliHelper(_daliHelper), stateHash(0)
     {
         ForEachItemIn(idx, allQuerySetNames)
         {
@@ -1563,7 +1563,7 @@ public:
     }
 
     CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, const IQueryDll *standAloneDll, unsigned numChannels, const char *querySet, bool forceReload)
-    : stateHash(0), daliHelper(_daliHelper)
+    : daliHelper(_daliHelper), stateHash(0)
     {
         Owned<IPropertyTree> standAloneDllTree;
         standAloneDllTree.setown(createPTree("Query", ipt_lowmem));
@@ -1811,7 +1811,7 @@ class CRoxiePackageSetManager : implements IRoxieQueryPackageManagerSet, impleme
 public:
     IMPLEMENT_IINTERFACE;
     CRoxiePackageSetManager(const IQueryDll *_standAloneDll) :
-        autoReloadThread(*this), standAloneDll(_standAloneDll)
+        standAloneDll(_standAloneDll), autoReloadThread(*this)
     {
         if (topology && topology->getPropBool("@lockDali", false))
             daliHelper.setown(connectToDali());
@@ -1925,7 +1925,7 @@ private:
         CRoxiePackageSetManager &owner;
     public:
         AutoReloadThread(CRoxiePackageSetManager &_owner)
-        : owner(_owner), Thread("AutoReloadThread")
+        : Thread("AutoReloadThread"), owner(_owner)
         {
             closing = false;
         }

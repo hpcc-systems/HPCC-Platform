@@ -3333,7 +3333,7 @@ dfu_operation FileSprayer::getOperation() const
 
 const char * FileSprayer::getOperationTypeString() const
 {
-    return DfuOperatonStr[operation];
+    return DfuOperationStr[operation];
 }
 
 bool FileSprayer::usePullOperation()
