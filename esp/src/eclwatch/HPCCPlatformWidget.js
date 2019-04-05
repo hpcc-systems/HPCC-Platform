@@ -286,7 +286,16 @@ define([
                             username: user
                         }
                     }).then(function (response) {
-                        if (lang.exists("UserEditResponse.Groups.Group", response)) {
+                        if (lang.exists("UserEditResponse.isLDAPAdmin", response)) {
+                            if (response.UserEditResponse.isLDAPAdmin === true){
+                                dojoConfig.isAdmin = true;
+                                egistry.byId(context.id + "SetBanner").set("disabled", false);
+                                    if (context.widget._OPS.refresh) {
+                                        context.widget._OPS.refresh();
+                                    }
+                                    return false;
+                                }
+                        } else {
                             arrayUtil.some(response.UserEditResponse.Groups.Group, function (item, idx) {
                                 if (item.name === "Administrators" || item.name === "Directory Administrators") {
                                     dojoConfig.isAdmin = true;
@@ -298,8 +307,8 @@ define([
                                 }
                             });
                         }
-                    });
-                }
+                    }
+                )}
             },
 
             checkIfSessionsAreActive: function () {

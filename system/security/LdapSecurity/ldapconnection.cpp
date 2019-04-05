@@ -4939,13 +4939,12 @@ private:
             else
                 groupdn.appendf("cn=%s,%s", m_ldapconfig->getAdminGroupName(), m_ldapconfig->getGroupBasedn());
         }
-        else if(stype == IPLANET)
+        else if(stype == IPLANET || stype == OPEN_LDAP)
         {
-            groupdn.append("cn=Directory Administrators,").append(m_ldapconfig->getBasedn());
-        }
-        else if(stype == OPEN_LDAP)
-        {
-            groupdn.append("cn=Directory Administrators,").append(m_ldapconfig->getBasedn());
+            if (0 == stricmp(m_ldapconfig->getAdminGroupName(), "Directory Administrator"))
+                groupdn.append("cn=Directory Administrators,").append(m_ldapconfig->getBasedn());
+            else
+                groupdn.appendf("cn=%s,%s", m_ldapconfig->getAdminGroupName(), m_ldapconfig->getGroupBasedn());
         }
     }
 
