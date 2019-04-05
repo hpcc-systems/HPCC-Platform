@@ -262,7 +262,7 @@ public:
     virtual annotate_kind getAnnotationKind() const override { return annotate_none; }
     virtual IHqlAnnotation * queryAnnotation() override { return NULL; }
     virtual bool isAttribute() const override { return false; }
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex) override { return this; }
+    virtual IHqlExpression *queryNormalizedSelector() override { return this; }
 
     virtual int  getStartLine() const override { throwUnexpected(); }
     virtual int  getStartColumn() const override { throwUnexpected(); }
@@ -469,7 +469,7 @@ class CHqlNormalizedSelectExpression : public CHqlSelectBaseExpression
 {
     friend class CHqlSelectBaseExpression;
 public:
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex) override;
+    virtual IHqlExpression *queryNormalizedSelector() override;
     virtual void calcNormalized() override;
 
 protected:
@@ -480,7 +480,7 @@ class CHqlSelectExpression : public CHqlSelectBaseExpression
 {
     friend class CHqlSelectBaseExpression;
 public:
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex) override;
+    virtual IHqlExpression *queryNormalizedSelector() override;
     virtual void calcNormalized() override;
 
 protected:
@@ -652,7 +652,7 @@ public:
     virtual IHqlSimpleScope *querySimpleScope() override;
     virtual IHqlExpression *queryFunctionDefinition() const override;
     virtual IHqlExpression *queryExternalDefinition() const override;
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex=false) override;
+    virtual IHqlExpression *queryNormalizedSelector() override;
     virtual IHqlExpression *queryAttribute(IAtom * propName) const override;
     virtual IHqlExpression *queryProperty(ExprPropKind kind) override;
     virtual IHqlExpression * clone(HqlExprArray &) override;
@@ -899,7 +899,7 @@ public:
     virtual IHqlSimpleScope *querySimpleScope() override;
     virtual IHqlDataset *queryDataset() override;
     virtual IAtom * queryName() const override;
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex) override;
+    virtual IHqlExpression *queryNormalizedSelector() override;
 };
 
 
@@ -1794,7 +1794,7 @@ public:
     ~CHqlDictionary();
 
     virtual IHqlExpression *clone(HqlExprArray &newkids) override;
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex) override;
+    virtual IHqlExpression *queryNormalizedSelector() override;
     
 protected:
     OwnedHqlExpr normalized;
@@ -1811,7 +1811,7 @@ public:
     virtual IHqlExpression * queryExpression() override { return this; }
     virtual IHqlSimpleScope *querySimpleScope() override;
     virtual IHqlDataset* queryTable() override;
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex) override;
+    virtual IHqlExpression *queryNormalizedSelector() override;
 
     virtual bool equals(const IHqlExpression & r) const override;
     virtual IHqlExpression *clone(HqlExprArray &newkids) override;

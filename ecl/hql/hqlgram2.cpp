@@ -3713,7 +3713,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                         if (insideEvaluate)
                             return addDatasetSelector(getActiveTableSelector(), ret);
 
-                        IHqlExpression * topSelect = top->queryNormalizedSelector(true);
+                        IHqlExpression * topSelect = top->queryNormalizedSelector();
                         return addDatasetSelector(LINK(topSelect), ret);
                     }
                     else
