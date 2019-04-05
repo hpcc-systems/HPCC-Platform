@@ -44,7 +44,7 @@ ServiceOutRecord :=
 output(SORT(SOAPCALL(targetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), LOG('simple'), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','1111')),record));
 
 // double query->dataset form
-output(SORT(SOAPCALL(doubleTargetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','2222')),record));
+output(SORT(SOAPCALL(doubleTargetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), LOG, HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','2222')),record));
 
 // simple dataset->dataset form
 output(sort(SOAPCALL(d, targetURL,'soapbase', { unkname }, DATASET(ServiceOutRecord), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','3333')),record));
