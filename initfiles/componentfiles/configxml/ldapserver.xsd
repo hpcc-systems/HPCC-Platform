@@ -146,6 +146,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="adminGroupName" type="xs:string" use="optional" default="Administrators">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The Active Directory group containing HPCC Administrators</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="ldapPort" type="xs:nonNegativeInteger" use="optional" default="389">
                 <xs:annotation>
                     <xs:appinfo>
