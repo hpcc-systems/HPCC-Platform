@@ -558,8 +558,9 @@ double rtlRoundTo(const double x, int places)
 {
     if (x < 0)
         return -rtlRoundTo(-x, places);
-    volatile double tt = x * kk;
-    double x0 = x + tt;
+// See HPCC-15557 and HPCC-21878 regarding the following two lines.
+//    volatile double tt = x * kk;
+//    double x0 = x + tt;
     if (places >= 0)
     {
         double scale = powerOfTen(places);
@@ -5100,6 +5101,7 @@ void rtlStrToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char *
     outlen = rtlUtf8Length(outsize, out);
 }
 
+#if U_ICU_VERSION_MAJOR_NUM<50
 static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
 {
     rtlDataAttr uleft(llen*sizeof(UChar));
@@ -5108,6 +5110,7 @@ static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32
     rtlUtf8ToUnicode(rlen, uright.getustr(), rlen, right);
     return rtlCompareUnicodeUnicode(llen, uleft.getustr(), rlen, uright.getustr(), locale);
 }
+#endif
 
 #ifdef _USE_ICU
 int rtlCompareUtf8Utf8(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)

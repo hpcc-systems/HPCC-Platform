@@ -824,7 +824,7 @@ private:
             type.readPacked(numFields);
             info.fieldsArray = new const RtlFieldInfo * [numFields+1];
             info.fieldsArray[numFields] = nullptr;
-            for (int n = 0; n < numFields; n++)
+            for (unsigned n = 0; n < numFields; n++)
             {
                 const char *fieldName;
                 type.read(fieldName);
@@ -959,7 +959,7 @@ extern ECLRTL_API void getFieldVal(size32_t & __lenResult,char * & __result, int
     if (column >= 0)
     {
         const RtlRecord &r = metaVal.queryRecordAccessor(true);
-        if (column < r.getNumFields())
+        if ((unsigned) column < r.getNumFields())
         {
             unsigned numOffsets = r.getNumVarFields() + 1;
             size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
@@ -1426,7 +1426,7 @@ private:
             const RtlTypeInfo *type = field->type;
             MatchInfo &info = matchInfo[idx];
             info.matchIdx = sourceRecInfo.getFieldNum(destRecInfo.queryName(idx));
-            if (info.matchIdx == -1)
+            if (info.matchIdx == (unsigned) -1)
             {
                 const byte * initializer = field->initializer;
                 info.matchType = isVirtualInitializer(initializer) ? match_virtual : match_none;
@@ -1692,7 +1692,7 @@ public:
         for (unsigned expectedIdx = 0; expectedIdx < expected.getNumFields(); expectedIdx++)
         {
             unsigned actualIdx = actual.getFieldNum(expected.queryName(expectedIdx));
-            if (actualIdx != -1)
+            if (actualIdx != (unsigned) -1)
             {
                 const RtlTypeInfo *expectedType = expected.queryType(expectedIdx);
                 const RtlTypeInfo *actualType = actual.queryType(actualIdx);
