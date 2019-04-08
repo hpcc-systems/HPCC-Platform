@@ -1588,14 +1588,14 @@ protected:
         if (max == 0)
             return LINK(expr);
 
+        //Fields and records cannot be returned as-is because this is an unnormalized expression
+        //and a TABLE statment might have references to self in the result record (HPCC-20863)
         switch (expr->getOperator())
         {
         case no_attr:
         case no_attr_expr:
         case no_left:
         case no_right:
-        case no_field:
-        case no_record:
             return LINK(expr);
         case no_assign:
             {
