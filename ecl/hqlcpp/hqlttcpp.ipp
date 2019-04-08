@@ -541,10 +541,8 @@ protected:
     HqlExprArray              alreadyProcessedUntransformed;
     HqlExprCopyArray          activeLocations;
     unsigned                  trivialStoredWfid;
-    unsigned                  onceWfid;
     unsigned                  nextInternalFunctionId;
     HqlExprArray              trivialStoredExprs;
-    HqlExprArray              onceExprs;
     bool                      combineAllStored;
     bool                      combineTrivialStored;
     bool                      isRootAction;
