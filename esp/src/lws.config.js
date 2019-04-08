@@ -1,5 +1,5 @@
 const CLUSTER_MV = "192.168.99.103";
-const CLUSTER_GJS = "192.168.3.22";
+const CLUSTER_GJS = "localhost";
 const debugServerIP = CLUSTER_MV ;
 
 let rewrite = [

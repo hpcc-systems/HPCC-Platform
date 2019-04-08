@@ -50,7 +50,7 @@ export class Summary extends FlexGrid {
         super.update(domNode, element);
     }
 
-    refresh() {
+    refresh(bypassCachedResult: boolean) {
         let hasGauge = false;
         for (const key in this._usage) {
             hasGauge = true;
@@ -65,7 +65,7 @@ export class Summary extends FlexGrid {
                 .text(nlsHPCC.loadingMessage)
                 ;
         }
-        this._connection.GetTargetClusterUsageEx().then(response => {
+        this._connection.GetTargetClusterUsageEx(undefined, bypassCachedResult).then(response => {
             this._loadingMsg && this._loadingMsg
                 .html(`<i class="fa fa-database"></i>`)
                 ;
@@ -82,10 +82,11 @@ export class Summary extends FlexGrid {
                     };
                 }
                 this._usage[details.Name].gauge
-                    .value(details.max / 100)
+                    .value((details.max || 0) / 100)
                     .valueDescription(nlsHPCC.Max)
-                    .tickValue(details.mean / 100)
+                    .tickValue((details.mean || 0) / 100)
                     .tickValueDescription(nlsHPCC.Mean)
+                    .tooltip(details.ComponentUsagesDescription)
                     ;
             });
             this.render();
