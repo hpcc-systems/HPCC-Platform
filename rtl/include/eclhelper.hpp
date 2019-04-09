@@ -703,7 +703,6 @@ interface ICodeContext : public IResourceContext
     virtual char *getClusterName() = 0; // caller frees return string.
     virtual char *getEnv(const char *name, const char *defaultValue) const = 0;
     virtual char *getGroupName() = 0; // caller frees return string.
-    virtual char *getClusterGroupNames() = 0; // caller frees return string.
     virtual char *getJobName() = 0; // caller frees return string.
     virtual char *getJobOwner() = 0; // caller frees return string.
     virtual unsigned getNodeNum() = 0;
@@ -763,6 +762,8 @@ interface ICodeContext : public IResourceContext
     virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) = 0;
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
     virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const = 0;
+
+    virtual char *getClusterGroupNames() = 0; // caller frees return string.
 };
 
 
