@@ -87,6 +87,7 @@ interface IRoxieServerContext : extends IInterface
 
     virtual unsigned getXmlFlags() const = 0;
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
+    virtual const IQueryFactory *queryQueryFactory() const = 0;
     virtual bool outputResultsToSocket() const = 0;
 
     virtual IRoxieDaliHelper *checkDaliConnection() = 0;

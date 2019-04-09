@@ -290,6 +290,7 @@ public:
     virtual bool getRescheduleFlag() const;
     virtual IConstWUResult * getResultByName(const char * name) const;
     virtual IConstWUResult * getResultBySequence(unsigned seq) const;
+    virtual IConstWUResult * getQueryResultByName(const char *qname) const;
     virtual unsigned getResultLimit() const;
     virtual IConstWUResultIterator & getResults() const;
     virtual IStringVal & getScope(IStringVal & str) const;

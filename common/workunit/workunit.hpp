@@ -238,6 +238,7 @@ interface IConstWUGraphMetaIterator : extends IScmIterator
 };
 
 
+constexpr int LibraryBaseSequence = 1000000000;
 //! IWUResult
 enum
 {
@@ -1216,6 +1217,8 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual bool getRescheduleFlag() const = 0;
     virtual IConstWUResult * getResultByName(const char * name) const = 0;
     virtual IConstWUResult * getResultBySequence(unsigned seq) const = 0;
+    // Like getResultByName, but ignores "special" results or results from libraries
+    virtual IConstWUResult * getQueryResultByName(const char * name) const = 0;
     virtual unsigned getResultLimit() const = 0;
     virtual IConstWUResultIterator & getResults() const = 0;
     virtual IStringVal & getScope(IStringVal & str) const = 0;
