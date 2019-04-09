@@ -794,7 +794,6 @@ void LRParser::expandReduction(StackElement & element, LRProduction * production
             LOG(MCdebugProgress, unknownJob, "Reduce by production %d new element %p[%s]", reduced->id, reduced.get(), s.str());
 #endif
             //MORE: Some kind of recursion checking needed?
-            StackElement * cached = activeOutput->cache[nextState];
             if (activeOutput->okToAddReduction(nextState))
                 activeOutput->addElementOwn(createState(&element, nextState, reduced), chooseBest);
             else
