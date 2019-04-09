@@ -633,7 +633,8 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned ex
             if (prevFormatCrc && (prevFormatCrc != dfsCrc)) // NB: all subfiles must have same dfsCrc and will use same translators for now (see HPCC-21834)
             {
                 StringBuffer fileStr;
-                if (super) fileStr.append("Superfile: ").append(file->queryLogicalName()).append(", subfile: ");
+                if (super)
+                    fileStr.append("Superfile: ").append(file->queryLogicalName()).append(", subfile: ");
                 else fileStr.append("File: ");
                 fileStr.append(f->queryLogicalName());
 
@@ -642,10 +643,14 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned ex
                     LOG(MCwarning, thorJob, e);
                 else
                 {
-                    if (!activity->queryContainer().queryJob().getWorkUnitValueInt("skipFileFormatCrcCheck", 0))
-                        throw LINK(e);
-                    e->setAction(tea_warning);
-                    activity->fireException(e);
+                    if (activity->queryContainer().queryJob().getWorkUnitValueBool("skipFileFormatCrcCheck", false))
+                    {
+                        // propagate as warning to workunit
+                        e->setAction(tea_warning);
+                        activity->fireException(e);
+                    }
+                    else
+                        throw e.getClear();
                 }
             }
         }
