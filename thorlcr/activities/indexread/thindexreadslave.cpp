@@ -71,6 +71,14 @@ protected:
     Owned<IKeyIndexSet> keyIndexSet;
     IConstPointerArrayOf<ITranslator> translators;
 
+    rowcount_t keyedLimitCount = RCMAX;
+    rowcount_t keyedLimit = RCMAX;
+    bool keyedLimitSkips = false;
+    bool rowLimitSkips = false;
+    rowcount_t keyedProcessed = 0;
+    rowcount_t rowLimit = RCMAX;
+
+
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
     {
     protected:
@@ -322,7 +330,15 @@ public:
             currentManager = keyManager;
         }
     }
-    virtual bool keyed() { return false; }
+    virtual bool incKeyedExceedsLimit()
+    {
+        ++keyedProcessed;
+        // NB - this is only checking if local limit exceeded (skip case previously checked)
+        if (keyedProcessed > keyedLimit)
+            return true;
+        return false;
+    }
+
     virtual void prepareManager(IKeyManager *manager)
     {
         if (currentManager == manager)
@@ -367,12 +383,84 @@ public:
             if (!currentInput)
                 break;
         }
-        if (nullptr == ret || keyed())
+        if (nullptr == ret || incKeyedExceedsLimit())
         {
             eoi = true;
             return nullptr;
         }
         return ret;
+    }
+    bool checkKeyedLimit()
+    {
+        bool ret = false;
+        if (RCMAX != keyedLimitCount)
+        {
+            keyedLimitCount = sendGetCount(keyedLimitCount);
+            if (keyedLimitCount > keyedLimit)
+            {
+                ret = true;
+                eoi = true;
+            }
+            keyedLimit = RCMAX; // don't check again [ during get() / stop() ]
+            keyedLimitCount = RCMAX;
+        }
+        return ret;
+    }
+    const void *handleKeyedLimit(bool &limitHit, bool &exception)
+    {
+        limitHit = false;
+        exception = false;
+        if (checkKeyedLimit())
+        {
+            limitHit = true;
+            if (container.queryLocalOrGrouped() || firstNode())
+            {
+                if (!keyedLimitSkips)
+                {
+                    if (0 != (TIRkeyedlimitcreates & helper->getFlags()))
+                        return createKeyedLimitOnFailRow();
+                    else
+                        exception = true;
+                }
+            }
+        }
+        return nullptr;
+    }
+    void initLimits(unsigned __int64 _choosenLimit, unsigned __int64 _keyedLimit, unsigned __int64 _rowLimit, bool mayFilter)
+    {
+        choosenLimit = _choosenLimit;
+        keyedLimit = _keyedLimit;
+        rowLimit = _rowLimit;
+        if (!helper->canMatchAny())
+        {
+            // disable
+            rowLimit = RCMAX;
+            keyedLimit = RCMAX;
+        }
+        else
+        {
+            if ((keyedLimit != RCMAX) && (TIRkeyedlimitskips & helper->getFlags()))
+                keyedLimitSkips = true;
+            if ((rowLimit != RCMAX) && (TIRlimitskips & helper->getFlags()))
+                rowLimitSkips = true;
+        }
+        keyedLimitCount = RCMAX;
+
+        if (!mayFilter)
+        {
+            if (choosenLimit)
+                remoteLimit = choosenLimit;
+        }
+
+        if ((RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
+            remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
+        if ((RCMAX != rowLimit) && (rowLimit+1 < remoteLimit))
+            remoteLimit = rowLimit+1; // 1 more to ensure triggered when received back.
+    }
+    void calcKeyedLimitCount()
+    {
+        if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
+            keyedLimitCount = getLocalCount(keyedLimit, true);
     }
 public:
     CIndexReadSlaveBase(CGraphElementBase *container) 
@@ -383,7 +471,7 @@ public:
         fixedDiskRecordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // 0 if variable and unused
         reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
-    rowcount_t getCount(const rowcount_t keyedLimit, bool hard)
+    rowcount_t getLocalCount(const rowcount_t keyedLimit, bool hard)
     {
         if (0 == partDescs.ordinality())
             return 0;
@@ -460,6 +548,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        keyedProcessed = 0;
         if (!eoi)
         {
             if (0 == partDescs.ordinality())
@@ -497,11 +586,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
     typedef CIndexReadSlaveBase PARENT;
 
     IHThorIndexReadArg *helper;
-    rowcount_t rowLimit = RCMAX;
-    bool keyedLimitSkips = false, first = false, needTransform = false, optimizeSteppedPostFilter = false, steppingEnabled = false;
-    rowcount_t keyedLimit = RCMAX;
-    rowcount_t keyedLimitCount = RCMAX;
-    unsigned keyedProcessed = 0;
+    bool first = false, needTransform = false, optimizeSteppedPostFilter = false, steppingEnabled = false;
     ISteppingMeta *rawMeta;
     ISteppingMeta *projectedMeta;
     IInputSteppingMeta *inputStepping;
@@ -569,7 +654,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
         if (memcmp(row + seekGEOffset, rawSeek, seekSize) < 0)
             assertex("smart seek failure");
 #endif
-        if (keyed())
+        if (incKeyedExceedsLimit())
         {
             eoi = true;
             return NULL;
@@ -629,43 +714,6 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
         }
         return nullptr;
     }
-
-    const void *checkLimit(bool &limitHit)
-    {
-        limitHit = false;
-        if (RCMAX != keyedLimitCount)
-        {
-            if (keyedLimitCount <= keyedLimit)
-                keyedLimitCount = sendGetCount(keyedLimitCount);
-            else if (!container.queryLocalOrGrouped())
-                sendPartialCount(*this, keyedLimitCount);
-            OwnedConstThorRow ret;
-            if (keyedLimitCount > keyedLimit)
-            {
-                limitHit = true;
-                eoi = true;
-                if (container.queryLocalOrGrouped() || firstNode())
-                {
-                    if (!keyedLimitSkips)
-                    {
-                        if (0 != (TIRkeyedlimitcreates & helper->getFlags()))
-                            ret.setown(createKeyedLimitOnFailRow());
-                        else
-                            helper->onKeyedLimitExceeded(); // should throw exception
-                    }
-                }
-            }
-            keyedLimit = RCMAX; // don't check again [ during get() / stop() ]
-            keyedLimitCount = RCMAX;
-            if (ret.get())
-            {
-                dataLinkIncrement();
-                return ret.getClear();
-            }
-        }
-        return NULL;
-    }
-
 public:
     CIndexReadSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
@@ -689,20 +737,13 @@ public:
         }
         appendOutputLinked(this);
     }
-    virtual bool keyed()
+    virtual bool incKeyedExceedsLimit() override
     {
-        ++keyedProcessed;
-        if (keyedLimit == RCMAX)
+        if (!PARENT::incKeyedExceedsLimit())
             return false;
-        // NB - this is only checking if local limit exceeded (skip case previously checked)
-        if (keyedProcessed > keyedLimit)
-        {
-            helper->onKeyedLimitExceeded(); // should throw exception
-            return true;
-        }
-        return false;
+        helper->onKeyedLimitExceeded(); // should throw exception
+        return true;
     }
-
 // IThorSlaveActivity
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -722,43 +763,18 @@ public:
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        choosenLimit = (rowcount_t)helper->getChooseNLimit();
 
         needTransform = helper->needTransform();
-        keyedLimit = (rowcount_t)helper->getKeyedLimit();
-        rowLimit = (rowcount_t)helper->getRowLimit(); // MORE - if no filtering going on could keyspan to get count
-        if (0 != (TIRlimitskips & helper->getFlags()))
-            rowLimit = RCMAX;
-        if (!helper->canMatchAny())
-            keyedLimit = RCMAX; // disable
-        else if (keyedLimit != RCMAX)
-        {
-            if (TIRkeyedlimitskips & helper->getFlags())
-                keyedLimitSkips = true;
-        }
-        first = true;
-        keyedLimitCount = RCMAX;
-        keyedProcessed = 0;
-        if (steppedExtra)
-            steppingMeta.setExtra(steppedExtra);
 
-        // NB: setup remoteLimit before base start() call which if parts remote, will use remoteLimit
-        if (!helper->transformMayFilter() && !helper->hasMatchFilter())
-        {
-            if (choosenLimit)
-                remoteLimit = choosenLimit;
-        }
-
-        if ((RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
-            remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
-
-        if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
-            keyedLimitCount = getCount(keyedLimit, true);
+        // NB: initLimits sets up remoteLimit before base start() call, because if parts are remote PARENT::start() will use remoteLimit
+        initLimits(helper->getChooseNLimit(), helper->getKeyedLimit(), helper->getRowLimit(), helper->transformMayFilter() || helper->hasMatchFilter());
+        calcKeyedLimitCount();
 
         PARENT::start();
 
-        if (eoi && RCMAX != keyedLimitCount && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
-            eoi = false; // because a non skipping limit needs to be triggered by checkLimit in nextRow(), which will either fire an exception or generate a row
+        first = true;
+        if (steppedExtra)
+            steppingMeta.setExtra(steppedExtra);
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
@@ -771,7 +787,7 @@ public:
 // IRowStream
     virtual void stop() override
     {
-        if (RCMAX != keyedLimit)
+        if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
         {
             keyedLimitCount = sendGetCount(keyedProcessed);
             if (keyedLimitCount > keyedLimit && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
@@ -787,23 +803,22 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (eoi) 
-            return nullptr;
         if (RCMAX != keyedLimitCount)
         {
             bool limitHit;
-            OwnedConstThorRow limitRow = checkLimit(limitHit);
-            if (limitHit)
+            bool exception;
+            OwnedConstThorRow limitRow = handleKeyedLimit(limitHit, exception);
+            if (exception)
+                helper->onKeyedLimitExceeded(); // should throw exception
+            else if (limitHit)
             {
-                eoi = true;
+                if (limitRow)
+                    dataLinkIncrement();
                 return limitRow.getClear();
             }
-            if (0 == partDescs.ordinality())
-            {
-                eoi = true;
-                return nullptr;
-            }
         }
+        if (eoi) // NB: intentionally checked after keyedLimitCount above, since eoi can be set in preparation for keyedLimit handling that needs to happen here
+            return nullptr;
         OwnedConstThorRow row = getNextRow();
         if (row)
         {
@@ -827,15 +842,22 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        if (eoi) 
-            return nullptr;
         if (RCMAX != keyedLimitCount)
         {
             bool limitHit;
-            OwnedConstThorRow limitRow = checkLimit(limitHit);
-            if (limitHit)
+            bool exception;
+            OwnedConstThorRow limitRow = handleKeyedLimit(limitHit, exception);
+            if (exception)
+                helper->onKeyedLimitExceeded(); // should throw exception
+            else if (limitHit)
+            {
+                if (limitRow)
+                    dataLinkIncrement();
                 return limitRow.getClear();
+            }
         }
+        if (eoi) // NB: intentionally checked after keyedLimitCount above, since eoi can be set in preparation for keyedLimit handling that needs to happen here
+            return nullptr;
         OwnedConstThorRow row = getNextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (row)
         {
@@ -844,7 +866,7 @@ public:
             {
                 helper->onLimitExceeded(); // should throw exception
                 eoi = true;
-                return NULL;
+                return nullptr;
             }
             dataLinkIncrement();
             return row.getClear();
@@ -998,6 +1020,17 @@ class CIndexCountSlaveActivity : public CIndexReadSlaveBase
     bool totalCountKnown = false;
     bool done = false;
 
+    bool checkKeyedLimit()
+    {
+        if (!PARENT::checkKeyedLimit())
+            return false;
+        else if (container.queryLocalOrGrouped() || firstNode())
+        {
+            if (!keyedLimitSkips)
+                helper->onKeyedLimitExceeded(); // should throw exception
+        }
+        return true;
+    }
 public:
     CIndexCountSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
@@ -1022,19 +1055,19 @@ public:
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        choosenLimit = (rowcount_t)helper->getChooseNLimit();
+
+        // NB: initLimits sets up remoteLimit before base start() call, because if parts are remote PARENT::start() will use remoteLimit
+        initLimits(helper->getChooseNLimit(), helper->getKeyedLimit(), helper->getRowLimit(), helper->hasMatchFilter());
+        calcKeyedLimitCount();
+
+        PARENT::start();
+
         if (!helper->canMatchAny())
         {
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
-        else
-        {
-            if (choosenLimit)
-                remoteLimit = choosenLimit;
-        }
         done = false;
-        PARENT::start();
     }
 
 // IRowStream
@@ -1042,58 +1075,72 @@ public:
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (done)
-            return NULL;
+            return nullptr;
         done = true;
         rowcount_t totalCount = 0;
         if (totalCountKnown)
         {
             totalCount = preknownTotalCount;
             if (!container.queryLocalOrGrouped() && !firstNode())
-                return NULL;
+                return nullptr;
         }
         else
         {
-            if (helper->hasFilter())
+            if (!checkKeyedLimit())
             {
-                IKeyManager *_currentManager = currentManager;
-                unsigned p = 0;
-                while (true)
+                if (helper->hasFilter())
                 {
-                    IKeyManager *keyManager = nullptr;
-                    Owned<IIndexLookup> indexInput = getNextInput(keyManager, p, false);
-                    if (!indexInput)
-                        break;
-                    if (keyManager)
-                        prepareManager(keyManager);
+                    IKeyManager *_currentManager = currentManager;
+                    unsigned p = 0;
                     while (true)
                     {
-                        const void *key = indexInput->nextKey();
-                        noteStats(indexInput->querySeeks(), indexInput->queryScans());
-                        if (!key)
+                        IKeyManager *keyManager = nullptr;
+                        Owned<IIndexLookup> indexInput = getNextInput(keyManager, p, false);
+                        if (!indexInput)
                             break;
-                        ++progress;
-                        totalCount += helper->numValid(key);
                         if (keyManager)
-                            callback.finishedRow();
+                            prepareManager(keyManager);
+                        while (true)
+                        {
+                            const void *key = indexInput->nextKey();
+                            noteStats(indexInput->querySeeks(), indexInput->queryScans());
+                            if (!key)
+                                break;
+                            if (incKeyedExceedsLimit())
+                                break;
+                            ++progress;
+                            totalCount += helper->numValid(key);
+                            if (totalCount > rowLimit)
+                                break;
+                            if (keyManager)
+                                callback.finishedRow();
+                            if ((totalCount > choosenLimit))
+                                break;
+                        }
+                        if (keyManager)
+                            resetManager(keyManager);
                         if ((totalCount > choosenLimit))
                             break;
                     }
-                    if (keyManager)
-                        resetManager(keyManager);
-                    if ((totalCount > choosenLimit))
-                        break;
+                    if (_currentManager)
+                        prepareManager(_currentManager);
                 }
-                if (_currentManager)
-                    prepareManager(_currentManager);
+                else
+                    totalCount = getLocalCount(choosenLimit, false);
             }
-            else
-                totalCount = getCount(choosenLimit, false);
             if (!container.queryLocalOrGrouped())
             {
                 sendPartialCount(*this, totalCount);
                 if (!firstNode())
-                    return NULL;
+                    return nullptr;
                 totalCount = getFinalCount(*this);
+            }
+            if (totalCount > rowLimit)
+            {
+                if (TIRlimitskips & helper->getFlags())
+                    totalCount = 0;
+                else
+                    helper->onLimitExceeded();
             }
             if (totalCount > choosenLimit)
                 totalCount = choosenLimit;
@@ -1119,7 +1166,17 @@ public:
         dataLinkIncrement();
         return result.finalizeRowClear(sz);     
     }
-    virtual void abort()
+    virtual void stop() override
+    {
+        if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
+        {
+            keyedLimitCount = sendGetCount(keyedProcessed);
+            if (keyedLimitCount > keyedLimit && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
+                helper->onKeyedLimitExceeded(); // should throw exception
+        }
+        PARENT::stop();
+    }
+    virtual void abort() override
     {
         CIndexReadSlaveBase::abort();
         cancelReceiveMsg(0, mpTag);
@@ -1138,7 +1195,6 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase
 
     bool expanding = false;
     IHThorIndexNormalizeArg *helper;
-    rowcount_t keyedLimit = RCMAX, rowLimit = RCMAX, keyedProcessed = 0, keyedLimitCount = RCMAX;
 
     const void * createNextRow()
     {
@@ -1163,20 +1219,6 @@ public:
         appendOutputLinked(this);
     }
 
-    virtual bool keyed() override
-    {
-        ++keyedProcessed;
-        if (keyedLimit == RCMAX)
-            return false;
-        // NB - this is only checking if local limit exceeded (skip case previously checked)
-        if (keyedProcessed > keyedLimit)
-        {
-            helper->onKeyedLimitExceeded(); // should throw exception
-            return true;
-        }
-        return false;
-    }
-
 // IThorDataLink
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
@@ -1188,31 +1230,20 @@ public:
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        choosenLimit = (rowcount_t)helper->getChooseNLimit();
-        keyedLimit = (rowcount_t)helper->getKeyedLimit();
-        rowLimit = (rowcount_t)helper->getRowLimit();
-        if (helper->getFlags() & TIRlimitskips)
-            rowLimit = RCMAX;
-        if (choosenLimit)
-        {
-            remoteLimit = choosenLimit;
-            if (keyedLimit && (keyedLimit < remoteLimit))
-                remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
-        }
 
-        expanding = false;
-        keyedProcessed = 0;
-        keyedLimitCount = RCMAX;
-        if (keyedLimit != RCMAX && (helper->getFlags() & TIRcountkeyedlimit) != 0)
-            keyedLimitCount = getCount(keyedLimit, true);
+        // NB: initLimits sets up remoteLimit before base start() call, because if parts are remote PARENT::start() will use remoteLimit
+        initLimits(helper->getChooseNLimit(), helper->getKeyedLimit(), helper->getRowLimit(), helper->hasMatchFilter());
+        calcKeyedLimitCount();
 
         PARENT::start();
+
+        expanding = false;
     }
 
 // IRowStream
     virtual void stop() override
     {
-        if (RCMAX != keyedLimit)
+        if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
         {
             keyedLimitCount = sendGetCount(keyedProcessed);
             if (keyedLimitCount > keyedLimit)
@@ -1223,41 +1254,26 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (eoi)
+        if (RCMAX != keyedLimitCount)
+        {
+            bool limitHit;
+            bool exception;
+            OwnedConstThorRow limitRow = handleKeyedLimit(limitHit, exception);
+            if (exception)
+                helper->onKeyedLimitExceeded(); // should throw exception
+            else if (limitHit)
+            {
+                if (limitRow)
+                    dataLinkIncrement();
+                return limitRow.getClear();
+            }
+        }
+        if (eoi) // NB: intentionally checked after keyedLimitCount above, since eoi can be set in preparation for keyedLimit handling that needs to happen here
             return nullptr;
 
         rowcount_t c = getDataLinkCount();
         if ((choosenLimit && c==choosenLimit)) // NB: only slave limiter, global performed in chained choosen activity
             return nullptr;
-
-        if (RCMAX != keyedLimitCount)
-        {
-            if (keyedLimitCount <= keyedLimit)
-                keyedLimitCount = sendGetCount(keyedLimitCount);
-            else if (!container.queryLocalOrGrouped())
-                sendPartialCount(*this, keyedLimitCount);
-            if (keyedLimitCount > keyedLimit)
-            {
-                eoi = true;
-                keyedLimit = RCMAX; // don't check again [ during get() / stop() ]
-                keyedLimitCount = RCMAX;
-                if (0 == (TIRkeyedlimitskips & helper->getFlags()))
-                {
-                    if (0 != (TIRkeyedlimitcreates & helper->getFlags()))
-                    {
-                        eoi = true;
-                        OwnedConstThorRow row = createKeyedLimitOnFailRow();
-                        dataLinkIncrement();
-                        return row.getClear();
-                    }
-                    else
-                        helper->onKeyedLimitExceeded(); // should throw exception
-                }
-                return nullptr;
-            }
-            keyedLimit = RCMAX; // don't check again [ during get() / stop() ]
-            keyedLimitCount = RCMAX;
-        }
 
         for (;;)
         {
