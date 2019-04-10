@@ -24188,6 +24188,9 @@ public:
         if (done) return NULL;
         done = true;
         unsigned __int64 totalCount = 0;
+        // Checking keyed limit on server is a bit odd - we only know the counts after postfiltering by the time we are on the server
+        // The count needs to behave the same as the output, which will regard a keyed limit as exceeded if the sum of the postfiltered outputs exceeds the keyed limit
+        bool hasKeyedLimit =  (keyedLimit != (unsigned __int64) -1);
         bool hasLimit = rowLimit != (unsigned __int64) -1;
 
         try
@@ -24202,7 +24205,7 @@ public:
                 else
                     totalCount += *(unsigned __int64 *) next;
                 ReleaseRoxieRow(next);
-                if (totalCount > rowLimit || (totalCount > choosenLimit && !hasLimit)) // can't break out early if there is a possibility of later slave throwing limit exception
+                if (totalCount > rowLimit || (totalCount > choosenLimit && !hasLimit && !hasKeyedLimit)) // can't break out early if there is a possibility of later slave throwing limit exception
                     break;
             }
             if (totalCount > rowLimit)
@@ -24211,6 +24214,16 @@ public:
                 if (flags & TIRlimitskips)
                     totalCount = 0;
                 else if (flags & TIRlimitcreates)
+                    totalCount = 1;
+                else
+                    countHelper.onLimitExceeded();
+            }
+            else if (totalCount > keyedLimit)
+            {
+                unsigned flags = indexHelper.getFlags();
+                if (flags & TIRkeyedlimitskips)
+                    totalCount = 0;
+                else if (flags & TIRkeyedlimitcreates)
                     totalCount = 1;
                 else
                     countHelper.onLimitExceeded();
