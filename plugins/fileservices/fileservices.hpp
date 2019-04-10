@@ -82,6 +82,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSwapSuperFile(IGlobalCodeContext *ctx,
 FILESERVICES_API void FILESERVICES_CALL fsReplaceSuperFile(IGlobalCodeContext *ctx, const char *lsuperfn,const char *lfn,const char *bylfn);
 FILESERVICES_API void FILESERVICES_CALL fsFinishSuperFileTransaction(IGlobalCodeContext *ctx, bool rollback=false);
 FILESERVICES_API char *  FILESERVICES_CALL fsForeignLogicalFileName(ICodeContext *ctx, const char *_lfn,const char *foreigndali,bool abspath);
+FILESERVICES_API char *  FILESERVICES_CALL fsForeignLogicalFileName_v2(ICodeContext *ctx, const char *_lfn,const char *foreigndali,bool abspath,bool omitClusterPrefix);
 FILESERVICES_API char *  FILESERVICES_CALL fsWaitDfuWorkunit(IGlobalCodeContext *ctx, const char *wuid, int timeout, const char * espServerIpPort);
 FILESERVICES_API void FILESERVICES_CALL fsAbortDfuWorkunit(IGlobalCodeContext *ctx, const char *wuid, const char * espServerIpPort);
 FILESERVICES_API void  FILESERVICES_CALL fsMonitorLogicalFileName(ICodeContext *ctx, const char *eventname, const char *_lfn,int shotcount, const char * espServerIpPort);
