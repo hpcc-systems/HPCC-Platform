@@ -121,7 +121,7 @@ public:
             return HPCCFileFormatUnknown;
         else
         {
-            StringBuffer toUpper = formatstr;
+            StringBuffer toUpper(formatstr);
             toUpper.trim().toUpperCase();
 
             if (strcmp(toUpper.str(), "FLAT")==0)

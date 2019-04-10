@@ -35,14 +35,14 @@ class jlib_decl StringBuffer
 {
     enum { InternalBufferSize = 16 };
 public:
-    StringBuffer();
-    StringBuffer(String & value);
-    StringBuffer(const char *value);
-    StringBuffer(StringBuffer && value);
-    StringBuffer(size_t len, const char *value);
-    StringBuffer(const StringBuffer & value);
+    explicit StringBuffer();
+    explicit StringBuffer(String & value);
+    explicit StringBuffer(const char *value);
+    explicit StringBuffer(StringBuffer && value);
+    explicit StringBuffer(size_t len, const char *value);
+    explicit StringBuffer(const StringBuffer & value);
     explicit StringBuffer(bool useInternal);
-    StringBuffer(char value);
+    explicit StringBuffer(char value);
     ~StringBuffer();
 
     inline size32_t length() const                      { return (size32_t)curLen; }
@@ -501,51 +501,61 @@ inline StringBuffer &appendJSONStringValue(StringBuffer& s, const char *name, co
     return appendJSONStringValue(s, name, (size32_t)(value ? strlen(value) : 0), value, encode, quoted);
 }
 
-template <typename type>
-inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, type value)
-{
-    appendJSONNameOrDelimit(s, name);
-    return s.append(value);
-}
-
-//specialization
-template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, bool value)
 {
     appendJSONNameOrDelimit(s, name);
     return s.append((value) ? "true" : "false");
 }
 
-template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, const char *value)
 {
     return appendJSONStringValue(s, name, value, true);
 }
 
-template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, long value)
 {
     appendJSONNameOrDelimit(s, name);
     return s.appendlong(value);
 }
 
-template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, __int64 value)
+{
+    appendJSONNameOrDelimit(s, name);
+    return s.append(value);
+}
+
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned __int64 value)
+{
+    appendJSONNameOrDelimit(s, name);
+    return s.append(value);
+}
+
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, double value)
 {
     return ::appendJSONRealValue(s, name, value);
 }
 
-template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, float value)
 {
     return ::appendJSONRealValue(s, name,  value);
 }
 
-template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned long value)
 {
     appendJSONNameOrDelimit(s, name);
     return s.appendulong(value);
+}
+
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, int value)
+{
+    appendJSONNameOrDelimit(s, name);
+    return s.append(value);
+}
+
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned value)
+{
+    appendJSONNameOrDelimit(s, name);
+    return s.append(value);
 }
 
 template <typename TValue>

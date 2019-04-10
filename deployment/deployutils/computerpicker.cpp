@@ -180,10 +180,10 @@ bool CComputerPicker::GetUsage(const char* szComputer, StringBuffer& sUsage,
 
           if (bIncludeComponentType)
           {
-            StringBuffer sType = GetComponentTypeForPrefix(chPrefix);
             //if (!sType.IsEmpty())
             if (sUsage.length() > 0)
             {
+              const char * sType = GetComponentTypeForPrefix(chPrefix);
               sUsage.append(sType);
               sUsage.append(" - ");
             }

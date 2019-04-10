@@ -305,9 +305,10 @@ void CDeploymentEngine::startInstance(IPropertyTree& node, const char* fileName/
 {
     EnvMachineOS os = m_envDepEngine.lookupMachineOS(node);
 
-    StringAttr hostDir(getHostDir(node).str());
+    StringBuffer hostDir;
+    getHostDir(hostDir, node);
     m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
-        "Starting %s process on %s", m_name.get(), hostDir.get());
+        "Starting %s process on %s", m_name.get(), hostDir.str());
 
     Owned<IDeployTask> task;
     if (m_useSSHIfDefined)
@@ -409,9 +410,10 @@ void CDeploymentEngine::stop()
 void CDeploymentEngine::stopInstance(IPropertyTree& node, const char* fileName/*="stop"*/)
 {
   EnvMachineOS os = m_envDepEngine.lookupMachineOS(node);
-    StringAttr hostDir(getHostDir(node).str());
+    StringBuffer hostDir;
+    getHostDir(hostDir, node);
     m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
-        "Stopping %s process on %s", m_name.get(), hostDir.get());
+        "Stopping %s process on %s", m_name.get(), hostDir.str());
 
     Owned<IDeployTask> task;
     if (m_useSSHIfDefined)
@@ -661,11 +663,16 @@ void CDeploymentEngine::_deploy(bool useTempDir)
 //---------------------------------------------------------------------------
 void CDeploymentEngine::deployInstance(IPropertyTree& instanceNode, bool useTempDir)
 {
-    StringAttr hostDir(getHostDir(instanceNode).str());
-    StringAttr destDir(useTempDir ? getDeployDir(instanceNode).str() : hostDir.get());
+    StringBuffer hostDir;
+    getHostDir(hostDir, instanceNode);
+    StringBuffer destDir;
+    if (useTempDir)
+        getDeployDir(destDir, instanceNode);
+    else
+        destDir.set(hostDir);
     ensurePath(destDir);
 
-    const char* pszHostDir = hostDir.get();
+    const char* pszHostDir = hostDir.str();
     if (pszHostDir && *pszHostDir==PATHSEPCHAR && *(pszHostDir+1)==PATHSEPCHAR && m_envDepEngine.lookupMachineOS(instanceNode) != MachineOsLinux)
         connectToHost(instanceNode);
 
@@ -750,10 +757,11 @@ void CDeploymentEngine::backupDirs()
 
             if (os == MachineOsLinux && !m_curSSHUser.isEmpty() && !m_curSSHKeyFile.isEmpty())
             {
-                StringAttr hostDir(getHostDir(instance).str());
+                StringBuffer hostDir;
+                getHostDir(hostDir, instance);
 
                 m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
-                    "Backing up directory %s", hostDir.get());
+                    "Backing up directory %s", hostDir.str());
 
                 StringBuffer bkPath;
                 getBackupDirName(hostDir.str(), bkPath);
@@ -779,10 +787,11 @@ void CDeploymentEngine::backupDirs()
             else
             {
                 connectToHost(instance);
-                StringAttr hostDir(getHostDir(instance).str());
+                StringBuffer hostDir;
+                getHostDir(hostDir, instance);
 
                 m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
-                    "Backing up directory %s", hostDir.get());
+                    "Backing up directory %s", hostDir.str());
 
                 backupDir(hostDir);
             }
@@ -1058,9 +1067,8 @@ StringBuffer& CDeploymentEngine::getDaliServers(StringBuffer& daliServers) const
 //---------------------------------------------------------------------------
 //  getHostRoot
 //---------------------------------------------------------------------------
-StringBuffer CDeploymentEngine::getHostRoot(const char* computer, const char* dir, bool bIgnoreDepToFolder/*=false*/) const
+StringBuffer &CDeploymentEngine::getHostRoot(StringBuffer &hostRoot, const char* computer, const char* dir, bool bIgnoreDepToFolder/*=false*/) const
 {
-    StringBuffer hostRoot;
     StringAttr netAddress;
     if (m_envDepEngine.lookupNetAddress(netAddress, computer).length() > 0)
     {
@@ -1087,9 +1095,8 @@ StringBuffer CDeploymentEngine::getHostRoot(const char* computer, const char* di
 //---------------------------------------------------------------------------
 //  getHostDir
 //---------------------------------------------------------------------------
-StringBuffer CDeploymentEngine::getHostDir(IPropertyTree& node, bool bIgnoreDepToFolder/*=false*/)
+StringBuffer &CDeploymentEngine::getHostDir(StringBuffer &hostDir, IPropertyTree& node, bool bIgnoreDepToFolder/*=false*/)
 {
-    StringBuffer hostDir;
     StringAttr netAddress;
     if (m_envDepEngine.lookupNetAddress(netAddress, node.queryProp("@computer")).length() > 0)
     {
@@ -1120,21 +1127,19 @@ StringBuffer CDeploymentEngine::getHostDir(IPropertyTree& node, bool bIgnoreDepT
 //---------------------------------------------------------------------------
 //  getDeployDir
 //---------------------------------------------------------------------------
-StringBuffer CDeploymentEngine::getDeployDir(IPropertyTree& node)
+StringBuffer &CDeploymentEngine::getDeployDir(StringBuffer &deployDir, IPropertyTree& node)
 {
-    char deployDir[_MAX_PATH];
-    strcpy(deployDir, getHostDir(node).str());
+    getHostDir(deployDir, node);
     removeTrailingPathSepChar(deployDir);
-    strcat(deployDir, "_deploy" PATHSEPSTR);
+    deployDir.append("_deploy" PATHSEPSTR);
     return deployDir;
 }
 
 //---------------------------------------------------------------------------
 // getLocalDir - returns @directory with '$' replaced by ':'
 //---------------------------------------------------------------------------
-StringBuffer CDeploymentEngine::getLocalDir(IPropertyTree& node) const
+StringBuffer &CDeploymentEngine::getLocalDir(StringBuffer &localDir, IPropertyTree& node) const
 {
-    StringBuffer localDir;
     queryDirectory(node, localDir);
 
     if (m_envDepEngine.lookupMachineOS(node) == MachineOsLinux)
@@ -1164,7 +1169,8 @@ void CDeploymentEngine::connectToHost(IPropertyTree& node, const char* dir/*=NUL
     StringAttr   user;
     StringAttr   pswd;
     m_envDepEngine.getAccountInfo(computer, user, pswd);
-    connectToNetworkPath( getHostRoot(computer, dir).str(), user, pswd );
+    StringBuffer hostRoot;
+    connectToNetworkPath( getHostRoot(hostRoot, computer, dir).str(), user, pswd );
 }
 
 //---------------------------------------------------------------------------

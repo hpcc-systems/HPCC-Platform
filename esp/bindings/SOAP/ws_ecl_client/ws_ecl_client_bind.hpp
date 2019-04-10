@@ -76,7 +76,7 @@ public:
     void setRequestId(unsigned long reqId){m_request_id = reqId;}
     void setClientValue(unsigned long cv){m_client_value = cv;}
     
-    void setHttpMessage(StringBuffer message){message.swapWith(m_HttpMessage);}
+    void setHttpMessage(const char *message){ m_HttpMessage.set(message);}
     const char* getHttpMessage(StringBuffer &message)
     {
         message.append(m_HttpMessage);
@@ -87,7 +87,7 @@ public:
             return NULL;
     }
 
-    void setStatusMessage(StringBuffer message){message.swapWith(m_StatusMessage);}
+    void setStatusMessage(const char *message){ m_StatusMessage.set(message);}
     const char* getStatusMessage(StringBuffer &message)
     {
         message.append(m_StatusMessage);
@@ -127,7 +127,7 @@ public:
             {
                 StringBuffer buf;
                 buf.append(eptr - sptr, sptr);
-                m_ResultsXML = buf;
+                m_ResultsXML->set(buf);
             }
         }   
 

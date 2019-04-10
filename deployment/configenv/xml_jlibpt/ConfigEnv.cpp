@@ -71,7 +71,7 @@ void ConfigEnv::create(IPropertyTree *params)
      int roxieNodes=1, thorNodes=1, slavesPerNode=1, supportNodes=1,
          espNodes=1, thorChannelsPerSlave=1, roxieChannelsPerSlave=1;
      bool roxieOnDemand = true;
-     MapStringTo<StringBuffer> dirMap;
+     MapStringTo<StringAttr, const char *> dirMap;
      Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ESP_CONFIG_PATH);
      StringArray arrAssignIPRanges;
      StringArray arrBuildSetWithAssignedIPs;

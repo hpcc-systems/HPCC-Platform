@@ -94,15 +94,15 @@ private:
     void getThorLog(const char *cluster,MemoryBuffer& returnbuff);
     //void getThorLog(StringBuffer logname,StringBuffer& returnbuff);
     int loadFile(const char* fname, int& len, unsigned char* &buf, bool binary=true);
-    void readLogFile(StringBuffer logname, IFile* pFile, ReadLog& readLogReq, StringBuffer& returnbuff);
-    void readLogFileToArray(StringBuffer logname, OwnedIFileIO rIO, ReadLog& readLogReq, StringArray& returnbuff);
-    bool readLogLineID(char* pTr, unsigned long& lineID);
+    void readLogFile(const char * logname, IFile* pFile, ReadLog& readLogReq, StringBuffer& returnbuff);
+    void readLogFileToArray(const char * logname, OwnedIFileIO rIO, ReadLog& readLogReq, StringArray& returnbuff);
+    bool readLogLineID(const char* pTr, unsigned long& lineID);
     bool readLogTime(char* pTr, int start, int length, CDateTime& dt);
-    bool findTimestampAndLT(StringBuffer logname, IFile* pFile, ReadLog& readLogReq, CDateTime& latestLogTime);
+    bool findTimestampAndLT(const char * logname, IFile* pFile, ReadLog& readLogReq, CDateTime& latestLogTime);
     unsigned findLineTerminator(const char* dataPtr, const size32_t dataSize);
     bool isLineTerminator(const char* dataPtr, const size32_t dataSize, unsigned ltLength);
     char* readALogLine(char* dataPtr, size32_t& dataSize, unsigned ltLength, StringBuffer& logLine, bool& hasLineTerminator);
-    void addALogLine(offset_t& readFrom, unsigned& locationFlag, StringBuffer dataRow, ReadLog& readLogReq, StringArray& returnbuff);
+    void addALogLine(offset_t& readFrom, unsigned& locationFlag, const char *dataRow, ReadLog& readLogReq, StringArray& returnbuff);
     void readTpLogFileRequest(IEspContext &context, const char* fileName, IFile* rFile, IEspTpLogFileRequest  &req, ReadLog& readLogReq);
     void setTpLogFileResponse(IEspContext &context, ReadLog& readLogReq, const char* fileName,
                                          const char* fileType, StringBuffer& returnbuf, IEspTpLogFileResponse &resp);

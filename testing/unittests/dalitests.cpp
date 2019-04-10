@@ -1471,7 +1471,7 @@ static void setupDFS(const IContextLogger &logctx, const char *scope, unsigned s
 
     logctx.CTXLOG("Cleaning up '%s' scope", bufScope.str());
     for (unsigned i=1; i<=supersToDel; i++) {
-        StringBuffer super = bufScope;
+        StringBuffer super(bufScope);
         super.append("::super").append(i);
         if (dir.exists(super.str(),user,false,true))
             ASSERT(dir.removeEntry(super.str(), user) && "Can't remove super-file");
@@ -1481,7 +1481,7 @@ static void setupDFS(const IContextLogger &logctx, const char *scope, unsigned s
     for (unsigned i=1; i<=subsToCreate; i++) {
         StringBuffer name;
         name.append("sub").append(i);
-        StringBuffer sub = bufScope;
+        StringBuffer sub(bufScope);
         sub.append("::").append(name);
 
         // Remove first

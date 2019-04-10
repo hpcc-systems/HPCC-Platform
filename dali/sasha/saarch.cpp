@@ -283,7 +283,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                 cmd->addId(wuid);
             else
             {
-                StringBuffer output = wuTree->queryName();
+                StringBuffer output(wuTree->queryName());
                 //Append more into the output.
                 setWUDataTree(wuTree, output);
                 cmd->addId(output.str());

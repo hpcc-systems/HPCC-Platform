@@ -244,7 +244,7 @@ template<class type> void MemCachedPlugin::MCached::get(ICodeContext * ctx, cons
     else
         value.setown(memcached_get(connection, key, strlen(key), &returnLength, &flag, &rc));
 
-    StringBuffer keyMsg = "'Get<type>' request failed - ";
+    StringBuffer keyMsg("'Get<type>' request failed - ");
     assertOnError(rc, appendIfKeyNotFoundMsg(rc, key, keyMsg));
     reportKeyTypeMismatch(ctx, key, flag, eclType);
 
@@ -267,7 +267,7 @@ template<class type> void MemCachedPlugin::MCached::get(ICodeContext * ctx, cons
     else
         value.setown(memcached_get(connection, key, strlen(key), &returnLength, &flag, &rc));
 
-    StringBuffer keyMsg = "'Get<type>' request failed - ";
+    StringBuffer keyMsg("'Get<type>' request failed - ");
     assertOnError(rc, appendIfKeyNotFoundMsg(rc, key, keyMsg));
     reportKeyTypeMismatch(ctx, key, flag, eclType);
 
@@ -286,7 +286,7 @@ void MemCachedPlugin::MCached::getVoidPtrLenPair(ICodeContext * ctx, const char 
     else
         value.setown(memcached_get(connection, key, strlen(key), &returnValueLength, &flag, &rc));
 
-    StringBuffer keyMsg = "'Get<type>' request failed - ";
+    StringBuffer keyMsg("'Get<type>' request failed - ");
     assertOnError(rc, appendIfKeyNotFoundMsg(rc, key, keyMsg));
     reportKeyTypeMismatch(ctx, key, flag, eclType);
 
@@ -340,7 +340,7 @@ void MemCachedPlugin::MCached::assertPool()
 {
     if (!pool)
     {
-        StringBuffer msg = "Memcached Plugin: Failed to instantiate server pool with:";
+        StringBuffer msg("Memcached Plugin: Failed to instantiate server pool with:");
         msg.newline().append(options);
         rtlFail(0, msg.str());
     }

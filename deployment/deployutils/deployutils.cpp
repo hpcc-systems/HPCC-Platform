@@ -58,13 +58,13 @@ bool schemaNodeHasAttributeGroups(IPropertyTree* pNode)
   return itAttrGr->first() && itAttrGr->isValid();
 }
 
-bool writeToFile(const char* fileName, StringBuffer sb)
+bool writeToFile(const char* fileName, const char * sb)
 {
   StringBuffer jsName(fileName);
   recursiveCreateDirectoryForFile(fileName);
   Owned<IFile> pFile = createIFile(jsName);
   Owned<IFileIO> pFileIO = pFile->open(IFOcreaterw);
-  pFileIO->write(0, sb.length(), sb.str());
+  pFileIO->write(0, strlen(sb), sb);
 
   return true;
 }
@@ -573,7 +573,7 @@ public:
         }
       }
 
-      void CreateAttributeFromSchema(IPropertyTree& attr, StringBuffer compName, const char* tabName, const char* childElementName)
+      void CreateAttributeFromSchema(IPropertyTree& attr, const char *compName, const char* tabName, const char* childElementName)
       {
         StringBuffer attrname;
         StringBuffer combovalues;
@@ -605,7 +605,7 @@ public:
             value.clear().append(attr.queryProp("./xs:annotation/xs:appinfo/autogenforwizard"));
             if(!strcmp(value.str(),"1"))
             {
-                    getValueForTypeInXSD(attr, compName, wizDefVal);  
+              getValueForTypeInXSD(attr, compName, wizDefVal);
             }
           }
           else
@@ -624,7 +624,7 @@ public:
         IPropertyTree* pField = NULL;
         if (m_pDefTree)
         {
-          IPropertyTree* pProcess = m_pDefTree->queryPropTree(compName.str());
+          IPropertyTree* pProcess = m_pDefTree->queryPropTree(compName);
 
           if (!pProcess)
             pProcess = m_pDefTree->addPropTree(compName, createPTree());
@@ -716,7 +716,7 @@ public:
 
               if (childElementName && i == 1 && m_splitterTabName.length())
               {
-                setNameInCompTabArray(m_splitterTabName, compName.str());
+                setNameInCompTabArray(m_splitterTabName, compName);
                 m_columns.appendf("tabCols['%s'][%d] = '_%s';", m_splitterTabName.str(), m_numAttrs, tabName);
               }
             }
@@ -729,7 +729,7 @@ public:
             {
               m_columns.appendf("tabCols['%s'][%d] = '%s';", getRealTabName(tabName), 0, caption? caption:attr.queryProp(XML_ATTR_NAME));
 
-              setNameInCompTabArray(m_splitterTabName, compName.str());
+              setNameInCompTabArray(m_splitterTabName, compName);
               m_columns.appendf("tabCols['%s'][%d] = '_%s';", m_splitterTabName.str(), m_numAttrs, tabName);
             }
           }
@@ -1169,8 +1169,8 @@ public:
       }
 
       void AddAttributeFromSchema(IPropertyTree& schemaNode, 
-        StringBuffer elemName, 
-        StringBuffer& compName, 
+        const char * elemName,
+        const char *compName,
         const char* tabName,
         const char* childElementName)
       {
@@ -1178,7 +1178,7 @@ public:
       }
 
       void AddAttributesFromSchema(IPropertyTree* pSchema,
-        StringBuffer& compName,
+        const char *compName,
         const char* tabName,
         const char* childElementName)
       {
@@ -1506,7 +1506,7 @@ public:
         CloneArray(tabNameArray, m_tabNameArray);
       }
 
-      void getDefnPropTree(IPropertyTree* pTree, StringBuffer xpathDefn)
+      void getDefnPropTree(IPropertyTree* pTree, const char * xpathDefn)
       {
         m_pDefTree = pTree;
         m_xpathDefn.clear().append(xpathDefn);
@@ -1548,7 +1548,7 @@ public:
         m_wizard.set(ptr);
       }
 
-      void getValueForTypeInXSD(IPropertyTree& attr, StringBuffer compName, StringBuffer& wizDefVal)
+      void getValueForTypeInXSD(IPropertyTree& attr, const char *compName, StringBuffer& wizDefVal)
       {
         StringBuffer tempPath;
         const char* type = attr.queryProp("@type");
@@ -1581,7 +1581,7 @@ public:
            }
            else if(!strcmp(attr.queryProp(tempPath.str()), "$processname"))
            {
-              tempPath.clear().appendf("Software/%s[1]/@name",compName.str());
+              tempPath.clear().appendf("Software/%s[1]/@name",compName);
               wizDefVal.clear().append(m_pEnv->queryProp(tempPath.str()));
            }
            else if(!strcmp(attr.queryProp(tempPath.str()), "$hthorcluster"))
@@ -1605,7 +1605,7 @@ public:
            else
            {
              wizDefVal.clear().append(attr.queryProp(tempPath.str()));
-             tempPath.clear().appendf("Software/%s[1]/@buildSet", compName.str());
+             tempPath.clear().appendf("Software/%s[1]/@buildSet", compName);
              if(m_pEnv->queryProp(tempPath.str()))
              {
                if(m_wizard->getNumOfNodes(m_pEnv->queryProp(tempPath.str())) > 1)
@@ -2883,7 +2883,7 @@ const char* getUniqueName(const IPropertyTree* pEnv, StringBuffer& sName, const 
   //if the name ends in _N (where N is a number) then ignore _N to avoid duplicating
   //number suffix as in _N_M
   //
-  StringBuffer sPrefix = sName;
+  StringBuffer sPrefix(sName);
   const char* pdx = strrchr(sName.str(), '_');
   if (pdx)
   {
@@ -2928,7 +2928,7 @@ const char* getUniqueName2(const IPropertyTree* pEnv, StringBuffer& sName, const
   //if the name ends in _N (where N is a number) then ignore _N to avoid duplicating
   //number suffix as in _N_M
   //
-  StringBuffer sPrefix = sName;
+  StringBuffer sPrefix(sName);
   const char* pdx = strrchr(sName.str(), '_');
   if (pdx)
   {
@@ -3140,7 +3140,7 @@ bool ensureUniqueName(const IPropertyTree* pEnv, IPropertyTree* pParentNode, con
 const char* expandXPath(StringBuffer& xpath, IPropertyTree* pNode, IPropertyTree* pParentNode, int position)
 {
   StringBuffer xpathOut;
-  StringBuffer subxpath = strpbrk(xpath.str(), "/=");
+  StringBuffer subxpath(strpbrk(xpath.str(), "/="));
   if (!strcmp(subxpath.str(), ".."))
   {
     int skip = 2;
@@ -3165,7 +3165,7 @@ const char* expandXPath(StringBuffer& xpath, IPropertyTree* pNode, IPropertyTree
   return xpath;
 }
 
-bool xsltTransform(const StringBuffer& xml, const char* sheet, IProperties *params, StringBuffer& ret)
+bool xsltTransform(const char *xml, const char* sheet, IProperties *params, StringBuffer& ret)
 {
   if (!checkFileExists(sheet))
     throw MakeStringException(-1, "Could not find stylesheet %s",sheet);
@@ -3173,7 +3173,7 @@ bool xsltTransform(const StringBuffer& xml, const char* sheet, IProperties *para
   Owned<IXslProcessor> proc  = getXslProcessor();
   Owned<IXslTransform> trans = proc->createXslTransform();
 
-  trans->setXmlSource(xml.str(), xml.length());
+  trans->setXmlSource(xml, strlen(xml));
   trans->loadXslFromFile(sheet);
 
   if (params)
@@ -3459,7 +3459,7 @@ void formIPList(const char* ip, StringArray& formattedIpList)
 }
 
 void buildEnvFromWizard(const char * wizardXml, const char* service,IPropertyTree* cfg, StringBuffer& envXml, StringArray& arrBuildSetWithAssignedIPs,
-                StringArray& arrAssignedIPs, MapStringTo<StringBuffer>* dirMap)
+                StringArray& arrAssignedIPs, MapStringTo<StringAttr, const char *>* dirMap)
 {
   if(wizardXml && *wizardXml)
   {

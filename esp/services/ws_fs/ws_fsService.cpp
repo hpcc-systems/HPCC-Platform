@@ -926,7 +926,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
     {
         context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
-        StringBuffer wuidStr = req.getWuid();
+        StringBuffer wuidStr(req.getWuid());
         const char* wuid = wuidStr.trim().str();
         if (wuid && *wuid && looksLikeAWuid(wuid, 'D'))
             return getOneDFUWorkunit(context, wuid, resp);
@@ -1203,7 +1203,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             if (req.getDescending())
                 resp.setDescending(req.getDescending());
 
-            StringBuffer strbuf = req.getSortby();
+            StringBuffer strbuf(req.getSortby());
             strbuf.append("=");
             String str1(strbuf.str());
             String str(basicQuery.str());
@@ -1331,13 +1331,13 @@ void CFileSprayEx::getInfoFromSasha(IEspContext &context, const char *sashaServe
             info->setStateMessage(state);
         if (timeStarted && *timeStarted)
         {
-            StringBuffer startStr = timeStarted;
+            StringBuffer startStr(timeStarted);
             startStr.replace('T', ' ');
             info->setTimeStarted(startStr.str());
         }
         if (timeStopped && *timeStopped)
         {
-            StringBuffer stopStr = timeStopped;
+            StringBuffer stopStr(timeStopped);
             stopStr.replace('T', ' ');
             info->setTimeStopped(stopStr.str());
         }
@@ -1633,7 +1633,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                             "Sasha (%s) took too long to respond from: Restore workunit %s.",
                             sashaAddress.str(), wuid);
                     {
-                        StringBuffer reply = "Restore ID: ";
+                        StringBuffer reply("Restore ID: ");
                         if (!cmd->getId(0, reply))
                             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Failed to get ID.");
                         res->setResult(reply.str());
@@ -2189,7 +2189,7 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
 
-        StringBuffer jobname = "Replicate: ";
+        StringBuffer jobname("Replicate: ");
         jobname.append(srcname);
         wu->setJobName(jobname.str());
         setDFUServerQueueReq(req.getDFUServerQueue(), wu);
@@ -3287,7 +3287,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
 
             try
             {
-                StringBuffer fileToDelete = path;
+                StringBuffer fileToDelete(path);
                 fileToDelete.append(file);
 
                 rfn.setPath(ep, fileToDelete.str());
@@ -3304,7 +3304,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
                 eMsg = e->errorMessage(eMsg);
                 e->Release();
 
-                StringBuffer failedMsg = "Failed: ";
+                StringBuffer failedMsg("Failed: ");
                 failedMsg.append(eMsg);
                 res->setResult(failedMsg.str());
             }

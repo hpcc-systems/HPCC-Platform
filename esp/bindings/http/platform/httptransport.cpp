@@ -732,7 +732,7 @@ void CHttpMessage::logMessage(const char* message, const char* prefix, const cha
     }
 
     RegExpr auth(find, true);
-    StringBuffer messageToLog = message;
+    StringBuffer messageToLog(message);
     if (auth.find(messageToLog.str()))
         auth.replace(replace, messageToLog.length() + strlen(replace) - strlen(find));
 
@@ -1947,7 +1947,7 @@ bool CHttpRequest::readUploadFileName(CMimeMultiPart* mimemultipart, StringBuffe
     return (fileName.length() > 0);
 }
 
-IFile* CHttpRequest::createUploadFile(StringBuffer netAddress, const char* filePath, StringBuffer& fileName)
+IFile* CHttpRequest::createUploadFile(const char * netAddress, const char* filePath, StringBuffer& fileName)
 {
     StringBuffer name(fileName), tmpFileName;
     char* str = (char*) name.reverse().str();
@@ -1963,7 +1963,7 @@ IFile* CHttpRequest::createUploadFile(StringBuffer netAddress, const char* fileP
 
     RemoteFilename rfn;
     SocketEndpoint ep;
-    ep.set(netAddress.str());
+    ep.set(netAddress);
     rfn.setPath(ep, tmpFileName.str());
 
     return createIFile(rfn);
@@ -2011,7 +2011,7 @@ void CHttpRequest::readUploadFileContent(StringArray& fileNames, StringArray& fi
     return;
 }
 
-int CHttpRequest::readContentToFiles(StringBuffer netAddress, StringBuffer path, StringArray& fileNames)
+int CHttpRequest::readContentToFiles(const char * netAddress, const char * path, StringArray& fileNames)
 {
     const char* contentType = m_content_type.get();
     if (!contentType || !*contentType)
@@ -2076,7 +2076,7 @@ int CHttpRequest::readContentToFiles(StringBuffer netAddress, StringBuffer path,
             break;
 
         StringBuffer fileNameWithPath;
-        fileNameWithPath.appendf("%s/%s", path.str(), fileName.str());
+        fileNameWithPath.appendf("%s/%s", path, fileName.str());
         file->rename(fileNameWithPath.str());
 
         if (!foundAnotherFile)

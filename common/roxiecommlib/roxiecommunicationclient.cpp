@@ -59,9 +59,9 @@ protected:
     SocketEndpoint ep;
     unsigned roxieTimeout;
 
-    IPropertyTree *sendRoxieControlQuery(const StringBuffer &xml, bool deployAll, const char *remoteRoxieIP = NULL)
+    IPropertyTree *sendRoxieControlQuery(const char *xml, bool deployAll, const char *remoteRoxieIP = NULL)
     {
-        unsigned len = xml.length();
+        unsigned len = strlen(xml);
         size32_t sendlen = len;
         _WINREV(sendlen);
         Owned<ISocket> sock = getRoxieSocket(remoteRoxieIP);
@@ -70,7 +70,7 @@ protected:
                 throw MakeStringException(GET_LOCK_FAILURE, "Request Failed! All roxie nodes unable to process this request at this time.  Roxie is busy - possibly in the middle of another deployment.  Try again later, if problem persists, make sure all nodes are running");
 
         sock->write(&sendlen, sizeof(sendlen));
-        sock->write(xml.str(), len);
+        sock->write(xml, len);
         StringBuffer response;
         for (;;)
         {
@@ -98,9 +98,9 @@ protected:
     }
 
 
-    const char *sendRoxieOnDemandQuery(const StringBuffer &xml, SCMStringBuffer &response, bool deployAll, const char *remoteRoxieIP = NULL)
+    const char *sendRoxieOnDemandQuery(const char *xml, SCMStringBuffer &response, bool deployAll, const char *remoteRoxieIP = NULL)
     {
-        unsigned len = xml.length();
+        unsigned len = strlen(xml);
         size32_t sendlen = len;
         _WINREV(sendlen);
         Owned<ISocket> sock = getRoxieSocket(remoteRoxieIP);
@@ -109,7 +109,7 @@ protected:
                 throw MakeStringException(GET_LOCK_FAILURE, "Request Failed! All roxie nodes unable to process this request at this time.  Roxie is busy - possibly in the middle of another deployment.  Try again later, if problem persists, make sure all nodes are running");
 
         sock->write(&sendlen, sizeof(sendlen));
-        sock->write(xml.str(), len);
+        sock->write(xml, len);
 
         Owned<IException> exception;
         for (;;)

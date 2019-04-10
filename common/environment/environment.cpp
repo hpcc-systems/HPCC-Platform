@@ -2318,7 +2318,7 @@ extern ENVIRONMENT_API void closeEnvironment()
 
 extern ENVIRONMENT_API unsigned long readSizeSetting(const char * sizeStr, const unsigned long defaultSize)
 {
-    StringBuffer buf = sizeStr;
+    StringBuffer buf(sizeStr);
     buf.trim();
 
     if (buf.isEmpty())

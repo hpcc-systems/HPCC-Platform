@@ -390,7 +390,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
   {
     //first, build a map of all ldapServer/IP
     StringBuffer sb1,sb2;
-    typedef MapStringTo<StringBuffer> strMap;
+    typedef MapStringTo<StringAttr, const char *> strMap;
     strMap ldapServers;
     {
       xPath.appendf("Software/%s/", XML_TAG_LDAPSERVERPROCESS);
@@ -430,7 +430,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
         //If this is ldap server name, lookup and add its IP address
         if (0==strcmp(attrs->queryName(), "@name"))
         {
-          StringBuffer * ldapIP = ldapServers.getValue(attrs->queryValue());
+          StringAttr * ldapIP = ldapServers.getValue(attrs->queryValue());
           if (ldapIP)
           {
             out.appendf("@ldapAddress,%s\n",ldapIP->str());

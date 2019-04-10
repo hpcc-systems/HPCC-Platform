@@ -2280,7 +2280,7 @@ jlib_decl StringBuffer& decodeUrlUseridPassword(StringBuffer& out, const char* i
 }
 
 
-StringBuffer jlib_decl passwordInput(const char* prompt, StringBuffer& passwd)
+jlib_decl StringBuffer &  passwordInput(const char* prompt, StringBuffer& passwd)
 {
 #ifdef _WIN32
     printf("%s", prompt);
