@@ -1407,6 +1407,10 @@ extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_ag
 
 class CHThorIndexCountActivity : public CHThorIndexReadActivityBase
 {
+    bool keyedLimitReached = false;
+    bool keyedLimitSkips = false;
+    unsigned __int64 keyedLimit = (unsigned __int64)-1;
+    unsigned __int64 rowLimit = (unsigned __int64)-1;
 
 public:
     CHThorIndexCountActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &_arg, ThorActivityKind _kind, IDistributedFile * df, IPropertyTree *_node);
@@ -1430,13 +1434,34 @@ CHThorIndexCountActivity::CHThorIndexCountActivity(IAgentContext &_agent, unsign
 {
     choosenLimit = (unsigned __int64)-1;
     finished = false;
+    keyedLimitSkips = ((helper.getFlags() & TIRkeyedlimitskips) != 0);
 }
 
 void CHThorIndexCountActivity::ready()
 {
     CHThorIndexReadActivityBase::ready();
+
+    keyedLimitReached = false;
+    keyedLimit = helper.getKeyedLimit();
+    rowLimit = helper.getRowLimit();
+
     finished = false;
     choosenLimit = helper.getChooseNLimit();
+
+    if ((keyedLimit != (unsigned __int64) -1) && ((helper.getFlags() & TIRcountkeyedlimit) != 0))
+    {
+        if (singlePart)
+        {
+            if (klManager) // NB: opened by base::ready()
+            {
+                unsigned __int64 result = klManager->checkCount(keyedLimit);
+                keyedLimitReached = (result > keyedLimit);
+                klManager->reset();
+            }
+        }
+        else
+            keyedLimitReached = doPreopenLimit(keyedLimit);
+    }
 }
 
 const void *CHThorIndexCountActivity::nextRow()
@@ -1444,8 +1469,17 @@ const void *CHThorIndexCountActivity::nextRow()
     if (finished) return NULL;
 
     unsigned __int64 totalCount = 0;
-    if(klManager)
+
+    if (keyedLimitReached)
     {
+        if (!keyedLimitSkips)
+            helper.onKeyedLimitExceeded(); // should throw exception
+    }
+    else if (klManager)
+    {
+        unsigned __int64 keyedProcessed = 0;
+        unsigned __int64 rowsProcessed = 0;
+        bool limitSkipped = false;
         for (;;)
         {
             if (helper.hasFilter())
@@ -1455,8 +1489,25 @@ const void *CHThorIndexCountActivity::nextRow()
                     agent.reportProgress(NULL);
                     if (!klManager->lookup(true))
                         break;
+                    ++keyedProcessed;
+                    if ((keyedLimit != (unsigned __int64) -1) && keyedProcessed > keyedLimit)
+                        helper.onKeyedLimitExceeded();
                     totalCount += helper.numValid(klManager->queryKeyBuffer());
                     callback.finishedRow();
+
+                    rowsProcessed++;
+                    if (rowsProcessed > rowLimit)
+                    {
+                        if (0 != (helper.getFlags() & TIRlimitskips))
+                        {
+                            totalCount = 0;
+                            limitSkipped = true;
+                            break;
+                        }
+                        else
+                            helper.onLimitExceeded();
+                    }
+
                     if ((totalCount > choosenLimit))
                         break;
                 }
@@ -1464,7 +1515,7 @@ const void *CHThorIndexCountActivity::nextRow()
             else
                 totalCount += klManager->getCount();
 
-            if ((totalCount > choosenLimit) || !nextPart())
+            if (limitSkipped || (totalCount > choosenLimit) || !nextPart())
                 break;
         }
     }
