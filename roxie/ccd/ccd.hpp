@@ -141,7 +141,7 @@ public:
 class RoxiePacketHeader
 {
 private:
-    RoxiePacketHeader(const RoxiePacketHeader &source);
+    RoxiePacketHeader(const RoxiePacketHeader &source) =  delete;
 
 public:
     unsigned packetlength;
