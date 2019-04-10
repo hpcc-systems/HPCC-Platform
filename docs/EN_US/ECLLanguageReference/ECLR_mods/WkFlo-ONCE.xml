@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ONCE">
+  <title>ONCE</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: ONCE<indexterm>
+      <primary>ONCE</primary>
+    </indexterm></emphasis><emphasis role="bold"> <indexterm>
+      <primary>ONCE workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.85pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>The name of the attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ONCE </emphasis>service allows you to
+  specify that the code is to be executed only once at query load time.
+  </para>
+
+  <para>This means a Roxie query will execute it only once even if the query
+  is executed multiple times. For a Thor or hThor query, ONCE behaves the same
+  as GLOBAL.</para>
+
+  <para>Example:</para>
+
+  <programlisting>InlineDCT := DICTIONARY([{0 =&gt; 'Black' , 'Greys'},
+                         {1 =&gt; 'Brown' , 'Earth'},
+                         {2 =&gt; 'Red'   , 'Reds'},
+                         {3 =&gt; 'White' , 'Greys'} ], 
+                        {UNSIGNED code =&gt; STRING10 color ,STRING10 Tone}) : ONCE;
+
+UNSIGNED v := 0 : STORED('v');
+
+OUTPUT(InlineDCT[v].color);</programlisting>
+
+  <para>See Also: <link linkend="GLOBAL">GLOBAL</link></para>
+</sect1>
