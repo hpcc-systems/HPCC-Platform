@@ -22,4 +22,4 @@ d2 := DICTIONARY([{3=>4}], { unsigned a=>unsigned b}) : ONCE;
 
 unsigned v := 0 : STORED('v');
 
-d1[v].b + d2[v].b;
+d1[v].b + d2[v].b : independent;
