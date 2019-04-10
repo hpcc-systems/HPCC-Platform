@@ -3099,6 +3099,12 @@ public:
     }
     ~JavaEmbedImportContext()
     {
+        if (persistMode == persistThread)
+        {
+            StringBuffer scopeKey;
+            getScopeKey(scopeKey);
+            JavaGlobalState::unregister(scopeKey);
+        }
         if (javaClass)
             JNIenv->DeleteGlobalRef(javaClass);
         if (classLoader)
