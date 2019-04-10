@@ -216,6 +216,8 @@ struct ECLRTL_API RtlKeyedIntTypeInfo final : public RtlTypeInfoBase
     virtual int compare(const byte * left, const byte * right) const override;
     virtual bool canMemCmp() const override { return true; }
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
+    virtual const RtlTypeInfo * queryChildType() const override;
+
 private:
     inline __uint64 getUInt(const void * ptr) const { return (__uint64) getInt(ptr); }
     static unsigned __int64 addBias(__int64 value, unsigned length);
