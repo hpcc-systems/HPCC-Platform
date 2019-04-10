@@ -181,7 +181,7 @@ class CFixedDistributionTable : public CDistributionTable
 {
 public:
     CFixedDistributionTable(const char *_fieldname, unsigned _ksize, unsigned _threshold) 
-        : CDistributionTable(_fieldname), threshold(_threshold), table(_ksize, false), ksize(_ksize)
+        : CDistributionTable(_fieldname), ksize(_ksize), threshold(_threshold), table(_ksize, false)
     {
         estimated = false;
         cardinality = 0;

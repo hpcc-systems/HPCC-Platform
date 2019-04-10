@@ -1503,7 +1503,7 @@ class ECLRTL_API CLibraryConstantRawIteratorArg : public CThorLinkedRawIteratorA
 {
 public:
     inline CLibraryConstantRawIteratorArg(unsigned _numRows, const byte * * _rows, IOutputMetaData * _meta)
-        : numRows(_numRows), meta(_meta),  rows(_rows)
+        : numRows(_numRows), meta(_meta), rows(_rows)
     {
         cur = 0;
     }

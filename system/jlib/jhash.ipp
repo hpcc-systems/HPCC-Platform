@@ -176,7 +176,7 @@ template <class VALUE_T,class VALINIT>
 class MappingConstStringTo : public CInterfaceOf<IAtom>
 {
 public:
-    MappingConstStringTo(const char *k, VALINIT a) : key(k), val(a), hash(0)
+    MappingConstStringTo(const char *k, VALINIT a) : hash(0), key(k), val(a)
     { };
 
     inline VALUE_T &            getValue()      { return val; };

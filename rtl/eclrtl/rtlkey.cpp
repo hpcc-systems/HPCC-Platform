@@ -174,7 +174,7 @@ void CWildKeySegmentMonitor::endRange(void *bufptr) const
 }
 
 CSetKeySegmentMonitor::CSetKeySegmentMonitor(bool _optional, IStringSet *_set, unsigned _fieldIdx, unsigned _offset, unsigned _size)
-    : set(_set), CKeySegmentMonitor(_fieldIdx, _offset, _size)
+    : CKeySegmentMonitor(_fieldIdx, _offset, _size), set(_set)
 {
     optional = _optional;
 }
@@ -189,7 +189,7 @@ bool CSetKeySegmentMonitor::increment(void *bufptr) const
         bool res = set->inRange(ptr, nextTransition);
         if (!res)
         {
-            if (-1 == nextTransition) return false;
+            if ((unsigned) -1 == nextTransition) return false;
             set->getTransitionValue(ptr, nextTransition);
         }
     }
@@ -1393,7 +1393,7 @@ class LegacySetCreator : implements ISetCreator
 {
 public:
     LegacySetCreator(IStringSet & _set, size32_t _minRecordSize, const RtlTypeInfo * _fieldType)
-    : set(_set), minRecordSize(_minRecordSize), fieldType(_fieldType) {}
+    : set(_set), fieldType(_fieldType), minRecordSize(_minRecordSize) {}
 
     virtual void addRange(TransitionMask lowerMask, const StringBuffer & lowerString, TransitionMask upperMask, const StringBuffer & upperString) override
     {
