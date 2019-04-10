@@ -145,8 +145,8 @@
         </listitem>
 
         <listitem>
-          <para>Oracle VM VirtualBox<superscript>®</superscript> (version 4.0
-          or later).</para>
+          <para>Oracle VM VirtualBox<superscript>®</superscript> (version
+          5.2.8 or later)</para>
         </listitem>
 
         <listitem>
@@ -533,7 +533,7 @@
         <listitem>
           <para>Install the ECL IDE, following the prompts in the installation
           program. Once the ECL IDE is installed successfully, you can
-          proceed. </para>
+          proceed.</para>
 
           <variablelist>
             <varlistentry>

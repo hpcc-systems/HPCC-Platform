@@ -3486,7 +3486,6 @@ unsigned RtlDatasetTypeInfo::hash(const byte * self, unsigned inhash) const
         for (size32_t row = 0; row < count; row++)
         {
             inhash = child->hash(rows[row], inhash);
-            row++;
         }
     }
     else

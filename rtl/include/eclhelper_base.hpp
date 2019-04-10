@@ -1289,7 +1289,7 @@ class ECLRTL_API CLibrarySplitArg : public CThorSplitArg
 {
 public:
     CLibrarySplitArg(unsigned _tempUsageCount, bool _balanced, IOutputMetaData * _meta) :
-        tempUsageCount(_tempUsageCount), balanced(_balanced), meta(_meta) {}
+        tempUsageCount(_tempUsageCount), meta(_meta), balanced(_balanced) {}
 
     virtual unsigned numBranches()                          { return tempUsageCount; }
     virtual bool isBalanced()                               { return balanced; }
@@ -1305,7 +1305,7 @@ class ECLRTL_API CLibraryFunnelArg : public CThorFunnelArg
 {
 public:
     CLibraryFunnelArg(bool _ordered, bool _sequential, IOutputMetaData * _meta) :
-        ordered(_ordered), sequential(_sequential), meta(_meta) {}
+        meta(_meta), ordered(_ordered), sequential(_sequential) {}
 
     virtual bool isOrdered()                            { return ordered; }
     virtual bool pullSequentially()                     { return sequential; }
@@ -1322,7 +1322,7 @@ class ECLRTL_API CLibraryLocalResultSpillArg : public CThorLocalResultSpillArg
 {
 public:
     CLibraryLocalResultSpillArg(unsigned _sequence, bool _usedOutside, IOutputMetaData * _meta) :
-        sequence(_sequence), usedOutside(_usedOutside), meta(_meta) {}
+        sequence(_sequence), meta(_meta), usedOutside(_usedOutside) {}
 
     virtual unsigned querySequence() { return sequence; }
     virtual bool usedOutsideGraph() { return usedOutside; }
@@ -1354,7 +1354,7 @@ class ECLRTL_API CLibraryWorkUnitWriteArg : public CThorWorkUnitWriteArg
 {
 public:
     CLibraryWorkUnitWriteArg(const char * _name, unsigned _flags, IOutputMetaData * _meta) :
-        name(_name), flags(_flags), meta(_meta)  {}
+        name(_name), meta(_meta), flags(_flags)  {}
 
     virtual const char * queryName() { return name; }
     virtual unsigned getFlags() { return flags; }
@@ -1371,7 +1371,7 @@ class ECLRTL_API CLibraryMemorySpillSplitArg : public CThorSpillArg
 {
 public:
     CLibraryMemorySpillSplitArg(unsigned _tempUsageCount, const char * _filename, IOutputMetaData * _meta) :
-        tempUsageCount(_tempUsageCount), filename(_filename), meta(_meta) {}
+        meta(_meta), filename(_filename), tempUsageCount(_tempUsageCount) {}
 
     virtual unsigned getFlags()                             { return TDXtemporary|TDXcompress|TDWnoreplicate; }
     virtual unsigned getTempUsageCount()                    { return tempUsageCount; }
@@ -1437,7 +1437,7 @@ class ECLRTL_API CLibrarySelectNArg : public CThorSelectNArg
 {
 public:
     inline CLibrarySelectNArg(unsigned __int64 _row, rowClearFunction _rowClear, IOutputMetaData * _meta = NULL)
-        : row(_row), rowClear(_rowClear), meta(_meta) {}
+        : meta(_meta), row(_row), rowClear(_rowClear) {}
 
     virtual IOutputMetaData * queryOutputMeta() { return meta; }
     virtual unsigned __int64 getRowToSelect() { return row; }
@@ -1454,7 +1454,7 @@ class ECLRTL_API CLibraryLocalResultReadArg : public CThorLocalResultReadArg
 {
 public:
     inline CLibraryLocalResultReadArg(unsigned _sequence, IOutputMetaData * _meta = NULL)
-        : sequence(_sequence), meta(_meta) {}
+        : meta(_meta), sequence(_sequence) {}
 
     virtual IOutputMetaData * queryOutputMeta() { return meta; }
     virtual unsigned querySequence() { return sequence; }
@@ -1503,7 +1503,7 @@ class ECLRTL_API CLibraryConstantRawIteratorArg : public CThorLinkedRawIteratorA
 {
 public:
     inline CLibraryConstantRawIteratorArg(unsigned _numRows, const byte * * _rows, IOutputMetaData * _meta)
-        : meta(_meta), numRows(_numRows), rows(_rows)
+        : numRows(_numRows), meta(_meta),  rows(_rows)
     {
         cur = 0;
     }

@@ -100,10 +100,10 @@ extern void putStatsValue(StringBuffer &reply, const char *statName, const char 
 }
 
 CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-  : id(_id),
-    subgraphId(_subgraphId),
-    queryFactory(_queryFactory),
+  : queryFactory(_queryFactory),
     helperFactory(_helperFactory),
+    id(_id),
+    subgraphId(_subgraphId),
     kind(_kind),
     mystats(allStatistics)  // We COULD cut down this list but it would complicate the structure, and we do actually track more in the factory than in the activity
 {
@@ -642,7 +642,7 @@ class OptimizedRowBuilder : public ARowBuilder, public CInterface
 {
 public:
     OptimizedRowBuilder(IEngineRowAllocator * _rowAllocator, const CachedOutputMetaData & _meta, IMessagePacker * _output, IOutputRowSerializer * _serializer)
-        : dynamicBuilder(_rowAllocator, false), meta(_meta), serializer(_serializer), output(_output)
+        : dynamicBuilder(_rowAllocator, false), meta(_meta), output(_output), serializer(_serializer)
     {
         useDynamic = serializer != NULL || meta.isVariableSize();
     }
@@ -847,11 +847,11 @@ public:
         ITranslatorSet *_translators,
         unsigned _parallelPartNo, unsigned _numParallel, bool _forceUnkeyed)
         : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory),
-        manager(_manager),
-        translators(_translators),
         parallelPartNo(_parallelPartNo),
         numParallel(_numParallel),
-        forceUnkeyed(_forceUnkeyed)
+        forceUnkeyed(_forceUnkeyed),
+        manager(_manager),
+        translators(_translators)
     {
         helper = (IHThorDiskReadBaseArg *) basehelper;
         variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
@@ -2018,9 +2018,9 @@ public:
                 RecordLengthType *rowLen = (RecordLengthType *) m.readDirect(sizeof(RecordLengthType));
                 if (!*rowLen)
                     break; 
-                RecordLengthType len = *rowLen;
                 RtlDynamicRowBuilder rowBuilder(rowAllocator);
                 size_t outsize = deserializer->deserialize(rowBuilder, rowSource);
+                dbgassertex(outsize==(size_t) *rowLen);
                 if (!finalBuilder.exists())
                     finalBuilder.swapWith(rowBuilder);
                 else
@@ -2498,8 +2498,8 @@ protected:
 
     CRoxieKeyedActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedActivityFactory *_aFactory)
         : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory), 
-        keyArray(_aFactory->keyArray),
         translators(_aFactory->translators),
+        keyArray(_aFactory->keyArray),
         createSegmentMonitorsPending(true)
     {
     }
@@ -4024,7 +4024,7 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
 
 public:
     CRoxieKeyedJoinIndexActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinIndexActivityFactory *_aFactory)
-        : factory(_aFactory), CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory)
+        : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory), factory(_aFactory)
     {
         helper = (IHThorKeyedJoinArg *) basehelper;
         keyRecInfo = &helper->queryIndexRecordSize()->queryRecordAccessor(true);
@@ -4372,9 +4372,9 @@ class CRoxieKeyedJoinFetchActivity : public CRoxieSlaveActivity
 public:
     CRoxieKeyedJoinFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinFetchActivityFactory *_aFactory,
                                  IFileIOArray *_files, ITranslatorSet *_translators)
-        : files(_files),
+        : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory),
           translators(_translators),
-          CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory)
+          files(_files)
     {
         // MORE - no continuation row support?
         base = 0;

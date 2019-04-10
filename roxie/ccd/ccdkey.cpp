@@ -904,7 +904,7 @@ public:
     IMPLEMENT_IINTERFACE;
     virtual bool IsShared() const override { return CInterface::IsShared(); }
 
-    InMemoryIndexManager(const RtlRecord &_recInfo, bool _isOpt, const char *_fileName) : recInfo(_recInfo), fileName(_fileName)
+    InMemoryIndexManager(const RtlRecord &_recInfo, bool _isOpt, const char *_fileName) : fileName(_fileName), recInfo(_recInfo)
     {
         recordCount = 0;
         loaded = false;
@@ -1095,7 +1095,7 @@ public:
     InMemoryIndexCursor(const InMemoryIndexManager *_manager, const InMemoryIndex *_index,
                         const PtrToOffsetMapper &_baseMap, RowFilter &_postFilter, const RtlRecord &_recInfo,
                         const ITranslatorSet *_translators, MemoryBuffer *serializedInfo = nullptr)
-    : manager(_manager), index(_index), baseMap(_baseMap), rowInfo(_recInfo), postFilter(_postFilter), translators(_translators)
+    : index(_index), postFilter(_postFilter), baseMap(_baseMap), rowInfo(_recInfo), manager(_manager), translators(_translators)
     {
         ForEachItemIn(idx, index->sortFields)
         {

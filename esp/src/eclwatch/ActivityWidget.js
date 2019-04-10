@@ -84,7 +84,7 @@ define([
             //  Hitched actions  ---
             _onRefresh: function (event) {
                 this.inherited(arguments);
-                this.refreshUsage();
+                this.refreshUsage(true);
             },
 
             _onPause: function (event, params) {
@@ -240,9 +240,9 @@ define([
                 var origResize = this._diskSummaryPane.resize;
                 this._diskSummaryPane.resize = function (size) {
                     origResize.apply(this, arguments);
-                    if (context._diskUsage && context._diskUsage.renderCount()) {
+                    if (context._diskUsage) {
                         context._diskUsage
-                            .resize({ width: size.w, height: size.h })
+                            .resize({ width: size.w, height: size.h || context._diskSummaryPane.h })
                             .lazyRender()
                             ;
                     }
@@ -283,9 +283,6 @@ define([
                 ESPUtil.MonitorVisibility(this.gridTab, function (visibility) {
                     if (visibility) {
                         context.refreshGrid();
-                        if (!context._diskUsage.renderCount()) {
-                            context._diskUsage.lazyRender();
-                        }
                     }
                 });
                 this.createStackControllerTooltip(this.id + "AutoRefresh", this.i18n.AutoRefresh + ": " + this.autoRefreshButton.get("checked"));
@@ -602,9 +599,9 @@ define([
                 return null;
             },
 
-            refreshUsage: function () {
+            refreshUsage: function (bypassCachedResult) {
                 this._diskUsage
-                    .refresh()
+                    .refresh(bypassCachedResult)
                     ;
             },
 

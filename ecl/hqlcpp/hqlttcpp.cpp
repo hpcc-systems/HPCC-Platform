@@ -5919,7 +5919,6 @@ WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _tr
     const HqlCppOptions & options = translator.queryOptions();
     trivialStoredWfid = 0;
     nextInternalFunctionId = 0;
-    onceWfid = 0;
     combineAllStored = options.combineAllStored;
     combineTrivialStored = options.combineTrivialStored;
     expandPersistInputDependencies = options.expandPersistInputDependencies;
@@ -6326,22 +6325,9 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
 
         if (info.persistOp == no_once)
         {
-            //MORE: Error if refers to stored or persist
+            //MORE: Error if refers to stored or persist - this test could be relaxed
             if (queryDirectDependencies(setValue).ordinality())
                 translator.ERRORAT(queryLocation(untransformed), HQLERR_OnceCannotAccessStored);
-
-            if (onceWfid == 0)
-            {
-                onceWfid = wfid;
-            }
-            else
-            {
-                wfid = onceWfid;
-                wfidCount--;
-            }
-            if (!onceExprs.contains(*setValue))
-                onceExprs.append(*LINK(setValue));
-            done = true;
         }
 
         if (combineTrivialStored && isTrivialStored(setValue))
@@ -6429,7 +6415,10 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 inheritDependencies(cluster);
                 setValue.set(cluster);
             }
-            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, info.queryCluster(), info.queryLabel());
+            WFMode wfMode = (info.persistOp == no_once) ? WFModeOnce : WFModeNormal;
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, wfMode, queryDirectDependencies(setValue), conts, info.queryCluster(), info.queryLabel());
+            if (info.persistOp == no_once)
+                wf->setScheduledNow();
             addWorkflowItem(*createWorkflowItem(setValue, wfid, info.persistOp, info.queryLabel()));
         }
     }
@@ -6795,7 +6784,7 @@ bool WorkflowTransformer::hasNonTrivialDependencies(IHqlExpression * expr)
     ForEachItemIn(i, dependencies)
     {
         unsigned cur = dependencies.item(i);
-        if ((cur != trivialStoredWfid) && (cur != onceWfid))
+        if (cur != trivialStoredWfid)
             return true;
     }
     return false;
@@ -7138,8 +7127,6 @@ IHqlExpression * WorkflowTransformer::transformSequentialEtc(IHqlExpression * ex
     //Ignore differences in access to trivial stored variables.
     if (trivialStoredWfid)
         cumulativeDependencies.append(trivialStoredWfid);
-    if (onceWfid)
-        cumulativeDependencies.append(onceWfid);
     OwnedHqlExpr ret = transformRootAction(expr);
     restoreDependencies(mark);
     return ret.getClear();
@@ -7255,15 +7242,6 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
         //ignore results that do nothing, but still collect the dependencies...
         if (ret->getOperator() != no_null)
             transformed.append(*ret.getClear());
-    }
-
-    if (onceExprs.length())
-    {
-        //By definition they don't have any dependencies, so no need to call inheritDependencies.
-        OwnedHqlExpr onceExpr = createActionList(onceExprs);
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(onceWfid, WFTypeNormal, WFModeOnce, queryDirectDependencies(onceExpr), NULL, "ONCE");
-        wf->setScheduledNow();
-        addWorkflowItem(*createWorkflowItem(onceExpr, onceWfid, no_once, "ONCE"));
     }
 
     if (trivialStoredExprs.length())

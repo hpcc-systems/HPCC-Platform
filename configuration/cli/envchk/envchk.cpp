@@ -142,11 +142,11 @@ int main(int argc, char *argv[])
     }
     catch (const ParseException &pe)
     {
-        std::cout << "There was a problem creating the environment manager instance: " << pe.what() << std::endl;
+        std::cerr << "There was a problem creating the environment manager instance: " << pe.what() << std::endl;
     }
     catch(const CliException &e)
     {
-        std::cout << "There was a problem loading the schema: " << e.what() << std::endl;
+        std::cerr << "There was a problem loading the schema: " << e.what() << std::endl;
     }
 
     //
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            std::cout << "There was a problem loading the environment: " << std::endl << pEnvMgr->getLastEnvironmentMessage() << std::endl;
+            std::cerr << "There was a problem loading the environment: " << std::endl << pEnvMgr->getLastEnvironmentMessage() << std::endl;
             rc = 1;
         }
     }
@@ -186,10 +186,10 @@ void outputStatus(Status &status, enum statusMsg::msgLevel lvl)
                     pNode->getPath(path);
                 }
             }
-            std::cout << status.getStatusTypeString(msg.msgLevel) << " : Path=" << path;
+            std::cerr << status.getStatusTypeString(msg.msgLevel) << " : Path=" << path;
             if (!msg.attribute.empty())
-                std::cout << "[" << msg.attribute << "]";
-            std::cout << " Message=" << msg.msg << std::endl;
+                std::cerr << "[" << msg.attribute << "]";
+            std::cerr << " Message=" << msg.msg << std::endl;
         }
     }
 }
@@ -264,7 +264,7 @@ bool processOptions(int argc, char *argv[])
     }
     catch(const CliException &e)
     {
-        std::cout << "There was an issue processing options: " << e.what() << std::endl;
+        std::cerr << "There was an issue processing options: " << e.what() << std::endl;
         rc = false;
     }
     return rc;
@@ -276,19 +276,19 @@ bool validate()
 
     if (!dirExists(configSchemaDir))
     {
-        std::cout << "Schema directory " << configSchemaDir << " does not exist" << std::endl;
+        std::cerr << "Schema directory " << configSchemaDir << " does not exist" << std::endl;
         return false;
     }
 
     if (!configSchemaPluginsDir.empty() && !dirExists(configSchemaPluginsDir))
     {
-        std::cout << "Schema plugins directory " << configSchemaPluginsDir << " does not exist" << std::endl;
+        std::cerr << "Schema plugins directory " << configSchemaPluginsDir << " does not exist" << std::endl;
         return false;
     }
 
     if (!fileExists(configSchemaDir + masterSchemaFile))
     {
-        std::cout << "The master config file " << masterSchemaFile << " does not exist" << std::endl;
+        std::cerr << "The master config file " << masterSchemaFile << " does not exist" << std::endl;
         return false;
     }
 
@@ -296,7 +296,7 @@ bool validate()
     {
         if (!fileExists(envFile))
         {
-            std::cout << "The environment file " << envFile << " does not exist" << std::endl;
+            std::cerr << "The environment file " << envFile << " does not exist" << std::endl;
             return false;
         }
     }

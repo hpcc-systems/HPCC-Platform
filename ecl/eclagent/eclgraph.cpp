@@ -1638,9 +1638,9 @@ void EclAgent::executeThorGraph(const char * graphName)
             e->Release();
             throw MakeStringExceptionDirect(-1, s.str());
         }
-        ThorReplyCodes replyCode;
-        reply.read((unsigned &)replyCode);
-        switch (replyCode)
+        unsigned replyCode;
+        reply.read(replyCode);
+        switch ((ThorReplyCodes) replyCode)
         {
             case DAMP_THOR_REPLY_PAUSED:
             {

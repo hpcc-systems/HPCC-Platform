@@ -1382,7 +1382,7 @@ void CBaseServerDebugContext::_continue(WatchState watch)
     }
 }
 
-unsigned CBaseServerDebugContext::checkOption(const char *supplied, const char *name, const char *accepted[])
+unsigned CBaseServerDebugContext::checkOption(const char *supplied, const char *name, const char * const *accepted)
 {
     if (supplied)
     {

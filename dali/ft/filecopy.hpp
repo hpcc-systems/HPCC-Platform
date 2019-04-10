@@ -36,7 +36,7 @@ typedef enum
     FFTlast
  } FileFormatType;
 
-static const char * FileFormatTypeStr[] =
+constexpr const char * FileFormatTypeStr[] =
 {       "FFTunknown",
         "FFTfixed", "FFTvariable", "FFTblocked",
         "FFTcsv",
@@ -57,7 +57,7 @@ typedef enum
     FMTlast
  } FileMarkupType;
 
-static const char * FileMarkupTypeStr[] =
+constexpr const char * FileMarkupTypeStr[] =
 {
     "FMTunknown",
     "FMTxml",
@@ -70,7 +70,7 @@ static const char * FileMarkupTypeStr[] =
 class DALIFT_API FileFormat
 {
 public:
-    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0) : headerLength((unsigned)-1), footerLength((unsigned)-1), markup(FMTunknown)
+    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0) : markup(FMTunknown), headerLength((unsigned)-1), footerLength((unsigned)-1)
             { set(_type, _recordSize); maxRecordSize = 0; quotedTerminator = true;}
 
     void deserialize(MemoryBuffer & in);
@@ -121,7 +121,7 @@ typedef enum {
         dfu_transfer,
     } dfu_operation;
 
-static const char * DfuOperatonStr[] =
+constexpr const char * DfuOperationStr[] =
     {
         "DFUunknown",
         "DFUcopy",

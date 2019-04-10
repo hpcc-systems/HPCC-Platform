@@ -478,7 +478,7 @@ typedef IThorDiskCallback IVirtualFieldCallback;
 struct RtlFieldInfo
 {
     constexpr inline RtlFieldInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, unsigned _flags = 0, const char *_initializer = NULL)
-    : name(_name), xpath(_xpath), type(_type), flags(_type->fieldType | _flags), initializer((const byte *) _initializer) {}
+    : name(_name), xpath(_xpath), type(_type), initializer((const byte *) _initializer), flags(_type->fieldType | _flags) {}
 
     const char * name;
     const char * xpath;

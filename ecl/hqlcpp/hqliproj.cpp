@@ -294,7 +294,12 @@ IHqlExpression * UsedFieldSet::createFilteredAssign(IHqlExpression * field, IHql
     if (field->isDatarow())
     {
         NestedField * match = findNested(field);
-        assertex(match);
+        if (!match)
+        {
+            match = findNestedByName(field);
+            assertex(match);
+            newField.set(match->field);
+        }
         NestedField * exception = exceptions ? exceptions->findNested(field) : NULL;
         if (!match->isEmpty())
         {

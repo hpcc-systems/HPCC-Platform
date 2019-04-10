@@ -234,7 +234,10 @@ int CEspHttpServer::processRequest()
 
         StringBuffer peerStr, pathStr;
         const char *userid=ctx->queryUserId();
-        ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), (userid) ? userid : "unknown", m_request->getPeer(peerStr).str());
+        if (isEmptyString(userid))
+            ESPLOG(LogMin, "%s %s, from %s", method.str(), m_request->getPath(pathStr).str(), m_request->getPeer(peerStr).str());
+        else //user ID is in HTTP header
+            ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
 
         authState = checkUserAuth();
         if ((authState == authTaskDone) || (authState == authFailed))
@@ -1808,7 +1811,7 @@ void CEspHttpServer::sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest&
                     "<div class=\"formContainer\">");
         content.appendf("<img id=\"logo\" src=\"%s%s\" />", espURL.str(), authReq.authBinding->queryLoginLogoURL());
          content.append("<div class=\"login\">");
-            content.appendf("<p class=\"loginStr\">%s <a href=\"%s\" class=\"loginStr\">Please click here to reload page</a></p>", errMsg, espURL.str());
+            content.appendf("<p class=\"loginStr\">%s <a href=\"%s\" class=\"loginStr\">Please click here to log into ECL Watch.</a></p>", errMsg, espURL.str());
          content.append("</div>"
                     "</div>"
                  "</div>"
@@ -1867,7 +1870,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: invalid session. Please relogin.");
+        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: invalid session.");
         ESPLOG(LogMin, "Authentication failed: invalid session ID '%u'. clearSessionCookies() called for the session.", sessionID);
         return authFailed;
     }
@@ -1878,7 +1881,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: network address for ESP session changed. Please relogin.");
+        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: Network address for ESP session has been changed.");
         ESPLOG(LogMin, "Authentication failed: session ID %u from IP %s. ", sessionID, peer.str());
         return authFailed;
     }

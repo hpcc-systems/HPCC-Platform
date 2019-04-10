@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,11 +15,24 @@
     limitations under the License.
 ############################################################################## */
 
-// Checking you can have more than one ONCE section
+//class=embedded
+//class=python2
 
-d1 := DICTIONARY([{1=>2}], { unsigned a=>unsigned b}) : ONCE;
-d2 := DICTIONARY([{3=>4}], { unsigned a=>unsigned b}) : ONCE;
+//nothor
 
-unsigned v := 0 : STORED('v');
+IMPORT Python;
 
-d1[v].b + d2[v].b : independent;
+// Test whether you can use EMBED inside a FORWARD
+
+TestMod := MODULE, FORWARD
+    EXPORT STRING TestFunction1(UNSIGNED1 n) := EMBED(Python)
+      return "Ok"
+    ENDEMBED;
+END;
+
+TestMod2 := MODULE, FORWARD
+    EXPORT STRING TestFunction1(UNSIGNED1 n) := EMBED(Python, ' return("Ok")');
+END;
+
+OUTPUT(TestMod.TestFunction1(5));
+OUTPUT(TestMod2.TestFunction1(5));

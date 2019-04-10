@@ -2433,7 +2433,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     }
 
     bool singleRow = hasSingleRow(expr);
-    bool useTempRow = singleRow && canAssignInline(&ctx, expr) && (format != FormatLinkedDataset) && (format != FormatArrayDataset);
+    bool useTempRow = singleRow && canAssignInline(&ctx, expr) && (format == FormatNatural);
     //Conditional row assignment if variable length causes offset to be recalculated outside of the if()
     //if (useTempRow && (op == no_if) && isVariableSizeRecord(expr->queryRecord()))
     //  useTempRow = false;

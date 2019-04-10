@@ -205,11 +205,11 @@ public:
 class ECLRTL_API KeySearcher : public CInterface
 {
 public:
-    KeySearcher(const RtlRecord & _info, RowFilter & _filter, ISourceRowCursor * _rows) : cursor(_info, _filter), rows(_rows)
+    KeySearcher(const RtlRecord & _info, RowFilter & _filter, ISourceRowCursor * _rows) : rows(_rows), cursor(_info, _filter)
     {
     }
 
-    KeySearcher(const RtlRecord & _info, const UnsignedArray &_sortOrder, RowFilter & _filter, ISourceRowCursor * _rows) : cursor(_info, _sortOrder, _filter), rows(_rows)
+    KeySearcher(const RtlRecord & _info, const UnsignedArray &_sortOrder, RowFilter & _filter, ISourceRowCursor * _rows) : rows(_rows), cursor(_info, _sortOrder, _filter)
     {
     }
 

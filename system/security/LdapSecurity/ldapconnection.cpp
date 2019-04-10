@@ -250,6 +250,7 @@ private:
 
     int                  m_ldapport;
     int                  m_ldap_secure_port;
+    StringBuffer         m_adminGroupName;
     StringBuffer         m_protocol;
     StringBuffer         m_basedn;
     StringBuffer         m_domain;
@@ -393,6 +394,12 @@ public:
         {
             throw MakeStringException(-1, "getServerInfo error - %s", ldap_err2string(rc));
         }
+
+        m_adminGroupName.clear();
+        cfg->getProp(".//@adminGroupName", m_adminGroupName);
+        if(m_adminGroupName.isEmpty())
+            m_adminGroupName.set(m_serverType == ACTIVE_DIRECTORY ? "Administrators" : "Directory Administrators");
+
         const char* basedn = cfg->queryProp(".//@commonBasedn");
         if(basedn == NULL || *basedn == '\0')
         {
@@ -529,6 +536,11 @@ public:
             m_sdfieldname.append("aci");
         else if(m_serverType == OPEN_LDAP)
             m_sdfieldname.append("aci");
+    }
+
+    virtual const char * getAdminGroupName()
+    {
+        return m_adminGroupName.str();
     }
 
     virtual LdapServerType getServerType()
@@ -4922,16 +4934,16 @@ private:
         LdapServerType stype = m_ldapconfig->getServerType();
         if(stype == ACTIVE_DIRECTORY)
         {
-            groupdn.append("cn=Administrators,cn=Builtin,").append(m_ldapconfig->getBasedn());
+            if (0 == stricmp(m_ldapconfig->getAdminGroupName(), "Administrators"))
+                groupdn.append("cn=Administrators,cn=Builtin,").append(m_ldapconfig->getBasedn());
+            else
+                groupdn.appendf("cn=%s,%s", m_ldapconfig->getAdminGroupName(), m_ldapconfig->getGroupBasedn());
         }
-        else if(stype == IPLANET)
+        else if(stype == IPLANET || stype == OPEN_LDAP)
         {
-            groupdn.append("cn=Directory Administrators,").append(m_ldapconfig->getBasedn());
+            groupdn.appendf("cn=%s,%s", m_ldapconfig->getAdminGroupName(), m_ldapconfig->getBasedn());
         }
-        else if(stype == OPEN_LDAP)
-        {
-            groupdn.append("cn=Directory Administrators,").append(m_ldapconfig->getBasedn());
-        }
+
     }
 
     virtual void changeUserMemberOf(const char* action, const char* userdn, const char* groupdn)
