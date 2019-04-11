@@ -678,8 +678,13 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                 throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "%s", errmsg.str());
             }
 
-            //"WsWorkunits.WsWorkunitsService.WUAbort:(LWsWorkunits/EsdlContext;LWsWorkunits/WUAbortRequest;)LWsWorkunits/WUAbortResponse;";
-            VStringBuffer signature("%s:(L%s/EsdlContext;L%s/%s;)L%s/%s;", javaScopedMethod, javaPackage, javaPackage, mthdef.queryRequestType(), javaPackage, mthdef.queryResponseType());
+            // Note that at present all methods called are assumed to be non-static (this was all that was supported prior to 7.2.0)
+            // We could extend edsl with a flag to indicate a static method (and remove the '@' in the signature below if it was set)
+            // Or we could remove the entire signature (the : and following in the line below) and have the plugin deduce it automatically - this does
+            // have a small performance penalty though.
+
+            //"WsWorkunits.WsWorkunitsService.WUAbort:@(LWsWorkunits/EsdlContext;LWsWorkunits/WUAbortRequest;)LWsWorkunits/WUAbortResponse;";
+            VStringBuffer signature("%s:@(L%s/EsdlContext;L%s/%s;)L%s/%s;", javaScopedMethod, javaPackage, javaPackage, mthdef.queryRequestType(), javaPackage, mthdef.queryResponseType());
 
             Owned<IEmbedFunctionContext> javactx;
             javactx.setown(srvctx->createFunctionContext(signature));

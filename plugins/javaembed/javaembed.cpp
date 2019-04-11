@@ -4122,13 +4122,13 @@ protected:
 
     const char *queryReportName()
     {
-        if (!importName.length())
+        if (!classname.length())
             return "";
-        const char *report = strrchr(importName.get(), '/');
+        const char *report = strrchr(classname.str(), '.');
         if (report)
             report++;
         else
-            report = importName.get();
+            report = classname.str();
         return report;
     }
 
@@ -4168,7 +4168,6 @@ protected:
         try
         {
             StringAttr checkedClassName;
-            nonStatic = true;   // until proven otherwise
             // Name should be in the form class.method:signature
             const char *funcname = strrchr(importName, '.');
             if (funcname)
@@ -4192,7 +4191,10 @@ protected:
                 methodName.set(funcname, sig-funcname);
                 sig++; // skip the ':'
                 if (*sig == '@') // indicates a non-static method
+                {
                     sig++;
+                    nonStatic = true;
+                }
                 else
                     nonStatic = false;
                 signature.set(sig);
