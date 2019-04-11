@@ -132,6 +132,12 @@
 
                 <entry>Get ESDL binding.</entry>
               </row>
+
+              <row>
+                <entry>get</entry>
+
+                <entry>Get ESDL definition.</entry>
+              </row>
             </tbody>
           </tgroup>
         </informaltable>
@@ -677,7 +683,7 @@
 
         <para>Examples:</para>
 
-        <programlisting>esdl publish mathservice.ecm mathservice -s nnn.nnn.nnn.nnn --port 8010
+        <programlisting>esdl publish MathService.ecm MathService -s nnn.nnn.nnn.nnn --port 8010
 </programlisting>
       </sect2>
 
@@ -753,8 +759,7 @@
       <sect2 id="CT_ESDL_CLI_esdl_delete" role="brk">
         <title>esdl delete</title>
 
-        <para><emphasis role="bold">esdl delete
-        &lt;ESDLServiceDefinitionName&gt; &lt;ESDLServiceDefinitionVersion&gt;
+        <para><emphasis role="bold">esdl delete &lt;ESDLDefinitionID&gt;
         [<emphasis>options</emphasis>]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
@@ -765,17 +770,9 @@
 
             <tbody>
               <row>
-                <entry>ESDLServiceDefinitionName</entry>
+                <entry>ESDLDefinitionID</entry>
 
-                <entry>The name of the ESDL service definition to
-                delete</entry>
-              </row>
-
-              <row>
-                <entry>ESDLServiceDefinitionVersion</entry>
-
-                <entry>The version of the ESDL service definition to
-                delete</entry>
+                <entry>The ID of the ESDL service definition to delete</entry>
               </row>
 
               <row>
@@ -829,7 +826,7 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl delete mathservice 2 -s nnn.nnn.nnn.nnn --port 8010
+        <programlisting>esdl delete MathService.2 -s nnn.nnn.nnn.nnn --port 8010
 </programlisting>
 
         <para><emphasis role="bold"></emphasis></para>
@@ -839,9 +836,9 @@
         <title>esdl bind-service</title>
 
         <para><emphasis role="bold">esdl bind-service
-        &lt;TargetESPProcessName&gt; &lt;TargetESPBindingPort |
-        TargetESPServiceName&gt; &lt;ESDLDefinitionId&gt;
-        (&lt;ESDLServiceName&gt;) [command options]</emphasis></para>
+        &lt;TargetESPProcessName&gt; &lt;TargetESPBindingPort&gt;
+        &lt;ESDLDefinitionId&gt; (&lt;ESDLServiceName&gt;) [command
+        options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -962,7 +959,7 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting format="linespecific">esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml 
+        <programlisting format="linespecific">esdl bind-service myesp 8003 MathService.1 MathService --config MathSvcCfg.xml 
                   -s nnn.nnn.nnn.nnn -p 8010</programlisting>
 
         <sect3>
@@ -1145,8 +1142,8 @@
       <sect2 id="CT_ESDL_CLI_esdl_unbind-service" role="brk">
         <title>esdl unbind-service</title>
 
-        <para><emphasis role="bold">esdl unbind-service &lt;ESPProcessName&gt;
-        &lt;ESPBindingName&gt; [options]</emphasis></para>
+        <para><emphasis role="bold">esdl unbind-service &lt;ESPBindingID&gt;
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1156,15 +1153,9 @@
 
             <tbody>
               <row>
-                <entry>ESPProcessName</entry>
+                <entry>ESPBindingID</entry>
 
-                <entry>The ESP Process name</entry>
-              </row>
-
-              <row>
-                <entry>ESPBindingName</entry>
-
-                <entry>The ESP Binding name</entry>
+                <entry>The ESDL Binding ID</entry>
               </row>
 
               <row>
@@ -1216,14 +1207,14 @@
         <para>Use this command to unbind ESDL service based bindings.</para>
 
         <para>To unbind a given ESDL binding, provide the ESP process name and
-        the ESP binding which make up this ESDL binding.</para>
+        the ESDL binding ID</para>
 
         <para>Available ESDL bindings to unbind can be found using the "esdl
         list-bindings" command</para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl unbind-service myesp myServiceBinding </programlisting>
+        <programlisting>esdl unbind-service myesp.8003.MathService </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esd_bind-method" role="brk">
@@ -1335,15 +1326,14 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl bind-method myEsp myespbinding mySvc mySvc.1 myMthd1 --config myMethods.xml</programlisting>
+        <programlisting>esdl bind-method myesp.8003.MathService AddThis --config myMethods.xml</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_unbind-method" role="brk">
         <title>esdl unbind-method</title>
 
-        <para><emphasis role="bold">esdl unbind-method &lt;ESPProcessName&gt;
-        &lt;ESPBindingName&gt; &lt;ESDLServiceName&gt; &lt;MethodName&gt;
-        [options]</emphasis></para>
+        <para><emphasis role="bold">esdl unbind-method &lt;ESDLBindingID&gt;
+        &lt;MethodName&gt; [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1353,23 +1343,9 @@
 
             <tbody>
               <row>
-                <entry>ESPProcessName</entry>
+                <entry>ESDLBindingID</entry>
 
-                <entry>The target ESP Process name</entry>
-              </row>
-
-              <row>
-                <entry>ESPBindingName</entry>
-
-                <entry>The target ESP binding name associated with this
-                service</entry>
-              </row>
-
-              <row>
-                <entry>ESDLServiceName</entry>
-
-                <entry>The name of the ESDLService associated with the target
-                method.</entry>
+                <entry>The ID of the ESDL Binding</entry>
               </row>
 
               <row>
@@ -1426,18 +1402,12 @@
         </informaltable>
 
         <para>Use this command to unbind a method configuration associated
-        with a given ESDL binding0.</para>
-
-        <para>To unbind a method, provide the target ESP process name (the ESP
-        which hosts the service.)</para>
-
-        <para>You must also provide the ESP binding on which this service is
-        configured to run, the name of the ESDL service, and the name of the
-        method you are unbinding.</para>
+        with a given ESDL binding. To unbind a method, provide the ID of the
+        ESDL binding and the name of the method you are unbinding.</para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl unbind-method myesp myespbinding WsMyService mymethod </programlisting>
+        <programlisting>esdl unbind-method myesp.8003.MathService AddThis </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_get-binding" role="brk">
@@ -1457,7 +1427,7 @@
                 <entry>ESDLBindingId</entry>
 
                 <entry>The target ESDL binding id
-                &lt;espprocessname&gt;.&lt;espbindingname&gt;</entry>
+                &lt;ESPProcessName&gt;.&lt;Port&gt;.&lt;ServiceName&gt;</entry>
               </row>
 
               <row>
@@ -1509,15 +1479,12 @@
         <para>Use this command to get DESDL Service based bindings.</para>
 
         <para>To specify the target DESDL based service configuration, provide
-        the target ESP process (esp process name or machine IP Address) which
-        hosts the service.</para>
-
-        <para>You must also provide the Port on which this service is
-        configured to run and the name of the service.</para>
+        the target ID of the ESDL binding, which is normally in the format
+        &lt;ESPProcessName&gt;.&lt;Port&gt;.&lt;ServiceName&gt;</para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl get-binding  myesp.dESDL_Service -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting>esdl get-binding  myesp.8003.MathService -s nnn.nnn.nnn.nnn -p 8010</programlisting>
 
         <para></para>
       </sect2>

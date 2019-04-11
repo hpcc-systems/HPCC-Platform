@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -93,7 +93,7 @@
     logic changes, data changes, or new features, as well as to interact with
     the service directly using SOAP, XML, or JSON.</para>
 
-    <para></para>
+    <para>Dynamic ESDL is an integral part of ESP.</para>
   </chapter>
 
   <chapter id="DESDLWorkflowTutorial">
@@ -106,13 +106,8 @@
 
       <itemizedlist>
         <listitem>
-          <para>Access to an HPCC Cluster (version 6.4.2 or later) that you
-          can reconfigure using Configuration Manager. This can be one running
-          in a Virtual Machine.</para>
-
-          <para>You should have a basic understanding of Configuration Manager
-          and how to use it. You also need access to the server(s) with
-          sufficient rights to modify the environment.</para>
+          <para>Access to an HPCC Cluster (version 7.0 or later). This can be
+          one running in a Virtual Machine.</para>
         </listitem>
       </itemizedlist>
 
@@ -121,11 +116,11 @@
           <para>Access to ECL Watch and WsECL (using a browser).</para>
 
           <para>For purposes of this tutorial, we assume that you know how to
-          submit a published using WsECL.</para>
+          submit a published query using WsECL.</para>
         </listitem>
 
         <listitem>
-          <para>The ECL IDE (version 6.4.2 or later)</para>
+          <para>The ECL IDE (version 7.0 or later)</para>
 
           <para>You won't need to know the ECL or ESDL languages to follow the
           steps in this book, but you will need to understand both to develop
@@ -157,13 +152,6 @@
       <para></para>
 
       <itemizedlist>
-        <listitem>
-          <para>Use Configuration Manager to add a Dynamic ESDL-based ESP
-          Service and bind it to a port on an ESP server.</para>
-
-          <para></para>
-        </listitem>
-
         <listitem>
           <para>Write an ESDL Service Definition using the editor in the ECL
           IDE.</para>
@@ -205,225 +193,62 @@
       <para></para>
     </sect1>
 
-    <sect1 id="DESDLConfigureAndBind">
-      <title>Configure and Bind the dESDL Service</title>
+    <sect1 id="ESDL_Configuration">
+      <title>ESDL Configuration</title>
 
-      <para>In this portion of the tutorial, we will add an ESP service and a
-      service binding that reserves a port for the dynamic ESDL
-      service.</para>
+      <para>The Configuration for Dynamic ESDL is an integral part of ESP.
+      Therefore, special configuration is not really necessary for basic ESDL
+      definitions. In Configuration Manager there are some configuration
+      elements that you can customize.</para>
 
-      <para>This step is independent of the development and publishing of the
-      actual Roxie query, so you can set it up before or after your query is
-      ready.</para>
+      <para>To customize your Dynamic ESDL set up In Configuration
+      Manager</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Go to the <emphasis role="bold">ESP - myesp</emphasis> page
+            then select Service bindings.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the <emphasis role="bold">ESP Service
+            Bindings</emphasis> Tab</para>
+          </listitem>
+        </orderedlist>The default ESP Service Bindings tab lists the service
+      bindings. Among the bindings listed there is the DESDLBindingTemplate.
+      This binding is a template, and provides a default configuration for all
+      DESDL bindings that you’re going to add on any port. Although the
+      template binding is set to use port 0, there is no binding created on
+      port 0, the template only exists to provide a default configuration.
+      <graphic fileref="images/desdl-Config01.png" /></para>
+
+      <para>You can customize the template to suit your needs. For example,
+      you can set up LDAP security or logging that will apply to all bindings.
+      If you wanted to have a custom configuration that is different from this
+      generic template, for instance to bind to Port 8020 that will use a
+      different LDAP server, you can add another DESDL binding template on
+      port 8020. </para>
 
       <orderedlist>
         <listitem>
-          <para>If it is running, stop the HPCC system, using this command in
-          a terminal window:</para>
-
-          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
-                      xpointer="element(/1)"
-                      xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-          <para><informaltable colsep="1" frame="all" rowsep="1">
-              <?dbfo keep-together="always"?>
-
-              <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
-
-                <colspec />
-
-                <tbody>
-                  <row>
-                    <entry><inlinegraphic
-                    fileref="images/OSSgr3.png" /></entry>
-
-                    <entry>You can use this command to confirm HPCC processes
-                    are stopped:<para> <programlisting>sudo systemctl status hpccsystems-platform.target</programlisting>
-                    </para></entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable></para>
+          <para>Right-click and choose <emphasis role="bold">Add</emphasis> on
+          the ESP Service Bindings tab</para>
         </listitem>
 
         <listitem>
-          <para>Start the Configuration Manager service.<emphasis
-          role="bold"></emphasis><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
-</programlisting></para>
+          <para>Click on the field in the <emphasis
+          role="bold">service</emphasis> column to select DESDL Service
+          Template from the drop list</para>
         </listitem>
 
         <listitem>
-          <para>Using a Web browser, go to the Configuration Manager's
-          interface:</para>
-
-          <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
-
-          <para>The Configuration Manager startup wizard displays.</para>
-        </listitem>
-
-        <listitem>
-          <?dbfo keep-together="always"?>
-
-          <para>Select <emphasis role="bold">Advanced View</emphasis> and then
-          select the source environment XML file to edit.</para>
-
-          <para><graphic fileref="images/desdl-openconfig.jpg" /></para>
-        </listitem>
-
-        <listitem>
-          <para>Press the <emphasis role="bold">Next</emphasis> button.</para>
-        </listitem>
-
-        <listitem>
-          <para>Check the <emphasis role="bold">Write Access</emphasis> box at
-          the top of the page.</para>
-
-          <para>Default access is read-only. Many options are only available
-          when write-access is enabled.</para>
-        </listitem>
-
-        <listitem>
-          <para>Right-click on <emphasis role="bold">Esp Services</emphasis>
-          and select <emphasis role="bold">Dynamic ESDL</emphasis> from
-          <emphasis role="bold">New Esp Services.</emphasis></para>
-
-          <para><graphic fileref="images/desdl-addDESDL.jpg" /></para>
-        </listitem>
-
-        <listitem>
-          <?dbfo keep-together="always"?>
-
-          <para>Change the name for the service. For this tutorial, let's name
-          it <emphasis role="bold">MathService</emphasis>.</para>
-
-          <para><graphic fileref="images/dsdl-NametheService.jpg" /></para>
-        </listitem>
-
-        <listitem>
-          <?dbfo keep-together="always"?>
-
-          <para>Select your ESP, then select the <emphasis role="bold">ESP
-          Service Bindings</emphasis> tab.</para>
-
-          <para><graphic fileref="images/desdl-ESPSVCBinding.jpg" /></para>
-        </listitem>
-
-        <listitem>
-          <?dbfo keep-together="always"?>
-
-          <para>Right-click in the list of bindings and select <emphasis
-          role="bold">Add</emphasis></para>
-
-          <para><graphic fileref="images/desdl-AddSVCBinding.jpg" /></para>
-        </listitem>
-
-        <listitem>
-          <para>Provide a name, port, and then select the service from the
-          drop list.</para>
-
-          <para>For this tutorial, name it <emphasis
-          role="bold">MathService</emphasis>, set the port to <emphasis
-          role="bold">8003</emphasis>, and select <emphasis
-          role="bold">MathService</emphasis> from the service drop list. This
-          is service definition you added in an earlier step.</para>
-
-          <para><graphic fileref="images/desdl-NameSVCBinding.jpg" /></para>
-        </listitem>
-
-        <listitem>
-          <para>Press the Save As button and name your new XML file <emphasis
-          role="bold">NewEnvironment</emphasis>.</para>
-
-          <para><graphic fileref="images/desdl-configSaveAs.jpg" /></para>
-        </listitem>
-
-        <listitem>
-          <para>Return to the terminal window and press <emphasis
-          role="bold">ctrl+c</emphasis> to close the Configuration
-          Manager.</para>
-        </listitem>
-
-        <listitem>
-          <para>Copy the NewEnvironment.xml file from the source directory to
-          the /etc/HPCCSystems and rename the file to environment.xml</para>
-
-          <programlisting># for example
-sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
-
-          <para><informaltable colsep="1" frame="all" rowsep="1">
-              <?dbfo keep-together="always"?>
-
-              <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
-
-                <colspec />
-
-                <tbody>
-                  <row>
-                    <entry><inlinegraphic
-                    fileref="images/caution.png" /></entry>
-
-                    <entry>Make sure that you have sufficient privileges to
-                    write file(s) to the destination directory before
-                    attempting to copy. If prompted to overwrite the
-                    destination file, you should answer <emphasis
-                    role="bold">yes</emphasis>.</entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable></para>
-        </listitem>
-
-        <listitem>
-          <para>Copy the <emphasis
-          role="bold">/etc/HPCCSystems/environment.xml</emphasis> to <emphasis
-          role="bold">/etc/HPCCSystems/</emphasis> on <emphasis
-          role="bold">every</emphasis> node.</para>
-
-          <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;</programlisting>
-        </listitem>
-
-        <listitem>
-          <?dbfo keep-together="always"?>
-
-          <para>Restart the HPCC system on <emphasis
-          role="bold">every</emphasis> node. The following command starts the
-          HPCC system on an individual node:</para>
-
-          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
-                      xpointer="element(/1)"
-                      xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-          <para></para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <?dbfo keep-together="always"?>
-
-            <tgroup cols="2">
-              <colspec colwidth="49.50pt" />
-
-              <colspec />
-
-              <tbody>
-                <row>
-                  <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
-
-                  <entry><para>You may want to create a script to push this
-                  command out to every node. A sample script is provided with
-                  HPCC. Use the following command to start HPCC on all
-                  nodes:</para> <xi:include
-                  href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
-                  xpointer="element(/1)"
-                  xmlns:xi="http://www.w3.org/2001/XInclude" /></entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-
-          <para></para>
+          <para>Click on the <emphasis role="bold">port</emphasis> column and
+          set the port number as desired, for example, port 8020</para>
         </listitem>
       </orderedlist>
+
+      <para>This template will override the template on port 0 and will
+      provide configuration for the dynamic bindings on port 8020.</para>
     </sect1>
 
     <sect1 id="DESDLWriteDef">
@@ -568,7 +393,7 @@ ESPresponse AddThisResponse
           <para>Notice that a new ECL file is now in the repository folder.
           Saving the ESDL file automatically generated a file named
           <emphasis>MathService.ecl</emphasis> in the current directory. You
-          could generate this ECl using the dropdown button and selecting
+          could generate this ECL using the dropdown button and selecting
           <emphasis role="bold">Generate ECL</emphasis>.</para>
 
           <para><figure>
@@ -727,6 +552,9 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
 
           <listitem>
             <para>Test the service using WsECL :<programlisting>http://&lt;<emphasis>esp ip </emphasis>&gt;:8002 </programlisting></para>
+
+            <para>Find the <emphasis>addthis</emphasis> service under the
+            Roxie, Target, Active Queries.</para>
           </listitem>
         </orderedlist></para>
     </sect1>
