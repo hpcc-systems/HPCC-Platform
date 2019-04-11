@@ -182,8 +182,10 @@ IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short
         try {
             Owned<IPropertyTree> dirTree = createPTree("machine");
             StringBuffer url;
-            node->endpoint().getIpText(url);
+            node->endpoint().getIpText(url.clear(), true);
             dirTree->setProp("@ip", url.str());
+            node->endpoint().getIpText(url.clear());
+            dirTree->setProp("@hn", url.str());
 
             XREFDirectoryBuilder builder;
             const char * cur = directory;

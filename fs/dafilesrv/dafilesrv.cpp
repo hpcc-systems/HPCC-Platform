@@ -542,6 +542,7 @@ int main(int argc,char **argv)
 
             // any overrides by Instance definitions?
             // NB: This won't work if netAddress is "." or if we start supporting hostnames there
+            // MCK - TODO
             StringBuffer ipStr;
             queryHostIP().getIpText(ipStr);
             VStringBuffer daFileSrvPath("Instance[@netAddress=\"%s\"]", ipStr.str());

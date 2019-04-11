@@ -1755,7 +1755,12 @@ public:
     {
         CriticalBlock block(xrefsect);
         StringBuffer path;
-        SocketEndpoint ep(machine->queryProp("@ip"));
+        SocketEndpoint ep;
+        const char *hn = machine->queryProp("@hn");
+        if (hn)
+            ep.ipset(hn);
+        else
+            ep.ipset(machine->queryProp("@ip"));
         ep.port = 0;
         xrefdir(ep,path,machine,clustsize);
     }
@@ -1962,7 +1967,12 @@ class CXRefManager: public CXRefManagerBase
             void scan(IPropertyTree *machine)
             {
                 StringBuffer path;
-                SocketEndpoint ep(machine->queryProp("@ip"));
+                SocketEndpoint ep;
+                const char *hn = machine->queryProp("@hn");
+                if (hn)
+                    ep.ipset(hn);
+                else
+                    ep.ipset(machine->queryProp("@ip"));
                 ep.port = 0;
                 scandir(ep,path,machine);
             }

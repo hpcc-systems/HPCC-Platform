@@ -5040,7 +5040,10 @@ void storeHistoryTreeToArray(IPropertyTree *history, IArrayOf<IEspHistory>& arrH
         Owned<IEspHistory> historyRecord = createHistory();
 
         IPropertyTree & item = historyIter->query();
-        historyRecord->setIP(item.queryProp("@ip"));
+        const char *hn = item.queryProp("@hn");
+        if (!hn)
+            hn = item.queryProp("@ip");
+        historyRecord->setIP(hn);
         historyRecord->setName(item.queryProp("@name"));
         historyRecord->setOperation(item.queryProp("@operation"));
         historyRecord->setOwner(item.queryProp("@owner"));

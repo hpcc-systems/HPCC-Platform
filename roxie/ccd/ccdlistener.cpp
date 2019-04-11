@@ -1822,9 +1822,12 @@ public:
                     ForEach(*accesses)
                     {
                         IPropertyTree &access = accesses->query();
+                        const char *hn = access.queryProp("@hn");
+                        if (!hn)
+                            hn = access.queryProp("@ip");
                         try
                         {
-                            addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode", -1));
+                            addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), hn, access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode", -1));
                         }
                         catch (IException *E)
                         {

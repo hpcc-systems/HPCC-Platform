@@ -391,8 +391,10 @@ bool processDirCommand(ISocket * masterSocket, MemoryBuffer & cmd, MemoryBuffer 
     StringBuffer url;
     
     Owned<IPropertyTree> dirTree = createPTree("machine", ipt_caseInsensitive);
-    node->endpoint().getIpText(url.clear());
+    node->endpoint().getIpText(url.clear(), true);
     dirTree->setProp("@ip", url.str());
+    node->endpoint().getIpText(url.clear());
+    dirTree->setProp("@hn", url.str());
 
     StringAttr nextDir;
     const char * cur = directory;
@@ -545,9 +547,11 @@ void doDirectoryCommand(const char * directory, IGroup * machines, IPropertyTree
     for (unsigned idx=0; idx < max; idx++)
     {
         INode & node = machines->queryNode(idx);
-        node.endpoint().getIpText(url.clear());
+        node.endpoint().getIpText(url.clear(), true);
         IPropertyTree * machine = createPTree("machine", ipt_caseInsensitive);
         machine->setProp("@ip", url.str());
+        node.endpoint().getIpText(url.clear());
+        machine->setProp("@hn", url.str());
         result->addPropTree("machine", machine);
         builder.rootDirectory(directory, &node, machine);
     }
@@ -681,7 +685,12 @@ void DirectoryCopier::copy()
     RemoteFilename sourceName;
     StringBuffer sourcePath;
     StringBuffer targetPath;
-    SocketEndpoint ip(machine->queryProp("@ip"));
+    SocketEndpoint ip;
+    const char *hn = machine->queryProp("@hn");
+    if (hn)
+        ip.ipset(hn);
+    else
+        ip.ipset(machine->queryProp("@ip"));
 
     sourceName.setPath(ip, rootDirectory->queryProp("@name"));
     sourceName.getRemotePath(sourcePath);
@@ -797,7 +806,12 @@ void doPhysicalCopy(IPropertyTree * source, const char * target, IPropertyTree *
     return;
 #endif
 
-    SocketEndpoint sourceMachine(source->queryProp("machine/@ip"));
+    SocketEndpoint sourceMachine;
+    const char *hn = source->queryProp("machine/@hn");
+    if (hn)
+        sourceMachine.ipset(hn);
+    else
+        sourceMachine.ipset(source->queryProp("machine/@ip"));
     RemoteFilename targetName;
     CachedPasswordProvider passwordProvider;
     Owned<IException> error;

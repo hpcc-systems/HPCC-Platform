@@ -2986,6 +2986,15 @@ void CheckResolveHN()
     }
 }
 
+bool setResolveHN(bool rhn)
+{
+    CriticalBlock c(hostnamesect);
+    CheckResolveHN();
+    bool prv = resolveHostnames;
+    resolveHostnames = rhn;
+    return prv;
+}
+
 const char * GetCachedHostName()
 {
     CriticalBlock c(hostnamesect);
@@ -3141,7 +3150,7 @@ bool IpAddress::ipequals(const IpAddress & other) const
     if (hcmp || !resolveHostnames)
         return hcmp;
 
-    // MCK - TODO should we make sure h_names are not dot-decimal strings ?
+    // MCK - TODO should we make sure h_names are not dotted-decimal strings ?
 
     // if one is loopback
     int hasLB = 0;
@@ -3353,7 +3362,10 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr,char *h_name)
                     strcpy(h_name, "localhost");
                 }
                 else
+                {
+                    // MCK - TODO just use name here ?
                     strcpy(h_name, entry->h_name);
+                }
             }
             else
             {
@@ -3451,7 +3463,10 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr,char *h_name)
                 strcpy(h_name, "localhost");
             }
             else
+            {
+                // MCK - TODO just use name here ?
                 strcpy(h_name, best->ai_canonname);
+            }
         }
         else
         {
@@ -3519,7 +3534,8 @@ bool IpAddress::ipset(const char *text)
         if (!*s)
         {
             memset(&netaddr, 0, sizeof(netaddr));
-            strcpy(h_name, "0.0.0.0");
+            // MCK - strcpy(h_name, "0.0.0.0");
+            strcpy(h_name, text);
             return false;
         }
         // resolve to name
@@ -3527,7 +3543,11 @@ bool IpAddress::ipset(const char *text)
             return true;
     }
     memset(&netaddr, 0, sizeof(netaddr));
-    strcpy(h_name, "0.0.0.0");
+    // MCK - strcpy(h_name, "0.0.0.0");
+    if (text&&*text)
+        strcpy(h_name, text);
+    else
+        strcpy(h_name, "0.0.0.0");
     return false;
 }
 
@@ -3560,9 +3580,9 @@ inline char * addbyte(char *s,byte b)
         
 
 
-StringBuffer & IpAddress::getIpText(StringBuffer & out, bool getRawIP) const
+StringBuffer & IpAddress::getIpText(StringBuffer & out, bool getIP) const
 {
-    if (getRawIP || !resolveHostnames)
+    if (getIP || !resolveHostnames)
         return ::getIpTextAddr(netaddr, out);
     return out.append(h_name);
 }
@@ -3826,12 +3846,12 @@ bool SocketEndpoint::set(const char *name,unsigned short _port)
     return false;
 }
 
-void SocketEndpoint::getUrlStr(char * str, size32_t len) const
+void SocketEndpoint::getUrlStr(char * str, size32_t len, bool getIP) const
 {
     if (len==0)
         return;
     StringBuffer _str;
-    getUrlStr(_str);
+    getUrlStr(_str, getIP);
     size32_t l = _str.length()+1;
     if (l>len)
     { 
@@ -3841,9 +3861,9 @@ void SocketEndpoint::getUrlStr(char * str, size32_t len) const
     memcpy(str,_str.str(),l);
 }
 
-StringBuffer &SocketEndpoint::getUrlStr(StringBuffer &str) const
+StringBuffer &SocketEndpoint::getUrlStr(StringBuffer &str, bool getIP) const
 {
-    getIpText(str);
+    getIpText(str, getIP);
     if (port) 
         str.append(':').append((unsigned)port);         // TBD IPv6 put [] on
     return str;

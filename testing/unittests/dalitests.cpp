@@ -2451,6 +2451,10 @@ public:
                                { "{~foreign::192.168.16.1::.::.::multi1, ~foreign::192.168.16.2::multi2::.::fname}", "{foreign::192.168.16.1::multi1,foreign::192.168.16.2::multi2::fname}" },
                                { nullptr, nullptr }                             // terminator
                              };
+
+        // skip resolve hostnames for these tests
+        setResolveHN(false);
+
         PROGLOG("Checking valid logical filenames");
         unsigned nlfn=0;
         for (;;)
@@ -2553,6 +2557,9 @@ public:
         const bool externalFile = true;
         const bool internalFile = false;
         const bool fileNameMatch = true;
+
+        // skip resolve hostnames for these tests
+        setResolveHN(false);
 
         PROGLOG("Checking external filenames detection and normalization");
         unsigned nlfn=0;

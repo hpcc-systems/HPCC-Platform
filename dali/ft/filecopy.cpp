@@ -3303,8 +3303,10 @@ void FileSprayer::splitAndCollectFileInfo(IPropertyTree * newRecord, RemoteFilen
 
     if (drive.isEmpty())
     {
-        remoteFileName.queryIP().getIpText(drive.clear());
+        remoteFileName.queryIP().getIpText(drive.clear(), true);
         newRecord->setProp("@ip", drive.str());
+        remoteFileName.queryIP().getIpText(drive.clear());
+        newRecord->setProp("@hn", drive.str());
     }
     else
         newRecord->setProp("@drive", drive.str());

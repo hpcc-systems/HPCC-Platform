@@ -4855,7 +4855,12 @@ bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid, bool 
         {
             IPropertyTree &file = associated->query();
             const char *filename = file.queryProp("@filename");
-            SocketEndpoint ep(file.queryProp("@ip"));
+            SocketEndpoint ep;
+            const char *hn = file.queryProp("@hn");
+            if (hn)
+                ep.ipset(hn);
+            else
+                ep.ipset(file.queryProp("@ip"));
             RemoteFilename rfn;
             rfn.setPath(ep, filename);
             OwnedIFile dstFile = createIFile(rfn);
@@ -10033,7 +10038,11 @@ IStringVal & CLocalWUAssociated::getDescription(IStringVal & str) const
 
 IStringVal & CLocalWUAssociated::getIp(IStringVal & str) const
 {
-    str.set(p->queryProp("@ip"));
+    const char *hn = p->queryProp("@hn");
+    if (hn)
+        str.set(hn);
+    else
+        str.set(p->queryProp("@ip"));
     return str;
 }
 
@@ -10232,6 +10241,10 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
     setEnum(s, "@type", type, queryFileTypes);
     s->setProp("@filename", name);
     s->setProp("@ip", ip);
+
+    // MCK - resolve ip/hn later, if/when needed
+    s->setProp("@hn", ip);
+
     s->setProp("@desc", desc);
 
     if (crc)

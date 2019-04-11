@@ -181,7 +181,12 @@ public:
 
     virtual void getDllFilename(RemoteFilename & filename)
     {
-        SocketEndpoint ep(locationRoot->queryProp("@ip"));
+        SocketEndpoint ep;
+        const char *hn = locationRoot->queryProp("@hn");
+        if (hn)
+            ep.ipset(hn);
+        else
+            ep.ipset(locationRoot->queryProp("@ip"));
         filename.setPath(ep, locationRoot->queryProp("@dll"));
     }
     virtual bool getLibFilename(RemoteFilename & filename)
@@ -198,17 +203,31 @@ public:
             lib = libnamebuf.str();
         }
 #endif
-        SocketEndpoint ep(locationRoot->queryProp("@ip"));
+        SocketEndpoint ep;
+        const char *hn = locationRoot->queryProp("@hn");
+        if (hn)
+            ep.ipset(hn);
+        else
+            ep.ipset(locationRoot->queryProp("@ip"));
         filename.setPath(ep, lib);
         return true;
     }
     virtual void getIP(IpAddress & ip)
     {
-        ip.ipset(locationRoot->queryProp("@ip"));
+        const char *hn = locationRoot->queryProp("@hn");
+        if (hn)
+            ip.ipset(hn);
+        else
+            ip.ipset(locationRoot->queryProp("@ip"));
     }
     virtual DllLocationType queryLocation()
     {
-        SocketEndpoint ep(locationRoot->queryProp("@ip"));
+        SocketEndpoint ep;
+        const char *hn = locationRoot->queryProp("@hn");
+        if (hn)
+            ep.ipset(hn);
+        else
+            ep.ipset(locationRoot->queryProp("@ip"));
         if (ep.isLocal())
         {
             RemoteFilename filename;
@@ -220,7 +239,9 @@ public:
             return DllLocationLocal;
         }
 #ifdef _WIN32
-        Owned<IConstDomainInfo> curDomain = getDomainFromIp(locationRoot->queryProp("@ip"));
+        StringBuffer hnstr;
+        ep.getIpText(hnstr, true);
+        Owned<IConstDomainInfo> curDomain = getDomainFromIp(hnstr.str());
         IConstDomainInfo * hostDomain = cachedHostDomain();
         if (curDomain && hostDomain && (curDomain == hostDomain))
             return DllLocationDomain;
@@ -265,8 +286,16 @@ void DllLocation::remove(bool removeFiles, bool removeDirectory)
         IPropertyTree & cur = iter->query();
         IpAddress curip;
         IpAddress locip;
-        curip.ipset(cur.queryProp("@ip"));
-        locip.ipset(locationRoot->queryProp("@ip"));
+        const char *curhn = cur.queryProp("@hn");
+        if (curhn)
+            curip.ipset(curhn);
+        else
+            curip.ipset(cur.queryProp("@ip"));
+        const char *lochn = locationRoot->queryProp("@hn");
+        if (lochn)
+            locip.ipset(lochn);
+        else
+            locip.ipset(locationRoot->queryProp("@ip"));
         if (curip.ipequals(locip))
         {
             if (propsMatch(cur, *locationRoot, "@dll") && propsMatch(cur, *locationRoot, "@lib"))
@@ -563,9 +592,10 @@ IDllEntry * DllServer::createEntry(IPropertyTree *owner, IPropertyTree *entry)
 void DllServer::doRegisterDll(const char * name, const char * kind, const char * dllPath, const char * libPath)
 {
     RemoteFilename dllRemote;
-    StringBuffer ipText, dllText;
+    StringBuffer ipText, dllText, hnText;
     dllRemote.setRemotePath(dllPath);
-    dllRemote.queryIP().getIpText(ipText);
+    dllRemote.queryIP().getIpText(ipText, true);
+    dllRemote.queryIP().getIpText(hnText);
     dllRemote.getLocalPath(dllText);
 
     Owned<IRemoteConnection> conn = getEntryConnection(name, RTM_LOCK_WRITE);
@@ -578,9 +608,17 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
         ForEach(*iter)
         {
             IPropertyTree & cur = iter->query();
-            if ((stricmp(cur.queryProp("@ip"),ipText.str()) == 0) && 
-                (stricmp(cur.queryProp("@dll"),dllText.str()) == 0))
-                return;
+            if (stricmp(cur.queryProp("@dll"),dllText.str()) == 0)
+            {
+                IpAddress curip;
+                const char *curhn = cur.queryProp("@hn");
+                if (curhn)
+                    curip.ipset(curhn);
+                else
+                    curip.ipset(cur.queryProp("@ip"));
+                if (dllRemote.queryIP().ipequals(curip))
+                    return;
+            }
         }
     }
     else
@@ -608,6 +646,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
 
     IPropertyTree * locationTree = createPTree("location");
     locationTree->setProp("@ip", ipText.str());
+    locationTree->setProp("@hn", hnText.str());
     locationTree->setProp("@dll", dllText.str());
 
     if (libPath && strlen(libPath))

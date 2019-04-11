@@ -693,8 +693,10 @@ void NodeLogMsgFilter::addToPTree(IPropertyTree * tree) const
     IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "node");
     StringBuffer buff;
-    node.getIpText(buff);
+    node.getIpText(buff, true);
     filterTree->setProp("@ip", buff.str());
+    node.getIpText(buff.clear());
+    filterTree->setProp("@hn", buff.str());
     filterTree->setPropInt("@port", node.port);
     if(localFlag) filterTree->setPropInt("@local", 1);
     tree->addPropTree("filter", filterTree);
@@ -705,8 +707,10 @@ void IpLogMsgFilter::addToPTree(IPropertyTree * tree) const
     IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "ip");
     StringBuffer buff;
-    ip.getIpText(buff);
+    ip.getIpText(buff, true);
     filterTree->setProp("@ip", buff.str());
+    ip.getIpText(buff.clear());
+    filterTree->setProp("@hn", buff.str());
     if(localFlag) filterTree->setPropInt("@local", 1);
     tree->addPropTree("filter", filterTree);
 }

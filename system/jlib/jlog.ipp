@@ -191,7 +191,11 @@ public:
     NodeLogMsgFilter(IPropertyTree * tree)
     {
         StringBuffer buff;
-        tree->getProp("@ip", buff);
+        const char *hn = tree->queryProp("@hn");
+        if (hn)
+            buff.append(hn);
+        else
+            tree->getProp("@ip", buff);
         node.set(buff.str(), tree->getPropInt("@port", 0));
         localFlag = tree->hasProp("@local");
     }
@@ -218,7 +222,15 @@ public:
     }
     IpLogMsgFilter(bool local) : localFlag(local) { GetHostIp(ip); }
     IpLogMsgFilter(MemoryBuffer & in) { ip.ipdeserialize(in); in.read(localFlag); }
-    IpLogMsgFilter(IPropertyTree * tree) : ip(tree->queryProp("@ip")) { localFlag = tree->hasProp("@local"); }
+    IpLogMsgFilter(IPropertyTree * tree)
+    {
+        const char *hn = tree->queryProp("@hn");
+        if (hn)
+            ip.ipset(hn);
+        else
+            ip.ipset(tree->queryProp("@ip"));
+        localFlag = tree->hasProp("@local");
+    }
 
     bool                      includeMessage(const LogMsg & msg) const { if(localFlag && msg.queryRemoteFlag()) return false; return msg.querySysInfo().queryNode()->ipequals(ip); }
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }

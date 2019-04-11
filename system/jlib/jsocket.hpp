@@ -93,7 +93,7 @@ public:
     bool isLoopBack() const;                            // is loopback (localhost: 127.0.0.1 or ::1)
     bool isLocal() const;                               // matches local interface 
     bool isIp4() const;
-    StringBuffer &getIpText(StringBuffer & out,bool getRawIP=false) const;
+    StringBuffer &getIpText(StringBuffer & out, bool getIP=false) const;
     StringBuffer &getHostText(StringBuffer & out) const;
     void ipserialize(MemoryBuffer & out) const;         
     void ipdeserialize(MemoryBuffer & in);          
@@ -130,6 +130,7 @@ extern jlib_decl const char * GetCachedHostName();
 inline StringBuffer & GetHostName(StringBuffer &str) { return str.append(GetCachedHostName()); }
 extern jlib_decl IpAddress &GetHostIp(IpAddress &ip);
 extern jlib_decl IpAddress &localHostToNIC(IpAddress &ip);  
+extern jlib_decl bool setResolveHN(bool rhn);
 
 class jlib_decl SocketEndpoint : extends IpAddress
 {
@@ -148,8 +149,8 @@ public:
     inline void setLocalHost(unsigned short _port)              { port = _port; GetHostIp(*this); } // NB *not* localhost(127.0.0.1)
     inline void set(unsigned short _port, const IpAddress & _ip) { ipset(_ip); port = _port; };
     inline bool equals(const SocketEndpoint &ep) const          { return ((port==ep.port)&&ipequals(ep)); }
-    void getUrlStr(char * str, size32_t len) const;             // in form ip4:port or [ip6]:port
-    StringBuffer &getUrlStr(StringBuffer &str) const;           // in form ip4:port or [ip6]:port
+    void getUrlStr(char * str, size32_t len, bool getIP=false) const;   // in form ip4:port or [ip6]:port
+    StringBuffer &getUrlStr(StringBuffer &str, bool getIP=false) const; // in form ip4:port or [ip6]:port
 
     inline SocketEndpoint & operator = ( const SocketEndpoint &other )
     {

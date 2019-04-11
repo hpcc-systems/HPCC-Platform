@@ -6831,6 +6831,7 @@ public:
     {
         exactmatch = _exactmatch;
         if (matchgroup.get()) {
+            // MCK - TODO
             StringBuffer query;
             query.append("Group[Node/@ip=\"");
             matchgroup->queryNode(0).endpoint().getUrlStr(query);
@@ -6963,7 +6964,7 @@ public:
             // allow IP or IP list instead of group name
             // I don't think this is a security problem as groups not checked
             // NB ports not allowed here
-
+            // MCK - TODO
             char *buf = strdup(logicalgroupname);
             char *s = buf;
             while (*s) {
@@ -7086,7 +7087,14 @@ public:
                 Owned<IPropertyTreeIterator> pe2 = pt->getElements("Node");
                 ForEach(*pe2)
                 {
-                    SocketEndpoint ep(pe2->query().queryProp("@ip"));
+                    SocketEndpoint ep;
+                    const char *hn = pe2->query().queryProp("@hn");
+                    if (hn)
+                        ep.ipset(hn);
+                    else
+                        ep.ipset(pe2->query().queryProp("@ip"));
+                    StringBuffer ipstr;
+                    ep.getIpText(ipstr, true);
                     epa.append(ep);
                 }
             }
@@ -7197,8 +7205,10 @@ public:
         ForEach(gi) {
             IPropertyTree *n = createPTree("Node");
             n = val->addPropTree("Node",n);
-            gi.query().endpoint().getIpText(str.clear());
+            gi.query().endpoint().getIpText(str.clear(), true);
             n->setProp("@ip",str.str());
+            gi.query().endpoint().getIpText(str.clear());
+            n->setProp("@hn",str.str());
         }
         gi.Release();
         connlock.conn->queryRoot()->addPropTree("Group",val);
@@ -7301,6 +7311,7 @@ public:
             const char *kind = group.queryProp("@kind");
             if (kind && streq("Spare", kind))
                 continue;
+            // MCK - TODO
             StringBuffer name;
             group.getProp("@name",name);
             StringBuffer xpath("Node[@ip = \"");
@@ -7369,7 +7380,12 @@ private:
         groupdir.set(pt->queryProp("@dir"));
         type = translateGroupType(pt->queryProp("@kind"));
         ForEach(*pe) {
-            SocketEndpoint ep(pe->query().queryProp("@ip"));
+            SocketEndpoint ep;
+            const char *hn = pe->query().queryProp("@hn");
+            if (hn)
+                ep.ipset(hn);
+            else
+                ep.ipset(pe->query().queryProp("@ip"));
             epa.append(ep);
         }
         return epa.ordinality() > 0;
@@ -9211,8 +9227,12 @@ class CInitGroups
         Owned<IPropertyTreeIterator> oldIter = oldClusterGroup->getElements("Node");
         if (newIter->first() && oldIter->first()) {
             for (;;) {
-                const char *oldIp = oldIter->query().queryProp("@ip");
-                const char *newIp = newIter->query().queryProp("@ip");
+                const char *oldIp = oldIter->query().queryProp("@hn");
+                if (!oldIp)
+                    oldIp = oldIter->query().queryProp("@ip");
+                const char *newIp = newIter->query().queryProp("@hn");
+                if (!newIp)
+                    newIp = newIter->query().queryProp("@ip");
                 IpAddress oip(oldIp);
                 IpAddress nip(newIp);
                 if (!nip.ipequals(oip))
@@ -9375,9 +9395,11 @@ class CInitGroups
         Owned<INodeIterator> iter = group->getIterator();
         StringBuffer str;
         ForEach(*iter) {
-            iter->query().endpoint().getIpText(str.clear());
+            iter->query().endpoint().getIpText(str.clear(), true);
             IPropertyTree *n = createPTree("Node");
             n->setProp("@ip",str.str());
+            iter->query().endpoint().getIpText(str.clear());
+            n->setProp("@hn",str.str());
             cluster->addPropTree("Node", n);
         }
         return cluster.getClear();
@@ -9563,7 +9585,12 @@ public:
                         if (existing) {
                             Owned<IPropertyTreeIterator> iter = existing->getElements("Node");
                             ForEach(*iter) {
-                                SocketEndpoint ep(iter->query().queryProp("@ip"));
+                                SocketEndpoint ep;
+                                const char *hn = iter->query().queryProp("@hn");
+                                if (hn)
+                                    ep.ipset(hn);
+                                else
+                                    ep.ipset(iter->query().queryProp("@ip"));
                                 if (eps->zap(ep)) {
                                     StringBuffer epStr;
                                     VStringBuffer errMsg("addSpares: not adding: %s, already in spares", ep.getUrlStr(epStr).str());
@@ -9582,9 +9609,11 @@ public:
                         ForEachItemIn(e, *eps) {
                             const SocketEndpoint &ep = eps->item(e);
                             StringBuffer ipStr;
-                            ep.getIpText(ipStr);
+                            ep.getIpText(ipStr.clear(), true);
                             IPropertyTree *node = createPTree();
                             node->setProp("@ip", ipStr.str());
+                            ep.getIpText(ipStr.clear());
+                            node->setProp("@hn", ipStr.str());
                             existing->addPropTree("Node", node);
                         }
                         break;
@@ -9599,6 +9628,7 @@ public:
                         IPropertyTree *existing = root->queryPropTree(xpath.str());
                         if (existing) {
                             ForEachItemIn(e, *eps) {
+                                // MCK - TODO
                                 const SocketEndpoint &ep = eps->item(e);
                                 StringBuffer ipStr;
                                 ep.getIpText(ipStr);
@@ -9752,6 +9782,27 @@ static IGroup *getClusterNodeGroup(const char *clusterName, const char *type, bo
     Owned<IGroup> expandedClusterGroup = init.getGroupFromCluster(type, cluster, true);
     if (!expandedClusterGroup)
         throwStringExceptionV(0, "Failed to get group for '%s' cluster '%s'", type, clusterName);
+
+#if 0 // mck
+    SocketEndpointArray cgepa;
+    expandedClusterGroup->getSocketEndpoints(cgepa);
+    ForEachItemIn(i1,cgepa) {
+        StringBuffer ip1, h1;
+        cgepa.element(i1).getIpText(ip1, true);
+        cgepa.element(i1).getHostText(h1);
+        DBGLOG("mck - cpegq(%s,%s)", ip1.str(), h1.str());
+    }
+
+    SocketEndpointArray ngepa;
+    nodeGroup->getSocketEndpoints(ngepa);
+    ForEachItemIn(i2,ngepa) {
+        StringBuffer ip2, h2;
+        ngepa.element(i2).getIpText(ip2, true);
+        ngepa.element(i2).getHostText(h2);
+        DBGLOG("mck - ngegq(%s,%s)", ip2.str(), h2.str());
+    }
+#endif // mck
+
     if (!expandedClusterGroup->equals(nodeGroup))
     {
         IPropertyTree *rawGroup = init.queryRawGroup(nodeGroupName);
