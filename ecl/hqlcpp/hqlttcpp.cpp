@@ -1330,6 +1330,14 @@ SequenceNumberAllocator::SequenceNumberAllocator(HqlCppTranslator & _translator)
     sequence = 0;
 }
 
+unsigned SequenceNumberAllocator::getNextSequence()
+{
+    if (translator.insideLibrary())
+        return translator.nextLibrarySequence();    // library sequence numbers must be unique for multiple embedded libraries
+    else
+        return sequence++;
+}
+
 void SequenceNumberAllocator::nextSequence(HqlExprArray & args, IHqlExpression * name, IAtom * overwriteAction, IHqlExpression * value, bool needAttr, bool * duplicate)
 {
     IHqlExpression * seq = NULL;
@@ -1380,13 +1388,13 @@ void SequenceNumberAllocator::nextSequence(HqlExprArray & args, IHqlExpression *
 
         if (!seq)
         {
-            seq = createConstant(signedType->castFrom(true, (__int64)sequence++));
+            seq = createConstant(signedType->castFrom(true, (__int64)getNextSequence()));
             OwnedHqlExpr saveValue = overwriteAction ? createAttribute(overwriteAction, LINK(seq), LINK(value)) : LINK(seq);
             namedMap.setValue(name, saveValue);
         }
     }
     else
-        seq = createConstant(signedType->castFrom(true, (__int64)sequence++));
+        seq = createConstant(signedType->castFrom(true, (__int64)getNextSequence()));
 
     if (needAttr)
         args.append(*createAttribute(sequenceAtom, seq));
@@ -1519,8 +1527,16 @@ IHqlExpression * SequenceNumberAllocator::attachSequenceNumber(IHqlExpression * 
 {
     switch (expr->getOperator())
     {
-    case no_buildindex:
     case no_output:
+        if (translator.insideLibrary())
+        {
+            if (!expr->hasAttribute(extendAtom))
+                throwError(HQLERR_OnlyExtendOutputInLibrary);
+            if (!expr->hasAttribute(namedAtom))
+                throwError(HQLERR_UnnamedOutputInLibrary);
+        }
+        //fall through
+    case no_buildindex:
     case no_apply:
     case no_distribution:
     case no_keydiff:
@@ -1537,6 +1553,9 @@ IHqlExpression * SequenceNumberAllocator::attachSequenceNumber(IHqlExpression * 
         break;
     case no_outputscalar:
         {
+            if (translator.insideLibrary())
+                throwError(HQLERR_NoScalarOutputInLibrary);
+
             IHqlExpression * name = queryResultName(expr);
             queryExtra(expr)->setGetsSequence();
             HqlExprArray args;
