@@ -2015,6 +2015,7 @@ public:
     inline StringBuffer & getUniqueId(StringBuffer & target) { return appendUniqueId(target, getUniqueId()); }
     inline unsigned curGraphSequence() const { return activeGraph ? graphSeqNumber : 0; }
     UniqueSequenceCounter & querySpillSequence() { return spillSequence; }
+    unsigned nextLibrarySequence() { return librarySequence++; }
 
 public:
     void traceExpression(const char * title, IHqlExpression * expr, unsigned level=500);
@@ -2049,6 +2050,7 @@ protected:
     ClusterType         targetClusterType;
     bool contextAvailable;
     unsigned maxSequence;
+    unsigned librarySequence = LibraryBaseSequence;
     unsigned            startCursorSet;
     bool                requireTable;
     BuildCtx *          activeGraphCtx;

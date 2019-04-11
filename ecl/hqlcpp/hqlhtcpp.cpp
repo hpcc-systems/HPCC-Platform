@@ -8983,7 +8983,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityEmbed(BuildCtx & ctx, IHqlExpr
     if (expr->isDataset())
     {
         MemberFunction func(*this, instance->startctx, "virtual IRowStream * createOutput(IThorActivityContext * activityContext) override");
-        buildReturn(func.ctx, newCall);
+        OwnedITypeInfo streamedType = setStreamedAttr(newCall->queryType(), true);
+        buildReturn(func.ctx, newCall, streamedType);
     }
     else
     {

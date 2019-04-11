@@ -511,6 +511,9 @@
 #define HQLERR_CacheMissingEntry                3153
 #define HQLERR_PotentialAmbiguity               3154
 #define HQLERR_CannotDefineFunctionFunction     3155
+#define HQLERR_NoScalarOutputInLibrary          3156
+#define HQLERR_OnlyExtendOutputInLibrary        3157
+#define HQLERR_UnnamedOutputInLibrary           3158
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -560,6 +563,9 @@
 #define HQLERR_CacheMissingEntry_Text           "Cannot process cache entry '%s'"
 #define HQLERR_PotentialAmbiguity_Text          "INTERNAL: Mapping introduces potential ambiguity into expression - please report issue"
 #define HQLERR_CannotDefineFunctionFunction_Text "Cannot define a function that returns a function"
+#define HQLERR_NoScalarOutputInLibrary_Text     "Scalar outputs are not supported inside libraries"
+#define HQLERR_OnlyExtendOutputInLibrary_Text   "OUTPUT within a library must use EXTEND"
+#define HQLERR_UnnamedOutputInLibrary_Text      "OUTPUT within a library must be NAMED"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

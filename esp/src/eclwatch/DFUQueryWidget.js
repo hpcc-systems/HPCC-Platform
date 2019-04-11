@@ -398,7 +398,7 @@ define([
                     request: this.updatedFilter
                 }).then(function (response) {
                     if (lang.exists("DFUQueryResponse", response)) {
-                        if (response.DFUQueryResponse.Warning) {
+                        if (response.DFUQueryResponse.Warning && dojo.byId(context.id).offsetParent !== null) {
                             context.filter.open();
                             context.filter.setFilterMessage(context.i18n.FilesWarning);
                         } else {
@@ -441,7 +441,16 @@ define([
                 });
 
                 this.initWorkunitsGrid();
-                this.checkIfWarning();
+
+                if (!params.searchResults) {
+                    this.checkIfWarning();
+                }
+
+                ESPUtil.MonitorVisibility(this.workunitsTab, function (visibility) {
+                    if (visibility) {
+                        context.checkIfWarning();
+                    }
+                });
 
                 this.filter.on("clear", function (evt) {
                     context.refreshHRef();

@@ -3074,6 +3074,11 @@ public:
     {
         return this;
     }
+    virtual const IQueryFactory *queryQueryFactory() const override
+    {
+        return factory;
+    }
+
 
     virtual IGlobalCodeContext *queryGlobalCodeContext()
     {

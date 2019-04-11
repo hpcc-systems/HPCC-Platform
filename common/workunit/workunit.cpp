@@ -3760,6 +3760,8 @@ public:
             { return c->getResultByName(name); }
     virtual IConstWUResult * getResultBySequence(unsigned seq) const
             { return c->getResultBySequence(seq); }
+    virtual IConstWUResult * getQueryResultByName(const char * name) const
+            { return c->getQueryResultByName(name); }
     virtual unsigned getResultLimit() const
             { return c->getResultLimit(); }
     virtual IConstWUResultIterator & getResults() const
@@ -4296,6 +4298,8 @@ extern WORKUNIT_API bool isSpecialResultSequence(unsigned sequence)
         return true;
     default:
         assertex(sequence <= INT_MAX);
+        if ((int) sequence >= LibraryBaseSequence)
+            return true;
         return false;
     }
 }
@@ -8933,6 +8937,27 @@ IConstWUResult* CLocalWorkUnit::getResultByName(const char *qname) const
         {
             cur.Link();
             return &cur;
+        }
+    }
+    return NULL;
+}
+
+IConstWUResult* CLocalWorkUnit::getQueryResultByName(const char *qname) const
+{
+    CriticalBlock block(crit);
+    loadResults();
+    ForEachItemIn(idx, results)
+    {
+        IConstWUResult &cur = results.item(idx);
+        if (!isSpecialResultSequence(cur.getResultSequence()))
+        {
+            SCMStringBuffer name;
+            cur.getResultName(name);
+            if (stricmp(name.str(), qname)==0)
+            {
+                cur.Link();
+                return &cur;
+            }
         }
     }
     return NULL;
