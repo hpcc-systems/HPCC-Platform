@@ -59,6 +59,10 @@
   - [ ] I have tested my changes in multiple modern browsers
   - [ ] The component(s) render as expected
 
+## Smoketest:
+- [ ] Send notifications about my Pull Request position in Smoketest queue.
+- [ ] Test my draft Pull Request.
+
 ## Testing:
 <!-- Please describe how this change has been tested.-->
 
