@@ -7450,7 +7450,7 @@ dataSetOrRowList
                         {
                             OwnedHqlExpr lhs = $1.getExpr();
                             OwnedHqlExpr rhs = $3.getExpr();
-                            OwnedHqlExpr normRhs = parser->checkEnsureRecordsMatch(lhs, rhs, $2.pos, rhs->isDatarow());
+                            OwnedHqlExpr normRhs = parser->checkEnsureRecordsMatch(lhs, rhs, $2.pos, rhs->queryType()->getTypeCode());
                             $$.setExpr(createComma(lhs.getClear(), normRhs.getClear()), $1);
                         }
     ;
@@ -7776,7 +7776,7 @@ simpleDataRow
                             OwnedHqlExpr elseExpr = $5.getExpr();
                             $3.unwindCommaList(args);
 
-                            parser->ensureMapToRecordsMatch(elseExpr, args, $5, true);
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $5, type_row);
 
                             args.append(*elseExpr.getClear());
                             OwnedHqlExpr expr = createRow(no_map, args);
@@ -7790,7 +7790,7 @@ simpleDataRow
                             parser->endList(args);
                             parser->checkCaseForDuplicates(args, $6);
 
-                            parser->ensureMapToRecordsMatch(elseExpr, args, $8, true);
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $8, type_row);
 
                             args.add(*$3.getExpr(),0);
                             args.append(*elseExpr.getClear());
@@ -9398,7 +9398,7 @@ simpleDataSet
                             HqlExprArray args;
                             OwnedHqlExpr elseExpr = $5.getExpr();
                             $3.unwindCommaList(args);
-                            parser->ensureMapToRecordsMatch(elseExpr, args, $5, false);
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $5, type_table);
                             args.append(*elseExpr.getClear());
                             OwnedHqlExpr expr = createDataset(no_map, args);
                             $$.setExpr(foldConstantMapExpr(expr), $1);
@@ -9413,7 +9413,7 @@ simpleDataSet
                             else
                                 elseExpr.setown(createDataset(no_null, LINK(queryNullRecord())));
 
-                            parser->ensureMapToRecordsMatch(elseExpr, args, $3, false);
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $3, type_table);
                             args.append(*elseExpr.getClear());
                             OwnedHqlExpr expr = createDataset(no_map, args);
                             $$.setExpr(foldConstantMapExpr(expr), $1);
@@ -9426,7 +9426,7 @@ simpleDataSet
                             parser->endList(args);
                             parser->checkCaseForDuplicates(args, $6);
 
-                            parser->ensureMapToRecordsMatch(elseExpr, args, $8, false);
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $8, type_table);
 
                             args.add(*$3.getExpr(),0);
                             args.append(*elseExpr.getClear());
@@ -9445,7 +9445,7 @@ simpleDataSet
                                 elseDs.setown(createDataset(no_null, LINK(queryNullRecord())));
                             parser->checkCaseForDuplicates(args, $6);
 
-                            parser->ensureMapToRecordsMatch(elseDs, args, $6, false);
+                            parser->ensureMapToRecordsMatch(elseDs, args, $6, type_table);
 
                             args.add(*$3.getExpr(),0);
                             args.append(*elseDs.getClear());
@@ -9482,7 +9482,7 @@ simpleDataSet
                                     {
                                         if (parser->lookupCtx.queryParseContext().expandCallsWhenBound && (isGrouped(cur) != isGrouped(compareDs)))
                                             parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
-                                        OwnedHqlExpr mapped = parser->checkEnsureRecordsMatch(compareDs, cur, $5.pos, false);
+                                        OwnedHqlExpr mapped = parser->checkEnsureRecordsMatch(compareDs, cur, $5.pos, type_table);
                                         if (mapped != cur)
                                             args.replace(*mapped.getClear(), idx);
                                     }
