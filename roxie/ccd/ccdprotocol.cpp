@@ -334,7 +334,7 @@ public:
                     {
                         StringBuffer s;
                         E->errorMessage(s);
-                        WARNLOG("%s", s.str());
+                        OWARNLOG("%s", s.str());
                         E->Release();
                         cleanupSocket(ssock);
                         ssock.clear();
@@ -344,7 +344,7 @@ public:
                     }
                     catch (...)
                     {
-                        WARNLOG("ProtocolSocketListener failure to establish secure connection");
+                        OWARNLOG("ProtocolSocketListener failure to establish secure connection");
                         cleanupSocket(ssock);
                         ssock.clear();
                         cleanupSocket(client);
@@ -353,7 +353,7 @@ public:
                     }
                     client.setown(ssock.getClear());
 #else
-                    WARNLOG("ProtocolSocketListener failure to establish secure connection: OpenSSL disabled in build");
+                    OWARNLOG("ProtocolSocketListener failure to establish secure connection: OpenSSL disabled in build");
                     continue;
 #endif
                 }
@@ -403,7 +403,7 @@ public:
 
     virtual bool stop() override
     {
-        ERRLOG("RoxieQueryWorker stopped with queries active");
+        IERRLOG("RoxieQueryWorker stopped with queries active");
         return true;
     }
 
@@ -1394,7 +1394,7 @@ public:
         //    logctx.CTXLOG("FAILED: %s", queryText);
         StringBuffer error("EXCEPTION: ");
         E->errorMessage(error);
-        DBGLOG("%s", error.str());
+        IERRLOG("%s", error.str());
         client.checkSendHttpException(httpHelper, E, queryName);
         E->Release();
     }
@@ -1774,7 +1774,7 @@ readAnother:
             if (traceLevel > 0)
             {
                 StringBuffer b;
-                DBGLOG("Error reading query from socket: %s", E->errorMessage(b).str());
+                IERRLOG("Error reading query from socket: %s", E->errorMessage(b).str());
             }
             E->Release();
             client.clear();
