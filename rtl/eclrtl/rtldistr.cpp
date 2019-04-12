@@ -408,8 +408,7 @@ ECLRTL_API IStringDistributionTable *createIStringDistributionTable(const char *
     switch (size)
     {
     case 0:
-//  case UNKNOWN_LENGTH:
-        assertex(false); // TBD
+        throwUnexpected();
     case 1:
         return new CCharDistributionTable(name);
     default:
