@@ -1158,7 +1158,7 @@ void retrieveQuerysetDetails(IEspContext &context, IArrayOf<IEspWUQuerySetDetail
     retrieveQuerysetDetails(context, details, registry, type, value, cluster, queriesOnCluster);
 }
 
-IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset, bool checkAllNodes)
+IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset, StringArray *queryIDs, bool checkAllNodes)
 {
     if (isEmpty(target))
         target = queryset;
@@ -1175,11 +1175,21 @@ IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset, boo
 
     try
     {
+        StringBuffer control;
+        if (!queryIDs || (queryIDs->ordinality() == 0))
+            control.append("<control:queries/>");
+        else
+        {
+            control.append("<control:queries>");
+            ForEachItemIn(i, *queryIDs)
+                control.appendf("<Query id='%s'/>",  queryIDs->item(i));
+            control.append("</control:queries>");
+        }
         Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
         if (checkAllNodes)
-            return sendRoxieControlAllNodes(sock, "<control:queries/>", false, ROXIECONTROLQUERIESTIMEOUT);
+            return sendRoxieControlAllNodes(sock, control, false, ROXIECONTROLQUERIESTIMEOUT);
         else
-            return sendRoxieControlQuery(sock, "<control:queries/>", ROXIECONTROLQUERIESTIMEOUT);
+            return sendRoxieControlQuery(sock, control, ROXIECONTROLQUERIESTIMEOUT);
     }
     catch(IException* e)
     {
@@ -1192,7 +1202,7 @@ IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset, boo
 
 void retrieveQuerysetDetailsByCluster(IEspContext &context, IArrayOf<IEspWUQuerySetDetail> &details, const char *target, const char *queryset, const char *type, const char *value, bool checkAllNodes)
 {
-    Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(target, queryset, checkAllNodes);
+    Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(target, queryset, nullptr, checkAllNodes);
     retrieveQuerysetDetails(context, details, target, type, value, target, queriesOnCluster);
 }
 
@@ -1232,7 +1242,7 @@ bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDet
         const char* cluster = req.getClusterName();
         if (isEmpty(cluster))
             cluster = req.getQuerySetName();
-        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, req.getQuerySetName(), req.getCheckAllNodes());
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, req.getQuerySetName(), nullptr, req.getCheckAllNodes());
         retrieveQuerysetDetails(context, registry, req.getFilterTypeAsString(), req.getFilter(), respQueries, respAliases, cluster, queriesOnCluster);
 
         resp.setQuerysetQueries(respQueries);
@@ -1347,7 +1357,21 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
         double version = context.getClientVersion();
         if (isEmpty(cluster))
             cluster = querySetId;
-        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, querySetId, checkAllNodes);
+
+        StringArray queryIDs;
+        ForEachItemIn(j, queries)
+        {
+            IEspQuerySetQuery& query = queries.item(j);
+            const char* queryId = query.getId();
+            const char* querySetId0 = query.getQuerySetId();
+            if (queryId && querySetId0 && strieq(querySetId0, querySetId))
+                queryIDs.append(queryId);
+        }
+
+        if (queryIDs.ordinality() == 0)
+            return;
+
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, querySetId, &queryIDs, checkAllNodes);
         if (!queriesOnCluster)
         {
             DBGLOG("getQueriesOnCluster() returns NULL for cluster<%s> and querySetId<%s>", cluster, querySetId);
@@ -1539,7 +1563,8 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         queries.append(*q.getClear());
     }
 
-    checkAndSetClusterQueryState(context, clusterReq, querySetIds, queries, req.getCheckAllNodes());
+    if (queries.ordinality() > 0)
+        checkAndSetClusterQueryState(context, clusterReq, querySetIds, queries, req.getCheckAllNodes());
 
     resp.setQuerysetQueries(queries);
     resp.setNumberOfQueries(numberOfQueries);
@@ -1927,7 +1952,10 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     }
     if (includeStateOnClusters && (version >= 1.43))
     {
-        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(querySet, querySet, req.getCheckAllNodes());
+        StringArray queryIds;
+        queryIds.append(queryId);
+
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(querySet, querySet, &queryIds, req.getCheckAllNodes());
         if (queriesOnCluster)
         {
             IArrayOf<IEspClusterQueryState> clusterStates;
