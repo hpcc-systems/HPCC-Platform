@@ -22,6 +22,7 @@ define([
     "src/Utility",
     "src/DiskUsage",
     "src/Clippy",
+    "src/components/Hello",
 
     "dojo/text!../templates/ActivityPageWidget.html",
 
@@ -260,6 +261,7 @@ define([
                     return;
 
                 var context = this;
+                // Would like to use like this <Hello message="Activity widget" />;
                 this._diskUsage = new DiskUsage.Summary()
                     .target(this.id + "DiskSummary")
                     .on("click", function (gauge, details) {

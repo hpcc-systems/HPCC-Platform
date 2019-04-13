@@ -43,18 +43,27 @@ module.exports = function (env) {
     return {
         context: __dirname,
         entry: {
-            stub: "eclwatch/stub",
-            dojoLib: "lib/src/dojoLib"
+            //stub: "eclwatch/stub",
+            react: "./src/index.tsx",
+            //dojoLib: "lib/src/dojoLib"
         },
         output: {
-            filename: "[name].eclwatch.js",
-            chunkFilename: "[name].eclwatch.js",
-            path: path.join(__dirname, "build/dist"),
-            publicPath: "/esp/files/dist/",
-            pathinfo: true
+            // filename: "[name].eclwatch.js",
+            // chunkFilename: "[name].eclwatch.js",
+            // path: path.join(__dirname, "build/dist"),
+            // publicPath: "/esp/files/dist/",
+            // pathinfo: true
+            filename: "reactBundle.js",
+            path: path.join(__dirname, "build/dist")
         },
         module: {
             rules: [
+                {
+                    test: /\.tsx?$/, loader: "awesome-typescript-loader"
+                },
+                {
+                    enforce: "pre", test: /\.js$/, loader: "source-map-loader"
+                },
                 {
                     test: /\.(png|jpg|gif)$/,
                     use: [
@@ -79,6 +88,7 @@ module.exports = function (env) {
                 }]
         },
         resolve: {
+            extensions: [".ts", ".tsx", ".js", ".json"],
             alias: {
                 "clipboard": path.resolve(__dirname, 'node_modules/clipboard/dist/clipboard')
             }
@@ -104,6 +114,11 @@ module.exports = function (env) {
                 })
             ]
         },
-        devtool: false
+        externals: {
+            "react": "React",
+            "react-dom": "ReactDOM"
+        },
+        //devtool: false
+        devtool: "source-map"
     }
 };
