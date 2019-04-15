@@ -2298,8 +2298,8 @@ public:
 
     ~CExtendedStats()
     {
-        free(newDiskStats);
-        free(oldDiskStats);
+        delete newDiskStats;
+        delete oldDiskStats;
         if (kbuf != nullptr)
             free(kbuf);
     }

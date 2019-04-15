@@ -639,7 +639,7 @@ protected:
             {
                 ForEachItemIn(t, targets)
                     delete targets.item(t);
-                delete sendersFinished;
+                delete [] sendersFinished;
             }
         }
         void reinit()
