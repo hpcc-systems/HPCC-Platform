@@ -3189,7 +3189,8 @@ public:
     {
         if (*returnType=='V' && strieq(methodName, "<init>"))
             return (unsigned __int64) result.l;
-        throw makeStringExceptionV(MSGAUD_user, 0, "javaembed: In method %s: Unsigned results not supported", queryReportName()); // Java doesn't support unsigned
+        StringBuffer s;
+        throw makeStringExceptionV(MSGAUD_user, 0, "javaembed: In method %s: Unsigned results not supported", getReportName(s).str()); // Java doesn't support unsigned
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
     {
@@ -3306,8 +3307,11 @@ public:
                 break;
             case 'C':
                 // we COULD map to a set of string1, but is there any point?
-                throw MakeStringException(0, "javaembed: In method %s: Return type mismatch (char[] not supported)", queryReportName());
+            {
+                StringBuffer s;
+                throw MakeStringException(0, "javaembed: In method %s: Return type mismatch (char[] not supported)", getReportName(s).str());
                 break;
+            }
             case 'S':
                 checkType(type_int, sizeof(jshort), elemType, elemSize);
                 JNIenv->GetShortArrayRegion((jshortArray) array, 0, numResults, (jshort *) outData);
@@ -3396,7 +3400,8 @@ public:
                         }
                         default:
                             JNIenv->ReleaseStringUTFChars(elem, text);
-                            throw MakeStringException(0, "javaembed: In method %s: Return type mismatch (ECL string type expected)", queryReportName());
+                            StringBuffer s;
+                            throw MakeStringException(0, "javaembed: In method %s: Return type mismatch (ECL string type expected)", getReportName(s).str());
                         }
                         JNIenv->ReleaseStringUTFChars(elem, text);
                         JNIenv->DeleteLocalRef(elem);
@@ -3405,7 +3410,10 @@ public:
                     }
                 }
                 else
-                    throw MakeStringException(0, "javaembed: In method %s: Return type mismatch (%s[] not supported)", queryReportName(), returnType+2);
+                {
+                    StringBuffer s;
+                    throw MakeStringException(0, "javaembed: In method %s: Return type mismatch (%s[] not supported)", getReportName(s).str(), returnType+2);
+                }
                 break;
             }
         }
@@ -3514,17 +3522,24 @@ public:
     }
     virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
     {
-        throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Unsigned parameters not supported", queryReportName()); // Java doesn't support unsigned
+        StringBuffer s;
+        throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Unsigned parameters not supported", getReportName(s).str()); // Java doesn't support unsigned
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
         if (!strchr(importName, '.') && argcount==0)  // Could require a flag, or a special parameter name...
         {
             if (!val)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Null value passed for \"this\"", queryReportName());
+            {
+                StringBuffer s;
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Null value passed for \"this\"", getReportName(s).str());
+            }
             instance = (jobject) val;
             if (JNIenv->GetObjectRefType(instance) != JNIGlobalRefType)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Invalid value passed for \"this\"", queryReportName());
+            {
+                StringBuffer s;
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Invalid value passed for \"this\"", getReportName(s).str());
+            }
             jclass newJavaClass = JNIenv->GetObjectClass(instance);
             if (!JNIenv->IsSameObject(newJavaClass, javaClass))
             {
@@ -3545,7 +3560,8 @@ public:
         else
         {
             // We could match a java class, to allow objects returned from one embed to be passed as parameters to another
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Unsigned parameters not supported", queryReportName()); // Java doesn't support unsigned
+            StringBuffer s;
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Unsigned parameters not supported", getReportName(s).str()); // Java doesn't support unsigned
         }
     }
     virtual void bindStringParam(const char *name, size32_t len, const char *val)
@@ -3928,12 +3944,14 @@ public:
         auto code = E->errorCode();
         auto aud = E->errorAudience();
         E->Release();
-        return makeStringExceptionV(aud, code, "javaembed: In method %s: %s", queryReportName(), text);
+        StringBuffer s;
+        return makeStringExceptionV(aud, code, "javaembed: In method %s: %s", getReportName(s).str(), text);
     }
 
     IException *resultMismatchException(const char *expected)
     {
-        return makeStringExceptionV(0, "javaembed: In method %s: Type mismatch on result (%s expected)", queryReportName(), expected);
+        StringBuffer s;
+        return makeStringExceptionV(0, "javaembed: In method %s: Type mismatch on result (%s expected)", getReportName(s).str(), expected);
     }
 
     virtual void callFunction()
@@ -4087,13 +4105,18 @@ protected:
                 break;
             }
         case ')':
-            throw MakeStringException(0, "javaembed: In method %s: Too many ECL parameters passed for Java signature", queryReportName());
+        {
+            StringBuffer s;
+            throw MakeStringException(0, "javaembed: In method %s: Too many ECL parameters passed for Java signature", getReportName(s).str());
+        }
         default:
-            throw MakeStringException(0, "javaembed: In method %s: Unrecognized character %c in Java signature", queryReportName(), *argsig);
+            StringBuffer s;
+            throw MakeStringException(0, "javaembed: In method %s: Unrecognized character %c in Java signature", getReportName(s).str(), *argsig);
         }
         if (!javaLen)
             javaLen = strlen(javaType);
-        throw MakeStringException(0, "javaembed: In Method %s: ECL type %s cannot be passed to Java type %.*s", queryReportName(), ECLtype, javaLen, javaType);
+        StringBuffer s;
+        throw MakeStringException(0, "javaembed: In Method %s: ECL type %s cannot be passed to Java type %.*s", getReportName(s).str(), ECLtype, javaLen, javaType);
     }
     void addArg(jvalue &arg)
     {
@@ -4120,16 +4143,18 @@ protected:
         return Class;
     }
 
-    const char *queryReportName()
+    StringBuffer &getReportName(StringBuffer &s)
     {
-        if (!classname.length())
-            return "";
-        const char *report = strrchr(classname.str(), '.');
-        if (report)
-            report++;
-        else
-            report = classname.str();
-        return report;
+        if (classname.length())
+        {
+            const char *report = strrchr(classname.str(), '.');
+            if (report)
+                report++;
+            else
+                report = classname.str();
+            s.append(classname).append('.');
+        }
+        return s.append(methodName);
     }
 
     jobject createThreadClassLoader(const char *classPath, size32_t bytecodeLen, const byte *bytecode)
