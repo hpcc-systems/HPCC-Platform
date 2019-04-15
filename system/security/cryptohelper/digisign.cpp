@@ -217,6 +217,7 @@ MODULE_EXIT()
     ::Release(dsm);
 }
 
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
 static void createDigitalSignatureManagerInstance(IDigitalSignatureManager * * ppDSM)
 {
     const char * pubKey = nullptr, *privKey = nullptr, *passPhrase = nullptr;
@@ -229,6 +230,7 @@ static void createDigitalSignatureManagerInstance(IDigitalSignatureManager * * p
     }
     *ppDSM = createDigitalSignatureManagerInstanceFromFiles(pubKey, privKey, passPhrase);
 }
+#endif
 
 
 //Returns reference to singleton instance created from environment.conf key file settings
