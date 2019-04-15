@@ -4797,6 +4797,7 @@ IHqlExpression * HqlCppTranslator::convertBetweenCountAndSize(const CHqlBoundExp
     case type_array:
         {
             ITypeInfo * elementType = type->queryChildType();
+            assertex(elementType);
             HqlExprArray fields;
             fields.append(*createField(valueId, LINK(elementType), NULL));
             record.setown(createRecord(fields));

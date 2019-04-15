@@ -5805,6 +5805,9 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
     ITypeInfo * listType = list->queryType();
     assertex(listType);
     ITypeInfo * childType = listType->queryChildType();
+    if (!childType)
+        reportError(ERR_TYPEMISMATCH_RECORD, recordAttr, "Cannot deduce the type of the elements in the set");
+
     IHqlExpression * field = queryOnlyField(record);
     if (!field)
         reportError(ERR_EXPECT_SINGLE_FIELD, recordAttr, "Expected a single field in the dataset parameter");
