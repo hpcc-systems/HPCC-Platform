@@ -2873,6 +2873,7 @@ public:
     ~CJoinGroup()
     {
         ReleaseRoxieRow(left);
+        join = nullptr; // not required, but clear to highlight any race conditions
     }
 
     MatchSet * getMatchSet()
@@ -2902,6 +2903,9 @@ public:
     inline void noteEnd()
     {
         assertex(!complete());
+        //Another completing group could cause this group to be processed once endMarkersPending is set to 0
+        //So link this object to ensure it is not disposed of while this function is executing
+        Linked<CJoinGroup> saveThis(this);
         if (atomic_dec_and_test(&groupStart->endMarkersPending))
         {
             join->onComplete(groupStart);
