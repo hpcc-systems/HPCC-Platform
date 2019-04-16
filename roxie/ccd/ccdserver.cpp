@@ -531,7 +531,7 @@ public:
                 putStatsValue(&edge, "NumStarts", "sum", _started);
         }
         else
-            ERRLOG("unexpected call to getEdgeProcessInfo for output %d in activity %d", output, queryId());
+            IERRLOG("unexpected call to getEdgeProcessInfo for output %d in activity %d", output, queryId());
     }
 
     virtual void getNodeProgressInfo(IPropertyTree &node) const
@@ -8376,7 +8376,7 @@ public:
         else
         {
             if (*algorithmName)
-                WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", algorithmName);
+                OWARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", algorithmName);
             if (sortFlags & TAFspill)
                 sortAlgorithm = ((sortFlags & TAFunstable) != 0) ? spillingQuickSortAlgorithm : stableSpillingQuickSortAlgorithm;
             else if (sortFlags & TAFunstable)
@@ -25064,7 +25064,7 @@ public:
         {
             StringBuffer errors;
             E->errorMessage(errors);
-            DBGLOG("%s File error = %s", (isLoadDataOnly) ? "LOADDATAONLY" : "SUSPENDED QUERY", errors.str());
+            OERRLOG("%s File error = %s", (isLoadDataOnly) ? "LOADDATAONLY" : "SUSPENDED QUERY", errors.str());
             E->Release();
         }
     }

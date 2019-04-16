@@ -3471,7 +3471,7 @@ void Heaplet::verifySpaceList()
 {
     if (nextSpace.load(std::memory_order_relaxed) == 0)
     {
-        ERRLOG("%p@%" I64F "u: Verify failed: %p %u", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull());
+        IERRLOG("%p@%" I64F "u: Verify failed: %p %u", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull());
     }
 }
 
@@ -3479,7 +3479,7 @@ void ChunkedHeaplet::verifySpaceList()
 {
     if (nextSpace.load(std::memory_order_relaxed) == 0)
     {
-        ERRLOG("%p@%" I64F "u: Verify failed: %p %u %x %x", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull(), freeBase.load(), r_blocks.load());
+        IERRLOG("%p@%" I64F "u: Verify failed: %p %u %x %x", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull(), freeBase.load(), r_blocks.load());
     }
 }
 

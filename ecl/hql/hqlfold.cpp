@@ -1053,7 +1053,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
             {
                 __asm__  __volatile__(
                     "movss  %%xmm0,(%%rdi) \n\t"
-                    :
+                    :"=m"(floatresult)
                     : "D"(&(floatresult))
                 );
             }
@@ -1061,7 +1061,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
             {
                 __asm__  __volatile__(
                     "movsd  %%xmm0, (%%rdi) \n\t"
-                    :
+                    : "=m"(doubleresult)
                     : "D"(&(doubleresult))
                 );
             }
@@ -1094,7 +1094,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
             {
                 __asm__  __volatile__(
                     "fstps (%%edi) \n\t"
-                    :
+                    :"=m"(floatresult)
                     : "D"(&(floatresult))
                 );
             }
@@ -1102,7 +1102,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
             {
                 __asm__  __volatile__(
                     "fstpl (%%edi) \n\t"
-                    :
+                    :"=m"(doubleresult)
                     : "D"(&(doubleresult))
                 );
             }
@@ -1230,7 +1230,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
             {
                 __asm__  __volatile__(
                     "fsts  s0,[%[fresult]] \n\t"
-                    :
+                    :"=m"(floatresult)
                     : [fresult] "r"(&(floatresult))
                 );
             }
@@ -1238,7 +1238,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
             {
                 __asm__  __volatile__(
                     "fstd  d0,[%[fresult]] \n\t"
-                    :
+                    :"=m"(doubleresult)
                     : [fresult] "r"(&(doubleresult))
                 );
             }

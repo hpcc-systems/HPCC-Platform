@@ -263,7 +263,7 @@ int check_set(const char *path, int value)
         si = atoi(r);
     if (!si)
     {
-        DBGLOG("WARNING: Failed to read value for %s", path);
+        OWARNLOG("WARNING: Failed to read value for %s", path);
         return 0;
     }
     else if (si<value)

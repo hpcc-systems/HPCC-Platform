@@ -1945,6 +1945,8 @@ IActivityReplicatedFile *createEnsurePrimaryPartFile(const char *logicalFilename
 class CFileCache;
 class CLazyFileIO : public CInterfaceOf<IFileIO>
 {
+    typedef CInterfaceOf<IFileIO> PARENT;
+
     CFileCache &cache;
     Owned<IActivityReplicatedFile> repFile;
     Linked<IExpander> expander;
@@ -2048,6 +2050,13 @@ class CFileCache : public CSimpleInterfaceOf<IThorFileCache>
             openFiles.item(i).close();
         openFiles.removen(0, purgeN);
     }
+    bool _remove(CLazyFileIO *lFile)
+    {
+        bool ret = files.removeExact(lFile);
+        if (!ret) return false;
+        openFiles.zap(*lFile);
+        return true;
+    }
     bool _remove(const char *id)
     {
         CLazyFileIO *lFile = files.find(id);
@@ -2103,7 +2112,7 @@ public:
             id.append(crc);
         CriticalBlock b(crit);
         Linked<CLazyFileIO> file = files.find(id);
-        if (!file)
+        if (!file || !file->isAlive())
         {
             Owned<IActivityReplicatedFile> repFile = createEnsurePrimaryPartFile(logicalFilename, &partDesc);
             bool compressed = partDesc.queryOwner().isCompressed();
@@ -2123,12 +2132,16 @@ public:
         file->setActivity(&activity); // an activity needed by IActivityReplicatedFile, mainly for logging purposes.
         return file.getClear();
     }
+friend class CLazyFileIO;
 };
 
-////
 void CLazyFileIO::beforeDispose()
 {
-    cache.remove(id);
+    {
+        CriticalBlock block(cache.crit);
+        cache._remove(this);
+    }
+    PARENT::beforeDispose();
 }
 
 IFileIO *CLazyFileIO::getOpenFileIO(CActivityBase &activity)
