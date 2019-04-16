@@ -301,8 +301,8 @@
             <entry>A previously defined data field, which implicitly provides
             the <emphasis>datatype</emphasis>,
             <emphasis>identifier</emphasis>, and
-            <emphasis>defaultvalue</emphasis> for the new field--inherited from
-            the <emphasis>sourcefield</emphasis>.</entry>
+            <emphasis>defaultvalue</emphasis> for the new field--inherited
+            from the <emphasis>sourcefield</emphasis>.</entry>
           </row>
 
           <row>
@@ -781,7 +781,7 @@ END;</programlisting>
     case field name, and the default value for Repeated is "Row." For example,
     this demonstrates "Container/Repeated":</para>
 
-    <programlisting>DATASET(PeopleNames) People{xpath('people/name'])};
+    <programlisting>DATASET(PeopleNames) People{xpath('people/name')};
           /*matches: &lt;people&gt;
                         &lt;name&gt;Gavin&lt;/name&gt;
                         &lt;name&gt;Ricardo&lt;/name&gt;
@@ -789,7 +789,7 @@ END;</programlisting>
 
     <para>This demonstrates "/Repeated":</para>
 
-    <programlisting>DATASET(Names) Names{xpath('/name'])};
+    <programlisting>DATASET(Names) Names{xpath('/name')};
           /*matches: &lt;name&gt;Gavin&lt;/name&gt;
                      &lt;name&gt;Ricardo&lt;/name&gt; */</programlisting>
 
