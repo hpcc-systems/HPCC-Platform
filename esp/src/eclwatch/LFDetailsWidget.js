@@ -99,6 +99,7 @@ define([
                 this.replicateSourceLogicalFile = registry.byId(this.id + "ReplicateSourceLogicalFile");
                 this.replicateDropDown = registry.byId(this.id + "ReplicateDropDown");
                 this.desprayIPSelect = registry.byId(this.id + "DesprayTargetIPAddress");
+                this.isProtected = registry.byId(this.id + "isProtected");
                 var context = this;
                 var origOnOpen = this.desprayTooltiopDialog.onOpen;
                 this.desprayTooltiopDialog.onOpen = function () {
@@ -261,6 +262,10 @@ define([
                     Groups: true
                 });
                 this.logicalFile.refresh();
+
+                this.isProtected.on("change", function(evt){
+                    context._onSave();
+                });
             },
 
             initTab: function () {
