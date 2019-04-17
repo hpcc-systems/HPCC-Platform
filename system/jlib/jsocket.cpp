@@ -765,6 +765,8 @@ inline void getSockAddrEndpoint(const J_SOCKADDR &u, socklen_t ul, SocketEndpoin
 
 
 StringBuffer & getIpTextAddr(const unsigned *netaddr, StringBuffer & out);
+static bool decodeNumericIP(const char *text,unsigned *netaddr, bool logErr=true);
+static unsigned zeroaddr[4] = { 0 };
 
 /* might need fcntl(F_SETFL), or ioctl(FIONBIO) */
 /* Posix.1g says fcntl */
@@ -3146,11 +3148,10 @@ bool IpAddress::isLocal() const
 bool IpAddress::ipequals(const IpAddress & other) const
 {
     // reverse compare for speed
-    bool hcmp = (other.netaddr[3]==netaddr[3])&&(IP4only||((other.netaddr[2]==netaddr[2])&&(other.netaddr[1]==netaddr[1])&&(other.netaddr[0]==netaddr[0])));
+    // if both are zero then look to names
+    bool hcmp = (memcmp(netaddr, zeroaddr, sizeof(netaddr)))&&(other.netaddr[3]==netaddr[3])&&(IP4only||((other.netaddr[2]==netaddr[2])&&(other.netaddr[1]==netaddr[1])&&(other.netaddr[0]==netaddr[0])));
     if (hcmp || !resolveHostnames)
         return hcmp;
-
-    // MCK - TODO should we make sure h_names are not dotted-decimal strings ?
 
     // if one is loopback
     int hasLB = 0;
@@ -3186,15 +3187,21 @@ bool IpAddress::ipequals(const IpAddress & other) const
             return hcmp;
     }
 
-    // at this point compare names
-    // MCK - TODO do we do this only if at least one matches this hostname ?
-
-    // names as original
+    // compare names - as original
     hcmp = streq(h_name, other.h_name);
     if (hcmp)
         return hcmp;
 
-    // names w/o domain
+    // make sure names are not dotted-decimal
+    unsigned locNetAddr[4];
+    bool hIsDotDec = decodeNumericIP(h_name, locNetAddr, false);
+    if (hIsDotDec)
+        return false;
+    hIsDotDec = decodeNumericIP(other.h_name, locNetAddr, false);
+    if (hIsDotDec)
+        return false;
+
+    // compare names - w/o domain
     strcpy(h0, h_name);
     l0 = strcspn(h0, ".");
     h0[l0] = '\0';
@@ -3250,35 +3257,42 @@ bool IpAddress::isHost() const
     return ipequals(queryHostIP());
 }
 
-static bool decodeNumericIP(const char *text,unsigned *netaddr)
+static bool decodeNumericIP(const char *text,unsigned *netaddr, bool logErr)
 {
     if (!text)
         return false;
     bool isv6 = strchr(text,':')!=NULL;
     StringBuffer tmp;
-    if ((*text=='[')&&!IP4only) {
+    if ((*text=='[')&&!IP4only)
+    {
         text++;
         size32_t l = strlen(text);
         if ((l<=2)||(text[l-1]!=']'))
             return false;
         text = tmp.append(l-2,text);
     }
-    if (!isv6&&isdigit(text[0])) {
-        if (_inet_pton(AF_INET, text, &netaddr[3])>0) {
+    if (!isv6&&isdigit(text[0]))
+    {
+        if (_inet_pton(AF_INET, text, &netaddr[3])>0)
+        {
             netaddr[2] = netaddr[3]?0xffff0000:0;  // check for NULL
             netaddr[1] = 0;
             netaddr[0] = 0;         // special handling for loopback?
             return true;
         }
     }
-    else if (isv6&&!IP4only) {
+    else if (isv6&&!IP4only)
+    {
         int ret = _inet_pton(AF_INET6, text, netaddr);
         if (ret>=0)
             return (ret>0);
-        int err = ERRNO();
-        StringBuffer tmp("_inet_pton: ");
-        tmp.append(text);
-        LOGERR(err,1,tmp.str());
+        if (logErr)
+        {
+            int err = ERRNO();
+            StringBuffer tmp("_inet_pton: ");
+            tmp.append(text);
+            LOGERR(err,1,tmp.str());
+        }
     }   
     return false;
 }
@@ -3363,7 +3377,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr,char *h_name)
                 }
                 else
                 {
-                    // MCK - TODO just use name here ?
+                    // MCK - use name ?
                     strcpy(h_name, entry->h_name);
                 }
             }
@@ -3464,7 +3478,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr,char *h_name)
             }
             else
             {
-                // MCK - TODO just use name here ?
+                // MCK - use name ?
                 strcpy(h_name, best->ai_canonname);
             }
         }
