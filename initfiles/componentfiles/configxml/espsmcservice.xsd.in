@@ -180,6 +180,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="ThorSlaveLogThreadPoolSize" type="xs:nonNegativeInteger" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Thread pool size for getting thor slave logs.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="enableLogDaliConnection" type="xs:boolean" use="optional" default="false">
                 <xs:annotation>
                     <xs:appinfo>

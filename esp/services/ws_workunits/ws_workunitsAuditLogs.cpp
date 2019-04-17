@@ -1442,7 +1442,7 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
 
     //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
     CWsWuFileHelper helper(directories);
-    response->setContent(helper.createWUZAPFileIOStream(context, cwu, zapInfoReq));
+    response->setContent(helper.createWUZAPFileIOStream(context, cwu, zapInfoReq, thorSlaveLogThreadPoolSize));
     response->setContentType(HTTP_TYPE_OCTET_STREAM);
     response->send();
 }
