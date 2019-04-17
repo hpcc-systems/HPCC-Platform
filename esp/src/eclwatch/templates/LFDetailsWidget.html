@@ -11,7 +11,7 @@
                     <div id="${id}CopyDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Copy}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}CopyForm" style="width: 460px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}CopyForm" style="width: 650px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
@@ -29,6 +29,7 @@
                                         <input id="${id}CopyTargetWrap" title="${i18n.Wrap}:" name="Wrap" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}CopyTargetRetainSuperfileStructure" title="${i18n.RetainSuperfileStructure}:" name="superCopy" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}CopyPreserveCompression" title="${i18n.PreserveCompression}:" checked="true" name="preserveCompression" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}CopyExpireDays" title="${i18n.ExpireDays}:" name="ExpireDays" data-dojo-type="dijit.form.NumberTextBox", />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
