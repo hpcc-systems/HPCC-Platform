@@ -111,6 +111,80 @@ inline byte compressQChar(byte c)
 #endif
 
 
+byte getQChar(const byte * buffer, size32_t index)
+{
+    size32_t offset = (index * 3) / 4;
+    switch (index & 3)
+    {
+    case 0:
+        return buffer[offset] >> 2;
+    case 1:
+        return ((buffer[offset] & 0x3) << 4) | (buffer[offset+1] >> 4);
+    case 2:
+        return ((buffer[offset] & 0xf) << 2) | (buffer[offset+1] >> 6);
+    case 3:
+        return (buffer[offset] & 0x3f);
+    }
+    return 0;
+}
+
+
+void setQChar(byte * buffer, size32_t index, byte value)
+{
+    size32_t offset = (index * 3) / 4;
+    byte cur = buffer[offset];
+    switch (index & 3)
+    {
+    case 0:
+        cur = (cur & 0x03) | value << 2;
+        break;
+    case 1:
+        cur = (cur & 0xFC) | (value >> 4);
+        buffer[offset+1] = (buffer[offset+1] & 0x0f) | ((value & 0x0F) << 4);
+        break;
+    case 2:
+        cur = (cur & 0xF0) | (value >> 2);
+        buffer[offset+1] = (buffer[offset+1] & 0x3f) | ((value & 0x03) << 6);
+        break;
+    case 3:
+        cur = (cur & 0xC0) | value;
+        break;
+    }
+    buffer[offset] = cur;
+}
+
+
+//-------------------------------------------------------------------------------------------------------------------
+
+bool incrementQString(byte *buf, size32_t size)
+{
+    int i = size;
+    while (i--)
+    {
+        byte next = getQChar(buf, i);
+        next = (next + 1) & 0x3F;
+        setQChar(buf, i, next);
+        if (next != 0)
+            return true;
+    }
+    return false;
+}
+
+bool decrementQString(byte *buf, size32_t size)
+{
+    int i = size;
+    while (i--)
+    {
+        byte next = getQChar(buf, i);
+        next = (next - 1) & 0x3F;
+        setQChar(buf, i, next);
+        if (next != 0x3f)
+            return true;
+    }
+    return false;
+}
+
+
 //---------------------------------------------------------------------------
 
 class QStrReader
@@ -485,6 +559,38 @@ int rtlCompareQStrQStr(size32_t llen, const void * left, size32_t rlen, const vo
         }
     }
     return ret;
+}
+
+
+int rtlSafeCompareQStrQStr(size32_t llen, const void * left, size32_t rlen, const void * right)
+{
+    QStrReader leftIter((const byte *)left);
+    QStrReader rightIter((const byte *)right);
+
+    size32_t len = std::min(llen, rlen);
+    for (unsigned i =0; i < len; i++)
+    {
+        int diff = (int)leftIter.nextQChar() - (int)rightIter.nextQChar();
+        if (diff != 0)
+            return diff;
+    }
+    if (len < llen)
+    {
+        while (len++ < llen)
+        {
+            if (leftIter.nextQChar() != 0)
+                return +1;
+        }
+    }
+    else
+    {
+        while (len++ < rlen)
+        {
+            if (rightIter.nextQChar() != 0)
+                return -1;
+        }
+    }
+    return 0;
 }
 
 

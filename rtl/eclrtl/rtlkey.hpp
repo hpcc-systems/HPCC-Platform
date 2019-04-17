@@ -150,6 +150,7 @@ ECLRTL_API void deserializeSet(IStringSet & set, size32_t minRecordSize, const R
 
 //---------------------------------------------------------------------------------------------------------------------
 
+constexpr size32_t MatchFullString = 0x7FFFFFFFU;
 enum TransitionMask : byte
 {
     CMPlt = 0x01,
@@ -162,7 +163,9 @@ enum TransitionMask : byte
     CMPminmask = CMPgt|CMPmin,
     CMPmaxmask = CMPlt|CMPmax,
 
-    CMPnovalue = 0x80,  // Used when serializing.
+//The following are only used when serializing:
+    CMPsubstring = 0x40,  // substring length is specified
+    CMPnovalue = 0x80,  // no value is supplied, either a minimum or a maximum
 };
 
 interface RtlTypeInfo;
@@ -182,8 +185,8 @@ interface IValueSet : public IInterface
 {
 //The following methods are used for creating a valueset
     virtual IValueTransition * createTransition(TransitionMask mask, unsigned __int64 value) const = 0;
-    virtual IValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const = 0;
-    virtual IValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const = 0;
+    virtual IValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value, size32_t subLength) const = 0;
+    virtual IValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value, size32_t subLength) const = 0;
     virtual void addRange(IValueTransition * loval, IValueTransition * hival) = 0;
     virtual void addAll() = 0;
     virtual void killRange(IValueTransition * loval, IValueTransition * hival) = 0;
@@ -233,6 +236,9 @@ interface IValueSet : public IInterface
     virtual void endRange(void *buffer, size32_t offset, const RtlTypeInfo &parentType) const = 0;
     virtual void setHigh(void *buffer, size32_t offset, const RtlTypeInfo &parentType) const = 0;
 
+    virtual IValueTransition * createRawTransitionEx(TransitionMask mask, const void * value, size32_t subLength) const = 0;
+    virtual void addRawRangeEx(const void * lower, const void * upper, size32_t subLength = MatchFullString) = 0;
+    virtual void killRawRangeEx(const void * lower, const void * upper, size32_t subLength = MatchFullString) = 0;
 };
 extern ECLRTL_API IValueSet * createValueSet(const RtlTypeInfo & type);
 extern ECLRTL_API IValueSet * createValueSet(const RtlTypeInfo & _type, MemoryBuffer & in);
@@ -240,7 +246,7 @@ extern ECLRTL_API IValueSet * createValueSet(const RtlTypeInfo & _type, MemoryBu
 interface ISetCreator
 {
 public:
-    virtual void addRange(TransitionMask lowerMask, const StringBuffer & lower, TransitionMask upperMask, const StringBuffer & upperString) = 0;
+    virtual void addRange(TransitionMask lowerMask, const StringBuffer & lower, TransitionMask upperMask, const StringBuffer & upperString, size32_t lowerSubLength, size32_t upperSubLength) = 0;
 };
 
 /*

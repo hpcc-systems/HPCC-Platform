@@ -75,6 +75,20 @@ static void readUntilTerminator(StringBuffer & out, const char * & in, const cha
     in = pbrk;
 }
 
+//Allow trailing :<length> to specify a substring match
+static void readSubLength(size32_t & subLength, const char * &in)
+{
+    const char * filter = in;
+    if (*filter == ':')
+    {
+        char * next;
+        subLength = strtoul(filter+1, &next, 10);
+        in = next;
+    }
+    else
+        subLength = MatchFullString;
+}
+
 
 void readFieldFromFieldFilter(StringBuffer & fieldText, const char * & src)
 {
@@ -90,13 +104,16 @@ void deserializeSet(ISetCreator & creator, const char * filter)
             throw MakeStringException(0, "Invalid filter string: expected [ or ( at start of range");
 
         StringBuffer upperString, lowerString;
+        size32_t lowerSubLength = MatchFullString;
+        size32_t upperSubLength = MatchFullString;
         if (*filter=='\'')
         {
             filter++;
             readString(lowerString, filter);
         }
         else
-            readUntilTerminator(lowerString, filter, ",])");
+            readUntilTerminator(lowerString, filter, ":,])");
+        readSubLength(lowerSubLength, filter);
 
         if (*filter == ',')
         {
@@ -107,10 +124,14 @@ void deserializeSet(ISetCreator & creator, const char * filter)
                 readString(upperString, filter);
             }
             else
-                readUntilTerminator(upperString, filter, "])");
+                readUntilTerminator(upperString, filter, ":])");
+            readSubLength(upperSubLength, filter);
         }
         else
+        {
             upperString.set(lowerString);
+            upperSubLength = lowerSubLength;
+        }
 
         char endRange = *filter++;
         if (endRange != ')' && endRange != ']')
@@ -122,7 +143,7 @@ void deserializeSet(ISetCreator & creator, const char * filter)
 
         TransitionMask lowerMask = (startRange == '(') ? CMPgt : CMPge;
         TransitionMask upperMask = (endRange == ')') ? CMPlt : CMPle;
-        creator.addRange(lowerMask, lowerString, upperMask, upperString);
+        creator.addRange(lowerMask, lowerString, upperMask, upperString, lowerSubLength, upperSubLength);
     }
 }
 
@@ -132,10 +153,10 @@ class ValueSetCreator : implements ISetCreator
 public:
     ValueSetCreator(IValueSet & _set) : set(_set) {}
 
-    virtual void addRange(TransitionMask lowerMask, const StringBuffer & lowerString, TransitionMask upperMask, const StringBuffer & upperString) override
+    virtual void addRange(TransitionMask lowerMask, const StringBuffer & lowerString, TransitionMask upperMask, const StringBuffer & upperString, size32_t lowerSubLength, size32_t upperSubLength) override
     {
-        Owned<IValueTransition> lower = lowerString ? set.createUtf8Transition(lowerMask, rtlUtf8Length(lowerString.length(), lowerString), lowerString) : nullptr;
-        Owned<IValueTransition> upper = upperString ? set.createUtf8Transition(upperMask, rtlUtf8Length(upperString.length(), upperString), upperString) : nullptr;
+        Owned<IValueTransition> lower = lowerString ? set.createUtf8Transition(lowerMask, rtlUtf8Length(lowerString.length(), lowerString), lowerString, lowerSubLength) : nullptr;
+        Owned<IValueTransition> upper = upperString ? set.createUtf8Transition(upperMask, rtlUtf8Length(upperString.length(), upperString), upperString, upperSubLength) : nullptr;
         set.addRange(lower, upper);
     }
 
@@ -151,12 +172,27 @@ void deserializeSet(IValueSet & set, const char * filter)
     deserializeSet(creator, filter);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+/*
+ * A link counted version of an RtlTypeInfo
+ */
+class SharedRtlTypeInfo : public CInterface
+{
+public:
+    SharedRtlTypeInfo(const RtlTypeInfo * _type) : type(_type) {}
+    ~SharedRtlTypeInfo() { type->doDelete(); }
+
+    const RtlTypeInfo * const type;
+};
 
 void getStretchedValue(MemoryBuffer & target, const RtlTypeInfo & newType, const RtlTypeInfo & oldType, const byte * value)
 {
     MemoryBufferBuilder builder(target, 0);
     translateScalar(builder, 0, nullptr, newType, oldType, value);
 }
+
+//---------------------------------------------------------------------------------------------------------------------
 
 static bool incrementBuffer(byte *buf, size32_t size)
 {
@@ -170,19 +206,54 @@ static bool incrementBuffer(byte *buf, size32_t size)
     return false;
 }
 
-static bool decrementBuffer(byte *buf, size32_t size)
+//---------------------------------------------------------------------------------------------------------------------
+
+bool needToApplySubString(const RtlTypeInfo & type, const byte * value, size32_t subLength)
 {
-    int i = size;
-    while (i--)
-    {
-        buf[i]--;
-        if (buf[i]!=0xff)
-            return true;
-    }
-    return false;
+    if (subLength == MatchFullString)
+        return false;
+
+    return type.compareRange(subLength, value, MatchFullString, value) != 0;
 }
 
-//---------------------------------------------------------------------------------------------------------------------
+void applySubString(TransitionMask & mask, const RtlTypeInfo & type, MemoryBuffer & buff, const byte * value, size32_t subLength)
+{
+    //Unusual: the string being searched against is larger than the substring being applied.  Truncate it to
+    //the substring length, and then change it back to the field string length
+    FieldTypeInfoStruct info;
+    info.fieldType = (type.fieldType & ~RFTMunknownsize);
+    info.length = subLength;
+    Owned<SharedRtlTypeInfo> subType(new SharedRtlTypeInfo(info.createRtlTypeInfo()));
+    const RtlTypeInfo & truncType = *subType->type;
+
+    MemoryBuffer resized;
+    getStretchedValue(resized, truncType, type, value);
+
+    buff.clear();
+    getStretchedValue(buff, type, truncType, resized.bytes());
+
+    // x >= 'ab' becomes x > 'a' => clear the equal item
+    // x < 'ab' becomes x <= 'a' => set the equal item
+    if (mask & CMPlt)
+        mask |= CMPeq;
+    else if (mask & CMPgt)
+        mask &= ~CMPeq;
+}
+
+void checkSubString(TransitionMask & mask, const RtlTypeInfo & type, MemoryBuffer & buff, size32_t subLength)
+{
+    if (buff.length() == 0)
+        return;
+
+    // Treat myfield[1..-1] as [1..0] - same as substring implementation.
+    if ((int)subLength < 0)
+        subLength =0;
+
+    const byte * value = (const byte *)buff.toByteArray();
+    if (needToApplySubString(type, value, subLength))
+        applySubString(mask, type, buff, value, subLength);
+}
+
 
 /*
  * This class represents a value and a comparison condition and is used for representing ranges of values
@@ -194,9 +265,13 @@ static bool decrementBuffer(byte *buf, size32_t size)
 class ValueTransition : implements CInterfaceOf<IValueTransition>
 {
 public:
-    ValueTransition(TransitionMask _mask, const RtlTypeInfo & type, const void *_value)
+    ValueTransition(TransitionMask _mask, const RtlTypeInfo & type, const void *_value, size32_t _subLength)
+    : mask(_mask), subLength(_subLength)
     {
-        mask = _mask;
+        // Treat myfield[1..-1] as [1..0] - same as substring implementation.
+        if ((int)subLength < 0)
+            subLength = 0;
+
         dbgassertex(_value || isMinimum() || isMaximum());
         if (_value)
         {
@@ -204,22 +279,28 @@ public:
             value.allocateN(size, false);
             memcpy(value, _value, size);
         }
+        //A subset >= length of the field is discarded
+        if (matchSubString() && type.isFixedSize())
+        {
+            if (subLength >= type.getMinSize())
+                subLength = MatchFullString;
+        }
     }
     ValueTransition(const RtlTypeInfo & type, MemoryBuffer & in)
     {
         byte inmask;
         in.read(inmask);
+
+        mask = (TransitionMask)(inmask & ~(CMPnovalue|CMPsubstring));
         if (!(inmask & CMPnovalue))
         {
-            mask = (TransitionMask)inmask;
             size32_t size = type.size(in.readDirect(0), nullptr);
             value.allocateN(size, false);
             in.read(size, value);
         }
-        else
-        {
-            mask = (TransitionMask)(inmask & ~CMPnovalue);
-        }
+
+        if (inmask & CMPsubstring)
+            in.readPacked(subLength);
     }
     ValueTransition(TransitionMask _mask) : mask(_mask)
     {
@@ -229,6 +310,8 @@ public:
     bool equals(const RtlTypeInfo & type, const ValueTransition & other) const
     {
         if (mask != other.mask)
+            return false;
+        if (subLength != other.subLength)
             return false;
         if (value && other.value)
         {
@@ -246,17 +329,19 @@ public:
     MemoryBuffer & serialize(const RtlTypeInfo & type, MemoryBuffer & out) const
     {
         byte outmask = mask;
+        if (!value)
+            outmask |= CMPnovalue;
+        if (matchSubString())
+            outmask |= CMPsubstring;
+
+        out.append(outmask);
         if (value)
         {
             size32_t size = type.size(value, nullptr);
-            out.append(outmask);
             out.append(size, value);
         }
-        else
-        {
-            outmask |= CMPnovalue;
-            out.append(outmask);
-        }
+        if (matchSubString())
+            out.appendPacked(subLength);
         return out;
     }
 
@@ -269,6 +354,9 @@ public:
             if (mask & CMPmax)
                 return -1;
         }
+        if (matchSubString())
+            return type.compareRange(subLength, field, subLength, value.get());
+
         return type.compare(field, value.get());
     }
 
@@ -309,6 +397,32 @@ public:
             throwUnexpected();
         }
 
+        if (matchSubString() || other.matchSubString())
+        {
+            size32_t minLength = std::min(subLength, other.subLength);
+            int compare = type.compareRange(minLength, value, minLength, other.value);
+            if ((compare == 0) && (subLength != other.subLength))
+            {
+                //If the start matches, but the lengths are different, whether the shorter string is a lower bound is key
+                if (subLength < other.subLength)
+                {
+                    //E.g. compre 'a:1' with 'aa'.
+                    if (isLowerBound())
+                        return -1;
+                    else
+                        return +1;
+                }
+                else
+                {
+                    //E.g. Compare 'aa' with 'a:1'.
+                    if (other.isLowerBound())
+                        return +1;
+                    else
+                        return -1;
+                }
+            }
+            return compare;
+        }
         return type.compare(value, other.value);
     }
 
@@ -339,6 +453,8 @@ public:
                 appendUtf8AsECL(out, size, text.getstr());
                 out.append("'");
             }
+            if (matchSubString())
+                out.append(":").append(subLength);
         }
 
         if (mask & CMPlt)
@@ -372,7 +488,7 @@ public:
         assertex(value);
         if (IsShared())
         {
-            return new ValueTransition(newMask, type, value);
+            return new ValueTransition(newMask, type, value, subLength);
         }
         else
         {
@@ -391,6 +507,8 @@ public:
     {
         if (!value)
             return LINK(this);
+        if (matchSubString())
+            throwUnexpected();
 
         MemoryBuffer resized;
         getStretchedValue(resized, newType, oldType, value);
@@ -408,7 +526,7 @@ public:
             else if (newMask & CMPgt)
                 newMask &= ~CMPeq;
         }
-        return new ValueTransition(newMask, newType, resized.toByteArray());
+        return new ValueTransition(newMask, newType, resized.toByteArray(), MatchFullString);
     }
 
     bool isLowerBound() const { return (mask & CMPgt) != 0; }
@@ -416,33 +534,22 @@ public:
     bool isInclusiveBound() const { return (mask & CMPeq) != 0; }
     bool isMinimum() const { return (mask & CMPmin) != 0; }
     bool isMaximum() const { return (mask & CMPmax) != 0; }
+    bool matchSubString() const { return (subLength != MatchFullString); }
 
     void setLow(void * buffer, size32_t offset, const RtlTypeInfo &type) const
     {
         byte *dst = ((byte *) buffer) + offset;
-        if (value)
-        {
-            memcpy(dst, value, type.getMinSize());
-            if (!isInclusiveBound())
-                incrementBuffer(dst, type.getMinSize());
-        }
-        else
-            memset(dst, 0, type.getMinSize());
+        type.setLowBound(dst, value, subLength, isInclusiveBound());
     }
     void setHigh(void * buffer, size32_t offset, const RtlTypeInfo &type) const
     {
+        //Variable size fields cannot sensibly implement this function
         byte *dst = ((byte *) buffer) + offset;
-        if (value)
-        {
-            memcpy(dst, value, type.getMinSize());
-            if (!isInclusiveBound())
-                decrementBuffer(dst, type.getMinSize());
-        }
-        else
-            memset(dst, 0xff, type.getMinSize());
+        type.setHighBound(dst, value, subLength, isInclusiveBound());
     }
 private:
     TransitionMask mask;
+    size32_t subLength = MatchFullString; //MORE: Substrings could use a derived class to avoid the space
     OwnedMalloc<byte> value;
 };
 
@@ -477,21 +584,23 @@ public:
         MemoryBuffer buff;
         MemoryBufferBuilder builder(buff, 0);
         type.buildInt(builder, 0, nullptr, value);
-        return new ValueTransition(mask, type, buff.toByteArray());
+        return new ValueTransition(mask, type, buff.toByteArray(), MatchFullString);
     }
-    virtual IValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const override
+    virtual IValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value, size32_t subLength) const override
     {
         MemoryBuffer buff;
         MemoryBufferBuilder builder(buff, 0);
         type.buildString(builder, 0, nullptr, len, value);
-        return new ValueTransition(mask, type, buff.toByteArray());
+        checkSubString(mask, type, buff, subLength);
+        return new ValueTransition(mask, type, buff.toByteArray(), subLength);
     }
-    virtual IValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const override
+    virtual IValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value, size32_t subLength) const override
     {
         MemoryBuffer buff;
         MemoryBufferBuilder builder(buff, 0);
         type.buildUtf8(builder, 0, nullptr, len, value);
-        return new ValueTransition(mask, type, buff.toByteArray());
+        checkSubString(mask, type, buff, subLength);
+        return new ValueTransition(mask, type, buff.toByteArray(), subLength);
     }
 
     virtual void addRange(IValueTransition * _lower, IValueTransition * _upper) override
@@ -865,20 +974,45 @@ public:
 
     virtual ValueTransition * createRawTransition(TransitionMask mask, const void * value) const override
     {
-        return new ValueTransition(mask, type, value);
+        return new ValueTransition(mask, type, value, MatchFullString);
+    }
+
+    virtual ValueTransition * createRawTransitionEx(TransitionMask mask, const void * rawvalue, size32_t subLength) const override
+    {
+        // Treat myfield[1..-1] as [1..0] - same as substring implementation.
+        if ((int)subLength < 0)
+            subLength =0;
+
+        const byte * value = (const byte *)rawvalue;
+        if (likely(!needToApplySubString(type, value, subLength)))
+            return new ValueTransition(mask, type, value, subLength);
+
+        MemoryBuffer tempBuffer;
+        applySubString(mask, type, tempBuffer, value, subLength);
+        return new ValueTransition(mask, type, tempBuffer.toByteArray(), subLength);
     }
 
     virtual void addRawRange(const void * lower, const void * upper) override
     {
-        Owned<ValueTransition> lowerBound = lower ? createRawTransition(CMPge, lower) : nullptr;
-        Owned<ValueTransition> upperBound = upper ? createRawTransition(CMPle, upper) : nullptr;
-        addRange(lowerBound, upperBound);
+        addRawRangeEx(lower, upper, MatchFullString);
     }
 
     virtual void killRawRange(const void * lower, const void * upper) override
     {
-        Owned<ValueTransition> lowerBound = lower ? createRawTransition(CMPge, lower) : nullptr;
-        Owned<ValueTransition> upperBound = upper ? createRawTransition(CMPle, upper) : nullptr;
+        killRawRangeEx(lower, upper, MatchFullString);
+    }
+
+    virtual void addRawRangeEx(const void * lower, const void * upper, size32_t subLength) override
+    {
+        Owned<ValueTransition> lowerBound = lower ? createRawTransitionEx(CMPge, lower, subLength) : nullptr;
+        Owned<ValueTransition> upperBound = upper ? createRawTransitionEx(CMPle, upper, subLength) : nullptr;
+        addRange(lowerBound, upperBound);
+    }
+
+    virtual void killRawRangeEx(const void * lower, const void * upper, size32_t subLength) override
+    {
+        Owned<ValueTransition> lowerBound = lower ? createRawTransitionEx(CMPge, lower, subLength) : nullptr;
+        Owned<ValueTransition> upperBound = upper ? createRawTransitionEx(CMPle, upper, subLength) : nullptr;
         killRange(lowerBound, upperBound);
     }
 
@@ -1085,10 +1219,13 @@ const void *ValueSet::querySingleValue() const
 {
     if (transitions.ordinality() == 2)
     {
-        if (queryTransition(0)->isInclusiveBound() && queryTransition(1)->isInclusiveBound() &&
-            type.compare(queryTransition(0)->queryValue(), queryTransition(1)->queryValue())==0)
+        ValueTransition *  lower = queryTransition(0);
+        ValueTransition *  upper = queryTransition(1);
+
+        if (lower->isInclusiveBound() && !lower->matchSubString() && upper->isInclusiveBound() && !upper->matchSubString())
         {
-            return queryTransition(0)->queryValue();
+            if (type.compare(queryTransition(0)->queryValue(), queryTransition(1)->queryValue())==0)
+                return queryTransition(0)->queryValue();
         }
     }
     return nullptr;
@@ -1603,18 +1740,6 @@ IFieldFilter * createFieldFilter(unsigned fieldId, const RtlTypeInfo & type, con
 
 
 //---------------------------------------------------------------------------------------------------------------------
-
-/*
- * A link counted version of an RtlTypeInfo
- */
-class SharedRtlTypeInfo : public CInterface
-{
-public:
-    SharedRtlTypeInfo(const RtlTypeInfo * _type) : type(_type) {}
-    ~SharedRtlTypeInfo() { type->doDelete(); }
-
-    const RtlTypeInfo * const type;
-};
 
 /*
  * A field filter that can match a set of values.
