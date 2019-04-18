@@ -993,9 +993,13 @@ public:
         if (!espRespTree)
             throw( MakeStringException(0, "Esdl Response type '%s' definition not found", esp_resp_type.str()));
 
+        bool skipOutputResponseTag = false;
         StringBuffer resp_type = esp_resp_type.get();
         if (resp_type.length()>2 && resp_type.charAt(resp_type.length()-2)=='E' && resp_type.charAt(resp_type.length()-1)=='x')
+        {
+            skipOutputResponseTag = true;
             resp_type.setLength(resp_type.length()-2);
+        }
 
         IPropertyTree *respTree = checkExtractNestedResponseType(depTree, espRespTree, resp_type);
 
@@ -1066,12 +1070,14 @@ public:
 
         xform->setParameter("platform", "'roxie'");
         xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));
+        xform->setParameter("skipResponseTag", "false()");
         xform->transform(ecl.clear());
         filename.setf("MonitorRoxie_create_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
         xform->setParameter("platform", "'esp'");
         xform->setParameter("responseType", stringvar.setf("'%s'", esp_resp_type.str()));
+        xform->setParameter("skipResponseTag", skipOutputResponseTag ? "true()" : "false()");
         xform->transform(ecl.clear());
         filename.setf("MonitorESP_create_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
@@ -1081,12 +1087,14 @@ public:
 
         xform->setParameter("platform", "'roxie'");
         xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));
+        xform->setParameter("skipResponseTag", "false()");
         xform->transform(ecl.clear());
         filename.setf("MonitorRoxie_run_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
         xform->setParameter("platform", "'esp'");
         xform->setParameter("responseType", stringvar.setf("'%s'", esp_resp_type.str()));
+        xform->setParameter("skipResponseTag", skipOutputResponseTag ? "true()" : "false()");
         xform->transform(ecl.clear());
         filename.setf("MonitorESP_run_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
@@ -1096,12 +1104,14 @@ public:
 
         xform->setParameter("platform", "'roxie'");
         xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));
+        xform->setParameter("skipResponseTag", "false()");
         xform->transform(ecl.clear());
         filename.setf("MonitorRoxie_demo_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
         xform->setParameter("platform", "'esp'");
         xform->setParameter("responseType", stringvar.setf("'%s'", esp_resp_type.str()));
+        xform->setParameter("skipResponseTag", skipOutputResponseTag ? "true()" : "false()");
         xform->transform(ecl.clear());
         filename.setf("MonitorESP_demo_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
@@ -1109,6 +1119,7 @@ public:
 //-------Compare---------
         xform->setParameter("diffmode", "'Compare'");
         xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));
+        xform->setParameter("skipResponseTag", "false()");
         xform->transform(ecl.clear());
         filename.setf("Compare_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
