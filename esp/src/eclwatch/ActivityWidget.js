@@ -531,7 +531,7 @@ define([
             },
 
             createDetail: function (id, row, params) {
-                if (params.usage) {
+                if (params && params.usage) {
                     return new DelayLoadWidget({
                         id: id,
                         title: row.details.Name,
