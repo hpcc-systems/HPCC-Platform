@@ -55,6 +55,7 @@ BuildIndexOp := BUILDINDEX(INDX_Postcode, OVERWRITE);
 SET OF STRING4 PartialPostcode:= ['KT19','KT40','KT3 ','KT20 1AEEE','KT50','KT60 3DE'];
 SET OF STRING4 PartialPostcodeStored:= ['KT19','KT40','KT3 ','KT20 1AEEE', 'KT50','KT60 3DE']:stored('PartialPostcode');
 SET OF STRING PartialPostcodeStored2:= ['KT19','KT40','KT3 ','KT20 1AEEE', 'KT50','KT60 3DE']:stored('PartialPostcode2');
+SET OF STRING8 PartialPostcodeStored8:= ['KT19','KT40','KT3 ','KT50']:stored('PartialPostcode8');
 
 partialmatch1 := INDX_Postcode( KEYED(postcode[1..4] IN PartialPostcode) );
 partialmatch2 := INDX_Postcode( KEYED(postcode[1..4] IN PartialPostcodeStored) );
@@ -69,6 +70,9 @@ partialmatch5 := INDX_Postcode( postcode[1..four] IN PartialPostcode );
 partialmatch6 := INDX_Postcode( postcode[1..four] IN PartialPostcodeStored );
 partialmatch7 := INDX_Postcode( postcode[..four] IN PartialPostcodeStored );
 partialmatch8 := INDX_Postcode( postcode[..four] IN PartialPostcodestored2 );
+partialmatch9 := INDX_Postcode( KEYED(postcode[..4] IN PartialPostcodestored8) );
+partialmatch10 := INDX_Postcode( KEYED(IF(four=4, postcode[..four] IN PartialPostcodestored8,true)) );
+partialmatch11 := INDX_Postcode( KEYED(postcode[..four] IN IF(four=4, PartialPostcodestored8, all)) );
 
 SEQUENTIAL(
   outputraw,
@@ -83,4 +87,7 @@ SEQUENTIAL(
   OUTPUT(partialmatch6),  // match KT19*, KT40*, KT3, KT20*, KT50* and KT60*
   OUTPUT(partialmatch7),  // match KT19*, KT40*, KT3, KT20*, KT50* and KT60*
   OUTPUT(partialmatch8),  // match KT19*, KT40*, KT3 and KT50*
+  OUTPUT(partialmatch9),  // match KT19*, KT40*, KT3 and KT50*
+  OUTPUT(partialmatch10),  // match KT19*, KT40*, KT3 and KT50*
+  OUTPUT(partialmatch11),  // match KT19*, KT40*, KT3 and KT50*
 );

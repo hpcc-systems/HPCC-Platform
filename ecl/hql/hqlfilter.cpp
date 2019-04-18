@@ -1190,8 +1190,7 @@ bool FilterExtractor::matchSubstringFilter(KeyConditionInfo & matches, node_oper
         newTest.setown(createBalanced(combineOp, boolType, compares));
     }
 
-    KeyCondition * entry = new KeyCondition(selector, newTest, keyedKind);
-    entry->subrange.set(left->queryChild(1));
+    KeyCondition * entry = new KeyCondition(selector, newTest, keyedKind, left->queryChild(1));
     matches.appendCondition(*entry);
     if (guard)
         matches.appendPreFilter(guard);
@@ -1224,8 +1223,7 @@ bool FilterExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IHq
         if (newOp != no_none)
         {
             OwnedHqlExpr newFilter = createValue(newOp, expr->getType(), LINK(l), LINK(r));
-            result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind));
-            result->subrange.set(querySubStringRange(l));
+            result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind, querySubStringRange(l)));
         }
     }
     else
@@ -1245,8 +1243,7 @@ bool FilterExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IHq
             if (newOp != no_none)
             {
                 OwnedHqlExpr newFilter = createValue(newOp, expr->getType(), LINK(r), LINK(l));
-                result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind));
-                result->subrange.set(querySubStringRange(r));
+                result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind, querySubStringRange(r)));
             }
         }
     }
@@ -1316,7 +1313,7 @@ bool FilterExtractor::extractOrFilter(KeyConditionInfo & matches, IHqlExpression
                 }
                 else
                 {
-                    if ((firstBranch->selector != cur.selector) || multipleSelectors)
+                    if ((firstBranch->selector != cur.selector) || multipleSelectors || (createValueSets && (firstBranch->subrange != cur.subrange)))
                         validOrFilter = false;
                 }
             }
@@ -1344,7 +1341,7 @@ bool FilterExtractor::extractOrFilter(KeyConditionInfo & matches, IHqlExpression
             {
                 KeyCondition & cur = branch.conditions.item(i2);
                 OwnedHqlExpr filter = extendCondition(no_or, invariant, cur.expr);
-                matches.conditions.append(*new KeyCondition(cur.selector, filter, keyedKind));
+                matches.conditions.append(*new KeyCondition(cur.selector, filter, keyedKind, cur.subrange));
             }
         }
         else
@@ -1358,7 +1355,7 @@ bool FilterExtractor::extractOrFilter(KeyConditionInfo & matches, IHqlExpression
                 extendOrCondition(combinedCondition, conjunction);
             }
 
-            matches.conditions.append(*new KeyCondition(firstBranch->selector, combinedCondition, keyedKind));
+            matches.conditions.append(*new KeyCondition(firstBranch->selector, combinedCondition, keyedKind, firstBranch->subrange));
         }
         return true;
     }
@@ -1493,7 +1490,7 @@ bool FilterExtractor::extractBoolFieldFilter(KeyConditionInfo & matches, IHqlExp
         if (isKeySelect(selector) && okToKey(selector, keyedKind))
         {
             OwnedHqlExpr newFilter = createValue(no_eq, makeBoolType(), LINK(selector), createConstant(compareValue));
-            matches.appendCondition(*new KeyCondition(selector, newFilter, keyedKind));
+            matches.appendCondition(*new KeyCondition(selector, newFilter, keyedKind, nullptr));
             return true;
         }
     }

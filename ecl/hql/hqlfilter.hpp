@@ -22,8 +22,8 @@ struct HQL_API KeyCondition : public CInterface
 {
 public:
     KeyCondition()          { keyedKind = KeyedNo; isWild = false; generated = false; wasKeyed = false; }
-    KeyCondition(IHqlExpression * _selector, IHqlExpression * _expr, KeyedKind _keyedKind)
-                            { selector.set(_selector); expr.set(_expr); keyedKind = _keyedKind; isWild = false; generated = false; wasKeyed = isKeyed(); }
+    KeyCondition(IHqlExpression * _selector, IHqlExpression * _expr, KeyedKind _keyedKind, IHqlExpression * _subrange)
+                            { selector.set(_selector); subrange.set(_subrange); expr.set(_expr); keyedKind = _keyedKind; isWild = false; generated = false; wasKeyed = isKeyed(); }
 
     bool isKeyed()          { return (keyedKind != KeyedNo); }
 
