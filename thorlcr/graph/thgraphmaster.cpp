@@ -692,7 +692,7 @@ public:
                 e.setown(deserializeException(msg));
             sender = sender - 1; // 0 = master
             if (raisedSet->testSet(sender, true) && !aborted)
-                WARNLOG("CBarrierMaster, raise barrier message on tag %d, already received from slave %d", tag, sender);
+                IWARNLOG("CBarrierMaster, raise barrier message on tag %d, already received from slave %d", tag, sender);
             if (aborted) break;
         }
         msg.clear();
@@ -1156,12 +1156,12 @@ public:
         {
             StringBuffer m;
             E->errorMessage(m);
-            DBGLOG("Unable to record exception in workunit: %s", m.str());
+            IERRLOG("Unable to record exception in workunit: %s", m.str());
             E->Release();
         }
         catch (...)
         {
-            DBGLOG("Unable to record exception in workunit: unknown exception");
+            IERRLOG("Unable to record exception in workunit: unknown exception");
         }
     }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) override
@@ -1177,12 +1177,12 @@ public:
         {
             StringBuffer m;
             E->errorMessage(m);
-            DBGLOG("Unable to record exception in workunit: %s", m.str());
+            IERRLOG("Unable to record exception in workunit: %s", m.str());
             E->Release();
         }
         catch (...)
         {
-            DBGLOG("Unable to record exception in workunit: unknown exception");
+            IERRLOG("Unable to record exception in workunit: unknown exception");
         }
         if (isAbort)
             rtlFailOnAssert();      // minimal implementation

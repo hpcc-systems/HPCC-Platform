@@ -2724,9 +2724,11 @@ void CJobBase::startJob()
     {
         StringBuffer output;
         if (getAllStacks(output))
-            PrintLogDirect(output);
+        {
+            IERRLOG("%s", output.str());
+        }
         else
-            WARNLOG("Failed to capture process stacks: %s", output.str());
+            IWARNLOG("Failed to capture process stacks: %s", output.str());
     }
 }
 

@@ -205,7 +205,7 @@ public:
     ~CSocketRowWriter()
     {
         if (!stopped) {
-            WARNLOG("CSocketRowWriter:: releasing before stopped");
+            IWARNLOG("CSocketRowWriter:: releasing before stopped");
             stop();
         }
     }

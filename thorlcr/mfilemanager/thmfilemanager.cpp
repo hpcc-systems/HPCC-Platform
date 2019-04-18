@@ -653,7 +653,7 @@ void configureFileDescriptor(const char *logicalName, IFileDescriptor &fileDesc)
         if (props.hasProp("@size"))
         {
             if (noSize)
-                WARNLOG("Some parts of logical file \"%s\" have sizes others do not!", logicalName);
+                IWARNLOG("Some parts of logical file \"%s\" have sizes others do not!", logicalName);
             else
                 offset += props.getPropInt64("@size");
         }

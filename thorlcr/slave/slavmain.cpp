@@ -1139,12 +1139,12 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     {
         if (activeKManagersByHandle.size())
         {
-            WARNLOG("KJService: clearing active %u key manager container(s), that were not closed cleanly", (unsigned)activeKManagersByHandle.size());
+            DBGLOG("KJService: clearing active %u key manager container(s), that were not closed cleanly", (unsigned)activeKManagersByHandle.size());
             activeKManagersByHandle.clear();
         }
         if (activeFetchContextsByHandle.size())
         {
-            WARNLOG("KJService: clearing %u fetch context(s), that were not closed cleanly", (unsigned)activeFetchContextsByHandle.size());
+            DBGLOG("KJService: clearing %u fetch context(s), that were not closed cleanly", (unsigned)activeFetchContextsByHandle.size());
             activeFetchContextsByHandle.clear();
         }
         cachedKMs.clear();
@@ -1485,7 +1485,7 @@ public:
             {
                 if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
                 {
-                    ERRLOG("CKJService: Failed to send error response");
+                    OERRLOG("CKJService: Failed to send error response");
                     break;
                 }
             }
@@ -1681,7 +1681,7 @@ public:
                     Owned<ICommunicator> comm = jobListener.mpServers.item(channel).createCommunicator(&queryClusterGroup());
                     PROGLOG("verifying mp connection to rest of slaves (from channel=%d)", channel);
                     if (!comm->verifyAll())
-                        ERRLOG("Failed to connect to rest of slaves");
+                        OERRLOG("Failed to connect to rest of slaves");
                     else
                         PROGLOG("verified mp connection to rest of slaves");
                 }
@@ -1780,7 +1780,7 @@ public:
                                 OwnedIFile iFile = createIFile(soPath.str());
                                 if (!iFile->exists())
                                 {
-                                    WARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
+                                    IWARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
                                     copyFile(soPath.str(), remoteSoPath);
                                 }
                                 querySoCache.add(soPath.str());
@@ -1794,7 +1794,7 @@ public:
                         StringBuffer tempSo;
                         if (!rfn.isLocal())
                         {
-                            WARNLOG("Cannot load shared object directly from remote path, creating temporary local copy: %s", soPath.str());
+                            IWARNLOG("Cannot load shared object directly from remote path, creating temporary local copy: %s", soPath.str());
                             GetTempName(tempSo,"so",true);
                             copyFile(tempSo.str(), soPath.str());
                             soPath.clear().append(tempSo.str());
@@ -2124,7 +2124,7 @@ class CFileInProgressHandler : public CSimpleInterface, implements IFileInProgre
         bakName.append((unsigned)dt.getSimple()).append("_").append((unsigned)GetCurrentProcessId()).append(".bak");
         iFileIO.clear(); // close old for rename
         iFile->rename(bakName.str());
-        WARNLOG("Renamed to %s", bakName.str());
+        DBGLOG("Renamed to %s", bakName.str());
         OwnedIFile newIFile = createIFile(origName);
         iFileIO.setown(newIFile->open(IFOreadwrite)); // reopen
     }
@@ -2177,7 +2177,7 @@ public:
         {
             if (sz<=3)
             {
-                WARNLOG("Corrupt files-in-progress file detected: %s", path.str());
+                IWARNLOG("Corrupt files-in-progress file detected: %s", path.str());
                 backup(dir, iFile);
             }
             else
@@ -2189,7 +2189,7 @@ public:
                     const char *eol = strchr(mem, '\n');
                     if (!eol)
                     {
-                        WARNLOG("Corrupt files-in-progress file detected: %s", path.str());
+                        IWARNLOG("Corrupt files-in-progress file detected: %s", path.str());
                         backup(dir, iFile);
                         break;
                     }
@@ -2271,7 +2271,7 @@ void slaveMain(bool &jobListenerStopped)
     HardwareInfo hdwInfo;
     getHardwareInfo(hdwInfo);
     if (hdwInfo.totalMemory < masterMemMB)
-        WARNLOG("Slave has less memory than master node");
+        OWARNLOG("Slave has less memory than master node");
     unsigned gmemSize = globals->getPropInt("@globalMemorySize");
     bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
     bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);

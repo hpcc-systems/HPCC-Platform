@@ -979,7 +979,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                         bool removed;
                         msg.read(removed);
                         if (!removed)
-                            WARNLOG("KJ service failed to remove [%u]", closeCmd);
+                            IWARNLOG("KJ service failed to remove [%u]", closeCmd);
                     }
                 }
             }

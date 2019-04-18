@@ -103,7 +103,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             catch (IException *E)
             {
                 StringBuffer s;
-                DBGLOG("ERROR: Invalid XML received from %s:%s", E->errorMessage(s).str(), rawText.str());
+                IWARNLOG("processDebugCommand: Invalid XML received from %s:%s", E->errorMessage(s).str(), rawText.str());
                 throw;
             }
 
@@ -187,7 +187,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                         DBGLOG("Reading debug command from socket...");
                         if (!ssock.readBlock(rawText, WAIT_FOREVER, NULL, continuationNeeded, isStatus, 1024*1024))
                         {
-                            WARNLOG("No data reading query from socket");
+                            DBGLOG("No data reading query from socket");
                             continue;
                         }
                         assertex(!continuationNeeded);
@@ -309,7 +309,7 @@ void CJobManager::fatal(IException *e)
     }
     catch (...)
     {
-        ERRLOG("Unknown exception in CJobManager::fatal");
+        IERRLOG("Unknown exception in CJobManager::fatal");
     }
     LOG(daliAuditLogCat,",Progress,Thor,Terminate,%s,%s,%s,exception",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
@@ -451,7 +451,7 @@ void CJobManager::run()
     Owned<IMPServer> mpServer = getMPServer();
     Owned<ICommunicator> comm = mpServer->createCommunicator(&queryClusterGroup());
     if (!comm->verifyAll())
-        ERRLOG("Failed to connect to all slaves");
+        OERRLOG("Failed to connect to all slaves");
     else
         PROGLOG("verified mp connection to all slaves");
 
@@ -641,12 +641,12 @@ void CJobManager::run()
             masterEp.serialize(msg);  // only used for tracing
             if (!conversation->send(msg))
             {
-                WARNLOG("send conversation failed");
+                IWARNLOG("send conversation failed");
                 continue;
             }
             if (!conversation->recv(msg.clear(),60*1000))
             {
-                WARNLOG("recv conversation failed");
+                IWARNLOG("recv conversation failed");
                 continue;
             }
             msg.read(graphName);
@@ -811,7 +811,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
         replyMb.append((unsigned)DAMP_THOR_REPLY_GOOD);
     if (!conversation->send(replyMb)) {
         s.clear();
-        ERRLOG("Failed to reply to agent %s",agentep.getUrlStr(s).str());
+        IERRLOG("Failed to reply to agent %s",agentep.getUrlStr(s).str());
     }
     conversation.clear();
     handlingConversation = false;

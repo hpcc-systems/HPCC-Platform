@@ -1178,7 +1178,7 @@ void CThorExpandingRowArray::serialize(IRowSerializerTarget &out)
                 serializer->serialize(out, (const byte *)row);
             else if (warnnull)
             {
-                WARNLOG("CThorExpandingRowArray::serialize ignoring NULL row");
+                IWARNLOG("CThorExpandingRowArray::serialize ignoring NULL row");
                 warnnull = false;
             }
         }
@@ -1236,7 +1236,7 @@ rowidx_t CThorExpandingRowArray::serializeBlock(MemoryBuffer &mb, rowidx_t idx, 
             serializer->serialize(out,(const byte *)row);
         else if (warnnull)
         {
-            WARNLOG("CThorExpandingRowArray::serialize ignoring NULL row");
+            IWARNLOG("CThorExpandingRowArray::serialize ignoring NULL row");
             warnnull = false;
         }
         // allows at least one
