@@ -59,7 +59,7 @@ if(SPARK)
 
     if(NOT SPARK_HPCC_JAR)
         if(NOT SPARK_HPCC_VERSION)
-            set(SPARK_HPCC_VERSION "7.2.0.1")
+            set(SPARK_HPCC_VERSION "7.2.6")
         endif()
         file(DOWNLOAD
             ${CENTRAL_REPO}/org/hpccsystems/spark-hpcc/${SPARK_HPCC_VERSION}/spark-hpcc-${SPARK_HPCC_VERSION}.jar
@@ -71,7 +71,7 @@ if(SPARK)
 
     if(NOT DFSCLIENT_JAR)    
         if(NOT DFSCLIENT_VERSION)
-            set(DFSCLIENT_VERSION "7.2.0.1")
+            set(DFSCLIENT_VERSION "7.2.6")
         endif()
         file(DOWNLOAD
             ${CENTRAL_REPO}/org/hpccsystems/dfsclient/${DFSCLIENT_VERSION}/dfsclient-${DFSCLIENT_VERSION}-jar-with-dependencies.jar
