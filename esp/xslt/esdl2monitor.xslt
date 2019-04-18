@@ -26,6 +26,8 @@
     <xsl:param name="diffaction" select="'Run'"/>
     <xsl:param name="listCategories" select="false()"/>
     <xsl:variable name="docname" select="/esxdl/@name"/>
+    <xsl:param name="skipResponseTag" select="substring($responseType, string-length($responseType) - 1)='Ex'"/>
+
     <xsl:template match="/">
         <xsl:apply-templates select="esxdl"/>
     </xsl:template>
@@ -367,7 +369,7 @@ END;
 </xsl:choose>
 
   output(executedAction.id, NAMED('MonitorId'));
-  output(executedAction.report, NAMED('Result'));
+  output(executedAction.report<xsl:if test="$skipResponseTag">[1].response</xsl:if>, NAMED('Result'));
 
 <xsl:if test="$listCategories">
   <xsl:if test="Template//*[@diff_monitor]">

@@ -17966,7 +17966,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         //virtual const char * getInputIteratorPath()
         IHqlExpression * xpath = expr->queryAttribute(xpathAtom);
         if (xpath)
-            doBuildVarStringFunction(instance->classctx, "getInputIteratorPath", xpath->queryChild(0));
+            doBuildVarStringFunction(instance->startctx, "getInputIteratorPath", xpath->queryChild(0));
 
         IHqlExpression * onFail = expr->queryAttribute(onFailAtom);
         if (onFail)
@@ -18122,7 +18122,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
         //virtual const char * getInputIteratorPath()
         IHqlExpression * xpath = expr->queryAttribute(xpathAtom);
         if (xpath)
-            doBuildVarStringFunction(instance->classctx, "getInputIteratorPath", xpath->queryChild(0));
+            doBuildVarStringFunction(instance->startctx, "getInputIteratorPath", xpath->queryChild(0));
 
         IHqlExpression * onFail = expr->queryAttribute(onFailAtom);
         if (onFail)

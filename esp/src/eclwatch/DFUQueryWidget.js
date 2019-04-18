@@ -55,6 +55,7 @@ define([
     "dijit/form/DropDownButton",
     "dijit/form/Select",
     "dijit/form/CheckBox",
+    "dijit/form/NumberTextBox",
     "dijit/form/RadioButton",
     "dijit/Dialog",
     "dijit/Toolbar",

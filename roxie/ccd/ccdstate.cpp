@@ -2478,7 +2478,8 @@ private:
                 else
                 {
                     bool includeAllQueries = control->getPropBool("@all", true);
-                    Owned<const IPropertyTree> stats = getAllQueryStats(includeAllQueries, from, to);
+                    bool rawStats = control->getPropBool("@rawStats", false);
+                    Owned<const IPropertyTree> stats = getAllQueryStats(includeAllQueries, rawStats, from, to);
                     toXML(stats, reply);
                 }
             }

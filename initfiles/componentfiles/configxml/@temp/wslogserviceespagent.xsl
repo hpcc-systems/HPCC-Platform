@@ -65,7 +65,7 @@ xmlns:set="http://exslt.org/sets">
                 
             <LogDataXPath>
                 <xsl:for-each select="$agentNode/LogDataItem">
-                    <LogDataItem name="{current()/@name}" XPath="{current()/@xpath}" xsl="{current()/@xsl}" default="{current()/@default}"/>
+                    <LogDataItem name="{current()/@name}" XPath="{current()/@xpath}" xsl="{current()/@xsl}" encode="{current()/@encode}" default="{current()/@default}"/>
                 </xsl:for-each>
                 <xsl:for-each select="$agentNode/LogInfo">
                     <LogInfo name="{current()/@name}" default="{current()/@default}" XPath="{current()/@xpath}" xsl="{current()/@xsl}" multiple="{current()/@multiple}" encode="{current()/@encode}" type="{current()/@type}"/>
