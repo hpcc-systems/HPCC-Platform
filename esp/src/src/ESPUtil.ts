@@ -297,28 +297,21 @@ export var LocalStorage = dojo.declare([Evented], {
 
 export function goToPageUserPreference(gridName, key) {
     var context = this;
-    var inGotoPage;
     var initUserPref = this.LocalStorage.prototype.getItem(key, "Number");
     if (initUserPref) {
-        gridName.set("rowsPerPage", initUserPref);
+        gridName.rowsPerPage = initUserPref;
+        gridName._updateRowsPerPageOption();
     }
     aspect.after(gridName, 'gotoPage', function (deferred, args) {
         return deferred.then(function () {
-            if (!inGotoPage) {
-                var currentUserPref = context.LocalStorage.prototype.getItem(key, "Number");
-                var currentGridValue = gridName.rowsPerPage;
-                if (currentUserPref !== currentGridValue) {
-                    inGotoPage = true;
-                    context.LocalStorage.prototype.setItem(key, currentGridValue);
-                    gridName.set("rowsPerPage", currentGridValue);
-                    return;
-                }
+            var currentUserPref = context.LocalStorage.prototype.getItem(key, "Number");
+            var currentGridValue = gridName.rowsPerPage;
+            if (currentUserPref !== currentGridValue) {
+                context.LocalStorage.prototype.setItem(key, currentGridValue);
             }
-            inGotoPage = false;
         });
     });
 }
-
 
 export var MonitorLockClick = dojo.declare([Evented], {
     unlocked: function () {

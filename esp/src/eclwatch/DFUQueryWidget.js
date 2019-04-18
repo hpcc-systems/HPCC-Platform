@@ -346,27 +346,27 @@ define([
 
             //  Implementation  ---
             getFilter: function () {
-                if (this.workunitsGrid){
+                if (this.workunitsGrid) {
                     var retVal = this.filter.toObject();
-                    if (retVal.Sortby){
-                        switch (retVal.Sortby){
+                    if (retVal.Sortby) {
+                        switch (retVal.Sortby) {
                             case "Smallest":
-                                this.workunitsGrid.set ("sort", [{ attribute: "FileSize", "descending": false }]);
+                                this.workunitsGrid.updateSortArrow([{ attribute: "IntSize", "descending": false }]);
                                 break;
                             case "Largest":
-                                this.workunitsGrid.set ("sort", [{ attribute: "FileSize", "descending": true }]);
+                                this.workunitsGrid.updateSortArrow([{ attribute: "IntSize", "descending": true }]);
                                 break;
                             case "Oldest":
-                                this.workunitsGrid.set ("sort", [{ attribute: "Modified", "descending": false }]);
+                                this.workunitsGrid.updateSortArrow([{ attribute: "Modified", "descending": false }]);
                                 break;
                             case "Newest":
-                                /* falls through */
+                            /* falls through */
                             default:
-                                this.workunitsGrid.set ("sort", [{ attribute: "Modified", "descending": true }]);
+                                this.workunitsGrid.updateSortArrow([{ attribute: "Modified", "descending": true }]);
                                 break;
-                            }
                         }
                     }
+                }
                 var retVal = this.filter.toObject();
                 if (retVal.StartDate && retVal.FromTime) {
                     lang.mixin(retVal, {

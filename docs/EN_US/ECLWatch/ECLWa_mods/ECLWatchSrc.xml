@@ -31,7 +31,7 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
@@ -573,19 +573,38 @@
             </mediaobject>
           </figure>
 
-          <para>Fill in the corresponding values under Description, History,
-          and Timings in the Z.A.P. dialog. Optionally, you can password
-          protect the ZAP package and choose to include slave logs. Press the
-          <emphasis role="bold">Apply </emphasis>button when finished. The
-          Z.A.P. utililty generates a zip file with all the appropriate
-          information for troubleshooting.</para>
+          <para>Some of the required fields are populated. Fill in the
+          corresponding values under Description, History, and Timings fields.
+          Optionally, you can password protect the ZAP package and choose to
+          include slave logs. Slave logs are not included by default. If there
+          are slave logs, the option to include them is available. You must
+          check that field when available to include the slave logs.</para>
+
+          <para>If your data contains sensitive information, such as
+          personally identifiable information (PII), save the ZAP package,
+          sanitize the data, then email it manually. If appropriate to share
+          your data, you can take advantage of the Send Email field.</para>
+
+          <para>The Send Email field is only available if email is configured
+          for the ESP service in the Configuration Manager. If available,
+          check the Send Email box to email the ZAP report. Only an
+          Administrator can configure the email. The (To) Email Address is
+          also set by the Administrator and can only be changed in the
+          configuration. The (From) Email Address can be set in the
+          Configuration Manager, but can be changed if desired. The Email
+          Subject is required, but the Email Body is optional.</para>
+
+          <para>Press the <emphasis role="bold">Apply </emphasis>button when
+          all the dialog fields are completed. At that point if you checked
+          the Send Email box, the Z.A.P. report gets sent. If email is not
+          configured, the Z.A.P. utility generates a zip file with all the
+          appropriate information for troubleshooting.</para>
 
           <para>You can find the generated zip file in your browser's
-          designated download directory. You can now send this file to the
-          person handling your support request, or you can upload the file
-          into the issue tracking system. Before distributing the file, verify
-          that the file does not contain any sensitive data, such as
-          personally identifiable information (PII).</para>
+          designated download directory. You can now manually send this file
+          to the person handling your support request, or you can upload the
+          file into the issue tracking system. Remember, you should only use
+          the email feature if appropriate to share your data.</para>
         </sect3>
 
         <sect3 id="ECLWatchSlaveLogDialog">
