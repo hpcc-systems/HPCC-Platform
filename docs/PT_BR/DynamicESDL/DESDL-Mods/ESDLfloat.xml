@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Data_float">
+  <title><emphasis role="bold">float</emphasis></title>
+
+  <para><indexterm>
+      <primary>float</primary>
+    </indexterm>Um ponto flutuante ou número real de 4 bytes.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>float Temperature;
+</programlisting>
+</sect1>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Documentation_Conventions">
+  <title>Convenções de Documentação</title>
+
+  <sect2 id="ECL_Syntax_Case">
+    <title>Caso de sintaxe ECL</title>
+
+    <para>Embora o ECL não faça distinção entre maiúsculas e minúsculas, as
+    palavras-chave reservadas do ECL e as funções contidas neste documento são
+    sempre exibidas com todos os caracteres EM MAIÚSCULA ( ALL CAPS ) para dar
+    destaque e facilitar a identificação. A definição e os nomes do conjunto
+    de registros são sempre exibidos no código de exemplo em caracteres
+    maiúsculos e minúsculos misturados. Palavras em execução podem ser usadas
+    para identificar explicitamente a finalidade nos exemplos.</para>
+  </sect2>
+
+  <sect2 id="Optional_Items">
+    <title>Itens Opcionais</title>
+
+    <para>Palavras-chave e parâmetros de uso opcional são incluídos em
+    <indexterm>
+        <primary>colchetes</primary>
+      </indexterm> nos diagramas de sintaxe com as opções e/ou separadas por
+    uma barra vertical (|), como neste exemplo:</para>
+
+    <para><emphasis role="bold">EXAMPLEFUNC(</emphasis><emphasis>parameter
+    </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>,optionalparameter</emphasis><emphasis
+    role="bold">]</emphasis><emphasis> </emphasis><emphasis
+    role="bold">[,OPTIONAL | WORD])</emphasis></para>
+  </sect2>
+
+  <sect2 id="Example_Code">
+    <title>Exemplo:</title>
+
+    <para><emphasis role="bold">Todos os códigos de exemplo neste documento
+    são mostrados como na lista abaixo:</emphasis></para>
+
+    <programlisting>TotalTrades := COUNT(Trades); // TotalTrades is the Definition name
+  // COUNT is a built-in function, Trades is the name of a record set</programlisting>
+  </sect2>
+</sect1>

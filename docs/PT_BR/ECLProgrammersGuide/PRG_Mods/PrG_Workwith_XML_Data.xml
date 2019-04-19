@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Working_with_XML_Data">
+  <title><emphasis role="bold">Trabalhando com Dados XML</emphasis></title>
+
+  <para>Os dados nem sempre são recebidos em arquivos simples, de comprimento
+  fixo, fáceis de trabalhar e perfeitos: eles podem vir de várias formas. Um
+  formato que é cada vez mais usado hoje em dia é o XML. ECL possui diversas
+  opções para processar dados em XML – algumas óbvias e outras nem
+  tanto.</para>
+
+  <para><emphasis role="bold">OBSERVAÇÃO:</emphasis> XML a leitura e a análise
+  podem consumir muita memória dependendo do uso. Em particular, se o XPATH
+  especificado combinar com uma quantidade muito grande de dados, uma grande
+  estrutura de dados será então fornecida para transformação. Dessa forma,
+  quanto maior for a combinação, mais recursos serão consumidos por
+  combinação. Por exemplo, se você possui um documento muito grande e combinar
+  um elemento próximo da raiz que, virtualmente, engloba o documento todo, o
+  documento inteiro será interpretado como uma estrutura referenciável que o
+  ECL terá acesso.</para>
+
+  <sect2 id="Simple_XML_Data_Handling">
+    <title>Manipulação de Dados XML Simples</title>
+
+    <para>As opções XML no DATASET e OUTPUT permitem que você trabalhe
+    facilmente com dados XML. Por exemplo, um arquivo XML que se parece com
+    isso (esses dados foram gerados pelo código no GenData..ECL):</para>
+
+    <programlisting>&lt;?xml version=1.0 ...?&gt;
+&lt;timezones&gt;
+&lt;area&gt;
+  &lt;code&gt;
+        215
+  &lt;/code&gt;
+  &lt;state&gt;
+        PA
+  &lt;/state&gt;
+  &lt;description&gt;
+        Pennsylvania (Philadelphia area)
+  &lt;/description&gt;
+  &lt;zone&gt;
+        Eastern Time Zone
+  &lt;/zone&gt;
+&lt;/area&gt;
+&lt;area&gt;
+  &lt;code&gt;
+        216
+  &lt;/code&gt;
+  &lt;state&gt;
+        OH
+  &lt;/state&gt;
+  &lt;description&gt;
+        Ohio (Cleveland area)
+  &lt;/description&gt;
+  &lt;zone&gt;
+        Eastern Time Zone
+  &lt;/zone&gt;
+&lt;/area&gt;
+&lt;/timezones&gt;
+</programlisting>
+
+    <para>Este arquivo pode ser declarado para uso em seu código ECL (uma vez
+    que esse arquivo é declarado com o DATASET TimeZonesXML declarado na
+    estrutura MODULE DeclareData) desta forma:</para>
+
+    <programlisting>EXPORT TimeZonesXML :=
+          DATASET('~PROGGUIDE::EXAMPLEDATA::XML_timezones',
+                  {STRING code,
+                   STRING state,
+                   STRING description,
+                   STRING timezone{XPATH('zone')}},
+                  XML('timezones/area') )
+</programlisting>
+
+    <para>Isso disponibiliza os dados contidos em cada tag XML no arquivo para
+    uso em seu código ECL assim como qualquer dataset de arquivo simples. Os
+    nomes de campo na estrutura RECORD (neste caso, embutidos na declaração
+    DATASET) duplicam os nomes de tags no arquivo. O uso do modificador XPATH
+    no campo timezone nos permite especificar que o campo vem da tag
+    &lt;zone&gt;. Esse mecanismo nos permite nomear campos de forma diferente
+    de seus nomes de tag.</para>
+
+    <para>Ao redefinir os campos como tipos STRING sem especificar seu
+    comprimento, é possível ter a certeza de que todos os dados estão sendo
+    obtidos – incluindo qualquer retorno de carro, alimentação de linha e
+    tabulação no arquivo XML que estejam contidos dentro das tags de campo
+    (conforme representadas neste arquivo). Esse OUTPUT simples mostra o
+    resultado (esse e todos os exemplos de código neste artigo estão contidos
+    no arquivo XMLcode..ECL).</para>
+
+    <programlisting>IMPORT $;
+
+ds := $.DeclareData.timezonesXML;
+
+OUTPUT(ds);</programlisting>
+
+    <para>Observe que o resultado exibido no programa ECL IDE contém colchetes
+    nos dados – esses são retornos de carro, as alimentações de linha e as
+    tabulações nos dados. É possível acabar com os erros de retorno de carro,
+    alimentações de linha e tabulações simplesmente especificando os registros
+    em uma operação PROJECT, da seguinte forma:</para>
+
+    <programlisting>StripIt(STRING str) := REGEXREPLACE('[\r\n\t]',str,'$1');
+RECORDOF(ds) DoStrip(ds L) := TRANSFORM
+  SELF.code := StripIt(L.code);
+  SELF.state := StripIt(L.state);
+  SELF.description := StripIt(L.description);
+  SELF.timezone := StripIt(L.timezone);
+END;
+StrippedRecs := PROJECT(ds,DoStrip(LEFT));
+OUTPUT(StrippedRecs);
+</programlisting>
+
+    <para>O uso da função REGEXREPLACE simplifica bastante o processo. Seu
+    primeiro parâmetro é uma expressão regular Perl padrão que representa os
+    caracteres que se busca: retorno de carro (\r), alimentação de linha (\n)
+    e tabulação (\t).</para>
+
+    <para>É possível agora operar o recordset StrippedRecs (ou dataset
+    ProgGuide.TimeZonesXML) assim como você faria com qualquer outro. Por
+    exemplo, você pode querer simplesmente filtrar campos e registros
+    desnecessários e gravar o resultado em um novo arquivo XML para ser
+    especificado.</para>
+
+    <programlisting>InterestingRecs := StrippedRecs((INTEGER)code BETWEEN 301 AND 303);
+OUTPUT(InterestingRecs,{code,timezone},
+       '~PROGGUIDE::EXAMPLEDATA::OUT::timezones300',
+XML('area',HEADING('&lt;?xml version=1.0 ...?&gt;\n&lt;timezones&gt;\n','&lt;/timezones&gt;')),OVERWRITE);
+</programlisting>
+
+    <para>O arquivo XML resultante é mais ou menos assim:</para>
+
+    <programlisting>&lt;?xml version=1.0 ...?&gt;
+&lt;timezones&gt;
+&lt;area&gt;&lt;code&gt;301&lt;/code&gt;&lt;zone&gt;Eastern Time Zone&lt;/zone&gt;&lt;/area&gt;
+&lt;area&gt;&lt;code&gt;302&lt;/code&gt;&lt;zone&gt;Eastern Time Zone&lt;/zone&gt;&lt;/area&gt;
+&lt;area&gt;&lt;code&gt;303&lt;/code&gt;&lt;zone&gt;Mountain Time Zone&lt;/zone&gt;&lt;/area&gt;
+&lt;/timezones&gt;
+</programlisting>
+  </sect2>
+
+  <sect2 id="Complex_XML_Data_Handling">
+    <title>Manipulação de Dados XML Complexos</title>
+
+    <para>É possível criar resultados em XML mais complexos usando a opção CSV
+    no OUTPUT em vez da opção XML. A opção XML produzirá apenas o estilo
+    simples do XML mostrado acima. Porém, algumas aplicações exigem o uso de
+    atributos XML dentro das tags. Este código demonstra como produzir esse
+    formato:</para>
+
+    <programlisting>CRLF := (STRING)x'0D0A';          
+OutRec := RECORD
+  STRING Line;
+END;
+OutRec DoComplexXML(InterestingRecs L) := TRANSFORM
+SELF.Line := '  &lt;area code="' + L.code + '"&gt;' + CRLF +
+             '    &lt;zone&gt;' + L.timezone + '&lt;/zone&gt;' + CRLF +
+             '  &lt;/area&gt;';
+END;
+ComplexXML := PROJECT(InterestingRecs,DoComplexXML(LEFT));
+OUTPUT(ComplexXML,,'~PROGGUIDE::EXAMPLEDATA::OUT::Complextimezones301',
+CSV(HEADING('&lt;?xml version=1.0 ...?&gt;'+CRLF+'&lt;timezones&gt;'+CRLF,'&lt;/timezones&gt;')),OVERWRITE);
+</programlisting>
+
+    <para>A estrutura RECORD define um campo de resultado único para conter
+    cada registro XML lógico criado com a função TRANSFORM. A operação PROJECT
+    compila todos os registros de resultados individuais e, em seguida, a
+    opção CSV na ação OUTPUT especifica os registros de cabeçalho e de rodapé
+    do arquivo (neste caso, as tags do arquivo XML), exibindo o resultado
+    mostrado aqui:</para>
+
+    <programlisting>&lt;?xml version=1.0 ...?&gt;
+&lt;timezones&gt;
+  &lt;area code="301"&gt;
+    &lt;zone&gt;Eastern Time Zone&lt;/zone&gt;
+  &lt;/area&gt;
+  &lt;area code="302"&gt;
+    &lt;zone&gt;Eastern Time Zone&lt;/zone&gt;
+  &lt;/area&gt;
+  &lt;area code="303"&gt;
+    &lt;zone&gt;Mountain Time Zone&lt;/zone&gt;
+  &lt;/area&gt;
+&lt;/timezones&gt;
+</programlisting>
+
+    <para>Então, se o uso da opção CSV é o meio para OBTER OUTPUT formatos de
+    dados XML complexos, como você pode acessar dados XML existentes de
+    formato complexo e usar o ECL para trabalhar com eles?</para>
+
+    <para>A resposta está no uso da opção XPATH nas definições de campo na
+    estrutura RECORD como abaixo:</para>
+
+    <programlisting>NewTimeZones := 
+ DATASET('~PROGGUIDE::EXAMPLEDATA::OUT::Complextimezones301',
+         {STRING area {XPATH('&lt;&gt;')}},
+         XML('timezones/area'));
+</programlisting>
+
+    <para>A opção {XPATH('&lt;&gt;')} especificada basicamente "solicita tudo
+    que está na tag XML, incluindo as próprias tags", de forma que você possa
+    então usar o ECL para interpretar o texto e fazer o seu trabalho. Os
+    registros de dados NewTimeZones se parecem com esse (já que incluem todos
+    os retornos de carro/alimentação de linha) ao realizar uma operação OUTPUT
+    simples e copiar o registro para um editor de texto:</para>
+
+    <programlisting>&lt;area code="301"&gt;
+  &lt;zone&gt;Eastern Time Zone&lt;/zone&gt;
+&lt;/area&gt;</programlisting>
+
+    <para>Você pode então usar qualquer uma das funções de processamento de
+    string no ECL ou as funções de Biblioteca de Serviços no StringLib ou
+    UnicodeLib (consulte <emphasis>Referência de biblioteca de
+    serviços</emphasis>) para trabalhar com o texto. No entanto, a ferramenta
+    mais poderosa de análise de texto ECL é a função PARSE, que permite
+    definir expressões regulares e/ou definições de atributos PATTERN do ECL
+    para processar os dados.</para>
+
+    <para>Este exemplo usa a versão TRANSFORM de PARSE para obter dados
+    XML:</para>
+
+    <programlisting>{ds.code, ds.timezone} Xform(NewTimeZones L) := TRANSFORM
+  SELF.code     := XMLTEXT('@code');
+  SELF.timezone := XMLTEXT('zone');
+END;
+ParsedZones := PARSE(NewTimeZones,area,Xform(LEFT),XML('area'));
+
+OUTPUT(ParsedZones);
+</programlisting>
+
+    <para>Neste código, usamos o formato XML da PARSE e sua função associada
+    XMLTEXT para analisar os dados da estrutura XML . O parâmetro para XMLTEXT
+    é o XPATH para os dados nos quais estamos interessados (o principal
+    subconjunto do padrão XPATH que o ECL suporta está documentado na
+    Referência de Linguagem na discussão de estrutura RECORD).</para>
+  </sect2>
+
+  <sect2 id="Input_with_Complex_XML_Formats">
+    <title>Entrada com formatos XML complexos</title>
+
+    <para>Os dados XML podem vir em diversos formatos, e alguns deles utilizam
+    "child dataset", de forma que uma determinada tag possa conter múltiplas
+    instâncias de outras tags que contêm as próprias tags de campo
+    individuais.</para>
+
+    <para>Aqui está um exemplo de uma estrutura com essa complexidade usando
+    dados UCC. Um arquivamento individual pode conter uma ou mais transações
+    que, por sua vez, podem conter múltiplos registros Debtor e
+    SecuredParty:</para>
+
+    <programlisting>&lt;UCC&gt;
+  &lt;Filing number='5200105'&gt;
+    &lt;Transaction ID='5'&gt;
+  &lt;StartDate&gt;08/01/2001&lt;/StartDate&gt;
+  &lt;LapseDate&gt;08/01/2006&lt;/LapseDate&gt;
+  &lt;FormType&gt;UCC 1 FILING STATEMENT&lt;/FormType&gt;
+  &lt;AmendType&gt;NONE&lt;/AmendType&gt;
+  &lt;AmendAction&gt;NONE&lt;/AmendAction&gt;
+  &lt;EnteredDate&gt;08/02/2002&lt;/EnteredDate&gt;
+  &lt;ReceivedDate&gt;08/01/2002&lt;/ReceivedDate&gt;
+  &lt;ApprovedDate&gt;08/02/2002&lt;/ApprovedDate&gt;
+  &lt;Debtor entityId='19'&gt;
+    &lt;IsBusiness&gt;true&lt;/IsBusiness&gt;
+    &lt;OrgName&gt;&lt;![CDATA[BOGUS LABORATORIES, INC.]]&gt;&lt;/OrgName&gt;
+    &lt;Status&gt;ACTIVE&lt;/Status&gt;
+    &lt;Address1&gt;&lt;![CDATA[334 SOUTH 900 WEST]]&gt;&lt;/Address1&gt;
+    &lt;Address4&gt;&lt;![CDATA[SALT LAKE CITY 45 84104]]&gt;&lt;/Address4&gt;
+    &lt;City&gt;&lt;![CDATA[SALT LAKE CITY]]&gt;&lt;/City&gt;
+    &lt;State&gt;UTAH&lt;/State&gt;
+    &lt;Zip&gt;84104&lt;/Zip&gt;
+    &lt;OrgType&gt;CORP&lt;/OrgType&gt;
+    &lt;OrgJurisdiction&gt;&lt;![CDATA[SALT LAKE CITY]]&gt;&lt;/OrgJurisdiction&gt;
+    &lt;OrgID&gt;654245-0142&lt;/OrgID&gt;
+    &lt;EnteredDate&gt;08/02/2002&lt;/EnteredDate&gt;
+  &lt;/Debtor&gt;
+  &lt;Debtor entityId='7'&gt;
+    &lt;IsBusiness&gt;false&lt;/IsBusiness&gt;
+    &lt;FirstName&gt;&lt;![CDATA[FRED]]&gt;&lt;/FirstName&gt;
+    &lt;LastName&gt;&lt;![CDATA[JONES]]&gt;&lt;/LastName&gt;
+    &lt;Status&gt;ACTIVE&lt;/Status&gt;
+    &lt;Address1&gt;&lt;![CDATA[1038 E. 900 N.]]&gt;&lt;/Address1&gt;
+    &lt;Address4&gt;&lt;![CDATA[OGDEN 45 84404]]&gt;&lt;/Address4&gt;
+    &lt;City&gt;&lt;![CDATA[OGDEN]]&gt;&lt;/City&gt;
+    &lt;State&gt;UTAH&lt;/State&gt;
+    &lt;Zip&gt;84404&lt;/Zip&gt;
+    &lt;OrgType&gt;NONE&lt;/OrgType&gt;
+    &lt;EnteredDate&gt;08/02/2002&lt;/EnteredDate&gt;
+  &lt;/Debtor&gt;
+  &lt;SecuredParty entityId='20'&gt;
+    &lt;IsBusiness&gt;true&lt;/IsBusiness&gt;
+    &lt;OrgName&gt;&lt;![CDATA[WELLS FARGO BANK]]&gt;&lt;/OrgName&gt;
+    &lt;Status&gt;ACTIVE&lt;/Status&gt;
+    &lt;Address1&gt;&lt;![CDATA[ATTN: LOAN OPERATIONS CENTER]]&gt;&lt;/Address1&gt;
+    &lt;Address3&gt;&lt;![CDATA[P.O. BOX 9120]]&gt;&lt;/Address3&gt;
+    &lt;Address4&gt;&lt;![CDATA[BOISE 13 83707-2203]]&gt;&lt;/Address4&gt;
+    &lt;City&gt;&lt;![CDATA[BOISE]]&gt;&lt;/City&gt;
+    &lt;State&gt;IDAHO&lt;/State&gt;
+    &lt;Zip&gt;83707-2203&lt;/Zip&gt;
+    &lt;Status&gt;ACTIVE&lt;/Status&gt;
+    &lt;EnteredDate&gt;08/02/2002&lt;/EnteredDate&gt;
+  &lt;/SecuredParty&gt;
+  &lt;Collateral&gt;
+    &lt;Action&gt;ADD&lt;/Action&gt;
+    &lt;Description&gt;&lt;![CDATA[ALL ACCOUNTS]]&gt;&lt;/Description&gt;
+    &lt;EffectiveDate&gt;08/01/2002&lt;/EffectiveDate&gt;
+  &lt;/Collateral&gt;
+    &lt;/Transaction&gt;
+    &lt;Transaction ID='375799'&gt;
+  &lt;StartDate&gt;08/01/2002&lt;/StartDate&gt;
+  &lt;LapseDate&gt;08/01/2006&lt;/LapseDate&gt;
+  &lt;FormType&gt;UCC 3 AMENDMENT&lt;/FormType&gt;
+  &lt;AmendType&gt;TERMINATION BY DEBTOR&lt;/AmendType&gt;
+  &lt;AmendAction&gt;NONE&lt;/AmendAction&gt;
+  &lt;EnteredDate&gt;02/23/2004&lt;/EnteredDate&gt;
+  &lt;ReceivedDate&gt;02/18/2004&lt;/ReceivedDate&gt;
+  &lt;ApprovedDate&gt;02/23/2004&lt;/ApprovedDate&gt;
+    &lt;/Transaction&gt;
+  &lt;/Filing&gt;
+&lt;/UCC&gt;
+</programlisting>
+
+    <para>O segredo para trabalhar com esse tipo de dados XML complexos são as
+    estruturas RECORD que definem o layout dos dados XML .</para>
+
+    <programlisting>CollateralRec := RECORD
+  STRING Action        {XPATH('Action')}; 
+  STRING Description   {XPATH('Description')}; 
+  STRING EffectiveDate {XPATH('EffectiveDate')}; 
+END;
+
+
+PartyRec := RECORD
+  STRING   PartyID         {XPATH('@entityId')}; 
+  STRING   IsBusiness      {XPATH('IsBusiness')};
+  STRING   OrgName         {XPATH('OrgName')};
+  STRING   FirstName       {XPATH('FirstName')};
+  STRING   LastName        {XPATH('LastName')};
+  STRING   Status          {XPATH('Status[1]')};
+  STRING   Address1        {XPATH('Address1')};
+  STRING   Address2        {XPATH('Address2')};
+  STRING   Address3        {XPATH('Address3')};
+  STRING   Address4        {XPATH('Address4')};
+  STRING   City            {XPATH('City')};
+  STRING   State           {XPATH('State')};
+  STRING   Zip             {XPATH('Zip')};
+  STRING   OrgType         {XPATH('OrgType')};
+  STRING   OrgJurisdiction {XPATH('OrgJurisdiction')};
+  STRING   OrgID           {XPATH('OrgID')};
+  STRING10 EnteredDate     {XPATH('EnteredDate')};
+END;
+
+TransactionRec := RECORD
+  STRING            TransactionID  {XPATH('@ID')}; 
+  STRING10          StartDate      {XPATH('StartDate')};   
+  STRING10          LapseDate      {XPATH('LapseDate')};   
+  STRING            FormType       {XPATH('FormType')};        
+  STRING            AmendType      {XPATH('AmendType')};   
+  STRING            AmendAction    {XPATH('AmendAction')};
+  STRING10          EnteredDate    {XPATH('EnteredDate')};
+  STRING10          ReceivedDate   {XPATH('ReceivedDate')};
+  STRING10          ApprovedDate   {XPATH('ApprovedDate')};
+  DATASET(PartyRec) Debtors        {XPATH('Debtor')};
+  DATASET(PartyRec) SecuredParties {XPATH('SecuredParty')};
+  CollateralRec     Collateral     {XPATH('Collateral')}
+END;
+
+UCC_Rec := RECORD 
+  STRING                  FilingNumber {XPATH('@number')}; 
+  DATASET(TransactionRec) Transactions {XPATH('Transaction')};
+END; 
+UCC := DATASET('~PROGGUIDE::EXAMPLEDATA::XML_UCC',UCC_Rec,XML('UCC/Filing')); 
+</programlisting>
+
+    <para>Começando por baixo, essas estruturas RECORD são combinadas para
+    criar o layout UCC_Rec final que define todo o formato desses dados XML
+    .</para>
+
+    <para>A opção XML na declaração DATASET final especifica o XPATH para a
+    tag de registro (arquivamento), e depois as definições de "campo" do
+    DATASET secundário nas estruturas RECORD processam as questões de múltipla
+    instância. Uma vez que o ECL faz distinção entre maiúsculas e minúsculas,
+    assim como a sintaxe XML , é necessário usar o XPATH para definir todas as
+    tags de campo. A estrutura RECORD PartyRec funciona com ambos os campos
+    DATASET secundários Debtors e SecuredParties, já que ambos contêm as
+    mesmas tags e informações.</para>
+
+    <para>Depois de definir o layout, como se extrai os dados para uma
+    estrutura relacional normalizada para que se possa trabalhar com ela no
+    supercomputador? NORMALIZE é a resposta. NORMALIZE precisa saber quantas
+    vezes ela deve acionar sua TRANSFORM, para que a função TABLE possa ser
+    usada para obter as contagens, da seguinte maneira:</para>
+
+    <programlisting>XactTbl := TABLE(UCC,{INTEGER XactCount := COUNT(Transactions), UCC});
+
+OUTPUT(XactTbl)</programlisting>
+
+    <para>Essa função TABLE obtém as contagens de múltiplos registros de
+    transação por arquivamento, de forma que possamos usar NORMALIZE para
+    extraí-las em uma tabela própria.</para>
+
+    <programlisting>Out_Transacts := RECORD
+   STRING            FilingNumber;
+   STRING            TransactionID; 
+   STRING10          StartDate;     
+   STRING10          LapseDate;     
+   STRING            FormType;         
+   STRING            AmendType;     
+   STRING            AmendAction;
+   STRING10          EnteredDate;
+   STRING10          ReceivedDate;
+   STRING10          ApprovedDate;
+   DATASET(PartyRec) Debtors;
+   DATASET(PartyRec) SecuredParties;
+   CollateralRec     Collateral;
+END;
+
+Out_Transacts Get_Transacts(XactTbl L, INTEGER C) := TRANSFORM
+  SELF.FilingNumber := L.FilingNumber;
+  SELF              := L.Transactions[C]; 
+END;
+
+Transacts := NORMALIZE(XactTbl,LEFT.XactCount,Get_Transacts(LEFT,COUNTER));
+
+OUTPUT(Transacts);
+</programlisting>
+
+    <para>Essa NORMALIZE extrai todas as transações em um conjunto de
+    registros separado com apenas uma transação por registro e com as
+    informações primárias (o número de arquivamento) anexadas. No entanto,
+    cada registro aqui ainda contém múltiplos registros secundários Debtor e
+    SecuredParty.</para>
+
+    <programlisting>PartyCounts := TABLE(Transacts,
+                     {INTEGER DebtorCount := COUNT(Debtors), 
+                      INTEGER PartyCount := COUNT(SecuredParties),
+                      Transacts});
+
+OUTPUT(PartyCounts);
+</programlisting>
+
+    <para>A função TABLE obtém as contagens dos múltiplos registros Debtor e
+    SecuredParty para cada transação.</para>
+
+    <programlisting>Out_Parties := RECORD
+   STRING   FilingNumber;
+   STRING   TransactionID;
+   PartyRec; 
+END;
+
+Out_Parties Get_Debtors(PartyCounts L, INTEGER C) := TRANSFORM
+  SELF.FilingNumber  := L.FilingNumber;
+  SELF.TransactionID := L.TransactionID; 
+  SELF               := L.Debtors[C]; 
+END;
+TransactDebtors := NORMALIZE( PartyCounts,
+                              LEFT.DebtorCount,
+                              Get_Debtors(LEFT,COUNTER));
+
+OUTPUT(TransactDebtors);
+</programlisting>
+
+    <para>O NORMALIZE extrai todos os Debtors para um conjunto de registros
+    separado.</para>
+
+    <programlisting>Out_Parties Get_Parties(PartyCounts L, INTEGER C) := TRANSFORM
+  SELF.FilingNumber  := L.FilingNumber;
+  SELF.TransactionID := L.TransactionID; 
+  SELF               := L.SecuredParties[C]; 
+END;
+
+TransactParties := NORMALIZE(PartyCounts,
+                             LEFT.PartyCount,
+                             Get_Parties(LEFT,COUNTER));
+
+OUTPUT(TransactParties);
+</programlisting>
+
+    <para>Essa NORMALIZE extrai todas as SecuredParties para um conjunto de
+    registros separado. Com isso, dividimos todos os registros secundários em
+    sua própria estrutura relacional normalizada com a qual podemos trabalhar
+    facilmente.</para>
+  </sect2>
+
+  <sect2 id="Piping_to_Third-Party_Tools">
+    <title>"Piping" para Ferramenta de Terceiros</title>
+
+    <para>Outra forma de trabalhar com dados XML é usar ferramentas de
+    terceiros adaptadas para uso no supercomputador, para ter a vantagem de
+    trabalhar com tecnologia já consagrada e o benefício de executar essa
+    tecnologia em paralelo em todos os nós de supercomputador de uma só
+    vez.</para>
+
+    <para>A técnica é simples: basta definir o arquivo de entrada como um
+    fluxo de dados e usar a opção PIPE no DATASET para processar os dados em
+    seu formato nativo. Após ter concluído o processamento, é possível gerar o
+    OUTPUT do resultado em qualquer formato resultante da ferramenta
+    terceirizada, algo como o seguinte código de exemplo (não
+    funcional):</para>
+
+    <programlisting>Rec := RECORD
+  STRING1  char;
+END;
+
+TimeZones := DATASET('timezones.xml',Rec,PIPE('ThirdPartyTool.exe'));
+
+OUTPUT(TimeZones,,'ProcessedTimezones.xml');
+</programlisting>
+
+    <para>O segredo para essa técnica é a definição do campo STRING1. Isso
+    produz a entrada e a saída de apenas um fluxo de dados de 1 byte por vez,
+    o qual passa pela ferramenta terceirizada e retorna para o código ECL em
+    seu formato nativo. Você não precisa nem saber qual é o formato. Você
+    também pode usar essa técnica com a opção PIPE no OUTPUT.</para>
+  </sect2>
+</sect1>

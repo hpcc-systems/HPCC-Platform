@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Automated_ECL">
+  <title><emphasis role="bold">ECL Automatizado</emphasis></title>
+
+  <para>Após ter definido os processos ECL padrão que você precisará realizar
+  regularmente, é possível começar a automatizar esses processos. A
+  automatização de processos elimina a necessidade de memorizar a ordem ou até
+  mesmo a periodicidade.</para>
+
+  <para>Uma forma de automação normalmente envolve iniciar MACROs com a
+  aplicação ECLPlus. Ao usar MACROs, é possível ter processos padrão que
+  operam em diferentes entradas por vez, mas que produzem o mesmo resultado.
+  Uma vez que o ECLPlus é uma aplicação de linha de comando, seu uso pode ser
+  iniciado automaticamente de várias formas diferentes – arquivos em lote no
+  DOS, de dentro de outra aplicação, ou...</para>
+
+  <para>Aqui está um exemplo. Esta MACRO (contida no arquivo DeclareData.ECL)
+  usa dois parâmetros: o nome de um arquivo e o nome de um campo nesse arquivo
+  para produzir uma contagem dos valores únicos no campo e um relatório de
+  tabela de referência cruzada do número de instâncias de cada valor.</para>
+
+  <programlisting>EXPORT MAC_CountFieldValues(infile,infield) := MACRO
+  // Create the count of unique values in the infield
+  COUNT(DEDUP(TABLE(infile,{infile.infield}),infield,ALL));
+
+  // Create the crosstab report
+  #UNIQUENAME(r_macro)
+  %r_macro% := RECORD
+    infile.infield;
+    INTEGER cnt := COUNT(GROUP);
+  END;
+  #UNIQUENAME(y_macro)
+  %y_macro% := TABLE(infile,%r_macro%,infield,FEW);
+  OUTPUT(CHOOSEN(%y_macro%,50000));
+ENDMACRO;
+</programlisting>
+
+  <para>Ao usar #UNIQUENAME para gerar todos os nomes de atributos, essa MACRO
+  pode ser usada múltiplas vezes na mesma tarefa. A MACRO pode ser testada no
+  programa ECL IDE executando uma consulta como essa na janela do compilador
+  ECL:</para>
+
+  <programlisting>IMPORT ProgrammersGuide AS PG;
+PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.Person.file,gender);
+</programlisting>
+
+  <para>Após ter testado completamente a MACRO e estar certo de que ela
+  funciona corretamente, é possível automatizar o processo usando o
+  ECLPlus.</para>
+
+  <para>Instale o programa ECLPlus em seu próprio diretório no mesmo PC que
+  executa o ECL IDE, e crie um arquivo ECLPLUS.INI na mesma pasta com as
+  configurações corretas para acessar o seu cluster (consulte a seção
+  <emphasis>Linha de comando ECL</emphasis> no <emphasis>PDF Ferramentas de
+  cliente </emphasis> ). Em seguida, você pode abrir uma janela de prompt de
+  comando e executar a mesma consulta da linha de comando da seguinte
+  maneira:</para>
+
+  <programlisting>C:\eclplus&gt;eclplus 
+ecl=$ProgGuide.MAC_CountFieldValues(ProgrammersGuide.DeclareData.Person.File,gender)</programlisting>
+
+  <para>Observe que você está usando a opção de linha de comando
+  <emphasis>ecl= </emphasis> e não a opção
+  <emphasis>$Module.Attribute</emphasis> . Essa é a maneira "correta" de
+  expandir uma MACRO e executá-la pelo ECLplus. A opção
+  <emphasis>$Module.Attribute</emphasis> é usada apenas para executar
+  consultas da janela do compilador ECL que foram salvas como atributos no
+  repositório (Executável da janela do compilador – código BWR) e não funciona
+  com as MACROs.</para>
+
+  <para>Quando uma MACRO é expandida e executada, o resultado observado é
+  parecido com esse em sua janela de prompt de comando:</para>
+
+  <programlisting>Workunit W20070118-145647 submitted
+[Result 1]
+Result_1
+2
+[Result_2]
+gender     cnt
+ F        500000
+ M        500000
+</programlisting>
+
+  <para>Você pode redirecionar esse resultado para um arquivo usando a opção
+  <emphasis>output="filename"</emphasis> na linha de comando da seguinte
+  maneira:</para>
+
+  <programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues
+( ProgrammersGuide.DeclareData.Person.File, gender) output="MyFile.txt"</programlisting>
+
+  <para>Para arquivos de resultados maiores, você deve deixar a ação OUTPUT em
+  seu código ECL gravar o conjunto de resultado em disco no supercomputador, e
+  depois consolidar os dados aos nós em sua zona de entrada de arquivos (é
+  possível usar a função File.Despray da biblioteca padrão para fazer isso a
+  partir do seu código ECL ).</para>
+
+  <sect2 id="Using_Text_Files">
+    <title>Utilizando Arquivos Texto</title>
+
+    <para>Outra opção de automação é gerar um arquivo de texto que contenha o
+    código ECL a ser executado e depois executar esse código a partir da linha
+    de comando.</para>
+
+    <para>Por exemplo, você pode criar um arquivo contendo o seguinte:</para>
+
+    <programlisting>IMPORT ProgrammersGuide AS PG;
+PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.Person.file,gender);
+PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.person.File,state)</programlisting>
+
+    <para>Essas duas chamadas MACRO vão gerar o relatório de referência de
+    tabela cruzada e contagem de ordinalidade de campo para os dois campos no
+    mesmo arquivo. Você pode então executá-los da seguinte maneira (onde
+    "test.ECL" é o nome do arquivo que você criou):</para>
+
+    <programlisting>C:\eclplus&gt;eclplus @test.ecl</programlisting>
+
+    <para>Isso gerará resultados similares àqueles acima.</para>
+
+    <para>A vantagem desse método é a capacidade de incluir qualquer código de
+    "configuração" do código ECL no arquivo antes dos acionamentos da MACRO,
+    da seguinte forma (contido no arquivo RunText.ECL):</para>
+
+    <programlisting>IMPORT ProgrammersGuide AS PG;
+MyRec := RECORD
+  STRING1 value1;
+  STRING1 value2;
+END;
+D := DATASET([{'A','B'},
+              {'B','C'},
+              {'A','D'},
+              {'B','B'},
+              {'A','C'},
+              {'B','D'},
+              {'A','B'},
+              {'C','C'},
+              {'C','D'},
+              {'A','A'}],MyRec);
+
+PG.DeclareData.MAC_CountFieldValues(D,Value1)
+PG.DeclareData.MAC_CountFieldValues(D,Value2)
+</programlisting>
+
+    <para>Dessa forma, você consegue obter um resultado parecido com
+    esse:</para>
+
+    <programlisting>C:\eclplus&gt;eclplus @test.ecl
+Workunit W20070118-145647 submitted
+[Result 1]
+result_1
+3
+[Result 2]
+value1  cnt
+C        2
+A        5
+B        3
+[Result 3]
+result_3
+4
+[Result 4]
+value2  cnt
+D        3
+C        3
+A        1
+B        3
+</programlisting>
+
+    <para>Fica a seu critério decidir como esse arquivo de texto será usado.
+    Para automatizar totalmente o processo, você pode programar uma aplicação
+    daemon que vigie o diretório (como a zona de entrada de arquivos do
+    ambiente HPCC) para detectar novos arquivos descartados (por quaisquer
+    meios) e gerar o arquivo de código ECL adequado para processar o novo
+    arquivo em algum modo padrão (normalmente usando acionamentos MACRO), e
+    depois executá-lo a partir da linha de comando ECLplus como descrito
+    acima. As possibilidades são infinitas.</para>
+  </sect2>
+</sect1>

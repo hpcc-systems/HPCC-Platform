@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ForeignLogicalFileName">
+  <title>ForeignLogicalFileName</title>
+
+  <para><emphasis role="bold">STD.File.ForeignLogicalFileName<indexterm>
+      <primary>STD.File.ForeignLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>STD.File.ForeignLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>ForeignLogicalFileName</primary>
+    </indexterm>(</emphasis> <emphasis>filename </emphasis> <emphasis
+  role="bold">[,</emphasis> <emphasis>foreigndali </emphasis> <emphasis
+  role="bold">] [,</emphasis> <emphasis>absolutepath</emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>foreigndali</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o endereço IP da
+          Dali estrangeiro. Se omitido, o <emphasis>filename</emphasis> será
+          interpretado como um nome de arquivo lógico estrangeiro e convertido
+          em um nome de arquivo lógico local.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>absolutepath</emphasis></entry>
+
+          <entry>Opcional. Um TRUE/FALSE booleano para indicar se um til (~)
+          deve ser acrescentado ao início do nome do arquivo lógico
+          estrangeiro. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>ForeignLogicalFileName retorna um valor VARSTRING (terminado
+          com nulo).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">ForeignLogicalFileName </emphasis>
+  retornará um nome de arquivo lógico estrangeiro (se o parâmetro
+  <emphasis>foreigndali</emphasis> estiver presente) ou um nome de arquivo
+  lógico local.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">sf := '~thor_data400::BASE::Business_Header';
+ff := STD.File.ForeignLogicalFileName(sf,'10.150.29.161',true);
+ //results in: ~foreign::10.150.29.161::thor_data400::base::business_header
+lf := STD.File.ForeignLogicalFileName(ff,'',true);
+ //results in: ~thor_data400::base::business_header</programlisting>
+</sect1>

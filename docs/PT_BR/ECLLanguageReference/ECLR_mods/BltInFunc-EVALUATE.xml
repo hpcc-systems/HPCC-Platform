@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EVALUATE">
+  <title>EVALUATE</title>
+
+  <sect2 id="EVALUATE_action">
+    <title>EVALUATE<indexterm>
+        <primary>EVALUATE</primary>
+      </indexterm> action</title>
+
+    <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
+    role="bold"> ] EVALUATE<indexterm>
+        <primary>EVALUATE action</primary>
+      </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
+    role="bold">) ;</emphasis></para>
+
+    <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
+    role="bold"> ] EVALUATE(</emphasis><emphasis>module </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, defname </emphasis><emphasis
+    role="bold"> ] ) ;</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="80.60pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>attrname</emphasis></entry>
+
+              <entry>Opcional. O nome da ação, que transforma a ação em uma
+              definição, consequentemente não é executado até que
+              <emphasis>attrname</emphasis> seja usado como uma ação.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>expression</emphasis></entry>
+
+              <entry>A função a ser acionada.em um contexto de ação.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>module</emphasis></entry>
+
+              <entry>O módulo a ser avaliado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defname</emphasis></entry>
+
+              <entry>Opcional. O nome de uma definição específica dentro do
+              <emphasis>módulo</emphasis> a ser avaliado. Se omitido, todas as
+              definições no <emphasis>módulo</emphasis> serão
+              avaliadas.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>A primeira forma da ação <emphasis role="bold">EVALUATE</emphasis>
+    nomeia uma <emphasis>expressão</emphasis> (tipicamente o acionamento de
+    uma função) a ser executada em um contexto de ação. Isso é útil
+    principalmente ao acionar funções que tenham efeitos colaterais, quando o
+    valor do retorno não é importante.</para>
+
+    <para>O segundo form da ação <emphasis role="bold">EVALUATE</emphasis>
+    recursivamente expande e avalia as definições exportadas do
+    <emphasis>módulo</emphasis> . Se um <emphasis>defname</emphasis> for
+    especificado, apenas essa definição será avaliada.</para>
+
+    <para>Exemplo:</para>
+
+    <para>Exemplo da Form 1:</para>
+
+    <programlisting>myService := SERVICE
+  UNSIGNED4 doSomething(STRING text);
+END;
+
+ds := DATASET('MyFile', {STRING20 text} , THOR);
+
+APPLY(ds, EVALUATE(doSomething(ds.text)));
+ //calls the doSomething function once for each record in the ds
+ // dataset, ignoring the returned values from the function
+</programlisting>
+
+    <para>Exemplo de Form 2:</para>
+
+    <programlisting>M := MODULE
+  EXPORT a := 10;
+  EXPORT b := OUTPUT('Hello');
+END;
+ 
+M2 := MODULE
+  EXPORT mx := M;
+  EXPORT d := OUTPUT('Richard');
+END;
+ 
+EVALUATE(M2); 
+//produces three results:
+//  Result_1: 10
+//  Result_2: Hello
+//  Result_3: Richard</programlisting>
+
+    <para>See Also: <link linkend="APPLY">APPLY</link>, <link
+    linkend="SERVICE_Structure">SERVICE Structure</link>,</para>
+  </sect2>
+
+  <sect2 id="EVALUATE_function">
+    <title>EVALUATE function</title>
+
+    <para><emphasis role="bold">EVALUATE(</emphasis><indexterm>
+        <primary>EVALUATE function</primary>
+      </indexterm><emphasis>onerecord, value</emphasis><emphasis
+    role="bold">)</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="79.15pt"/>
+
+          <colspec colwidth="309.65pt"/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>onerecord</emphasis></entry>
+
+              <entry>Um conjunto de registros que consiste de um único
+              registro.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>value</emphasis></entry>
+
+              <entry>O valor a ser retornado. Isso pode ser qualquer expressão
+              que produza um valor.</entry>
+            </row>
+
+            <row>
+              <entry>Return:</entry>
+
+              <entry>EVALUATE retorna um único valor.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>A função <emphasis role="bold">EVALUATE</emphasis> retorna o
+    <emphasis>valor</emphasis> avaliado no contexto do conjunto
+    <emphasis>onerecord</emphasis> (o qual deve ser apenas um único registro).
+    Esta função normalmente usa a indexação para selecionar um único registro
+    para o record set <emphasis>onerecord</emphasis> . O uso serve para
+    retornar um valor de um registro secundário específico quando estiver
+    operando no nível de escopo do registro primário. A vantagem de EVALUATE
+    sobre o uso da indexação do record set em um único campo é que o
+    <emphasis>valor</emphasis> retornado pode ser constituído de qualquer
+    expressão, e não apenas de um único campo do dataset secundário (child
+    dataset).</para>
+  </sect2>
+
+  <sect2 id="Accessing_Field-level_Data_in_a_Specific_Record">
+    <title>Acessando Field-level Data em um Registro Específico</title>
+
+    <para>Para acessar os dados de nível de campo em um registro específico,
+    os recursos de indexação do conjunto de registro deve ser usado para
+    selecionar um único registro. A função SORT e os filtros do conjunto de
+    registros são úteis na seleção e ordenação do conjunto de registros para
+    que o registro adequado possa ser selecionado.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>WorstCard := SORT(Cards,Std.Scoring);
+MyValue   := EVALUATE(WorstCard[1],Std.Utilization);
+ // WorstCard[1] uses indexing to get the first record
+ // in the sort order, then evaluates that record
+ // returning the Std.Utilization value
+
+ValidBalTrades := trades(ValidMoney(trades.trd_bal));
+HighestBals := SORT(ValidBalTrades,-trades.trd_bal);
+Highest_HC := EVALUATE(HighestBals[1],trades.trd_hc);
+ //return trd_hc field of the trade with the highest balance
+ // could also be coded as (using indexing):
+ // Highest_HC := HighestBals[1].trades.trd_hc;
+
+OUTPUT(Person,{per_last_name,per_first_name,Highest_HC});
+ //output that Highest_HC for each person
+ //This output operates at the scope of the Person record
+ // EVALUATE is needed to get the value from a Trades record
+ // because Trades is a Child of Person
+
+IsValidInd := trades.trd_ind_code IN ['FM','RE'];
+IsMortgage := IsValidInd OR trades.trd_rate = 'G';
+SortedTrades := SORT(trades(ValidDate(trades.trd_dopn),isMortgage),
+      trades.trd_dopn_mos);
+CurrentRate := MAP(~EXISTS(SortedTrades) =&gt; ' ',
+                   EVALUATE(SortedTrades[1], trades.trd_rate));
+
+OUTPUT(person,{CurrentRate});
+</programlisting>
+
+    <para>See Also: <link linkend="SORT">SORT</link></para>
+  </sect2>
+</sect1>

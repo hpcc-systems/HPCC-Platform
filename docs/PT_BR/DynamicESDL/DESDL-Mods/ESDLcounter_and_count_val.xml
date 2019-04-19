@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_counter-count_val">
+  <title>counter <indexterm>
+      <primary>counter</primary>
+    </indexterm>e count_val</title>
+
+  <para><indexterm>
+      <primary>count_val</primary>
+    </indexterm>Estes dois atributos são usados para ajudar o ESP a calcular a
+  contagem do registro da resposta.</para>
+
+  <para><emphasis>O counter</emphasis> conta o número de registros secundários
+  dos nós. Quando o nó corresponde a uma matriz, o valor é o mesmo do que o
+  número de itens na matriz.</para>
+
+  <para><emphasis>O count_val</emphasis> usará o valor do nó como número de
+  registros. O campo <emphasis role="bold">RecordCount</emphasis> está
+  implicitamente marcado como <emphasis>count_val</emphasis>.</para>
+
+  <para>Quando uma resposta possui múltiplos contadores, count_val, a soma dos
+  valores é retornada como número de registros.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>[counter] ESParray&lt;MyRecord, Record&gt; Records; 
+[count_val] int TotalFound;   </programlisting>
+</sect1>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Month">
+  <title>Month</title>
+
+  <para><emphasis role="bold">STD.Date.Month<indexterm>
+      <primary>STD.Date.Month</primary>
+    </indexterm><indexterm>
+      <primary>Date.Month</primary>
+    </indexterm><indexterm>
+      <primary>Month</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>Um valor de data no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>Month retorna um valor INTEGER no intervalo de 1 a
+          12.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">Month</emphasis> retorna o número do
+  mês do valor <emphasis>date</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+UNSIGNED4 MyDate := 20120101;   //January 1, 2012
+  
+M := STD.Date.Month(MyDate);
+    //M contains 1, representing January
+  </programlisting>
+
+  <para/>
+</sect1>

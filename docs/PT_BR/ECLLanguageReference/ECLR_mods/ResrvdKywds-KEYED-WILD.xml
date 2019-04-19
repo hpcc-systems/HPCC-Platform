@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="KEYED-WILD">
+  <title>KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> and WILD<indexterm>
+      <primary>WILD index filter</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">KEYED( </emphasis><emphasis>expression
+  </emphasis><emphasis role="bold">[, OPT<indexterm>
+      <primary>OPT</primary>
+    </indexterm> ] )</emphasis><emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold">WILD<indexterm>
+      <primary>WILD</primary>
+    </indexterm>( </emphasis><emphasis>field </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>expression</emphasis></entry>
+
+          <entry>Uma condição de filtro INDEX.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">OPT</emphasis></entry>
+
+          <entry>Gera apenas uma condição de filtro.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>field</emphasis></entry>
+
+          <entry>Um único campo em um INDEX.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>As palavras-chave <emphasis role="bold">KEYED</emphasis><indexterm>
+      <primary>KEYED e</primary>
+    </indexterm> <emphasis role="bold">WILD<indexterm>
+      <primary>WILD</primary>
+    </indexterm></emphasis> são válidas apenas para filtros nos atributos
+  INDEX (que também qualifica como parte da
+  <emphasis>junção</emphasis><indexterm>
+      <primary>junção para</primary>
+    </indexterm> JOIN com "half-keyed”). Elas indicam ao compilador quais dos
+  principais campos de índice são usados como filtros (KEYED) ou como curinga
+  (WILD) para que o compilador possa avisá-lo em caso de erro. Os campos de
+  seguimento não usados no filtro são ignorados (sempre tratados como
+  curingas).</para>
+
+  <para>As regras de uso são as seguintes (o termo “segmonitor” se refere a um
+  objeto interno criado para representar possíveis condições de coincidência
+  para um campo de chave única):</para>
+
+  <para>1. KEYED gera um segmonitor. O segmonitor pode ser wild se a expressão
+  nunca puder ser falsa, tal como: <emphasis>expression</emphasis> o
+  segmonitor pode ser wild se a expressão nunca puder ser falsa, tal
+  como:</para>
+
+  <programlisting>   KEYED(inputval = '' OR field = inputval)</programlisting>
+
+  <para>2. WILD gera um segmonitor wild, a menos que também exista um filtro
+  KEYED() no mesmo campo.</para>
+
+  <para>3. KEYED, OPT gera um segmonitor não wild apenas se o campo anterior
+  também o fez.</para>
+
+  <para>4. Qualquer campo que contenha KEYED e KEYED OPT gera erro no tempo de
+  compilação.</para>
+
+  <para>5. Se WILD ou KEYED não forem especificados para nenhum campo, os
+  segmonitores são gerados para todas as condições inseridas.</para>
+
+  <para>6. Uma condição de filtro INDEX sem o KEYED especificado, gera um
+  segmonitor wild (exceto como especificado no item 5).</para>
+
+  <para>7. Os limites KEYED baseiam-se em todos os segmonitores não
+  wild.</para>
+
+  <para>8. As condições que não geram segmonitores são pós-filtradas.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>ds := DATASET('~local::rkc::person',
+        { STRING15 f1, STRING15 f2, STRING15 f3, STRING15 f4,
+        UNSIGNED8 filepos{virtual(fileposition)} }, FLAT);
+ix := INDEX(ds, { ds },'\\lexis\\person.name_first.key');
+
+/*** Valid examples ****/
+
+COUNT(ix(KEYED(f1='Kevin1')));
+        // legal because only f1 is used.
+
+COUNT(ix(KEYED(f1='Kevin2' and f2='Halliday')));
+        // legal because both f1 and f2 are used
+
+COUNT(ix(KEYED(f2='Kevin3') and WILD(f1)));
+        // keyed f2, but ok because f1 is marked as wild.
+
+COUNT(ix(f2='Halliday'));
+        // ok - if keyed isn't used then it doesn't have to have
+        // a wild on f1
+
+COUNT(ix(KEYED(f1='Kevin3') and KEYED(f2='Kevin4') and WILD(f1)));
+        // it is ok to mark as wild and keyed otherwise you can get
+        // in a mess with compound queries.
+
+COUNT(ix(f1='Kevin3' and KEYED(f2='Kevin4') and WILD(f1)));
+        // can also be wild and a general expression.
+
+/***Error examples ***/
+
+COUNT(ix(KEYED(f3='Kevin3' and f2='Halliday')));
+        // missing WILD(f1) before keyed
+
+COUNT(ix(KEYED(f3='Kevin3') and f2='Halliday'));
+        // missing WILD(f1) before keyed after valid field
+
+COUNT(ix(KEYED(f3='Kevin3') and WILD(f2)));
+        // missing WILD(f1) before a wild
+
+COUNT(ix(WILD(f3) and f2='Halliday'));
+        // missing WILD(f1) before wild after valid field
+
+COUNT(ds(KEYED(f1='Kevin')));
+        //KEYED not valid in DATASET filters</programlisting>
+
+  <para>Ver também: <link linkend="INDEX_record_structure">INDEX</link>, <link
+  linkend="JOIN">JOIN</link>, <link linkend="FETCH">FETCH</link></para>
+</sect1>

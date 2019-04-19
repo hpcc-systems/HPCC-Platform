@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SwapSuperFile">
+  <title>SwapSuperFile</title>
+
+  <para><emphasis role="bold">STD.File.SwapSuperFile<indexterm>
+      <primary>STD.File.SwapSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.SwapSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>SwapSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile1, superfile2 </emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile1</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>superfile2</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Null.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">SwapSuperFile </emphasis> move todos os
+  subarquivos de <emphasis>superfile1 </emphasis> para <emphasis>superfile2
+  </emphasis> e vice-versa.</para>
+
+  <para>Essa função pode ser incluída em uma transação de superarquivo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">SEQUENTIAL(
+ STD.File.StartSuperFileTransaction(),
+ STD.File.SwapSuperFile('MySuperFile','YourSuperFile'),
+ STD.File.FinishSuperFileTransaction()
+);</programlisting>
+</sect1>

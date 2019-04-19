@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FUNCTIONMACRO_Structure">
+  <title>Estrutura FUNCTIONMACRO<indexterm>
+      <primary>FUNCTIONMACRO Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>[</emphasis><emphasis>resulttype</emphasis><emphasis
+  role="bold">]</emphasis><emphasis> funcname </emphasis><emphasis
+  role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
+  role="bold">) := FUNCTIONMACRO<indexterm>
+      <primary>FUNCTIONMACRO</primary>
+    </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold"/><emphasis>code</emphasis> <emphasis
+  role="bold"/></para>
+
+  <para><emphasis role="bold"> RETURN</emphasis>
+  <emphasis>retval</emphasis>;</para>
+
+  <para><emphasis role="bold">ENDMACRO;</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>O tipo do valor de retorno da função. Se omitido, o tipo será
+          obtido implicitamente da expressão <emphasis>retval</emphasis>
+          .</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry><para>O nome da definição da ECL para a
+          função/macro.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>Uma lista separada por vírgulas dos nomes (tokens) dos
+          parâmetros a serem passados para a função/macro. Esses nomes são
+          usados em <emphasis>code</emphasis> e <emphasis>retval</emphasis>
+          para indicar onde os valores dos parâmetros passados serão
+          substituídos quando a função/macro for usada. Os tipos de valores
+          para esses parâmetros não são permitidos, mas é possível especificar
+          valores padrão como constantes de string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>code</emphasis></entry>
+
+          <entry>As definições locais que compõem a função. As definições não
+          podem ser EXPORT ou SHARED, mas podem incluir ações (como
+          OUTPUT).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">RETURN<indexterm>
+              <primary>RETURN</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Especifica a expressão do valor de retorno da função
+          <emphasis>retval</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>retval</emphasis></entry>
+
+          <entry>O valor, a expressão, o conjunto de registros, a linha
+          (registro) ou a ação a ser retornada.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A estrutura <emphasis role="bold">FUNCTIONMACRO </emphasis> é uma
+  ferramenta de geração de código, como a estrutura MACRO, combinada com os
+  benefícios do encapsulamento de código da estrutura FUNCTION. Uma vantagem
+  de FUNCTIONMACRO sobre a estrutura MACRO é que pode ser chamada no contexto
+  de uma expressão, da mesma forma que FUNCTION.</para>
+
+  <para>Ao contrário da estrutura MACRO, não é necessário usar #UNIQUENAME
+  para evitar conflitos de nomes de definição internos quando FUNCTIONMACRO é
+  usada várias vezes dentro do mesmo escopo de visibilidade. No entanto, a
+  palavra-chave <emphasis role="bold">LOCAL</emphasis> deve ser usada
+  explicitamente dentro de FUNCTIONMACRO se um nome de definição em seu
+  <emphasis>code</emphasis> pode também ter sido definido fora de
+  FUNCTIONMACRO e dentro do mesmo escopo de visibilidade. LOCAL identifica
+  claramente que a definição é limitada ao <emphasis>code</emphasis> dentro de
+  FUNCTIONMACRO.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <para>Este exemplo demonstra FUNCTIONMACRO usada em um contexto de
+  expressão. O exemplo também mostra como FUNCTIONMACRO pode ser chamada
+  várias vezes de suas definições internas sem conflitos de nome:</para>
+
+  <programlisting>EXPORT Field_Population(infile,infield,compareval) := FUNCTIONMACRO
+  c1 := COUNT(infile(infield=compareval));
+  c2 := COUNT(infile);
+  RETURN DATASET([{'Total Records',c2},
+                  {'Recs=' + #TEXT(compareval),c1},
+                  {'Population Pct',(INTEGER)(((c2-c1)/c2)* 100.0)}],
+                 {STRING15 valuetype,INTEGER val});
+ENDMACRO;
+
+ds1 := dataset([{'M'},{'M'},{'M'},{''},{''},{'M'},{''},{'M'},{'M'},{''}],{STRING1 Gender});
+ds2 := dataset([{''},{'M'},{'M'},{''},{''},{'M'},{''},{''},{'M'},{''}],{STRING1 Gender});
+
+OUTPUT(Field_Population(ds1,Gender,''));
+OUTPUT(Field_Population(ds2,Gender,''));</programlisting>
+
+  <para>Este exemplo demonstra o uso da palavra-chave LOCAL para evitar
+  conflitos de nome com definições externas dentro do mesmo escopo de
+  visibilidade de FUNCTIONMACRO:</para>
+
+  <programlisting>numPlus := 'this creates a syntax error without LOCAL in the FUNCTIONMACRO';
+AddOne(num) := FUNCTIONMACRO
+  LOCAL numPlus := num + 1;   //LOCAL required here
+  RETURN numPlus;
+ENDMACRO;
+
+AddTwo(num) := FUNCTIONMACRO
+  LOCAL numPlus := num + 2;   //LOCAL required here
+  RETURN numPlus;
+ENDMACRO;
+
+numPlus;
+AddOne(5);
+AddTwo(8);</programlisting>
+
+  <para>Ver também: <link linkend="FUNCTION_Structure">Estrutura
+  FUNCTION</link>, <link linkend="MACRO_Structure">Estrutura
+  MACRO</link></para>
+</sect1>

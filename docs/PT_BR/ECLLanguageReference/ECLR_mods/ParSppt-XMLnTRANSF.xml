@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="XML_Parsing_RECORD_and_TRANSFORM_Functions">
+  <title>Funções RECORD e TRANSFORM e Análise XML</title>
+
+  <para><emphasis>As seguintes funções são válidas para uso apenas em
+  expressões de definição de campo dentro de uma estrutura RECORD <indexterm>
+      <primary>estrutura RECORD</primary>
+    </indexterm> ou de uma função TRANSFORM usada para definir o conjunto de
+  resultado da função PARSE , ou a estrutura RECORD de entrada para um DATASET
+  que contém dados XML.</emphasis></para>
+
+  <para><emphasis role="bold">XMLTEXT<indexterm>
+      <primary>XMLTEXT</primary>
+    </indexterm>(</emphasis><emphasis>xmltag</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">XMLTEXT</emphasis> returns the ASCII text from
+  the <emphasis>xmltag</emphasis>.</para>
+
+  <para><emphasis role="bold">XMLUNICODE<indexterm>
+      <primary>XMLUNICODE</primary>
+    </indexterm>(</emphasis><emphasis>xmltag</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">XMLUNICODE</emphasis> retorna o texto Unicode da
+  <emphasis>xmltag</emphasis>.</para>
+
+  <para><emphasis role="bold">XMLPROJECT<indexterm>
+      <primary>XMLPROJECT</primary>
+    </indexterm>(</emphasis><emphasis>xmltag, transform</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">XMLPROJECT</emphasis> retorna o texto da
+  <emphasis>xmltag </emphasis>na forma de um dataset secundário.</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>xmltag</emphasis></entry>
+
+          <entry>Uma constante de string que nomeia o XPATH para a tag que
+          contém os dados (consulte a seção <emphasis role="bold">Suporte
+          XPATH</emphasis> na discussão sobre a estrutura RECORD). Pode conter
+          um número de instância (tal como
+          <emphasis>tagname</emphasis>[1]).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transform</emphasis></entry>
+
+          <entry>A função TRANSFORM que gera o dataset secundário.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Exemplo:</para>
+
+  <programlisting>d := DATASET([{'&lt;library&gt;&lt;book isbn="123456789X"&gt;' +
+  '&lt;author&gt;Bayliss&lt;/author&gt;&lt;title&gt;A Way Too Far&lt;/title&gt;&lt;/book&gt;' +
+  '&lt;book isbn="1234567801"&gt;' +
+  '&lt;author&gt;Smith&lt;/author&gt;&lt;title&gt;A Way Too Short&lt;/title&gt;&lt;/book&gt;' +
+  '&lt;/library&gt;'}],
+  {STRING line });
+
+rform := RECORD
+  STRING author := XMLTEXT('author');
+  STRING title := XMLTEXT('title');
+END;
+
+books := PARSE(d,line,rform,XML('library/book'));
+
+OUTPUT(books);
+
+//*******************************************
+/* The following XML can be parsed using XMLPROJECT
+&lt;XML&gt;
+&lt;Field name='surname' distinct=2&gt;
+&lt;Value count=3&gt;Halliday&lt;/Value&gt;
+&lt;Value count=2&gt;Chapman&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;XML&gt;
+*/
+extractedValueRec := RECORD
+  STRING value;
+  UNSIGNED cnt;
+END;
+
+extractedRec := RECORD
+  STRING name;
+  UNSIGNED cnt;
+  DATASET(extractedValueRec) values;
+END;
+
+x := DATASET([{'&lt;XML&gt;' +
+               '&lt;Field name="surname" distinct="2"&gt;' +
+               '&lt;Value count="3"&gt;Halliday&lt;/Value&gt;' +
+               '&lt;Value count="2"&gt;Chapman&lt;/Value&gt;' +
+               '&lt;/Field&gt;' + 
+               '&lt;/XML&gt;'}],{STRING line});
+
+extractedRec t1 := TRANSFORM
+ SELF.name   := XMLTEXT('@name');
+ SELF.cnt    := (UNSIGNED)XMLTEXT('@distinct');
+ SELF.values := XMLPROJECT('Value',
+                            TRANSFORM(extractedValueRec,
+                                      SELF.value := XMLTEXT(''),
+                                      SELF.cnt :=
+                                      (UNSIGNED)XMLTEXT('@count')))(cnt &gt; 1);
+ END;
+p := PARSE(x, line, t1, XML('XML/Field'));
+OUTPUT(p);
+</programlisting>
+
+  <para>Ver também: <link linkend="PARSE">PARSE</link>, <link
+  linkend="RECORD_Structure">Estrutura RECORD</link>, <link
+  linkend="TRANSFORM_Structure">Estrutura TRANSFORM</link>, <link
+  linkend="DATASET">DATASET</link></para>
+</sect1>

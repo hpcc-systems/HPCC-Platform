@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="VARSTRING">
+  <title>VARSTRING</title>
+
+  <para><emphasis> </emphasis><emphasis role="bold">VARSTRING<indexterm>
+      <primary>VARSTRING</primary>
+    </indexterm><indexterm>
+      <primary>VARSTRING value type</primary>
+    </indexterm>[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis></para>
+
+  <para>Uma string de caracteres terminada por nulo que contém <emphasis>n
+  </emphasis> bytes de dados. Se <emphasis>n </emphasis> for omitido, a string
+  terá o tamanho variável necessário para conter o resultado do parâmetro
+  convertido ou passado. Você pode usar indexação de conjunto de qualquer
+  string para extrair uma substring.</para>
+
+  <para>O limite de tamanho superior para qualquer valor de VARSTRING é de 4
+  GB.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>VARSTRING3 MyString := 'ABC';
+       // declares MyString a 3-byte null-terminated string</programlisting>
+
+  <para>Ver também: <link linkend="LENGTH">LENGTH</link>, <link
+  linkend="TRIM">TRIM</link>, <link
+  linkend="Set_Ordering_and_Indexing">Classificação e indexação de
+  conjuntos</link></para>
+</sect1>

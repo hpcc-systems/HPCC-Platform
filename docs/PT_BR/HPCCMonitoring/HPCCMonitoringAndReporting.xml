@@ -1,0 +1,1514 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>Monitoramento e Relatórios do HPCC (Visão Técnica)</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="GangliaIntroduction">
+    <title>Introdução</title>
+
+    <para>A plataforma do HPCC Systems<superscript>®</superscript> suporta
+    componentes de monitoramento e de relatório gráficos.</para>
+
+    <para><emphasis role="bold">Ganglia:</emphasis></para>
+
+    <para>O componente Monitor do HPCC utiliza o Ganglia – um sistema de
+    monitoramento distribuído, escalonável e de código público – para exibir
+    as informações do sistema na forma gráfica.</para>
+
+    <para>Com o componente de monitoramento gráfico você pode: <itemizedlist>
+        <listitem>
+          <para>Ver prontamente as informações do sistema</para>
+        </listitem>
+
+        <listitem>
+          <para>Visualizar uma representação gráfica dos clusters Roxie</para>
+        </listitem>
+
+        <listitem>
+          <para>Avaliar as métricas do Roxie</para>
+        </listitem>
+
+        <listitem>
+          <para>Manter um registro do histórico das métricas</para>
+        </listitem>
+
+        <listitem>
+          <para>Analisar métricas de servidores individuais</para>
+        </listitem>
+
+        <listitem>
+          <para>Detectar rapidamente os nós problemáticos</para>
+        </listitem>
+
+        <listitem>
+          <para>Realizar mais aplicações, como planejamento e alocação de
+          recursos mais informados.</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para><emphasis role="bold">Nagios</emphasis></para>
+
+    <para>O componente Relatório e Alerta do HPCC utiliza o Nagios, um sistema
+    de monitoramento e de notificação poderoso que ajuda a identificar e
+    solucionar problemas de infraestrutura antes que eles afetem os processos
+    críticos.</para>
+
+    <para>Através do componente Relatório e Alerta do HPCC você pode
+    configurar alertas para ser informado de quaisquer alterações em:</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>Uso do disco</para>
+        </listitem>
+
+        <listitem>
+          <para>Roxie</para>
+        </listitem>
+
+        <listitem>
+          <para>Dali</para>
+        </listitem>
+
+        <listitem>
+          <para>Dafilesrv</para>
+        </listitem>
+
+        <listitem>
+          <para>Sasha</para>
+        </listitem>
+
+        <listitem>
+          <para>Service Bindings nos servidores ESP</para>
+        </listitem>
+
+        <listitem>
+          <para>Conectividade SSH</para>
+        </listitem>
+
+        <listitem>
+          <para>Usuários no sistema</para>
+        </listitem>
+
+        <listitem>
+          <para>Carga do sistema</para>
+        </listitem>
+      </itemizedlist></para>
+  </chapter>
+
+  <chapter id="Ganglya_Overview">
+    <title>Ganglia</title>
+
+    <para>O componente HPCC Monitoring utiliza o Ganglia – um sistema de
+    monitoramento distribuído, escalonável e de código público – para criar
+    uma visão gráfica dos servidores de um cluster Roxie. Ganglia usa
+    tecnologias de representação de dados amplamente aceitas. Ele oferece
+    monitoramento e visão de métricas de desempenho quase que em tempo real.
+    Se a sua empresa já possui um servidor de monitoramento Ganglia, você pode
+    adicionar facilmente os clusters Roxie ao monitorador.</para>
+
+    <sect1 id="Ganglia_Overview">
+      <title>Visão geral do Ganglia</title>
+
+      <para>O Monitorador Ganglia possui dois componentes principais: o
+      visualizador e o Deamon do Monitorador Ganglia (gmond). A instalação e a
+      configuração podem variar dependendo do seu sistema.</para>
+
+      <para>Em um <emphasis role="bold">sistema baseado em RPM,
+      instale</emphasis> o <emphasis>RPM
+      ganglia-gmond-modules-python</emphasis> executando o seguinte
+      comando:</para>
+
+      <programlisting>sudo rpm -i ganglia-gmond-modules-python-3.4.0-1.x86_64.rpm</programlisting>
+
+      <para>Em um <emphasis role="bold">sistema baseado em Debian</emphasis>,
+      instale <emphasis>ganglia-monitor</emphasis> executando o seguinte
+      comando:</para>
+
+      <programlisting>sudo apt-get install ganglia-monitor</programlisting>
+
+      <para>As etapas específicas exigidas para instalar e configurar o
+      Ganglia são encontradas no wiki Ganglia:</para>
+
+      <para><ulink
+      url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink></para>
+
+      <sect2 id="Ganglia_Requirements">
+        <title>O Visualizador</title>
+
+        <para>Para usar o Ganglia com o Roxie é preciso ter os seguintes
+        pacotes instalados em cada nó que deseja monitorar.</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>ganglia-gmond</para>
+          </listitem>
+
+          <listitem>
+            <para>ganglia-gmond-python</para>
+          </listitem>
+
+          <listitem>
+            <para>python-lxml</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Para o componente de visualização, é preciso ter:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>ganglia-gmetad</para>
+            </listitem>
+          </itemizedlist>A instalação e o funcionamento adequados do Ganglia
+        depende desses componentes.</para>
+      </sect2>
+
+      <sect2 id="Ganglia_Monitoring_Daemon" role="brk">
+        <title>Daemon de Monitoramento do Ganglia</title>
+
+        <para>É necessário instalar daemon de monitoramento nos nós Roxie que
+        deseja monitorar. Instale o daemon <emphasis>gmond</emphasis> nos nós
+        que deseja monitorar. A instalação e a configuração são descritas em:
+        A instalação e a configuração são descritas em:</para>
+
+        <para><ulink
+        url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink></para>
+
+        <para>Se um servidor de monitoramento Ganglia já estiver em execução
+        no seu ambiente, isso significa que você já possui os componentes e
+        pré-requisitos necessários. Certifique-se de que os arquivos
+        <emphasis>/etc/ganglia/conf.d </emphasis> e <emphasis>
+        /etc/ganglia/.pyconf</emphasis> estejam presentes e adicione os nós do
+        Roxie que deseja monitorar. Isso pode ser feito ao instalar os
+        componentes do Ganglia e os componentes do HPCC Monitor cada nó do
+        Roxie.</para>
+
+        <para>Caso não tenha o Ganglia instalado, ou deseja instalá-lo, leia a
+        documentação do Ganglia clicando no link acima e instale-o juntamente
+        com quaisquer dependências do sistema. Em seguida, você precisará
+        baixar e instalar o componente HPCC Monitoring.</para>
+
+        <sect3 id="Installing-HPCCGanglia" role="brk">
+          <title>Instando o componente de Monitoramento HPCC</title>
+
+          <para>O componente HPCC Monitoring está disponível para download. Os
+          componentes do HPCC Monitoring usam as ferramentas de monitoramento
+          do Ganglia , e serão necessários apenas se você não tiver os
+          componentes do monitorador Ganglia instalados em seu sistema.</para>
+
+          <para>Para obter os componentes do HPCC Monitoring, identifique o
+          pacote adequado para seu sistema.</para>
+
+          <para>Os pacotes estão disponíveis para download no site do HPCC
+          Systems<superscript>®</superscript> :</para>
+
+          <para><ulink
+          url="http://hpccsystems.com/download">hpccsystems.com/download</ulink></para>
+
+          <para>ou</para>
+
+          <para><ulink
+          url="http://hpccsystems.com/download/free-community-edition/all">http://hpccsystems.com/download/free-community-edition/all</ulink></para>
+
+          <para>Identifique e instale o pacote adequado para seu
+          sistema.</para>
+
+          <para>Por exemplo, se você tiver o sistema CentOS 6.x, baixe o
+          pacote RPM.</para>
+
+          <programlisting>hpccsystems-ganglia-monitoring-4.2.0-rc1.el6.x86_64.rpm</programlisting>
+
+          <para>Instale o pacote do monitorador no sistema que deseja
+          monitorar. Você também pode verificar o pacote de instalação
+          fornecido e usá-lo como orientação para implementar componentes de
+          monitoramento customizados.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="HPCC_Viewer">
+      <title>Visualizador do HPCC Ganglia</title>
+
+      <para>Um visualizador do Ganglia já vem pré-instalado e configurado na
+      versão 4.2.x (ou posterior) da Máquina virtual do HPCC. O monitorador da
+      Máquina Virtual está configurado para monitorar as instâncias do Roxie
+      na rede. Este documento apresenta o monitorador e descreve como ele deve
+      ser executado em seu sistema. <figure>
+          <title>Monitorador do HPCC</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/GAN001.jpg" vendor="Ganglia"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>A imagem acima corresponde a um resumo geral de todos os nós do
+      Roxie monitorados no cluster chamado VM Demo.</para>
+
+      <sect2 id="Ganglia_Viewer">
+        <title>O Visualizador</title>
+
+        <para>Caso um servidor de monitoramento Ganglia já esteja em execução
+        em sua rede, o componente Visualizador deve já estar presente Se não
+        tiver o Ganglia, será necessário instalar e configurar o
+        visualizador.</para>
+
+        <para>Consulte o diretório <ulink
+        url="https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise">https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise</ulink>
+        . Lá você encontrará os recursos usados para configurar o Ganglia na
+        máquina virtual e poderá usá-los como exemplos para configurar o
+        Ganglia em sua empresa.</para>
+
+        <para>O script <emphasis>install_graphs_helper.sh</emphasis> ,
+        disponível no link github acima, e também fornecido com a máquina
+        virtual, é usado para incorporar o componente Visualizador. Ao usar
+        esse script como base, é possível configurar e implementar o
+        componente Visualizador de forma semelhante em seu sistema.</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="VirtuaLMetrics">
+      <title>Métricas na Virtual Machine</title>
+
+      <para>Uma maneira fácil de entender como as métricas funcionam e como
+      implementá-las em um sistema maior é analisar essas métricas em
+      ação.</para>
+
+      <para>A interação do Nagios está incorporada às imagens atuais da
+      Máquina virtual do HPCC. Faça o download e inicialize uma imagem virtual
+      e observe como o componente Monitorador funciona.</para>
+
+      <para>Isso possibilita:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Pré-visualização das métricas</para>
+        </listitem>
+
+        <listitem>
+          <para>Inicialização rápida</para>
+        </listitem>
+
+        <listitem>
+          <para>Guia para configuração</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Avalie o valor do conteúdo e decida quais aspectos da medição são
+      relevantes às suas necessidades.</para>
+
+      <!--INCLUDE-VM_STEPS-as-Sect2-->
+
+      <!--H11780-->
+
+      <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+    </sect1>
+
+    <sect1 id="GangliaIntegration">
+      <title>Integração do Ganglia com o HPCC</title>
+
+      <para>Os nós do Roxie podem relatar métricas para o Ganglia se o
+      Monitorador Ganglia e as dependências associadas a ele tiverem sido
+      instalados.</para>
+
+      <para>Revise a wiki do Ganglia: <ulink
+      url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink>
+      para conhecer os requisitos.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Instale os componentes do Ganglia em cada nó.</para>
+        </listitem>
+
+        <listitem>
+          <para>Configure o Ganglia adequadamente de acordo com seu
+          sistema.</para>
+
+          <para>Os arquivos de configuração do Ganglia normalmente estão
+          localizados no <emphasis>diretório </emphasis> /etc/ganglia/.</para>
+        </listitem>
+
+        <listitem>
+          <para>Instale o componente de monitoramento do HPCC
+          Systems<superscript>®</superscript> .</para>
+        </listitem>
+
+        <listitem>
+          <para>Implemente o daemon de monitoramento (gmond) e o pacote de
+          Monitoramento do HPCC para cada nó que deseja monitorar.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>Os gráficos VM podem ser usados para monitorar os clusters Roxie.
+      Com o multicast, você pode adicionar mais nós Roxie instalados em
+      qualquer lugar na mesma rede.</para>
+
+      <para>Para adicionar um novo nó Roxie, instale o pacote do Monitorador
+      do HPCC em cada nó Roxie a ser monitorado. Em configurações mais
+      simples, pode ser preciso adicionar o(s) endereço(s) IP dos nós ao
+      arquivo <emphasis>/etc/ganglia/gmetad.conf </emphasis> . Contanto que o
+      novo nó Roxie possa se comunicar com o host do componente Monitorador
+      (por exemplo, ping), os gráficos dessa comunicação serão adicionados
+      automaticamente à tela de gráficos.</para>
+
+      <para><variablelist>
+          <varlistentry>
+            <term>OBSERVAÇÃO:</term>
+
+            <listitem>
+              <para>Em alguns gráficos pode haver demora no preenchimento de
+              dados. Inicialmente esses gráficos podem aparecer em branco ou
+              vazios, mas serão atualizados adequadamente na medida em que
+              houver um maior acúmulo de dados a serem preenchidos no
+              gráfico.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist></para>
+    </sect1>
+
+    <sect1 id="GangliaInECLWatch">
+      <title>Ganglia no ECL Watch</title>
+
+      <para>Com o plug-in Ganglia para HPCC instalado. É possível ver as
+      estatísticas e os gráficos do Ganglia diretamente pela interface do ECL
+      Watch. Por padrão, o monitorador de simples e fácil instalação exibe
+      várias estatísticas-chave. As visualizações podem ser customizadas e
+      configuradas.</para>
+
+      <figure>
+        <title>Ganglia no ECL Watch</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/GAN051.jpg" vendor="VM_welcome"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>A página de “Plugins” padrão possui a aba para “Custom Monitoring
+      (Monitorador personalizado)”, na qual é possível adicionar com
+      facilidade alguns componentes personalizados do monitorador.</para>
+
+      <para>Selecione a aba Custom Monitoring personalizado e pressione o
+      botão Metrics. Use os menus suspensos para exibir os diversos
+      utilitários de geração de gráficos.</para>
+
+      <sect2 id="UsingGangliaInECLWatch">
+        <title>Instalando o Ganglia no ECL Watch</title>
+
+        <para>Para usar o Ganglia no ECL Watch, é necessário instalar o
+        Ganglia no HPCC System. <orderedlist>
+            <listitem>
+              <para>Instale ou certifique-se de que os componentes do
+              Monitorador do HPCC estejam instalados em um nó onde o ECL Watch
+              também esteja instalado.</para>
+            </listitem>
+
+            <listitem>
+              <para>Verifique se o Ganglia gtemad daemon está em
+              execução.</para>
+            </listitem>
+
+            <listitem>
+              <para>Reinicie o ESP se esta for a primeira instalação de
+              quaisquer um desses componentes.</para>
+            </listitem>
+
+            <listitem>
+              <para>Inicialize ou conecte-se ao ECL Watch naquele nó.</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no ícone do plugin – localizado no topo da página
+              do ECL Watch.</para>
+
+              <para>Os gráficos exibem os dados.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>O EclWatch/Esp pode estar em um nó distinto do da máquina
+        gmetad, desde que os diretórios de dados rrd sejam exibidos para o
+        plugin.</para>
+      </sect2>
+
+      <sect2 id="ConfiguringGangliaGraphsInECLWatch">
+        <title>Configurando Gráficos do Ganglia no ECL Watch</title>
+
+        <para>A configuração do Ganglia no ECL Watch é mantida no arquivo
+        <emphasis role="bold">ganglia.json</emphasis> . Também pode ser
+        encontrada no directory/componentfiles (diretório/arquivos de
+        componente) do sistema no HPCC Systems<superscript>®</superscript> .
+        Os recursos Ganglia padrão do diretório do sistema HPCC
+        Systems<superscript>®</superscript> estão em:</para>
+
+        <para>/opt/HPCCSystems/componentfiles/files/ganglia</para>
+
+        <para>A configuração pode ser customizada e modificada de forma a
+        atender às suas necessidades.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="HPCC_Nagios_Chapter">
+    <title>Nagios</title>
+
+    <para>O componente Relatório do HPCC utiliza o Nagios – uma aplicação de
+    monitoramento de infraestrutura de rede e de sistema, de código público –
+    para monitorar e alertar os Administradores do HPCC. Nagios utiliza
+    tecnologias de código público consagradas e aceitas para alertar os
+    usuários quanto a mudanças ou possíveis problemas. Nagios fornece
+    monitoramento e relatórios regulares periódicos do sistema.</para>
+
+    <para>Através da integração com o HPCC , é possível criar arquivos de
+    configuração do Nagios para monitorar a integridade do servidor do HPCC.
+    Após o Nagios ter sido configurado, você poderá monitorar:<itemizedlist>
+        <listitem>
+          <para>Uso do disco</para>
+        </listitem>
+
+        <listitem>
+          <para>Roxie</para>
+        </listitem>
+
+        <listitem>
+          <para>Dali</para>
+        </listitem>
+
+        <listitem>
+          <para>Dafilesrv</para>
+        </listitem>
+
+        <listitem>
+          <para>Sasha</para>
+        </listitem>
+
+        <listitem>
+          <para>Service Bindings nos servidores ESP</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>Com plugins adicionais disponíveis (terceiros), utilitários de
+    verificação e modificação do arquivo de configuração, o Nagios também pode
+    monitorar:</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>Conectividade SSH</para>
+        </listitem>
+
+        <listitem>
+          <para>Usuários no sistema</para>
+        </listitem>
+
+        <listitem>
+          <para>Carga do sistema</para>
+        </listitem>
+
+        <listitem>
+          <para>Uso do disco / CPU / memória</para>
+        </listitem>
+
+        <listitem>
+          <para>Infraestrutura de rede</para>
+        </listitem>
+
+        <listitem>
+          <para>Mais...</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <sect1 id="NagiosIntro">
+      <title>Introdução ao Nagios</title>
+
+      <para>Nagios é um sistema poderoso de monitoramento e notificação que
+      pode ser usado com o HPCC para ajudar a identificar e solucionar
+      problemas de infraestrutura antes que esses problemas afetem os
+      processos críticos. As notificações de hardware do Nagios ajudam seu
+      sistema a se manter altamente ativo, e os alertas podem auxiliar na
+      manutenção preventiva dos processos que estão inativos ou que estão se
+      comportando fora dos parâmetros esperados. Tudo isso para garantir a
+      estabilidade, a confiabilidade e a operação do sistema. Scripts e
+      ferramentas são fornecidos para extrair as métricas de sistema da
+      Plataforma do HPCC e para uma fácil integração desses dados ao
+      Nagios.</para>
+
+      <para>Os administradores precisam estar cientes de que plataformas
+      diferentes podem não ser compatíveis com todos os plugins. O utilitário
+      <emphasis>hpcc-nagios-tools</emphasis> pode ser usado para simplificar a
+      adição de plugins customizados. Há vários outros plugins e utilitários
+      (de terceiros) disponíveis para o Nagios.</para>
+
+      <para>O pacote do Nagios não é um utilitário de tipo “instalar e
+      executar”. Algumas etapas adicionais são necessárias para configurá-lo e
+      usá-lo da forma adequada. Caso não esteja familiarizado com o Nagios,
+      faça o seguinte:<itemizedlist>
+          <listitem>
+            <para>Familiarize-se com o pacote básico do Nagios acessando
+            https://www.nagios.org</para>
+          </listitem>
+
+          <listitem>
+            <para>Configure uma instalação padrão do Nagios, como por exemplo
+            a instalação em uma máquina virtual.</para>
+          </listitem>
+
+          <listitem>
+            <para>Revise toda a documentação sobre Monitoramento e Relatórios
+            do HPCC .</para>
+          </listitem>
+
+          <listitem>
+            <para>Revise a instalação e configuração da VM.</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>O Nagios configura limites para acionar alertas. Uma verificação
+      pode indicar que o tempo limite foi esgotado devido a uma falha ou alta
+      carga, portanto seria útil ter alguma referência histórica. O Ganglia
+      pode ser útil para esse propósito. O monitorador Nagios usa um intervalo
+      de sondagem para verificar a integridade do sistema. A frequência e o
+      número de verificações dependeriam das necessidades no cluster. Os
+      alertas são úteis apenas se forem acionáveis. Antes de configurar o
+      ambiente, deve-se levar em conta quem recebe o alerta (escalonamentos
+      faseados), quando os alertas são recebidos (limites, múltiplos), e que
+      tipos de alertas são enviados (nenhum?, e-mail, mensagem de texto,
+      telefone, EclWatch etc.).</para>
+    </sect1>
+
+    <sect1 id="NagiosVM">
+      <title>Nagios na Virtual Machine</title>
+
+      <para>Uma maneira fácil de entender como o Nagios funciona e como ele
+      deve ser implementado em um sistema maior é analisar uma sessão já
+      implementada em ação.</para>
+
+      <para>A interação do Nagios está incorporada às imagens atuais da
+      Máquina virtual do HPCC. Faça o download e inicialize uma imagem virtual
+      e observe como o componente Monitorador funciona.</para>
+
+      <para>O componente Nagios para o HPCC na VM permite:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Pré-visualização dos alertas</para>
+        </listitem>
+
+        <listitem>
+          <para>Inicialização rápida</para>
+        </listitem>
+
+        <listitem>
+          <para>Guia para configuração</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Avalie o valor do conteúdo e decida quais aspectos são relevantes
+      às suas necessidades.</para>
+
+      <!--INCLUDE-VM_STEPS-as-Sect2-->
+
+      <sect2 id="hpcc-2id">
+        <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
+                    xpointer="xpointer(/sect2/node())"
+                    xmlns:xi="http://www.w3.org/2001/XInclude"/>
+      </sect2>
+
+      <sect2 id="TheNagiosInterface">
+        <title>Interface ao Nagios</title>
+
+        <para>Há várias configurações do Nagios disponíveis. Para entender
+        melhor sobre a configuração do Nagios , veja a configuração definida
+        na VM. Para fazer o login na página de admin do Nagios :</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Acesse
+            <emphasis>http://nnn.nnn.nnn.nnn/</emphasis>nagios3</para>
+
+            <para>Onde <emphasis>nnn.nnn.nnn.nnn</emphasis> é o seu servidor
+            ESP executando o ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <para>Faça o login com o nome do usuário: nagiosadmin</para>
+          </listitem>
+
+          <listitem>
+            <para>Digite a senha: nagiosadmin</para>
+          </listitem>
+        </orderedlist>
+
+        <para>Após o login, a página inicial do Nagios será exibida. Essa
+        página exibe informações sobre o Nagios e contém links para os
+        diversos componentes, itens e documentações.</para>
+
+        <para>Para ver a configuração, clique no link <emphasis
+        role="bold">Host Group</emphasis> no menu de navegação do Nagios ,
+        localizado ao lado esquerdo da página.</para>
+
+        <para><figure>
+            <title>Grupos de host do Nagios</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/NAG001.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Aqui são mostrados os Grupos de host que estão sendo
+        monitorados.</para>
+
+        <figure>
+          <title>Grupos de host do Nagios</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/NAG002.jpg"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <sect3 id="NagiosServices">
+          <title>Serviços do Nagios</title>
+
+          <para>Clique no link <emphasis role="bold">Services</emphasis> no
+          menu de navegação do Nagios, localizado ao lado esquerdo da página.
+          <figure>
+              <title>Serviços do Nagios</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/NAG003.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>O link de serviços mostra os detalhes do Status do serviço
+          para os sistemas que estão sendo monitorados. <figure>
+              <title>Status de serviço do Nagios</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/NAG004.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>É possível ver o status do serviço dos sistemas que estão
+          sendo monitorados.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="NagiosInstallation">
+      <title>Instalação do Nagios</title>
+
+      <para>O pacote Nagios para HPCC fornece ferramentas e utilitários para
+      criar as configurações da ferramenta. Essas configurações examinam o
+      HPCC e realizam algumas das verificações específicas para o HPCC . A
+      instalação do Nagios para o HPCC está disponível no portal do HPCC
+      Systems<superscript>®</superscript> .</para>
+
+      <sect2 id="HPCC_Nagios_Installation">
+        <title>Pacote de instalação do HPCC Nagios</title>
+
+        <para>Para ter o Monitorador Nagios do HPCC em seu sistema, é preciso
+        baixar o pacote de instalação. Faça o download o pacote de instalação
+        no portal do HPCC Systems.</para>
+
+        <para>No portal da Internet do HPCC
+        Systems<superscript>®</superscript> , você encontra recursos,
+        downloads, plugins e informações úteis sobre o HPCC.</para>
+
+        <para><ulink
+        url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/</ulink></para>
+
+        <para>O pacote de instalação do Monitorador e Relatórios do HPCC pode
+        ser encontrado em:</para>
+
+        <para><ulink
+        url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/download/free-community-edition/monitoring</ulink></para>
+
+        <para>Faça o download do pacote de instalação apropriado para seu
+        sistema operacional.</para>
+      </sect2>
+
+      <sect2 id="HPCC_InstallNagios" role="brk">
+        <title>Instalando o Nagios</title>
+
+        <para>Para instalar o Nagios do HPCC, você precisa ter a plataforma
+        HPCC System e o pacote de código público Nagios instalados.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Instale o <emphasis
+              role="bold">hpcc-nagios-monitoring</emphasis> no nó que fará o
+              monitoramento. O nó em que o Monitorador Nagios será instalado
+              deve ter conectividade de rede com todos os nós
+              monitorados.</para>
+
+              <para>Com as ferramentas Nagios do HPCC instaladas, os
+              utilitários de verificação do HPCC estão localizados em:</para>
+
+              <para><programlisting> /usr/lib/nagios/plugins/ </programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Crie arquivos de configuração do Nagios. Há várias opções
+              de configuração para o Nagios. Identifique suas necessidades e
+              personalize de forma apropriada.</para>
+
+              <para>Os recursos principais incluídos são ferramentas usadas
+              para criar as configurações do Nagios. As configurações criadas
+              podem ser modificadas com indicadores opcionais que se enquadram
+              ao ambiente que está sendo monitorado. O pacote padrão também
+              fornece alguns utilitários para monitorar os processos do HPCC
+              como Roxies, ESP Services (Serviços ESP) por nó e porta, Dali, e
+              dafilesrv. Outros processos também poderiam ser monitorados na
+              presença de um utilitário de verificação e se o arquivo de
+              configuração criado for modificado (localizar/substituir tudo
+              provavelmente seria suficiente).</para>
+            </listitem>
+          </orderedlist>Crie uma configuração de Grupos de host para o
+        Nagios.</para>
+
+        <programlisting> /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
+ /etc/HPCCSystems/environment.xml -g -out /etc/nagios3/config.d/hpcc_hostgroups.cfg
+</programlisting>
+
+        <para>Crie um arquivo de configuração de serviços.</para>
+
+        <programlisting>  /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
+ /etc/HPCCSystems/environment.xml -s -out /etc/nagios3/config.d/hpcc_services.cfg
+</programlisting>
+
+        <para>Crie um arquivo de notificações de escalonamento.</para>
+
+        <para><programlisting>./hpcc-nagios-tools -ec -env /etc/HPCCSystems/environment.xml  \
+-enable_host_notify -enable_service_notify -set_url localhost/nagios3 \
+-disable_check_all_disks –out /etc/nagios3/conf.d/hpcc_notifications.cfg
+</programlisting>As configurações criadas podem ser usadas como estão,
+        combinadas às configurações existentes ou modificadas para atender às
+        suas necessidades específicas.</para>
+
+        <para><orderedlist continuation="continues">
+            <listitem>
+              <para>Integre os arquivos de configuração do host e de serviços
+              às pastas de configuração do Nagios.</para>
+            </listitem>
+
+            <listitem>
+              <para>Reinicie o Nagios para que a nova configuração entre em
+              vigor.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <sect3 id="NagiosOptions">
+          <title>Opções do Nagios</title>
+
+          <para>Dependendo da sua distribuição Linux, será preciso substituir
+          alguns dos valores padrão. Pode ser necessário modificar alguns dos
+          scripts de verificação para distribuições diferentes. Use os
+          indicadores de substituição para nomear todos os scripts de
+          verificação nos arquivos de configuração de forma adequada e de
+          acordo com a sua distribuição.</para>
+
+          <para>Os níveis de limites dependem das suas necessidades e
+          ambientes específicos. Os valores padrão servem como pontos
+          iniciais. A avaliação de suas necessidades específicas ao longo do
+          tempo ajudarão a determinar os limites apropriados para seu(s)
+          ambiente(s) de produção.</para>
+
+          <para>Para substituir os valores padrão, modifique as configurações
+          geradas conforme necessário.</para>
+
+          <para>As ferramentas de monitoramento como Ganglia podem ajudar a
+          determinar os limites.</para>
+        </sect3>
+
+        <sect3 id="nagios-tools_Usage" role="brk">
+          <title>Uso de hpcc-nagios-tools</title>
+
+          <para><emphasis role="bold">hpcc-nagios-tools -env</emphasis>
+          <emphasis>&lt;environment file&gt;</emphasis> <emphasis
+          role="bold">-out</emphasis> <emphasis>&lt;output path&gt;</emphasis>
+          <emphasis role="bold">[</emphasis>options<emphasis
+          role="bold">]</emphasis></para>
+
+          <para>Parâmetros opcionais disponíveis: <informaltable>
+              <tgroup cols="3">
+                <colspec colwidth="174pt"/>
+
+                <colspec colwidth="155pt"/>
+
+                <colspec/>
+
+                <thead>
+                  <row>
+                    <entry>Opção/Flag</entry>
+
+                    <entry>Detalhe</entry>
+
+                    <entry>Valor padrão</entry>
+                  </row>
+                </thead>
+
+                <tbody>
+                  <row>
+                    <entry>-c or -cfggen</entry>
+
+                    <entry>O caminho para o configgen</entry>
+
+                    <entry>/opt/HPCCSystems/sbin/configgen</entry>
+                  </row>
+
+                  <row>
+                    <entry>-g ou -hostgroup</entry>
+
+                    <entry>Gera arquivo do grupo de host</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-s or -service</entry>
+
+                    <entry>Gera arquivo de host e serviço</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-t or -host</entry>
+
+                    <entry>Gera arquivo de host</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-n ou -nrpe</entry>
+
+                    <entry>Gera configurações do plugin client para
+                    nrpe</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-e or -env</entry>
+
+                    <entry>Arquivo de configuração do ambiente do HPCC</entry>
+
+                    <entry>/etc/HPCCSystems/environment.xml</entry>
+                  </row>
+
+                  <row>
+                    <entry>S-ec ou -escalation_cmds</entry>
+
+                    <entry>Gera comandos de escalonamento</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-enable_host_notify</entry>
+
+                    <entry>Ativa notificações de host</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-enable_service_notify</entry>
+
+                    <entry>Ativa notificações de serviço</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-set_url</entry>
+
+                    <entry>Define o link do URL para notificações de
+                    escalonamento</entry>
+
+                    <entry>NotificationURL</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_send_serivce_status</entry>
+
+                    <entry>Substitui o comando de escalonamento
+                    send_status</entry>
+
+                    <entry>/opt/HPCCSystems/bin/send_status -o $HOSTADDRESS$
+                    -s $HOSTSTATE$ -d '$HOSTNOTES$' -t $TIMET$ -n
+                    $HOSTDISPLAYNAME$</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_send_host_status</entry>
+
+                    <entry>Substitui o comando de escalonamento
+                    send_status</entry>
+
+                    <entry>/opt/HPCCSystems/bin/send_status -o $HOSTADDRESS$
+                    -s $HOSTSTATE$ -d '$HOSTNOTES$' -t $TIMET$ -n
+                    $HOSTDISPLAYNAME$</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_service_status</entry>
+
+                    <entry>Substitui host_notification_commands</entry>
+
+                    <entry>send_service_status</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_host_status</entry>
+
+                    <entry>Substitui service_notification_commands</entry>
+
+                    <entry>send_host_status</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_eclwatch_host_port</entry>
+
+                    <entry>Substitui a porta do host do eclwatch para comandos
+                    de escalonamento. Esse indicador deve ser especificado
+                    diversas vezes.</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-o or -output</entry>
+
+                    <entry>Arquivo de saída onde a configuração gerada será
+                    gravada</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-r ou -retry</entry>
+
+                    <entry>Continua tentando determinar IP para os nomes de
+                    host. Para após a primeira falha.</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-lookup</entry>
+
+                    <entry>Pesquisa o nome de host do IP</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-u or -user</entry>
+
+                    <entry>MACRO nome a ser usado para “Nome do usuário” no
+                    login do servidor ESP. Examplo: $USER1$</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-p ou -pass</entry>
+
+                    <entry>MACRO deve ser usado para “Senha” no login do
+                    servidor ESP. Exemplo: $USER2$</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-attempts</entry>
+
+                    <entry>Número máximo de tentativas do host</entry>
+
+                    <entry>10</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload1warn</entry>
+
+                    <entry>limite de aviso load1</entry>
+
+                    <entry>5</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload5warn</entry>
+
+                    <entry>limite de aviso load5</entry>
+
+                    <entry>4</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload15warn</entry>
+
+                    <entry>limite de aviso load15</entry>
+
+                    <entry>3</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload1crit</entry>
+
+                    <entry>limite de crítico load1</entry>
+
+                    <entry>10</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload5crit</entry>
+
+                    <entry>limite de crítico load5</entry>
+
+                    <entry>6</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload15crit</entry>
+
+                    <entry>limite de crítico load15</entry>
+
+                    <entry>4</entry>
+                  </row>
+
+                  <row>
+                    <entry>-diskspacewarn</entry>
+
+                    <entry>limite de aviso da % do espaço em disco</entry>
+
+                    <entry>15</entry>
+                  </row>
+
+                  <row>
+                    <entry>-diskspacecrit</entry>
+
+                    <entry>limite crítico da % de espaço em disco</entry>
+
+                    <entry>8</entry>
+                  </row>
+
+                  <row>
+                    <entry>-usernumwarn</entry>
+
+                    <entry>usuários logados em limite de aviso</entry>
+
+                    <entry>5</entry>
+                  </row>
+
+                  <row>
+                    <entry>-usernumcrit</entry>
+
+                    <entry>usuários logados em limite crítico</entry>
+
+                    <entry>10</entry>
+                  </row>
+
+                  <row>
+                    <entry>-totalprocswarn</entry>
+
+                    <entry>limite de aviso total de processos</entry>
+
+                    <entry>350</entry>
+                  </row>
+
+                  <row>
+                    <entry>-totalprocscrit</entry>
+
+                    <entry>limite crítico total do processo</entry>
+
+                    <entry>500</entry>
+                  </row>
+
+                  <row>
+                    <entry>-checkperiod</entry>
+
+                    <entry>período de verificação do host</entry>
+
+                    <entry>24x7</entry>
+                  </row>
+
+                  <row>
+                    <entry>-contacts</entry>
+
+                    <entry>contatos do host</entry>
+
+                    <entry>eclwatch</entry>
+                  </row>
+
+                  <row>
+                    <entry>-contactgroups</entry>
+
+                    <entry>grupos de contato do host</entry>
+
+                    <entry>eclwatch_group</entry>
+                  </row>
+
+                  <row>
+                    <entry>-notify_interval</entry>
+
+                    <entry>grupos de contato do host</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-notify_period</entry>
+
+                    <entry>grupos de contato do host</entry>
+
+                    <entry>24x7</entry>
+                  </row>
+
+                  <row>
+                    <entry>-set_esp_username_pw</entry>
+
+                    <entry>Define credenciais específicas de login para
+                    verificações do ESP . Todos os campos são obrigatórios
+                    (Nome do ESP, Nome do usuário, Senha). Pode ser
+                    especificado mais de uma vez para suportar múltiplos
+                    servidores ESP .</entry>
+
+                    <entry><para>&lt;esp name&gt;</para><para>&lt;user
+                    name&gt;</para><para>&lt;password&gt;</para></entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_retry_interval</entry>
+
+                    <entry>verifica retry_interval</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_active_checks_enabled</entry>
+
+                    <entry>active_checks</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_passive_checks_enabled</entry>
+
+                    <entry>passive_checks</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_parallelize_check</entry>
+
+                    <entry>parallelize_check</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_obsess_over_service</entry>
+
+                    <entry>obsess_over_service</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_freshness</entry>
+
+                    <entry>check_freshness</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_event_handler_enabled</entry>
+
+                    <entry>event_handler_enabled</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_is_volatile</entry>
+
+                    <entry>is_volatile</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_normal_check_interval</entry>
+
+                    <entry>normal_check_interval</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_flap_detection_enabled</entry>
+
+                    <entry>flap_detection_enabled</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_process_perf_data</entry>
+
+                    <entry>process_perf_data</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_failure_prediction_enabled</entry>
+
+                    <entry>failure_prediction_enabled</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_retain_status_information</entry>
+
+                    <entry>retain_status_information</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_retain_nonstatus_information</entry>
+
+                    <entry>retain_nonstatus_information</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-check_all_disks</entry>
+
+                    <entry>ativa/desativa o serviço de verificação
+                    check_all_disks</entry>
+
+                    <entry>check_all_disks</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_all_disks</entry>
+
+                    <entry>nome do plugin check_all_disk</entry>
+
+                    <entry>check_all_disks</entry>
+                  </row>
+
+                  <row>
+                    <entry>-check_users</entry>
+
+                    <entry>ativa/desativa o serviço de verificação
+                    check_users</entry>
+
+                    <entry>check_users</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_users</entry>
+
+                    <entry>nome do plugin check_users</entry>
+
+                    <entry>check_users</entry>
+                  </row>
+
+                  <row>
+                    <entry>-check_procs</entry>
+
+                    <entry>ativa/desativa o serviço de verificação
+                    check_procs</entry>
+
+                    <entry>check_procs</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_procs</entry>
+
+                    <entry>nome do plugin check_procs</entry>
+
+                    <entry>check_procs</entry>
+                  </row>
+
+                  <row>
+                    <entry>-check_load</entry>
+
+                    <entry>ativa/desativa o serviço de verificação
+                    check_load</entry>
+
+                    <entry>check_load</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_load</entry>
+
+                    <entry>nome do plugin check_procs</entry>
+
+                    <entry>check_load</entry>
+                  </row>
+
+                  <row>
+                    <entry>-check_ssh</entry>
+
+                    <entry>ativa/desativa verificação de serviço de
+                    verificação ssh</entry>
+
+                    <entry>checkSSH</entry>
+                  </row>
+
+                  <row>
+                    <entry>-set_catch_all_hostgroup</entry>
+
+                    <entry>cria um grupo de host e inclui todos os nós como
+                    membros</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-set_host_check_command</entry>
+
+                    <entry>configura o check_command dos hosts</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-check_host</entry>
+
+                    <entry>ativa/desativa a verificação check_host</entry>
+
+                    <entry>check_host</entry>
+                  </row>
+
+                  <row>
+                    <entry>-disable_use_of_note_for_host_port</entry>
+
+                    <entry>o comando enviar usará o(a) detalhe/nota para
+                    host:ip em vez do parâmetro</entry>
+
+                    <entry>true (verdadeiro)</entry>
+                  </row>
+
+                  <row>
+                    <entry>-use_https</entry>
+
+                    <entry>Usa conexão https para chamadas de serviço do esp.
+                    <emphasis role="bold">ALTAMENTE RECOMENDADO</emphasis> ao
+                    usar nome de usuário/senha</entry>
+
+                    <entry/>
+                  </row>
+
+                  <row>
+                    <entry>-d ou -debug</entry>
+
+                    <entry>verbose debug output\n</entry>
+
+                    <entry/>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Use os indicadores de opção disponíveis para customizar a
+          configuração do Nagios de acordo com o seu ambiente.</para>
+        </sect3>
+
+        <sect3 id="HPCC_NagiosHelp">
+          <title>Ajuda</title>
+
+          <para>Para obter ajuda com o HPCC Nagios, digite:</para>
+
+          <programlisting> /opt/HPCCSystems/bin/hpcc-nagios-tools</programlisting>
+
+          <para>Digitar o comando sem nenhum parâmetro ou opções especificados
+          exibe todas as opções disponíveis.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <xi:include href="HPCCMonitoring/MonRep-Mods/NagiosInECLWa.xml"
+                xpointer="xpointer(//*[@id='Nagios_in_ECLWatch'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+</book>

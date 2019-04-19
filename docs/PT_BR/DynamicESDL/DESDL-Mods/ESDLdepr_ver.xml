@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_depr_ver">
+  <title><emphasis role="bold">depr_ver</emphasis></title>
+
+  <para><indexterm>
+      <primary>depr_ver</primary>
+    </indexterm>O atributo depr_ver permite declarar a versão do final da vida de um campo. O campo é preterido em um número de versão especificado. As solicitações que usam essa versão ou qualquer versão subsequente não terão acesso ao campo.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>[depr_ver("1.04")] bool IsValid;</programlisting>
+</sect1>

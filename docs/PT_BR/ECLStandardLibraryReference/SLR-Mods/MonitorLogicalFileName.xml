@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MonitorLogicalFileName">
+  <title>MonitorLogicalFileName</title>
+
+  <para><emphasis role="bold">STD.File.MonitorLogicalFileName<indexterm>
+      <primary>STD.File.MonitorLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>File.MonitorLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>MonitorLogicalFileName</primary>
+    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
+  role="bold"> </emphasis> <emphasis>filename, </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis>, shotcount </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, espserverIPport </emphasis> <emphasis
+  role="bold">] )</emphasis> <emphasis/></para>
+
+  <para><emphasis>dfuwuid </emphasis> <emphasis role="bold">:=
+  STD.File.fMonitorLogicalFileName<indexterm>
+      <primary>STD.File.fMonitorLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>File.fMonitorLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>fMonitorLogicalFileName</primary>
+    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
+  role="bold"> </emphasis> <emphasis>filename, </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis>, shotcount </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, espserverIPport </emphasis> <emphasis
+  role="bold">] );</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>event</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome definido pelo
+          usuário do evento a ser acionado quando
+          <emphasis>filename</emphasis> aparecer. O valor é usado como o
+          primeiro parâmetro da função EVENT.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do arquivo
+          lógico no DFU a ser monitorado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>shotcount</emphasis></entry>
+
+          <entry>Opcional. Um valor inteiro que indica o número de vezes que o
+          evento deve ser gerado antes da conclusão do job de monitoramento.
+          Um valor de um negativo (-1) indica que o job de monitoramento
+          continuará até ser abortada manualmente. Se omitido, o padrão é
+          1.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>espserverIPport</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o
+          protocolo, o IP, a porta e o diretório ou DNS equivalente do
+          programa do servidor' ESP. Normalmente são os mesmos IP e porta do
+          ECL Watch, com "/FileSpray" anexado. Se omitida, o padrão é o valor
+          contido no atributo lib_system.ws_fs_server.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuwuid</emphasis></entry>
+
+          <entry>O nome do atributo que receberá a string terminada por nulo
+          que contém o ID da workunit DFU (DFUWUID) gerado para o job de
+          monitoramento.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>fMonitorLogicalFileName retorna uma string terminada com nulo
+          contendo o ID da workunit DFU (DFUWUID).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">MonitorLogicalFileName </emphasis> cria
+  uma workunit de monitoramento de arquivos no servidor do DFU. Após ser
+  recebida, o job entra no modo de monitoramento (que pode ser vista na tela
+  da workunit DFU do eclwatch), que sonda em intervalos fixos (o padrão é 15
+  minutos). Se um arquivo com nome adequado chegar nesse intervalo, será
+  acionado um <emphasis>evento</emphasis> com o nome do objeto acionador como
+  subtipo do evento (consulte a função EVENT).</para>
+
+  <para>Esta função não permite caracteres curinga. Para monitorar arquivos
+  físicos ou diretórios usando curingas, use a função <link
+  linkend="MonitorFile">MonitorFile</link> .</para>
+
+  <para>Esse processo continua até que:</para>
+
+  <para>1) O número do eventos <emphasis>shotcount</emphasis> tenham sido
+  gerados</para>
+
+  <para>2) O usuário aborte a workunit DFU.</para>
+
+  <para>As funções STD.File.AbortDfuWorkunit e STD.File.WaitDfuWorkunit podem
+  ser usadas para abortar ou aguardar o job DFU passando por elas e retornando
+  ao <emphasis>dfuwuid</emphasis>.</para>
+
+  <para><emphasis role="bold">Observe as seguintes advertências e
+  restrições:</emphasis></para>
+
+  <para>1) Se existir um arquivo correspondente no momento em que o job do
+  Monitorador DFU for iniciada, esse arquivo <emphasis role="underline">
+  não</emphasis> gerará um evento. Ele só gerará o evento quando o arquivo
+  tiver sido removido e recriado.</para>
+
+  <para>2) Se um arquivo for criado e depois removido (ou removido e depois
+  recriado) entre os intervalos de sondagem, ele não será visto pelo monitor e
+  não acionará um evento.</para>
+
+  <para>3) Os eventos são gerados apenas durante o intervalo de
+  sondagem.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">EventName := 'MyFileEvent';
+FileName  := 'test::myfile';
+IF (STD.File.FileExists(FileName),
+         STD.File.DeleteLogicalFile(FileName));
+STD.File.MonitorLogicalFileName(EventName,FileName);
+OUTPUT('File Created') : WHEN(EVENT(EventName,'*'),COUNT(1));
+    
+rec := RECORD
+  STRING10 key;
+  STRING10 val;
+END;
+afile := DATASET([{ 'A', '0'}], rec);
+OUTPUT(afile,,FileName);
+</programlisting>
+</sect1>

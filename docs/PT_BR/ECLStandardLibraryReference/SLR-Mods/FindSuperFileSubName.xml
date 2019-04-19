@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FindSuperFileSubName">
+  <title>FindSuperFileSubName</title>
+
+  <para><emphasis role="bold">STD.File.FindSuperFileSubName<indexterm>
+      <primary>STD.File.FindSuperFileSubName</primary>
+    </indexterm><indexterm>
+      <primary>File.FindSuperFileSubName</primary>
+    </indexterm><indexterm>
+      <primary>FindSuperFileSubName</primary>
+    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subfile</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          subfile.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>FindSuperFileSubName retorna um valor INTEGER4.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">FindSuperFileSubName </emphasis>
+  retorna a posição ordinal do subfile especificado no superfile.
+  <emphasis>subfile</emphasis> na definição
+  <emphasis>superfile</emphasis>.</para>
+
+  <para>Essa função não é incluída em uma transação de superarquivo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.File.GetSuperFileSubName('~CLASS::RT::IN::SF1', 'Sue'); 
+     //get position of sub-file Sue</programlisting>
+</sect1>

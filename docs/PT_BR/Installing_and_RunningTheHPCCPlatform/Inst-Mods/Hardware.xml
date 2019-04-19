@@ -1,0 +1,403 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>Instalando a plataforma HPCC: Módulo de Hardware</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito bem-vindos e podem ser enviados por e-mail para <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre documentação</emphasis> na linha de assunto e indique o nome do documento, o número das páginas e número da versão atual no corpo da mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems é uma marca comercial registrada da LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas. Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="Hardware-and-Software-Chapter">
+    <title>Requerimento de Hardware e Software</title>
+
+    <para>Esta seção descreve alguns requisitos ou recomendações de hardware e software para executar o HPCC. Essencialmente, o sistema HPCC foi projetado para ser executado em hardware comum, podendo funcionar em quase todos os tipos de hardware. Para obter um benefício real de toda a capacidade do sistema HPCC, é preciso implementar o HPCC System em hardware modernos e mais avançados.</para>
+
+    <para>As tecnologias de hardware e software estão mudando e sendo aperfeiçoadas constantemente. Em função disso, os requisitos e as recomendações mais recentes e atualizadas estão disponíveis no Portal do HPCC Systems  A página Requisitos do sistema descreve de forma detalhada os requisitos mais recentes da plataforma.</para>
+
+    <para><ulink
+    url="http://hpccsystems.com/permlink/requirements">http://hpccsystems.com/permlink/requirements</ulink></para>
+
+    <sect1 id="HW-Switch" role="nobrk">
+      <title>Switch de Rede</title>
+
+      <para>A switch de rede é um componente importante do HPCC System.</para>
+
+      <sect2 id="Switch-Requirements">
+        <title>Requerimento do Switch</title>
+
+        <itemizedlist spacing="compact">
+          <listitem>
+            <para>Número suficiente de portas para permitir que todos os nós sejam conectados diretamente a ela;</para>
+          </listitem>
+
+          <listitem>
+            <para>Suporte à IGMP v.2 </para>
+          </listitem>
+
+          <listitem>
+            <para>Suporte à espionagem IGMP</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Seu HPCC System supostamente apresentará um melhor desempenho quando cada nó estiver conectado diretamente a uma única chave. Você precisa fornecer uma porta para cada nó em uma única chave para otimizar o desempenho do sistema. O tamanho da sua chave deve corresponder ao tamanho do seu sistema. É importante assegurar que a chave utilizada tenha capacidade suficiente para que cada nó seja conectado à sua própria porta.</para>
+      </sect2>
+
+      <sect2 id="Switch-additional-recommend">
+        <title>Recursos adicionais recomendados para o Switch</title>
+
+        <para><itemizedlist mark="square" spacing="compact">
+            <listitem>
+              <para>Velocidade em Gigabit</para>
+            </listitem>
+
+            <listitem>
+              <para>Backplane sem bloqueio e não sobrecarregado</para>
+            </listitem>
+
+            <listitem>
+              <para>Baixa latência (menos de 35usec)</para>
+            </listitem>
+
+            <listitem>
+              <para>Comutação da camada 3</para>
+            </listitem>
+
+            <listitem>
+              <para>Gerenciado e monitorado (SNMP é uma vantagem a mais)</para>
+            </listitem>
+
+            <listitem>
+              <para>Suporte de canal de porta (agrupamento de portas)</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <para>Normalmente, as chaves de maior qualidade e produtividade também oferecerão melhor desempenho. Em sistemas maiores, a melhor opção é usar uma chave gerenciada de alta capacidade que possa ser configurada e ajustada com base na eficiência do HPCC.</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="HW-LoadBalancer">
+      <title>Balanceamento de Carga</title>
+
+      <para>Um balanceador de carga distribui o tráfego da rede entre vários servidores. Cada nó do Roxie é capaz de receber solicitações e de retornar resultados. Consequentemente, um balanceador de carga distribui a carga de maneira eficiente para obter o melhor desempenho e evitar um possível afunilamento.</para>
+
+      <sect2 id="LoadBalancerRequirements">
+        <title>Requerimento do Balanceamento de Carga</title>
+
+        <sect3 id="LoadBalancer_MinimumRequirements">
+          <title>Requisitos mínimos de entrada</title>
+
+          <para><itemizedlist spacing="compact">
+              <listitem>
+                <para>Transferência: 1 Gigabit</para>
+              </listitem>
+
+              <listitem>
+                <para>Portas Ethernet: 2</para>
+              </listitem>
+
+              <listitem>
+                <para>Estratégia de balanceamento: Round Robin</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
+
+        <sect3 id="LoadBalancer_StandardRequirements">
+          <title>Requisitos padrão</title>
+
+          <para><itemizedlist spacing="compact">
+              <listitem>
+                <para>Transferência: 8Gbps</para>
+              </listitem>
+
+              <listitem>
+                <para>Portas Gigabit Ethernet: 4</para>
+              </listitem>
+
+              <listitem>
+                <para>Estratégia de balanceamento: Flexível (iRules F5 ou equivalente)</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
+
+        <sect3 id="LoadBalancer_RecommendedCapabilities">
+          <title>Capacidade Recomendada</title>
+
+          <para><itemizedlist spacing="compact">
+              <listitem>
+                <para>Capacidade de fornecer rotação de carga cíclica (e não o balanceamento de carga)</para>
+              </listitem>
+
+              <listitem>
+                <para>Capacidade de encaminhar o tráfego SOAP/HTTP</para>
+              </listitem>
+
+              <listitem>
+                <para>Capacidade de fornecer roteamento de triangulação/n-path (tráfego de entrada através do balanceador de carga para o nó, respostas enviadas através da chave).</para>
+              </listitem>
+
+              <listitem>
+                <para>Capacidade de tratar um cluster de nós como uma entidade única (para clusters de balanceamento de carga, não os nós)</para>
+
+                <para>ou</para>
+              </listitem>
+
+              <listitem>
+                <para>Capacidade de empilhar ou fasear os balanceadores de carga em vários níveis.</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Nodes-Hardware">
+      <title>Hardware-Nós</title>
+
+      <para>Um HPCC System pode ser executado como um sistema de nó único ou de nós múltiplos.</para>
+
+      <para>Essas recomendações de hardware destinam-se a um sistema de produção de vários nós. Um sistema de teste pode usar especificações menos rigorosas. Além disso, embora seja mais fácil gerenciar um sistema onde todos os nós sejam idênticos, isso não é obrigatório. Porém, é importante observar que seu sistema será executado na mesma velocidade de seu nó mais lento.</para>
+
+      <sect2 id="Node-Min-requirements">
+        <title>Requerimento Mínimo para um nó</title>
+
+        <itemizedlist mark="square" spacing="compact">
+          <listitem>
+            <para>CPU Pentium 4 ou mais recente</para>
+          </listitem>
+
+          <listitem>
+            <para>32-bit</para>
+          </listitem>
+
+          <listitem>
+            <para>1GB de RAM por escravo</para>
+
+            <para>(Observação: se você configurar mais de 1 escravo por nó, a memória será compartilhada. Por exemplo, se desejar 2 escravos por nó com 4 GB de memória cada, o servidor precisará de 8 GB de memória total.)</para>
+          </listitem>
+
+          <listitem>
+            <para>Um disco rígido (com espaço livre suficiente para lidar com o tamanho dos dados que você pretende processar) ou um armazenamento conectado à rede.</para>
+          </listitem>
+
+          <listitem>
+            <para>Interface de rede de 1 GigE</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="Node-recommended-specifications">
+        <title>Especificações recomendadas para os nós</title>
+
+        <para><itemizedlist mark="square" spacing="compact">
+            <listitem>
+              <para>CPU Dual Core i7 (ou melhor)</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit</para>
+            </listitem>
+
+            <listitem>
+              <para>4 GB de RAM (ou mais) por escravo</para>
+            </listitem>
+
+            <listitem>
+              <para>Interface de rede de 1 GigE</para>
+            </listitem>
+
+            <listitem>
+              <para>Suporte à inicialização PXE no BIOS</para>
+
+              <para>O suporte à inicialização PXE é recomendado para que você possa gerenciar os pacotes do OS (SO) e outras configurações quando tiver um sistema maior.</para>
+            </listitem>
+
+            <listitem>
+              <para>Opcionalmente, suporte para IPMI e KVM sobre IP</para>
+
+              <para><emphasis role="bold">Para os nós do Roxie:</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Dois discos rígidos SAS de 10K RPM (ou mais rápidos)</para>
+
+              <para>Normalmente, a velocidade do disco é uma prioridade para os nós do Roxie</para>
+
+              <para><emphasis role="bold">Para os nós do Thor:</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Dois discos rígidos SATA de 7200K RPM (Thor)</para>
+            </listitem>
+
+            <listitem>
+              <para>Opcionalmente, 3 ou mais discos rígidos podem ser configurados em um contêiner RAID 5 para melhorar o desempenho e a disponibilidade.</para>
+
+              <para>Normalmente, a capacidade do disco é uma prioridade para os nós do Thor</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Nodes-Software">
+      <title>Software-Nós</title>
+
+      <para>Todos os nós devem ter sistemas operacionais idênticos. Recomendamos que todos os nós tenham instalados configurações BIOS e pacotes idênticos. Isso diminui significativamente as variáveis em caso de solução de problemas. Embora seja mais fácil gerenciar um sistema onde todos os nós são idênticos, isso não é obrigatório.</para>
+
+      <sect2 id="Operating-System-Requirements">
+        <title>Requerimentos do Sistema Operacional</title>
+
+        <para>Os pacotes de instalação binária estão disponíveis para diversos sistemas operacionais Linux. Os requisitos da plataforma do HPCC System estão prontamente disponíveis no Portal do HPCC.</para>
+
+        <para><ulink
+        url="http://hpccsystems.com/permlink/requirements">http://hpccsystems.com/permlink/requirements</ulink></para>
+      </sect2>
+
+      <sect2 id="configuration-manager">
+        <title>Dependências</title>
+
+        <para>Para instalar o HPCC em seu sistema, é preciso ter os pacotes de componentes obrigatórios instalados no sistema. As dependências obrigatórias podem variar de acordo com a sua plataforma. As dependências obrigatórias podem variar de acordo com a sua plataforma. Em alguns casos, as dependências estão incluídas nos pacotes de instalação. Em outras situações, a instalação pode não ser concluída com sucesso, e o utilitário de gerenciamento do pacote solicitará os pacotes obrigatórios. A instalação desses pacotes pode variar de acordo com a sua plataforma. Para detalhes sobre comandos de instalação específicos para obter e instalar esses pacotes, consulte os comandos específicos do seu Sistema Operacional. <variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>Para instalações CentOS, o repositório Fedora EPEL é obrigatório.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect2>
+
+      <sect2 id="SSH_Keys" role="brk">
+        <title>Chaves SSH</title>
+
+        <para>Os componentes do HPCC usam chaves ssh para autenticar uns aos outros Isso é obrigatório para a comunicação entre os nós. Fornecemos um script para geração de chaves. Você precisa executar esse script e distribuir as chaves públicas e privadas a todos os nós após ter instalado os pacotes em todos eles, porém antes de configurar um HPCC de nós múltiplos.</para>
+
+        <para><itemizedlist spacing="compact">
+            <listitem>
+              <para>Como raiz (ou sudo como mostrado abaixo), gere uma nova chave usando este comando:</para>
+
+              <para><programlisting>sudo /opt/HPCCSystems/sbin/keygen.sh</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Distribua as chaves para todos os nós. No diretório  <emphasis
+              role="bold">/home/hpcc/.ssh</emphasis> , copie esses três arquivos para o mesmo diretório (<emphasis
+              role="bold">/home/hpcc/.ssh</emphasis>) em cada nó: Em todos os nós</para>
+
+              <itemizedlist spacing="compact">
+                <listitem>
+                  <para><emphasis role="bold">id_rsa</emphasis></para>
+                </listitem>
+
+                <listitem>
+                  <para><emphasis role="bold">id_rsa.pub</emphasis></para>
+                </listitem>
+
+                <listitem>
+                  <para><emphasis
+                  role="bold">authorized_keys</emphasis></para>
+                </listitem>
+              </itemizedlist>
+
+              <para>Lembre-se de que os arquivos devem reter as permissões ao serem distribuídos. Essas chaves precisam pertencer ao usuário <emphasis
+              role="bold">“hpcc”</emphasis>.</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="workstation-requirements">
+      <title>Requerimentos da estação de trabalho</title>
+
+      <itemizedlist spacing="compact">
+        <listitem>
+          <para>A execução da plataforma HPCC requer comunicação desde a estação de trabalho do usuário com um navegador até o HPCC. Isso será usado para acessar o ECL Watch -- uma interface com base na Web para seu HPCC System. O ECL Watch permite examinar e gerenciar os vários aspectos do HPCC e permite ver informações sobre tarefas executadas, arquivos de dados e métricas de sistema.</para>
+
+          <para>Use um dos navegadores Web compatíveis com Javascript habilitado.</para>
+
+          <itemizedlist spacing="compact">
+            <listitem>
+              <para>Internet Explorer® 11 (ou mais recente)</para>
+            </listitem>
+
+            <listitem>
+              <para>Firefox 3.0 (ou mais recente)</para>
+
+              <!--***Add additional browsers when approved-->
+            </listitem>
+
+            <listitem>
+              <para>Google Chrome 10 (ou mais recente)</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>Se a segurança do navegador estiver configurada para  <emphasis
+          role="bold">Alta</emphasis>, você precisa adicionar o ECLWatch como site confiável para permitir que o Javascript seja executado.</para>
+
+          <!--note: window users may want to use the 32 bit graph control***-->
+        </listitem>
+
+        <listitem>
+          <para>Instale o ECL IDE</para>
+
+          <para>O ECL IDE (Ambiente de desenvolvimento integrado) é uma ferramenta usada para criar consultas em seus dados e arquivos ECL com os quais suas consultas serão compiladas.</para>
+
+          <para>Baixe o ECL IDE no portal do HPCC Systems no endereço http://hpccsystems.com</para>
+
+          <para>Você encontra o ECL IDE e as Ferramentas do Client nesta página usando o URL:</para>
+
+          <para><ulink
+          url="http://hpccsystems.com/download/free-community-edition/ecl-ide">http://hpccsystems.com/download/free-community-edition/ecl-ide</ulink></para>
+
+          <para>O ECL IDE foi projetado para ser executado em máquinas Windows. Consulte a seção Anexos para obter instruções sobre como executar em estações de trabalho Linux usando o Wine.</para>
+        </listitem>
+
+        <listitem>
+          <para>Compilador Microsoft VS 2008 C++ (edição Express ou Professional). Isso é necessário caso você esteja executando o Windows e queira compilar consultas localmente. Isso permite compilar e executar código ECL em sua estação de trabalho Windows.</para>
+        </listitem>
+
+        <listitem>
+          <para>GCC Isso é necessário se você estiver executando o Linux e deseja compilar consultas localmente em uma máquina Linux autônoma (pode ser que isso já esteja disponível para você, já que normalmente acompanha o sistema operacional).</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+  </chapter>
+</book>

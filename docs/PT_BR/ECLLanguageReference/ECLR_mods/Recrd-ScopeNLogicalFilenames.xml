@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Scope_and_Logical_Filenames">
+  <title>Escopo<indexterm>
+      <primary>SCOPE</primary>
+    </indexterm> e Nomes de Arquivo Lógicos.<indexterm>
+      <primary>LOGICAL Filenames</primary>
+    </indexterm></title>
+
+  <sect2 id="File_Scope">
+    <title>Escopo do Arquivo<indexterm>
+        <primary>File Scope</primary>
+      </indexterm></title>
+
+    <para>Os nomes de arquivo lógicos usados nos atributos DATASET e INDEX e
+    as ações OUTPUT e BUILD (ou BUILDINDEX) podem começar opcionalmente com um
+    ~, o que significa que são absolutos. Caso contrário, são relativos (o
+    prefixo de escopo configurado para a plataforma é acrescentado ao início
+    do nome do arquivo). Ele pode conter escopos delimitados por dois
+    caracteres de dois pontos (::), e a parte final é o nome do arquivo. Não é
+    permitido ter dois caracteres de dois pontos (::) no final do nome do
+    arquivo. É possível especificar um qualificador de cluster. Por exemplo,
+    ~myfile@mythor2 aponta para um arquivo em que o arquivo está em vários
+    clusters no mesmo escopo. Os caracteres ASCII válidos de um escopo ou nome
+    de arquivo devem ser maiores que 32 e menores que 127, exceto * " / : &lt;
+    &gt; ? e |.</para>
+
+    <para>Para fazer referência a caracteres maiúsculos em caminhos e nomes de
+    arquivos físicos, use o caractere circunflexo (^). Por exemplo,
+    "~file::10.150.254.6::var::lib::^h^p^c^c^systems::mydropzone::^people.txt".</para>
+
+    <para>A presença de um escopo no nome do arquivo permite substituir o nome
+    do escopo padrão do cluster. Por exemplo, supondo que você está operando
+    em um cluster com nome de escopo padrão "Training", as duas ações OUTPUT a
+    seguir resultarão no mesmo escopo:</para>
+
+    <programlisting>OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
+OUTPUT(SomeFile,,'~Training::SomeDir::SomeFileOut2');</programlisting>
+
+    <para>A presença de um til no início do nome do campo define apenas o nome
+    do escopo e não altera o conjunto de discos onde os dados são gravados (os
+    arquivos são <emphasis role="bold">sempre </emphasis><emphasis
+    role="bold"> gravados nos discos do cluster onde o código é
+    </emphasis><emphasis role="bold"> executado</emphasis>). A declaração
+    DATASET<indexterm>
+        <primary>DATASET declaration</primary>
+      </indexterm>s para esses arquivos pode ser parecida com:</para>
+
+    <programlisting>RecStruct := {STRING line};
+ds1 := DATASET('SomeDir::SomeFileOut1',RecStruct,THOR);
+ds2 := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting>
+
+    <para>Esses dois arquivos estão no mesmo escopo. Portanto, quando você
+    usar DATASETs em uma tarefa, o utilitário de arquivos distribuídos (DFU)
+    procurará os dois arquivos no escopo Training.</para>
+
+    <para>No entanto, uma vez que você souber o nome do escopo, poderá fazer
+    referência a arquivos de qualquer outro cluster dentro do mesmo ambiente.
+    Por exemplo, supondo que você está operando em um cluster com o nome de
+    escopo padrão "Production" e quer usar os dados nos dois arquivos acima.
+    As duas definições de DATASET a seguir permitem acessar esses
+    dados:</para>
+
+    <programlisting>FileX := DATASET('~Training::SomeDir::SomeFileOut1',RecStruct,THOR);
+FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting>
+
+    <para>Note a presença do nome do escopo nas duas definições. Isso é
+    obrigatório porque os arquivos estão em outro escopo.</para>
+  </sect2>
+
+  <sect2 id="Foreign_Files">
+    <title>Arquivos Estrangeiros<indexterm>
+        <primary>Foreign files</primary>
+      </indexterm></title>
+
+    <para>De forma semelhante às regras de escopo descritas acima, você também
+    pode referenciar arquivos em ambientes separados atendidos por um Dali
+    diferente. Isso permite uma referência somente leitura a arquivos (super e
+    lógicos) remotos.</para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>OBSERVAÇÃO:</term>
+
+          <listitem>
+            <para>Se a autenticação LDAP estiver ativada no Dali remoto, as
+            credenciais do usuário serão verificadas antes do processamento da
+            solicitação de acesso ao arquivo. Se a segurança de escopo de
+            arquivo do LDAP estiver habilitada no Dali remoto, as permissões
+            de acesso aos arquivos do usuário também serão verificadas.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
+    <para>A sintaxe é semelhante a:</para>
+
+    <para><emphasis
+    role="bold">‘~foreign::&lt;dali-ip&gt;::&lt;scope&gt;::&lt;tail&gt;’</emphasis></para>
+
+    <para>Por exemplo,</para>
+
+    <programlisting>MyFile :=DATASET('~foreign::10.150.50.11::training::thor::myfile',
+                 RecStruct,FLAT);</programlisting>
+
+    <para>concede acesso somente leitura ao arquivo remoto
+    <emphasis>training::thor::myfile </emphasis> no ambiente <emphasis>
+    10.150.50.11.</emphasis> .</para>
+  </sect2>
+
+  <sect2 id="Landing_Zone_Files">
+    <title>Arquivos da Zona de entrada de arquivos<indexterm>
+        <primary>Landing Zone files</primary>
+      </indexterm></title>
+
+    <para>Você também pode ler e gravar arquivos diretamente em uma zona de
+    entrada de arquivos (ou qualquer outra caixa endereçável por IP) que não
+    foi sprayed para o Thor. A zona de entrada de arquivos deve estar
+    executando o programa utilitário dafileserv. Se a caixa for uma caixa
+    Windows, dafileserv deve ser instalado como serviço.</para>
+
+    <para>A sintaxe é semelhante a:</para>
+
+    <para><emphasis
+    role="bold">‘~file::&lt;LZ-ip&gt;::&lt;path&gt;::&lt;filename&gt;’</emphasis></para>
+
+    <para>Por exemplo,</para>
+
+    <programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::training::import::myfile',RecStruct,FLAT);</programlisting>
+
+    <para>concede acesso ao arquivo remoto
+    <emphasis>c$/AdvancedECL/myfile</emphasis> na zona de entrada de arquivos
+    <emphasis>10.150.50.12 </emphasis> baseada em Linux.</para>
+
+    <para>Os nomes de arquivo lógicos da ECL não fazem distinção entre
+    maiúsculas e minúsculas. Os nomes físicos são, por padrão, em minúsculas,
+    o que pode causar problemas quando a zona de entrada de arquivos é uma
+    caixa Linux (o Linux faz distinção entre maiúsculas e minúsculas). Os
+    caracteres podem ser convertidos explicitamente em maiúsculas
+    acrescentando o caractere de escape circunflexo (^) ao início do nome,
+    como neste exemplo:</para>
+
+    <programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::^Advanced^E^C^L::myfile',RecStruct,FLAT);</programlisting>
+
+    <para>concede acesso ao arquivo remoto
+    <emphasis>c$/AdvancedECL/myfile</emphasis> na zona de entrada de arquivos
+    <emphasis>10.150.50.12 </emphasis> baseada em Linux.</para>
+  </sect2>
+
+  <sect2 id="Dynamic_Files">
+    <title>Arquivos Dinâmicos<indexterm>
+        <primary>Dynamic Files</primary>
+      </indexterm></title>
+
+    <para>Em queries do Roxie (e somente nelas), você também pode ler arquivos
+    que podem não existir no momento da implementação, mas que existirão no
+    tempo de execução da query, tornando o nome de arquivo DYNAMIC.</para>
+
+    <para>A sintaxe é semelhante a:</para>
+
+    <para><emphasis role="bold">DYNAMIC(‘&lt;filename&gt;’ )</emphasis></para>
+
+    <para>Por exemplo,</para>
+
+    <programlisting>MyFile :=DATASET(DYNAMIC('~training::import::myfile'),RecStruct,FLAT);</programlisting>
+
+    <para>Isso faz com que o arquivo seja resolvido na execução da query e não
+    na implementação.</para>
+  </sect2>
+
+  <sect2 id="Temporary_SuperFiles">
+    <title>Arquivos Temporários<indexterm>
+        <primary>Temporary SuperFile</primary>
+      </indexterm>s</title>
+
+    <para>Um Superarquivo<indexterm>
+        <primary>SuperFile</primary>
+      </indexterm> é uma coleção de arquivos lógicos tratada como única
+    entidade (consulte o artigo <emphasis role="bold">Visão geral dos
+    Superarquivos</emphasis> no <emphasis>Guia do Programador</emphasis>).
+    Você pode especificar um Superarquivo temporário nomeando o conjunto de
+    subarquivos entre chaves na string que nomeia o arquivo lógico da
+    declaração DATASET<indexterm>
+        <primary>DATASET declaration</primary>
+      </indexterm> A sintaxe é semelhante a:</para>
+
+    <para><emphasis role="bold">DATASET<indexterm>
+        <primary>DATASET</primary>
+      </indexterm>( '{</emphasis><emphasis> listoffiles </emphasis><emphasis
+    role="bold">} '</emphasis>, recstruct, THOR);</para>
+
+    <para><emphasis>listoffiles</emphasis> Uma lista delimitada por vírgulas
+    do conjunto de arquivos lógicos a serem tratados como um único Super
+    Arquivo. Os nomes de arquivos lógicos devem seguir as regras listadas
+    acima, com uma exceção: o til que indica substituição de nome de escopo
+    pode ser especificado em cada nome na lista ou fora das chaves.</para>
+
+    <para>Por exemplo, supondo que o nome de escopo padrão é "thor", os
+    exemplos a seguir definem o mesmo Super Arquivo:</para>
+
+    <programlisting>MyFile :=DATASET('{in::file1,
+                   in::file2,
+                  ~train::in::file3}'),
+                 RecStruct,THOR);
+
+MyFile :=DATASET('~{thor::in::file1,
+                   thor::in::file2,
+                   train::in::file3}'),
+                 RecStruct,THOR);</programlisting>
+
+    <para>Não é possível usar essa forma de nome de arquivo lógico para
+    executar um OUTPUT ou PERSIST, pois ela é somente leitura.</para>
+  </sect2>
+</sect1>

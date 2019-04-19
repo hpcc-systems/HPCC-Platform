@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DATA">
+  <title>DATA<indexterm>
+      <primary>DATA</primary>
+    </indexterm><indexterm>
+      <primary>DATA value type</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DATA[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis></para>
+
+  <para>Um bloco de dados "<indexterm>
+      <primary>hexadecimal compactado</primary>
+    </indexterm>” packed hexadecimal de <emphasis>n</emphasis> bytes,
+  preenchido com zeros (e não com espaços). Se <emphasis>n </emphasis> for
+  omitido, a string terá o tamanho variável necessário para conter o resultado
+  do parâmetro convertido ou passado. A conversão de tipo é permitida apenas
+  para uma STRING ou UNICODE que possui o mesmo número de bytes.</para>
+
+  <para>Este tipo é especialmente útil para os dados que contêm BLOB (Binary
+  Large OBject). Consulte o artigo do <emphasis role="bold">Guia do
+  Programador Trabalhando com BLOBs </emphasis> para obter mais informações
+  sobre este assunto.</para>
+
+  <para>O limite de tamanho máximo para qualquer valor DATA é 4GB.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>DATA8 MyHexString := x'1234567890ABCDEF'; 
+        // an 8-byte data block - hex values 12 34 56 78 90 AB CD EF</programlisting>
+</sect1>

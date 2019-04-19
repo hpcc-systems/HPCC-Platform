@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FindReplace">
+  <title>FindReplace</title>
+
+  <para><emphasis role="bold">STD.Str.FindReplace<indexterm>
+      <primary>STD.Str.FindReplace</primary>
+    </indexterm><indexterm>
+      <primary>Str.FindReplace</primary>
+    </indexterm><indexterm>
+      <primary>FindReplace</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">STD.Uni.FindReplace<indexterm>
+      <primary>STD.Uni.FindReplace</primary>
+    </indexterm><indexterm>
+      <primary>Uni.FindReplace</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">STD.Uni.LocaleFindReplace<indexterm>
+      <primary>STD.Uni.LocaleFindReplace</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleFindReplace</primary>
+    </indexterm><indexterm>
+      <primary>LocaleFindReplace</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, replacement, locale
+  </emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os dados a serem pesquisados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>target </emphasis></entry>
+
+          <entry>Uma string que contém a substring a ser pesquisada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>replacement </emphasis></entry>
+
+          <entry>Uma string que contém os dados de substituição.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o código de idioma e
+          país a ser usado para determinar a ordem correta de classificação e
+          outras operações.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>FindReplace retorna um valor STRING ou UNICODE, conforme
+          apropriado.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>As funções <emphasis role="bold">FindReplace </emphasis> retornam a
+  string <emphasis> source</emphasis> com as strings
+  <emphasis>replacement</emphasis> substituídas em todas as instâncias da
+  string <emphasis>target </emphasis>. Se a string <emphasis>target</emphasis>
+  não estiver na string <emphasis>source</emphasis> , a string
+  <emphasis>source</emphasis> será retornada sem alterações.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.Str.FindReplace('ABCDEABCDE', 'BC','XY');
+   //A contains 'AXYDEAXYDE'
+A := STD.Uni.FindReplace(u'abcde', u'a', u'AAAAA');
+   //A contains u'AAAAAbcde'
+A := STD.Uni.FindReplace(u'aaaaa', u'aa', u'b');
+   //A contains u'bba'
+A := STD.Uni.FindReplace(u'aaaaaa', u'aa', u'b');
+   //A contains u'bbb'
+A := STD.Uni.LocaleFindReplace(u'gh\u0131klm', u'hyk', u'XxXxX', 'lt');
+   //A contains u'gXxXxXlm'
+A := STD.Uni.LocaleFindReplace(u'gh\u0131klm', u'hyk', u'X', 'lt');
+   //A contains u'gXlm'
+</programlisting>
+
+  <para/>
+</sect1>

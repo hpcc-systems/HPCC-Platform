@@ -1,0 +1,161 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Copy">
+  <title>Copy</title>
+
+  <para><emphasis role="bold">STD.File.Copy<indexterm>
+      <primary>STD.File.Copy</primary>
+    </indexterm><indexterm>
+      <primary>File.Copy</primary>
+    </indexterm><indexterm>
+      <primary>Copy</primary>
+    </indexterm>(</emphasis> <emphasis> sourceLogicalName, destinationGroup</emphasis> <emphasis role="bold">, </emphasis>
+  <emphasis>destinationLogicalName, </emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>,sourceDali</emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,timeOut</emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,espServerIPPort </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
+  <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
+  <emphasis>,allowOverwrite</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis role="bold"> [</emphasis> <emphasis>,replicate</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,asSuperfile</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
+  <emphasis role="bold">] [</emphasis>
+  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
+  role="bold">]);</emphasis></para>
+
+  <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> := STD.File.fCopy<indexterm>
+      <primary>STD.File.fCopy</primary>
+    </indexterm><indexterm>
+      <primary>File.fCopy</primary>
+    </indexterm><indexterm>
+      <primary>fCopy</primary>
+    </indexterm>(</emphasis> <emphasis> sourceLogicalName, destinationGroup</emphasis> <emphasis role="bold">,</emphasis> <emphasis
+  role="bold"> </emphasis> <emphasis>destinationLogicalName, </emphasis>
+  <emphasis role="bold"> [</emphasis> <emphasis>,sourceDali</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,timeOut</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>,espServerIPPort </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
+  <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
+  <emphasis>,allowOverwrite</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis role="bold"> [</emphasis> <emphasis>,replicate</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,asSuperfile</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
+  <emphasis role="bold">] [</emphasis>
+  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
+  role="bold">]);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>sourceLogicalName</emphasis></entry>
+
+          <entry>Uma string terminada em nulo contendo o nome lógico do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationGroup</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o cluster de destino do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationLogicalName</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o novo nome lógico do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sourceDali</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o IP e a porta do Dali que contém o arquivo a ser copiado. Se omitida, o padrão é uma cópia intra-Dali.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>timeOut</emphasis></entry>
+
+          <entry>Opcional. Um valor inteiro que indica a configuração de tempo limite. Se omitido, o padrão é -1. Se definido como (0), o controle da execução retorna imediatamente à workunit ECL sem esperar a conclusão da workunit DFU.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>espServerIPPort</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o protocolo, o IP, a porta e o diretório ou DNS equivalente do programa do servidor' ESP. Normalmente são os mesmos IP e porta do ECL Watch, com "/FileSpray" anexado. Se omitida, o padrão é o valor contido no atributo lib_system.ws_fs_server.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxConnections</emphasis></entry>
+
+          <entry>Opcional. Um inteiro que especifica o número máximo de conexões. Se omitido, o padrão é um (1).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>allowOverwrite</emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o novo arquivo pode sobrescrever um arquivo existente do mesmo nome. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>replicate</emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o novo arquivo deve ser replicado automaticamente. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>asSuperfile</emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o arquivo deve ser tratado como superarquivo. Se omitido, o padrão é FALSE. Se TRUE e o arquivo a ser copiado for um superarquivo, a operação criará um superarquivo no destino, criando subarquivos conforme a necessidade e sobrescrevendo apenas os subarquivos já existentes cujo conteúdo tenha sido alterado. Se FALSE e o arquivo a ser copiado for um superarquivo, a operação consolidará todo o conteúdo do superarquivo em um único arquivo lógico (e não um superarquivo) no destino.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>compress</emphasis></entry>
+
+          <entry>Opcional. Um booleano TRUE ou FALSE indica se LZW compactou o novo arquivo. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>forcePush </emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o processo de cópia deve ser executado nos nós de origem enviando para os destinos, em vez de executado nos destinos e recebendo da origem. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transferBufferSize </emphasis></entry>
+
+          <entry>Opcional. Um valor inteiro que substitui o valor do tamanho do buffer do servidor DFU (o padrão é 64 k)</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>preservecompression </emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se a compressão do arquivo antigo deve ser preservada durante a cópia. Se omitido, o padrão é TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuwuid</emphasis></entry>
+
+          <entry>O nome do atributo que receberá a string terminada por nulo que contém o ID da workunit DFU (DFUWUID) gerada para o job.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Copy retorna uma string terminada por nulo contendo o ID da workunit DFU (DFUWUID).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">Copy </emphasis> recebe um arquivo lógico e o copia para outro arquivo lógico. Isso pode ser feito no mesmo cluster, para outro cluster ou para um cluster em um Dali totalmente separado.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">STD.File.Copy('OUT::MyFile','400way','OUT::MyNewFile');
+</programlisting>
+</sect1>

@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect2 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RemoveFileRelationship">
+  <title>RemoveFileRelationship</title>
+
+  <para><emphasis role="bold">STD.File.RemoveFileRelationship<indexterm>
+      <primary>STD.File.RemoveFileRelationship</primary>
+    </indexterm><indexterm>
+      <primary>File.RemoveFileRelationship</primary>
+    </indexterm><indexterm>
+      <primary>RemoveFileRelationship</primary>
+    </indexterm>(</emphasis> <emphasis> primary, secondary,</emphasis>
+  <emphasis> </emphasis> <emphasis role="bold">[</emphasis> <emphasis>, primaryfields </emphasis> <emphasis role="bold">]</emphasis> <emphasis>
+  </emphasis> <emphasis role="bold">[</emphasis> <emphasis>, secondaryfields
+  </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>,</emphasis> <emphasis role="bold"> </emphasis>
+  <emphasis>relationship </emphasis> <emphasis
+  role="bold">]);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>primary</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do arquivo lógico do arquivo primário.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondary</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do arquivo lógico do arquivo secundário.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>primaryfields</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do campo de chave primária do arquivo  <emphasis>primary</emphasis> . O valor "__fileposition__" indica que  <emphasis>secondary</emphasis>  é um INDEX que deve usar FETCH para acessar campos sem chave. Se omitida, o padrão é uma string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondaryfields</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do campo de chave estrangeira relacionada ao arquivo  <emphasis>primary</emphasis> . Se omitida, o padrão é uma string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>relationship</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém "link" ou "view" para indicar o tipo de relação entre os arquivos 
+          <emphasis>primary</emphasis>  e  <emphasis>secondary</emphasis>
+          . Se omitida, o padrão é "link."</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">RemoveFileRelationship</emphasis>  remove uma relação entre os arquivos  <emphasis>primary</emphasis>  e 
+  <emphasis>secondary</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">STD.File.RemoveFileRelationship('names', 'inquiries');
+</programlisting>
+
+  <para>Ver também: <link linkend="AddFileRelationship">AddFileRelationship</link></para>
+</sect1>

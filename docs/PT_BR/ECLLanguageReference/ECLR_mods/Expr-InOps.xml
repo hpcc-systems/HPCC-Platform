@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IN_Operator">
+  <title>Operador IN<indexterm>
+      <primary>IN</primary>
+    </indexterm><indexterm>
+      <primary>Operador IN</primary>
+    </indexterm></title>
+
+  <para><emphasis>value </emphasis><emphasis role="bold">IN
+  </emphasis><emphasis>value_set</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>O valor a ser localizado no <emphasis>value_set</emphasis>.
+          Trata-se geralmente de um único valor, porém se o
+          <emphasis>value_set</emphasis> for um DICTIONARY com chave de
+          múltiplos componentes, também pode ser uma ROW.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value_set</emphasis></entry>
+
+          <entry>Um conjunto de valores. Isto pode ser uma expressão do
+          conjunto, a função SET, ou um DICTIONARY.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>O operador <emphasis role="bold">IN</emphasis> é um atalho para uma
+  coleção de condições OR . É um operador que buscará uma inclusão no
+  conjunto, resultando em um retorno booleano. O uso de IN é muito mais
+  eficiente do que sua expressão equivalente OR .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>ABCset := ['A', 'B', 'C'];
+IsABCStatus := Person.Status IN ABCset;
+    //This code is directly equivalent to:
+    // IsABCStatus := Person.Status = 'A' OR
+    //                Person.Status = 'B' OR
+    //                Person.Status = 'C';
+       
+IsABC(STRING1 char) := char IN ABCset;
+Trades_ABCstat := Trades(IsABC(rate));
+    // Trades_ABCstat is a record set definition of all those
+    // trades with a trade status of A, B, or C
+
+//SET function examples
+r := {STRING1 Letter};
+SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+                     {'F'},{'G'},{'H'},{'I'},{'J'}],r);
+x := SET(SomeFile(Letter &gt; 'C'),Letter);
+y := 'A' IN x;  //results in FALSE
+z := 'D' IN x;  //results in TRUE
+
+//DICTIONARY examples:
+rec := {STRING color,UNSIGNED1 code};
+ColorCodes := DATASET([{'Black' ,0 },
+                       {'Brown' ,1 },
+                       {'Red'   ,2 },
+                       {'White' ,3 }], rec);
+
+CodeColorDCT  := DICTIONARY(ColorCodes,{Code =&gt; Color});
+OUTPUT(6 IN CodeColorDCT);     //false
+
+ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});
+OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);
+</programlisting>
+
+  <para>Ver também: <link linkend="Basic_Attribute_Types">Tipos Básicos de
+  Definições</link>, <link linkend="Basic_Attribute_Types">Tipos de
+  definição</link> (<link linkend="Set_Attributes">Set Definitions</link>),
+  <link linkend="Logical_Operators">Operadores Lógicos</link>, <link
+  linkend="PARSE_Pattern_Value_Types">PATTERN</link>, <link
+  linkend="DICTIONARY">DICTIONARY</link>, <link linkend="ROW">ROW</link>,
+  <link linkend="SET">SET</link>, <link
+  linkend="Recordset_Filtering">Conjuntos e Filtros</link>, <link
+  linkend="SET_OF">SET OF</link>, <link linkend="Set_Operators">Operadores
+  Set</link></para>
+</sect1>

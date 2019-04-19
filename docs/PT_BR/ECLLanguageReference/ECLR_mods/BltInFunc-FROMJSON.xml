@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FROMJSON">
+  <title>FROMJSON</title>
+
+  <para><emphasis role="bold">FROMJSON<indexterm>
+      <primary>FROMJSON</primary>
+    </indexterm><indexterm>
+      <primary>FROMJSON function</primary>
+    </indexterm>(</emphasis><emphasis> record, jsonstring
+  </emphasis>,<emphasis
+  role="bold">[ONFAIL(</emphasis><emphasis>transform</emphasis> <emphasis
+  role="bold">)])</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="77.95pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>record</emphasis></entry>
+
+            <entry>A estrutura RECORD a ser gerada. Cada campo deve
+            especificar o XPATH para os dados que devem ser contidos na
+            json<emphasis>string</emphasis> . Se omitido, os nomes do campo de
+            caixa baixa serão utilizados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>jsonstring</emphasis></entry>
+
+            <entry>Uma string que contém o JSON a ser convertido.</entry>
+          </row>
+
+          <row>
+            <entry>ONFAIL</entry>
+
+            <entry>Opcional. Especifica um transform para manusear os erros no
+            JSON.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>Uma estrutura TRANSFORM correspondente à estrutura do
+            registro do primeiro parâmetro.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>FROMJSON retorna uma única linha (registro).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">FROMJSON </emphasis>retorna uma única
+  linha (registro) no formato <emphasis>record</emphasis> da
+  <emphasis>string</emphasis>json especificada. Isso pode ser usado onde quer
+  que uma linha única possa ser usada (semelhante à função ROW ).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>namesRec := RECORD  
+  UNSIGNED2 EmployeeID{xpath('EmpID')};  
+  STRING10 Firstname{xpath('FName')};  
+  STRING10 Lastname{xpath('LName')}; 
+END; 
+x := '{"FName": "George" , "LName": "Jetson", "EmpID": 42}'; 
+rec := FROMJSON(namesRec,x); 
+OUTPUT(rec);
+</programlisting>
+
+  <para>Exemplo com manuseio do Error e JSON inválido:</para>
+
+  <programlisting>namesRec := RECORD  
+  UNSIGNED2 EmployeeID{xpath('EmpID')};  
+  STRING20 Firstname{xpath('FName')};  
+  STRING20 Lastname{xpath('LName')}; 
+END; 
+x := '{"FName": "malformedJSON""George" , "LName": "Jetson", "EmpID": 42}'; 
+
+namesRec createFailure() := 
+  TRANSFORM
+    SELF.FirstName := FAILMESSAGE;
+    SELF := [];
+  END;
+rec := FROMJSON(namesRec,x,ONFAIL(createFailure())); 	
+OUTPUT(rec);</programlisting>
+
+  <para>Ver também: <link linkend="ROW">ROW</link>, <link
+  linkend="TOJSON">TOJSON</link></para>
+</sect1>

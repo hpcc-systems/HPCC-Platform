@@ -1,0 +1,1446 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <title>HPCC Data Tutorial</title>
+
+  <bookinfo>
+    <title>HPCC Data Tutorial</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos e serviços podem ser marcas comerciais ou
+      registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <!--Release Info makes a running page footer: now an include! -->
+
+    <!--The following include statement pulls in the date_ver from version.xml-->
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <!--corpname never prints-->
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <!--Copyright tag inserts the symbol automatically: Now an Include!-->
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="DataTutorialIntroduction">
+    <title>Introdução</title>
+
+    <sect1 id="Introduction_Case-Study-and-Tutorial" role="nobrk">
+      <title>O processo de desenvolvimento do ECL</title>
+
+      <para>Este tutorial oferece uma orientação sobre o processo de
+      desenvolvimento, do início até o fim, e foi projetado para servir como
+      uma introdução para trabalhar com dados em qualquer um dos HPCC
+      Systems.<footnote>
+          <para><emphasis role="bold">H</emphasis>igh <emphasis
+          role="bold">P</emphasis>erformance <emphasis
+          role="bold">C</emphasis>omputing <emphasis
+          role="bold">C</emphasis>luster (HPCC) é uma plataforma de computação
+          de processamento massivamente paralelo que soluciona problemas de
+          big data. Acesse o link
+          http://www.hpccsystems.com/Why-HPCC/How-it-works para obter mais
+          detalhes</para>
+        </footnote>. Vamos programar em ECL<footnote>
+          <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+          role="bold">C</emphasis>ontrol <emphasis
+          role="bold">L</emphasis>anguage (ECL) é uma linguagem de programação
+          declarativa e centrada em dados usada para gerenciar todos os
+          aspectos da junção, classificação e compilação de dados massivos que
+          realmente diferenciam o HPCC das demais tecnologias na sua
+          capacidade de fornecer análise de dados flexíveis em escala
+          massiva</para>
+        </footnote>para processar nossos dados e consultá-los.</para>
+
+      <para>Este tutorial presume que:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Você tem um HPCC em execução. Ele pode ser a VM Edition ou uma
+          plataforma HPCC com um ou mais nós</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>• Ter o ECL IDE<footnote>
+          <para>O ECL IDE (Ambiente de desenvolvimento integrado) é uma
+          ferramenta usada para criar consultas em seus dados e arquivos ECL
+          com os quais suas consultas serão compiladas.</para>
+        </footnote> instalado e configurado</para>
+
+      <para>Neste tutorial, iremos:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Baixar um arquivo de dados bruto</para>
+
+          <para>Há links para arquivos de dados disponíveis na página <ulink
+          url="http://hpccsystems.com/community/docs/data-tutorial-guide">http://hpccsystems.com/community/docs/data-tutorial-guide</ulink></para>
+
+          <para>O download tem cerca de 30 MB (compactado) e está disponível
+          nos formatos ZIP ou .tar.gz. Selecione o link correto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Realizar o spray do arquivo para um cluster da Refinaria de
+          dados. Os clusters do HPCC realizam o processo de spray dos dados
+          para partes de arquivo em cada nó.</para>
+
+          <para>Um <emphasis>spray</emphasis> , ou
+          <emphasis>importação</emphasis> , é a transferência de um arquivo de
+          dados de um local para um cluster do HPCC. O termo spray foi adotado
+          devido à natureza da transferência dos arquivos – o arquivo é
+          particionado entre todos os nós em um cluster.</para>
+        </listitem>
+
+        <listitem>
+          <para>Examinar os dados e determinar o pré-processamento que
+          precisamos realizar</para>
+        </listitem>
+
+        <listitem>
+          <para>Realizar o pré-processamento dos dados para gerar um novo
+          arquivo de dados</para>
+        </listitem>
+
+        <listitem>
+          <para>Determinar os tipos de consultas desejadas</para>
+        </listitem>
+
+        <listitem>
+          <para>Criar as consultas</para>
+        </listitem>
+
+        <listitem>
+          <para>Testá-las</para>
+        </listitem>
+
+        <listitem>
+          <para>Implementá-las para um cluster de motor de entrega rápida de
+          dados (RDDE), também conhecido como um cluster Roxie.</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+  </chapter>
+
+  <chapter id="Working_with_Data">
+    <title>Trabalhando com Dados</title>
+
+    <sect1 id="The_Original_Data" role="nobrk">
+      <title>Dados Originais</title>
+
+      <para>Nesta situação, vamos receber um arquivo de dados estruturado que
+      contenha registros com nomes e endereços de pessoas. Também oferece
+      suporte para dados não estruturados, mas este exemplo é mais simples.
+      Este arquivo é documentado na tabela a seguir:</para>
+
+      <para/>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="3">
+            <colspec colwidth="147.60pt"/>
+
+            <colspec colwidth="147.60pt"/>
+
+            <colspec colwidth="147.60pt"/>
+
+            <thead>
+              <row>
+                <entry align="left">Nome do Campo</entry>
+
+                <entry align="left">Tipo</entry>
+
+                <entry align="left">Descrição</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>FirstName</entry>
+
+                <entry>Nome em string de 15 caracteres</entry>
+
+                <entry>Primeiro Nome</entry>
+              </row>
+
+              <row>
+                <entry>LastName</entry>
+
+                <entry>Nome em string de 25 caracteres</entry>
+
+                <entry>Sobrenome</entry>
+              </row>
+
+              <row>
+                <entry>MiddleName</entry>
+
+                <entry>Nome em string de 15 caracteres</entry>
+
+                <entry>Nome do Meio</entry>
+              </row>
+
+              <row>
+                <entry>ZIP</entry>
+
+                <entry>String de 5 caracteres</entry>
+
+                <entry>CEP</entry>
+              </row>
+
+              <row>
+                <entry>Street</entry>
+
+                <entry>String de 42 caracteres</entry>
+
+                <entry>Endereço</entry>
+              </row>
+
+              <row>
+                <entry>City</entry>
+
+                <entry>String de 20 caracteres</entry>
+
+                <entry>City</entry>
+              </row>
+
+              <row>
+                <entry>Estado</entry>
+
+                <entry>String de 2 caracteres</entry>
+
+                <entry>Estado</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Isso totaliza um tamanho de registro de 124 (o total do tamanho de
+      todos os campos). É necessário conhecer esse comprimento para o processo
+      de <emphasis role="bold">Spray do arquivo</emphasis> .</para>
+
+      <para/>
+
+      <sect2 id="Uploading_a_file">
+        <title>Enviando os arquivos de dados de entrada para sua Zona de
+        Entrada de Arquivos</title>
+
+        <para>Uma Zona de entrada (ou Drop Zone) é um local de armazenamento
+        físico definido no ambiente do seu HPCC. Um daemon (DaFileSrv) precisa
+        estar em execução no servidor para possibilitar sprays e desprays do
+        arquivo.</para>
+
+        <para>Para arquivos de dados menores, é possível usar o utilitário de
+        arquivos de envio/download no ECL Watch (uma interface baseada na Web
+        para a sua plataforma HPCC). O arquivo de dados de amostra tem cerca
+        de ~100 Mb.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Faça o download o arquivo de dados de amostra no portal do
+            HPCC Systems.<superscript>®</superscript> .</para>
+
+            <para>O arquivo de dados está disponível nos links na página
+            <ulink
+            url="http://hpccsystems.com/community/docs/data-tutorial-guide">http://hpccsystems.com/community/docs/data-tutorial-guide</ulink>.
+            O download tem cerca de 30 MB (compactado) e está disponível nos
+            formatos ZIP ou .tar.gz.(<emphasis
+            role="bold">OriginalPerson.tar.gz </emphasis> ou <emphasis
+            role="bold"> OriginalPerson.zip</emphasis>)</para>
+          </listitem>
+
+          <listitem>
+            <para>Extraia-o para uma pasta em sua máquina local.</para>
+          </listitem>
+
+          <listitem>
+            <para>Em seu navegador, acesse o URL do <emphasis role="bold">ECL
+            Watch</emphasis> . Por exemplo, http://nnn.nnn.nnn.nnn:8010, onde
+            nnn.nnn.nnn.nnn é o ESP.<footnote>
+                <para>O ESP (Enterprise Services Platform) Server é o servidor
+                de camada de comunicação no seu ambiente HPCC.</para>
+              </footnote> Endereço IP do servidor.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png"/></entry>
+
+                      <entry>Seu endereço IP poderá ser diferente dos
+                      endereços fornecidos nas imagens de exemplo. Use o
+                      endereço IP fornecido pela <emphasis
+                      role="bold">sua</emphasis> instalação.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Na página inicial do ECL Watch, clique no ícone <emphasis
+            role="bold">Files</emphasis> e no link <emphasis
+            role="bold">Landing Zone (Zona de entrada de arquivos)</emphasis>
+            localizados no submenu de navegação.</para>
+
+            <para>Pressione o botão de ação <emphasis role="bold">Upload
+            </emphasis> na guia Landing Zone (Zona de entrada de
+            arquivos).</para>
+
+            <para><figure>
+                <title>Upload/Download</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Depois de pressionar o botão Upload, é mostrada uma caixa de
+            diálogo onde é possível selecionar um arquivo para envio.</para>
+          </listitem>
+
+          <listitem>
+            <para>Navegue pelos arquivos na máquina local, selecione o arquivo
+            a ser enviado e pressione o botão <emphasis
+            role="bold">Open</emphasis> .</para>
+
+            <para>O arquivo selecionado é exibido na caixa de diálogo
+            <emphasis role="bold">File Uploader</emphasis> .</para>
+
+            <para><figure>
+                <title>Enviador de Arquivo</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Start</emphasis>
+            para concluir o envio do arquivo.<figure>
+                <title>Progresso de envio</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg06.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
+        <title>Spray do Arquivo de Dados para seu Cluster Thor</title>
+
+        <para>Para usar o arquivo de dados em nosso cluster HPCC System,
+        precisamos primeiro realizar seu spray para um cluster Thor. Um
+        <emphasis>spray</emphasis> ou <emphasis> importação</emphasis> , é a
+        transferência de um arquivo de dados de um local para um cluster Thor.
+        O termo spray foi adotado devido à natureza da transferência dos
+        arquivos – o arquivo é particionado entre todos os nós em um
+        cluster.</para>
+
+        <para>Neste exemplo, o arquivo está em sua zona de entrada de arquivos
+        e é denominado <emphasis role="bold">OriginalPerson.</emphasis></para>
+
+        <para>Vamos realizar seu spray para nosso cluster Thor e dar a ele um
+        nome lógico de <emphasis role="bold">tutorial::</emphasis><emphasis
+        role="bold">YN</emphasis><emphasis
+        role="bold">::OriginalPerson</emphasis><emphasis role="bold">
+        </emphasis> onde <emphasis role="bold"> YN</emphasis> são as suas
+        iniciais. O Utilitário de arquivo distribuído mantém uma lista de
+        arquivos lógicos e seus locais de arquivos físicos
+        correspondentes.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Abra o ECL Watch em seu navegador usando o seguinte
+            URL:</para>
+
+            <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+            </emphasis><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
+            nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a
+            porta. A porta padrão é 8010)</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Na página inicial do ECL Watch, clique no ícone <emphasis
+            role="bold">Files</emphasis> e no link <emphasis
+            role="bold">Landing Zones</emphasis> localizados no submenu de
+            navegação.</para>
+
+            <para>Na guia landing Zone, clique na seta ao lado do contêiner
+            mydropzone para ampliar a lista de arquivos enviados. <figure>
+                <title>mydropzone</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg000.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Encontre o arquivo que você deseja fazer spray na lista
+            (OriginalPerson) e marque a caixa ao lado do nome do arquivo para
+            selecioná-lo.</para>
+
+            <para>Depois de selecionar o arquivo na lista, os botões de ação
+            <emphasis role="bold">Spray</emphasis> ficam ativados.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão de ação <emphasis
+            role="bold">Fixed</emphasis> . Isso indica que você está
+            realizando o spray de um arquivo de largura fixa. <figure>
+                <title>Spray: Botão de ação Fixed</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg001.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>A caixa de diálogo <emphasis role="bold">Fixed
+            Spray</emphasis> é mostrada.</para>
+          </listitem>
+
+          <listitem>
+            <para>O campo Target Name é preenchido automaticamente com o
+            arquivo selecionado. <figure>
+                <title>Caixa de diálogo Spray fixo</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg002.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione o cluster mythor na lista suspensa <emphasis
+            role="bold">Group</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Preencher o <emphasis role="bold">Tamanho do
+            registro</emphasis> (124).</para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha o <emphasis role="bold">Target Scope</emphasis>
+            usando a convenção de nomenclatura descrita anteriormente:
+            <emphasis role="bold">tutorial::</emphasis><emphasis
+            role="bold">YN</emphasis> (lembre-se de que <emphasis
+            role="bold">YN</emphasis> são as suas iniciais).</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Não se esqueça de marcar a caixa <emphasis
+            role="bold">Replicate</emphasis><emphasis role="bold">
+            </emphasis>.</para>
+
+            <para><emphasis role="bold">Observação:</emphasis> Essa opção só
+            está disponível em sistemas onde a replicação tiver sido
+            ativada.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Spray<emphasis
+            role="bold"> </emphasis></emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>A página de detalhes da workunit é exibida. É possível ver o
+            progresso do spray.</para>
+
+            <para><figure>
+                <title>Visualizando Progresso</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg02.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Depois de concluir o spray, podemos prosseguir.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Begin_Coding">
+      <title>Programando</title>
+
+      <para>Nesta parte do tutorial, vamos programar o código ECL para definir
+      o arquivo de dados e executar consultas ECL simples nele, para que
+      possamos avaliá-lo e determinar qualquer pré-processamento
+      necessário.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Inicie o IDE ECL (Start &gt;&gt; All Programs &gt;&gt; HPCC
+          Systems &gt;&gt; IDE ECL)</para>
+        </listitem>
+
+        <listitem>
+          <para>Faça login em seu ambiente</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Clique com o botão direito na pasta <emphasis role="bold">My
+          Files</emphasis> na janela Repository e selecione <emphasis
+          role="bold">Insert Folder</emphasis> no menu pop-up.</para>
+
+          <para><figure>
+              <title>Insert Folder</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg04.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Para finalidades deste tutorial, vamos criar uma pasta chamada
+          <emphasis role="bold">Tutorial</emphasis><emphasis role="bold">
+          YourName</emphasis><emphasis> </emphasis> (onde
+          <emphasis>YourName</emphasis> é o seu nome).</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Insira <emphasis role="bold">Tutorial</emphasis><emphasis
+          role="bold"> YourName</emphasis> (onde <emphasis>
+          YourName</emphasis> é o seu nome)<emphasis> </emphasis> para o
+          rótulo e depois pressione o botão OK.</para>
+
+          <para><figure>
+              <title>Inserir o rótulo da pasta</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg05.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Clique com o botão direito na pasta <emphasis
+          role="bold">Tutorial</emphasis><emphasis role="bold">
+          YourName</emphasis> e selecione <emphasis role="bold"> Insert
+          File</emphasis> no menu pop-up.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Insira <emphasis role="bold">Layout_People</emphasis> para o
+          rótulo e depois pressione o botão OK.</para>
+
+          <para><figure>
+              <title>Inserir arquivo</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg06.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Uma janela do compilador será aberta.</para>
+
+          <para><figure>
+              <title>Layout de pessoas no compilador</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg07.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Observe que parte do texto já foi escrita para você na janela.
+          Isso ajuda a lembrar que o nome do arquivo (Layout_People)
+          <emphasis> sempre precisa corresponder exatamente</emphasis> ao nome
+          da definição EXPORT única (Layout_People) contida no arquivo. Isso é
+          obrigatório – uma definição de EXPORT por arquivo e seu nome precisa
+          corresponder ao nome do arquivo.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Escreva o código a seguir no espaço de trabalho do
+          Compilador:</para>
+
+          <para><programlisting>EXPORT Layout_People  := RECORD
+      STRING15 FirstName;
+      STRING25 LastName;
+      STRING15 MiddleName;
+      STRING5  Zip;
+      STRING42 Street;
+      STRING20 City;
+      STRING2  State;
+END;  </programlisting> <figure>
+              <title>Programar na janela do Compilador</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg08.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão de verificação de sintaxe localizado na
+          barra de ferramentas principal (ou pressione F7).</para>
+
+          <para>É sempre recomendado verificar a sintaxe antes do
+          envio.</para>
+
+          <para><figure>
+              <title>Verificar a sintaxe</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg23.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Esse arquivo define a estrutura de registro para o arquivo de
+          dados. Em seguida, vamos examinar os dados.</para>
+        </listitem>
+      </orderedlist>
+
+      <sect2 id="Examine_the_Data" role="brk">
+        <title>Examinando os Dados</title>
+
+        <para>Nesta seção, vamos analisar os dados e determinar se é
+        recomendado realizar algum pré-processamento. Essa é a etapa no
+        processo de desenvolvimento na qual convertemos dados brutos para um
+        formato utilizável.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique com o botão direito na pasta <emphasis
+            role="bold">Tutorial</emphasis><emphasis role="bold"> YourName
+            </emphasis> e selecione <emphasis role="bold">Insert
+            File</emphasis> no menu pop-up.</para>
+          </listitem>
+
+          <listitem>
+            <para>Insira <emphasis role="bold">File_OriginalPerson</emphasis>
+            para o rótulo e depois pressione o botão OK.</para>
+
+            <para><figure>
+                <title>Inserir arquivo</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg09.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>Uma janela do compilador será aberta.</para>
+          </listitem>
+
+          <listitem>
+            <para>Escreva o código a seguir (lembre-se de substituir
+            <emphasis>YN</emphasis> pelas suas iniciais):</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+EXPORT File_OriginalPerson :=
+DATASET('~tutorial::YN::OriginalPerson',TutorialYourName.Layout_People,THOR);
+</programlisting></para>
+
+            <para><figure>
+                <title>File_OriginalPerson.ecl</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg10.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão de verificação de sintaxe localizado na
+            barra de ferramentas principal (ou pressione F7) para verificar a
+            sintaxe.</para>
+
+            <para>Isso define o dataset. Em seguida, vamos examinar os
+            dados.</para>
+          </listitem>
+
+          <listitem>
+            <para>Abra uma nova janela no Compilador (CTRL+N) e escreva o
+            código a seguir (lembre-se de substituir <emphasis>YourName
+            </emphasis> pelo seu nome)</para>
+
+            <programlisting>IMPORT TutorialYourName; 
+COUNT(TutorialYourName.File_OriginalPerson);
+</programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão de verificação de sintaxe localizado na
+            barra de ferramentas principal (ou pressione F7) para verificar a
+            sintaxe.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Verifique se o cluster selecionado é o Thor e pressione o
+            botão <emphasis role="bold">Submit</emphasis> . Observe que o
+            cluster de destino pode ter um nome diferente.</para>
+
+            <para><figure>
+                <title>Thor de destino</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg11.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Quando a tarefa for concluída, ela aparece com uma marca de
+            verificação verde <inlinegraphic
+            fileref="images/DT173-15.jpg"/>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione a aba Workunit (aquela com o número ao lado da
+            marca de verificação) e selecione a guia <emphasis
+            role="bold">Result 1</emphasis> (ela pode já ter sido
+            selecionada)</para>
+
+            <para><figure>
+                <title>Aba Result</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DT173-16.png"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>Essa guia nos mostra que há 841.400 registros no
+            arquivo de dados.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione a aba Compilador e altere COUNT para OUTPUT como
+            mostrado abaixo:</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+<emphasis role="bold">OUTPUT</emphasis>(TutorialYourName.File_OriginalPerson);</programlisting></para>
+
+            <para><emphasis role="bold">Observação: </emphasis>A parte
+            modificada é mostrada em <emphasis
+            role="bold">negrito</emphasis>.</para>
+
+            <para/>
+          </listitem>
+
+          <listitem>
+            <para>Verifique a sintaxe e, se não houver erros, pressione o
+            botão <emphasis role="bold">Submit</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Quando o envio estiver concluído, selecione a aba Workunit e
+            em seguida a aba <emphasis role="bold">Result 1</emphasis>
+            .</para>
+
+            <para><figure>
+                <title>Exibição dos Resultados</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DT173-17.png"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Observe que os nomes estão em caixa mista.</para>
+
+            <para>Para nossas finalidades, será mais fácil ter todos os nomes
+            em caixa alta. Isso demonstra uma das etapas no processo básico de
+            preparação de dados (extrair, transformar e carregar – ETL) usando
+            ECL.</para>
+          </listitem>
+
+          <listitem>
+            <para>Feche a janela do Compilador.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Process_the_Data" role="brk">
+        <title>Processando os Dados</title>
+
+        <para>Nesta seção, vamos programar o código para converter os dados
+        originais para que todos os nomes fiquem em caixa alta. Vamos então
+        gravar esse novo arquivo em nosso cluster Thor.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique com o botão direito na pasta <emphasis
+            role="bold">Tutorial</emphasis><emphasis role="bold"> YourName
+            </emphasis> e selecione Insert File no menu pop-up.</para>
+          </listitem>
+
+          <listitem>
+            <para>Nomeie esse arquivo como <emphasis
+            role="bold">BWR_ProcessRawData</emphasis> e escreva o seguinte
+            código (alterando YN e YourName como antes):</para>
+
+            <para><programlisting>IMPORT TutorialYourName, Std;
+    TutorialYourName.Layout_People toUpperPlease(TutorialYourName.Layout_People pInput)
+      := TRANSFORM
+     SELF.FirstName := Std.Str.ToUpperCase(pInput.FirstName);
+     SELF.LastName := Std.Str.ToUpperCase(pInput.LastName);
+     SELF.MiddleName := Std.Str.ToUpperCase(pInput.MiddleName);
+     SELF.Zip := pInput.Zip;
+     SELF.Street := pInput.Street;
+     SELF.City := pInput.City;
+     SELF.State := pInput.State;
+    END ;
+
+OrigDataset := TutorialYourName.File_OriginalPerson;
+UpperedDataset := PROJECT(OrigDataset,toUpperPlease(LEFT));
+OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Verifique a sintaxe e, se não houver erros, pressione o
+            botão <emphasis role="bold">Submit</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Quando o envio estiver concluído, selecione a aba Workunit e
+            em seguida a aba Results 1.</para>
+
+            <para><figure>
+                <title>Processar resultados</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DT173-18.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Os resultados mostram que o processo converteu corretamente
+            os campos de nome para caixa alta.</para>
+          </listitem>
+
+          <listitem>
+            <para>Depois de examinar os resultados, feche a janela do
+            Compilador.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Using_our_Data">
+        <title>Utilizando nosso Novos Dados</title>
+
+        <para/>
+
+        <para>Agora que temos nossos dados em um formato útil e o arquivo está
+        salvo, podemos escrever mais códigos para usar o novo arquivo de
+        dados. Vamos determinar os índices que precisamos e criá-los. Para
+        esse tutorial, vamos supor que o campo que precisamos indexar é o do
+        CEP.</para>
+
+        <para/>
+
+        <para>Na definição DATASET, vamos adicionar um campo virtual à
+        estrutura RECORD para a posição de arquivo. Isso é necessário para os
+        índices.</para>
+
+        <para/>
+
+        <orderedlist>
+          <listitem>
+            <para>Insira um arquivo na pasta <emphasis
+            role="bold">Tutorial</emphasis><emphasis role="bold">
+            YourName</emphasis><emphasis role="bold"> </emphasis>. Nomeie-o
+            como <emphasis role="bold"> File_TutorialPerson </emphasis> e
+            escreva esse código (alterando <emphasis>YN </emphasis> para as
+            suas iniciais):</para>
+
+            <para/>
+
+            <para><programlisting>IMPORT TutorialYourName;
+EXPORT File_TutorialPerson :=
+DATASET('~tutorial::YN::TutorialPerson',
+       {TutorialYourName.Layout_People,
+        UNSIGNED8 fpos {virtual(fileposition)}},THOR);</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Verifique a sintaxe e, se não houver erros, pressione o
+            botão <emphasis role="bold">Submit</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Depois de concluir, ela aparece com uma marca de verificação
+            verde <inlinegraphic fileref="images/DT173-15.jpg"/>.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Index_the_Data">
+        <title>Indexando os Dados</title>
+
+        <para>Em seguida, vamos definir o INDEX.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Insira um arquivo na pasta Tutorial. Nomeie-o como <emphasis
+            role="bold">IDX_PeopleByZip</emphasis><emphasis role="bold">
+            </emphasis>e escreva esse código (alterando o
+            <emphasis>YN</emphasis> e <emphasis>YourName</emphasis> como
+            antes):</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+EXPORT IDX_PeopleByZIP :=
+INDEX(TutorialYourName.File_TutorialPerson,{zip,fpos},'~tutorial::YN::PeopleByZipINDEX');
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Verifique a sintaxe.</para>
+
+            <para>Em seguida, vamos compilar o arquivo de índice.</para>
+          </listitem>
+
+          <listitem>
+            <para>Insira um arquivo na pasta <emphasis
+            role="bold">Tutorial</emphasis><emphasis role="bold">
+            YourName</emphasis><emphasis role="bold"> </emphasis>, nomeie-o
+            como <emphasis role="bold">BWR_BuildPeopleByZip </emphasis> e
+            escreva esse código (substituindo <emphasis> YourName</emphasis>
+            pelo seu nome):</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+BUILDINDEX(TutorialYourName.IDX_PeopleByZIP,OVERWRITE);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Verifique a sintaxe e, caso não haja erros, pressione o
+            botão <emphasis role="bold">Submit</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Aguarde a conclusão da tarefa e feche a janela do
+            Compilador.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Query_the_Data">
+        <title>Build a Query</title>
+
+        <para>Agora que temos um arquivo de índice, vamos escrever uma
+        consulta que o utilize.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Insira um arquivo na pasta Tutorial. Nomeie-o <emphasis
+            role="bold">BWR_FetchPeopleByZip </emphasis> e escreva esse código
+            (alterando <emphasis>YourName</emphasis> como antes):</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+ZipFilter :='33024';
+FetchPeopleByZip :=
+FETCH(TutorialYourName.File_TutorialPerson,
+      TutorialYourName.IDX_PeopleByZIP(zip=ZipFilter),
+      RIGHT.fpos);
+OUTPUT(FetchPeopleByZip);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Verifique a sintaxe e, caso não haja erros, pressione o
+            botão <emphasis role="bold">Submit</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Quando o envio estiver concluído, selecione a aba
+            Workunit<emphasis role="bold"> </emphasis> e em seguida a aba
+            <emphasis role="bold">Results</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Examine o resultado, feche a janela do Compilador e reenvie
+            o código.</para>
+
+            <para><emphasis role="bold">Observação</emphasis>: É possível
+            alterar o valor do campo <emphasis role="bold">ZipValue</emphasis>
+            para obter resultados de diferentes CEPs.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Publishing_your_Query">
+      <title>Publicando sua Consulta Thor</title>
+
+      <para>Agora que criamos uma consulta indexada, a próxima etapa é
+      possibilitar o acesso a ela através de uma interface da Web.</para>
+
+      <para>Nossas variáveis STORED oferecem um meio para passar valores como
+      parâmetros de consulta. Neste exemplo, o usuário pode fornecer o ZIP
+      (CEP) para que os resultados sejam pessoas na região do ZIP
+      (CEP).</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Insira um arquivo na pasta <emphasis
+          role="bold">TutorialYourName </emphasis> e nomeie-o como <emphasis
+          role="bold"> FetchPeopleByZipService</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Escreva esse código (alterando <emphasis>YourName</emphasis>
+          como antes):</para>
+
+          <para><programlisting>IMPORT TutorialYourName;
+STRING10 ZipFilter := '' :STORED('ZIPValue');
+resultSet :=
+            FETCH(TutorialYourName.File_TutorialPerson,
+            TutorialYourName.IDX_PeopleByZIP(zip=ZipFilter),
+            RIGHT.fpos);
+OUTPUT(resultset);
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Verifique a sintaxe e salve o arquivo.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis
+          role="bold">Submit</emphasis><emphasis role="bold">
+          </emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Quando a tarefa estiver concluída, selecione a aba
+          Workunit<emphasis role="bold"> </emphasis> e em seguida a aba ECL
+          Watch.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Publish</emphasis> na
+          guia ECL Watch.</para>
+
+          <para><figure>
+              <title>Publicar Workunit</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg12.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>A caixa de diálogo Publish é exibida, com o campo Job Name
+          automaticamente preenchido Você pode adicionar um comentário no
+          campo Comment se quiser, e depois pressione Submit. <figure>
+              <title>Caixa de diálogo Publish</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg12b.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Se não houver mensagens de erro, a workunit é publicada.
+          Mantenha a janela do Compilador aberta – ela será necessária
+          posteriormente.</para>
+        </listitem>
+      </orderedlist>
+
+      <sect2 id="Execute-using-the-Data-Delivery-Engine">
+        <title>Executar utilizando WsECL</title>
+
+        <para>Agora que a consulta foi publicada, podemos executá-la usando o
+        serviço da Web WsECL. O WsECL oferece uma interface baseada na Web
+        para sua consulta publicada. Ele também cria automaticamente um
+        formulário de entrada para executar a consulta.</para>
+
+        <para>Use a seguinte URL:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
+        nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a porta.
+        Porta padrão é 8002)</emphasis></para>
+
+        <para><figure>
+            <title>WsECL</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/DTimg13.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para/>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique no sinal + ao lado de <emphasis
+            role="bold">thor</emphasis> para expandir a árvore.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique no hiperlink <emphasis
+            role="bold">fetchpeoplebyzipservice</emphasis> .</para>
+
+            <para>O formulário de serviço será exibido.</para>
+
+            <para><figure>
+                <title>Formulário de serviço</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg14a.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Informe um CEP (por exemplo, 33024) no campo <emphasis
+            role="bold">zipvalue</emphasis> . Selecione <emphasis
+            role="bold">Output Tables</emphasis> na lista suspensa e pressione
+            o botão <emphasis role="bold">Submit</emphasis> .</para>
+
+            <para>Os resultados serão exibidos.</para>
+
+            <para><figure>
+                <title>Resultados</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg15a.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Deploy_the_Roxie_Query">
+      <title>Compilar e Publicar uma Consulta Roxie</title>
+
+      <para>A última etapa no processo é publicar a consulta indexada para um
+      cluster de motor de entrega rápida de dados (Roxie).</para>
+
+      <para>Vamos recompilar o código com o Roxie como cluster de destino e
+      depois publicá-lo em um cluster Roxie. <orderedlist>
+          <listitem>
+            <para>No ECL IDE, selecione a guia Compilador na janela do
+            compilador de arquivos FetchPeopleByZipService.</para>
+          </listitem>
+
+          <listitem>
+            <para>Usando a lista suspensa <emphasis
+            role="bold">Target</emphasis> , selecione Roxie como o cluster de
+            destino.</para>
+
+            <para><figure>
+                <title>Roxie de destino</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg16.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Na janela do compilador, no canto superior esquerdo, há uma
+            seta suspensa ao lado do botão <emphasis
+            role="bold">Submit</emphasis> . Selecione a seta para exibir a
+            opção <emphasis role="bold">Compile </emphasis> (compilar.)</para>
+
+            <figure>
+              <title>Compilar</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg17.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+
+          <listitem>
+            <para>Selecione <emphasis role="bold">Compile
+            (Compilar)</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Quando a workunit for concluída, ela exibirá um círculo
+            verde indicando que foi compilada.</para>
+
+            <para><figure>
+                <title>Compilada</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg18.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist></para>
+
+      <sect2 id="Deploy_the_Query_to_Roxie">
+        <title>Publicar uma consulta Roxie</title>
+
+        <para>Agora vamos publicar a consulta em um cluster Roxie.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Selecione a aba Workunit para a workunit
+            FetchPeopleByZipService que você acabou de compilar.</para>
+
+            <para>Isso abre a tarefa em uma aba no ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão de ação <emphasis
+            role="bold">Publish</emphasis> , e depois verifique as informações
+            na caixa de diálogo e pressione <emphasis
+            role="bold">Submit</emphasis>.</para>
+
+            <para><figure>
+                <title>Publicar consulta</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg19.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>Isso publica a consulta.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Run_the_Roxie_Query" role="brk">
+        <title>Execute uma consulta Roxie Query no WsECL</title>
+
+        <para>Agora que a consulta foi implementada a um cluster Roxie,
+        podemos executá-la usando o serviço WS-ECL no URL a seguir:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
+        nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a porta. A
+        porta padrão é 8002)</emphasis></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique no sinal + ao lado de <emphasis
+            role="bold">myroxie</emphasis> para expandir a árvore.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique no hiperlink <emphasis
+            role="bold">fetchpeoplebyzipservice</emphasis> .</para>
+
+            <para>O formulário de serviço será exibido.</para>
+
+            <para><figure>
+                <title>RoxieECL</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg21.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Informe um CEP (por exemplo, 33024), selecione <emphasis
+            role="bold">Output Tables</emphasis> na lista suspensa e pressione
+            o botão Submit.</para>
+
+            <para>Os resultados serão exibidos.</para>
+
+            <para><figure>
+                <title>RoxieResults</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg22.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="Summary">
+    <title>Resumo</title>
+
+    <para>Agora que os dados brutos foram processados corretamente, o spray
+    para um cluster foi feito e os dados foram implementados em um cluster
+    RDDE, qual é a próxima etapa?</para>
+
+    <!-- -->
+
+    <para>Aqui está uma pequena lista de sugestões do que você pode fazer a
+    seguir:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Criar índices em outros campos e criar consultas usando esses
+        índices.</para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Programar aplicações client para acessar suas consultas usando
+        interfaces</para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Conferir os recursos disponíveis na aba Links</para>
+
+        <para><figure>
+            <title>Links</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/DTimg24.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>A aba Links oferece fácil acesso a um formulário, uma
+        amostra da busca, uma amostra de resposta, o WSDL, o esquema XML (XSD)
+        e muito mais.</para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Siga os procedimentos neste tutorial usando seus próprios
+        dados!</para>
+      </listitem>
+    </itemizedlist>
+  </chapter>
+</book>

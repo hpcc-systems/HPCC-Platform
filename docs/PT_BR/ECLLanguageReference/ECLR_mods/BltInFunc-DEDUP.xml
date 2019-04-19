@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DEDUP">
+  <title>DEDUP<indexterm>
+      <primary>DEDUP</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DEDUP<indexterm>
+      <primary>DEDUP function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[,</emphasis><emphasis> condition </emphasis><emphasis
+  role="bold">[[MANY], ALL<indexterm>
+      <primary>ALL</primary>
+    </indexterm>[, HASH<indexterm>
+      <primary>HASH</primary>
+    </indexterm>]] [,BEST (<indexterm>
+      <primary>BEST</primary>
+    </indexterm></emphasis><emphasis>sort-list</emphasis><emphasis
+  role="bold">)[[, KEEP<indexterm>
+      <primary>KEEP</primary>
+    </indexterm> </emphasis><emphasis>n </emphasis><emphasis role="bold">]
+  [</emphasis>,<emphasis> keeper </emphasis><emphasis role="bold">] ]
+  [</emphasis><emphasis>, </emphasis><emphasis role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>]</emphasis> <emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.95pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros a ser processado, normalmente
+            classificado na mesma ordem em que a expressão será testada. Pode
+            ser o nome de um dataset ou de um record set derivado, ou qualquer
+            expressão que resulte em um conjunto de registro derivado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>Opcional. Uma lista delimitada por vírgula de expressões ou
+            campos principais no record set que define os registros
+            “duplicados”. As palavras-chave LEFT e RIGHT podem ser usadas como
+            qualificadores de dataset nos campos do recordset. Se a condição
+            for omitida, cada campo de record set se tornará uma condição de
+            correspondência. As palavras-chave RECORD (ou WHOLE RECORD) podem
+            ser usadas para indicar todos os campos nessa estrutura, e/ou você
+            pode usar a palavra-chave EXCEPT para listar os campos de não
+            deduplicação na estrutura.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MANY</emphasis></entry>
+
+            <entry>Opcional. Especifica ou desempenha uma
+            classificação/deduplicação local antes de localizar conteúdos
+            duplicados globalmente. Isso é muito mais útil quando houver
+            expectativa de vários conteúdos duplicados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Opcional. Faz a correspondência da condição em relação a
+            todos os registros, e não apenas em relação aos registros
+            adjacentes. Esta opção pode mudar a ordem do resultado dos
+            registros resultantes.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">HASH</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação ALL é realizada com o
+            uso de tabelas de hash.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">BEST</emphasis></entry>
+
+            <entry>Opcional. Oferece controle adicional sobre quais registros
+            são mantidos de um conjunto de registros “duplicados”. O primeiro
+            na ordem de registros &lt;sort-list&gt; será mantido. BEST não
+            pode ser usado com um parâmetro KEEP maior do que 1.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sort-list</emphasis></entry>
+
+            <entry>Uma lista de campos delimitada por vírgula que define os
+            registros duplicados a serem mantidos. Os campos podem ser
+            prefixados com um sinal de subtração para solicitar uma
+            classificação reversa desse campo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEEP</emphasis></entry>
+
+            <entry>Opcional. Especifica manter n números de registros
+            duplicados. Se omitido, o comportamento padrão é KEEP 1. Não é
+            válido se a opção ALL estiver presente.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>O número de registros duplicados a serem mantidos.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>keeper</emphasis></entry>
+
+            <entry>Opcional. As palavras-chave LEFT ou RIGHT LEFT (padrão, se
+            omitido) mantém o primeiro registro encontrado e RIGHT mantém o
+            último.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DEPUP retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">DEDUP</emphasis> analisa o
+  <emphasis>recordset</emphasis> para encontrar registros duplicados, como
+  definido pelo parâmetro da <emphasis>condição</emphasis> , e retorna um
+  conjunto de retorno único. Essa função é semelhante à declaração DISTINCT na
+  declaração SQL <indexterm>
+      <primary>DISTINCT no SQL</primary>
+    </indexterm>. O <emphasis>recordset </emphasis> deve ser classificado, a
+  menos que ALL tenha sido especificada.</para>
+
+  <para>Se um parâmetro de <emphasis>condição </emphasis> for um valor único
+  (<emphasis>field</emphasis>), DEDUP realiza uma deduplicação simples em
+  nível de campo equivalente a
+  LEFT.<emphasis>field</emphasis>=RIGHT.<emphasis>field</emphasis>. A
+  <emphasis>condição </emphasis> é avaliada para cada par de registros
+  adjacentes no record set. Se a <emphasis>condição </emphasis>retornar TRUE,
+  o registro <emphasis>detentor</emphasis> será mantido e o outro
+  removido.</para>
+
+  <para>A opção <emphasis role="bold">ALL</emphasis> significa que cada par de
+  registro é avaliado – em vez de apenas aqueles adjacentes uns aos outros –
+  independentemente da ordem de classificação. A avaliação é tal que, para os
+  registros 1, 2, 3, 4, os pares de registros que são comparados entre si
+  são:</para>
+
+  <para>(1,2),(1,3),(1,4),(2,1),(2,3),(2,4),(3,1),(3,2),(3,4),(4,1),(4,2),(4,3)</para>
+
+  <para>Isso significa que são realizadas suas comparações para cada par,
+  permitindo que a <emphasis>condição </emphasis> seja não cumulativa.</para>
+
+  <para><emphasis role="bold">KEEP </emphasis> <emphasis>n</emphasis>
+  significa efetivamente deixar <emphasis>n</emphasis> registros de cada tipo
+  duplicado. Isso é útil para amostragem. O valor <emphasis
+  role="bold">detentor</emphasis> <emphasis> LEFT</emphasis> (implícito se
+  LEFT ou RIGHT não tiverem sido especificados) significa que se os registros
+  left e right atendem aos critérios de deduplicação (ou seja, eles
+  “coincidem”), o registro left é mantido. Mas se em vez disso o <emphasis
+  role="bold"> detentor </emphasis> <emphasis>RIGHT</emphasis> aparecer, o
+  right será mantido. Em ambos os casos, a próxima comparação envolve o
+  sobrevivente da deduplicação; dessa forma, vários registros duplicados podem
+  se transformar em apenas um.</para>
+
+  <para>A opção <emphasis role="bold">BEST</emphasis> oferece controle
+  adicional sobre quais registros são mantidos de um conjunto de registros
+  “duplicados”. O primeiro na ordem de registros
+  <emphasis>sort-list</emphasis> será mantido. A <emphasis>sort-list
+  </emphasis> é uma lista de campos delimitada por vírgula. Os campos podem
+  ser prefixados com um sinal de subtração para solicitar uma classificação
+  reversa desse campo.</para>
+
+  <para>DEDUP(recordset, field1, BEST(field2) ) significa que nos regitros
+  duplicados, o primeiro registro do conjunto de duplicados classificado por
+  field2 será mantido. DEDUP(recordset, field1, BEST(-field2) ) gera o último
+  registro classificado por field2 no conjunto de duplicados.</para>
+
+  <para>A opção BEST não pode ser usada com um parâmetro KEEP maior do que
+  1.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>SomeFile := DATASET([{'001','KC','G'}, 
+                     {'002','KC','Z'}, 
+                     {'003','KC','Z'}, 
+                     {'004','KC','C'}, 
+                     {'005','KA','X'}, 
+                     {'006','KB','A'}, 
+                     {'007','KB','G'}, 
+                     {'008','KA','B'}],{STRING3 Id, String2 Value1, String1 Value2});
+
+SomeFile1 := SORT(SomeFile, Value1);
+
+DEDUP(SomeFile1, Value1, BEST(Value2));
+// Output: 
+// id value1 value2
+// 008 KA B
+// 006 KB A
+// 004 KC C
+
+DEDUP(SomeFile1, Value1, BEST(-Value2));
+// Output:
+// id value1 value2
+// 005 KA X
+// 007 KB G
+// 002 KC Z
+
+DEDUP(SomeFile1, Value1, HASH, BEST(Value2));
+// Output: 
+// id value1 value2
+// 008 KA B
+// 006 KB A
+// 004 KC C</programlisting>
+
+  <sect2 id="Complex_Record_Set_Conditions">
+    <title>Condições Record Set Complex</title>
+
+    <para>A função DEDUP <indexterm>
+        <primary>DEDUP function</primary>
+      </indexterm> com a opção ALL é útil para determinar as condições
+    complexas do recordset entre os registros de um mesmo conjunto. Embora
+    DEDUP seja tradicionalmente usado para eliminar registros duplicados
+    próximos uns aos outros no record set, a expressão condicional combinada
+    com a opção ALL estende esta capacidade. A opção ALL faz com que cada
+    registro seja comparado de acordo com a expressão condicional para cada um
+    dos demais registros do conjunto de registros. Este recurso é mais eficaz
+    com conjuntos de registros pequenos; os conjuntos maiores também devem
+    usar a opção HASH.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>LastTbl := TABLE(Person,{per_last_name});
+Lasts   := SORT(LastTbl,per_last_name);
+MySet   := DEDUP(Lasts,per_last_name);
+      // unique last names -- this is exactly equivalent to:
+      //MySet := DEDUP(Lasts,LEFT.per_last_name=RIGHT.per_last_name);
+      // also exactly equivalent to:
+      //MySet := DEDUP(Lasts);
+NamesTbl1 := TABLE(Person,{per_last_name,per_first_name});
+Names1    := SORT(NamesTbl1,per_last_name,per_first_name);
+MyNames1  := DEDUP(Names1,RECORD);
+      //dedup by all fields -- this is exactly equivalent to:
+      //MyNames1  := DEDUP(Names,per_last_name,per_first_name);
+      // also exactly equivalent to:
+      //MyNames1 := DEDUP(Names1);
+NamesTbl2 := TABLE(Person,{per_last_name,per_first_name, per_sex});
+Names2    := SORT(NamesTbl,per_last_name,per_first_name);
+MyNames2  := DEDUP(Names,RECORD, EXCEPT per_sex);
+      //dedup by all fields except per_sex
+      // this is exactly equivalent to:
+      //MyNames2 := DEDUP(Names, EXCEPT per_sex);
+
+/* In the following example, we want to determine how many 'AN' or 'AU' type inquiries 
+have occurred within 3 days of a 'BB' type inquiry. 
+The COUNT of inquiries in the deduped recordset is subtracted from the COUNT 
+of the inquiries in the original recordset to provide the result.*/
+INTEGER abs(INTEGER i) := IF ( i &lt; 0, -i, i );
+WithinDays(ldrpt,lday,rdrpt,rday,days) :=
+  abs(DaysAgo(ldrpt,lday)-DaysAgo(rdrpt,rday)) &lt;= days;
+DedupedInqs := DEDUP(inquiry, LEFT.inq_ind_code='BB' AND
+     RIGHT.inq_ind_code IN ['AN','AU'] AND
+                          WithinDays(LEFT.inq_drpt,
+           LEFT.inq_drpt_day,
+           RIGHT.inq_drpt,
+           RIGHT.inq_drpt_day,3),
+        ALL );
+InqCount := COUNT(Inquiry) - COUNT(DedupedInqs);
+OUTPUT(person(InqCount &gt;0),{InqCount});  
+</programlisting>
+
+    <para>Ver também: <link linkend="SORT">SORT</link>, <link
+    linkend="ROLLUP">ROLLUP</link>, <link linkend="TABLE">TABLE</link>, <link
+    linkend="FUNCTION_Structure">Estrutura FUNCTION</link></para>
+  </sect2>
+</sect1>

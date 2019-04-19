@@ -1,0 +1,713 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PARSE">
+  <title>PARSE</title>
+
+  <para><emphasis role="bold">PARSE<indexterm>
+      <primary>PARSE</primary>
+    </indexterm><indexterm>
+      <primary>PARSE function</primary>
+    </indexterm>(</emphasis><emphasis>dataset, data, pattern,
+  result</emphasis><emphasis role="bold"> </emphasis><emphasis>, flags
+  </emphasis><emphasis role="bold">[</emphasis>,<emphasis role="bold">
+  MAXLENGTH<indexterm>
+      <primary>MAXLENGTH</primary>
+    </indexterm>( </emphasis><emphasis>length </emphasis><emphasis
+  role="bold">) ])</emphasis><emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">PARSE(</emphasis><emphasis>dataset, data,
+  result</emphasis><emphasis role="bold"> </emphasis><emphasis>,
+  </emphasis><emphasis role="bold">XML<indexterm>
+      <primary>XML</primary>
+    </indexterm>( </emphasis><emphasis>path </emphasis><emphasis role="bold">)
+  </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="91.55pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>dataset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>data</emphasis></entry>
+
+            <entry>Uma expressão que especifica o texto a ser interpretado
+            (analisado), tipicamente o nome de um campo em um dataset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern</emphasis></entry>
+
+            <entry>O padrão de análise a ser correspondido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>result</emphasis></entry>
+
+            <entry>O nome do atributo da estrutura RECORD que especifica o
+            formato do conjunto de registro de resultado (como a função
+            TABLE), ou a função TRANSFORM que gera o conjunto do registro de
+            resultado (como PROJECT).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>flags</emphasis></entry>
+
+            <entry>Uma ou mais das opções de análise listadas abaixo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MAXLENGTH</emphasis></entry>
+
+            <entry>Especifica o comprimento máximo que o padrão pode
+            corresponder. Se omitido, o comprimento padrão é 4096.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>length</emphasis></entry>
+
+            <entry>Uma constante inteira que especifica o número máximo de
+            caracteres correspondentes.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">XML</emphasis></entry>
+
+            <entry>Especifica que o dataset contém dados XML.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>path</emphasis></entry>
+
+            <entry>Uma constante da string que contém XPATH na tag que
+            delimita os dados XML no dataset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>PARSE retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">PARSE </emphasis> desempenha um texto
+  ou uma operação de análise XML .</para>
+
+  <sect2 id="PARSE_Text_Data">
+    <title>Análise de Texto<indexterm>
+        <primary>PARSE Text</primary>
+      </indexterm> Data</title>
+
+    <para>A primeira forma opera sobre o <emphasis>dataset</emphasis>,
+    localizando registros cujos <emphasis>dados</emphasis> possuem um
+    <emphasis>padrão correspondente</emphasis> e gerando um conjunto de
+    resultados dessas correspondências no formato de <emphasis>resultado
+    </emphasis>. Se o <emphasis>padrão</emphasis> localizar múltiplas
+    correspondências nos <emphasis>dados</emphasis>, um registro de resultado
+    será gerado para cada uma delas. Cada correspondência para PARSE é
+    efetivamente um único caminho através do <emphasis>padrão</emphasis>. Se
+    houver mais de um caminho correspondente, quando o
+    <emphasis>resultado</emphasis> transform é acionado uma vez para cada
+    caminho ou quando a opção BEST é usada, o caminho com a penalidade mais
+    baixa será selecionado.</para>
+
+    <para>Se o <emphasis>resultado</emphasis> nomear uma estrutura RECORD ,
+    essa forma de PARSE funcionará como a função TABLE para gerar o conjunto
+    de resultado, porém também funcionará em texto de comprimento variável. Se
+    o <emphasis>resultado</emphasis> nomear uma função TRANSFORM , a função
+    “transform” irá gerar o conjunto de resultado. A função TRANSFORM deve
+    adotar pelo menos um parâmetro: um registro LEFT de mesmo formato que o
+    <emphasis>dataset</emphasis>. O formato do conjunto de registro resultante
+    não precisa ser o mesmo do da entrada.</para>
+
+    <para><emphasis>Indicadores</emphasis> indicadores podem ter os seguintes
+    valores:</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="103.20pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">FIRST<indexterm>
+                  <primary>FIRST</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Retorna uma linha apenas para a primeira correspondência
+              que inicia em uma posição específica.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ALL<indexterm>
+                  <primary>ALL</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Retorna uma linha para cada possível correspondência da
+              string em uma posição específica.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">WHOLE<indexterm>
+                  <primary>WHOLE</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Corresponde apenas à string completa.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">NOSCAN<indexterm>
+                  <primary>NOSCAN</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Se houver uma posição correspondente, não continua a
+              busca por outras correspondências.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SCAN<indexterm>
+                  <primary>SCAN</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Se houver uma posição correspondente, continua a busca a
+              partir do final da correspondência ou a partir da próxima
+              posição.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SCAN ALL<indexterm>
+                  <primary>SCAN ALL</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Retorna correspondências para cada posição inicial
+              possível. Use a função TRIM para eliminar a análise de espaços
+              em branco estranhos.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">NOCASE<indexterm>
+                  <primary>NOCASE</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Realiza uma comparação sem distinção de maiúsculas e
+              minúsculas.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">CASE<indexterm>
+                  <primary>CASE</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Realiza uma comparação com distinção de maiúsculas e
+              minúsculas (esse é o padrão).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SKIP</emphasis><indexterm>
+                  <primary>SKIP</primary>
+                </indexterm>(<emphasis>separator-pattern</emphasis>)</entry>
+
+              <entry>Especifica um padrão que pode ser inserido após cada
+              token em um padrão de busca. Por exemplo, SKIP ( [' ','\t']*)
+              pula espaços e guias entre os tokens.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">KEEP</emphasis><indexterm>
+                  <primary>KEEP</primary>
+                </indexterm>(<emphasis>max</emphasis>)</entry>
+
+              <entry>Mantém apenas a primeira correspondência <emphasis>
+              max</emphasis> .</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ATMOST</emphasis><indexterm>
+                  <primary>ATMOST</primary>
+                </indexterm>(<emphasis>max</emphasis>)</entry>
+
+              <entry>Não gera nenhuma correspondência se houver mais de uma
+              <emphasis>correspondências</emphasis> max.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">MAX<indexterm>
+                  <primary>MAX</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Retorna uma linha para o resultado que corresponde à
+              sequência mais longa da entrada. Apenas uma correspondência é
+              retornada, a menos que a opção MANY tenha sido
+              especificada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">MIN<indexterm>
+                  <primary>MIN</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Retorna uma linha para o resultado que corresponde à
+              sequência mais curta da entrada. Apenas uma correspondência é
+              retornada, a menos que a opção MANY tenha sido
+              especificada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">MATCHED<indexterm>
+                  <primary>MATCHED</primary>
+                </indexterm></emphasis>( [ <emphasis>rule-reference</emphasis>
+              ] )</entry>
+
+              <entry>Usada quando <emphasis>referência de regra</emphasis> é
+              usada em uma função de correspondência de usuário. Se a
+              referência de regra não for especificada, as informações
+              correspondentes podem não ser preservadas.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">MATCHED(ALL)<indexterm>
+                  <primary>MATCHED ALL</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Mantém todos os nomes de regra – se forem usados pelas
+              funções de correspondência de usuário.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">NOT MATCHED<indexterm>
+                  <primary>NOT MATCHED</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Gera uma linha se não houver correspondências na linha de
+              entrada. Todos os acionamentos da função MATCHED() retornarão
+              como falsos dentro da
+              <emphasis>resultstructure</emphasis>.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">NOT MATCHED ONLY<indexterm>
+                  <primary>NOT MATCHED ONLY</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Gera uma linha apenas se nenhuma correspondência for
+              encontrada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">BEST<indexterm>
+                  <primary>BEST</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Seleciona a correspondência com maior pontuação
+              (penalidade mais baixa). Se os indicadores MAX ou MIN também
+              estiverem presentes, eles serão ativados primeiro. Apenas uma
+              correspondência é retornada, a menos que a opção MANY tenha sido
+              especificada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">MANY<indexterm>
+                  <primary>MANY</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Retornar várias correspondências para as opções MELHOR,
+              MÁX ou MÍN.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PARSE<indexterm>
+                  <primary>PARSE</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Implementa a análise Tomita<indexterm>
+                  <primary>Tomita parsing</primary>
+                </indexterm> Implementa análise em vez da tecnologia de
+              análise de expressão regular.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">USE<indexterm>
+                  <primary>USE</primary>
+                </indexterm></emphasis>([ <emphasis>struct</emphasis>, ]
+              x)</entry>
+
+              <entry>Especifica usando um atributo de padrão RULE definido
+              mais adiante no código com a função DEFINE(x), introduzindo uma
+              gramática recursiva (a única recursão permitida no ECL) Se a
+              <emphasis>estrutura</emphasis> RECORD <indexterm>
+                  <primary>RECORD structure</primary>
+                </indexterm> opcional for especificada, USE especifica
+              utilizando o atributo de padrão RULE definido mais adiante no
+              código com a função DEFINE(x) que gera um resultado de linha no
+              formato de <emphasis>estrutura </emphasis> RECORD <indexterm>
+                  <primary>RECORD structure</primary>
+                </indexterm> (válido apenas se a opção PARSE também estiver
+              presente). USE é exigido em PARSE quando qualquer padrão não
+              puder ser localizado ao conduzir as regras a partir da raiz sem
+              seguir nenhum USEs.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>rec := {STRING10000 line};
+datafile := DATASET([
+    {'Ge 34:2 And when Shechem the son of Hamor the Hivite, prince of the country, saw her,'+
+     ' he took her, and lay with her, and defiled her.'},
+    {'Ge 36:10 These are the names of Esaus sons; Eliphaz the son of Adah the wife of Esau,'+
+     ' Reuel the son of Bashemath the wife of Esau.'}],rec);
+PATTERN ws1 := [' ','\t',','];
+PATTERN ws := ws1 ws1?;
+PATTERN patStart := FIRST | ws;
+PATTERN patEnd := LAST | ws;
+PATTERN article := ['A','The','Thou','a','the','thou'];
+
+TOKEN patWord := PATTERN('[a-zA-Z]+');
+TOKEN Name := PATTERN('[A-Z][a-zA-Z]+');
+
+RULE Namet := name OPT(ws ['the','king of','prince of'] ws name);
+PATTERN produced := OPT(article ws) ['begat','father of','mother of'];
+PATTERN produced_by := OPT(article ws) ['son of','daughter of'];
+PATTERN produces_with := OPT(article ws) ['wife of'];
+
+RULE relationtype := ( produced | produced_by | produces_with);
+RULE progeny := namet ws relationtype ws namet;
+
+results := RECORD
+  STRING60 Le := MATCHTEXT(Namet[1]);
+  STRING60 Ri := MATCHTEXT(Namet[2]);
+  STRING30 RelationPhrase := MatchText(relationtype);
+END;
+outfile1 := PARSE(datafile,line,progeny,results,SCAN ALL);
+</programlisting>
+  </sect2>
+
+  <sect2 id="PARSE_XML_Data">
+    <title>PARSE XML<indexterm>
+        <primary>PARSE XML</primary>
+      </indexterm> Data</title>
+
+    <para>A segunda forma funciona a partir de um <emphasis>dataset</emphasis>
+    XML, analisando os <emphasis>dados </emphasis> XML e criando um recordset
+    com o uso do parâmetro <emphasis>resultado </emphasis>, um registro de
+    resultado por entrada. A expectativa é que cada linha de
+    <emphasis>dados</emphasis> contenha um bloco completo de XML. Se o
+    <emphasis>resultado</emphasis> nomear uma estrutura RECORD, essa forma de
+    PARSE funcionará como a função TABLE para gerar o recordset.</para>
+
+    <para>Se o <emphasis>resultado</emphasis> nomear uma função TRANSFORM , a
+    função “transform” irá gerar o conjunto de resultado. A função TRANSFORM
+    deve adotar pelo menos um parâmetro: um registro LEFT de mesmo formato que
+    o <emphasis>dataset</emphasis>. O formato do conjunto de registro
+    resultante não precisa ser o mesmo do da entrada.</para>
+
+    <para><emphasis role="bold">OBSERVAÇÃO:</emphasis> A leitura e a análise
+    do XML podem consumir muita memória dependendo do uso. Em particular, se o
+    xpath especificado combinar com uma quantidade muito grande de dados, uma
+    grande estrutura de dados será então fornecida para transformação. Dessa
+    forma, quanto maior for a combinação, mais recursos serão consumidos por
+    combinação. Por exemplo, se você possui um documento muito grande e
+    combinar um elemento próximo da raiz que, virtualmente, engloba o
+    documento todo, o documento inteiro será interpretado como uma estrutura
+    referenciável que o ECL terá acesso.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>linerec := { STRING line };
+in1 := DATASET([{
+        '&lt;ENTITY eid="P101" type="PERSON" subtype="MILITARY"&gt;' +
+        '  &lt;ATTRIBUTE name="fullname"&gt;JOHN SMITH&lt;/ATTRIBUTE&gt;' +
+        '  &lt;ATTRIBUTE name="honorific"&gt;Mr.&lt;/ATTRIBUTE&gt;' +
+        '  &lt;ATTRIBUTEGRP descriptor="passport"&gt;' +
+        '     &lt;ATTRIBUTE name="idNumber"&gt;W12468&lt;/ATTRIBUTE&gt;' +
+        '     &lt;ATTRIBUTE name="idType"&gt;pp&lt;/ATTRIBUTE&gt;' +
+        '     &lt;ATTRIBUTE name="issuingAuthority"&gt;JAPAN PASSPORT AUTHORITY&lt;/ATTRIBUTE&gt;' +
+        '     &lt;ATTRIBUTE name="country" value="L202"/&gt;' +
+        '     &lt;ATTRIBUTE name="age" value="19"/&gt;' +
+        '  &lt;/ATTRIBUTEGRP&gt;' +
+        '&lt;/ENTITY&gt;'}],
+     linerec);
+passportRec := RECORD
+  STRING id;
+  STRING idType;
+  STRING issuer;
+  STRING country;
+  INTEGER age;
+END;
+outrec := RECORD
+  STRING id;
+  UNICODE fullname;
+  UNICODE title;
+  passportRec passport;
+  STRING line;
+END;
+outrec t(lineRec L) := TRANSFORM
+  SELF.id := XMLTEXT('@eid');
+  SELF.fullname := XMLUNICODE('ATTRIBUTE[@name="fullname"]');
+  SELF.title := XMLUNICODE('ATTRIBUTE[@name="honorific"]');
+  SELF.passport.id := XMLTEXT('ATTRIBUTEGRP[@descriptor="passport"]' 
+                            + '/ATTRIBUTE[@name="idNumber"]');
+  SELF.passport.idType := XMLTEXT('ATTRIBUTEGRP[@descriptor="passport"]'
+                                + '/ATTRIBUTE[@name="idType"]');
+  SELF.passport.issuer := XMLTEXT('ATTRIBUTEGRP[@descriptor="passport"]'
+                                + '/ATTRIBUTE[@name="issuingAuthority"]');
+  SELF.passport.country := XMLTEXT('ATTRIBUTEGRP[@descriptor="passport"]'
+                                 + '/ATTRIBUTE[@name="country"]/@value');
+  SELF.passport.age := (INTEGER)XMLTEXT('ATTRIBUTEGRP[@descriptor="passport"]'
+                                      + '/ATTRIBUTE[@name="age"]/@value');
+  SELF := L;
+END;
+
+textout := PARSE(in1, line, t(LEFT), XML('/ENTITY[@type="PERSON"]'));
+</programlisting>
+
+    <para>Ver também: <link linkend="DATASET">DATASET</link>, <link
+    linkend="OUTPUT">OUTPUT</link>, <link
+    linkend="XMLENCODE">XMLENCODE</link>, <link
+    linkend="XMLDECODE">XMLDECODE</link>, <link
+    linkend="REGEXFIND">REGEXFIND</link>, <link
+    linkend="REGEXREPLACE">REGEXREPLACE</link>, <link
+    linkend="DEFINE">DEFINE</link></para>
+  </sect2>
+
+  <sect2 id="Extended_PARSE_Examples">
+    <title>Exemplos de PARSE Extendido<indexterm>
+        <primary>Extended PARSE</primary>
+      </indexterm> Examples<indexterm>
+        <primary>PARSE Examples</primary>
+      </indexterm><indexterm>
+        <primary>Extended PARSE Examples</primary>
+      </indexterm></title>
+
+    <para>Este exemplo analisa os números de telefone não processados de um
+    campo específico em um dataset de entrada em um único resultado padrão
+    contendo apenas os números. O código de área ausente nos dados de entrada
+    não processados resulta em três zeros iniciais no resultado.</para>
+
+    <programlisting>infile := DATASET([{'5619994581'},{'15619994581'},
+                   {'(561) 999-4581'},{'(561)999-4581'},
+                   {'561-999-4581'},{'561 999 4581'},
+                   {'561.999.4581'},{'561/999/4581'},
+                   {'561 999-4581'},{'9994581'},
+                   {'999-4581'}],{STRING20 rawnumber});
+  
+            
+PATTERN numbers := PATTERN('[0-9]')+;
+PATTERN alpha := PATTERN('[A-Za-z]')+;
+PATTERN ws := [' ','\t']*;
+PATTERN sepchar := PATTERN('[-./ ]');
+PATTERN Seperator := ws sepchar ws;
+
+// Area Code
+PATTERN OpenParen := ['[','(','{','&lt;'];
+PATTERN CloseParen := [']',')','}','&gt;'];
+PATTERN FrontDigit := ['1', '0'] OPT(Seperator);
+PATTERN areacode := OPT(FrontDigit) OPT(OpenParen) numbers length(3) OPT(CloseParen);
+
+// Last Seven digits
+PATTERN exchange := numbers length(3);
+PATTERN lastfour := numbers length(4);
+PATTERN seven := exchange OPT(Seperator) lastfour;
+
+// Extension
+PATTERN extension := ws alpha ws numbers;
+
+// Phone Number
+PATTERN phonenumber := OPT(areacode) OPT(Seperator) seven
+          opt(extension) ws;
+
+layout_phone_append := RECORD
+  infile;
+  STRING10 clean_phone := MAP(NOT MATCHED(phonenumber) =&gt; '',
+              NOT MATCHED(areacode) =&gt; '000' + MATCHTEXT(exchange) + MATCHTEXT(lastfour),
+              MATCHTEXT(areacode/numbers) + MATCHTEXT(exchange) + MATCHTEXT(lastfour));
+END;
+
+outfile := 
+  PARSE(infile, rawnumber, phonenumber, layout_phone_append,FIRST, NOT MATCHED, WHOLE);
+
+OUTPUT(outfile);
+</programlisting>
+
+    <para>Este exemplo analisa um subconjunto pequeno de dados não processados
+    de filmes (disponíveis gratuitamente em IMDB.com) em campos de base de
+    dados padrão:</para>
+
+    <programlisting>Layout_Actors_Raw := RECORD
+STRING120 IMDB_Actor_Desc;
+END;
+
+File_Actors := DATASET([
+{'A.V., Subba Rao Chenchu Lakshmi (1958/I) &lt;10&gt;'},
+{' Jayabheri (1959) &lt;17&gt;'},
+{' Madalasa (1948) &lt;3&gt;'},
+{' Mangalya Balam (1958) &lt;12&gt;'},
+{' Mohini Bhasmasura (1938) &lt;3&gt;'},
+{' Palletoori Pilla (1950) [Kampanna Dora] &lt;4&gt;'},
+{' Peddamanushulu (1954) &lt;6&gt;'},
+{' Sarangadhara (1957) &lt;12&gt;'},
+{' Sri Seetha Rama Kalyanam (1961) &lt;12&gt;'},
+{' Sri Venkateswara Mahatmyam (1960) [Akasa Raju] &lt;5&gt;'},
+{' Vara Vikrayam (1939) [Judge] &lt;12&gt;'},
+{' Vindhyarani (1948) &lt;7&gt;'},
+{''},
+{'Aa, Brynjar Adjo solidaritet (1985) [Ponker] &lt;40&gt;'},
+{''},
+{'Aabel, Andreas Bor Borson Jr. (1938) [O.G. Hansen] &lt;9&gt;'},
+{' Jeppe pa bjerget (1933) [En skomakerlaerling]'},
+{' Kampen om tungtvannet (1948) &lt;8&gt;'},
+{' Prinsessen som ingen kunne maqlbinde (1932) [Espen
+          Askeladd] &lt;3&gt;'},
+{' Spokelse forelsker seg, Et (1946) [Et spokelse] &lt;6&gt;'},
+{''},
+{'Aabel, Hauk (I) Alexander den store (1917) [Alexander Nyberg]'},
+{' Du har lovet mig en kone! (1935) [Professoren] &lt;6&gt;'},
+{' Glad gutt, En (1932) [Ola Nordistua] &lt;1&gt;'},
+{' Jeppe pa bjerget (1933) [Jeppe] &lt;1&gt;'},
+{' Morderen uten ansikt (1936)'},
+{' Store barnedapen, Den (1931) [Evensen, kirketjener] &lt;5&gt;'},
+{' Troll-Elgen (1927) [Piper, direktor] &lt;9&gt;'},
+{' Ungen (1938) [Krestoffer] &lt;8&gt;'},
+{' Valfangare (1939) [Jensen Sr.] &lt;4&gt;'},
+{''},
+{'Aabel, Per (I) Brudebuketten (1953) [Hoyland jr.] &lt;3&gt;'},
+{' Cafajestes, Os (1962)'},
+{' Farlige leken, Den (1942) [Fredrik Holm, doktor]'},
+{' Herre med bart, En (1942) [Ole Grong, advokat] &lt;1&gt;'},
+{' Kjaere Maren (1976) [Doktor]'},
+{' Kjaerlighet og vennskap (1941) [Anton Schack] &lt;3&gt;'},
+{' Ombyte fornojer (1939) [Gregor Ivanow] &lt;2&gt;'},
+{' Portrettet (1954) [Per Haug, provisor] &lt;1&gt;'}],
+Layout_Actors_Raw);
+
+//Basic patterns:
+PATTERN arb := PATTERN('[-!.,\t a-zA-Z0-9]')+;
+
+//all alphanumeric &amp; certain special characters
+PATTERN ws := [' ','\t']+; //word separators (space &amp; tab)
+PATTERN number := PATTERN('[0-9]')+; //numbers
+
+//extended patterns:
+PATTERN age := '(' number OPT('/I') ')';
+
+//movie year -- OPT('/I') required for first rec
+PATTERN role := '[' arb ']'; //character played
+PATTERN m_rank := '&lt;' number '&gt;'; //credit appearance number
+PATTERN actor := arb OPT(ws '(I)' ws);
+//actor's name -- OPT(ws '(I)' ws)
+// required for last two actors
+
+//extended pattern to parse the actual text:
+PATTERN line := actor '\t' arb ws OPT(age) ws OPT(role) ws OPT(m_rank) ws;
+
+//output record structure:
+NLP_layout_actor_movie := RECORD
+  STRING30 actor_name := Std.Str.filterout(MATCHTEXT(actor),'\t');
+  STRING50 movie_name := MATCHTEXT(arb[2]);
+  UNSIGNED2 movie_year := (UNSIGNED)MATCHTEXT(age/number);
+  STRING20 movie_role := MATCHTEXT(role/arb);
+  UNSIGNED1 cast_rank := (UNSIGNED)MATCHTEXT(m_rank/number);
+END;
+
+//and the actual parsing operation
+Actor_Movie_Init := PARSE(File_Actors,
+                          IMDB_Actor_Desc,
+                          line,
+                          NLP_layout_actor_movie,WHOLE,FIRST);
+
+// then iterate to propagate actor name in each record
+NLP_layout_actor_movie IterNames(NLP_layout_actor_movie L,
+                                 NLP_layout_actor_movie R) := TRANSFORM
+  SELF.actor_name := IF(R.actor_Name='',L.actor_Name,R.actor_name);
+  SELF:= R;
+END;
+
+NLP_Actor_Movie := ITERATE(Actor_Movie_Init,IterNames(LEFT,RIGHT));
+
+// and output the result set
+OUTPUT(NLP_Actor_Movie);
+</programlisting>
+  </sect2>
+</sect1>

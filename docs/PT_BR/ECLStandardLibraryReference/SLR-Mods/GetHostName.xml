@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetHostName">
+  <title><emphasis role="bold">GetHostName</emphasis></title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.System.Util.GetHostName<indexterm>
+      <primary>STD.System.Util.GetHostName</primary>
+    </indexterm> <indexterm>
+      <primary>System.Util.GetHostName</primary>
+    </indexterm> <indexterm>
+      <primary>Util.GetHostName</primary>
+    </indexterm> <indexterm>
+      <primary>GetHostName</primary>
+    </indexterm>(</emphasis> <emphasis> ip </emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>ip</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o endereço IP da
+          máquina remota.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetHostName retorna um valor VARSTRING (terminado por
+          nulo).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">GetHostName </emphasis> executa uma
+  busca reversa de DNS para retornar o nome do host da máquina no endereço
+  <emphasis>ip</emphasis> especificado.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IP   := '10.150.254.6';
+   
+OUTPUT(STD.System.Util.GetHostName(IP));
+</programlisting>
+</sect1>

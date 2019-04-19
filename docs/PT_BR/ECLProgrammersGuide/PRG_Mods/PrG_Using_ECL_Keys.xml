@@ -1,0 +1,549 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Using_ECL_Keys-INDEX_Files">
+  <title><emphasis role="bold">Utilizando Chaves ECL (Arquivos
+  Index)</emphasis></title>
+
+  <para>As operações ETL (extrair, transformar e carregar – processamento de
+  ingestão de dados padrão) no ECL normalmente operam em oposição a todos, ou
+  à maioria, dos registos de um determinado dataset, fazendo com que o uso das
+  chaves (arquivos INDEX) sejam de pouca utilidade. Muitas consultas realizam
+  a mesma operação.</para>
+
+  <para>No entanto, a entrega de dados de produção para usuários finais
+  raramente requer o acesso a todos os registros em um dataset. Os usuários
+  finais sempre buscam acesso "instantâneo" para os dados desejados e, muitas
+  vezes, esses dados são um pequeno subconjunto do grupo total de registros
+  disponíveis. Consequentemente, o uso de chaves (INDEXes) passou a ser
+  obrigatório.</para>
+
+  <para>As definições dos atributos a seguir usadas pelos exemplos de códigos
+  neste artigo são declaradas no atributo de estrutura MODULE DeclareData no
+  arquivo DeclareData.ECL :</para>
+
+  <programlisting>EXPORT Person := MODULE
+  EXPORT File := DATASET('~PROGGUIDE::EXAMPLEDATA::People',Layout_Person, THOR);
+  EXPORT FilePlus := DATASET('~PROGGUIDE::EXAMPLEDATA::People',
+                             {Layout_Person,
+                              UNSIGNED8 RecPos{VIRTUAL(fileposition)}}, THOR);
+END;                                          
+EXPORT Accounts := DATASET('~PROGGUIDE::EXAMPLEDATA::Accounts',
+                           {Layout_Accounts_Link,
+                            UNSIGNED8 RecPos{VIRTUAL(fileposition)}}, THOR);
+EXPORT PersonAccounts := DATASET('~PROGGUIDE::EXAMPLEDATA::PeopleAccts',
+                                 {Layout_Combined,
+                                  UNSIGNED8 RecPos{virtual(fileposition)}},THOR);
+
+EXPORT IDX_Person_PersonID := INDEX(Person.FilePlus,{PersonID,RecPos},
+                                    '~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID');
+EXPORT IDX_Accounts_PersonID := INDEX(Accounts,{PersonID,RecPos},
+                                      '~PROGGUIDE::EXAMPLEDATA::KEYS::Accounts.PersonID');
+
+EXPORT IDX_Accounts_PersonID_Payload := 
+        INDEX(Accounts,
+              {PersonID},
+              {Account,OpenDate,IndustryCode,AcctType,
+               AcctRate,Code1,Code2,HighCredit,Balance,RecPos},
+              '~PROGGUIDE::EXAMPLEDATA::KEYS::Accounts.PersonID.Payload');
+
+EXPORT IDX_PersonAccounts_PersonID := 
+        INDEX(PersonAccounts,{PersonID,RecPos},
+              '~PROGGUIDE::EXAMPLEDATA::KEYS::PeopleAccts.PersonID');
+
+EXPORT IDX__Person_LastName_FirstName := 
+        INDEX(Person.FilePlus,{LastName,FirstName,RecPos},
+              '~PROGGUIDE::EXAMPLEDATA::KEYS::People.LastName.FirstName');
+EXPORT IDX__Person_PersonID_Payload := 
+        INDEX(Person.FilePlus,{PersonID},
+              {FirstName,LastName,MiddleInitial,
+               Gender,Street,City,State,Zip,RecPos},
+              '~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID.Payload');
+</programlisting>
+
+  <para>Embora seja possível usar um INDEX como se fosse um DATASET, há apenas
+  duas operações no ECL que usam chaves diretamente: FETCH e JOIN.</para>
+
+  <sect2 id="Simple_FETCH">
+    <title>FETCH simples</title>
+
+    <para>A operação FETCH é o uso mais simples de um INDEX. Sua finalidade é
+    localizar registros de um dataset usando um INDEX para acessar diretamente
+    apenas os registros especificados.</para>
+
+    <para>O código de exemplo abaixo (contido no arquivo IndexFetch.ECL)
+    ilustra a forma comum:</para>
+
+    <programlisting>IMPORT $;
+
+F1 := FETCH($.DeclareData.Person.FilePlus,
+            $.DeclareData.IDX_Person_PersonID(PersonID=1),  
+            RIGHT.RecPos);
+OUTPUT(F1);	</programlisting>
+
+    <para>Você perceberá que o DATASET nomeado como o primeiro parâmetro não
+    possui filtro, enquanto o INDEX nomeado como segundo parâmetro possui um
+    filtro. Isso sempre acontece com a operação FETCH. O propósito do INDEX no
+    ECL é sempre possibilitar o acesso "direto" a registros individuais no
+    dataset de base, de forma que seja sempre necessário filtrar o INDEX para
+    definir o conjunto exato de registros a serem localizados. Devido a isso,
+    a filtragem do dataset de base não é necessária.</para>
+
+    <para>Como você pode ver, não há uma função TRANSFORM neste código. Para
+    usos mais comuns de FETCH, uma função de transformação é desnecessária,
+    embora seja certamente adequado se os dados de resultado exigirem
+    formatação, como neste exemplo (também contido no arquivo
+    IndexFetch.ECL):</para>
+
+    <programlisting>r := RECORD
+  STRING FullName;
+  STRING Address;
+  STRING CSZ;
+END;
+
+r Xform($.DeclareData.Person.FilePlus L) := TRANSFORM
+  SELF.Fullname := TRIM(L.Firstname) + TRIM(' ' + L.MiddleInitial) + ' ' + L.Lastname;
+  SELF.Address  := L.Street;
+  SELF.CSZ      := TRIM(L.City) + ', ' + L.State + ' ' + L.Zip;
+END;
+
+F2 := FETCH($.DeclareData.Person.FilePlus,
+            $.DeclareData.IDX_Person_PersonID(PersonID=1),
+            RIGHT.RecPos,
+            Xform(LEFT));
+OUTPUT(F2);
+</programlisting>
+
+    <para>Mesmo com a função TRANSFORM, esse código ainda é basicamente uma
+    operação direta de localização de registros.</para>
+  </sect2>
+
+  <sect2 id="Full-keyed_JOIN">
+    <title>Full-keyed JOIN</title>
+
+    <para>Ao contrário da simplicidade de FETCH, o uso de INDEXes nas
+    operações JOIN é um pouco mais complexo. A forma mais óbvia é o JOIN, de
+    “full-keyed”, especificado pela opção KEYED , que nomeia um INDEX no
+    conjunto de registros direito (o segundo parâmetro JOIN). A finalidade
+    para essa forma é tratar de situações nas quais o conjunto de registros
+    esquerdo (nomeado como o primeiro parâmetro no JOIN) é um dataset bastante
+    pequeno que precisa ser combinado a um dataset grande e indexado (o
+    conjunto de registros direito). Ao usar a opção KEYED, a operação JOIN
+    utiliza o INDEX especificado para localizar os registros direitos
+    correspondentes. Isso significa que a condição de combinação precisa usar
+    os principais campos no INDEX para localizar os registros
+    correspondentes.</para>
+
+    <para>Esse código de exemplo (contido no arquivo IndexFullKeyedJoin.ECL)
+    ilustra o uso habitual de uma combinação com chaves completas:</para>
+
+    <programlisting>IMPORT $;
+
+r1 := RECORD
+  $.DeclareData.Layout_Person;
+  $.DeclareData.Layout_Accounts;
+END;
+
+r1 Xform1($.DeclareData.Person.FilePlus L, 
+          $.DeclareData.Accounts R) := TRANSFORM
+  SELF := L;
+  SELF := R;
+END;
+J1 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
+           $.DeclareData.Accounts,
+           LEFT.PersonID=RIGHT.PersonID,
+           Xform1(LEFT,RIGHT),
+           KEYED($.DeclareData.IDX_Accounts_PersonID));
+
+OUTPUT(J1,ALL);
+</programlisting>
+
+    <para>O arquivo de Contas direito contém cinco milhões de registros e, com
+    a condição de filtro especificada, o conjunto de registro Pessoa esquerdo
+    contém exatamente cem registros. Um JOIN padrão entre esses dois
+    normalmente exigiria que todos os cinco milhões de registros de conta
+    fossem lidos para produzir o resultado. No entanto, ao usar a opção KEYED,
+    a árvore binária INDEX será usada para localizar as entradas com os
+    valores de campo de chave adequados e obter os ponteiros para o conjunto
+    exato de registros de contas necessário para produzir o resultado correto.
+    Isso significa que apenas aqueles registros lidos do arquivo direito são
+    os de fato contidos no resultado.</para>
+  </sect2>
+
+  <sect2 id="Half-keyed_JOIN">
+    <title>Half-keyed JOIN</title>
+
+    <para>A operação half-keyed JOIN é uma versão mais simples, onde o INDEX é
+    o conjunto de registros direito no JOIN. Assim como acontece com
+    full-keyed JOIN, a condição de combinação precisa usar os principais
+    campos no INDEX para realizar seu trabalho. A finalidade de half-keyed
+    JOIN é a mesma da versão de chave completa.</para>
+
+    <para>Na verdade, full-keyed JOIN é, nos bastidores, basicamente o mesmo
+    que um JOIN de meia chave e um FETCH para localizar os registros de
+    dataset de base. Com isso, um half-keyed JOIN e um FETCH são semântica e
+    funcionalmente equivalentes, como mostrado neste código de exemplo
+    (contido no arquivo IndexHalfKeyedJoin..ECL file):</para>
+
+    <programlisting>IMPORT $;
+
+r1 := RECORD
+  $.DeclareData.Layout_Person;
+  $.DeclareData.Layout_Accounts;
+END;
+r2 := RECORD
+  $.DeclareData.Layout_Person;
+  UNSIGNED8 AcctRecPos;
+END;
+
+r2 Xform2($.DeclareData.Person.FilePlus L, 
+          $.DeclareData.IDX_Accounts_PersonID R) := TRANSFORM
+  SELF.AcctRecPos := R.RecPos;
+  SELF := L;
+END;
+
+J2 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
+           $.DeclareData.IDX_Accounts_PersonID,
+           LEFT.PersonID=RIGHT.PersonID,
+           Xform2(LEFT,RIGHT));		
+
+r1 Xform3($.DeclareData.Accounts L, r2 R) := TRANSFORM
+  SELF := L;
+  SELF := R;
+END;
+F1 := FETCH($.DeclareData.Accounts,
+            J2,  
+            RIGHT.AcctRecPos,
+            Xform3(LEFT,RIGHT));
+
+OUTPUT(F1,ALL);
+</programlisting>
+
+    <para>Esse código produz o mesmo conjunto de resultado que o exemplo
+    anterior.</para>
+
+    <para>A vantagem de usar JOINs de meia chave em vez da versão completa é
+    em casos onde você possa precisar realizar vários JOINs para executar
+    qualquer processo que esteja em execução. O uso da forma de meia chave
+    permite que você realize todos os JOINs antes do FETCH explicitamente para
+    localizar os registros de resultado final, tornando assim o código mais
+    eficiente.</para>
+  </sect2>
+
+  <sect2 id="Payload_INDEXes">
+    <title>Índices de Payload</title>
+
+    <para>Há uma forma estendida do INDEX que permite que cada entrada
+    carregue uma "carga útil" – dados adicionais não incluídos no conjunto de
+    campos-chave. Esses campos adicionais podem simplesmente ser campos extras
+    do dataset de base (não precisam fazer parte da chave de busca) ou podem
+    conter o resultado de alguma computação preliminar (campos computados).
+    Uma vez que os dados em um INDEX são sempre compactados (usando a
+    compressão LZW), carregar carga de conteúdo extra não força o sistema
+    incorretamente.</para>
+
+    <para>Um INDEX de carga de conteúdo exige duas estruturas RECORD como o
+    segundo e terceiro parâmetros da declaração INDEX. O segundo parâmetro da
+    estrutura RECORD lista os principais campos nos quais o INDEX é
+    desenvolvido (os campos de busca), enquanto o terceiro parâmetro da
+    estrutura RECORD define os campos de carga de conteúdo adicionais.</para>
+
+    <para>O campo de ponteiro de registro <emphasis
+    role="bold">virtual(fileposition)</emphasis> sempre precisa ser o último
+    campo listado em qualquer tipo de INDEX; por isso, ao definir uma chave de
+    carga de conteúdo, ele é sempre o último campo no terceiro parâmetro da
+    estrutura RECORD.</para>
+
+    <para>Este código de exemplo (contido no arquivo
+    IndexHalfKeyedPayloadJoin.ECL) duplica novamente os resultados anteriores,
+    porém usando apenas o JOIN de meia chave (sem o FETCH) ao marcar o uso de
+    uma chave de carga de conteúdo:</para>
+
+    <programlisting>IMPORT $;
+
+r1 := RECORD
+  $.DeclareData.Layout_Person;
+  $.DeclareData.Layout_Accounts;
+END;
+
+r1 Xform($.DeclareData.Person.FilePlus L, $.DeclareData.IDX_Accounts_PersonID_Payload R) := 
+  TRANSFORM
+    SELF := L;
+    SELF := R;
+END;
+
+J2 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
+           $.DeclareData.IDX_Accounts_PersonID_Payload,
+           LEFT.PersonID=RIGHT.PersonID,
+           Xform(LEFT,RIGHT));
+ 
+OUTPUT(J2,ALL);
+</programlisting>
+
+    <para>É possível ver que isso torna o código mais enxuto. Ao eliminar a
+    operação FETCH, também se elimina o acesso de disco associado a ela,
+    agilizando o processo. O requisito, obviamente, é pré-desenvolver as
+    chaves de carga de conteíudo para que FETCH não seja mais
+    necessário.</para>
+  </sect2>
+
+  <sect2 id="Computed_Fields_in_Payload_Keys">
+    <title>Campos Computados nas Chaves de Payload</title>
+
+    <para>Há um truque para colocar campos computados na carga útil. Uma vez
+    que um "campo computado", por definição, não existe no dataset, a técnica
+    necessária para sua criação e uso é desenvolver o conteúdo do INDEX
+    antecipadamente.</para>
+
+    <para>O código de exemplo a seguir (contido no arquivo
+    IndexPayloadFetch.ECL) ilustra como fazer isso ao desenvolver o conteúdo
+    de alguns campos computados (derivados dos registros secundários) em uma
+    TABLE onde o INDEX é desenvolvido:</para>
+
+    <programlisting>IMPORT $;
+
+PersonFile := $.DeclareData.Person.FilePlus;
+AcctFile   := $.DeclareData.Accounts;
+IDXname := '~$.DeclareData::EXAMPLEDATA::KEYS::Person.PersonID.CompPay';
+
+r1 := RECORD
+  PersonFile.PersonID;
+  UNSIGNED8 AcctCount := 0;
+  UNSIGNED8 HighCreditSum := 0;
+  UNSIGNED8 BalanceSum := 0;
+  PersonFile.RecPos;
+END;
+
+t1 := TABLE(PersonFile,r1);
+st1 := DISTRIBUTE(t1,HASH32(PersonID));
+
+
+r2 := RECORD
+  AcctFile.PersonID;
+  UNSIGNED8 AcctCount := COUNT(GROUP);
+  UNSIGNED8 HighCreditSum := SUM(GROUP,AcctFile.HighCredit);
+  UNSIGNED8 BalanceSum := SUM(GROUP,AcctFile.Balance);
+END;
+
+t2 := TABLE(AcctFile,r2,PersonID);
+st2 := DISTRIBUTE(t2,HASH32(PersonID));
+
+r1 countem(t1 L, t2 R) := TRANSFORM
+  SELF := R;
+  SELF := L;
+END;
+
+j := JOIN(st1,st2,LEFT.PersonID=RIGHT.PersonID,countem(LEFT,RIGHT),LOCAL);
+
+Bld := BUILDINDEX(j,
+                  {PersonID},
+                  {AcctCount,HighCreditSum,BalanceSum,RecPos},
+                  IDXname,OVERWRITE);
+
+
+i := INDEX(PersonFile,
+           {PersonID},
+           {UNSIGNED8 AcctCount,UNSIGNED8 HighCreditSum,UNSIGNED8 BalanceSum,RecPos},
+           IDXname);
+
+f := FETCH(PersonFile,i(PersonID BETWEEN 1 AND 100),RIGHT.RecPos);
+
+Get := OUTPUT(f,ALL);
+
+SEQUENTIAL(Bld,Get);
+</programlisting>
+
+    <para>A primeira função TABLE localiza todos os valores dos principais
+    campos do dataset Person para o INDEX e cria campos vazios para conter os
+    valores computados. Observe bem que o valor de campo RecPos
+    virtual(fileposition) também é localizado neste ponto.</para>
+
+    <para>A segunda função TABLE calcula os valores que vão nos campos
+    computados. Os valores neste exemplo são provenientes do dataset Accounts
+    relacionado. Esses valores de campo computados vão permitir que o INDEX de
+    carga de conteúdo final no dataset Person produza esses valores de
+    conjunto de registro secundário sem nenhum código adicional (ou acesso de
+    disco).</para>
+
+    <para>A operação JOIN combina o resultado de duas TABLEs em sua forma
+    final. Esses são os dados a partir dos quais o INDEX é
+    desenvolvido.</para>
+
+    <para>A ação BUILDINDEX grava o INDEX no disco. A parte complicada é então
+    declarar o INDEX em relação ao dataset de base (não ao resultado JOIN).
+    Assim sendo, é essencial para essa técnica desenvolver o INDEX em relação
+    a um conjunto derivado/computado de dados e depois declarar o INDEX em
+    relação ao dataset de base do qual os dados foram extraídos.</para>
+
+    <para>Para demonstrar o uso de um INDEX, esse código de exemplo só realiza
+    uma simples operação de FETCH para localizar o resultado combinado com
+    todos os campos do dataset Person juntamente com todos os valores de campo
+    computados. No uso "normal", esse tipo de chave de carga útil seria usado
+    em uma operação half-keyed JOIN.</para>
+  </sect2>
+
+  <sect2 id="Computed_Fields_in_Search_Keys">
+    <title>Campos Computados nas Chaves de Pesquisa</title>
+
+    <para>Há uma situação na qual é necessário o uso de um campo computado
+    como uma chave de busca – quando o campo que você deseja procurar está em
+    um tipo de dados REAL ou DECIMAL. Nenhum desses dois é válido para uso
+    como uma chave de busca. Consequentemente, fazer da chave de busca um
+    campo de STRING computado contendo o valor para pesquisa é uma forma de
+    superar essa limitação.</para>
+
+    <para>O segredo para os campos computados na carga útil é o mesmo para
+    chaves de busca – desenvolver o conteúdo do INDEX antecipadamente O
+    exemplo a seguir (contido no arquivo IndexREALkey.ECL) ilustra como fazer
+    isso ao desenvolver o conteúdo dos campos de chave de busca computados nos
+    quais o INDEX é desenvolvido usando TABLE e PROJECT:</para>
+
+    <programlisting>IMPORT $;
+
+r := RECORD
+  REAL8      Float := 0.0;
+  DECIMAL8_3 Dec   := 0.0; 
+  $.DeclareData.person.file;
+END;
+t := TABLE($.DeclareData.person.file,r);
+
+r XF(r L) := TRANSFORM
+  SELF.float := L.PersonID / 1000;
+  SELF.dec := L.PersonID / 1000;
+  SELF := L;
+END;
+p := PROJECT(t,XF(LEFT));
+
+DSname   := '~PROGGUIDE::EXAMPLEDATA::KEYS::dataset';
+IDX1name := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestIDX1';
+IDX2name := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestIDX2';
+OutName1 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout1';
+OutName2 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout2';
+OutName3 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout3';
+OutName4 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout4';
+OutName5 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout5';
+OutName6 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout6';
+
+DSout := OUTPUT(p,,DSname,OVERWRITE);
+
+ds := DATASET(DSname,r,THOR);
+
+idx1 := INDEX(ds,{STRING13 FloatStr := REALFORMAT(float,13,3)},{ds},IDX1name);
+idx2 := INDEX(ds,{STRING13 DecStr := (STRING13)dec},{ds},IDX2name);
+
+Bld1Out := BUILD(idx1,OVERWRITE);
+Bld2Out := BUILD(idx2,OVERWRITE);
+
+j1 := JOIN(idx1,idx2,LEFT.FloatStr = RIGHT.DecStr);
+j2 := JOIN(idx1,idx2,KEYED(LEFT.FloatStr = RIGHT.DecStr));
+j3 := JOIN(ds,idx1,KEYED((STRING10)LEFT.float = RIGHT.FloatStr));
+j4 := JOIN(ds,idx2,KEYED((STRING10)LEFT.dec = RIGHT.DecStr));
+j5 := JOIN(ds,idx1,KEYED((STRING10)LEFT.dec = RIGHT.FloatStr));
+j6 := JOIN(ds,idx2,KEYED((STRING10)LEFT.float = RIGHT.DecStr));
+
+JoinOut1 := OUTPUT(j1,,OutName1,OVERWRITE);
+JoinOut2 := OUTPUT(j2,,OutName2,OVERWRITE);
+JoinOut3 := OUTPUT(j3,,OutName3,OVERWRITE);
+JoinOut4 := OUTPUT(j4,,OutName4,OVERWRITE);
+JoinOut5 := OUTPUT(j5,,OutName5,OVERWRITE);
+JoinOut6 := OUTPUT(j6,,OutName6,OVERWRITE);
+
+SEQUENTIAL(DSout,Bld1Out,Bld2Out,JoinOut1,JoinOut2,JoinOut3,JoinOut4,JoinOut5,JoinOut6);
+</programlisting>
+
+    <para>Esse código começa com algumas definições de nome de arquivo. A
+    estrutura de registro adiciona dois campos ao conjunto de campos existente
+    de nosso dataset de base: um campo REAL8 denominado "float" e um campo
+    DECIMAL12_6 denominado "dec." Esses campos conteráo nossos dados REAL e
+    DECIMAL que desejamos pesquisar. O PROJECT da TABLE insere valores nesses
+    dois campos (neste caso, simplesmente dividindo o arquivo PersonID por
+    1.000 para alcançar um valor de ponto flutuante exclusivo para ser
+    usado).</para>
+
+    <para>A definição IDX1 INDEX cria a chave de busca REAL como um campo
+    computado STRING13 usando a função REALFORMAT para justificar à direita o
+    valor de ponto flutuante em uma STRING de 13 caracteres. Isso padroniza o
+    valor com o número exato de casas decimais especificado na função
+    REALFORMAT.</para>
+
+    <para>A definição IDX2 INDEX cria a chave de busca DECIMAL como um campo
+    computado STRING13 ao atribuir os dados DECIMAL para uma STRING13. Usar o
+    operador de representação de tipos apenas justifica à esquerda o valor na
+    string. Ele também pode incluir zeros à direita de forma que não há
+    garantia de que o número de casas decimais será sempre o mesmo.</para>
+
+    <para>Uma vez que há dois métodos distintos de elaborar as strings de
+    chave de busca, as próprias strings não são iguais, embora os valores
+    usados para criá-las sejam os mesmos. Isso significa que você não pode
+    esperar uma "mistura e combinação" entre as duas – é necessário usar cada
+    INDEX com o método usado para criá-la. É por isso que as duas operações
+    JOIN que demonstram seu uso utilizam o mesmo método para criar o valor de
+    comparação de string conforme usado para criar o INDEX. Dessa maneira,
+    você tem a certeza de que terá valores correspondentes.</para>
+  </sect2>
+
+  <sect2 id="Using_an_INDEX_like_a_DATASET">
+    <title>Utilizando um INDEX como DATASET</title>
+
+    <para>As chaves de carga útil também podem ser usadas para operações de
+    tipo DATASET padrão. Nesse tipo de uso, o INDEX atua como se fosse um
+    dataset, com a vantagem de conter dados comprimidos e um índice btree. A
+    principal diferença neste tipo de uso é a utilização de KEYED e WILD nos
+    filtros INDEX , que permite a leitura do INDEX para utilizar o btree em
+    vez de realizar uma busca completa na tabela.</para>
+
+    <para>O código de exemplo a seguir (contido no arquivo
+    IndexAsDataset.ECL)ilustra o uso de um INDEX como se ele fosse um DATASET,
+    e compara o desempenho relativo do INDEX em relação ao uso do
+    DATASET:</para>
+
+    <programlisting>IMPORT $;
+
+OutRec := RECORD
+  INTEGER   Seq;
+  QSTRING15 FirstName;
+  QSTRING25 LastName;
+  STRING2   State;
+END;
+
+IDX  := $.DeclareData.IDX__Person_LastName_FirstName_Payload;
+Base := $.DeclareData.Person.File;
+
+OutRec XF1(IDX L, INTEGER C) := TRANSFORM
+  SELF.Seq := C;
+  SELF := L;
+END;
+
+O1 := PROJECT(IDX(KEYED(lastname='COOLING'),
+                  KEYED(firstname='LIZZ'),
+              state='OK'),
+              XF1(LEFT,COUNTER));
+OUTPUT(O1,ALL);
+
+OutRec XF2(Base L, INTEGER C) := TRANSFORM
+  SELF.Seq := C;
+  SELF := L;
+END;
+
+O2 := PROJECT(Base(lastname='COOLING',
+                   firstname='LIZZ',
+              state='OK'),
+              XF2(LEFT,COUNTER));
+OUTPUT(O2,ALL);
+</programlisting>
+
+    <para>As duas operações PROJECT produzirão exatamente o mesmo resultado,
+    mas a primeira utiliza um INDEX e a segunda um DATASET. A única diferença
+    significativa entre as duas é o uso de KEYED no filtro INDEX. Isso indica
+    que a leitura do index deve usar o btree para localizar o conjunto
+    específico de registros de nó folha para leitura. A versão DATASET precisa
+    ler todos os registros no arquivo para localizar o correto, fazendo deste
+    um processo bem mais lento.</para>
+
+    <para>Se verificar as medidas de tempo de tarefa no ECL Watch, você
+    perceberá uma diferença. Neste caso de testes, a diferença pode não
+    parecer grande (não há muitos dados de testes), mas em suas aplicações
+    reais a diferença entre uma operação de leitura de índice e uma
+    verificação completa de tabela deve ser significativa.</para>
+  </sect2>
+</sect1>

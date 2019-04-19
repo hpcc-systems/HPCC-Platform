@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RANGE">
+  <title>RANGE</title>
+
+  <para><emphasis role="bold">RANGE<indexterm>
+      <primary>RANGE</primary>
+    </indexterm><indexterm>
+      <primary>RANGE function</primary>
+    </indexterm>( </emphasis><emphasis>setofdatasets, setofintegers</emphasis>
+  <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="81.50pt"/>
+
+        <colspec colwidth="271.30pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>setofdatasets</emphasis></entry>
+
+            <entry>Um conjunto de datasets.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>setofintegers</emphasis></entry>
+
+            <entry>Um conjunto de valores inteiros.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>RANGE retorna um conjunto de datasets.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">RANGE </emphasis> extrai um subconjunto
+  do <emphasis>setofdatasets</emphasis> na forma de um SET. O
+  <emphasis>setofintegers</emphasis> especifica quais elementos do
+  <emphasis>setofdatasets</emphasis> compreendem o SET resultante de datasets.
+  Isto é normalmente usado na função GRAPH .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>r := {STRING1 Letter};
+ds1 := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],r);
+ds2 := DATASET([{'F'},{'G'},{'H'},{'I'},{'J'}],r);
+ds3 := DATASET([{'K'},{'L'},{'M'},{'N'},{'O'}],r);
+ds4 := DATASET([{'P'},{'Q'},{'R'},{'S'},{'T'}],r);
+ds5 := DATASET([{'U'},{'V'},{'W'},{'X'},{'Y'}],r);
+
+SetDS := [ds1,ds2,ds3,ds4,ds5];
+outDS := RANGE(setDS,[1,3]); 
+//use only 1st and 3rd elements
+
+OUTPUT(outDS[1]); //results in A,B,C,D,E
+OUTPUT(outDS[2]); //results in K,L,M,N,O
+</programlisting>
+
+  <para>Ver também: <link linkend="GRAPH">GRAPH</link></para>
+</sect1>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Nagios_in_ECLWatch">
+  <title>Nagios no ECL Watch</title>
+
+  <para>O ECL Watch está configurado para monitorar seu sistema com Nagios. O
+  ECL Watch possui uma API capaz de se conectar com o Nagios para oferecer o
+  monitoramento Nagios diretamente no ECL Watch. Os escalonamentos Nagios são
+  indicados para a versão 5.4 (ou posterior) do ECL Watch e podem ser
+  visualizados diretamente no ECL Watch.</para>
+
+  <para>Por padrão, todos os serviços do ECL Watch definidos no
+  environment.xml receberão notificações geradas usando
+  <emphasis>hpcc-nagios-tools</emphasis>. Isso pode substituído caso você não
+  queira que seja dessa forma. As instâncias do ECL Watch não precisam estar
+  no cluster que está sendo monitorado. <figure>
+      <title>Nagios no ECL Watch</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="../../images/NAG010.jpg" vendor="VM_welcome"/>
+        </imageobject>
+      </mediaobject>
+    </figure></para>
+
+  <para>Após ter configurado o Nagios de acordo com seu ambiente, você poderá
+  ver rapidamente se há algum alerta. Você verá uma pequena luz indicadora na
+  faixa superior da janela do ECL Watch. A luz escura (na cor cinza) aparecerá
+  se não houver dados do sistema a serem relatados, o que normalmente indica
+  que o seu sistema ainda não foi configurado para monitoramento.</para>
+
+  <para>A luz verde indica que todos os sistemas estão relatando dados dentro
+  da normalidade. A luz amarela indica que há um aviso. A luz fica vermelha
+  quando há um alerta. Todos os alertas são configuráveis através da
+  configuração do Nagios.</para>
+
+  <para>Por padrão, o monitorador do ECL Watch mantém sua última atualização
+  por 30 minutos. Isso significa que quando o Nagios para de escalonar para o
+  ECL Watch, qualquer status, incluindo o Normal, será extinguido da lista. O
+  comportamento e a frequência das notificações de escalonamentos Nagios são
+  configuráveis. Consulte a documentação Nagios para obter mais informações.
+  Uma lista vazia poderia indicar “no data (ausência de dados)” ou “no outages
+  (sem interrupções)”. Por padrão, nenhum alerta é gerado quando tudo está em
+  perfeita ordem.</para>
+
+  <para>Para saber mais sobre quaisquer avisos ou alertas, pressione a luz
+  indicadora no topo. Você também pode acessar a página <emphasis>Primary
+  Monitoring</emphasis> clicando no link <emphasis
+  role="bold">Operations</emphasis> e, em seguida, no link <emphasis
+  role="bold">Monitoring</emphasis> no submenu de navegação. <figure>
+      <title>Nagios no ECL Watch</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="../../images/NAG011.jpg" vendor="VM_welcome"/>
+        </imageobject>
+      </mediaobject>
+    </figure></para>
+
+  <para>Isso exibe todas as mensagens e alertas relatados para o sistema de
+  monitoramento. Para mais informações sobre uma mensagem específica,
+  pressione a seta ao lado da mensagem desejada.</para>
+</sect1>

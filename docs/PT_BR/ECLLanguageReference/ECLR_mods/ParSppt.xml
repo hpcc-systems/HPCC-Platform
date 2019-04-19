@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Parsing_Support" role="nobrk">
+  <title>Suporte a Análise (Parsing)</title>
+
+  <para>Análise de Linguagem Natural <indexterm>
+      <primary>Natural Language Parsing</primary>
+    </indexterm>  é realizada no ECL através da combinação de definições do padrão com uma estrutura RECORD gerada (ou função TRANSFORM) projetada especificamente para receber os valores analisados, e depois usar a função PARSE para realizar a operação.</para>
+
+  <para>As definições do padrão são usadas para detectar o texto "interessante" dentro dos dados. Assim como ocorre com todas as outras definições de atributo, esses padrões normalmente definem elementos de avaliação específicos e podem ser combinados para formar padrões, tokens e regras mais complexas.</para>
+
+  <para>A estrutura RECORD gerada (ou função TRANSFORM) define o formato do recordset resultante. Ela normalmente possui funções específicas de correspondência de padrão que retornam o texto “interessante”, seu comprimento ou posição.</para>
+
+  <para>A função PARSE implementa a operação de análise. Ela retorna um recordset que pode ser processado posteriormente, conforme necessário, usando a sintaxe padrão do ECL ou simplesmente o resultado.</para>
+</sect1>

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CATCH">
+  <title>CATCH</title>
+
+  <para><emphasis>result</emphasis><emphasis role="bold"> := CATCH<indexterm>
+      <primary>CATCH</primary>
+    </indexterm><indexterm>
+      <primary>CATCH Function</primary>
+    </indexterm>(</emphasis> <emphasis>recset, action</emphasis> <emphasis
+  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">)
+  ]</emphasis><emphasis role="bold"> );</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="121.70pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>result</emphasis></entry>
+
+            <entry>Nome de definição do conjunto de registro
+            resultante</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recset</emphasis></entry>
+
+            <entry>A expressão do recordset que, se falhar, faz com que a
+            <emphasis>ação</emphasis> seja iniciada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>action</emphasis></entry>
+
+            <entry>Uma das três ações válidas abaixo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CATCH retorna um conjunto de registros (que pode estar
+            vazio).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">CATCH </emphasis> executa a
+  <emphasis>ação</emphasis> se a expressão <emphasis>recset</emphasis> falhar
+  por qualquer motivo.</para>
+
+  <para>As <emphasis>ações</emphasis> válidas são:</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="135.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">SKIP<indexterm>
+                <primary>SKIP</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Especifica ignorar o erro e dar continuidade, retornando um
+            dataset vazio.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ONFAIL<indexterm>
+                <primary>ONFAIL</primary>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
+
+            <entry>Especifica o retorno de um único registro da função
+            <emphasis>transform</emphasis> . A função TRANSFORMAR pode usar
+            FAILCODE e/ou FAILMESSAGE<indexterm>
+                <primary>FAILMESSAGE</primary>
+              </indexterm> para fornecer detalhes da falha e deve resultar em
+            uma estrutura RECORD de mesmo formato que
+            <emphasis>recset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FAIL<indexterm>
+                <primary>FAIL</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>A ação FAIL, que especifica a mensagem de erro a ser
+            gerada. Isso serve para fornecer informações mais úteis ao usuário
+            final sobre o motivo da falha da tarefa.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyRec := RECORD
+    STRING50 Value1;
+    UNSIGNED Value2;
+END;
+
+ds := DATASET([{'C',1},{'C',2},{'C',3},
+               {'C',4},{'C',5},{'X',1},{'A',1}],MyRec);
+
+MyRec FailTransform := transform
+  self.value1 := FAILMESSAGE[1..17]; 
+  self.value2 := FAILCODE
+END;
+
+limited1 := LIMIT(ds, 2);
+limited2 := LIMIT(ds, 3);
+limited3 := LIMIT(ds, 4);
+
+recovered1 := CATCH(limited1, SKIP);
+recovered2 := CATCH(limited2, ONFAIL(FailTransform));
+recovered3 := CATCH(CATCH(limited3, FAIL(1, 'Failed, dude')), ONFAIL(FailTransform));
+
+OUTPUT(recovered1);  //empty recordset 
+OUTPUT(recovered2);  //
+OUTPUT(recovered3);  //
+</programlisting>
+
+  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+  TRANSFORM</link>, <link linkend="FAIL">FAIL</link>, <link
+  linkend="FAILCODE">FAILCODE</link>, <link
+  linkend="FAILMESSAGE">FAILMESSAGE</link></para>
+</sect1>

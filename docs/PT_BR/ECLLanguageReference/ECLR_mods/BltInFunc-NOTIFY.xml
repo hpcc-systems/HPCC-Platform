@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="NOTIFY">
+  <title>NOTIFY</title>
+
+  <informalexample id="SchNOTIFY">
+    <para><emphasis role="bold">[</emphasis><emphasis>attributename</emphasis>
+    :=<emphasis role="bold"> ] <indexterm>
+        <primary>NOTIFY function</primary>
+      </indexterm>NOTIFY<indexterm>
+        <primary>NOTIFY</primary>
+      </indexterm>(</emphasis><emphasis> event </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, parm </emphasis><emphasis
+    role="bold">] [</emphasis><emphasis>, expression </emphasis><emphasis
+    role="bold">] )</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="83.05pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>attributename</emphasis></entry>
+
+              <entry>Opcional. O identificador desta ação.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>event</emphasis></entry>
+
+              <entry>A função EVENT , ou uma constante de string sem distinção
+              entre maiúsculas e minúsculas que nomeia o evento a ser
+              gerado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>parm</emphasis></entry>
+
+              <entry>Opcional. Uma constante de string sem distinção entre
+              maiúsculas e minúsculas que contém o parâmetro do
+              evento.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>expression</emphasis></entry>
+
+              <entry>Opcional. Uma constante de string sem distinção entre
+              maiúsculas e minúsculas que permite a especificação simples da
+              mensagem para restringir o evento a uma workunit
+              específica.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>A ação <emphasis role="bold">NOTIFY </emphasis> aciona o
+    <emphasis>evento</emphasis> para que a função WAIT function ou o serviço
+    de fluxo de trabalho WHEN possa proceder com as operações que estão
+    encarregador de operar.</para>
+
+    <para>O parâmetro <emphasis>expression</emphasis> permite definir um
+    serviço em ECL iniciado por um <emphasis>evento</emphasis>, respondendo
+    apenas para a tarefa que o iniciou.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>NOTIFY('testevent', 'foobar');
+  
+receivedFileEvent(STRING name) := EVENT('ReceivedFile', name);
+NOTIFY(receivedFileEvent('myfile'));
+
+//as a service
+doMyService := FUNCTION
+OUTPUT('Did a Service for: ' + 'EVENTNAME=' + EVENTNAME);
+NOTIFY(EVENT('MyServiceComplete',
+'&lt;Event&gt;&lt;returnTo&gt;FRED&lt;/returnTo&gt;&lt;/Event&gt;'),
+EVENTEXTRA('returnTo'));
+RETURN EVENTEXTRA('returnTo');
+END;
+     
+doMyService : WHEN('MyService');
+// and a call to the service
+NOTIFY('MyService',
+'&lt;Event&gt;&lt;returnTo&gt;'+WORKUNIT+'&lt;/returnTo&gt;....&lt;/Event&gt;');
+WAIT('MyServiceComplete');
+OUTPUT('WORKUNIT DONE')
+</programlisting>
+  </informalexample>
+
+  <para>Ver também: <link linkend="EVENT">EVENT</link>, <link
+  linkend="EVENTNAME">EVENTNAME</link>, <link
+  linkend="EVENTEXTRA">EVENTEXTRA</link>, <link linkend="CRON">CRON</link>,
+  <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link></para>
+</sect1>

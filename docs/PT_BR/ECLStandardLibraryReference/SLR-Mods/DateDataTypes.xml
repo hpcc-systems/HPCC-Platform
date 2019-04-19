@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Date_Data_Types">
+  <title>Date Data Types</title>
+
+  <para><emphasis role="bold">STD.Date.Date_rec<indexterm>
+      <primary>STD.Date.Date_rec</primary>
+    </indexterm><indexterm>
+      <primary>Date.Date_rec</primary>
+    </indexterm><indexterm>
+      <primary>Date_rec</primary>
+    </indexterm></emphasis></para>
+
+  <para><emphasis role="bold">STD.Date.Date_t<indexterm>
+      <primary>STD.Date.Date_t</primary>
+    </indexterm><indexterm>
+      <primary>S</primary>
+    </indexterm><indexterm>
+      <primary>Date_t</primary>
+    </indexterm></emphasis></para>
+
+  <para><emphasis role="bold">STD.Date.Days_t<indexterm>
+      <primary>STD.Date.Days_t</primary>
+    </indexterm><indexterm>
+      <primary>Date.Days_t</primary>
+    </indexterm><indexterm>
+      <primary>Days_t</primary>
+    </indexterm></emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis role="bold">Date_rec</emphasis></entry>
+
+          <entry>Uma estrutura RECORD contendo três campos e INTEGER2 ano, um
+          mês UNSIGNED1 e um dia UNSIGNED1.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">Date_t</emphasis></entry>
+
+          <entry>(Um UNSIGNED4 que contém um valor de data no formato
+          YYYYMMDD.)</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">Days_t</emphasis></entry>
+
+          <entry>Um UNSIGNED4 que contém um valor de dados que representa o
+          número de dias decorridos desde uma determinada data base. Esse
+          número pode ser o número de dias da era comum (1 de janeiro de 1 AD
+          = 1) com base no calendário juliano ou gregoriano, ou o número de
+          dias decorridos desde 1 de janeiro de 1900 (1 de janeiro de 1900 =
+          1) do calendário gregoriano.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Os três tipos de dados de data definidos na biblioteca de padrão de
+  dados são:</para>
+
+  <programlisting format="linespecific">    // A record stucture with the different elements separated out.
+EXPORT Date_rec := RECORD
+  INTEGER2   year;
+  UNSIGNED1  month;
+  UNSIGNED1  day;
+END;
+
+    //An unsigned number holding a date in the decimal form YYYYMMDD.  
+    //This type does not support dates prior to 1AD
+EXPORT Date_t := UNSIGNED4;
+
+    //A number of elapsed days.  Value depends on the function called.
+EXPORT Days_t := UNSIGNED4;
+</programlisting>
+
+  <para>Ver também: <link linkend="Date_Data_Types">Tipos de dados de
+  hora</link></para>
+</sect1>

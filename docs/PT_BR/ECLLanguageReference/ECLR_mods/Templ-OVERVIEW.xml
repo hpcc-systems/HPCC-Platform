@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Template_Language_Overview" role="nobrk">
+  <title>Linguagem de Modelos<indexterm>
+      <primary>Template Language</primary>
+    </indexterm> Visão geral</title>
+
+  <para>A ECL foi criada para ser a linguagem de programação de toda a nossa tecnologia HPCC. Portanto, a linguagem deve ser capaz de atender a todas as demandas de uma solução de negócios completa, do consumo, query e processamento de dados até o atendimento e a saída para o cliente.</para>
+
+  <para>Na maioria das soluções de negócios que criamos, os usuários finais usam algum tipo de aplicativo de interface gráfica do usuário (GUI) específica dos negócios (normalmente, criada por nós) para especificar queries de dados e configurar o processamento de tarefas para o supercomputador. Esses aplicativos de GUI personalizados podem gerar para os usuários a ECL que realmente executará a query ou o processo. A tarefa de gerar essa ECL pode ser um grande desafio do ponto de vista de codificação, quando consideramos a curva exponencial de todos os possíveis conjuntos de escolhas que o usuário pode fazer em um sistema moderadamente complexo. À medida que o sistema se torna mais complexo, o problema fica se agrava ainda mais. Isso significa que uma solução de codificação é inviável.</para>
+
+  <para>A linguagem de modelos da ECL oferece a solução para esse problema. A linguagem de modelos é uma metalinguagem que recebe entradas em XML padrão, normalmente geradas por um aplicativo de GUI do usuário final (simplificando consideravelmente, dessa forma, o problema de codificação na GUI) e gera o código ECL adequado para implementar as escolhas do usuário.</para>
+
+  <sect2 id="Template_Language_Statements">
+    <title>Declarações de Linguagem de Modelos</title>
+
+    <para>Todas as declarações da linguagem de modelos começam por # para diferenciá-los claramente do código ECL que será gerado pelo modelo. A maioria das declarações recebem parâmetros que determinam sua ação específica em cada instância.</para>
+
+    <para>O terminador de declaração obrigatório é o ponto e vírgula (assim como na ECL) e há estruturas de várias linhas que terminam com a declaração #END. Essas estruturas podem estar aninhadas uma dentro da outra.</para>
+  </sect2>
+
+  <sect2 id="Template_Symbols">
+    <title>Template Symbols</title>
+
+    <para>A linguagem de modelos usa símbolos definidos pelo usuário como variáveis. Esses símbolos devem ser declarados explicitamente antes do uso (consulte #DECLARE). <emphasis
+    role="bold">Os nomes de tag no texto XML sendo processado também são tratados como símbolos definidos pelo usuário.</emphasis></para>
+
+    <para>Para fazer referência a um símbolo definido pelo usuário ou a uma tag XML, o nome do símbolo ou tag deve estar entre sinais de porcentagem. Uma tag XML usada como  <emphasis>symbol</emphasis>  de template pode ser um simples nome de tag ou um xpath para os dados XML a serem recuperados (consulte a documentação da estrutura RECORD para obter uma descrição da sintaxe de xpath permitida). Se um xpath for usado, o 
+    <emphasis>symbol</emphasis>  usado deve ser o xpath completo para os dados, especificado entre chaves ({}). A sintaxe pode assumir várias formas:</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="147.60pt" />
+
+          <colspec colwidth="285.30pt" />
+
+          <tbody>
+            <row>
+              <entry><emphasis>%symbol%</emphasis></entry>
+
+              <entry>retorna o valor do símbolo</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>%'symbol'%.</emphasis></entry>
+
+              <entry>retorna o valor do símbolo como string</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>%'' %</emphasis></entry>
+
+              <entry>(uma string vazia) retorna o conteúdo da tag XML atual</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>%{xpath}%</emphasis></entry>
+
+              <entry>retorna o valor dos dados apontados pelo xpath</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>%'{xpath}'%.</emphasis></entry>
+
+              <entry>retorna o valor dos dados apontados pelo xpath como uma string</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+</sect1>

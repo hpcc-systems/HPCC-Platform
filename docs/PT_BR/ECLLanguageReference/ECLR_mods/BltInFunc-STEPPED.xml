@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="STEPPED">
+  <title>STEPPED</title>
+
+  <para><emphasis role="bold">STEPPED<indexterm>
+      <primary>STEPPED</primary>
+    </indexterm><indexterm>
+      <primary>STEPPED function</primary>
+    </indexterm>( </emphasis><emphasis>index, fields </emphasis><emphasis
+  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="75.30pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>index</emphasis></entry>
+
+            <entry>O INDEX para classificar. Pode ser filtrado ou o resultado
+            de um PROJECT em um INDEX.</entry>
+          </row>
+
+          <row>
+            <entry>fields</entry>
+
+            <entry>Uma lista de campos delimitada por vírgulas pela qual o
+            resultado é classificado, normalmente com elementos à esquerda na
+            chave.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">STEPPED </emphasis>classifica o
+  <emphasis>índice</emphasis> pelos <emphasis>campos</emphasis> especificados.
+  Essa função é usada em casos nos quais a função SORTED (índice) não será
+  suficiente.</para>
+
+  <para>Há algumas restrições para o seu uso:</para>
+
+  <para>Os campos de chave anteriores aos <emphasis>campos</emphasis>
+  ordenados devem estar razoavelmente bem filtrados; caso contrário, a
+  classificação pode consumir muita memória.</para>
+
+  <para>O Roxie só oferece suporte para classificação por componentes à
+  esquerda ou índices que são lidos localmente (índices de parte única ou
+  superchaves que contenham índices de parte única) ou ainda índices NOROOT
+  lidos em ALLNODES.</para>
+
+  <para>O Thor não oferece suporte para STEPPED.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>DataFile := '~RTTEST::TestStepped';
+KeyFile := '~RTTEST::TestSteppedKey';
+Rec := RECORD
+STRING2 state;
+STRING20 city;
+STRING25 lname;
+STRING15 fname;
+END;
+ds := DATASET(DataFile,
+{Rec,UNSIGNED8 RecPos {virtual(fileposition)}},
+THOR);
+IDX := INDEX(ds,{state,city,lname,fname,RecPos},KeyFile);
+
+OUTPUT(IDX(state IN ['FL','PA']));
+/* where this OUTPUT produces this result:
+FL BOCA RATON WIK PICHA
+FL DELAND WIKER OKE
+FL GAINESVILLE WIK MACHOUSTON
+PA NEW STANTON WIKER DESSIE */
+
+OUTPUT(STEPPED(IDX(state IN ['FL','PA']),fname));
+/* this STEPPED OUTPUT produces this result:
+PA NEW STANTON WIKER DESSIE
+FL GAINESVILLE WIK MACHOUSTON
+FL DELAND WIKER OKE
+FL BOCA RATON WIK PICHA */
+</programlisting>
+
+  <para>Ver também: <link linkend="INDEX_record_structure">INDEX</link>, <link
+  linkend="SORTED">SORTED</link>, <link
+  linkend="ALLNODES">ALLNODES</link></para>
+</sect1>

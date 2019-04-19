@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="NLP_RECORD_and_TRANSFORM_Functions">
+  <title>Funções NLP RECORD e TRANSFORM</title>
+
+  <para><emphasis>As funções a seguir são usadas em expressões de definição de
+  campo dentro da estrutura RECORD <indexterm>
+      <primary>RECORD structure</primary>
+    </indexterm> ou da função TRANSFORM que define o conjunto de resultado a
+  partir da função PARSE <indexterm>
+      <primary>PARSE function</primary>
+    </indexterm>:</emphasis></para>
+
+  <para><emphasis role="bold">MATCHED(<indexterm>
+      <primary>MATCHED</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">[
+  </emphasis><emphasis>patternreference </emphasis><emphasis role="bold">]
+  )</emphasis></para>
+
+  <para><emphasis role="bold">MATCHED</emphasis> retorna “true” (verdadeiro)
+  ou “false” (falso) quando <emphasis>patternreference</emphasis> encontra (ou
+  não encontra) uma correspondência. Se <emphasis>patternreference</emphasis>
+  for omitido, MATCHED indica se o padrão inteiro foi ou não foi combinado
+  (usar com a opção NOT MATCHED).</para>
+
+  <para><emphasis role="bold">MATCHTEXT</emphasis><emphasis><indexterm>
+      <primary>MATCHTEXT</primary>
+    </indexterm> </emphasis><emphasis role="bold">[
+  (</emphasis><emphasis>patternreference</emphasis><emphasis role="bold">)
+  ]</emphasis></para>
+
+  <para><emphasis role="bold">MATCHTEXT</emphasis> retorna o texto ASCII
+  correspondente localizado por <emphasis>patternreference</emphasis> , ou se
+  a correspondência não for encontrada. Se
+  <emphasis>patternreference</emphasis> for omitido, MATCHTEXT retorna todos
+  os textos correspondentes.</para>
+
+  <para><emphasis role="bold">MATCHUNICODE(<indexterm>
+      <primary>MATCHUNICODE</primary>
+    </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">MATCHUNICODE </emphasis> retorna o texto Unicode
+  correspondente localizado por <emphasis>patternreference</emphasis> , ou se
+  a correspondência não for encontrada, MATCHUNICODE retornará em
+  branco.</para>
+
+  <para><emphasis role="bold">MATCHLENGTH(<indexterm>
+      <primary>MATCHLENGTH</primary>
+    </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">MATCHLENGTH</emphasis> retorna o número de
+  caracteres no texto correspondente localizado por
+  <emphasis>patternreference</emphasis> , ou se a correspondência não for
+  encontrada, MATCHLENGTH retornará o número 0.</para>
+
+  <para><emphasis role="bold">MATCHPOSITION(<indexterm>
+      <primary>MATCHPOSITION</primary>
+    </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">MATCHPOSITION</emphasis> retorna a posição do
+  primeiro caractere dentro do texto no texto correspondente localizado por
+  <emphasis>patternreference</emphasis> , ou se a correspondência não for
+  encontrada, MATCHPOSITION retornará o número 0.</para>
+
+  <para><emphasis role="bold">MATCHROW(<indexterm>
+      <primary>MATCHROW</primary>
+    </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">MATCHROW</emphasis> retorna a linha inteira do
+  texto correspondente localizado por <emphasis>patternreference</emphasis>
+  para RULE (válido apenas quando a opção PARSE for usada na função PARSE ).
+  Isto pode ser usado para a qualificação completa de um campo na estrutura
+  RECORD da linha.</para>
+
+  <sect2 id="Pattern_References">
+    <title>Referências do Parâmetro Pattern</title>
+
+    <para>O parâmetro <emphasis>patternreference</emphasis> destas funções é
+    uma lista delimitada por barra (/) dos atributos PATTERN, TOKEN, ou RULE
+    previamente definidos, com ou sem um número de instância anexado em
+    colchetes.</para>
+
+    <para>Se um número de instância for fornecido, o
+    <emphasis>patternreference</emphasis> fará a correspondência de uma
+    ocorrência específica; caso contrário, a correspondência será feita em
+    qualquer ocorrência. O <emphasis>patternreference</emphasis> fornece um
+    caminho através da gramática da expressão regular para um determinado
+    resultado. O caminho para um atributo específico pode ser totalmente ou
+    parcialmente especificado.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>PATTERN ws := PATTERN('[ \t\r\n]');
+PATTERN arb := PATTERN('[-!.,\t a-zA-Z0-9]')+;
+PATTERN number := PATTERN('[0-9]')+;
+PATTERN age := '(' number OPT('/I') ')';
+PATTERN role := '[' arb ']';
+PATTERN m_rank := '&lt;' number '&gt;';
+PATTERN actor := arb OPT(ws '(I)' ws);
+          
+NLP_layout_actor_movie := RECORD
+  STRING30 actor_name := MATCHTEXT(actor);
+  STRING50 movie_name := MATCHTEXT(arb[2]); //2nd instance of arb
+  UNSIGNED2 movie_year := (UNSIGNED)MATCHTEXT(age/number);
+                         //number within age
+  STRING20 movie_role := MATCHTEXT(role/arb); //arb within role
+  UNSIGNED1 cast_rank := (UNSIGNED)MATCHTEXT(m_rank/number);
+END;
+          
+// This example demonstrates the use of productions in PARSE code
+//(only supported in the tomita version of PARSE).
+PATTERN ws := [' ','\t'];
+TOKEN number := PATTERN('[0-9]+');
+TOKEN plus := '+';
+TOKEN minus := '-';
+
+attrRec := RECORD
+  INTEGER val;
+END;
+
+RULE(attrRec) e0 :=
+          '(' USE(attrRec,expr)? ')' |
+          number TRANSFORM(attrRec, SELF.val := (INTEGER)$1;) |
+          '-' SELF TRANSFORM(attrRec, SELF.val := -$2.val;);
+RULE(attrRec) e1 :=
+          e0 |
+          SELF '*' e0 TRANSFORM(attrRec, SELF.val := $1.val * $3.val;) |
+          USE(attrRec, e1) '/' e0
+               TRANSFORM(attrRec, SELF.val := $1.val / $3.val;);
+RULE(attrRec) e2 :=
+          e1 |
+          SELF plus e1 TRANSFORM(attrRec, SELF.val := $1.val + $3.val;) |
+          SELF minus e1 TRANSFORM(attrRec, SELF.val := $1.val - $3.val;);
+RULE(attrRec) expr := e2;
+ 
+infile := DATASET([{'1+2*3'},{'1+2*z'},{'1+2+(3+4)*4/2'}],
+          { STRING line });
+resultsRec := RECORD
+  RECORDOF(infile);
+  attrRec;
+  STRING exprText;
+  INTEGER value3;
+END;
+
+resultsRec extractResults(infile l, attrRec attr) := TRANSFORM
+  SELF := l;
+  SELF := attr;
+  SELF.exprText := MATCHTEXT;
+  SELF.value3 := MATCHROW(e0[3]).val;
+END;
+
+OUTPUT(PARSE(infile,line,expr,extractResults(LEFT, $1),
+            FIRST,WHOLE,PARSE,SKIP(ws)));</programlisting>
+
+    <para>Ver também: <link linkend="PARSE">PARSE</link>, <link
+    linkend="RECORD_Structure">Estrutura RECORD</link>, <link
+    linkend="TRANSFORM_Structure">Estrutura TRANSFORM</link></para>
+  </sect2>
+</sect1>

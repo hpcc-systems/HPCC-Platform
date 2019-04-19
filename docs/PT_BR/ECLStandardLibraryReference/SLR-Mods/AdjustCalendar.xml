@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AdjustCalendar">
+  <title>AdjustCalendar</title>
+
+  <para><emphasis role="bold">STD.Date.AdjustCalendar<indexterm>
+      <primary>STD.Date.AdjustCalendar</primary>
+    </indexterm><indexterm>
+      <primary>Date.AdjustCalendar</primary>
+    </indexterm><indexterm>
+      <primary>AdjustCalendar</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> ,
+  [<emphasis>year_delta</emphasis>],[<emphasis>month_delta</emphasis>]
+  ,[<emphasis>day_delta</emphasis>] <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>Um valor de data no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>year_delta</emphasis></entry>
+
+          <entry>O ano mínimo aceitável. Opcional, o valor padrão é
+          zero.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>month_delta</emphasis></entry>
+
+          <entry>O ano mínimo aceitável. Opcional, o valor padrão é
+          zero.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>day_delta</emphasis></entry>
+
+          <entry>O ano máximo aceitável. Opcional, o valor padrão é
+          zero.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>AdjustDate retorna date_t que representa a data
+          ajustada.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função AdjustCalendar ajusta uma data incrementando ou decrementando
+  meses e/ou anos. A data deve estar no calendário gregoriano, após o ano
+  1600.</para>
+
+  <para>São usadas as regras definidas em McGinn v. State, 46 Neb. 427, 65
+  N.W. 427, 65 N.W. 46 (1895):</para>
+
+  <blockquote>
+    <para>"O termo mês de calendário, usado em decretos ou contratos e não
+    tendo aparentemente sido usado em um sentido diferente, denota um período
+    que termina com o dia do mês posterior numericamente correspondente ao dia
+    do início do período, menos um. Se não houver dia correspondente no mês
+    posterior, o período termina com o seu último dia."</para>
+  </blockquote>
+
+  <para>Ajustes de dia são executados após os ajustes de ano e mês usando as
+  regras acima.</para>
+
+  <para>Como exemplo, 31 de janeiro de 2014 + 1 mês resulta em 28 de fevereiro
+  de 2014; 31 de janeiro de 2014 + 1 mês + 1 dia resulta em 1 de março de
+  2014.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT std;
+inDate :=19631123;
+Std.Date.AdjustCalendar(inDate,5,1,3);  //returns 19681226
+</programlisting>
+
+  <para>Ver também: <link linkend="AdjustDate">AdjustDate</link></para>
+</sect1>

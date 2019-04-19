@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_get_data_from">
+  <title><emphasis role="bold">get_data_from</emphasis></title>
+
+  <para><indexterm>
+      <primary>get_data_from</primary>
+    </indexterm>O atributo get_data_from permite especificar que um campo
+  obtém seus dados a partir de uma outra variável Isso oferece compatibilidade
+  com a reutilização do código quando são realizadas alterações complexas de
+  versão.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>ESPresponse RoxieEchoPersonInfoResponse
+{
+  ESPstruct NameInfo Name;
+  string Var1;
+  [get_data_from("Var1")] string Var2;
+};
+</programlisting>
+
+  <para>No exemplo acima, a consulta retorna os dados em Var1 e, em seguida, o
+  serviço coloca os dados no campo Var2 e envia em resposta para o
+  client.</para>
+
+  <para>Neste exemplo, tanto Var1 quanto Var2 estão na resposta para o client.
+  Normalmente, Var1 e Var2 fazem parte das versões sem sobreposição, por isso
+  apenas uma delas estará na resposta (dependendo da versão
+  especificada).</para>
+
+  <para>Uma vez que o atributo get_data_from é compatível com tipos de dados
+  complexos, como um ESPstruct, os campos não precisam ser limitados aos tipos
+  de string.</para>
+</sect1>

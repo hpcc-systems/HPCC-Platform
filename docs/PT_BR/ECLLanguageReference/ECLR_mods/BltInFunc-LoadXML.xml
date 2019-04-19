@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LOADXML">
+  <title>LOADXML</title>
+
+  <para><emphasis>[</emphasis><emphasis>attributename</emphasis> :=<emphasis
+  role="bold"> ] LOADXML<indexterm>
+      <primary>LOADXML</primary>
+    </indexterm><indexterm>
+      <primary>LOADXML function</primary>
+    </indexterm>( </emphasis><emphasis> xmlstring | symbol
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, branch
+  </emphasis><emphasis role="bold">])</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="83.05pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>attributename</emphasis></entry>
+
+          <entry>Opcional. O nome da ação, que transforma a ação em definição
+          de atributo, consequentemente não é executado até que
+          <emphasis>attributename</emphasis> seja usado como uma ação.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>xmlstring</emphasis></entry>
+
+          <entry>Uma expressão da string que contém o texto XML a ser
+          processado em linha (sem retornos ou alimentações de linha).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>symbol</emphasis></entry>
+
+          <entry>O símbolo modelo que contém o texto XML a ser processado
+          (normalmente carregado por #EXPORT ou #EXPORTXML).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>branch</emphasis></entry>
+
+          <entry>Uma string definida pelo usuário que nomeia o texto XML ,
+          permitindo assim a operação de #FOR.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold">LOADXML </emphasis>abre um escopo XML ativo para
+  que as declarações de linguagem de modelo ou símbolos possam atuar. LOADXML
+  precisa ser a primeira linha do código para funcionar corretamente.</para>
+
+  <para>LOADXML também é usado no código MACRO de “detalhamento”.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>LOADXML('&lt;section&gt;&lt;item type="count"&gt;&lt;set&gt;person&lt;/set&gt;&lt;/item&gt;&lt;/section&gt;')
+//this macro receives in-line XML as its parameter
+//and demonstrates the code for multiple row drilldown
+EXPORT id(xmlRow) :=   MACRO
+STRING myxmlText := xmlRow;
+LOADXML(myxmlText);
+#DECLARE(OutStr)
+#SET(OutStr, '' )
+#FOR(row)
+  #APPEND(OutStr,
+          'OUTPUT(FETCH(Files.People,Files.PeopleIDX(id='
+     + %'id'% + '),RIGHT.RecPos));\n' )
+  #APPEND(OutStr,
+     'ds' + %'id'%
+     + ' := FETCH(Files.Property,Files.PropertyIDX(personid= '
+     + %'id'% + '),RIGHT.RecPos);\n' )
+  #APPEND(OutStr,
+     'OUTPUT(ds' + %'id'%
+     + ',{countTaxdata := COUNT(Taxrecs), ds'
+     + %'id'% + '});\n' )
+  #APPEND(OutStr,
+     'OUTPUT(FETCH(Files.Vehicle,Files.VehicleIDX(personid= '
+         + %'id'% + '),RIGHT.RecPos));\n' )
+#END
+%OutStr%
+ENDMACRO;
+    
+//this is an example of code for a drilldown (1 per row)
+EXPORT CountTaxdata(xmlRow) := MACRO
+LOADXML(xmlRow);
+OUTPUT(FETCH(Files.TaxData,
+   Files.TaxdataIDX(propertyid=%propertyid%),
+   RIGHT.RecPos));
+ENDMACRO;
+
+//This example uses #EXPORT to generate the XML
+
+NamesRecord := RECORD
+  STRING10 first;
+  STRING20 last;
+END;
+r := RECORD
+  UNSIGNED4 dg_parentid;
+  STRING10  dg_firstname;
+  STRING    dg_lastname;
+  UNSIGNED1 dg_prange;
+  IFBLOCK(SELF.dg_prange % 2 = 0)
+    STRING20 extrafield;
+  END;
+  NamesRecord namerec;
+  DATASET(NamesRecord) childNames;
+END;
+
+ds := DATASET('~RTTEST::OUT::ds', r, thor);
+   
+//Walk a record and do some processing on it.
+#DECLARE(out)
+#EXPORT(out, r);
+LOADXML(%'out'%, 'FileStruct');
+   
+#FOR (FileStruct)
+ #FOR (Field)
+  #IF (%'{@isEnd}'% &lt;&gt; '')
+OUTPUT('END');
+  #ELSE
+OUTPUT(%'{@type}'%
+   #IF (%'{@size}'% &lt;&gt; '-15' AND
+   %'{@isRecord}'%='' AND
+   %'{@isDataset}'%='')
++ %'{@size}'%
+   #END
++ ' ' + %'{@label}'% + ';');
+  #END
+ #END
+#END
+OUTPUT('Done');
+</programlisting>
+
+  <para>Ver também: <link linkend="Templates">Templates</link>, <link
+  linkend="_EXPORT">#EXPORT</link>, <link
+  linkend="_EXPORTXML">#EXPORTXML</link></para>
+</sect1>

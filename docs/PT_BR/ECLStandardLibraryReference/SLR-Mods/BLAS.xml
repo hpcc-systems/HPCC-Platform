@@ -1,0 +1,1234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="BLAS">
+  <title><emphasis>Suporte a BLAS</emphasis></title>
+
+  <para>Esta seção oferece suporte para o subprograma de álgebra linear
+  básica.</para>
+
+  <para>As funções BLAS usam o principal mapeamento de coluna para armazenar
+  uma matriz. Este é o mapeamento usado no Fortran, que tem entradas da
+  primeira coluna, seguidas pelas entradas da segunda coluna. Esta é a
+  transposição do formato principal da linha, usado normalmente na linguagem
+  C, em que as entradas da primeira linha são seguidas pelas entradas da
+  segunda linha.</para>
+
+  <sect1 id="BLASTypes">
+    <title>Tipos:</title>
+
+    <para><emphasis role="bold">STD.BLAS.Types<indexterm>
+        <primary>STD.BLAS.Types</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.Types</primary>
+      </indexterm><indexterm>
+        <primary>Tipos:</primary>
+      </indexterm></emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <tbody>
+          <row>
+            <entry><emphasis>value_t</emphasis></entry>
+
+            <entry>REAL8</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dimension_t</emphasis></entry>
+
+            <entry>UNSIGNED4</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>matrix_t</emphasis></entry>
+
+            <entry>SET OF REAL8</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>Triangle</emphasis></entry>
+
+            <entry>ENUM(UNSIGNED1, Upper=1, Lower=2)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>Diagonal</emphasis></entry>
+
+            <entry>ENUM(UNSIGNED1, UnitTri=1, NotUnitTri=2)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>Side</emphasis></entry>
+
+            <entry>ENUM(UNSIGNED1, Ax=1, xA=2)</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Types para suporte a subprogramas de álgebra linear básica de
+    blocos</para>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="ICellFunc">
+    <title>ICellFunc</title>
+
+    <para><emphasis role="bold">STD.BLAS.ICellFunc<indexterm>
+        <primary>STD.BLAS.ICellFunc</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.ICellFunc</primary>
+      </indexterm><indexterm>
+        <primary>ICellFunc</primary>
+      </indexterm>(</emphasis> <emphasis>v, r</emphasis> <emphasis
+    role="bold">,</emphasis> <emphasis>c</emphasis> <emphasis>);</emphasis>
+    <emphasis/></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>v</emphasis></entry>
+
+            <entry>O Valor</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>r</emphasis></entry>
+
+            <entry>O Ordinal da Linha</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>c</emphasis></entry>
+
+            <entry>O Ordinal da Coluna</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>O Valor atualizado</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold">ICellFunc </emphasis> é o protótipo de função
+    para Apply2Cells.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+REAL8 my_func(STD.BLAS.Types.value_t v, STD.BLAS.Types.dimension_t x, 
+              STD.BLAS.Types.dimension_t y) 
+              := 1/v; //set element to the reciprocal value
+</programlisting>
+
+    <para>Ver também: <link linkend="Apply2Cells">Apply2Cells</link></para>
+  </sect1>
+
+  <sect1 id="Apply2Cells">
+    <title>Apply2Cells</title>
+
+    <para><emphasis role="bold">STD.BLAS.Apply2Cells<indexterm>
+        <primary>STD.BLAS.Apply2Cells</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.Apply2Cells</primary>
+      </indexterm><indexterm>
+        <primary>Apply2Cells</primary>
+      </indexterm>(</emphasis> <emphasis>m, n</emphasis> <emphasis
+    role="bold">,</emphasis> <emphasis>x, f</emphasis> <emphasis>);</emphasis>
+    <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>m</emphasis></entry>
+
+            <entry>Número de Linhas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>Número de Colunas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>x</emphasis></entry>
+
+            <entry>Matriz</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>f</emphasis></entry>
+
+            <entry>Função para aplicar</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>O Matriz atualizada</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">Apply2Cells </emphasis> itera uma
+    matriz e aplica uma função a cada célula.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.value_t example_1(STD.BLAS.Types.value_t v, 
+                                 STD.BLAS.Types.dimensiopn_t x, 
+                                 STD.BLAS.Types.dimension_t y) := FUNCTION
+  RETURN IF(x=y, 1.0, 1/v);
+END;
+
+init_mat := [1, 2, 4, 4, 5, 10, 2, 5, 2];
+new_mat := STD.BLAS.Apply2Cells(3, 3, init_mat, example_1);
+
+// The new_mat matrix will be [1, .5, .25, .25, 1, .1, .5, .2, 1]
+</programlisting>
+
+    <para>Ver também: <link linkend="ICellFunc">ICellFunc</link></para>
+  </sect1>
+
+  <sect1 id="dasum">
+    <title>dasum</title>
+
+    <para><emphasis role="bold">STD.BLAS.dasum<indexterm>
+        <primary>STD.BLAS.dasum</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.dasum</primary>
+      </indexterm><indexterm>
+        <primary>dasum</primary>
+      </indexterm>(</emphasis> <emphasis>m, </emphasis> <emphasis>x, incx,
+    skipped);</emphasis> <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>m</emphasis></entry>
+
+            <entry>Número de entradas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>x</emphasis></entry>
+
+            <entry>A matriz principal da coluna que mantém o vetor</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>incxx</emphasis></entry>
+
+            <entry>O incremento para x, 1 no caso de um vetor real</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>skipped</emphasis></entry>
+
+            <entry>O número de entradas ignoradas. O padrão é zero.</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>A soma dos valores absolutos</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">dasum </emphasis> obtém a soma
+    absoluta, a norma 1 de um vetor.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.matrix_t test_data := [2, -2, -3, 3, 1, 3, -1, -1, 1];
+STD.BLAS.dasum(9, test_data, 1); //sums the absolute values of the matrix, and returns 17
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="daxpy">
+    <title>daxpy</title>
+
+    <para><emphasis role="bold">STD.BLAS.daxpy<indexterm>
+        <primary>STD.BLAS.daxpy</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.daxpy</primary>
+      </indexterm><indexterm>
+        <primary>daxpy</primary>
+      </indexterm>(</emphasis> <emphasis>N, alpha, X, incX, Y, incY,
+    x_skipped,y_skipped);</emphasis> <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>N</emphasis></entry>
+
+            <entry>Número de entradas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>alpha</emphasis></entry>
+
+            <entry>A coluna principal da matriz que mantém o vetor</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>X</emphasis></entry>
+
+            <entry>O incremento para x, 1 no caso de um vetor real</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>incX</emphasis></entry>
+
+            <entry>A coluna principal da matriz que mantém o vetor X</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>Y</emphasis></entry>
+
+            <entry>A coluna principal da matriz que mantém o vetor Y</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>incY</emphasis></entry>
+
+            <entry>O incremento ou passo de Y</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>x_skipped</emphasis></entry>
+
+            <entry>O número de entradas ignoradas para chegar ao primeiro
+            X.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>y_skipped</emphasis></entry>
+
+            <entry>O número de entradas ignoradas para chegar ao primeiro
+            Y.</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>O Matriz atualizada</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">daxpy</emphasis> é usada para somar
+    dois vetores ou matrizes com um multiplicador escalar aplicado durante a
+    operação de soma.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.t_matrix term_1 := [1, 2, 3];
+STD.BLAS.Types.t_matrix term_2 := [3, 2, 1].
+STD.BLAS.daxpy(3, 2, term_1, 1, term_2, 1); // result is [5, 6, 7]
+
+
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="dgemm">
+    <title>dgemm</title>
+
+    <para><emphasis role="bold">STD.BLAS.dgemm<indexterm>
+        <primary>STD.BLAS.dgemm</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.dgemm</primary>
+      </indexterm><indexterm>
+        <primary>dgemm</primary>
+      </indexterm>(</emphasis> <emphasis>transposeA, transposeB, M, N, K,
+    alpha, A, B, beta, C);</emphasis> <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>transposeA</emphasis></entry>
+
+            <entry>Verdadeiro quando a transposição de A é usada</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transposeB</emphasis></entry>
+
+            <entry>Verdadeiro quando a transposição de B é usada</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>M</emphasis></entry>
+
+            <entry>Número de linhas no produto</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>N</emphasis></entry>
+
+            <entry>Número de colunas no produto</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>K</emphasis></entry>
+
+            <entry>Número de colunas/linhas para o
+            multiplicador/multiplicado</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>alpha</emphasis></entry>
+
+            <entry>Escalar usado em A</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>A</emphasis></entry>
+
+            <entry>Matriz A</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>B</emphasis></entry>
+
+            <entry>Matriz B</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>beta</emphasis></entry>
+
+            <entry>Escala para matriz C</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>C</emphasis></entry>
+
+            <entry>Matriz C (ou vazio)</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>A Matriz atualizada</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">dgemm</emphasis> é usada para
+    multiplicar duas matrizes e opcionalmente adicionar esse produto a outra
+    matriz.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.t_matrix term_a := [2, 4, 8];
+STD.BLAS.Types.t_matrix term_c := [2, 1, 1];
+
+STD.BLAS.dgemm(TRUE, FALSE, 3, 3, 1, 1, term_a, term_b);
+                  //the outer product of the term_a and term_b vectors
+                  //result is [4,8, 16, 2, 4, 8, 2, 4, 8]
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="dgetf2">
+    <title>dgetf2</title>
+
+    <para><emphasis role="bold">STD.BLAS.dgetf2<indexterm>
+        <primary>STD.BLAS.dgetf2</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.dgetf2</primary>
+      </indexterm><indexterm>
+        <primary>dgetf2</primary>
+      </indexterm>(</emphasis> <emphasis>m, n, a);</emphasis>
+    <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>m</emphasis></entry>
+
+            <entry>Número de linhas da matriz a</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>Número de colunas da matriz a</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>a</emphasis></entry>
+
+            <entry>Matriz A</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Matriz composta de fatores, o triângulo inferior tem uma
+            diagonal implícita de uns. O triângulo superior tem a diagonal do
+            composto.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">dgetf2</emphasis> era uma fatoração
+    combinada triangular inferior e superior.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.t_matrix test := [2,4,6,3,10,25, 9,34,100];
+STD.BLAS.dgetf2(3, 3, test); //result is [2,2,3,3,4,4,9,16,25];
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="dpotf2">
+    <title>dpotf2</title>
+
+    <para><emphasis role="bold">STD.BLAS.dpotf2<indexterm>
+        <primary>STD.BLAS.dpotf2</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.dpotf2</primary>
+      </indexterm><indexterm>
+        <primary>dpotf2</primary>
+      </indexterm>(</emphasis> <emphasis>tri,, r, A, clear);</emphasis>
+    <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>tri</emphasis></entry>
+
+            <entry>Indica se o triângulo superior ou inferior é usado</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>r</emphasis></entry>
+
+            <entry>Número de linhas/colunas na matriz quadrada</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>A</emphasis></entry>
+
+            <entry>A matriz quadrada A</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>clear</emphasis></entry>
+
+            <entry>Limpa o triângulo não utilizado</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>A matriz triangular solicitada</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">dpotf2</emphasis> calcula a fatoração
+    de Cholesky de uma matriz definida positiva simétrica real A. O formato da
+    fatoração será A = U**T*U se o parâmetro <emphasis>tri</emphasis> for
+    Triangle.Upper ou A = L * L**T se o parâmetro <emphasis>tri</emphasis> for
+    Triangle.Lower. Esta é a versão desbloqueada do algoritmo, que chama BLAS
+    nível 2.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.matrix_t  symmetric_pos_def := [4, 6, 8, 6, 13, 18, 8, 18, 29];
+Lower_Triangle := BLAS.dpotf2(STD.BLAS.Types.Triangle.lower, 3, symmetric_pos_def); </programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="dscal">
+    <title>dscal</title>
+
+    <para><emphasis role="bold">STD.BLAS.dscal<indexterm>
+        <primary>STD.BLAS.dscal</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.dscal</primary>
+      </indexterm><indexterm>
+        <primary>dscal</primary>
+      </indexterm>(</emphasis> <emphasis>N, alpha, X, incX,
+    skipped);</emphasis> <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>N</emphasis></entry>
+
+            <entry>Número de elementos no vetor</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>alpha</emphasis></entry>
+
+            <entry>O fator de escala</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>X</emphasis></entry>
+
+            <entry>A coluna principal da matriz que mantém o vetor</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>incX</emphasis></entry>
+
+            <entry>O passo para chegar ao próximo elemento no vetor</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>skipped</emphasis></entry>
+
+            <entry>O número de entradas ignoradas para chegar ao primeiro
+            elemento.</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>A Matriz atualizada</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">dscal </emphasis> escala um vetor
+    alfa.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.matrix_t test := [1, 1, 1, 2, 2, 2, 3, 3, 3];
+result := STD.BLAS.dscal(9, 2.0, test, 1); // multiply each element by 
+</programlisting>
+
+    <para/>
+
+    <para/>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="dsyrk">
+    <title>dsyrk</title>
+
+    <para><emphasis role="bold">STD.BLAS.dsyrk<indexterm>
+        <primary>STD.BLAS.dsyrk</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.dsyrk</primary>
+      </indexterm><indexterm>
+        <primary>dsyrk</primary>
+      </indexterm>(</emphasis> <emphasis>tri, transposeA, N, K, alpha, A,
+    beta, C, clear);</emphasis> <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>tri</emphasis></entry>
+
+            <entry>Indica se o triângulo superior ou inferior é usado</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transposeA</emphasis></entry>
+
+            <entry>Executa a transposição da matriz A para NxK</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>N</emphasis></entry>
+
+            <entry>Número de Linhas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>K</emphasis></entry>
+
+            <entry>Número de colunas na matriz de atualização ou
+            transposição</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>alpha</emphasis></entry>
+
+            <entry>A escala alfa</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>A </emphasis></entry>
+
+            <entry>matriz de atualização, NxK ou KxN</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>beta</emphasis></entry>
+
+            <entry>A escala Beta</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>C</emphasis></entry>
+
+            <entry>A matriz para atualizar</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>clear</emphasis></entry>
+
+            <entry>Limpar o triângulo não atualizado. BLAS supõe que matrizes
+            simétricas têm apenas um dos triângulos e esta opção permite fazer
+            isso ser verdadeiro.</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>A Matriz atualizada</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">dsyrk </emphasis> implementa uma
+    atualização de classificação simétrica C &lt;- alpha A**T A + beta C ou c
+    &lt;- alpha A A**T + beta C. C é N x N.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.matrix_t initC := [1, 1, 1, 2, 2, 2, 3, 3, 3];
+STD.BLAS.Types.matrix_t initA := [1, 1, 1];
+Test1_mat := STD.BLAS.dsyrk(
+             STD.BLAS.Types.Triangle.upper, FALSE, 3, 1, 1, initA, 1, initC, TRUE)
+
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="dtrsm">
+    <title>dtrsm</title>
+
+    <para><emphasis role="bold">STD.BLAS.dtrsm<indexterm>
+        <primary>STD.BLAS.dtrsm</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.dsyrk</primary>
+      </indexterm><indexterm>
+        <primary>dtrsm</primary>
+      </indexterm>(</emphasis> <emphasis>side, tri, transposeA, diag, M, N,
+    lda, alpha, A, B);</emphasis> <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>side</emphasis></entry>
+
+            <entry>Lado de A, Side.Ax é op(A) X = alpha B</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>tri</emphasis></entry>
+
+            <entry>Indica se o triângulo superior ou inferior é usado</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transposeA</emphasis></entry>
+
+            <entry>Se op(A) é a transposição de A</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>diag</emphasis></entry>
+
+            <entry>A diagonal (uma diagonal de unidades implícita ou
+            fornecida)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>M</emphasis></entry>
+
+            <entry>Número de Linhas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>N</emphasis></entry>
+
+            <entry>Número de Colunas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>lda </emphasis></entry>
+
+            <entry>A principal dimensão da matriz A, que pode ser M ou
+            N</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>alpha</emphasis></entry>
+
+            <entry>O multiplicador escalar de B</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>A</emphasis></entry>
+
+            <entry>A matriz triangular</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>B</emphasis></entry>
+
+            <entry>A matriz de valores para a solução</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>A matriz de coeficientes para obter B</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">dtrsm </emphasis> é uma resolvedora
+    de matriz triangular. op(A) X = alpha B ou X op(A) = alpha B *, onde op é
+    Transpose, X e B são MxN</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+Side := STD.BLAS.Types.Side;
+Diagonal := STD.BLAS.Types.Diagonal;
+Triangle := STD.BLAS.Types.Triangle;
+STD.BLAS.Types.matrix_t left_a0 := [2, 3, 4, 0, 2, 3, 0, 0, 2];
+STD.BLAS.Types.matrix_t mat_b := [4, 6, 8, 6, 13, 18, 8, 18, 29];
+
+Test1_mat := STD.BLAS.dtrsm(Side.Ax, Triangle.Lower, FALSE, Diagonal.NotUnitTri,
+                            3, 3, 3, 1.0, left_a0, mat_b)
+</programlisting>
+
+    <para/>
+
+    <para/>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="extract_diag">
+    <title>extract_diag</title>
+
+    <para><emphasis role="bold">STD.BLAS.extract_diag <indexterm>
+        <primary>STD.BLAS.extract_diag</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.extract_diag</primary>
+      </indexterm><indexterm>
+        <primary>extract_diag</primary>
+      </indexterm>(</emphasis> <emphasis>m.n.x);</emphasis> <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>m</emphasis></entry>
+
+            <entry>Número de Linhas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>Número de Colunas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>x</emphasis></entry>
+
+            <entry>A matriz de onde extrair a diagonal</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Matriz Diagonal</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">extract_diag </emphasis> extrai a
+    diagonal da matriz</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.matrix_t x := [1.0, 2.0, 3.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0];
+diagonal_only := := STD.BLAS.extract_diag(3, 3, x);
+</programlisting>
+
+    <para/>
+
+    <para/>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="extract_tri">
+    <title>extract_tri</title>
+
+    <para><emphasis role="bold">STD.BLAS.extract_tri <indexterm>
+        <primary>STD.BLAS.extract_tri</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.extract_tri</primary>
+      </indexterm><indexterm>
+        <primary>extract_tri</primary>
+      </indexterm>(</emphasis> <emphasis>m, n, tri, dt, a );</emphasis>
+    <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>m</emphasis></entry>
+
+            <entry>Número de Linhas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>Número de Colunas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>tri</emphasis></entry>
+
+            <entry>Indica se o triângulo superior ou inferior é usado</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dt</emphasis></entry>
+
+            <entry>Use Diagonal.NotUnitTri ou Diagonal.UnitTri</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>a</emphasis></entry>
+
+            <entry>A matriz, normalmente um composto da fatoração</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Triangle</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">extract_tri </emphasis> extrai o
+    triângulo superior ou inferior. A diagonal pode ser a diagonal de unidades
+    real ou implícita.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+Diagonal := STD.BLAS.Types.Diagonal;
+Triangle := STD.BLAS.Types.Triangle;
+STD.BLAS.Types.matrix_t x := [1.0, 2.0, 3.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0];
+triangle := STD.BLAS.extract_tri(3, 3, Triangle.upper, Diagonal.NotUnitTri, x);
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="make_diag">
+    <title>make_diag</title>
+
+    <para><emphasis role="bold">STD.BLAS.make_diag <indexterm>
+        <primary>STD.BLAS.make_diag</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.make_diag</primary>
+      </indexterm><indexterm>
+        <primary>make_diag</primary>
+      </indexterm>(</emphasis> <emphasis>m, v, X );</emphasis>
+    <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>m</emphasis></entry>
+
+            <entry>Número de entradas na diagonal</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>v</emphasis></entry>
+
+            <entry>Valor da opção, o padrão é 1</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>X</emphasis></entry>
+
+            <entry>Entrada opcional de valores da diagonal, multiplicados por
+            v</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Matriz Diagonal</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">make_diag </emphasis> gera uma matriz
+    diagonal.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.matrix_t init1 := [1.0, 2.0, 3.0, 4.0];
+Square := STD.BLAS.make_diag(4, 1, init1); //4x4 with diagonal 1, 2, 3, 4
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="make_vector">
+    <title>make_vector</title>
+
+    <para><emphasis role="bold">STD.BLAS.make_vector <indexterm>
+        <primary>STD.BLAS.make_vector</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.make_vector</primary>
+      </indexterm><indexterm>
+        <primary>make_vector</primary>
+      </indexterm>(</emphasis> <emphasis>m, v );</emphasis> <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>m</emphasis></entry>
+
+            <entry>Número de elementos</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>v</emphasis></entry>
+
+            <entry>Os valores, o padrão é 1</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>O vetor</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">make_vector</emphasis> gera um vetor
+    da dimensão n</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+twos_vector := STD.BLAS.make_vector(4, 2); // a vector of [2, 2, 2, 2]
+</programlisting>
+
+    <para/>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="BLASTrace">
+    <title>trace</title>
+
+    <para><emphasis role="bold">STD.BLAS.trace <indexterm>
+        <primary>STD.BLAS.tracer</primary>
+      </indexterm><indexterm>
+        <primary>BLAS.trace</primary>
+      </indexterm><indexterm>
+        <primary>trace</primary>
+      </indexterm>(</emphasis> <emphasis>( m, n, x );</emphasis>
+    <emphasis/></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>m</emphasis></entry>
+
+            <entry>Número de Linhas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>Número de Colunas</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>x</emphasis></entry>
+
+            <entry>A Matriz</entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>O trace (soma das entradas da diagonal)</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">trace</emphasis> calcula o trace da
+    matriz de entrada</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.BLAS.Types.matrix_t x := [1.0, 2.0, 3.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0];
+trace_of_x := STD.BLAS.trace(3,3,x); // the trace is 7
+</programlisting>
+
+    <para/>
+  </sect1>
+</chapter>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CleanAccents">
+  <title>CleanAccents</title>
+
+  <para><emphasis role="bold">STD.Uni.CleanAccents<indexterm>
+      <primary>STD.Uni.CleanAccents</primary>
+    </indexterm><indexterm>
+      <primary>Uni.CleanAccents</primary>
+    </indexterm><indexterm>
+      <primary>CleanAccents</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os dados a serem higienizados.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>CleanAccents retorna um valor UNICODE.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">CleanAccents </emphasis> retorna a
+  string <emphasis>source</emphasis> com todos os caracteres acentuados
+  substituídos pelos não acentuados.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">UNICODE A := STD.Uni.CleanAccents(u'caf\u00E9');   //café - U+00E9 is lowercase e with acute
+                                                   //a contains 'cafe'
+</programlisting>
+
+  <para/>
+</sect1>

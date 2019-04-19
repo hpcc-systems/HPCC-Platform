@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Actions_and_Attributes">
+  <title>Ações e Definições</title>
+
+  <para>Enquanto Definições definem as expressões que podem ser avaliadas,
+  Ações desencadeiam a execução de uma workunit que gera resultados que podem
+  ser vistos. Uma Ação pode avaliar as Definições para gerar seu resultado.
+  Existem várias Ações integradas na ECL (como OUTPUT). Todas as expressões
+  (sem um nome de Definição) são tratadas implicitamente como uma Ação para
+  gerar o resultado da expressão.</para>
+
+  <sect2 id="Functions_as_ActionsFunctions_as_Actions">
+    <title>Expressões como Ações<indexterm>
+        <primary>Expressões como Ações</primary>
+      </indexterm></title>
+
+    <para>Fundamentalmente, qualquer expressão pode ser tratada como uma Ação.
+    Por exemplo,</para>
+
+    <programlisting>Attr1 := COUNT(Trades);     
+Attr2 := MAX(Trades,trd_bal);
+Attr3 := IF (1 = 0, 'A', 'B');</programlisting>
+
+    <para>são todas definições, mas sem um nome de definição são consideradas
+    apenas como expressões</para>
+
+    <programlisting>COUNT(Trades);       //execute these expressions as Actions
+MAX(Trades,trd_bal);
+IF (1 = 0, 'A', 'B');</programlisting>
+
+    <para>que são tratadas como ações e, como tal, podem diretamente gerar
+    valores de resultados se forem enviadas como queries (consultas) para o
+    supercomputador. Basicamente, qualquer expressão da ECL pode ser usada
+    como uma Ação para instigar uma workunit.</para>
+  </sect2>
+
+  <sect2 id="Attributes_as_ActionsAttributes_as_Actions">
+    <title>Definições como ações<indexterm>
+        <primary>Definições como ações</primary>
+      </indexterm></title>
+
+    <para>Estas mesmas definições da expressão podem ser executadas ao enviar
+    os nomes das Definições como queries (consultas), conforme este
+    exemplo:</para>
+
+    <programlisting>Attr1; //These all generate the same result values
+Attr2; // as the previous examples
+Attr3;</programlisting>
+  </sect2>
+
+  <sect2 id="Actions_as_Attributes">
+    <title>Ações como Definições<indexterm>
+        <primary>Ações como Definições</primary>
+      </indexterm></title>
+
+    <para>Por outro lado, dar um nome de Definição para qualquer Ação faz com
+    que esta ação se torne uma Definição que, consequentemente, não é mais uma
+    ação diretamente executável. Por exemplo,</para>
+
+    <programlisting>OUTPUT(Person);</programlisting>
+
+    <para>é uma ação, porém</para>
+
+    <programlisting>Attr4 := OUTPUT(Person);</programlisting>
+
+    <para>é uma definição e não é imediatamente executada ao ser enviada como
+    parte de uma consulta. Para executar a ação integrada à definição, é
+    preciso executar o nome da Definição que foi dado à Ação, como por
+    exemplo:</para>
+
+    <programlisting>Attr4; // run the previously defined OUTPUT(Person) action </programlisting>
+  </sect2>
+
+  <sect2 id="Debugging_Uses">
+    <title>Depuração</title>
+
+    <para>Essa técnica de execução direta de uma Definição como uma Ação
+    auxilia a depuração de um código ECL complexo. Você pode enviar a
+    Definição como uma consulta para determinar se os valores intermediários
+    foram calculados corretamente antes de avançar para um código mais
+    complexo.</para>
+  </sect2>
+</sect1>

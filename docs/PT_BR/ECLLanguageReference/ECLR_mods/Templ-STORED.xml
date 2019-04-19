@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_STORED">
+  <title>#STORED</title>
+
+  <para><emphasis role="bold">#STORED<indexterm>
+      <primary>#STORED</primary>
+    </indexterm>( </emphasis><emphasis> storedname , value
+  </emphasis><emphasis role="bold"> );</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.25pt"/>
+
+        <colspec colwidth="272.55pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>storedname</emphasis></entry>
+
+            <entry>Uma constante de string que contém o nome do resultado do
+            atributo armazenado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>Uma expressão para o novo valor a ser atribuído ao atributo
+            armazenado.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A declaração <emphasis role="bold">#STORED </emphasis> atribui
+  <emphasis>value</emphasis> a <emphasis>storedname</emphasis>, substituindo
+  todos os valores anteriores contidos no atributo armazenado. Essa declaração
+  pode ser usada fora de um escopo XML e não exige um LOADXML anterior para
+  instanciar um escopo XML.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  PersonCount := COUNT(person) : STORED('myname');
+  #STORED('myname',100);  
+       //change stored PersonCount attribute value to 100
+</programlisting>
+
+  <para>Ver também: <link linkend="STORED">STORED</link>, <link
+  linkend="_CONSTANT">#CONSTANT</link></para>
+</sect1>

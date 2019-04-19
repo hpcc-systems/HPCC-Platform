@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DISTRIBUTE">
+  <title>DISTRIBUTE<indexterm>
+      <primary>DISTRIBUTE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DISTRIBUTE<indexterm>
+      <primary>DISTRIBUTE function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis> <emphasis
+  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
+
+  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+  expression </emphasis><emphasis role="bold"> [<emphasis>,</emphasis>
+  MERGE(</emphasis><emphasis> sorts </emphasis><emphasis role="bold">) ]
+  </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset, index
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, joincondition
+  </emphasis><emphasis role="bold">] </emphasis><emphasis role="bold">[,
+  UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis
+  role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis>
+  <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
+
+  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold"> SKEW<indexterm>
+      <primary>SKEW</primary>
+    </indexterm>(</emphasis><emphasis> maxskew </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, skewlimit</emphasis><emphasis
+  role="bold"> ] ) </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82.20pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros a ser distribuído.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Uma expressão inteira que especifica como distribuir o
+            conjunto de registros, geralmente usando uma das funções HASH para
+            fins de eficiência.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MERGE</emphasis></entry>
+
+            <entry>Especifica que os dados são redistribuídos, mantendo a
+            ordem de classificação local em cada nó.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sorts</emphasis></entry>
+
+            <entry>As expressões de classificação pelas quais os dados foram
+            localmente classificados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>index</emphasis></entry>
+
+            <entry>O nome da definição de um atributo INDEX , que fornece a
+            distribuição adequada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>joincondition</emphasis></entry>
+
+            <entry>Opcional. Uma expressão lógica que especifica como vincular
+            os registros ao conjunto de registros e índice. As palavras-chave
+            LEFT e RIGHT podem ser usadas como qualificadores de dataset nos
+            campos do recordset e do índice.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SKEW</emphasis></entry>
+
+            <entry>Especifica os valores de distorção de dados
+            permitidos.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>maxskew</emphasis></entry>
+
+            <entry>Um número de ponto flutuante no intervalo de zero (0,0) a
+            um (1,0) especificando a distorção mínima a ser permitida
+            (0,1=10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>skewlimit</emphasis></entry>
+
+            <entry>Opcional. Um número de ponto flutuante no intervalo de zero
+            (0,0) a um (1,0) especificando a distorção máxima a ser permitida
+            (0,1=10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DISTRIBUTE retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">DISTRIBUTE</emphasis> redistribui
+  registros do <emphasis>recordset</emphasis> para todos os nós do
+  cluster.</para>
+
+  <sect2 id="Random_DISTRIBUTE">
+    <title>“Random” DISTRIBUTE</title>
+
+    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset
+    </emphasis><emphasis role="bold">)</emphasis></para>
+
+    <para>Esta forma redistribui o <emphasis>recordset</emphasis>
+    "aleatoriamente" para que não haja distorção de dados entre os nós, porém
+    sem as desvantagens que a função RANDOM() poderia introduzir. Isso é
+    funcionalmente equivalente a distribuição do registro inteiro através de
+    uma hash.</para>
+  </sect2>
+
+  <sect2 id="Expression_DISTRIBUTE">
+    <title>Expressão DISTRIBUTE</title>
+
+    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+    expression </emphasis><emphasis role="bold">)</emphasis></para>
+
+    <para>Esta forma redistribui o <emphasis>recordset</emphasis> com base na
+    <emphasis>expressão especificada, </emphasis>normalmente uma das funções
+    HASH . Somente os 32 bits inferiores do valor da
+    <emphasis>expressão</emphasis> são usados; portanto, HASH ou HASH32 são a
+    escolha ideal. Os registros para os quais a <emphasis>expressão</emphasis>
+    avalia a mesma terminarão no mesmo nó. DISTRIBUTE executa implicitamente
+    uma operação de módulo se o valor da <emphasis>expressão</emphasis> não
+    estiver no intervalo do número de nós disponíveis.</para>
+
+    <para>Se a opção MERGE for especificada, o <emphasis>recordset </emphasis>
+    precisa ter sido classificado localmente pelas expressões
+    <emphasis>sort</emphasis> . Isso evita uma reclassificação.</para>
+  </sect2>
+
+  <sect2 id="Index-based_DISTRIBUTE">
+    <title>Index-based DISTRIBUTE</title>
+
+    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+    index </emphasis><emphasis role="bold">[</emphasis><emphasis>,
+    joincondition </emphasis><emphasis role="bold">] )</emphasis></para>
+
+    <para>Esta forma redistribui o <emphasis>recordset</emphasis> com base na
+    distribuição existente do <emphasis>index</emphasis> especificado, onde a
+    ligação entre os dois é determinada pela
+    <emphasis>joincondition</emphasis>. Os registros para os quais a
+    <emphasis>joincondition</emphasis> é true (verdadeira) terminarão no mesmo
+    nó.</para>
+  </sect2>
+
+  <sect2 id="Skew-based_DISTRIBUTE">
+    <title>Skew-based DISTRIBUTE</title>
+
+    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+    </emphasis><emphasis role="bold">SKEW(</emphasis><emphasis> maxskew
+    </emphasis><emphasis role="bold">[</emphasis><emphasis>,
+    skewlimit</emphasis><emphasis role="bold"> ] ) )</emphasis></para>
+
+    <para>Esta forma redistribui o <emphasis>recordset</emphasis> , mas apenas
+    se for necessário. A finalidade desta forma é substituir o uso de
+    DISTRIBUTE<emphasis>(recordset</emphasis>,RANDOM()) para apenas obter uma
+    distribuição relativamente uniforme dos dados entre os nós. Esta forma
+    sempre tentará minimizar a quantidade de dados redistribuídos entre os
+    nós.</para>
+
+    <para>A distorção de um dataset é calculada da seguinte forma:</para>
+
+    <para>MAX(ABS(AvgPartSize-PartSize[node])/AvgPartSize)</para>
+
+    <para>Se a distorção do <emphasis>recordset</emphasis> for menor do que a
+    do <emphasis>maxskew </emphasis>, então DISTRIBUTE será não operacional.
+    Se o <emphasis> limite de distorção</emphasis> for especificado e se a
+    distorção em qualquer nó exceder esse limite, a tarefa falhará e exibirá
+    uma mensagem de erro (especificando o número do primeiro nó que excedeu o
+    limite); caso contrário, os dados são redistribuídos para garantir que os
+    dados sejam distribuídos com menor distorção que
+    <emphasis>maxskew</emphasis>.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>MySet1 := DISTRIBUTE(Person); //"random" distribution - no skew
+MySet2 := DISTRIBUTE(Person,HASH32(Person.per_ssn));
+ //all people with the same SSN end up on the same node
+ //INDEX example:
+mainRecord := RECORD
+  INTEGER8 sequence;
+  STRING20 forename; 
+  STRING20 surname;
+  UNSIGNED8 filepos{virtual(fileposition)};
+END;
+mainTable := DATASET('~keyed.d00',mainRecord,THOR);
+nameKey := INDEX(mainTable, {surname,forename,filepos}, 'name.idx');
+incTable := DATASET('~inc.d00',mainRecord,THOR);
+x := DISTRIBUTE(incTable, nameKey,
+                LEFT.surname = RIGHT.surname AND
+                LEFT.forename = RIGHT.forename);
+OUTPUT(x);
+
+//SKEW example:
+Jds := JOIN(somedata,otherdata,LEFT.sysid=RIGHT.sysid);
+Jds_dist1 := DISTRIBUTE(Jds,SKEW(0.1));
+ //ensures skew is less than 10%
+Jds_dist2 := DISTRIBUTE(Jds,SKEW(0.1,0.5));
+ //ensures skew is less than 10%
+ //and fails if skew exceeds 50% on any node
+</programlisting>
+
+    <para>Ver também: <link linkend="HASH32">HASH32</link>, <link
+    linkend="DISTRIBUTED">DISTRIBUTED</link>, <link
+    linkend="INDEX_record_structure">INDEX</link></para>
+  </sect2>
+</sect1>

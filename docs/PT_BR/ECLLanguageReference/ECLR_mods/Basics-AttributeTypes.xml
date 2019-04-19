@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Basic_Attribute_Types">
+  <title>Tipos Básicos de Definições<indexterm>
+      <primary>Definition Types</primary>
+    </indexterm></title>
+
+  <para>Os tipos básicos de definições usados com mais frequência na
+  programação em ECL são: <emphasis role="bold">Boolean</emphasis><indexterm>
+      <primary>Boolean</primary>
+    </indexterm>, <emphasis role="bold">Value<indexterm>
+      <primary>Value</primary>
+    </indexterm></emphasis>, <emphasis role="bold">Set<indexterm>
+      <primary>Set</primary>
+    </indexterm></emphasis>, <emphasis role="bold">Record Set<indexterm>
+      <primary>Record Set</primary>
+    </indexterm></emphasis>, e <emphasis role="bold">TypeDef<indexterm>
+      <primary>TypeDef</primary>
+    </indexterm></emphasis>.</para>
+
+  <sect2 id="Boolean_Attributes">
+    <title>Definição BOOLEAN<indexterm>
+        <primary>Boolean Definition</primary>
+      </indexterm>s</title>
+
+    <para>Uma definição booleana é definida como qualquer Definição cuja
+    definição seja uma expressão lógica com resultado TRUE/FALSE
+    (VERDADEIRO/FALSO). Por exemplo, todas as definições a seguir são
+    booleanas:</para>
+
+    <programlisting>IsBoolTrue  := TRUE;
+IsFloridian := Person.per_st = 'FL';
+IsOldPerson := Person.Age &gt;= 65;</programlisting>
+  </sect2>
+
+  <sect2 id="Value_Attributes">
+    <title>Definição Value<indexterm>
+        <primary>Value Definition</primary>
+      </indexterm>s</title>
+
+    <para>Uma Value é definida como qualquer definição cuja expressão seja
+    aritmética ou de string com um resultado de valor único. Por exemplo,
+    todos os seguintes são definições de valor:</para>
+
+    <programlisting>ValueTrue      := 1;
+FloridianCount := COUNT(Person(Person.per_st = 'FL'));
+OldAgeSum     := SUM(Person(Person.Age &gt;= 65),Person.Age);</programlisting>
+  </sect2>
+
+  <sect2 id="Set_Attributes">
+    <title>Definições Set</title>
+
+    <para>Uma definição SET<indexterm>
+        <primary>Set Definition</primary>
+      </indexterm> é definida como qualquer definição cuja expressão seja um
+    conjunto de valores expressados em colchetes <indexterm>
+        <primary>square brackets</primary>
+      </indexterm>. Conjunto de constante <indexterm>
+        <primary>Constant set</primary>
+      </indexterm>s são criados como um conjunto de valores constantes
+    <indexterm>
+        <primary>constant values</primary>
+      </indexterm> declarados de forma explícita que precisam ser expressados
+    entre colchetes, seja esse conjunto definido como uma definição separada
+    ou simplesmente incluída em linha em outra expressão. Todas as constantes
+    precisam ser do mesmo tipo.</para>
+
+    <programlisting>SetInts  := [1,2,3,4,5]; // an INTEGER set with 5 elements
+SetReals := [1.5,2.0,3.3,4.2,5.0];
+            // a REAL set with 5 elements
+SetStatusCodes := ['A','B','C','D','E'];
+            // a STRING set with 5 elements</programlisting>
+
+    <para>Os elementos em qualquer conjunto declarado de forma explícita
+    também podem ser compostos de expressões arbitrárias. Todas as expressões
+    precisam resultar no mesmo tipo e precisam ser expressões
+    constantes.</para>
+
+    <programlisting>SetExp := [1,2+3,45,SomeIntegerDefinition,7*3];
+                        // an INTEGER set with 5 elements</programlisting>
+
+    <para>Sets podem conter definições e expressões<indexterm>
+        <primary>Sets can contain definitions and expressions</primary>
+      </indexterm> , além de constantes, contanto que todos os elementos sejam
+    do mesmo tipo de resultado. Por exemplo:</para>
+
+    <programlisting>StateCapitol(STRING2 state) :=
+          CASE(state, 'FL' =&gt; 'Tallahassee', 'Unknown');
+SetFloridaCities := ['Orlando', StateCapitol('FL'), 'Boca '+'Raton',
+          person[1].per_full_city];</programlisting>
+
+    <para>Set Definitions <indexterm>
+        <primary>Set Definition</primary>
+      </indexterm>s também podem ser definidas usando a função SET <indexterm>
+        <primary>SET function</primary>
+      </indexterm> (consulte) SETS definidos desta maneira podem ser usados
+    como qualquer outro SET</para>
+
+    <programlisting>SetSomeField := SET(SomeFile, SomeField);
+          // a set of SomeField values</programlisting>
+
+    <para>SETs também podem conter datasets para uso com essas funções (como:
+    MERGE, JOIN, MERGEJOIN ou GRAPH), exigindo conjuntos de datasets como
+    parâmetros de entrada.</para>
+
+    <programlisting>SetDS := [ds1, ds2, ds3]; // a set of datasets</programlisting>
+  </sect2>
+
+  <sect2 id="Set_Ordering_and_Indexing">
+    <title>Ordenação e Indexação de Set <indexterm>
+        <primary>Set Ordering</primary>
+      </indexterm><indexterm>
+        <primary>Indexing</primary>
+      </indexterm></title>
+
+    <para>SETs são ordenados de forma implícita e você pode indexá-los para
+    acessar elementos individuais. Colchetes são usados para especificar o
+    número do elemento para acesso. O primeiro elemento é o número um
+    (1).</para>
+
+    <programlisting>MySet := [5,4,3,2,1];
+ReverseNum := MySet[2]; //indexing to MySet's element number 2,
+                       //so ReverseNum contains the value 4</programlisting>
+
+    <para>String<indexterm>
+        <primary>String</primary>
+      </indexterm>s (SET de caracteres <indexterm>
+        <primary>Character Sets</primary>
+      </indexterm>) podem também ser indexados para acessar elementos
+    contíguos individuais ou múltiplos dentro do SET de caracteres (uma string
+    é tratada como se fosse um conjunto de strings de 1 caractere). Um número
+    de elemento dentro de colchetes especifica um caractere individual a ser
+    extraído.</para>
+
+    <programlisting>MyString := 'ABCDE';
+MySubString := MyString[2]; // MySubString is 'B'</programlisting>
+
+    <para>Substrings podem ser extraídas usando dois pontos finais para
+    separar os números de elemento inicial e final nos colchetes, a fim de
+    especificar a <indexterm>
+        <primary>substring</primary>
+      </indexterm> (string slice<indexterm>
+        <primary>string slice</primary>
+      </indexterm>) a ser extraída. O número do elemento inicial ou final pode
+    ser omitido para indicar uma substring do início ao elemento especificado,
+    ou do elemento especificado até o final.</para>
+
+    <programlisting>MyString := 'ABCDE';
+MySubString1 := MyString[2..4]; // MySubString1 is 'BCD'
+MySubString2 := MyString[ ..4]; // MySubString2 is 'ABCD'
+MySubString3 := MyString[2.. ]; // MySubString3 is 'BCDE'</programlisting>
+  </sect2>
+
+  <sect2 id="Record_Set_Attributes">
+    <title>Definição Recordset</title>
+
+    <para>O termo "Dataset"<indexterm>
+        <primary>Dataset</primary>
+      </indexterm> no ECL significa explicitamente um arquivo de dados
+    "físico" no supercomputador (em disco ou na memória), enquanto o termo
+    “Record Set" <indexterm>
+        <primary>Record Set</primary>
+      </indexterm> indica qualquer conjunto de registros derivados de um
+    dataset (ou outro Record Set) normalmente baseado em alguma condição de
+    filtro para limitar o conjunto de resultados para um subconjunto de
+    registros. Conjuntos de registros também são criados como o resultado de
+    retorno de uma das funções integradas que retornam conjuntos de
+    resultados.</para>
+
+    <para>Uma definição de Record Set <indexterm>
+        <primary>Record Set Definition</primary>
+      </indexterm> é definida como qualquer definição cuja expressão seja um
+    Record Set ou dataset filtrado, ou qualquer função que retorne um Record
+    Set. Por exemplo, todos os itens a seguir são Definições de conjunto de
+    registro:</para>
+
+    <programlisting>FloridaPersons    := Person(Person.per_st = 'FL');
+OldFloridaPersons := FloridaPersons(Person.Age &gt;= 65);</programlisting>
+  </sect2>
+
+  <sect2 id="Record_Set_Ordering_and_Indexing">
+    <title>Ordenação e Indexação do Record Set</title>
+
+    <para>Todos os Datasets e Conjuntos de registro são organizados de forma
+    implícita e podem ser indexados para acessar registros individuais dentro
+    do conjunto. Colchetes são usados para especificar o número de elemento
+    para acesso, e o primeiro elemento em qualquer conjunto é o número um
+    (1).</para>
+
+    <para>Datasets (incluindo datasets secundários) e Conjuntos de registro
+    podem usar o mesmo método descrito acima para strings para acessar
+    registros contíguos individuais ou múltiplos.</para>
+
+    <programlisting>MyRec1 := Person[1];     // first rec in dataset
+MyRec2 := Person[1..10]; // first ten recs in dataset
+MyRec4 := Person[2..];   // all recs except the first</programlisting>
+
+    <para><emphasis role="bold">Observação:</emphasis> ds[1] e ds[1..1] não
+    são idênticos - ds[1..1] é um Record Set (pode ser usado no contexto de
+    Record Set), enquanto ds[1] é uma linha única (pode ser usada para
+    referenciar campos únicos).</para>
+
+    <para>E você também pode acessar campos individuais em um registro
+    específico com um índice único:</para>
+
+    <programlisting>MyField := Person[1].per_last_name; // last name in first rec</programlisting>
+
+    <para>A indexação de um Record Set com um valor que esteja fora dos
+    limites é definida para retornar uma linha na qual todos os campos
+    contenham valores zerados/em branco. Muitas vezes, é mais eficiente
+    indexar um valor fora do limite em vez de usar uma programação que
+    processa o caso especial de um valor de índice fora do limite.</para>
+
+    <para>Por exemplo, a expressão:</para>
+
+    <programlisting>IF(COUNT(ds) &gt; 0, ds[1].x, 0); </programlisting>
+
+    <para>is simpler as:</para>
+
+    <programlisting>ds[1].x //note that this returns 0 if ds contains no records.
+</programlisting>
+
+    <para/>
+  </sect2>
+
+  <sect2 id="TypeDef_Attributes">
+    <title>Definições TypeDef</title>
+
+    <para>Uma definição TypeDef <indexterm>
+        <primary>TypeDef Definition</primary>
+      </indexterm> é definida como qualquer definição cuja expressão é um tipo
+    de valor, seja ela integrada ou definida pelo usuário. Por exemplo, todas
+    as definições a seguir são TypeDef (exceto GetXLen):</para>
+
+    <programlisting>GetXLen(DATA x,UNSIGNED len) := TRANSFER(((DATA4)(x[1..len])),UNSIGNED4);
+
+EXPORT xstring(UNSIGNED len) := TYPE
+  EXPORT INTEGER PHYSICALLENGTH(DATA x) := GetXLen(x,len) + len;
+  EXPORT STRING LOAD(DATA x) := (STRING)x[(len+1)..GetXLen(x,len) + len];
+  EXPORT DATA STORE(STRING x):= TRANSFER(LENGTH(x),DATA4)[1..len] + (DATA)x;
+END;
+
+pstr := xstring(1); // typedef for user defined type
+pppstr := xstring(3);
+nameStr := STRING20; // typedef of a system type
+
+namesRecord := RECORD
+  pstr surname;
+  nameStr forename;
+  pppStr addr;
+  
+END;
+//A RECORD structure is also a typedef definition (user-defined)</programlisting>
+  </sect2>
+</sect1>

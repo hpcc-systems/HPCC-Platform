@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="INDEX_record_structure">
+  <title>INDEX</title>
+
+  <para><emphasis> attr</emphasis><emphasis role="bold"> := INDEX<indexterm>
+      <primary>INDEX</primary>
+    </indexterm>([</emphasis><emphasis> baserecset, </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> keys, indexfile </emphasis><emphasis
+  role="bold">[,SORTED<indexterm>
+      <primary>SORTED</primary>
+    </indexterm>] [,OPT<indexterm>
+      <primary>OPT</primary>
+    </indexterm>] [,COMPRESSED<indexterm>
+      <primary>COMPRESSED</primary>
+    </indexterm>( LZW<indexterm>
+      <primary>LZW</primary>
+    </indexterm> | ROW<indexterm>
+      <primary>ROW</primary>
+    </indexterm> | FIRST<indexterm>
+      <primary>FIRST</primary>
+    </indexterm>) ]</emphasis><emphasis role="bold"> [,DISTRIBUTED<indexterm>
+      <primary>DISTRIBUTED</primary>
+    </indexterm>] [,FILEPOSITION( [
+  </emphasis><emphasis>flag</emphasis><emphasis role="bold">] ) ] [,
+  MAXLENGTH<indexterm>
+      <primary>MAXLENGTH</primary>
+    </indexterm>[</emphasis>(<emphasis>**value</emphasis>**)<emphasis
+  role="bold">] ] );</emphasis></para>
+
+  <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+  INDEX([</emphasis><emphasis> baserecset, </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> keys, payload, indexfile
+  </emphasis><emphasis role="bold">[,SORTED] [,OPT] [,COMPRESSED( LZW | ROW |
+  FIRST) ] [,DISTRIBUTED] [,FILEPOSITION( [
+  </emphasis><emphasis>flag</emphasis><emphasis role="bold">] ) ] [,
+  MAXLENGTH<indexterm>
+      <primary>MAXLENGTH</primary>
+    </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
+  role="bold">] ]</emphasis>);</para>
+
+  <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+  INDEX(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
+  role="bold"> [, MAXLENGTH<indexterm>
+      <primary>MAXLENGTH</primary>
+    </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
+  role="bold">] ]); </emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>attr</emphasis></entry>
+
+          <entry>O nome do INDEX a ser usado posteriormente em outros
+          atributos.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>baserecset</emphasis></entry>
+
+          <entry>Opcional. O conjunto de registros de dados para o qual o
+          arquivo de índice foi criado. Se omitido, todos os campos dos
+          parâmetros <emphasis>keys</emphasis> e <emphasis>payload</emphasis>
+          devem ser totalmente qualificados. &gt;</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>keys</emphasis></entry>
+
+          <entry>A estrutura RECORD dos campos no
+          <emphasis>indexfile</emphasis> que contém informações-chave e de
+          posição do arquivo a serem mencionadas no
+          <emphasis>baserecset</emphasis>. Os nomes e tipos de campos devem
+          corresponder aos campos de <emphasis>baserecset</emphasis> (os tipos
+          de campos REAL e DECIMAL não são permitidos). Isso também pode
+          conter campos adicionais que não estão presentes no
+          <emphasis>baserecset</emphasis> (campos calculados). Se omitido,
+          todos os campos em <emphasis>baserecset</emphasis> serão
+          usados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>payload</emphasis></entry>
+
+          <entry>A estrutura RECORD do <emphasis>indexfile</emphasis> que
+          contém campos adicionais não usados como chaves. O nome do atributo.
+          <emphasis>baserecset</emphasis> se o nome do baserecset estiver na
+          estrutura, especificará "todos os outros campos ainda não nomeados
+          no parâmetro <emphasis>keys</emphasis> ". Isso pode conter campos
+          que não estão presentes no <emphasis>baserecset</emphasis> (campos
+          calculados). A <emphasis>payload</emphasis> esses campos não ocupam
+          espaço nos nós non-leaf do índice e não podem ser citados em uma
+          cláusula de filtro KEYED() Todos os campos com o modificador {BLOB}
+          (para permitir mais de 32 K de dados por entrada de índice) são
+          armazenados no <emphasis>indexfile</emphasis>, mas não com o resto
+          do registro. O acesso aos dados do BLOB exige uma procura
+          adicional.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>indexfile</emphasis></entry>
+
+          <entry>Uma constante de string que contém o nome do arquivo lógico
+          do índice. Consulte a seção <emphasis>Escopo e Nomes de arquivos
+          lógicos </emphasis> para obter mais detalhes sobre nomes de arquivos
+          lógicos.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SORTED</emphasis></entry>
+
+          <entry>Opcional. Especifica que, quando o índice é acessado, os
+          registros são fornecidos na ordem das <emphasis>keys</emphasis>. Se
+          omitido, a ordem do registro retornado será indefinida.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">OPT</emphasis></entry>
+
+          <entry><para>Opcional. Significa que usar o índice quando o
+          <emphasis>indexfile</emphasis> não existe resulta em um conjunto de
+          registros vazio em vez de em uma condição de erro.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
+
+          <entry><para>Opcional. Especifica o tipo de compactação usado. Se
+          omitido, o padrão usado é <emphasis role="bold"> LZW</emphasis>, uma
+          variante do algoritmo Lempel-Ziv-Welch. A especificação de <emphasis
+          role="bold">ROW</emphasis> compacta entradas de índice com base nas
+          diferenças entre linhas contíguas (apenas para uso com registros de
+          comprimento fixo) e é recomendada quando um tempo de descompactação
+          rápido é mais importante que a quantidade de compactação conseguida.
+          <emphasis role="bold">FIRST</emphasis> compacta os elementos
+          principais comuns da chave (recomendado apenas para uso na
+          comparação de cronometragem de tempo).</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DISTRIBUTED</emphasis></entry>
+
+          <entry>Opcional. Especifica que o índice foi criado com a opção
+          DISTRIBUTED na ação BUILD ação <indexterm>
+              <primary>BUILD action</primary>
+            </indexterm> ou que a ação BUILD simplesmente fez referência à
+          declaração INDEX<indexterm>
+              <primary>INDEX declaration</primary>
+            </indexterm> com a opção DISTRIBUTED. Portanto, o INDEX é acessado
+          localmente em cada nó (de forma semelhante à função LOCAL<indexterm>
+              <primary>LOCAL function</primary>
+            </indexterm>, que é preferível), não é classificado globalmente e
+          não há um índice raiz para indicar que parte do índice conterá uma
+          determinada entrada. Isso pode ser útil em queries do Roxie
+          juntamente com o uso de ALLNODES.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">FILEPOSITION</emphasis></entry>
+
+          <entry>Opcional. Se a <emphasis> flag</emphasis> for FALSE, evitará
+          o comportamento padrão da criação do campo implícito fileposition e
+          não tratará um campo inteiro à direita de forma diferente do resto
+          da carga útil.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>flag</emphasis></entry>
+
+          <entry>Opcional. TRUE ou FALSE, indicando se o campo “fileposition”
+          implícito será ou não criado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>index</emphasis></entry>
+
+          <entry><para>O nome de um atributo INDEX previamente definido a ser
+          duplicado.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>newindexfile</emphasis></entry>
+
+          <entry><para>Uma constante de string contendo o nome do arquivo
+          lógico do novo índice. Consulte a seção <emphasis>Escopo e Nomes de
+          arquivos lógicos</emphasis> para obter mais detalhes sobre nomes de
+          arquivos lógicos.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">MAXLENGTH</emphasis></entry>
+
+          <entry>Opcional. Esta opção é usada para criar índices que são
+          compatíveis com versões anteriores às versões 3.0. Especifica o
+          comprimento máximo de um registro de índice de comprimento variável.
+          Os registros de comprimento fixo sempre utilizam o tamanho mínimo
+          exigido. Se o comprimento máximo padrão causar problemas de
+          ineficiência, ele pode ser substituído de forma explícita.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>Opcional. Um valor inteiro que indica o comprimento máximo.
+          Se omitido, o tamanho máximo será calculado a partir da estrutura do
+          registro. Registros de comprimento variável que não especificam
+          MAXLENGTH podem ser ligeiramente ineficientes.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold">INDEX </emphasis>declara um índice previamente
+  criado para uso. INDEX é relacionado a BUILD (ou BUILDINDEX) da mesma forma
+  que DATASET é relacionado a OUTPUT: BUILD cria um arquivo de índice que
+  INDEX define para uso no código ECL code. Os arquivos de índice são
+  compactados. Um único registro de índice deve ser definido como menos de 32K
+  e resultar em uma página de menos de 8 K após a compactação.</para>
+
+  <para>Na parte de metachave da árvore Binária de INDEX, há uma parte do
+  arquivo separada de 32K no primeiro nó do cluster Thor onde foi criado, mas
+  que foi implementada em todos os nós de um cluster Roxie. O número de partes
+  de arquivo do nó folha é igual ao número de nós do cluster Thor onde foi
+  criado. No geral, a distribuição específica de registros de nó folha entre
+  nós de execução é indefinida, pois depende do tamanho do cluster onde foi
+  criado e do tamanho do cluster onde é usado.</para>
+
+  <para>Esses tipos de dados são permitidos na parte das chaves de um
+  INDEX:<itemizedlist>
+      <listitem>
+        <para>BOOLEAN</para>
+      </listitem>
+
+      <listitem>
+        <para>INTEGER</para>
+      </listitem>
+
+      <listitem>
+        <para>UNSIGNED</para>
+      </listitem>
+
+      <listitem>
+        <para>STRING</para>
+      </listitem>
+
+      <listitem>
+        <para>DATA</para>
+      </listitem>
+
+      <listitem>
+        <para>QSTRING</para>
+
+        <para>Todas as STRINGs devem ter comprimento fixo.</para>
+      </listitem>
+    </itemizedlist></para>
+
+  <sect2 id="Keyed_Access_INDEX">
+    <title>Acesso chaveado INDEX</title>
+
+    <para>Essa forma define um arquivo de índice para permitir acesso ao
+    <emphasis>baserecset</emphasis>usando chaves. O índice é usado
+    principalmente pelas operações FETCH e JOIN (com a opção KEYED
+    option).</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>PtblRec := RECORD
+  STRING2 State := Person.per_st;
+  STRING20 City := Person.per_full_city;
+  STRING25 Lname := Person.per_last_name;
+  STRING15 Fname := Person.per_first_name;
+END;
+
+PtblOut := OUTPUT(TABLE(Person,PtblRec),,'RTTEMP::TestFetch');
+          
+Ptbl := DATASET('RTTEMP::TestFetch',
+          {PtblRec,UNSIGNED8 RecPtr {virtual(fileposition)}},
+          FLAT);
+          
+AlphaInStateCity := INDEX(Ptbl,
+                   {state,city,lname,fname,RecPtr},
+                   'RTTEMPkey::TestFetch');
+Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
+  </sect2>
+
+  <sect2 id="Payload_INDEX">
+    <title>Índices de Payload</title>
+
+    <para>Essa forma define um arquivo de índice que contém campos adicionais
+    de carga útil, além das chaves. A carga útil pode conter campos com o
+    modificador {BLOB} para permitir a criação de mais de 32 K de dados por
+    entrada de índice. Esses campos BLOB são armazenados dentro do
+    <emphasis>indexfile</emphasis>, mas não com o resto do registro. O acesso
+    aos dados do BLOB exige uma procura adicional.</para>
+
+    <para>Essa forma é usada principalmente em operações JOIN com “half-key”
+    para eliminar a necessidade de acessar diretamente o
+    <emphasis>baserecset</emphasis>. Assim, o desempenho é superior ao da
+    versão da mesma operação com "chave completa" (executada com a opção KEYED
+    no JOIN). Por padrão, os campos de carga útil não são classificados
+    durante a ação BUILD<indexterm>
+        <primary>BUILD action</primary>
+      </indexterm> para minimizar o espaço dos nós folha da chave. Esse
+    comportamento de classificação pode ser controlado usando
+    <emphasis>sortIndexPayload</emphasis> em uma declaração #OPTION.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>Vehicles := DATASET('vehicles',
+          {STRING2 st,STRING20 city,STRING20 lname,
+          UNSIGNED8 fpos{virtual(fileposition)}},FLAT);
+
+VehicleKey := INDEX(Vehicles,{st,city},{lname,fpos},'vkey::st.city'); 
+BUILDINDEX(VehicleKey);</programlisting>
+  </sect2>
+
+  <sect2 id="Duplicate_INDEX">
+    <title>Duplicate INDEX</title>
+
+    <para>Essa forma define um <emphasis>newindexfile </emphasis> idêntico ao
+    <emphasis>index</emphasis> previamente definido.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>NewVehicleKey := INDEX(VehicleKey,'NEW::vkey::st.city');
+          //define NewVehicleKey like VehicleKey</programlisting>
+
+    <para>Ver também: <link linkend="DATASET">DATASET</link>, <link
+    linkend="BUILD">BUILDINDEX</link>, <link linkend="JOIN">JOIN</link>, <link
+    linkend="FETCH">FETCH</link>, <link
+    linkend="KEYED-WILD">KEYED/WILD</link></para>
+  </sect2>
+</sect1>

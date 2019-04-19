@@ -1,0 +1,1234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <title>Seis Graus de Kevin Bacon</title>
+
+  <bookinfo>
+    <title>Seis Graus de Kevin Bacon: Exemplo de Programação em ECL</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="Working_with_Data">
+    <title><emphasis role="bold">Trabalhando com Dados</emphasis></title>
+
+    <sect1 id="Working_with_data_Intro" role="nobrk">
+      <title>Introdução</title>
+
+      <para>Este exercício mostra a metodologia para extrair informações úteis
+      dos dados. Localizar links e relações interessantes em datasets grandes
+      ou massivos faz parte da rotina de uso da plataforma HPCC Systems –
+      HPCC.</para>
+
+      <para>Neste exemplo, faremos o download dos arquivos de dados do
+      Internet Movie Database (Base de dados de filmes na Internet ou IMDB) e
+      analisaremos uma técnica para extrair links e localizar relações.</para>
+
+      <para>Uma vez que o conceito de atores e filmes é conceitualmente
+      simples, todos devem compreender os dados e as relações de forma
+      intuitiva. No entanto, os dados são abrangentes o suficiente para
+      fornecer um exemplo sólido e inspiração para que novos usuários obtenham
+      habilidades para “atacar” seus próprios problemas do mundo real com um
+      HPCC.</para>
+
+      <para>Neste exemplo, iremos:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Fazer o download de arquivos de dados brutos e as
+          documentações de apoio a esses dados</para>
+        </listitem>
+
+        <listitem>
+          <para>Analisar o arquivo de dados para compreender seu formato e
+          conteúdo</para>
+        </listitem>
+
+        <listitem>
+          <para>Fazer o spray do arquivo para o cluster da refinaria de dados
+          (Thor)</para>
+        </listitem>
+
+        <listitem>
+          <para>Examinar os dados e determinar o pré-processamento
+          necessário</para>
+        </listitem>
+
+        <listitem>
+          <para>Realizar o pré-processamento dos dados para gerar um novo
+          arquivo de dados</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><informaltable colsep="1" frame="all">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="52.60pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+                <entry>Apesar de esse exemplo ser executado em um HPCC de nó
+                único, você verá uma diferença significativa no desempenho em
+                um sistema de vários nós. O verdadeiro poder do HPCC é a sua
+                capacidade de trabalhar nas diferentes partes de um arquivo de
+                dados em paralelo. Isso é o que chamamos de Processamento
+                Paralelo Massivo (MPP).</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect1>
+
+    <sect1 id="Processing_the_data">
+      <title>Processando os Dados</title>
+
+      <sect2 id="Get_a_data_file">
+        <title><emphasis>Nós temos um arquivo de dados</emphasis></title>
+
+        <para>A Base de Dados de Filmes na Internet (IMDB) constitui de um
+        conjunto de arquivo de dados sobre filmes que pode ser baixado
+        livremente da Internet.</para>
+
+        <para>A IMDB pode ser baixada em vários formatos, incluindo em arquivo
+        de texto. O conjunto de dados inclui aproximadamente 48 arquivos sobre
+        atores, atrizes, diretores, produtores e outros aspectos dos filmes
+        cinematográficos.</para>
+
+        <para>Seu tamanho é gerenciável (~400MB) e suficiente para ser usado
+        na plataforma HPCC , porém não é muito grande para download<emphasis
+        role="bold">.</emphasis></para>
+
+        <para>Os arquivos de dados de texto simples estão disponíveis nos
+        seguintes sites ftp:</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para><ulink
+            url="ftp://ftp.fu-berlin.de/pub/misc/movies/database/">ftp://ftp.fu-berlin.de/pub/misc/movies/database/</ulink>
+            (Alemanha)</para>
+          </listitem>
+
+          <listitem>
+            <para><ulink
+            url="ftp://ftp.funet.fi/pub/mirrors/ftp.imdb.com/pub/">ftp://ftp.funet.fi/pub/mirrors/ftp.imdb.com/pub/</ulink>
+            (Finlândia)</para>
+          </listitem>
+
+          <listitem>
+            <para><ulink
+            url="ftp://ftp.sunet.se/pub/tv+movies/imdb/">ftp://ftp.sunet.se/pub/tv+movies/imdb/</ulink>
+            (Suécia)</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Os arquivos são compactados através do GNUzip para economizar
+        espaço e largura de banda.</para>
+
+        <para>Inicialmente, vamos focar em dois dos maiores datasets no banco
+        de dados IMDB</para>
+
+        <blockquote>
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>O dataset de atores (com aproximadamente 4 milhões de
+              registros)</para>
+            </listitem>
+
+            <listitem>
+              <para>O dataset de atrizes (com aproximadamente 2 milhões de
+              registros)</para>
+            </listitem>
+          </itemizedlist>
+        </blockquote>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Faça o download dos arquivos de dados de texto simples
+            (<emphasis>actors.list.gzos</emphasis> e
+            <emphasis>actresses.list.gz</emphasis> ) em sua unidade local
+            usando a interface ftp de sua preferência.</para>
+          </listitem>
+
+          <listitem>
+            <para>Extraia os dois arquivos de dados
+            (<emphasis>actors.list</emphasis> e <emphasis>actresses.list
+            </emphasis> ) usando qualquer interface GNUzip.</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="Analyze_the_data">
+        <title><emphasis>Analisar o arquivo de dados para compreender seu
+        formato e conteúdo</emphasis></title>
+
+        <para>Aqui está o exemplo dos dados do arquivo Actors.list da
+        IMDB</para>
+
+        <para><programlisting>Koolout' Starks, Johnny Nothing Like the Holidays (2008) [Alexis' Thug] &lt;35&gt;
+Subtle Seduction (2008) [Officer Ward]
+The Godfather of Green Bay (2005) (as Johnny Starks) [Marcus] &lt;18&gt;
+
+La Chispa', Tony Caceria de judiciales (1997) &lt;11&gt;
+Violencia en la sierra (1995) [Victoriano] &lt;4&gt;</programlisting></para>
+
+        <para>Observe que o arquivo de texto dos atores está estruturado da
+        seguinte forma</para>
+
+        <para><programlisting>Blankline
+Actorname_i Moviename (year) [role] &lt;listing position&gt;
+            Moviename (year) [role] &lt;listing position&gt;
+            Moviename (year) [role] &lt;listing position&gt;
+              :
+Blankline
+Actorname_j \t Moviename (year) [role] &lt;listing position&gt;
+              :
+Blankline</programlisting></para>
+      </sect2>
+
+      <sect2 id="Load_the_Incoming_Data" role="brk">
+        <title><emphasis>Enviando os arquivos de dados de entrada para sua
+        Zona de Entrada de Arquivos</emphasis></title>
+
+        <para>Nesta etapa, você copiará os arquivos de dados para um local
+        onde eles possam ser distribuídos aos nós de seu cluster HPCC. Uma
+        zona de entrada de arquivos é um local de armazenagem anexado ao seu
+        HPCC. Ela possui um utilitário em execução para facilitar o spraying
+        (processo de distribuir dados aos nós) para um cluster.</para>
+
+        <para>Para arquivos de dados menores, com tamanho máximo de 2GB, você
+        pode usar o utilitário upload/dowload do arquivo no ECL Watch. Os
+        arquivos de dados de amostra possuem aproximadamente 400 mb.</para>
+
+        <para>Em seguida, você distribuirá (ou fará o spray) o dataset para
+        todos os nós no cluster do HPCC. O poder do HPCC vem da sua capacidade
+        de atribuir vários processadores para trabalhar nas diferentes partes
+        do arquivo de dados em paralelo.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Caso ainda não tenha feito, baixe os arquivos de dados de
+            amostra do site ftp, como mencionado na seção anterior.</para>
+          </listitem>
+
+          <listitem>
+            <para>Extraia os arquivos para uma pasta em seu computador
+            local.</para>
+          </listitem>
+
+          <listitem>
+            <para>Em seu navegador, acesse a URL do <emphasis role="bold">ECL
+            Watch</emphasis> . Por exemplo, http://nnn.nnn.nnn.nnn:8010, onde
+            nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png"/></entry>
+
+                      <entry>Seu endereço IP poderá ser diferente dos
+                      endereços fornecidos nas imagens de exemplo. Use o
+                      endereço IP fornecido pela sua instalação <emphasis
+                      role="bold">sua</emphasis> installation.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Na página do ECL Watch, clique no <emphasis
+            role="bold">ícone Files </emphasis>, e em seguida no link
+            <emphasis role="bold">Landing Zones (Zona de entrada de
+            arquivos)</emphasis> .</para>
+
+            <para><figure>
+                <title>Upload/Download</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Após clicar no link <emphasis role="bold">Upload</emphasis>
+            , uma caixa de diálogo do arquivo será exibida.</para>
+
+            <para/>
+          </listitem>
+
+          <listitem>
+            <para>Localize os arquivos em seu computador local e use a função
+            de multi-seleção para selecionar os arquivos que deseja enviar,
+            pressionando em seguida o botão <emphasis
+            role="bold">Open</emphasis> .</para>
+
+            <para>Os arquivos selecionados aparecerão. Os arquivos de dados
+            possuem os seguintes nomes: <emphasis>actors.list</emphasis> e
+            <emphasis> actresses.list</emphasis> <emphasis role="bold">
+            </emphasis></para>
+
+            <figure>
+              <title>Dropzones e Arquivos</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/IMDB_upload.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Start</emphasis>
+            para enviar os arquivos.</para>
+
+            <para>É possível acompanhar o progresso do envio.</para>
+
+            <figure>
+              <title>Progresso de envio</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/IMDB_uploadProgress.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Spray_the_Data_to_THOR">
+        <title>Spray do arquivo de dados para o seu <emphasis>Cluster da
+        Refinaria de Dados (Thor)</emphasis></title>
+
+        <para>Para usar o arquivo de dados em seu HPCC System, é preciso fazer
+        o "spray” (distribuir) desse arquivo para todos os nós. O
+        <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> um spray
+        ou importação é a transferência de um arquivo de dados de um local
+        (como a zona de entrada de arquivos) para diversas partes do arquivo
+        ou nós em um cluster.</para>
+
+        <para>O arquivo distribuído passa a ter um <emphasis>nome de arquivo
+        lógico </emphasis> como segue<emphasis role="bold">:
+        ~thor::in::IMDB::actors.list </emphasis> O sistema mantém uma lista de
+        arquivos lógicos e as localizações do arquivo físico correspondente
+        das partes do arquivo.</para>
+
+        <para/>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Abra o ECL Watch usando a URL:</para>
+
+            <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
+            nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a
+            porta. A porta padrão é 8010)</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no ícone <emphasis role="bold">Files</emphasis> , e
+            em seguida no link <emphasis role="bold">Landing Zone</emphasis>
+            (Zona de entrada de arquivos) na navegação.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione os dois arquivos (actors.list e actresses.list ) e
+            pressione o botão Delimited.</para>
+
+            <para>A caixa de diálogo <emphasis role="bold">Delimeted
+            Spray</emphasis> será exibida.</para>
+
+            <para><figure>
+                <title>Spray delimitado</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/IMDB_01.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para/>
+          </listitem>
+
+          <listitem>
+            <para>Selecione mythor na lista suspensa <emphasis
+            role="bold">Group</emphasis> .</para>
+
+            <para>O endereço IP é preenchido automaticamente e o Caminho local
+            é parcialmente preenchido com o nome da pasta padrão na Zona de
+            entrada de arquivos. Observação: VM e Community Edition
+            normalmente possuem apenas uma zona de entrada de arquivos.</para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha o Escopo de destino (Target Scope) <emphasis
+            role="bold">~thor::in::IMDB</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha os demais parâmetros (caso ainda não tenham sido
+            preenchidos).</para>
+
+            <para><itemizedlist>
+                <listitem>
+                  <para>Max Record Length 8192 (Máximo tamanho do registro
+                  8192)</para>
+                </listitem>
+
+                <listitem>
+                  <para>Separator \, (Separador \,)</para>
+                </listitem>
+
+                <listitem>
+                  <para>Line Terminator \n,\r\n (Terminador de linhas
+                  \n,\r\n)</para>
+                </listitem>
+
+                <listitem>
+                  <para>Quote: ‘ (Aspas: ‘)</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Não se esqueça de marcar a caixa <emphasis
+            role="bold">Overwrite</emphasis> (Substituir).</para>
+
+            <para>Se disponível, certifique-se de que a caixa <emphasis
+            role="bold">Replicate</emphasis> esteja marcada. (A opção replicar
+            está disponível apenas em sistemas em que a replicação tenha sido
+            ativada.)</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis
+            role="bold">Spray</emphasis><emphasis role="bold">
+            </emphasis>.</para>
+
+            <para>Uma aba será aberta para cada arquivo. Nessas abas, é
+            possível monitorar o progresso de cada spray DFU .</para>
+
+            <para><figure>
+                <title>Ver progresso</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/IMDB_03a.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Após os sprays tiverem sido concluídos, podemos consultar os
+            arquivos lógicos no HPCC para ver os arquivos que foram
+            distribuídos aos nós.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no link <emphasis role="bold">Logical
+            Files</emphasis></para>
+
+            <para>Os arquivos serão exibidos na lista de arquivos
+            lógicos:</para>
+
+            <para><figure>
+                <title>Exibir arquivos lógicos</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/IMDB_05.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="Working_with_the_Data">
+        <title>Trabalhando com Dados</title>
+
+        <para>Nesta parte do exemplo, vamos programar o código ECL para que
+        possamos ler e os arquivos de dados distribuídos. Vamos definir e
+        executar consultas simples para que possamos avaliá-lo e determinar
+        qualquer pré-processamento necessário.</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Inicie o ECL IDE (Start &gt;&gt; All Programs &gt;&gt; HPCC
+            Systems &gt;&gt; ECL IDE )</para>
+          </listitem>
+
+          <listitem>
+            <para>Faça login em seu ambiente.</para>
+          </listitem>
+
+          <listitem>
+            <para>Expanda a pasta ECL de <emphasis
+            role="bold">exemplos</emphasis> na caixa de ferramentas
+            Repository.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Expanda a pasta <emphasis role="bold">IMDB
+            </emphasis></para>
+
+            <para>Todos os arquivos ECL que precisam concluir este tutorial
+            estão localizados na pasta IMDB.</para>
+
+            <figure>
+              <title>Arquivos ECL IMDB</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/IMDB_06_new.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+
+          <listitem>
+            <para>Abra o arquivo ECL CleanActor e examine o código.</para>
+
+            <para>Esse código lê e processa o arquivo de texto bruto. Os
+            comentários abaixo descrevem o processo:</para>
+
+            <para><programlisting>IMPORT Std;
+
+EXPORT STRING CleanActor(STRING infld) := FUNCTION
+  //this can be refined later
+  s1 := Std.Str.FindReplace(infld, '\'',''); // replace apostrophe
+  s2 := Std.Str.FindReplace(s1, '\t','');    //replace tabs
+  s3 := Std.Str.FindReplace(s2, '----','');  // replace multiple -----
+  return TRIM(s3, LEFT, RIGHT);
+END;
+</programlisting></para>
+          </listitem>
+        </itemizedlist>
+
+        <sect3 id="Examine_The_Data" role="brk">
+          <title>Examinando os dados</title>
+
+          <para>Nesta seção, vamos analisar os dados e determinar se é há
+          algum pré-processamento para ser realizado. Essa é a etapa no
+          processo de desenvolvimento na qual convertemos dados brutos para um
+          formato realmente utilizável.</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>O arquivo da IMDB.FileActors.ecl file especifica o
+                tamanho do cabeçalho nos arquivos (actors.list e
+                actresses.list.) O valor do HEADING() no código de exemplo
+                estava correto no momento em que baixamos os dados IMDB , mas
+                poderia mudar a qualquer momento. Sugerimos abrir um editor de
+                textos e verificar o número da linha onde o cabeçalho termina
+                e os dados começam (como mostrado abaixo).</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+
+          <figure>
+            <title>actors.list no editor de texto</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/IMDB_fileheading.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para/>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Abra uma nova Janela do compilador (CTRL+N) e escreva o
+              seguinte código:</para>
+
+              <para><programlisting>IMPORT IMDB; OUTPUT(IMDB.FileActors);
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de verificação de sintaxe localizado na
+              barra de ferramentas principal (ou pressione F7).</para>
+
+              <para>É sempre recomendado verificar a sintaxe antes do
+              envio.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Verifique se o cluster selecionado é o
+              <emphasis>thor</emphasis> e pressione o botão <emphasis
+              role="bold">Submit</emphasis> .</para>
+
+              <para><figure>
+                  <title>Enviar para o Thor</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/IMDB_10.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Quando a workunit for concluída, ela aparece com uma marca
+              de verificação verde. <inlinegraphic
+              fileref="images/DT173-15.jpg"/></para>
+
+              <para><emphasis role="bold">Observação:</emphasis> Dependendo do
+              tamanho do seu cluster e da velocidade do(s) seu(s)
+              servidor(es), esse processo pode levar vários minutos. Se
+              estiver sendo executado em uma máquina virtual, pode demorar até
+              45 minutos para ser concluído.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Selecione a aba Workunit (a que possui um número e uma
+              marca de verificação ao lado) e selecione a aba <emphasis
+              role="bold">Result 1</emphasis></para>
+
+              <para><figure>
+                  <title>Selecionar Workunit</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/IMDB_07.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Role a página para baixo para ver mais registros.</para>
+
+              <para><figure>
+                  <title>Ver mais registros</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/IMDB_08.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Feche a janela do Compilador.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Processing_the_Data_E-T-L">
+        <title><emphasis role="bold">Processando os dados Extract,
+        </emphasis><emphasis>Transform e Load</emphasis></title>
+
+        <para><emphasis>Nesta seção, nós vamos programar para transformar os
+        dados originais do ator, como segue:</emphasis></para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>A partir dos dados brutos de atores, faremos uma operação
+            ETL (Extrair, Transformar, Carregar) para criar um conjunto de
+            relação <emphasis role="bold">actor_movie </emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Vamos construir um conjunto de pesquisa dos graus de
+            separação de Kevin Bacon. Essa é a estrutura que consultaremos
+            para responder à pergunta:</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><emphasis>Q</emphasis><emphasis>uantos graus de separação
+        existem entre o Ator X e Kevin Bacon?</emphasis></para>
+
+        <para/>
+
+        <para/>
+
+        <para/>
+
+        <para><emphasis role="bold">Por exemplo: </emphasis>Usando Jon Lovitz
+        como o ator, queremos as informações da seguinte forma:</para>
+
+        <para>Jon Lovitz ( (estava no) Filme X ( (com) Ator2 ((que estava no)
+        Filme Y ( (com) Kevin Bacon</para>
+
+        <para>Vamos então gravar esse arquivo novo em nosso cluster Thor para
+        que ele seja usado em consultas de parâmetro.</para>
+
+        <para/>
+
+        <para/>
+
+        <para><itemizedlist mark="bullet">
+            <listitem>
+              <para>No ECL IDE , vá para o painel Repository e expanda a pasta
+              IMDB .</para>
+            </listitem>
+
+            <listitem>
+              <para>Abra o arquivo ECL ActorsInMovies.</para>
+
+              <para>O código neste arquivo ECL é mais ou menos assim:</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <para><programlisting>/* ******************************************************************************
+## Copyright 2011 HPCC SystemsÂ®.  All rights reserved.
+******************************************************************************* */
+
+/**
+  * Produce a slimmed down version of the IMDB actor AND actress files to 
+  * permit more efficient join operations.
+  * Filter out the movie records we do not want in building our KBacon Number sets.
+  *
+  */
+
+IMPORT $ AS IMDB;
+IMPORT Std;
+
+// Filter out TV movies, Videos AND some documentary type collections
+ds_IMDB := IMDB.FileActors(actorname!='' AND moviename != '' AND
+                           Std.Str.Find(moviename,'Boffo',1) = 0 AND
+                           Std.Str.Find(moviename,'Slasher Film',1) = 0 AND
+                           movie_type != 'Video' AND isTVseries = 'N' AND
+                           movie_type != 'For TV');
+
+//Slim the records down to bare essentials for searching AND joining
+slim_IMDB_rec := RECORD
+  STRING50  actor;
+  STRING150 movie;
+END;
+
+slim_IMDB_rec slim_it(ds_IMDB L):= TRANSFORM
+  SELF.actor := Std.Str.FindReplace(L.actorname,'(I)','');
+  SELF.movie := L.moviename;;
+END;
+
+IMDB_names := PROJECT(ds_IMDB, slim_it(LEFT));
+
+export ActorsInMovies := IMDB_Names : persist('~temp::IMDB::ActorsInMovies');;
+</programlisting></para>
+
+        <para>Isso define um dataset relacional:-- actor:movie. Usaremos essa
+        definição mais tarde.</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Getting_Useful_Info_from_Data">
+      <title>Obtendo Informações Úteis dos Dados</title>
+
+      <sect2 id="Links_and_Degrees_of_Separation">
+        <title><emphasis>Links e Graus de Separação</emphasis></title>
+
+        <para>Agora que temos nossos dados em um formato útil, definimos a
+        relação, e o arquivo está salvo, podemos escrever mais códigos para
+        usar o novo arquivo de dados.</para>
+
+        <para>Queremos saber quantos atores estão a uma distância
+        <emphasis>N</emphasis> de Kevin Bacon. Para isso, vamos construir
+        conjuntos dos coadjuvantes de Kevin Bacon separados por um número
+        KBacon.</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Abra o arquivo ECL KevinBaconNumberSets.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Esse código ECL conta o número de atores com <emphasis>"números
+        bacon (bacon number)”</emphasis> de 1 a 7, que estão nos 7 Níveis de
+        separação são os mais altos. Usaremos isso mais tarde para realizar
+        buscas através da criação de um índice.</para>
+
+        <para><programlisting>/* ******************************************************************************
+ATTRIBUTE PURPOSE: 
+ Produce a series of sets for Actors and Movies that are : distance-0
+ away (KBacons Direct movies ), distance-2 Away KBacon's Costars Movies , 
+ distance-3 away - Movies of Costars of Costars etc all the way upto level 7
+ 
+ The nested attributes below are shown here together for the benefit of the reader. 
+ 
+ Notes on variable naming convention used for costars and movies
+ KBMovies               :  Movies  Kevin Bacon Worked in    (distance 0)
+ KBCoStars              :  Stars who worked in KBMovies      (distance 1)
+ KBCoStarMovies         :  Movies worked in by KBCoStars   
+                             except KBMovies   (distance 1)
+ KBCo2Stars             :  Stars(Actors) who worked in KBCoStarMovies (distance 2)
+ KBCo2StarMovies        :  Movies worked  in by KBCo2Stars 
+                             except KBCoStarMovies    (distance 2)
+ KBCo3Stars             :  Stars(Actors) who worked in KBCo2StarMovies (distance 3)
+ KBCo3StarMovies        :  Movies worked  in by KBCo3Stars  
+                             except KBCo2StarMovies   (distance 3)
+etc..
+******************************************************************************* */
+
+IMPORT Std;
+IMPORT IMDB;
+
+EXPORT KevinBaconNumberSets := MODULE
+  // Constructing a proper name match function is an art within itself
+  // For simplicity we will define a name as matching if both first and last name 
+  //are found within the string
+
+  NameMatch(string full_name, string fname,string lname) :=
+    Std.Str.Find(full_name,fname,1) &gt; 0 AND 
+    Std.Str.Find(full_name,lname,1) &gt; 0;
+
+  //------ Get KBacon Movies
+  AllKBEntries := IMDB.ActorsInMovies(NameMatch(actor,'Kevin','Bacon'));
+  EXPORT KBMovies := DEDUP(AllKBEntries, movie, ALL); // Each movie should ONLY occur once
+
+  //------ Get KBacon CoStars
+  CoStars := IMDB.ActorsInMovies(Movie IN SET(KBMovies,Movie));
+  EXPORT KBCoStars := DEDUP( CoStars(actor&lt;&gt;'Kevin Bacon'), actor, ALL);
+
+  //------ Get KBacon Costars' Movies
+  // CSM = First find all of the movies that a KBCoStar has been in
+
+  CSM := DEDUP(JOIN(IMDB.ActorsInMovies,KBCoStars, LEFT.actor=RIGHT.actor,
+                    TRANSFORM(LEFT), LOOKUP),
+               movie,ALL);
+
+  // Now we need to remove all of those that KB was in himself
+  // We can use a set; KB has not been in (quite!) that many movies
+
+  EXPORT KBCoStarMovies := CSM(movie NOT IN SET(KBMovies,movie));
+
+  //------ Bacon # 2 Actors
+  // To be a Co2Star of Kevin Bacon you must have appeared in a movie with a 
+  //CoStar of Kevin Bacon
+  // This corresponds to having a Bacon number of 2
+  // We are now getting towards the expensive part of the process
+  KBCo2S := DEDUP(JOIN(IMDB.ActorsInMovies, KBCoStarMovies, LEFT.movie=RIGHT.movie,
+                       TRANSFORM(LEFT), LOOKUP),
+                  actor, ALL);
+
+  // KCCo2S = ALL Actors appearing in Movies of KBacon's CoActors
+  // The above is all the people in the movies; but some will have been co-stars of KB 
+  //directly - these must be removed
+  // The LEFT ONLY join removes items in one list from another
+
+  EXPORT KBCo2Stars := JOIN(KBCo2S, KBCoStars, LEFT.actor=RIGHT.actor, 
+                            TRANSFORM(LEFT), LEFT ONLY);
+
+  //------- bacon # 2 Movies
+  // Co2SM = what movies have all the Co2Stars been in? 
+  Co2SM := DEDUP(JOIN(IMDB.ActorsInMovies, KBCo2Stars, LEFT.actor=RIGHT.actor,
+                      TRANSFORM(LEFT), LOOKUP),
+                 movie, ALL);
+  // Co2SM = ALL Movies KBCo2Stars have been in
+  // Of course some of these movies will have CoStars in too and thus will already have 
+  //been listed. Note this list will not contain any Kevin Bacon movies OR the movie would 
+  //have been reached earlier!
+
+  Export KBCo2StarMovies := JOIN(Co2SM, KBCoStarMovies, LEFT.movie=RIGHT.movie,
+                                 TRANSFORM(LEFT),LEFT ONLY);
+
+  //------ bacon #3 Actors
+  // Find people with a Bacon number of 3
+  // This code is very similar to KBCo2Stars; one might be tempted to common up into a 
+  // function or macro. However it is worth looking at the attribute counts first; we may be
+  // down to a small enough set that we can start using in-memory functions (e.g.,SET) again.
+
+  KBCo3S := DEDUP(JOIN(IMDB.ActorsInMovies, KBCo2StarMovies, LEFT.movie=RIGHT.movie,
+                       TRANSFORM(LEFT), LOOKUP),
+                  actor, ALL);
+
+  // KBCo3S = ALL CoStars  in KBCo2Star Movies
+  // The above is all the people in the movies; but some will have been co2stars of KB 
+  // directly - these must be removed. The LEFT ONLY join removes items in one list from 
+  // another. There should not be any direct CoStars in this list (or the movie would have
+  // been a CoStarMovie not a CoCoStarMovie)
+
+  EXPORT KBCo3Stars := JOIN(KBCo3S, KBCo2Stars, LEFT.actor=RIGHT.actor, 
+                            TRANSFORM(LEFT),LEFT ONLY);
+
+  //----- bacon #3 Movies
+  // So what movies have all the KBCo3Stars been in?
+
+  Co3SM := DEDUP(JOIN(IMDB.ActorsInMovies, KBCo3Stars, LEFT.actor=RIGHT.actor,
+                      TRANSFORM(LEFT), LOOKUP),
+                 movie, ALL);
+
+  // Co3SM = ALL Movies KBCo3Stars have been in
+  // Of course some of these movies will have KBCo2Stars in too and thus will already have 
+  // been listed. Note We ONLY have to remove one level back from the list; previous levels 
+  // cannot be reached by definition
+
+  EXPORT KBCo3StarMovies := JOIN(Co3SM, KBCo2StarMovies, LEFT.movie=RIGHT.movie,
+                                 TRANSFORM(LEFT),LEFT ONLY);
+
+  //------bacon #4 Actors
+  KBCo4S := DEDUP(JOIN(IMDB.ActorsInMovies, KBCo3StarMovies, LEFT.movie=RIGHT.movie,
+                       TRANSFORM(LEFT), LOOKUP),
+                  actor, ALL);
+
+  EXPORT KBCo4Stars := JOIN(KBCo4S, KBCo3Stars, LEFT.actor=RIGHT.actor,
+                            TRANSFORM(LEFT),LEFT ONLY);
+
+  //----- bacon #4 Movies
+  // So what movies have all the Co4Stars been in?
+
+  Co4SM := DEDUP(JOIN(IMDB.ActorsInMovies, KBCo4Stars, LEFT.actor=RIGHT.actor,
+                      TRANSFORM(LEFT), LOOKUP),
+                 movie, ALL);
+
+  // Co4SM = ALL Movies KBCo4Stars have been in
+  // Of course some of these movies will have Co3Stars in too and thus will already have 
+  // been listed. Note We ONLY have to remove one level back from the list; previous levels
+  // cannot be reached by definition
+
+  EXPORT KBCo4StarMovies := JOIN(Co4SM, KBCo3StarMovies, LEFT.movie=RIGHT.movie,
+                                 TRANSFORM(LEFT),LEFT ONLY);
+
+  //----- bacon #5 Stars
+  KBCo5S := DEDUP(JOIN(IMDB.ActorsInMovies, KBCo4StarMovies, LEFT.movie=RIGHT.movie,
+                       TRANSFORM(LEFT), LOOKUP),
+                  actor, ALL);
+
+  EXPORT KBCo5Stars := JOIN(KBCo5S, KBCo4Stars, LEFT.actor=RIGHT.actor, 
+                            TRANSFORM(LEFT),LEFT ONLY);
+
+//----- bacon #5 Movies
+  Co5SM := DEDUP(JOIN(IMDB.ActorsInMovies, KBCo5Stars, LEFT.actor=RIGHT.actor,
+                      TRANSFORM(LEFT), LOOKUP),
+                 movie,ALL);
+
+  EXPORT KBCo5StarMovies := JOIN(Co5SM, KBCo4StarMovies, LEFT.movie=RIGHT.movie,
+                                 TRANSFORM(LEFT),LEFT ONLY);
+
+  //----- bacon #6 Stars
+  // Find people with a Bacon number of 6
+  // KBCo5 is getting small again - can move back down to the SET?
+
+  KBCo6S  := DEDUP(IMDB.ActorsInMovies(movie IN SET(KBCo5StarMovies, movie)),
+                   actor, ALL);
+
+  EXPORT KBCo6Stars := JOIN(KBCo6S, KBCo5Stars, LEFT.actor=RIGHT.actor,
+                            TRANSFORM(LEFT),LEFT ONLY);
+
+  //----- bacon #6 Movies
+  Co6SM := DEDUP(IMDB.ActorsInMovies(actor IN SET(KBCo6Stars, actor)), movie, ALL);
+
+  EXPORT KBCo6StarMovies := Co6SM(movie NOT IN SET(KBCo5StarMovies, movie));
+
+  //----- bacon #7 Movies
+  // Find people with a Bacon number of 7
+  KBCo7S := DEDUP(IMDB.ActorsInMovies(movie IN SET(KBCo6StarMovies,movie)), actor, ALL);
+  EXPORT KBCo7Stars := KBCo7S(actor NOT IN SET(KBCo6Stars, actor));
+
+  //----- We just have to count them all !! (How many holes in Albert Hall?)
+  EXPORT doCounts := PARALLEL(
+    OUTPUT(COUNT(KBMovies), NAMED('KBMovies')),
+    OUTPUT(COUNT(KBCoStars), NAMED('KBCoStars')),
+    OUTPUT(COUNT(KBCoStarMovies), NAMED('KBCoStarMovies')),
+    OUTPUT(COUNT(KBCo2Stars), NAMED('KBCo2Stars')),
+    OUTPUT(COUNT(KBCo2StarMovies), NAMED('KBCo2StarMovies')),
+    OUTPUT(COUNT(KBCo3Stars), NAMED('KBCo3Stars')),
+    OUTPUT(COUNT(KBCo3StarMovies), NAMED('KBCo3StarMovies')),
+    OUTPUT(COUNT(KBCo4Stars), NAMED('KBCo4Stars')),
+    OUTPUT(COUNT(KBCo4StarMovies), NAMED('KBCo4StarMovies')),
+    OUTPUT(COUNT(KBCo5Stars), NAMED('KBCo5Stars')),
+    OUTPUT(COUNT(KBCo5StarMovies), NAMED('KBCo5StarMovies')),
+    OUTPUT(COUNT(KBCo6Stars), NAMED('KBCo6Stars')),
+    OUTPUT(COUNT(KBCo6StarMovies), NAMED('KBCo6StarMovies')),
+    OUTPUT(COUNT(KBCo7Stars), NAMED('KBCo7Stars')),
+    OUTPUT(KBCo7Stars)
+  );
+
+END;</programlisting></para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Abra uma nova Janela do Compilador e digite:</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><programlisting>IMPORT IMDB; IMDB.KevinBaconNumberSets.doCounts;</programlisting></para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Verifique a sintaxe e pressione o botão <emphasis
+            role="bold">Submit</emphasis> .</para>
+
+            <para><emphasis role="bold">Observação:</emphasis> Dependendo do
+            tamanho do seu cluster e da velocidade do(s) seu(s) servidor(es),
+            esse processo pode levar vários minutos. Se estiver sendo
+            executado em uma máquina virtual, isso pode demorar até uma hora
+            para ser concluído.</para>
+          </listitem>
+
+          <listitem>
+            <para>Quando o processo tiver sido concluído, cada linha exibida
+            abaixo se transforma em sua própria aba de resultado. Você obterá
+            uma amostra do resultado como segue:</para>
+
+            <para><emphasis role="bold">Observação:</emphasis> Os arquivos de
+            dados deste tutorial mudam com frequência; seus resultados podem
+            ser diferentes dos resultados mostrados neste documento.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><informaltable>
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <tbody>
+                <row>
+                  <entry>KB Movies</entry>
+
+                  <entry>71</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co Stars</entry>
+
+                  <entry>3520</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co Star Movies</entry>
+
+                  <entry>33504</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 2 Stars</entry>
+
+                  <entry>430145</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 2 Star Movies</entry>
+
+                  <entry>251867</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 3 Stars</entry>
+
+                  <entry>896009</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 3 Star Movies</entry>
+
+                  <entry>51650</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 4 Stars</entry>
+
+                  <entry>102729</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 4 Star Movies</entry>
+
+                  <entry>2634</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 5 Stars</entry>
+
+                  <entry>6080</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 5 Star Movies</entry>
+
+                  <entry>190</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 6 Stars</entry>
+
+                  <entry>450</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 6 Star Movies</entry>
+
+                  <entry>14</entry>
+                </row>
+
+                <row>
+                  <entry>KB Co 7 Stars</entry>
+
+                  <entry>22</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="Next_Steps">
+    <title><emphasis role="bold">“Próximos passos”</emphasis></title>
+
+    <para>Agora que os dados foram processados com sucesso e os links foram
+    determinados, qual é o próximo passo?</para>
+
+    <para>Dois arquivos ECL adicionais foram incluídos na pasta IMDB e podem
+    ser usados juntamente com os exemplos que você já trabalhou através deste
+    tutorial:</para>
+
+    <para>• KeysKevinBacon -- Cria um índice de atores/atrizes e dos filmes
+    que eles atuaram</para>
+
+    <para>Esse índice deve ser criado antes de executar as consultas para que
+    seja possível encontrar o grau de separação entre Kevin Bacon e um ator de
+    sua escolha.</para>
+
+    <para>Para criar o índice, abra a janela do compilador e digite o seguinte
+    código:</para>
+
+    <para><programlisting>IMPORT IMDB; IMDB.KeysKevinBacon.BuildAll;</programlisting></para>
+
+    <para>Pressione o botão <emphasis role="bold">Submit</emphasis> para
+    executar o código ECL code e criar o índice.</para>
+
+    <para>SearchKevinBaconLinks -- Realiza uma busca no índice que você criou
+    para informar o grau de separação entre um ator e Kevin Bacon.</para>
+
+    <para>Por exemplo, para encontrar o grau de separação entre Kevin Bacon e
+    Andi Everingham, abra a janela do compilador e digite o código:</para>
+
+    <para><programlisting>IMPORT IMDB; IMDB.SearchKevinBaconLinks('Everingham, Andi');</programlisting></para>
+
+    <para>Verifique se o cluster selecionado é o seu cluster
+    <emphasis>hThor</emphasis> , e em seguida pressione o botão <emphasis
+    role="bold">Submit </emphasis> para executar a consulta.</para>
+
+    <para>Quando a consulta estiver sido concluída, clique na guia ID da
+    workunit.</para>
+
+    <para>Dois resultados serão mostrados.</para>
+
+    <para><emphasis role="bold">Result1</emphasis> mostra o grau de separação
+    entre o ator e Kevin Bacon.</para>
+
+    <para>Os resultados devem ser interpretados da seguinte forma:</para>
+
+    <para>Ator se encontra no nível 1 - O ator escolhido e Kevin Bacon atuaram
+    em um filme juntos.</para>
+
+    <para>Ator se encontra no nível 2 - O ator escolhido atuou em um filme com
+    um ator que atuou em um filme com Kevin Bacon.</para>
+
+    <para>Quanto mais alto for o nível, maior será o grau de separação entre o
+    ator que você escolheu e Kevin Bacon.</para>
+
+    <para>Neste exemplo, o ator se encontra no nível 6; isso indica que
+    existem 6 graus de separação entre Andi Everingham e Kevin Bacon.</para>
+
+    <para><emphasis role="bold">Result2</emphasis> mostra o nível (grau de
+    separação), o nome do ator e o filme em que ele atuou.</para>
+
+    <para>Cada linha mostra um ator e o filme em que ele atuou, vinculando
+    cada ator entre si e, eventualmente, com Kevin Bacon.</para>
+
+    <para>Divirta-se descobrindo os graus de separação entre qualquer ator e
+    Kevin Bacon.</para>
+
+    <para>Lembre-se de primeiramente criar o índice.</para>
+  </chapter>
+</book>

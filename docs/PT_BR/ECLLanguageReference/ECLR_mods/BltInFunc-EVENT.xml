@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EVENT">
+  <title>EVENT<indexterm>
+      <primary>EVENT</primary>
+    </indexterm></title>
+
+  <informalexample id="SchEvent">
+    <para><emphasis role="bold">EVENT<indexterm>
+        <primary>EVENT function</primary>
+      </indexterm>(</emphasis><emphasis> event , subtype </emphasis><emphasis
+    role="bold"> )</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="79.30pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>event</emphasis></entry>
+
+              <entry>Uma constante de strings, com distinção entre maiúsculas
+              e minúsculas, que nomeia o evento para interceptação.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>subtype</emphasis></entry>
+
+              <entry>Uma constante de strings, com distinção entre maiúsculas
+              e minúsculas, que nomeia o tipo de evento específico para
+              interceptação. Pode conter * e ? como correspondência-curinga do
+              subtipo do evento.</entry>
+            </row>
+
+            <row>
+              <entry>Return:</entry>
+
+              <entry>EVENT retorna um único evento.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>A função <emphasis role="bold">EVENT</emphasis> retorna um evento
+    acionado, que pode ser usado no serviço do fluxo de trabalho WHEN ou na
+    ação NOTIFY .<indexterm>
+        <primary>WHEN serviço de fluxo de trabalho</primary>
+      </indexterm> ou as ações WAIT e NOTIFY.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>IMPORT STD;
+MyEventName := 'MyFileEvent';
+MyFileName  := 'test::myfile';
+
+IF (STD.File.FileExists(MyFileName),
+ STD.File.DeleteLogicalFile(MyFileName));
+ //deletes the file if it already exists
+
+STD.File.MonitorLogicalFileName(MyEventName,MyFileName);
+ //sets up monitoring and the event name
+ //to fire when the file is found
+
+OUTPUT('File Created') : WHEN(EVENT(MyEventName,'*'),COUNT(1));
+ //this OUTPUT occurs only after the event has fired
+
+afile := DATASET([{ 'A', '0'}], {STRING10 key,STRING10 val});
+OUTPUT(afile,,MyFileName);
+ //this creates a file that the DFU file monitor will find
+ //when it periodically polls
+
+
+//**********************************
+EXPORT events := MODULE
+  EXPORT dailyAtMidnight := CRON('0 0 * * *');
+  EXPORT dailyAt( INTEGER hour,
+   INTEGER minute=0) :=
+  EVENT('CRON',
+   (STRING)minute + ' ' + (STRING)hour + ' * * *');
+  EXPORT dailyAtMidday := dailyAt(12, 0);
+END;
+BUILD(teenagers): WHEN(events.dailyAtMidnight);
+BUILD(oldies)  : WHEN(events.dailyAt(6));
+</programlisting>
+  </informalexample>
+
+  <para>Ver também: <link linkend="EVENTNAME">EVENTNAME</link>, <link
+  linkend="EVENTEXTRA">EVENTEXTRA</link>, <link linkend="CRON">CRON</link>,
+  <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link
+  linkend="NOTIFY">NOTIFY</link></para>
+</sect1>

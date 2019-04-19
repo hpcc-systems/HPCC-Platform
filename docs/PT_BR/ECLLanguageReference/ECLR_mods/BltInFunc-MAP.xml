@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MAP">
+  <title>MAP</title>
+
+  <para><emphasis role="bold">MAP<indexterm>
+      <primary>MAP</primary>
+    </indexterm><indexterm>
+      <primary>MAP function</primary>
+    </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
+  role="bold"> =&gt; </emphasis><emphasis>value</emphasis><emphasis
+  role="bold">, [</emphasis><emphasis> expression</emphasis><emphasis
+  role="bold"> =&gt; </emphasis><emphasis>value</emphasis><emphasis
+  role="bold">, ... ] [,</emphasis><emphasis> elsevalue </emphasis><emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="79.75pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>expression</emphasis></entry>
+
+          <entry>Uma expressão condicional.</entry>
+        </row>
+
+        <row>
+          <entry>=&gt;</entry>
+
+          <entry>O operador "resulta em" - válido somente em CHOOSESETS, CASE
+          e MAP.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>O valor a ser retornado se a expressão for “true”
+          (verdadeira). Pode ser uma expressão de um único valor, um conjunto
+          de valores, um DATASET, um DICTIONARY, um recordset ou uma
+          ação.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>elsevalue</emphasis></entry>
+
+          <entry>Opcional. O valor a ser retornado se todas as expressões
+          forem “false” (falso). Pode ser uma expressão de um único valor, um
+          conjunto de valores, um conjunto de registros ou uma ação. Pode ser
+          omitido se todos os valores de retorno forem ações (o padrão então
+          seria nenhuma ação), ou se todos os valores de retorno forem
+          conjuntos de registro (o padrão então seria um conjunto de registros
+          vazio).</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>MAP retorna um único <emphasis>valor</emphasis>.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">MAP </emphasis> avalia a lista de
+  <emphasis>expressões</emphasis> e retorna o <emphasis>valor</emphasis>
+  associado com a primeira <emphasis>expressão</emphasis> “true” (verdadeira).
+  Se não houver correspondência, <emphasis>elsevalue</emphasis> será
+  retornado. MAP pode ser considerado como um tipo de estrutura "IF ... ELSIF
+  ... ELSIF ... ELSE".</para>
+
+  <para>Todos os valores de retorno de <emphasis>value</emphasis> e
+  <emphasis>elsevalue</emphasis> devem ser exatamente do mesmo tipo, ou
+  ocorrerá um erro de “incompatibilidade de tipo”. Todas as
+  <emphasis>expressões</emphasis> devem referenciar o mesmo nível de escopo do
+  dataset, ou ocorrerá um erro de “escopo inválido”. Por consequência, todas
+  as <emphasis>expressões </emphasis> devem referenciar os campos em um mesmo
+  dataset ou a existência de um conjunto de registros secundários relacionados
+  (consulte EXISTS).</para>
+
+  <para>As <emphasis>expressões</emphasis> são normalmente avaliadas na ordem
+  em que são exibidas, porém se todos os <emphasis>valores</emphasis> de
+  retorno forem escalar, o otimizador de código pode alterar essa
+  ordem.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>Attr01 := MAP(EXISTS(Person(Person.EyeColor = 'Blue')) =&gt; 1,
+              EXISTS(Person(Person.Haircolor = 'Brown')) =&gt; 2,
+              3);
+ //If there are any blue-eyed people, Attr01 gets 1
+ //elsif there any brown-haired people, Attr01 gets 2
+ //else, Attr01 gets 3
+
+Valu6012 := MAP(NoTrades =&gt; 99,
+                NoValidTrades =&gt; 98,
+                NoValidDates =&gt; 96,
+                Count6012);
+ //If there are no trades, Valu6012 gets 99
+ //elsif there are no valid trades, Valu6012 gets 98
+ //elsif there are no valid dates, Valu6012 gets 96
+ //else, Valu6012 gets Count6012
+
+MyTrades := MAP(rms.rms14 &gt;= 93 =&gt; trades(trd_bal &gt;= 10000),
+                rms.rms14 &gt;=  2 =&gt; trades(trd_bal &gt;= 2000),
+                rms.rms14 &gt;=  1 =&gt; trades(trd_bal &gt;= 1000),
+                Trades);
+ // this example takes the value of rms.rms14 and returns a 
+ // set of trades based on that value. If the value is &lt;= 0,
+ // then all trades are returned.
+</programlisting>
+
+  <para>Ver também: <link linkend="EVALUATE">EVALUATE</link>, <link
+  linkend="IF">IF</link>, <link linkend="CASE">CASE</link>, <link
+  linkend="CHOOSE">CHOOSE</link>, <link
+  linkend="CHOOSESETS">CHOOSESETS</link>, <link
+  linkend="REJECTED">REJECTED</link>, <link
+  linkend="WHICH">WHICH</link></para>
+</sect1>

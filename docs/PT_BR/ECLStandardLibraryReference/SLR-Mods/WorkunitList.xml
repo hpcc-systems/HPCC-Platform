@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitList">
+  <title>WorkunitList</title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitList <indexterm>
+      <primary>STD.System.Workunit.WorkunitList</primary>
+    </indexterm> <indexterm>
+      <primary>System.Workunit.WorkunitList</primary>
+    </indexterm> <indexterm>
+      <primary>Workunit.WorkunitList</primary>
+    </indexterm> <indexterm>
+      <primary>WorkunitList</primary>
+    </indexterm> (</emphasis> <emphasis> lowwuid </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, highwuid </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, username </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis> <emphasis>,
+  cluster </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, jobname
+  </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, state
+  </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, priority
+  </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>, fileread </emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>, filewritten </emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>, roxiecluster </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis> <emphasis>,
+  eclcontains </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,
+  online </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, archived
+  </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, appvalues
+  </emphasis> <emphasis role="bold">])</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>lowwuid</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o menor WorkUnit
+          IDentifier a ser listado. Pode ser uma string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>highwuid</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o maior
+          WorkUnit IDentifier a ser listado. Se omitida, o padrão é uma string
+          vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>cluster</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o nome do
+          cluster onde a workunit foi executada. Se omitida, o padrão é uma
+          string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>jobname</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o nome da
+          workunit. Pode conter caracteres curinga ( * ? ) Se omitida, o
+          padrão é uma string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>state</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o estado
+          da workunit. Se omitida, o padrão é uma string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>priority</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém a
+          prioridade da workunit. Se omitida, o padrão é uma string
+          vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fileread</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o nome de
+          um arquivo lido pela workunit. Pode conter caracteres curinga ( * ?
+          ) Se omitida, o padrão é uma string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filewritten</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o nome de
+          um arquivo gravado pela workunit. Pode conter caracteres curinga ( *
+          ? ) Se omitida, o padrão é uma string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>roxiecluster</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o nome do
+          cluster Roxie. Se omitida, o padrão é uma string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>eclcontains</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o texto a
+          ser pesquisado no código da ECL da workunit. Pode conter caracteres
+          curinga ( * ? ) Se omitida, o padrão é uma string vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>online</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano true/false que especifica se a
+          pesquisa deve ser executada online. Se omitido, o padrão é
+          TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>archived</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano true/false que especifica se a
+          pesquisa deve ser executada nos arquivos. Se omitido, o padrão é
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>appvalues</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém os valores
+          do aplicativo a serem pesquisados. Use uma string no formato
+          appname/key=value ou appname/*=value.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Retorna um dataset no seguinte formato:</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">WorkunitList </emphasis> retorna um
+  dataset de todas as workunits que atendem aos critérios de pesquisa
+  especificados pelos parâmetros passados para a função. Todos os parâmetros
+  são parâmetros de pesquisa e todos, exceto o primeiro, podem ser omitidos.
+  Portanto, a forma mais fácil de passar um único parâmetro é usar a técnica
+  de passagem de parâmetros NAMED.</para>
+
+  <para>O DATASET resultante está neste formato:</para>
+
+  <programlisting>WorkunitRecord := RECORD
+  STRING24 wuid;
+  STRING owner{MAXLENGTH(64)};
+  STRING cluster{MAXLENGTH(64)};
+  STRING roxiecluster{MAXLENGTH(64)};
+  STRING job{MAXLENGTH(256)};
+  STRING10 state;
+  STRING7 priority;
+  STRING20 created;
+  STRING20 modified;
+  BOOLEAN online;
+  BOOLEAN protected;
+END;</programlisting>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitList(''));
+ //list all current workunits
+OUTPUT(STD.System.Workunit.WorkunitList('',
+       NAMED eclcontains := 'COUNT'));
+ //list only those where the ECL code contains the word 'COUNT'
+ //this search is case insensitive and does include comments
+
+STD.System.Workunit.SetWorkunitAppValue('MyApp','FirstName','Jim',TRUE);
+OUTPUT(STD.System.Workunit.WorkunitList(appvalues := 'MyApp/FirstName='Jim'));
+//returns a list of workunits with app values where FirstName='Jim'
+</programlisting>
+
+  <para>Ver também: <link
+  linkend="SetWorkunitAppValue">SetWorkunitAppValue</link></para>
+</sect1>

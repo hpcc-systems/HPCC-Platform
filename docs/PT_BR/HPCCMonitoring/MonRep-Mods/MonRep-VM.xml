@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect2 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="get_hpcc">
+  <title>Obtendo a imagem mais recente da Máquina Virtual HPCC</title>
+
+  <para>Informações completas sobre como instalar e executar o HPCC em uma
+  máquina virtual estão disponíveis no documento: <emphasis role="bold">Como
+  executar o HPCC em uma máquina virtual</emphasis>, através do link <ulink
+  url="hpccsystems.com/download/docs">http://hpccsystems.com/download/docs</ulink>
+  .</para>
+
+  <para>As etapas abaixo são apenas um breve resumo, supondo que você já
+  esteja familiarizado com a execução de máquinas virtuais.</para>
+
+  <para><orderedlist>
+      <listitem>
+        <para>Baixe o arquivo de imagem Máquina Virtual do HPCC mais recente
+        em:</para>
+
+        <para><ulink
+        url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
+      </listitem>
+
+      <listitem>
+        <para>Salve o arquivo em uma pasta no seu computador.</para>
+      </listitem>
+
+      <listitem>
+        <para>Abra seu software de virtualização, importe a máquina virtual e
+        inicie-a.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Após a inicialização da VM ter sido concluída, aparecerá uma
+        janela semelhante a seguinte:</para>
+
+        <figure>
+          <title>Tela de boas-vindas da VM</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/GA-vm01.jpg"
+                         vendor="VM_welcome"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png"/></entry>
+
+                  <entry>Seu endereço IP virtual poderá ser diferente dos
+                  endereços fornecidos nas imagens de exemplo. Use o endereço
+                  IP fornecido pela <emphasis role="bold">sua</emphasis>
+                  instalação.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Favor usar o endereço IP do seu nó.</para>
+      </listitem>
+
+      <listitem>
+        <para>No seu navegador, digite o URL exibido (circulado em vermelho
+        acima) na imagem anterior (sem o: 8010)</para>
+
+        <para>Para o Ganglia, digite o <emphasis>Endereço
+        IP</emphasis>/ganglia. Para Nagios, insira o endereço
+        <emphasis>Endereço IP</emphasis>/nagios3.</para>
+
+        <para>Por exemplo,
+        <emphasis>http://nnn.nnn.nnn.nnn/nagios3</emphasis>Por exemplo,
+        http://nnn.nnn.nnn.nnn:8010, onde nnn.nnn.nnn.nnn é o endereço IP da
+        sua máquina virtual.</para>
+      </listitem>
+    </orderedlist></para>
+
+  <para>Recomendamos que usuários experientes usem SSH e façam o login na VM
+  para examinar mais a fundo a configuração de uma solução de monitorador de 1
+  nó.</para>
+
+  <sect3 role="brk">
+    <title>Visualizando Métricas</title>
+
+    <para>Para ver a página de métricas, acesse a(s) seguinte(s) página(s) em
+    seu navegador.</para>
+
+    <para><emphasis role="bold">Métricas do Ganglia</emphasis></para>
+
+    <para><programlisting> 
+<emphasis>http://nnn.nnn.nnn.nnn/ganglia</emphasis></programlisting></para>
+
+    <para>Onde: <emphasis>nnn.nnn.nnn.nnn</emphasis> é o seu servidor ESP
+    executando o ECL Watch.</para>
+
+    <para><emphasis role="bold">Nagios:</emphasis></para>
+
+    <para><programlisting> 
+<emphasis>http://nnn.nnn.nnn.nnn/nagios3</emphasis></programlisting></para>
+
+    <para>Onde: <emphasis>nnn.nnn.nnn.nnn</emphasis> é o seu servidor ESP
+    executando o ECL Watch.</para>
+  </sect3>
+</sect2>

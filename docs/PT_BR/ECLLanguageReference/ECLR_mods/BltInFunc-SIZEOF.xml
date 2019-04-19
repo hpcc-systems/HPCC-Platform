@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SIZEOF">
+  <title>SIZEOF</title>
+
+  <para><emphasis role="bold">SIZEOF<indexterm>
+      <primary>SIZEOF</primary>
+    </indexterm><indexterm>
+      <primary>SIZEOF function</primary>
+    </indexterm>(</emphasis><emphasis>data </emphasis><emphasis
+  role="bold">[</emphasis>, <emphasis role="bold">MAX</emphasis><emphasis
+  role="bold"><indexterm>
+      <primary>MAX</primary>
+    </indexterm> </emphasis><emphasis role="bold">] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.00pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>data</emphasis></entry>
+
+            <entry>O nome de um dataset, uma estrutura RECORD, o nome de um
+            campo totalmente qualificado, ou uma expressão de string
+            constante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MAX</emphasis></entry>
+
+            <entry>Especifica que os dados são de comprimento variável (que
+            contêm datasets secundários) e que o valor a ser retornado possui
+            tamanho máximo.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ROUNDUP retorna um único valor inteiro.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">SIZEOF </emphasis> retorna o número
+  total de bytes definido para armazenar a estrutura de dados ou campo
+  especificados. <emphasis>data</emphasis> Estrutura ou Campo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyRec := RECORD
+INTEGER1 F1;
+INTEGER5 F2;
+STRING1 F3;
+STRING10 F4;
+QSTRING12 F5;
+VARSTRING12 F6;
+END;
+MyData :=
+        DATASET([{1,33333333333,'A','A','A',V'A'}],MyRec);
+SIZEOF(MyRec); //result is 39
+SIZEOF(MyData.F1); //result is 1
+SIZEOF(MyData.F2); //result is 5
+SIZEOF(MyData.F3); //result is 1
+SIZEOF(MyData.F4); //result is 10
+SIZEOF(MyData.F5); //result is 9 -12 chars stored in 9
+        bytes
+SIZEOF(MyData.F6); //result is 13 -12 chars plus null
+          terminator
+
+Layout_People := RECORD
+STRING15 first_name;
+STRING15 middle_name;
+STRING25 last_name;
+STRING2 suffix;
+STRING42 street;
+STRING20 city;
+STRING2 st;
+STRING5 zip;
+STRING1 sex;
+STRING3 age;
+STRING8 dob;
+BOOLEAN age_flag;
+UNSIGNED8 __filepos { virtual(fileposition)};
+END;
+File_People := DATASET('ecl_training::People', Layout_People,
+          FLAT);
+SIZEOF(File_People); //result is 147
+SIZEOF(File_People.street); //result is 42
+SIZEOF('abc' + '123'); //result is 6
+SIZEOF(person.per_cid); //result is 9 - Person.per_cid is
+        DATA9
+</programlisting>
+
+  <para>Ver também: <link linkend="LENGTH">LENGTH</link></para>
+</sect1>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EditDistance">
+  <title>EditDistance</title>
+
+  <para><emphasis role="bold">STD.Str.EditDistance<indexterm>
+      <primary>STD.Str.EditDistance</primary>
+    </indexterm><indexterm>
+      <primary>Str.EditDistance</primary>
+    </indexterm><indexterm>
+      <primary>EditDistance</primary>
+    </indexterm>(</emphasis> <emphasis>string1, string2</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.EditDistance<indexterm>
+      <primary>STD.Uni.EditDistance</primary>
+    </indexterm><indexterm>
+      <primary>Uni.EditDistance</primary>
+    </indexterm>(</emphasis> <emphasis>string1, string2, locale</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>string1</emphasis></entry>
+
+          <entry>A primeira string de um par de strings a ser
+          comparado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>string2</emphasis></entry>
+
+          <entry>A segunda string de um par de strings a ser
+          comparado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o código de idioma e
+          país a ser usado para determinar a ordem correta de classificação e
+          outras operações.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>EditDistance retorna um valor UNSIGNED4.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">EditDistance </emphasis> retorna uma
+  pontuação do algoritmo de distância de Levenshtein padrão para a distância
+  de edição entre <emphasis>string1</emphasis> e <emphasis>string2</emphasis>.
+  Essa pontuação reflete o número mínimo de operações necessárias para
+  transformar <emphasis>string1</emphasis> em
+  <emphasis>string2</emphasis>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">STD.Str.EditDistance('CAT','CAT');  //returns 0
+STD.Str.EditDistance('CAT','BAT');  //returns 1
+STD.Str.EditDistance('BAT','BAIT'); //returns 1
+STD.Str.EditDistance('CAT','BAIT'); //returns 2
+</programlisting>
+</sect1>

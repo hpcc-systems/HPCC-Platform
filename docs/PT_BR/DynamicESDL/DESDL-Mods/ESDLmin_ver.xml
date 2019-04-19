@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_min_ver">
+  <title><emphasis role="bold">min_ver</emphasis></title>
+
+  <para><indexterm>
+      <primary>min_ver</primary>
+    </indexterm>O atributo min_ver permite definir a versão mínima (mais antiga) em que um campo possa ser visível. As solicitações que usarem uma versão anterior não terão acesso ao campo.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting> [min_ver("1.03")] bool IsValid;   </programlisting>
+</sect1>

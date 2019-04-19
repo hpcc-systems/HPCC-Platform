@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PRIORITY">
+  <title>PRIORITY</title>
+
+  <para><emphasis>action </emphasis><emphasis role="bold">: PRIORITY<indexterm>
+      <primary>PRIORITY</primary>
+    </indexterm>(</emphasis><emphasis> value </emphasis><emphasis
+  role="bold">) <indexterm>
+      <primary>PRIORITY workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="75.40pt"/>
+
+        <colspec colwidth="277.40pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>action</emphasis></entry>
+
+            <entry>Uma ação (geralmente OUTPUT) que irá gerar um
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>Um valor inteiro no intervalo de 0 a 100 indicando a
+            importância relativa da ação.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>O serviço <emphasis role="bold">PRIORITY </emphasis> determina a
+  importância relativa de várias <emphasis>ações</emphasis> na workunit.
+  Quanto mais alto for o <emphasis>valor</emphasis> de uma <emphasis>
+  ação</emphasis> , maior será sua prioridade. A <emphasis>ação</emphasis> de
+  maior prioridade será executada primeiro (se possível).
+  <emphasis>PRIORITY</emphasis> não é permitida em definições de atributo;
+  deve estar associada apenas com a ação. Disponível apenas se os serviços de
+  fluxo de trabalho estiverem ativados (consulte #OPTION(workflow)).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>OUTPUT(Person(per_st='NY')) : PRIORITY(30);
+OUTPUT(Person(per_st='CA')) : PRIORITY(60);
+OUTPUT(Person(per_st='FL')) : PRIORITY(90);
+  //The Florida
+</programlisting>
+
+  <para>Ver também: <link linkend="OUTPUT">OUTPUT</link>, <link
+  linkend="_OPTION">#OPTION</link></para>
+</sect1>

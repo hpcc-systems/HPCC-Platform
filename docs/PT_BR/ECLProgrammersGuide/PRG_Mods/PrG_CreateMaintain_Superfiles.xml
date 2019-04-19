@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Creating_and_Maintaining_SuperFiles">
+  <title><emphasis role="bold">Criando e Mantendo
+  SuperFiles</emphasis></title>
+
+  <sect2 id="Creating_Data">
+    <title>Criando Dados</title>
+
+    <para>Primeiro, precisamos criar alguns arquivos lógicos para inserir em
+    um superarquivo.</para>
+
+    <para>Os nomes dos arquivos a seguir para os novos subarquivos são
+    declarados no atributo de estrutura MODULE DeclareData:</para>
+
+    <programlisting>EXPORT BaseFile := '~PROGGUIDE::SUPERFILE::Base';
+EXPORT SubFile1 := '~PROGGUIDE::SUPERFILE::People1';
+EXPORT SubFile2 := '~PROGGUIDE::SUPERFILE::People2';
+EXPORT SubFile3 := '~PROGGUIDE::SUPERFILE::People3';
+EXPORT SubFile4 := '~PROGGUIDE::SUPERFILE::People4';
+EXPORT SubFile5 := '~PROGGUIDE::SUPERFILE::People5';
+EXPORT SubFile6 := '~PROGGUIDE::SUPERFILE::People6';
+</programlisting>
+
+    <para>O código a seguir (no arquivo SuperFile1.ECL) cria os arquivos que
+    vamos usar para compilar superarquivos:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+s1 := $.DeclareData.Person.File(firstname[1] = 'A');
+s2 := $.DeclareData.Person.File(firstname[1] BETWEEN 'B' AND 'C');
+s3 := $.DeclareData.Person.File(firstname[1] BETWEEN 'D' AND 'J');
+s4 := $.DeclareData.Person.File(firstname[1] BETWEEN 'K' AND 'N');
+s5 := $.DeclareData.Person.File(firstname[1] BETWEEN 'O' AND 'R');
+s6 := $.DeclareData.Person.File(firstname[1] BETWEEN 'S' AND 'Z');
+
+Rec := $.DeclareData.Layout_Person;
+
+IF(~Std.File.FileExists($.DeclareData.SubFile1),
+   OUTPUT(s1,,$.DeclareData.SubFile1));
+
+IF(~Std.File.FileExists($.DeclareData.SubFile2),
+   OUTPUT(s2,,$.DeclareData.SubFile2));
+
+IF(~Std.File.FileExists($.DeclareData.SubFile3),
+   OUTPUT(s3,,$.DeclareData.SubFile3));
+
+IF(~Std.File.FileExists($.DeclareData.SubFile4),
+   OUTPUT(s4,,$.DeclareData.SubFile4));
+
+IF(~Std.File.FileExists($.DeclareData.SubFile5),
+   OUTPUT(s5,,$.DeclareData.SubFile5));  
+
+IF(~Std.File.FileExists($.DeclareData.SubFile6),
+   OUTPUT(s6,,$.DeclareData.SubFile6));
+</programlisting>
+
+    <para>Esse código obtém dados do dataset ProgGuide.Person.File (criado
+    pelo código no GenData.ECL e declarado no atributo de estrutura MODULE
+    ProgGuide no módulo Default) e grava seis amostras discretas separadas em
+    seus próprios arquivos lógicos, mas apenas se elas ainda não existirem.
+    Vamos usar esses arquivos lógicos para compilar alguns
+    superarquivos.</para>
+  </sect2>
+
+  <sect2 id="A_Simple_Example">
+    <title>Um Exemplo Simples</title>
+
+    <para>Vamos começar com um exemplo simples sobre como criar e usar um
+    superarquivo. Essa declaração de dataset está na estrutura MODULE
+    ProgGuide (contida no módulo Default). Isso declara o superarquivo como um
+    DATASET que pode ser referenciado no código ECL:</para>
+
+    <programlisting>EXPORT SuperFile1 := DATASET(BaseFile,Layout_Person,FLAT);
+</programlisting>
+
+    <para>Vamos então criar e adicionar subarquivos a um superarquivo (esse
+    código está contido no arquivo SuperFile2.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.CreateSuperFile($.DeclareData.BaseFile),
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.BaseFile,$.DeclareData.SubFile1),
+  Std.File.AddSuperFile($.DeclareData.BaseFile,$.DeclareData.SubFile2),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>Se a tarefa falhar com uma mensagem de erro "logical name
+    progguide::superfile::base already exists", abra o arquivo
+    SuperFileRestart.ECL e execute-o; em seguida, tente o código acima
+    novamente. Depois de ter conseguido executar esse código em uma janela do
+    compilador, você criou o superarquivo e adicionou dois subarquivos a
+    ele.</para>
+
+    <para>O atributo de declaração DATASET SuperFile1 disponibiliza o
+    superarquivo para uso assim como qualquer outro DATASET faria – esse é o
+    segredo para usar superarquivos. Isso significa que os seguintes tipos de
+    ações podem ser executadas em um superarquivo, assim como com qualquer
+    outro dataset:</para>
+
+    <programlisting>IMPORT $;
+COUNT($.DeclareData.SuperFile1(PersonID &lt;&gt; 0));
+OUTPUT($.DeclareData.SuperFile1);
+</programlisting>
+
+    <para>Devido aos arquivos lógicos anteriormente compilados, os resultados
+    da COUNT devem ser 317.000. A condição de filtro sempre será verdadeira,
+    de forma que a COUNT retornada será o número total de registros no
+    superarquivo. O filtro do registro (PersonID &lt;&gt; 0) é necessário para
+    que a COUNT real seja realizada toda vez que o resultado não for um valor
+    de atalho armazenado internamente pelo ECL Agent. Obviamente, o OUTPUT
+    produz os 100 primeiros registros no superarquivo.</para>
+  </sect2>
+
+  <sect2 id="Nesting_SuperFiles">
+    <title>Aninhando Superarquivos</title>
+
+    <para>A técnica de aninhar superarquivos (um superarquivo que contém um
+    subarquivo que é, na verdade, outro superarquivo) é uma técnica que
+    permite que novos dados recebidos periodicamente (diariamente, a cada hora
+    ou outros) sejam disponibilizados "instantaneamente" no sistema. Uma vez
+    que o código ECL que se refere a um superarquivo sempre faz referência à
+    declaração DATASET, a única mudança necessária para disponibilizar novos
+    dados para consultas é adicionar os novos dados como um subarquivo. Uma
+    vez que a adição de um subarquivo é sempre realizada em uma transação de
+    superarquivo, quaisquer consultas são bloqueadas enquanto a atualização
+    está em andamento.</para>
+
+    <para>Também está implícito nessa técnica a implantação e consolidação
+    periódicas de novos dados em arquivos compostos. Isso é necessário porque
+    o limite prático para o número de arquivos físicos que você deve combinar
+    em um superarquivo é de aproximadamente 100 (cem), já que toda vez que se
+    faz referência ao superarquivo todo subarquivo precisa ter sido
+    fisicamente aberto e lido no disco e, quanto mais subarquivos houver, mais
+    recursos de sistema operacional são usados para ter acesso aos
+    dados.</para>
+
+    <para>Dessa forma, é necessário executar periodicamente um processo que
+    combine fisicamente todos os arquivos lógicos incrementais e combiná-los
+    em um arquivo lógico único que substitua todos eles. A consolidação
+    periódica dos dados em superarquivos é um processo simples de uso do
+    OUTPUT para gravar conteúdos completos do superarquivo em um arquivo
+    lógico único e novo. Depois que todos os dados estão em um único arquivo,
+    uma transação de superarquivo pode apagar o conjunto antigo de subarquivos
+    e depois adicionar o novo arquivo lógico de "base".</para>
+  </sect2>
+
+  <sect2 id="Nested_SuperFile_Example">
+    <title>Exemplo de Superarquivo Aninhado</title>
+
+    <para>Aqui está um exemplo de como aninhar superarquivos. Este exemplo
+    supõe que você receba novos dados diariamente. Ele também supõe que você
+    queira implantar novos dados diariamente e semanalmente. Os nomes dos
+    arquivos a seguir para os novos subarquivos são declarados no atributo de
+    estrutura MODULE DeclareData:</para>
+
+    <programlisting>EXPORT AllPeople := '~PROGGUIDE::SUPERFILE::AllPeople';
+EXPORT WeeklyFile := '~PROGGUIDE::SUPERFILE::Weekly';
+EXPORT DailyFile := '~PROGGUIDE::SUPERFILE::Daily';
+</programlisting>
+
+    <para>A criação de três ou mais superarquivos precisa ser apenas uma vez;
+    depois, é necessário adicionar os subarquivos a eles (este código está
+    contido no arquivo SuperFile3.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.CreateSuperFile($.DeclareData.AllPeople),
+  Std.File.CreateSuperFile($.DeclareData.WeeklyFile),
+  Std.File.CreateSuperFile($.DeclareData.DailyFile),
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.AllPeople,$.DeclareData.BaseFile),
+  Std.File.AddSuperFile($.DeclareData.AllPeople,$.DeclareData.WeeklyFile),
+  Std.File.AddSuperFile($.DeclareData.AllPeople,$.DeclareData.DailyFile),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>Agora o superarquivo AllPeople contém os superarquivos BaseFile,
+    WeklyFile e DailyFile como subarquivos, criando uma hierarquia de
+    superarquivos, sendo que apenas um ainda não contém dados reais. O
+    superarquivo Base contém todos os dados atualmente conhecidos, como a hora
+    da compilação dos arquivos lógicos. Os superarquivos Weekly e Daily terão
+    atualizações provisórias de dados conforme são recebidos, acabando com a
+    necessidade de recompilar todo o banco de dados sempre que um novo
+    conjunto de dados for recebido.</para>
+
+    <para>Um aviso importante neste esquema é que um determinado arquivo
+    lógico real (arquivo de dados real) deve estar contido em exatamente um
+    dos superarquivos aninhados por vez. Caso contrário haverá registros
+    duplicados no superarquivo de base. Dessa forma, é necessário ter cuidado
+    em como se mantém a hierarquia a fim de não permitir que o mesmo arquivo
+    lógico seja referido por mais de um dos superarquivos aninhados por vez,
+    fora de um quadro de transação.</para>
+
+    <para>Ao receber novos arquivos lógicos no decorrer do dia, é possível
+    adicioná-los ao superarquivo diário da seguinte maneira (este código está
+    contido no SuperFile4.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile3),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>Isso anexa o arquivo lógico ProgGuide.SubFile3 à lista de
+    subarquivos no SuperFile DailyFile. Isso significa que a próxima consulta
+    que usar um dataset SuperFile1 estará utilizando os dados mais recentes –
+    atualizados no último minuto.</para>
+
+    <para>Essa declaração de dataset está na estrutura MODULE DeclareData
+    (contida no módulo Default). Isso declara o superarquivo aninhado como um
+    DATASET que pode ser referenciado no código ECL:</para>
+
+    <programlisting>EXPORT SuperFile2 := DATASET(AllPeople,Layout_Person,FLAT);</programlisting>
+
+    <para>Execute a seguinte ação:</para>
+
+    <programlisting>IMPORT ProgrammersGuide AS PG;
+COUNT(PG.DeclareData.SuperFile2(PersonID &lt;&gt; 0));
+</programlisting>
+
+    <para>O resultado de COUNT agora deve ser 451.000.</para>
+
+    <para>Edite o código do SuperFile4.ECL para adicionar no
+    ProgGuide.SubFile4, da seguinte maneira:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile4),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>A reexecução da ação COUNT acima, deve agora resultar em
+    620.000.</para>
+
+    <para>Uma vez por dia, é possível implantar todos os subarquivos no
+    WeeklyFile e apagar o DailyFile para o processamento de ingestão de dados
+    do dia seguinte da seguinte maneira (este código está contido no arquivo
+    SuperFile5.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.WeeklyFile,$.DeclareData.DailyFile,,TRUE),
+  Std.File.ClearSuperFile($.DeclareData.DailyFile),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>Isso move as referências de todos os subarquivos do DailyFile para o
+    WeeklyFile (o quatro parâmetro para a função AddSuperFile sendo TRUE copia
+    as referências de um superarquivo para outro), e depois apaga o
+    DailyFile.</para>
+  </sect2>
+
+  <sect2 id="Data_Consolidation">
+    <title>Consolidação de dados</title>
+
+    <para>Uma vez que o limite prático para o número de arquivos lógicos que
+    você deve combinar em um superarquivo é limitado a cem, será necessário
+    executar um processo que combine fisicamente todos os arquivos lógicos
+    incrementais e os combine em um único arquivo lógico que substitua todos
+    os demais das seguinte maneira:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+OUTPUT($.DeclareData.SuperFile2,,'~$.DeclareData::SUPERFILE::People14',OVERWRITE)
+</programlisting>
+
+    <para>Isso gravará um novo arquivo contendo todos os registros de todos os
+    subarquivos no superarquivo.</para>
+
+    <para>Depois de fazer isso, será necessário apagar todos os superarquivos
+    de componentes e adicionar o novo arquivo de dados com todos os dados
+    existentes no BaseFile, da seguinte maneira (este código está contido no
+    SuperFile6.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+SEQUENTIAL(
+  Std.File.StartSuperFileTransaction(),
+  Std.File.ClearSuperFile($.DeclareData.BaseFile),
+  Std.File.ClearSuperFile($.DeclareData.WeeklyFile),
+  Std.File.ClearSuperFile($.DeclareData.DailyFile),
+  Std.File.AddSuperFile($.DeclareData.BaseFile,'~$.DeclareData::SUPERFILE::People14'),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>Essa ação apaga o superarquivo de base, adiciona a referência ao
+    novo arquivo lógico completo e depois apaga todo os superarquivos
+    incrementais.</para>
+
+    <para>A reexecução da ação COUNT acima, deve ainda resultar em
+    620.000.</para>
+
+    <para>Novamente, edite o código do arquivo SuperFile4.ECL para adicionar
+    os arquivos ProgGuide.SubFile5 e ProgGuide.SubFile6 ao DailyFile, da
+    seguinte maneira:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile5),  
+  Std.File.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile6),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>Depois de fazer isso, a reexecução da ação COUNT acima, deve agora
+    resultar em 1.000.000.</para>
+  </sect2>
+
+  <sect2 id="Getting_SuperFile_Components">
+    <title>Obtendo componentes do superarquivo</title>
+
+    <para>Essa macro (no atributo de estrutura MODULE DeclareData) demonstra
+    uma técnica para listar os subarquivos de componentes de um
+    superarquivo:</para>
+
+    <programlisting>IMPORT STD;
+EXPORT MAC_ListSFsubfiles(SuperFile) := MACRO
+
+#UNIQUENAME(SeedRec)
+%SeedRec% := DATASET([{''}], {STRING name});
+
+#UNIQUENAME(Xform)
+TYPEOF(%SeedRec%) %Xform%(%SeedRec% L, INTEGER C) :=
+          TRANSFORM
+SELF.name :=
+          Std.File.GetSuperFileSubName(SuperFile,C);
+END;
+
+OUTPUT(NORMALIZE(%SeedRec%,
+Std.File.GetSuperFileSubCount(SuperFile),
+%Xform%(LEFT,COUNTER)));
+ENDMACRO;
+</programlisting>
+
+    <para>A técnica interessante aqui é o uso de NORMALIZE para acionar a
+    função TRANSFORM de forma iterativa até que todos os subarquivos no
+    estejam listados no superarquivo. É possível acionar essa macro em uma
+    janela de compilador como essa (este código está contido no arquivo
+    SuperFile7.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+$.DeclareData.MAC_ListSFsubfiles($.DeclareData.AllPeople);</programlisting>
+
+    <para>Isso retornará uma lista de todos os subarquivos no superarquivo
+    especificado. No entanto, esse tipo de código não é mais necessário, uma
+    vez que o modo padrão da função SuperFileContents() agora retorna
+    exatamente o mesmo resultado, da seguinte forma:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+OUTPUT(Std.File.SuperFileContents($.DeclareData.AllPeople));</programlisting>
+
+    <para>A função SuperFileContents() tem uma vantagem sobre a macro: ela tem
+    uma opção para retornar os subarquivos de qualquer superarquivo aninhado
+    (algo que a macro não oferece). Dessa forma, a função se parece com o
+    seguinte:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+OUTPUT(Std.File.SuperFileContents($.DeclareData.AllPeople,TRUE));</programlisting>
+  </sect2>
+</sect1>

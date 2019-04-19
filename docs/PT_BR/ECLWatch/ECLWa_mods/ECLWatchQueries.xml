@@ -1,0 +1,918 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <title>Wrapper</title>
+
+  <bookinfo>
+    <title>Wrapper</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email> Inclua a frase <emphasis
+      role="bold">Feedback sobre documentação</emphasis> na linha de assunto e
+      indique o nome do documento, o número das páginas e número da versão
+      atual no corpo da mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença. Os
+      demais produtos, logotipos e serviços podem ser marcas comerciais ou
+      registradas de suas respectivas empresas. Todos os nomes e dados de
+      exemplo usados neste manual são fictícios. Qualquer semelhança com
+      pessoas reais, vivas ou mortas, é mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="../../images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="WrapperECLWatchQueries">
+    <title>Wrapper</title>
+
+    <para/>
+
+    <sect1 id="Queries_Page" role="nobrk">
+      <title>Página de Consultas no ECL Watch</title>
+
+      <para>A página Queries lista as consultas publicadas para cada cluster
+      de destino. Nesta página, você pode ver as consultas publicadas. Você
+      também pode executar algumas ações nas consultas selecionadas.</para>
+
+      <figure>
+        <title>Procurar conjuntos de consulta</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/ECLWA432.jpg" vendor="eclwatchSS"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>A interface “Queries” fornece algumas informações gerais; há três
+      colunas ao lado esquerdo de cada consulta listada. Essas três colunas
+      fornecem informações sobre cada consulta listada.</para>
+
+      <!--Per Miguel: The Icons are very likely to be removed from the Main Queries page, 
+can probably just move the table here to the query detail page... 
+depending on where they wind up.-->
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/ECLWA-pause.jpg"/></entry>
+
+                <entry><para>Indica uma consulta em pausa</para><para>
+                </para></entry>
+              </row>
+
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/ECLWA-active.jpg"/></entry>
+
+                <entry><para>Indica uma consulta ativada</para><para>
+                </para></entry>
+              </row>
+
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/ECLWA-suspend.jpg"/></entry>
+
+                <entry><para>Indica uma consulta suspensa pelo
+                sistema</para><para> </para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>A página de consultas também fornece outras informações gerais
+      sobre:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>o ID da consulta</para>
+          </listitem>
+
+          <listitem>
+            <para>o nome da consulta</para>
+          </listitem>
+
+          <listitem>
+            <para>o destino</para>
+          </listitem>
+
+          <listitem>
+            <para>a ID da workunit (WUID)</para>
+          </listitem>
+
+          <listitem>
+            <para>a dll</para>
+          </listitem>
+
+          <listitem>
+            <para>Publicado por</para>
+          </listitem>
+        </itemizedlist>Todas as informações acima são disponibilizadas de
+      forma resumida na página principal de consultas, porém é possível
+      executar outras ações a partir dos botões de ação localizados no topo da
+      aba. É possível classificar uma coluna clicando em seu título. Clique
+      uma vez para classificar em ordem crescente e clique novamente para
+      mudar para a ordem decrescente. A direção da seta indica a ordem da
+      classificação.</para>
+
+      <!--VERIFY THAT THIS BEHAVIOR APPLIES HERE: YES, was not implemented but added when I brought this up.***-->
+
+      <para>É preciso selecionar uma consulta para ver a página detalhada ou
+      para realizar uma ação. Você pode selecionar uma ou várias consultas
+      clicando na caixa de seleção. Também é possível abrir uma consulta
+      específica ao clicar duas vezes na consulta desejada.</para>
+
+      <sect2 id="Queries_Tab" role="brk">
+        <title>Aba Queries (Consultas)</title>
+
+        <para>Ao selecionar o hiperlink Publish Queries (Consultas
+        publicadas), a aba Queries será aberta. Esta aba exibe as consultas
+        publicadas no sistema. Os botões de ação permitem realizar operações
+        nas consultas publicadas selecionadas.</para>
+
+        <para><figure>
+            <title>Botões de ação das Consultas publicadas</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA202.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure> <variablelist>
+            <varlistentry>
+              <term>Open</term>
+
+              <listitem>
+                <para>Abre a(s) consulta(s) selecionada(s).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Delete</term>
+
+              <listitem>
+                <para>Remove a(s) consulta(s) selecionada(s).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Suspend</term>
+
+              <listitem>
+                <para>Suspende a(s) consulta(s) selecionada(s).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Unsuspend</term>
+
+              <listitem>
+                <para>Reativa a(s) consulta(s) selecionada(s)
+                suspensa(s).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Activate</term>
+
+              <listitem>
+                <para>Ativa a(s) consulta(s) selecionada(s). Essa função
+                atribui uma consulta à sua réplica ativa de mesmo nome.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Deactivate</term>
+
+              <listitem>
+                <para>Desativa a(s) consulta(s) ativa(s) selecionada(s)
+                removendo a réplica da consulta ativa de um dado grupo de
+                consultas.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <?dbfo keep-together="always"?>
+
+              <term>Filter</term>
+
+              <listitem>
+                <para>Permite filtrar consultas de acordo com os critérios
+                inseridos. Quando o filtro é aplicado, o botão de ação exibe o
+                <emphasis role="bold">Filter Set</emphasis>. Este ícone indica
+                que as consultas publicadas exibidas são filtradas.</para>
+
+                <para><graphic fileref="../../images/ECLWA203.jpg"/>É possível
+                filtrar diversos atributos de uma consulta. A filtragem pode
+                ser feita por:</para>
+
+                <itemizedlist>
+                  <listitem>
+                    <para>ID</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Name (Name)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Publish by (Publicado por)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>WUID</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Cluster</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Logical File Name (Nome de arquivo lógico)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Libraries Used (Bibliotecas usadas)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Suspend (Consultas suspensas)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Active (Consultas ativas).</para>
+                  </listitem>
+                </itemizedlist>
+
+                <para>A função Filter também é compatível com o uso de
+                elementos coringa.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Options</term>
+
+              <listitem>
+                <para>Oferece a opção de busca ou exibição de consultas em um
+                único nó ou em todos os nós. Usar esta opção pode melhorar o
+                desempenho se você tiver um cluster maior com múltiplos
+                nós.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect2>
+
+      <sect2 id="QueryDetails" role="brk">
+        <title>Detalhes da consulta</title>
+
+        <para>Para examinar a página Query Details, selecione e abra a(s)
+        consulta(s). Esse procedimento abrirá uma aba que contém os detalhes
+        da consulta. Na página Query Details, é possível obter mais
+        informações sobre uma consulta específica. Você também pode executar
+        algumas ações na consulta desejada. Há várias abas contendo
+        informações adicionais sobre a consulta selecionada.</para>
+
+        <sect3 id="QuerySummaryTab">
+          <title>Aba Query Summary</title>
+
+          <para>A aba padrão da consulta, aberta ao selecionar uma consulta, é
+          a aba Summary. A aba Summary exibe algumas informações detalhadas
+          sobre a consulta.</para>
+
+          <para><figure>
+              <title>Página Detalhes da consulta</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLW006.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure>Nesta aba é possível realizar algumas ações na consulta.
+          Pressione os botões de ação para realizar a atividade desejada na
+          consulta selecionada.</para>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>Refresh</term>
+
+                <listitem>
+                  <para>Atualiza as informações exibidas para a consulta
+                  selecionada.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Save</term>
+
+                <listitem>
+                  <para>Salva a(s) consulta(s) selecionada(s).</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Delete</term>
+
+                <listitem>
+                  <para>Remove a(s) consulta(s) selecionada(s).</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </sect3>
+
+        <sect3 id="ErrorsTab">
+          <title>Aba Errors</title>
+
+          <para>Há uma aba "Erros" para casa consulta selecionada. A aba Erros
+          exibe quaisquer erros que possam ter sido encontrados durante a
+          compilação e a publicação daquela consulta. Se não houver erros, a
+          aba de Erros estará em branco (vazia). Em caso de erros, é possível
+          analisar qualquer um específico de forma mais detalhada ao clicar na
+          caixa de seleção, selecionar o erro desejado e pressionar o botão de
+          ação Open. Você também pode clicar duas vezes sobre o erro
+          selecionado. <figure>
+              <title>Erro de consulta</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA006E.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para/>
+        </sect3>
+
+        <sect3 id="GraphsTab">
+          <title>Aba Gráficos</title>
+
+          <para>A aba Graphs oferece acesso as interpretações gráficas da
+          consulta. Isso pode auxiliar na visualização sobre como a consulta
+          foi executada. A aba Graphs exibe uma lista de todos os gráficos
+          gerados pela consulta selecionada, juntamente com algumas
+          informações adicionais como medidas de tempo. Para exibir um gráfico
+          específico, basta selecioná-lo e escolher a opção “Open" ou clicar
+          duas vezes no gráfico listado.</para>
+
+          <figure>
+            <title>Lista de Gráficos</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA006G.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>Ao abrir o gráfico, uma nova aba será aberta mostrando o(s)
+          gráfico(s) selecionado(s).</para>
+
+          <para><figure>
+              <title>Gráficos</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA006G1.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>Ao abrir um gráfico, a imagem se divide em três seções
+          menores com cada uma exibindo alguns componentes relevantes do
+          gráfico da consulta. Observe a miríade dos controles de gráficos e
+          as abas na borda de cada aba. Use estes controles para visualizar os
+          diferentes aspectos dos gráficos.</para>
+
+          <para>O botão Advanced, localizado na área de controle principal do
+          gráfico, oferece acesso a outras opções de representação gráfica
+          ainda mais avançadas.</para>
+        </sect3>
+
+        <sect3 id="ECLWatch_Queries_LogicalFiles">
+          <title>Aba Logical Files</title>
+
+          <para>A página de detalhes das consultas publicadas fornece um link
+          para a aba dos arquivos lógicos da consulta. A aba “Logical Files"
+          mostra todos os arquivos lógicos usados pela consulta. Para
+          visualizar os detalhes dos arquivos lógicos de qualquer arquivo
+          listado, selecione um ou mais arquivos marcando a caixa de seleção e
+          pressionando o botão de ação Open. As abas de cada arquivo
+          selecionado se abrirão e você poderá visualizar e fazer alterações
+          nos arquivos sem precisar retornar à página de arquivos
+          lógicos.</para>
+
+          <figure>
+            <title>Aba Queries: Logical Files</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA006L.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>A imagem acima mostra a lista de arquivos lógicos na aba
+          Logical Files. Para ver mais detalhes sobre um arquivo lógico
+          listado, marque a caixa próxima ao arquivo e pressione o botão
+          <emphasis role="bold">Open</emphasis> fixo. Também é possível clicar
+          duas vezes sobre o arquivo lógico que deseja visualizar.</para>
+
+          <para>Após aberto, é possível selecionar qualquer uma das abas que
+          deseja visualizar: Summary, Contents, ECL, DEF, XML, File Parts,
+          Queries, ou a Workunit.</para>
+
+          <figure>
+            <title>Aba Queries:Logical Files:Contents</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA006j.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para/>
+        </sect3>
+
+        <sect3 id="Test_Pages">
+          <title>Aba Test Pages</title>
+
+          <para>A aba "Test Pages" oferece alguns recursos que podem ser
+          usados para testar sua consulta, incluindo SOAP/JSON/WSDL e o
+          formato antigo WS-ECL, assim como outras abas que exibem informações
+          ou amostras úteis da consulta.</para>
+
+          <para><figure>
+              <title>Aba Test Pages</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA012.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Informações disponíveis a partir da aba Test Page.</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">SOAP</emphasis> Esta aba oferece uma
+              interface interativa para o envio de consulta (com dados de
+              entrada) e de visualização da resposta em formato XML.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">JSON</emphasis> Esta aba oferece uma
+              interface interativa para o envio de consulta (com dados de
+              entrada) e de visualização da resposta em formato JSON.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">WSDL</emphasis> Esta aba fornece uma
+              definição de WSDL descrevendo a funcionalidade oferecida pela
+              consulta (serviço Web).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Request Schema </emphasis>Esta aba
+              oferece um esquema em formato XSD que descreve uma solicitação
+              para a consulta (serviço Web).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Response Schema</emphasis> Esta aba
+              oferece um esquema em formato XSD que descreve uma resposta para
+              a consulta (serviço Web).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Sample Request </emphasis>Esta aba
+              fornece uma amostra de busca para a consulta (serviço Web) em
+              formato XML.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Sample Response</emphasis> Esta aba
+              fornece uma amostra de resposta para a consulta (serviço Web) em
+              formato XML.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Parameter XML</emphasis> Esta aba
+              fornece uma representação parametrizada em XML da interface da
+              consulta.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Legacy Form</emphasis> Esta aba
+              fornece um formato que pode ser usado para enviar uma consulta e
+              obter uma resposta. Isso é semelhante ao formato WsECL. Isso é
+              semelhante ao formato WsECL.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Links</emphasis> Fornece uma lista
+              de links úteis como: o formato, uma amostra de URL REST, uma
+              amostra de busca, uma amostra de resposta, o parâmetro XML, SOAP
+              POST, WSDL, XSD e o esquema de resultado.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 id="QueriesWorkUnits">
+          <title>Workunits</title>
+
+          <para>A página Query Details das consultas publicadas fornece um
+          link para página de workunit. Esta aba corresponde a um atalho que o
+          levará para a mesma aba de workunit acessada através do menu
+          Workunits do ECL.</para>
+
+          <figure>
+            <title>Consultas Workunit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA006W.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>É idêntica a página <emphasis role="bold">Workunits do
+          ECL</emphasis> do submenu de navegação Workunit. Aqui você pode
+          realizar as mesmas operações. Observe que aqui também há algumas
+          abas conhecidas – como por exemplo a aba Graphs – tanto da página
+          Query Details da consulta como da aba workunit aqui aninhada.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Package_Maps" role="brk">
+        <title>Package Maps</title>
+
+        <para>O Data Package Maps fornece uma referência ao conteúdo de uma
+        superchave usada em consultas que substitui a definição original. O
+        mapeamento de arquivos do Data Package Map pode ser organizado em uma
+        coleção de arquivos definindo alguns subconjuntos de consultas, ou
+        organizados por vários agrupamentos tais como funções, arquivos,
+        desenvolvedores, etc. Estes subconjuntos são denominados <emphasis
+        role="bold">parts (partes)</emphasis> Para obter mais informações
+        sobre os Data Package Map consulte o aba <emphasis>Roxie
+        Reference</emphasis> .</para>
+
+        <para>Você pode acessar a página de Data Package Map a partir do link
+        do ícone "Queries". Pressione o botão <emphasis role="bold">Package
+        Maps</emphasis> na barra de navegação do submenu para acessar os
+        Package Maps em seu cluster. <figure>
+            <title>Package Maps</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA470.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>A página Package Maps mostra todos os package maps carregados em
+        seu cluster. Você pode Adicionar (Add), Ativar (Activate), Desativar
+        (Deactivate), Remover (Delete) ou Abrir (Open) um Data Package Map.
+        Para ver um Data Package Map, selecione um Data Package Map na
+        lista.</para>
+
+        <para>Para atualizar os mapas do pacote de dados que estão sendo
+        usados, é possível editar o arquivo do Data Package Map ou adicionar
+        um novo e depois ativá-lo. É possível remover o arquivo antigo mais
+        tarde.</para>
+
+        <sect3 id="Package_Map_Actions">
+          <title id="Packagemap_Actions">Ações do Data Package Map</title>
+
+          <para>É possível executar ações em seus mapas do pacote de dados a
+          partir da aba "Data Package Maps" no ECL Watch.</para>
+
+          <sect4 id="Open_Pkg_Map">
+            <title>Abrir Package Map</title>
+
+            <para>Para visualizar um Data Package Map, selecione o mapa
+            desejado e pressione o botão <emphasis role="bold">Open</emphasis>
+            . Isso abrirá uma nova aba onde você pode acessar abas adicionais
+            com informações sobre o pacote, o XML, e validar o mapas do pacote
+            de dados.</para>
+          </sect4>
+
+          <sect4 id="Add_PKG_Map">
+            <title>Adicionar Package Map</title>
+
+            <para>Para adicionar um Data Package Map ao clusters de
+            destino:</para>
+
+            <orderedlist>
+              <listitem>
+                <para>Selecione um Data Package Map a ser adicionado marcando
+                a caixa de seleção próxima a ele.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Add</emphasis> e
+                abra a caixa "Add Package Map"</para>
+
+                <para><figure>
+                    <title>Adicionar Package Map</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="../../images/ECLWA470A.jpg"
+                                   vendor="ECLWatchSS"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Select Package
+                File</emphasis> e selecione os arquivos do pacote que deseja
+                adicionar.</para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione o <emphasis role="bold">Target </emphasis>
+                para o qual deseja associar o mapeamento.</para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione um <emphasis role="bold">Process
+                Filter</emphasis> a partir da lista suspensa. O filtro de
+                processo determina em qual cluster Roxie físico o Data Package
+                Map será carregado.</para>
+              </listitem>
+
+              <listitem>
+                <para>Insira o endereço IP ou nome do host do Dali remoto que
+                será usado para pesquisar o arquivo lógico no campo <emphasis
+                role="bold">Remote Dali IP Address</emphasis> .</para>
+              </listitem>
+
+              <listitem>
+                <para>Marque as caixas para Ativar(Activate) ou Substituir
+                (Overwrite), como desejado.</para>
+              </listitem>
+            </orderedlist>
+          </sect4>
+
+          <sect4 id="Activate_Package_Map">
+            <title>Ativar o Package Map</title>
+
+            <para>Pressione o botão <emphasis role="bold">Activate</emphasis>
+            para desativar o Package Map de dados ativo no momento e para
+            ativar o mapa selecionado.</para>
+          </sect4>
+
+          <sect4 id="Deactivate_Package_Map">
+            <title>Desativar o Package Map</title>
+
+            <para>Pressione o botão <emphasis
+            role="bold">Deactivate</emphasis> para desativar o mapa do pacote
+            de dados ativo no momento.</para>
+          </sect4>
+
+          <sect4 id="PackageMap_Delete">
+            <title>Remover Package Map</title>
+
+            <para>Para remover um package map:</para>
+
+            <orderedlist>
+              <listitem>
+                <para>Selecione o pacote a ser removido marcando a caixa de
+                seleção próxima a ele.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis
+                role="bold">Delete</emphasis> .</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione <emphasis role="bold">OK</emphasis> ao
+                solicitar a confirmação da ação.</para>
+              </listitem>
+            </orderedlist>
+          </sect4>
+        </sect3>
+
+        <sect3 id="Pacakge_Map_Parts">
+          <title>Partes do Package Map</title>
+
+          <para>É possível ver mais informações e realizar algumas ações nas
+          partes do package map. Abra o package map para visualizar a aba
+          package maps.</para>
+
+          <para><figure>
+              <title>Partes do pacote</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWAPkgParts01.jpg"
+                             vendor="ECLWatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Através desta interface no ECLWatch é possível examinar partes
+          individuais, adicionar ou removê-las.</para>
+
+          <sect4 id="Add_Part">
+            <title>Adicionar Parte</title>
+
+            <para>Para adicionar uma parte ao mapa do pacote de dados:</para>
+
+            <orderedlist>
+              <listitem>
+                <para>Selecione <emphasis role="bold">a aba</emphasis> Package
+                Parts.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Add</emphasis>
+                .</para>
+              </listitem>
+
+              <listitem>
+                <para>Preencha os campos com as informações adequadas.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione <emphasis role="bold">App</emphasis>.</para>
+              </listitem>
+            </orderedlist>
+          </sect4>
+
+          <sect4 id="RemovePart">
+            <title>Remover Parte</title>
+
+            <para>Para remover uma parte do package map:</para>
+
+            <orderedlist>
+              <listitem>
+                <para>Selecione <emphasis role="bold">a aba</emphasis> Package
+                Parts.</para>
+              </listitem>
+
+              <listitem>
+                <para>Marque a caixa de seleção próxima à parte que será
+                removida.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Remove
+                Part</emphasis> .</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione <emphasis role="bold">OK</emphasis> ao ter a
+                confirmação solicitada.</para>
+              </listitem>
+            </orderedlist>
+          </sect4>
+
+          <sect4 id="GetPart">
+            <title>Obter parte</title>
+
+            <para><figure>
+                <title>Obter parte</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="../../images/ECLWaGetPart01.jpg"
+                               vendor="ECLWatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Pressione o botão <emphasis role="bold">Get Part</emphasis>
+            para visualizar o conteúdo da parte selecionada. <figure>
+                <title>Conteúdo do Package Part</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="../../images/ECLWaGetPart02.jpg"
+                               vendor="ECLWatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="Packagemap_Validation">
+          <title>Validar o Package Map</title>
+
+          <para>A <emphasis role="bold">aba</emphasis> Validate Package Map é
+          utilizada para validar package maps ativos. A <emphasis
+          role="bold">aba</emphasis> Validate Package Content é utilizada para
+          validar o conteúdo do package map que ainda não foi carregado. Para
+          validar um package map ativo:</para>
+
+          <para><figure>
+              <title>Validar Package Maps</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWaPkMgr.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <orderedlist>
+            <listitem>
+              <para>Selecione <emphasis role="bold">a aba</emphasis> Validate
+              Package Map.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione o <emphasis role="bold">Target</emphasis> e o
+              <emphasis role="bold">Process</emphasis> a partir das listas
+              suspensas na aba <emphasis role="bold">Validate Package
+              Map</emphasis> .</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis
+              role="bold">Validate</emphasis> para validar o package
+              map.</para>
+            </listitem>
+          </orderedlist>
+
+          <para>O resultado será exibido na aba <emphasis role="bold">Validate
+          Active Package Map</emphasis> .</para>
+
+          <para>É possível validar qualquer package map ativo, inativo,
+          externo ou aqueles que ainda não foram carregados no
+          ambiente.</para>
+
+          <para>Para validar um package map externo:</para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Vá para a aba <emphasis role="bold">Package
+                Maps</emphasis> .</para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione o package map a ser validado.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Open</emphasis>
+                .</para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione <emphasis role="bold">a aba</emphasis>
+                Validate.</para>
+              </listitem>
+            </orderedlist></para>
+
+          <para>A aba Validate Package Content permite que você abra qualquer
+          arquivo de package map ou insira qualquer conteúdo do pacote no
+          formato para validá-lo. O conteúdo não precisa ser publicado no
+          sistema.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

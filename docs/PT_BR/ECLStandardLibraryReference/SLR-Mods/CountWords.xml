@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CountWords">
+  <title>CountWords</title>
+
+  <para><emphasis role="bold">STD.Str.CountWords<indexterm>
+      <primary>STD.Str.CountWords</primary>
+    </indexterm><indexterm>
+      <primary>Str.CountWords</primary>
+    </indexterm><indexterm>
+      <primary>CountWords</primary>
+    </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém as palavras a serem contadas.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>separator</emphasis></entry>
+
+          <entry>Uma string que contém o delimitador de palavras a ser
+          usado.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>CountWords retorna um valor inteiro.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">CountWords </emphasis> retorna o número
+  de palavras na string <emphasis>source</emphasis> baseado no separador
+  <emphasis>especificado</emphasis>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT Std;
+
+str1 := 'a word a day keeps the doctor away';
+str2 := 'a|word|a|day|keeps|the|doctor|away';
+
+output(LENGTH(TRIM(Str1,LEFT,RIGHT)) - LENGTH(TRIM(Str1,ALL)) + 1);
+                                 //finds eight words by removing spaces
+STD.STr.CountWords(str1,' ');    //finds eight words based on space delimiter
+STD.STr.CountWords(str2,'|');    //finds eight words based on bar delimiter
+</programlisting>
+
+  <para/>
+</sect1>

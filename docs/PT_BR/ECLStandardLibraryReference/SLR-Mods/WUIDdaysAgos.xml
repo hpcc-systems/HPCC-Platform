@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect2
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="WUIDdaysAgos">
+   <title>
+      <emphasis role="bold">WUIDdaysAgos</emphasis>
+   </title>
+   <para>
+      <emphasis role="bold">WorkunitServices.WUIDdaysAgo(</emphasis>
+      <emphasis> daysago
+        </emphasis>
+      <emphasis role="bold"> )</emphasis>
+   </para>
+   <para>
+      <emphasis>daysago</emphasis> Um inteiro sem sinal que contém o número de dias a retroceder.</para>
+   <para>Return:<emphasis> </emphasis>WUIDdaysAgo retorna um valor VARSTRING.</para>
+   <para>A função  <emphasis role="bold">WUIDdaysAgo </emphasis> retorna um identificador de workunit válido de uma workunit executada no número de dias mais recentes especificado em  <emphasis>daysago</emphasis> .</para>
+   <para>Exemplo:</para>
+   <programlisting format="linespecific">daysago := WorkunitServices.WUIDdaysAgo(3); OUTPUT(WorkunitServices.WorkunitList(daysago)); //returns a list of workunits run in the last 72 hours</programlisting>
+</sect2>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CreateSuperFile">
+  <title>CreateSuperFile</title>
+
+  <para><emphasis role="bold">STD.File.CreateSuperFile<indexterm>
+      <primary>STD.File.CreateSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.CreateSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>CreateSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, sequentialparts </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, allowExist </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sequentialparts</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano que indica se os subarquivos
+          devem ser ordenados sequencialmente. Se omitido, o padrão é
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>allowExist</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano que indica se um erro deverá ser
+          publicado se o <emphasis>superarquivo</emphasis> já existir. Se
+          TRUE, nenhum erro é publicado. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Nulo</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">CreateSuperFile </emphasis> cria um
+  <emphasis>superarquivo</emphasis> vazio. Essa função não é incluída em uma
+  transação de superarquivo.</para>
+
+  <para>O parâmetro <emphasis>sequentialparts</emphasis> definido como TRUE
+  controla o caso pouco comum em que a numeração lógica de subarquivos deve
+  ser sequencial (por exemplo, quando todos os subarquivos já estão
+  classificados globalmente). Com <emphasis>sequentialparts</emphasis> FALSE
+  (o padrão), as partes dos subarquivos são intercaladas para que possam ser
+  encontradas localmente.</para>
+
+  <para>Por exemplo, se em um cluster de 4 dimensões existirem 3 arquivos (A,
+  B e C), as partes serão as seguintes:</para>
+
+  <para>A._1_of_4, B._1_of_4 e C_1_of_4 estão no nó 1</para>
+
+  <para>A._1_of_4, B._1_of_4 e C_1_of_4 estão no nó 2</para>
+
+  <para>A._1_of_4, B._1_of_4 e C_1_of_4 estão no nó 3</para>
+
+  <para>A._1_of_4, B._1_of_4 e C_1_of_4 estão no nó 4</para>
+
+  <para>Lendo o superfile criado com <emphasis>sequentialparts</emphasis>
+  FALSE, no Thor lerá as partes na ordem:</para>
+
+  <para>[A1,B1,C1,] [A2,B2,C2,] [A3,B3,C3,] [A4,B4,C4]</para>
+
+  <para>para que as leituras sejam todas locais (ou seja, A1, B1 e C1 no nó 1,
+  etc.). Definir <emphasis>sequentialparts</emphasis> como TRUE lerá as partes
+  na ordem do subarquivo, da seguinte forma:</para>
+
+  <para>[A1,A2,A3,] [A4,B1,B2] [,B3,B4,C1,] [C2,C3,C4]</para>
+
+  <para>para que a ordem global de A, B, C e D seja mantida. No entanto, nem
+  todas as partes poderão ser lidas localmente (por exemplo, A2 e A3 serão
+  lidas na parte 1). Por isso, definir <emphasis>sequentialparts</emphasis>
+  como verdadeiro é muito menos eficiente. De qualquer forma, como não é comum
+  ter arquivos particionados em ordem, essa opção é raramente definida.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">STD.File.CreateSuperFile('~CLASS::RT::IN::SF1',,1);
+//This is the same but uses named parameter
+STD.File.CreateSuperFile('~CLASS::RT::IN::SF1',allowExist := 1);
+</programlisting>
+</sect1>

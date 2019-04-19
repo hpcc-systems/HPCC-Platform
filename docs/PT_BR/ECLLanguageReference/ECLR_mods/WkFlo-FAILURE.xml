@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FAILURE">
+  <title>FAILURE</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: FAILURE<indexterm>
+      <primary>FAILURE</primary>
+    </indexterm>(</emphasis><emphasis>handler</emphasis><emphasis
+  role="bold">) <indexterm>
+      <primary>FAILURE workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.65pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>O nome do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A definição do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>handler</emphasis></entry>
+
+            <entry>A ação a ser executada se a expressão falhar.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>O serviço <emphasis role="bold">FAILURE </emphasis>executa a
+  <emphasis>manipulação</emphasis> do atribute quanto a
+  <emphasis>expressão</emphasis> falha. Teoricamente, FAILURE executa em
+  paralelo com o retorno com falha do resultado. Esse serviço implicitamente
+  faz com que o <emphasis>atributo</emphasis> seja avaliado em um escopo
+  global em vez de escopo de função. Disponível apenas se os serviços de fluxo
+  de trabalho estiverem ativados (consulte #OPTION(workflow)).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  sPeople  := SORT(Person,Person.per_first_name);
+  nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND
+                    Person.address))
+           : FAILURE(Email.simpleSend(SystemsPersonel,
+                    SystemsPersonel.email,'ouch.htm'));
+</programlisting>
+
+  <para>Ver também: <link linkend="SUCCESS">SUCCESS</link>, <link
+  linkend="RECOVERY">RECOVERY</link></para>
+</sect1>

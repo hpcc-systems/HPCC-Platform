@@ -1,0 +1,4495 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>ECL CLI do Componente de Ferramentas do Cliente</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Equipe de documentação</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>Novembro de 2011</pubdate>
+  </bookinfo>
+
+  <chapter id="ECL_CLI">
+    <title><emphasis role="bold">Interface de Comando</emphasis></title>
+
+    <sect1 id="The_ECL_Command_Syntax" role="nobrk">
+      <title>Sintaxe de Comandos ECL</title>
+
+      <sect2 id="ecl_command_syntax">
+        <title><emphasis role="bold">ecl [</emphasis>--version<emphasis
+        role="bold">]</emphasis> &lt;command&gt; <emphasis
+        role="bold">[</emphasis>&lt;options&gt;<emphasis
+        role="bold">]</emphasis></title>
+
+        <para/>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><emphasis>--version</emphasis></entry>
+
+                <entry>exibe informações de versão.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Argumentos</emphasis></entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>deploy</entry>
+
+                <entry>Cria uma workunit a partir de um arquivo ECL, arquivo
+                ou dll</entry>
+              </row>
+
+              <row>
+                <entry>publish</entry>
+
+                <entry>Adiciona uma workunit a um Grupo de Consultas</entry>
+              </row>
+
+              <row>
+                <entry>Cancelar publicação</entry>
+
+                <entry>Remove uma consulta de um grupo de consultas</entry>
+              </row>
+
+              <row>
+                <entry>run</entry>
+
+                <entry>Executa o arquivo ecl, arquivo, dll, wuid, ou
+                consulta</entry>
+              </row>
+
+              <row>
+                <entry>results</entry>
+
+                <entry>Retorna o resultado completo de uma WUID em formato XML
+                .</entry>
+              </row>
+
+              <row>
+                <entry>activate</entry>
+
+                <entry>Ativa uma consulta publicada</entry>
+              </row>
+
+              <row>
+                <entry>deactivate</entry>
+
+                <entry>Desativa o nome do alias da consulta</entry>
+              </row>
+
+              <row>
+                <entry>queries</entry>
+
+                <entry>Lista ou manipula consultas ou grupo de
+                consultas</entry>
+              </row>
+
+              <row>
+                <entry>roxie</entry>
+
+                <entry>Executa comandos para o Roxie</entry>
+              </row>
+
+              <row>
+                <entry>packagemap</entry>
+
+                <entry>Executa comandos do packagemap (para o Roxie)</entry>
+              </row>
+
+              <row>
+                <entry>bundle</entry>
+
+                <entry>Gerencia pacotes ECL</entry>
+              </row>
+
+              <row>
+                <entry>abort</entry>
+
+                <entry>Aborta uma ou mais workunits de uma WUID ou nome da
+                tarefa</entry>
+              </row>
+
+              <row>
+                <entry>status</entry>
+
+                <entry>Retorna o status de uma workunit ou de um nome do job.
+                <para>Se for encontrado mais de um nome, será fornecido uma
+                lista.</para></entry>
+              </row>
+
+              <row>
+                <entry>getname</entry>
+
+                <entry>Retorna o nome da workunit de uma determinada
+                WUID.</entry>
+              </row>
+
+              <row>
+                <entry>getwuid</entry>
+
+                <entry>Retorna a(s) WUID(s) do job de uma determinad
+                workunit.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para/>
+
+        <sect3 id="CT_ECL_CLI_ecl.ini" role="brk">
+          <title>ecl.ini</title>
+
+          <para>Várias opções podem ser colocadas em um arquivo denominado
+          <emphasis role="bold">ecl.ini</emphasis> no mesmo diretório do
+          executável. As opções que raramente são alteradas devem ser
+          colocadas em um arquivo ini. Por exemplo:</para>
+
+          <programlisting>eclWatchIP=10.150.50.12
+eclWatchPort=28010
+eclUserName=emilykate
+eclPassword=elmo812
+resultLimit=200
+</programlisting>
+
+          <para>Em alguns exemplos abaixo, vamos supor que ecl.ini possui o
+          conteúdo acima.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/caution.png" scale="noin"
+                    xml:base="../../"/></entry>
+
+                    <entry>Não recomendamos armazenar sua senha no arquivo ini
+                    (que não é criptografado). A senha está incluída no
+                    arquivo ini nesses exemplos para simplificar o código de
+                    exemplo.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>As opções a seguir podem ser fornecidas em um arquivo ini:
+          eclWatchIP, eclWatchPort, eclUserName, eclPassword, activateDefault,
+          waitTimeout, resultLimit.</para>
+
+          <para>A análise das opções seguem a seguinte ordem de
+          precedência:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Linha de comando</para>
+            </listitem>
+
+            <listitem>
+              <para>Arquivo ini</para>
+            </listitem>
+
+            <listitem>
+              <para>Variável do ambiente</para>
+            </listitem>
+
+            <listitem>
+              <para>Valor padrão</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 id="CT_CLI_Syntax_EnvironmentVariables" role="brk">
+          <title>Variável do ambiente</title>
+
+          <para>Algumas opções podem ser armazenadas nas variáveis do ambiente
+          em seu computador. Há suporte para as seguintes opções:</para>
+
+          <programlisting>ECL_WATCH_IP
+ECL_WATCH_PORT
+ECL_USER_NAME
+ECL_PASSWORD
+ECL_WAIT_TIMEOUT
+ECL_RESULT_LIMIT
+ECLCC_PATH
+</programlisting>
+
+          <para/>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/caution.png" scale="noin"
+                    xml:base="../../"/></entry>
+
+                    <entry>Não recomendamos armazenar palavras em uma variável
+                    do ambiente, a menos que seu sistema esteja
+                    protegido.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLDeploy" role="brk">
+        <title>ecl deploy</title>
+
+        <para><emphasis role="bold">ecl deploy &lt;target&gt; &lt;file&gt;
+        [--name=&lt;value&gt;] </emphasis></para>
+
+        <para><emphasis role="bold">ecl deploy &lt;target&gt; &lt;archive&gt;
+        [--name=&lt;value&gt;] </emphasis></para>
+
+        <para><emphasis role="bold">ecl deploy &lt;target&gt; &lt;so | dll
+        &gt; [--name=&lt;value&gt;] </emphasis></para>
+
+        <para><emphasis role="bold">ecl deploy &lt;target&gt; -
+        [--name=&lt;val&gt;]</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl deploy roxie findperson.ecl --name=FindPersonService 
+ecl deploy roxie ArchiveQuery.xml --name=FindPersonService 
+ecl deploy roxie libW20150914-125557.so --name=FindPersonService 
+ecl deploy roxie - --name=FindPersonService 
+</programlisting>
+
+        <para>Um hífen (-) especifica que o objeto deve ser lido a partir do
+        stdin.</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl deploy</entry>
+
+                  <entry>Cria uma workunit no HPCC System para um determinado
+                  texto ECL, <para>arquivo ECL, arquivo, objeto compartilhado,
+                  ou dll. A workunit é criada na
+                  <emphasis>compilação</emphasis> .</para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O cluster de destino para o qual será feita a
+                  implementação</entry>
+                </row>
+
+                <row>
+                  <entry>file</entry>
+
+                  <entry>O arquivo de texto ECL a ser implementado</entry>
+                </row>
+
+                <row>
+                  <entry>archive</entry>
+
+                  <entry>O arquivo ECL a ser implementado</entry>
+                </row>
+
+                <row>
+                  <entry>so | dll</entry>
+
+                  <entry>A biblioteca de vínculo dinâmico da workunit ou
+                  objeto compartilhado a ser implementado</entry>
+                </row>
+
+                <row>
+                  <entry>-</entry>
+
+                  <entry>Especifica que o objeto deve ser lido a partir de
+                  stdin</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-n, --name</entry>
+
+                  <entry>O nome da consulta publicada</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--main</entry>
+
+                  <entry>A definição a ser usada a partir de um repositório
+                  ECL antigo</entry>
+                </row>
+
+                <row>
+                  <entry>--ecl-only</entry>
+
+                  <entry>Envia a consulta ECL para o HPCC como texto em vez de
+                  um arquivo gerado</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções ECCLC</emphasis></entry>
+
+                  <entry/>
+                </row>
+
+                <row>
+                  <entry>-Ipath</entry>
+
+                  <entry>Adiciona um caminho aos locais para procurar por
+                  importações ecl</entry>
+                </row>
+
+                <row>
+                  <entry>-Lpath</entry>
+
+                  <entry>Adiciona um caminho aos locais para procurar por
+                  bibliotecas do sistema</entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Especifica o caminho para manifestar o
+                  arquivo</entry>
+                </row>
+
+                <row>
+                  <entry>-checkDirty</entry>
+
+                  <entry>Faz com que o eclcc gere um aviso para qualquer
+                  atributo que tenha sido modificado (conforme o resultado do
+                  status git) O uso dessa função exige que o git esteja
+                  instalado e disponível no caminho.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLPublish" role="brk">
+        <title>ecl publish</title>
+
+        <para><emphasis role="bold">ecl publish &lt;target&gt; &lt;file&gt;
+        [--name=&lt;val&gt;] </emphasis></para>
+
+        <para><emphasis role="bold">ecl publish &lt;target&gt; &lt;wuid&gt;
+        [--name=&lt;val&gt;] </emphasis></para>
+
+        <para><emphasis role="bold">ecl publish &lt;target&gt; &lt;so |
+        dll&gt; [--name=&lt;val&gt;] </emphasis></para>
+
+        <para><emphasis role="bold">ecl publish &lt;target&gt; &lt;archive&gt;
+        [--name=&lt;val&gt;] </emphasis></para>
+
+        <para><emphasis role="bold">ecl publish &lt;target&gt; -
+        [--name=&lt;val&gt;] </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl publish roxie findperson.ecl --name=FindPersonService -A 
+ecl publish roxie W20150914-125557 --name=FindPersonService -A 
+ecl publish roxie libW20150914-125557.so --name=FindPersonService -A 
+ecl publish roxie ArchiveQuery.xml --name=FindPersonService -A 
+ecl publish roxie - --name=FindPersonService --activate
+ecl publish roxie findperson.ecl --name=FindPersonService --no-activate 
+ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate 
+</programlisting>
+
+        <para>Um hífen (-) especifica que o objeto deve ser lido a partir do
+        stdin.</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl publish</entry>
+
+                  <entry>Publica uma consulta em um grupo de consultas. A
+                  consulta é criada ao adicionar a tarefa em um grupo de
+                  consultas e ao atribuir um nome de consulta.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O cluster de destino para o qual será feita a
+                  publicação</entry>
+                </row>
+
+                <row>
+                  <entry>wuid</entry>
+
+                  <entry>A ID da workunit a ser publicada</entry>
+                </row>
+
+                <row>
+                  <entry>file</entry>
+
+                  <entry>O arquivo de texto ECL a ser publicado</entry>
+                </row>
+
+                <row>
+                  <entry>archive</entry>
+
+                  <entry>O arquivo ECL a ser publicado</entry>
+                </row>
+
+                <row>
+                  <entry>so | dll</entry>
+
+                  <entry>A biblioteca de vínculo dinâmico da workunit ou
+                  objeto compartilhado a ser publicado</entry>
+                </row>
+
+                <row>
+                  <entry>-</entry>
+
+                  <entry>Especifica que o objeto deve ser lido a partir de
+                  stdin</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-n, --name</entry>
+
+                  <entry>O nome da consulta publicada</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Ativa a consulta quando publicada (padrão)</entry>
+                </row>
+
+                <row>
+                  <entry>-A-, --no-activate</entry>
+
+                  <entry>Não ativa a consulta quando publicada</entry>
+                </row>
+
+                <row>
+                  <entry>-sp, --suspend-prev</entry>
+
+                  <entry>Suspende a consulta previamente ativa</entry>
+                </row>
+
+                <row>
+                  <entry>-dp, --delete-prev</entry>
+
+                  <entry>Remove a consulta previamente ativa</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Especifica que as informações do arquivo DFS não
+                  devem ser copiadas para os arquivos referenciados pela
+                  consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Especifica que um novo carregamento do cluster Roxie
+                  não deve ser solicitado</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Especifica a permissão do uso de arquivos remotos em
+                  uma consulta Roxie. Se uma consulta Roxie fizer referência a
+                  arquivos remotos e se essa permissão não for ativada, a
+                  publicação falhará.</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=</entry>
+
+                  <entry>Endereço IP ou nome do host do Dali Remoto a ser
+                  usado na pesquisa de arquivos lógicos.</entry>
+                </row>
+
+                <row>
+                  <entry>--update-dfs</entry>
+
+                  <entry>Atualiza os superarquivos DFS locais se o Dali remoto
+                  tiver sido alterado</entry>
+                </row>
+
+                <row>
+                  <entry>---source-process</entry>
+
+                  <entry>Cluster de processo da qual os arquivos serão
+                  copiados.</entry>
+                </row>
+
+                <row>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Valor a ser definido para configuração do tempo
+                  limite da consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Valor a ser definido para a configuração do aviso de
+                  tempo limite da consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Valor a ser definido para configuração do limite de
+                  memória da consulta. Formatar &lt;mem&gt; como 500000B,
+                  550K, 100M, 10G, ou 1T, etc.</entry>
+                </row>
+
+                <row>
+                  <entry>--priority=&lt;val&gt;</entry>
+
+                  <entry>Define a prioridade desta consulta. O valor pode ser
+                  LOW, HIGH, SLA, NONE. A opção NONE apagará a configuração
+                  atual.</entry>
+                </row>
+
+                <row>
+                  <entry>--comment=&lt;string&gt;</entry>
+
+                  <entry>Um comentário associado à esta consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>O tempo máximo restante para a conclusão da
+                  atualização do cluster</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--main</entry>
+
+                  <entry>A definição a ser usada a partir de um repositório
+                  ECL antigo</entry>
+                </row>
+
+                <row>
+                  <entry>--ecl-only</entry>
+
+                  <entry>Envia a consulta ECL para o HPCC como texto em vez de
+                  um arquivo gerado</entry>
+                </row>
+
+                <row>
+                  <entry>--limit=&lt;limit&gt;</entry>
+
+                  <entry>Define o limite do resultado da consulta. O padrão é
+                  100.</entry>
+                </row>
+
+                <row>
+                  <entry>-f&lt;option&gt;[=value]</entry>
+
+                  <entry>Define uma opção ECL (equivalente a #option)</entry>
+                </row>
+
+                <row>
+                  <entry>-Dname=value</entry>
+
+                  <entry>Substitui a definição do “nome” global do
+                  atributo</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções ECCLC</emphasis></entry>
+
+                  <entry/>
+                </row>
+
+                <row>
+                  <entry>-Ipath</entry>
+
+                  <entry>Adiciona um caminho aos locais para procurar por
+                  importações ecl</entry>
+                </row>
+
+                <row>
+                  <entry>-Lpath</entry>
+
+                  <entry>Adiciona um caminho aos locais para procurar por
+                  bibliotecas do sistema</entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Especifica o caminho para manifestar o
+                  arquivo</entry>
+                </row>
+
+                <row>
+                  <entry>-checkDirty</entry>
+
+                  <entry>Faz com que o eclcc gere um aviso para qualquer
+                  atributo que tenha sido modificado (conforme o resultado do
+                  status git) O uso dessa função exige que o git esteja
+                  instalado e disponível no caminho.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLUnPublish" role="brk">
+        <title>ecl unpublish</title>
+
+        <para><emphasis role="bold">Executa o comando ECL não publicado
+        fornecido</emphasis></para>
+
+        <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+        <programlisting>ecl unpublish roxie FindpersonService.1
+ecl unpublish roxie "FindpersonService*"
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl unpublish</entry>
+
+                  <entry>Executa o comando ECL não publicado fornecido</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>O nome do grupo de consultas que contém a consulta
+                  que não será publicada</entry>
+                </row>
+
+                <row>
+                  <entry>query_id</entry>
+
+                  <entry>A consulta que será removida do grupo de consultas.
+                  Elementos curinga são permitidos, mas devem estar entre
+                  aspas (p.ex., "MyQuery*" ).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLRun" role="brk">
+        <title>ecl run</title>
+
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;file&gt;
+        [--name=&lt;val&gt;] [--input=&lt;file|xml&gt;] [--wait=&lt;i&gt;]
+        </emphasis></para>
+
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;wuid&gt;
+        [--input=&lt;file|xml&gt;] [--wait=&lt;ms&gt;]</emphasis></para>
+
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;query&gt;
+        [--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]</emphasis></para>
+
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;so | dll&gt;
+        [--name=&lt;val&gt;][--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]</emphasis></para>
+
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;archive&gt;
+        --name=&lt;val&gt;
+        [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]</emphasis></para>
+
+        <para><emphasis role="bold">ecl run &lt;target&gt; -
+        --name=&lt;val&gt;
+        [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]</emphasis></para>
+
+        <para><emphasis role="bold">Exemplos</emphasis>:</para>
+
+        <programlisting>ecl run thor findperson.ecl --name=findperson --input=data.xml --wait=1000
+ecl run thor W20150914-125557 --input=data.xml --wait=1000
+ecl run thor findperson --input=data.xml --wait=1000
+ecl run thor libW20150914-125557.so --input=data.xml --wait=1000
+ecl run thor - --input=data.xml --poll --wait=1000
+ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" 
+ecl run thor findperson.ecl -I C:\MyECL\ 
+</programlisting>
+
+        <para>Um hífen (-) especifica que o objeto deve ser lido a partir do
+        stdin.</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl run</entry>
+
+                  <entry>Executa o comando ECL de execução fornecido</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O cluster de destino para o qual será feita a
+                  publicação</entry>
+                </row>
+
+                <row>
+                  <entry>wuid</entry>
+
+                  <entry>A ID da workunit a ser executada</entry>
+                </row>
+
+                <row>
+                  <entry>file</entry>
+
+                  <entry>O arquivo de texto ECL a ser executado</entry>
+                </row>
+
+                <row>
+                  <entry>archive</entry>
+
+                  <entry>O arquivo ECL a ser executado</entry>
+                </row>
+
+                <row>
+                  <entry>so | dll</entry>
+
+                  <entry>A biblioteca de vínculo dinâmico da workunit ou o
+                  objeto compartilhado a ser executado</entry>
+                </row>
+
+                <row>
+                  <entry>-</entry>
+
+                  <entry>Especifica que o objeto deve ser lido a partir de
+                  stdin</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-n, --name</entry>
+
+                  <entry>O nome da tarefa</entry>
+                </row>
+
+                <row>
+                  <entry>-in,--input=&lt;file|xml&gt;</entry>
+
+                  <entry>O arquivo ou conteúdo xml a ser usado como entrada da
+                  consulta</entry>
+                </row>
+
+                <row>
+                  <entry>-X&lt;name&gt;</entry>
+
+                  <entry>Define o valor de entrada armazenado
+                  (stored('name'))</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Tempo máximo restante para a conclusão da atualização
+                  do cluster (em ms)</entry>
+                </row>
+
+                <row>
+                  <entry>--exception-level</entry>
+
+                  <entry>Define a severidade mínima para relatar exceções. Os
+                  possíveis níveis de severidade são <emphasis
+                  role="bold">info</emphasis>, <emphasis
+                  role="bold">atenção</emphasis>, ou <emphasis
+                  role="bold">erro</emphasis>. O padrão é “info”, que retorna
+                  todas as exceções.</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--poll</entry>
+
+                  <entry>Envia uma workunit de forma assíncrona e pesquisa o
+                  servidor até que o estado da tarefa seja alterado para
+                  concluído. Em seguida, os resultados são restabelecidos.
+                  Combine com a opção --wait para limitar o tempo da
+                  pesquisa.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--main</entry>
+
+                  <entry>A definição a ser usada a partir de um repositório
+                  ECL antigo</entry>
+                </row>
+
+                <row>
+                  <entry>--ecl-only</entry>
+
+                  <entry>Envia a consulta ECL para o HPCC como texto em vez de
+                  um arquivo gerado</entry>
+                </row>
+
+                <row>
+                  <entry>--limit</entry>
+
+                  <entry>Define o limite do resultado da consulta. O padrão é
+                  100.</entry>
+                </row>
+
+                <row>
+                  <entry>-f&lt;option&gt;[=value]</entry>
+
+                  <entry>Define uma opção ECL (equivalente a #option no
+                  ECL)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções ECCLC</emphasis></entry>
+
+                  <entry/>
+                </row>
+
+                <row>
+                  <entry>-I &lt;path&gt;</entry>
+
+                  <entry>Adiciona um caminho aos locais para procurar por
+                  importações ecl (ex. -I C:\MyECL\ )</entry>
+                </row>
+
+                <row>
+                  <entry>-L &lt;path&gt;</entry>
+
+                  <entry>Adiciona um caminho aos locais para procurar
+                  bibliotecas do sistema</entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Especifica o caminho para manifestar o
+                  arquivo</entry>
+                </row>
+
+                <row>
+                  <entry>-checkDirty</entry>
+
+                  <entry>Faz com que o eclcc gere um aviso para qualquer
+                  atributo que tenha sido modificado (conforme o resultado do
+                  status git) O uso dessa função exige que o git esteja
+                  instalado e disponível no caminho.</entry>
+                </row>
+
+                <row>
+                  <entry>-f-xxx</entry>
+
+                  <entry>Passará a opção -xxx para o eclcc</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLResult" role="brk">
+        <title>ecl results</title>
+
+        <para><emphasis role="bold">ecl results &lt;wuid&gt; [--noroot]
+        [--exception-level=<emphasis>&lt;value&gt;</emphasis>]
+        </emphasis></para>
+
+        <para><emphasis role="bold">Examples</emphasis>:</para>
+
+        <programlisting>ecl results W20170519-142920 
+ecl results W20170519-142920 --noroot --exception-level=error
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl results</entry>
+
+                  <entry>Retorna o resultado completo de uma WUID em formato
+                  XML.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>wuid</entry>
+
+                  <entry>A workunit a partir da qual os resultados serão
+                  retornados.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--noroot</entry>
+
+                  <entry>Suprime a tag raiz &lt;Result&gt; no XML
+                  retornado.</entry>
+                </row>
+
+                <row>
+                  <entry>--exception-level</entry>
+
+                  <entry>Define a severidade mínima para relatar exceções. Os
+                  possíveis níveis de severidade são <emphasis
+                  role="bold">info</emphasis>, <emphasis
+                  role="bold">atenção</emphasis>, ou <emphasis
+                  role="bold">erro</emphasis>. O padrão é “info”, que retorna
+                  todas as exceções.</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLActivate" role="brk">
+        <title>ecl activate</title>
+
+        <para><emphasis role="bold">ecl activate &lt;queryset&gt;
+        &lt;query_id&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+        <programlisting>ecl activate Roxie FindpersonService.4</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl activate</entry>
+
+                  <entry>Ativa uma consulta publicada. Essa função atribui uma
+                  consulta à sua réplica ativa de mesmo nome.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>O nome do grupo de consultas que contém a consulta a
+                  ser ativada</entry>
+                </row>
+
+                <row>
+                  <entry>query_id</entry>
+
+                  <entry>Compilar e Publicar a consulta para o Roxie</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLDeactivate" role="brk">
+        <title>ecl deactivate</title>
+
+        <para><emphasis role="bold">ecl deactivate &lt;queryset&gt;
+        &lt;active_alias&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+        <programlisting>ecl deactivate Roxie FindpersonService</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl deactivate</entry>
+
+                  <entry>Desativa uma consulta publicada ao remover o alias da
+                  consulta ativa de um determinado grupo de consultas.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>O nome do grupo de consultas que contém o alias a ser
+                  desativado</entry>
+                </row>
+
+                <row>
+                  <entry>active_alias</entry>
+
+                  <entry>O alias ativo que será removido do grupo de
+                  consultas</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLQueriesList" role="brk">
+        <title id="eclquerieslist">ecl queries list</title>
+
+        <para><emphasis role="bold">ecl queries list
+        [&lt;queryset&gt;][--target=&lt;cluster&gt;][--show=&lt;flags&gt;]</emphasis></para>
+
+        <para><emphasis role="bold"/></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl queries list roxie
+ecl queries list roxie --target=roxie --show=A </programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl queries list</entry>
+
+                  <entry>Exibe uma lista das consultas em um ou mais grupos de
+                  consultas. Se um cluster for fornecido, os grupos de
+                  consultas associados com esse cluster serão exibidos. Caso
+                  nenhum grupo de consultas ou cluster for especificado, todos
+                  os grupos de consultas serão mostrados.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>list</entry>
+
+                  <entry>Lista as consultas no(s) grupo(s) de
+                  consultas</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>O nome do grupo de consultas a partir do qual as
+                  consultas serão listadas</entry>
+                </row>
+
+                <row>
+                  <entry>-t, --target</entry>
+
+                  <entry>O cluster de destino associado às consultas a serem
+                  listadas</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Ativa a consulta quando publicada</entry>
+                </row>
+
+                <row>
+                  <entry>--show=&lt;flags&gt;</entry>
+
+                  <entry>Mostra apenas as consultas com indicadores
+                  combinados</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Indicadores</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>A</entry>
+
+                  <entry>Ativo</entry>
+                </row>
+
+                <row>
+                  <entry>S</entry>
+
+                  <entry>Suspenso</entry>
+                </row>
+
+                <row>
+                  <entry>U</entry>
+
+                  <entry>Sem Indicadores</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_eclqueriescopy" role="brk">
+        <title>ecl queries copy</title>
+
+        <para><emphasis role="bold">ecl queries copy &lt;source_query_path&gt;
+        &lt;target_queryset&gt; [--activate] </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl queries copy thor/findperson thor2 --activate
+ecl queries copy //192.168.1.10:8010/thor/findperson thor
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl queries copy</entry>
+
+                  <entry>Copia uma consulta de um grupo para outro. Uma
+                  consulta pode ser copiada de um ambiente do HPCC para outro
+                  usando um caminho que começa com '//', seguido do IP ou nome
+                  do host e da porta do ECL Watch de origem seguida pelo grupo
+                  de consultas e a consulta de origem.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>copy</entry>
+
+                  <entry>Copia uma consulta de um grupo para outro</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>source_query_path</entry>
+
+                  <entry>O caminho da consulta a ser copiada usando o formato:
+                  [//ip:port/]queryset/query or queryset/query.</entry>
+                </row>
+
+                <row>
+                  <entry>target_queryset</entry>
+
+                  <entry>O nome do grupo de consultas para o qual a consulta
+                  será copiada</entry>
+                </row>
+
+                <row>
+                  <entry>-t, --target</entry>
+
+                  <entry>O cluster de destino a ser associado com a tarefa
+                  remota</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Especifica que as informações do arquivo DFS não
+                  devem ser copiadas para os arquivos referenciados pela
+                  consulta</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Ativa a consulta quando copiada</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Especifica que um novo carregamento do cluster Roxie
+                  não deve ser solicitado</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Especifica a permissão do uso de arquivos remotos em
+                  uma consulta Roxie. Se uma consulta Roxie referencia
+                  arquivos remotos e se esta opção não for ativada, a cópia
+                  falhará.</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>Se a informação existente deve ser substituída – true
+                  se estiver presente</entry>
+                </row>
+
+                <row>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Valor a ser definido para configuração do tempo
+                  limite da consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Valor a ser definido para a configuração do aviso de
+                  tempo limite da consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Valor a ser definido para configuração do limite de
+                  memória da consulta. Formatar &lt;mem&gt; como 500000B,
+                  550K, 100M, 10G, ou 1T, etc.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Tempo máximo restante para a conclusão da atualização
+                  do cluster (em ms)</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_eclqueriescopyset" role="brk">
+        <title>ecl queries copy-set</title>
+
+        <para><emphasis role="bold">ecl queries copy-set &lt;source_target&gt;
+        &lt;destination_target&gt; [--all] [--clone-active-state]
+        </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl queries copy-set roxie1 roxie2
+ecl queries copy-set roxie1 roxie2 --all
+ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl queries copy-set</entry>
+
+                  <entry>Copia um conjunto de consultas ECL de um destino a
+                  outro.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>copy-set</entry>
+
+                  <entry>Copia um conjunto de consultas ECL de um destino a
+                  outro</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>source_target</entry>
+
+                  <entry>Cluster de destino a partir do qual as consultas ECL
+                  são copiadas</entry>
+                </row>
+
+                <row>
+                  <entry>destination_target</entry>
+
+                  <entry>Cluster de destino para o qual as consultas ECL são
+                  copiadas.</entry>
+                </row>
+
+                <row>
+                  <entry>--all</entry>
+
+                  <entry>Especifica copiar consultas ECL ativas e inativas. Se
+                  omitido, apenas as consultas ativas serão copiadas.</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Especifica que as informações do arquivo DFS não
+                  devem ser copiadas para os arquivos referenciados pela
+                  consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=</entry>
+
+                  <entry>Endereço IP ou nome do host do Dali remoto a ser
+                  usado para pesquisa de arquivos lógicos</entry>
+                </row>
+
+                <row>
+                  <entry>---source-process</entry>
+
+                  <entry>Cluster de processo da qual os arquivos serão
+                  copiados.</entry>
+                </row>
+
+                <row>
+                  <entry>--clone-active-state</entry>
+
+                  <entry>Ativa as consultas ECL copiadas no destino, caso elas
+                  estejam ativadas na origem.</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Especifica a permissão do uso de arquivos remotos em
+                  uma consulta Roxie. Se uma consulta Roxie referencia
+                  arquivos remotos e se esta opção não for ativada, a cópia
+                  falhará.</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>Se a informação existente deve ser substituída – true
+                  se estiver presente</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclqueriesconfig" role="brk">
+        <title>ecl queries copy</title>
+
+        <para><emphasis role="bold">ecl queries config &lt;target&gt;
+        &lt;queryid&gt; [options]</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl queries config thor findperson --wait=1000
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl queries copy</entry>
+
+                  <entry>Atualiza os valores de configuração da
+                  consulta</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>config</entry>
+
+                  <entry>Define ou atualiza os valores de configuração da
+                  consulta</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O nome do queryset de destino</entry>
+                </row>
+
+                <row>
+                  <entry>queryid</entry>
+
+                  <entry>O nome da consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Especifica que um novo carregamento do cluster Roxie
+                  não deve ser solicitado</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Tempo máximo restante para a conclusão da atualização
+                  do cluster (em ms)</entry>
+                </row>
+
+                <row>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Valor a ser definido para configuração do tempo
+                  limite da consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Valor a ser definido para a configuração do aviso de
+                  tempo limite da consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Valor a ser definido para configuração do limite de
+                  memória da consulta.<para> Formatar &lt;mem&gt; como
+                  500000B, 550K, 100M, 10G, ou 1T, etc.</para></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  está executando os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackageadd" role="brk">
+        <title>ecl packagemap add</title>
+
+        <para><emphasis role="bold">ecl packagemap add [--daliip][options]
+        &lt;target&gt; &lt;filename&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl packagemap add  -s=192.168.1.10 roxie mypackagemap.pkg
+ecl packagemap add roxie mypackagemap.pkg --overwrite
+ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap add</entry>
+
+                  <entry>Aciona o comando adicionar Package Map</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>add</entry>
+
+                  <entry>Adiciona um packgemap a um cluster de destino</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O destino com o qual o package map será
+                  associado</entry>
+                </row>
+
+                <row>
+                  <entry>filename</entry>
+
+                  <entry>O nome do arquivo que contém as informações do
+                  package map.</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=</entry>
+
+                  <entry>Endereço IP ou nome do host do Dali remoto a ser
+                  <para>usado para pesquisa de arquivos lógicos</para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>Se a informação existente deve ser substituída – true
+                  se estiver presente</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Ativar o Package Map</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Especifica a permissão do uso de arquivos remotos.
+                  <para>Se um package map referencia arquivos remotos
+                  e</para>se esta opção não for ativada, a adição
+                  falhará.</entry>
+                </row>
+
+                <row>
+                  <entry>--pmid=&lt;packagemapid&gt;</entry>
+
+                  <entry>ID do packagemap – se não for especificado, o padrão
+                  é o nome do arquivo</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP
+                  <para>que está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagedelete" role="brk">
+        <title>ecl packagemap delete</title>
+
+        <para><emphasis role="bold">ecl packagemap delete [options]
+        &lt;target&gt;&lt;packagemap&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl packagemap delete roxie mypackagemap
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap delete</entry>
+
+                  <entry>Aciona o comando para remover o package map</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>delete</entry>
+
+                  <entry>Remove um package map</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP
+                  <para>que está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackageactivate" role="brk">
+        <title>ecl packagemap activate</title>
+
+        <para><emphasis role="bold">ecl packagemap activate &lt;target&gt;
+        &lt;packagemap&gt; </emphasis></para>
+
+        <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+        <programlisting>ecl packagemap activate roxie mypackagemap.pkg</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap activate</entry>
+
+                  <entry>O comando ativar desativará o package map atual,
+                  <para>ativando o package map especificado.</para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O destino que contém o package map que será
+                  ativado</entry>
+                </row>
+
+                <row>
+                  <entry>packagemap</entry>
+
+                  <entry>O nome do package map será atualizado</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagedeactivate" role="brk">
+        <title>ecl packagemap deactivate</title>
+
+        <para><emphasis role="bold">ecl packagemap deactivate &lt;target&gt;
+        &lt;packagemap&gt; </emphasis></para>
+
+        <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+        <programlisting>ecl packagemap deactivate roxie mypackagemap.pkg</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap deactivate</entry>
+
+                  <entry>O comando desativará o package map atualmente
+                  ativo.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O destino que contém o package map que será
+                  desativado</entry>
+                </row>
+
+                <row>
+                  <entry>packagemap</entry>
+
+                  <entry>O nome do package map que será desativado</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagelist" role="brk">
+        <title>ecl packagemap list</title>
+
+        <para><emphasis role="bold">ecl packagemap list &lt;target&gt;
+        </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl packagemap list roxie
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap list</entry>
+
+                  <entry>Aciona o comando da listagem de package maps</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>list</entry>
+
+                  <entry>Lista os nomes do package map carregado</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O destino que contém o package map a ser
+                  listado</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackageinfo" role="brk">
+        <title>ecl packagemap info</title>
+
+        <para><emphasis role="bold">ecl packagemap info [options]
+        &lt;target&gt; </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl packagemap info roxie
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap info</entry>
+
+                  <entry>Aciona o comando de informações sobre o package
+                  map</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>info</entry>
+
+                  <entry>retorna informações do package map</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O destino que contém o package map a ser
+                  recuperarado</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagemapaddpart" role="brk">
+        <title>ecl packagemap add-part</title>
+
+        <para><emphasis role="bold">ecl packagemap add-part &lt;target&gt;
+        &lt;pmid&gt; &lt;filename&gt; </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl packagemap add-part roxie multipart.pkg addresses.pkg 
+</programlisting>
+
+        <para>O comando packagemap add-part adiciona conteúdo adicional do
+        package a um package map existente</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap add-part</entry>
+
+                  <entry>Aciona o comando packagemap add-part.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>add-part</entry>
+
+                  <entry><para>Adiciona conteúdo adicional do package map a um
+                  existente</para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>Nome do destino a ser usado ao adicionar partes do
+                  package map</entry>
+                </row>
+
+                <row>
+                  <entry>pmid</entry>
+
+                  <entry>Identificador do package map para o qual a parte será
+                  adicionada</entry>
+                </row>
+
+                <row>
+                  <entry>filename</entry>
+
+                  <entry>Um ou mais arquivos de parte</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--part-name</entry>
+
+                  <entry>Nome da parte que está sendo adicionada (o padrão é o
+                  nome do arquivo)</entry>
+                </row>
+
+                <row>
+                  <entry>--delete-prev</entry>
+
+                  <entry>Substitui uma parte existente de mesmo nome</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=&lt;ip&gt;</entry>
+
+                  <entry>IP do Dali remoto a ser usado na pesquisa de arquivos
+                  lógicos</entry>
+                </row>
+
+                <row>
+                  <entry>--global-scope</entry>
+
+                  <entry>O package map especificado é compartilhado entre
+                  vários destinos</entry>
+                </row>
+
+                <row>
+                  <entry>--source-process=&lt;value&gt;</entry>
+
+                  <entry>Processa o cluster para copiar arquivos</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Não falha caso arquivos remotos sejam usados no
+                  package map</entry>
+                </row>
+
+                <row>
+                  <entry>--preload-all</entry>
+
+                  <entry>Define a opção de carregamento prévio de todos os
+                  pacotes</entry>
+                </row>
+
+                <row>
+                  <entry>--update-super-files</entry>
+
+                  <entry>Atualiza os superarquivos DFS locais se o Dali remoto
+                  tiver sido alterado</entry>
+                </row>
+
+                <row>
+                  <entry>--update-clone-from</entry>
+
+                  <entry>Atualiza o clone local da localização se o Dali
+                  remoto tiver sido alterado</entry>
+                </row>
+
+                <row>
+                  <entry>--dont-append-cluster</entry>
+
+                  <entry>Usar apenas para evitar problemas de bloqueio devido
+                  <para>a adição de cluster ao arquivo</para></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagemapgetpart" role="brk">
+        <title>ecl packagemap get-part</title>
+
+        <para><emphasis role="bold">ecl packagemap get-part &lt;target&gt;
+        &lt;packagemap&gt; &lt;partname&gt; </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl packagemap get-part roxie multipart.pkg contacts
+</programlisting>
+
+        <para>O comando get-part busca uma determinada parte de um package map
+        <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap get-part</entry>
+
+                  <entry>Aciona o comando packagemap gert-part.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>get-part</entry>
+
+                  <entry><para>Busca uma determinada parte de um package map
+                  </para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>Nome do destino a ser usado ao adicionar partes do
+                  package map</entry>
+                </row>
+
+                <row>
+                  <entry>packagemap</entry>
+
+                  <entry>Nome do package map que contém a parte</entry>
+                </row>
+
+                <row>
+                  <entry>partname</entry>
+
+                  <entry>Nome da parte a ser recuperada</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--global-scope</entry>
+
+                  <entry>O package map especificado é compartilhado entre
+                  vários destinos</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagemapremovepart" role="brk">
+        <title>ecl packagemap remove-part</title>
+
+        <para><emphasis role="bold">ecl packagemap remove-part &lt;target&gt;
+        &lt;pmid&gt; &lt;partname&gt; </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl packagemap remove-part roxie multipart.pkg contacts
+</programlisting>
+
+        <para>O comando remove-part removerá determinada parte do package
+        map</para>
+
+        <para/>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="175.55pt"/>
+
+            <colspec colwidth="384.85pt"/>
+
+            <tbody>
+              <row>
+                <entry>ecl packagemap remove-part</entry>
+
+                <entry>Aciona o comando packagemap remove-part.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Ações</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>remove-part</entry>
+
+                <entry><para>Remove uma determinada parte do package
+                map</para></entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Argumentos</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>target</entry>
+
+                <entry>Nome do destino a ser usado</entry>
+              </row>
+
+              <row>
+                <entry>packagemap</entry>
+
+                <entry>Nome do package map que contém a parte</entry>
+              </row>
+
+              <row>
+                <entry>partname</entry>
+
+                <entry>Nome da parte a ser removida</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Opções</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>--global-scope</entry>
+
+                <entry>O package map especificado é compartilhado entre vários
+                destinos</entry>
+              </row>
+
+              <row>
+                <entry>-v, --verbose</entry>
+
+                <entry>Saída de informações adicionais de rastreamento</entry>
+              </row>
+
+              <row>
+                <entry>-s, --server</entry>
+
+                <entry>O endereço IP ou nome do host do servidor ESP que
+                <para>está executando os serviços do ECL Watch</para></entry>
+              </row>
+
+              <row>
+                <entry>--port</entry>
+
+                <entry>A porta dos serviços do ECL Watch (o padrão é
+                8010)</entry>
+              </row>
+
+              <row>
+                <entry>-ssl</entry>
+
+                <entry>Use o protocolo SSL para proteger a conexão com o
+                servidor.</entry>
+              </row>
+
+              <row>
+                <entry>-u, --username</entry>
+
+                <entry>O nome do usuário (se necessário)</entry>
+              </row>
+
+              <row>
+                <entry>-pw, --password</entry>
+
+                <entry>A senha (se necessário)</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+      </sect2>
+
+      <sect2 id="eclpackagevalidate" role="brk">
+        <title>Validar ecl packagemap</title>
+
+        <para><emphasis role="bold">ecl packagemap validate &lt;target&gt;
+        [&lt;filename&gt;] </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl packagemap validate roxie mypackagemap.pkg
+ecl packagemap validate roxie --active</programlisting>
+
+        <para>O comando packagemap validate verifica se:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>As superchaves referenciadas possuem subarquivos definidos
+            (avisa caso não existam subarquivos)</para>
+          </listitem>
+
+          <listitem>
+            <para>Todas as consultas ECL referenciadas existem no grupo de
+            consultas Roxie atual</para>
+          </listitem>
+
+          <listitem>
+            <para>Todas as consultas Roxie estão definidas no pacote</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>O resultado também listará qualquer arquivo usado pelas
+        consultas ECL, mas que não foram mapeados no package map.</para>
+
+        <para>Filename, --active, e --pmid são mutualmente exclusivos. As
+        opções --active ou --pmid validam um package map já adicionado em vez
+        de um arquivo local.</para>
+
+        <para>A opção --queryid verifica os arquivos em uma única consulta em
+        vez de todas as consultas no grupo de consultas de destino. É mais
+        rápido quando apenas os arquivos de uma única consulta precisam ser
+        validados. <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap validate</entry>
+
+                  <entry>Aciona o comando packagemap validate.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>validate</entry>
+
+                  <entry>Retorna informações do package map</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>filename</entry>
+
+                  <entry>O nome do arquivo que contém as informações do
+                  <para>package map a serem validadas</para></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O destino que contém o package map a ser
+                  validado</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--active</entry>
+
+                  <entry>Valida o package map ativo para o destino
+                  especificado</entry>
+                </row>
+
+                <row>
+                  <entry>--pmid=&lt;packagemapid&gt;</entry>
+
+                  <entry>Valida o package map especificado</entry>
+                </row>
+
+                <row>
+                  <entry>--queryid</entry>
+
+                  <entry>Valida os arquivos da ID da consulta especificada, se
+                  <para>não estiverem mapeados no package map</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagemapcopy" role="brk">
+        <title>ecl packagemap copy</title>
+
+        <para><emphasis role="bold">ecl packagemap copy &lt;path&gt;
+        &lt;target&gt; </emphasis></para>
+
+        <para>Copia o package map de um destino a outro.</para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl packagemap copy roxie/MyPkg roxie2
+ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
+</programlisting>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap copy</entry>
+
+                  <entry>Aciona o comando packagemap copy</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>copy</entry>
+
+                  <entry>Copia o package map de um destino a outro.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>path</entry>
+
+                  <entry>Caminho para o package map de origem a ser
+                  copiado</entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O destino para o qual o package map será
+                  copiado</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Ativar o Package Map</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=</entry>
+
+                  <entry>Endereço IP ou nome do host do Dali remoto a ser
+                  <para>usado para pesquisa de arquivos lógicos</para></entry>
+                </row>
+
+                <row>
+                  <entry>--pmid=&lt;packagemapid&gt;</entry>
+
+                  <entry>ID do packagemap – se não for especificado, o padrão
+                  é o nome do arquivo</entry>
+                </row>
+
+                <row>
+                  <entry>---source-process</entry>
+
+                  <entry>Processa o cluster para copiar arquivos</entry>
+                </row>
+
+                <row>
+                  <entry>--preload-all</entry>
+
+                  <entry>Define a opção de carregamento prévio de todos os
+                  pacotes</entry>
+                </row>
+
+                <row>
+                  <entry>--replace</entry>
+
+                  <entry>Substituir o package map</entry>
+                </row>
+
+                <row>
+                  <entry>--update-super-files</entry>
+
+                  <entry>Atualiza os superarquivos DFS locais se o Dali remoto
+                  tiver sido alterado</entry>
+                </row>
+
+                <row>
+                  <entry>--update-clone-from</entry>
+
+                  <entry>Atualiza o clone local da localização se o Dali
+                  remoto tiver sido alterado</entry>
+                </row>
+
+                <row>
+                  <entry>--dont-append-cluster</entry>
+
+                  <entry>Usar apenas para evitar problemas de bloqueio devido
+                  a adição de cluster ao arquivo</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Os seguintes formatos são suportados para o caminho:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>remote packagemap: //IP:PORT/Target/PackageMapId</para>
+          </listitem>
+
+          <listitem>
+            <para>local packagemap: target/PackageMapId</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLRoxieAttach" role="brk">
+        <title>ecl roxie attach</title>
+
+        <para><emphasis role="bold">ecl roxie attach
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl roxie attach myroxie
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie attach</entry>
+
+                  <entry>Une o Roxie ao Dali</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>stá executando os serviços do ECL Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLRoxieDetach" role="brk">
+        <title>ecl roxie detach</title>
+
+        <para><emphasis role="bold">ecl roxie detach
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl roxie detach myroxie
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie detach</entry>
+
+                  <entry>Desconecta o Roxie do Dali</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLRoxieReload" role="brk">
+        <title>ecl roxie reload</title>
+
+        <para><emphasis role="bold">ecl roxie reload
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl roxie reload myroxie
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie reload</entry>
+
+                  <entry>Recarrega as informações do Roxie a partir do
+                  Dali</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLRoxieCheck" role="brk">
+        <title>ecl roxie check</title>
+
+        <para><emphasis role="bold">ecl roxie check
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl roxie check myroxie
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie check</entry>
+
+                  <entry>Verifica o estado do processo Roxie</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=<emphasis>&lt;ms&gt;</emphasis></entry>
+
+                  <entry>Tempo máximo de espera em milissegundos</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable><parameter/></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLBundleDepends" role="brk">
+        <title>ecl bundle depends</title>
+
+        <para><emphasis role="bold">ecl bundle depends &lt;bundleName&gt;
+        [--version &lt;versionnumber&gt;]</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl bundle depends mybundle
+ecl bundle depends mybundle --version=2</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle depends</entry>
+
+                  <entry>Mostra as dependências de um pacote</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>O nome de um arquivo de pacote ou de um pacote
+                  instalado</entry>
+                </row>
+
+                <row>
+                  <entry>--recurse</entry>
+
+                  <entry>Exibe dependências indiretas</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>Especifica uma versão do pacote</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLBundleInfo" role="brk">
+        <title>ecl bundle info</title>
+
+        <para><emphasis role="bold">ecl bundle info &lt;bundleName&gt;
+        [--version &lt;versionnumber&gt;]</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle info mybundle
+ecl bundle info https://github.com/hpcc-systems/ecl-bundles.git
+ecl bundle info mybundle --version=2</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle info</entry>
+
+                  <entry>Lista informações sobre um pacote</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>Nome de arquivo, pasta, nome ou URL de um
+                  pacote.</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>Especifica uma versão do pacote</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Se a URL termina em .git, ele supostamente é um repositório git
+        (buscado com o uso de um clone git); caso contrário, ele provavelmente
+        será a URL de um arquivo que possa ser recuperado. Em ambos os casos,
+        ele é trazido para uma localização local temporária, processado como
+        um arquivo ou diretório local e depois removido.</para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLBundleInstall" role="brk">
+        <title>ecl bundle install</title>
+
+        <para><emphasis role="bold">ecl bundle install
+        &lt;bundleName&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl bundle install mybundle
+ecl bundle install https://github.com/hpcc-systems/ecl-bundles.git
+ecl bundle install mybundle --dryrun
+ecl bundle install mybundle --update
+ecl bundle install mybundle --keepprior</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle install</entry>
+
+                  <entry>Instala um pacote</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>O nome ou URL de um arquivo do pacote, pasta ou de um
+                  pacote instalado.</entry>
+                </row>
+
+                <row>
+                  <entry>--dryrun</entry>
+
+                  <entry>Lista, mas não copia, o que seria instalado</entry>
+                </row>
+
+                <row>
+                  <entry>--force</entry>
+
+                  <entry>Instala mesmo na ausência das dependências
+                  exigidas</entry>
+                </row>
+
+                <row>
+                  <entry>--keepprior</entry>
+
+                  <entry>Não remove nenhuma versão prévia do pacote</entry>
+                </row>
+
+                <row>
+                  <entry>Atualizar</entry>
+
+                  <entry>Atualiza um pacote instalado existente</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Se a URL termina em .git, ele supostamente é um repositório git
+        (buscado com o uso de um clone git); caso contrário, ele provavelmente
+        será a URL de um arquivo que possa ser recuperado. Em ambos os casos,
+        ele é trazido para uma localização local temporária, processado como
+        um arquivo ou diretório local e depois removido.</para>
+
+        <para>Para usar o comando "ecl bundle install &lt;git url&gt;", é
+        preciso ter o git instalado e configurado em seu sistema. O Git
+        precisa estar acessível ao usuário (no caminho).</para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLBundleUninstall" role="brk">
+        <title>ecl bundle uninstall</title>
+
+        <para><emphasis role="bold">ecl bundle uninstall
+        &lt;bundleName&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl bundle uninstall mybundle
+ecl bundle install mybundle --dryrun
+ecl bundle install mybundle --update
+ecl bundle install mybundle --keepprior</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle install</entry>
+
+                  <entry>Instala um pacote</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>O nome de um pacote instalado</entry>
+                </row>
+
+                <row>
+                  <entry>--dryrun</entry>
+
+                  <entry>Lista o que seria removido, mas não faz a
+                  remoção</entry>
+                </row>
+
+                <row>
+                  <entry>--force</entry>
+
+                  <entry>Desinstala mesmo que outros pacotes sejam dependentes
+                  deste</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>Especifica uma versão do pacote</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLBundleList" role="brk">
+        <title>ecl bundle list</title>
+
+        <para><emphasis role="bold">ecl bundle list
+        &lt;pattern&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl bundle list
+ecl bundle list myb*
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle list</entry>
+
+                  <entry>Lista os pacotes que correspondem ao padrão
+                  especificado</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;pattern&gt;</entry>
+
+                  <entry>Um padrão que especifica os pacotes a serem listados.
+                  <para>Se omitido, todos os pacotes serão
+                  listados</para></entry>
+                </row>
+
+                <row>
+                  <entry>--details</entry>
+
+                  <entry>Relata os detalhes de cada pacote instalado</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLBundleUse" role="brk">
+        <title>ecl bundle use</title>
+
+        <para><emphasis role="bold">ecl bundle use &lt;bundleName&gt;
+        [--version &lt;version&gt;]</emphasis></para>
+
+        <para>Exemplo:</para>
+
+        <programlisting>ecl bundle use myBundle --version 2
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle use</entry>
+
+                  <entry>Ativa uma versão especificada de um pacote
+                  ativo</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>O nome de um arquivo de pacote</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>A versão do pacote a ser ativado, ou
+                  “nenhuma”</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLRoxieUnusedFiles" role="brk">
+        <title>ecl roxie unused-files</title>
+
+        <para><emphasis role="bold">ecl roxie unused-files
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl roxie unused-files myroxie
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie unused-files</entry>
+
+                  <entry>Localiza arquivos no DFS para um determinado processo
+                  Roxie que não<para>esteja sendo usado atualmente pelas
+                  consultas ECL nesse Roxie.</para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--check-packagemaps</entry>
+
+                  <entry>Exclui arquivos referenciados nos package maps
+                  ativos</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLAbort" role="brk">
+        <title>ecl abort</title>
+
+        <para><emphasis role="bold">ecl abort -wu &lt;WUID&gt; | -n
+        &lt;jobName&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl abort -wu W20150516-111213
+ecl abort -n MyJob</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl abort</entry>
+
+                  <entry>Aborta uma ou mais workunits de uma WUID ou nome da
+                  workunit</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-wu</entry>
+
+                  <entry>Os WUID (ID da Workunit)</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>O nome do Job</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLStatus" role="brk">
+        <title>ecl status</title>
+
+        <para><emphasis role="bold">ecl status -wu &lt;WUID&gt; | -n
+        &lt;jobName&gt;</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl status -wu W20150516-111213
+ecl status -n MyJob</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl status</entry>
+
+                  <entry>Retorna o status de uma workunit ou de um nome do
+                  job. <para>Se for encontrado mais de um nome, será fornecido
+                  uma lista CSV.</para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-wu</entry>
+
+                  <entry>Os WUID (ID da Workunit)</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>O nome do Job</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLGetWUID" role="brk">
+        <title>ecl getwuid</title>
+
+        <para><emphasis role="bold">ecl getwuid -n &lt;jobName&gt;
+        [--limit=&lt;limitCount&gt;]</emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl getwuid -n MyJobName
+ecl getwuid -n MyCommonJobName --limit=100</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl getwuid</entry>
+
+                  <entry>Retorna a(s) WUID(s) de um determinado nome do job.
+                  <para>Se for encontrado mais de um nome, será fornecido uma
+                  lista.</para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>O nome do Job</entry>
+                </row>
+
+                <row>
+                  <entry>--limit=<emphasis>nn</emphasis></entry>
+
+                  <entry>Inteiro para definir o limite do resultado; o padrão
+                  é 100</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLGetName" role="brk">
+        <title>ecl getname</title>
+
+        <para><emphasis role="bold">ecl getname -wu &lt;WUID&gt;
+        </emphasis></para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl getname -wu W20140516-111213
+ecl getname -wu W201407*
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec colwidth="384.85pt"/>
+
+              <tbody>
+                <row>
+                  <entry>ecl getname</entry>
+
+                  <entry>Retorna o nome do job de uma determinada
+                  workunit</entry>
+                </row>
+
+                <row>
+                  <entry>--wuid</entry>
+
+                  <entry>Os WUID (ID da Workunit)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--limit=&lt;limit&gt;</entry>
+
+                  <entry>Define o limite do resultado. Esta opção é útil ao
+                  usar <para>elementos curinga em uma solicitação. (O padrão é
+                  100)</para></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP que
+                  <para>está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

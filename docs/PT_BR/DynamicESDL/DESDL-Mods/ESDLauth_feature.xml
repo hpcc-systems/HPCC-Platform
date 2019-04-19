@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_auth_feature">
+  <title><emphasis role="bold">auth_feature</emphasis></title>
+
+  <para><indexterm>
+      <primary>auth_feature</primary>
+    </indexterm>O atributo auth_feature (válido apenas para ESPService ou
+  ESPMethod) permite especificar meios de verificar as permissões de um
+  usuário para executar um método.</para>
+
+  <para>Para ativar este recurso, seu sistema deve estar configurado para usar
+  um formulário de segurança compatível com a autenticação em nível de
+  recurso, tal como a segurança LDAP incluída na Community Edition da
+  plataforma. Depois da LDAP ter sido configurada, adicione o nome da tag
+  fornecido como o valor do atributo <emphasis
+  role="bold">authFeature</emphasis> à lista de autenticação em nível de
+  recurso na seção “Segurança” do ECL Watch. Em seguida, defina as permissões
+  para os usuários e/ou grupos.</para>
+
+  <para>Se estiver usando um Security Manager Plugin (Plugin do Gerenciador de
+  Segurança) de terceiros, consulte a documentação do plugin para obter
+  detalhes sobre como adicionar nome de tag à configuração de
+  segurança.</para>
+
+  <para>O atributo auth_feature é obrigatório para cada método, mas pode ser
+  especificado no nível ESPService para ser aplicado a todos os métodos em um
+  serviço. Você pode substituir um método individual configurando o atributo
+  em um nível de método</para>
+
+  <para>A configuração auth_feature("NONE") significa que nenhuma autenticação
+  é necessária. A configuração auth_feature("DEFERRED") adia a autenticação
+  para a lógica de negócios na lógica de implementação do método do
+  desenvolvedor do ESP .</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting> ESPservice MyService [auth_feature("NONE")]
+ {
+   ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
+   ESPmethod 
+    [
+     description("MyMethod Two"),
+     auth_feature("AllowMyMethod2"),
+     help("This method does everything MyMethod1 does plus a few extra features"),
+     min_ver("1.2")
+    ]
+   MyMethod2(MyMethod2Request, MyMethod2Response);
+ };</programlisting>
+</sect1>

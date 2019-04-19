@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ATAN2">
+  <title>ATAN2</title>
+
+  <para><emphasis role="bold">ATAN2<indexterm>
+      <primary>ATAN2</primary>
+    </indexterm><indexterm>
+      <primary></primary>
+    </indexterm>(</emphasis><emphasis></emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.95pt" />
+
+        <colspec colwidth="309.85pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>y</emphasis></entry>
+
+            <entry>O valor do numerador REAL da tangente.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>x</emphasis></entry>
+
+            <entry>O valor do denominador REAL da tangente.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ATAN2 retorna um valor REAL único.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função  <emphasis role="bold">ATAN2 </emphasis> retorna o arco tangente (inverso) da tangente calculada, em radianos. Isso é semelhante à função ATAN <indexterm>
+      <primary>ATAN function</primary>
+    </indexterm> , porém mais preciso e lida com situações onde x ou y é igual a zero.
+  <emphasis>x</emphasis> ou <emphasis>y</emphasis> o padrão é zero.</para>
+
+  <para>Exemplo:</para>
+
+  <para>ArcTangent := ATAN2(TangentNumerator, TangentDenominator);</para>
+
+  <para>Ver também: <link linkend="ATAN">ATAN</link>, <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+</sect1>

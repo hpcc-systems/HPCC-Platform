@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TimeFromParts">
+  <title>TimeFromParts</title>
+
+  <para><emphasis role="bold">STD.Date.TimeFromParts<indexterm>
+      <primary>STD.Date.TimeFromParts</primary>
+    </indexterm><indexterm>
+      <primary>Date.TimeFromParts</primary>
+    </indexterm><indexterm>
+      <primary>TimeFromParts</primary>
+    </indexterm>(</emphasis> <emphasis>hour, minute, second</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>hour</emphasis></entry>
+
+          <entry>Um valor de horas INTEGER1 no intervalo de 0 a 23.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>minute</emphasis></entry>
+
+          <entry>Um valor de minutos UNSIGNED1 no intervalo de 0 a 59.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>second</emphasis></entry>
+
+          <entry>Um valor de segundos UNSIGNED1 no intervalo de 0 a
+          59.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>TimeReturn retorna um Time_t (Um UNSIGNED3 com a hora do dia
+          no formato HHMMDD.)</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">TimeFromParts</emphasis> retorna um
+  valor Time_t dos parâmetros <emphasis>hour</emphasis>,
+  <emphasis>minute</emphasis> e <emphasis>second</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+  UNSIGNED1   MyHour   := 23;
+  UNSIGNED1   MyMinute := 59;
+  UNSIGNED1   MySecond := 50;
+  
+T := STD.Date.TimeFromParts(MyHour,MyMinute,MySecond);
+    //T contains 235950
+  
+  </programlisting>
+
+  <para/>
+</sect1>

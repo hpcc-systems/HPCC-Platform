@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EPservice">
+  <title>ESPservice</title>
+
+  <para><indexterm>
+      <primary>ESPservice</primary>
+    </indexterm>Define uma interface de serviço web do ESP. Uma vez
+  estabelecida, essa definição de interface pode ser atribuída (vinculada) a
+  um ESP Service baseado em uma ESDL dinâmica.</para>
+
+  <para>Um ESPservice deve conter uma ou mais definições de método.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>ESPservice [auth_feature("AllowMyService")] MyService
+{
+  ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
+  ESPmethod MyMethod2(MyMethod2Request, MyMethod2Response);
+};
+</programlisting>
+</sect1>

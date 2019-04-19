@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Query_Libraries">
+  <title><emphasis role="bold">Bibliotecas de Consultas</emphasis></title>
+
+  <para>Uma biblioteca de consulta é um conjunto de atributos, agrupados em
+  uma unidade autocontida, que permite que o código seja compartilhado entre
+  diferentes tarefas. Isso reduz o tempo necessário para implementar um
+  conjunto de atributos, podendo reduzir a pegada de memória para o grupo de
+  consultas no Roxie que usam a biblioteca. Também é possível atualizar uma
+  biblioteca de consultas sem precisar reimplementar todas as consultas que a
+  utilizam.</para>
+
+  <para>As bibliotecas de consulta não são compatíveis com o Thor, porém podem
+  vir a ter compatibilidade futuramente.</para>
+
+  <para>Uma biblioteca de consulta é definida por duas estruturas – uma
+  INTERFACE para definir os parâmetros do percurso e um MODULE que implementa
+  a INTERFACE.</para>
+
+  <sect2 id="Library_INTERFACE_Definition">
+    <title>Definição da biblioteca INTERFACE</title>
+
+    <para>Para criar uma biblioteca de consulta, a primeira exigência é uma
+    definição de seus parâmetros de entrada com uma estrutura de INTERFACE que
+    recebe os parâmetros:</para>
+
+    <programlisting>NamesRec := RECORD
+  INTEGER1  NameID;
+  STRING20  FName;
+  STRING20  LName;
+END;
+     
+FilterLibIface1(DATASET(namesRec) ds, STRING search) := INTERFACE
+  EXPORT DATASET(namesRec) matches;
+  EXPORT DATASET(namesRec) others;
+END;</programlisting>
+
+    <para>Esse exemplo define a INTERFACE para uma biblioteca que usa duas
+    entradas – um DATASET (com o formato de layout especificado) e uma STRING
+    – e fornece a capacidade de gerar dois resultados de DATASET.</para>
+
+    <para>Para a maioria das consultas de biblioteca, pode ser preferível usar
+    uma INTERFACE individual para definir os parâmetros de entrada. O uso de
+    uma INTERFACE torna os parâmetros especificados mais claros e facilita a
+    sincronização contínua da interface e da implementação. Este exemplo
+    define a mesma interface de biblioteca mostrada acima:</para>
+
+    <programlisting>NamesRec := RECORD
+    INTEGER1  NameID;
+    STRING20  FName;
+    STRING20  LName;
+END;
+
+IFilterArgs := INTERFACE //defines passed parameters
+  EXPORT DATASET(namesRec) ds;
+  EXPORT STRING search;
+END;
+FilterLibIface2(IFilterArgs args) := INTERFACE
+  EXPORT DATASET(namesRec) matches;
+  EXPORT DATASET(namesRec) others;
+END;</programlisting>
+  </sect2>
+
+  <sect2 id="Library_MODULE_Definitions">
+    <title>Definições da biblioteca MODULE</title>
+
+    <para>Uma biblioteca de consulta é uma definição de estrutura de MODULE
+    que implementa uma determinada definição de INTERFACE da biblioteca. Os
+    parâmetros especificados ao MODULE precisam corresponder exatamente à
+    definição da INTERFACE da biblioteca, e o MODULE precisa conter definições
+    de atributos EXPORT compatíveis para cada um dos resultados especificados
+    na INTERFACE da biblioteca. A opção LIBRARY na definição MODULE especifica
+    a INTERFACE da biblioteca que está sendo implementada. Este exemplo define
+    uma implementação para as INTERFACEs acima:</para>
+
+    <programlisting>FilterDsLib1(DATASET(namesRec) ds,
+             STRING search) := MODULE,LIBRARY(FilterLibIface1)
+  EXPORT matches := ds(Lname = search);
+  EXPORT others := ds(Lname != search);
+END;</programlisting>
+
+    <para>e para a variedade que compõe uma INTERFACE como seu parâmetro
+    único:</para>
+
+    <programlisting>FilterDsLib2(IFilterArgs args) := MODULE,LIBRARY(FilterLibIface2)
+  EXPORT matches := args.ds(Lname = args.search);
+  EXPORT others := args.ds(Lname != args.search);
+END;</programlisting>
+  </sect2>
+
+  <sect2 id="Building_an_External_library">
+    <title>Construindo uma Biblioteca Externa</title>
+
+    <para>Uma biblioteca de consulta pode ser interna ou externa. Uma
+    biblioteca interna seria usada principalmente em consultas do hthor para
+    testes e depuração antes da implementação no Roxie. Embora seja possível
+    usar bibliotecas de consulta internas em consultas do Roxie, as vantagens
+    são obtidas no uso da versão externa.</para>
+
+    <para>Uma biblioteca de consulta externa é criada pela ação BUILD, que
+    compila a biblioteca de consulta em sua própria tarefa. O nome da
+    biblioteca é o nome do trabalho associado à tarefa. Como consequência, a
+    #WORKUNIT normalmente seria usada para dar um nome de trabalho
+    significativo à tarefa, como neste exemplo:</para>
+
+    <programlisting>#WORKUNIT('name','Ppass.FilterDsLib'); 
+BUILD(FilterDsLib1);</programlisting>
+
+    <para>Este código compila a biblioteca para a versão de parâmetros de
+    INTERFACE do código acima:</para>
+
+    <programlisting>#WORKUNIT('name','Ipass.FilterDsLib'); 
+BUILD(FilterDsLib2);</programlisting>
+
+    <para>O sistema mantém um catálogo das mais recentes versões de cada
+    biblioteca de consulta que é atualizado sempre que uma biblioteca é
+    compilada. O hthor usa isso para determinar bibliotecas de consulta ao
+    executar uma consulta (como o Thor também fará quando for compatível com
+    bibliotecas de consulta). O Roxie usa o mecanismo de alias de consulta da
+    mesma maneira.</para>
+  </sect2>
+
+  <sect2 id="Using_a_Query_Library">
+    <title>Usando uma biblioteca de consulta</title>
+
+    <para>A sintaxe para usar uma biblioteca de consulta é levemente
+    diferente, dependendo de a biblioteca ser externa ou interna. No entanto,
+    ambos os métodos usam a função LIBRARY.</para>
+
+    <para>A função LIBRARY retorna a implementação de um MODULE com os
+    parâmetros adequados especificados para a instância na qual você deseja
+    usar, que pode ser usada para acessar os atributos EXPORT da
+    biblioteca.</para>
+
+    <sect3 id="RoxieQuery_InternalLibraries">
+      <title id="RoxieQueryLibrary_InternalLibraries">Bibliotecas
+      internas</title>
+
+      <para>Uma biblioteca interna gera o código de biblioteca como uma
+      unidade separada, mas depois inclui essa unidade na tarefa de consulta.
+      Ela não possui a vantagem de reduzir o tempo de compilação ou o uso de
+      memória no Roxie, mas retém a estrutura da biblioteca, o que significa
+      que alterações no código não podem afetar mais ninguém que esteja usando
+      o sistema. Isso torna as bibliotecas um método de testes
+      perfeito.</para>
+
+      <para>A sintaxe para uso de uma biblioteca de consultas interna
+      simplesmente passa o nome do atributo MODULE da biblioteca dentro de uma
+      chamada de função INTERNAL no primeiro parâmetro para a função LIBRARY,
+      como neste exemplo (para a versão que não usa uma INTERFACE como
+      parâmetro):</para>
+
+      <programlisting>NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                      NamesRec);
+lib1 := LIBRARY(INTERNAL(FilterDsLib1),FilterLibIface1(NamesTable, 'Holliday'));
+</programlisting>
+
+      <para>Neste caso, o resultado é um MODULE com dois atributos EXPORTed –
+      correspondências e outros – que podem ser usados da mesma forma que
+      qualquer outro MODULE, como neste exemplo:</para>
+
+      <programlisting>OUTPUT(lib1.matches); 
+OUTPUT(lib1.others);</programlisting>
+
+      <para>e o código muda para esse, para a variedade que usa uma
+      INTERFACE:</para>
+
+      <programlisting>NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                      NamesRec);
+SearchArgs := MODULE(IFilterArgs)
+  EXPORT DATASET(namesRec) ds := NamesTable;
+  EXPORT STRING search := 'Holliday';
+END;
+lib3 := LIBRARY(INTERNAL(FilterDsLib2),FilterLibIface2(SearchArgs));
+OUTPUT(lib3.matches);
+OUTPUT(lib3.others);</programlisting>
+    </sect3>
+
+    <sect3 id="RoxieQuery_ExternalLibraries">
+      <title><emphasis role="bold">Bibliotecas Externas</emphasis></title>
+
+      <para>Depois que a biblioteca é implementada como uma biblioteca externa
+      (o uso da ação BUILD para criar a biblioteca é feito em uma tarefa
+      separada), a função LIBRARY não exige mais o uso da função INTERNAL para
+      especificar a biblioteca. Em vez disso, ela usa uma string constante que
+      contém o nome da tarefa criada pelo BUILD como seu primeiro parâmetro,
+      como este:</para>
+
+      <programlisting>NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                    NamesRec);
+lib2 := LIBRARY('Ppass.FilterDsLib',FilterLibIface1(NamesTable, 'Holliday'));
+OUTPUT(lib2.matches);
+OUTPUT(lib2.others);</programlisting>
+
+      <para>Ou, para a versão INTERFACE :</para>
+
+      <programlisting>NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                     NamesRec);
+  
+SearchArgs := MODULE(IFilterArgs)
+  EXPORT DATASET(namesRec) ds := NamesTable;
+  EXPORT STRING search := 'Holliday';
+END;
+      
+lib4 := LIBRARY('Ipass.FilterDsLib',FilterLibIface2(SearchArgs));
+OUTPUT(lib4.matches);
+OUTPUT(lib4.others);
+</programlisting>
+
+      <para>Um aviso rápido sobre o uso de bibliotecas externas: se estiver
+      desenvolvendo um atributo dentro de uma biblioteca que seja
+      compartilhado por outras pessoas, então é necessário garantir que suas
+      mudanças de desenvolvimento não invalidem outras consultas. Isso
+      significa que você precisa usar um nome de biblioteca diferente no
+      desenvolvimento. O método mais simples é provavelmente usar um atributo
+      diferente para a implementação de biblioteca durante o desenvolvimento.
+      Outra maneira para evitar isso é desenvolver/testar com bibliotecas
+      internas e apenas desenvolver e implementar a biblioteca externa quando
+      estiver pronto para colocar a consulta em produção.</para>
+
+      <para>Se as bibliotecas forem aninhadas, o processo ficará mais
+      complicado. Se estiver trabalhando em uma biblioteca C, que é acionada a
+      partir de uma biblioteca A, que é então acionada a partir de uma
+      consulta, então você precisará usar nomes de biblioteca diferentes para
+      as bibliotecas C e A. Caso contrário, ou você não acionará seu código
+      modificado na biblioteca C ou todos que usarem a biblioteca A acionarão
+      o seu código modificado. Você pode optar por tornar as bibliotecas A e C
+      internas, mas não poderá ter os benefícios do tempo reduzido de
+      compilação associado às bibliotecas externas.</para>
+
+      <para>Além disso, lembre-se de que suas alterações ocorrem na
+      biblioteca, e não na consulta. Não é incomum pensar porque as alterações
+      no ECL não estão tendo efeito e depois perceber que você estava
+      recompilando/implementando o item incorreto.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="Query_Library_Tips">
+    <title>Dicas da Biblioteca de Consultas</title>
+
+    <para>É possível deixar o código mais limpo tornando a chamada LIBRARY um
+    atributo de função da seguinte maneira:</para>
+
+    <programlisting>FilterDataset(DATASET(namesRecord) ds,
+              STRING search) := LIBRARY('Ppass.FilterDsLib',FilterLibIface1(ds, search));
+</programlisting>
+
+    <para>O uso da biblioteca então se torna:</para>
+
+    <programlisting>FilterDataset(myNames, 'Holliday');</programlisting>
+
+    <para>O nome da biblioteca (especificado como o primeiro parâmetro para a
+    função LIBRARY) não precisa ser um valor constante, mas não deve ser
+    alterado enquanto a consulta estiver sendo executada. Isso significa que
+    você pode selecionar condicionalmente diferentes versões de uma
+    biblioteca.</para>
+
+    <para>Por exemplo, é provável que você queira separar as bibliotecas para
+    processar dados FCRA e não FCRA, já que combinar os dois pode gerar um
+    código ineficiente ou não processável. O código para selecionar entre as
+    duas implementações seria assim:</para>
+
+    <programlisting>LibToUse := IF(isFCRA,'special.lookupFRCA','special.lookupNoFCRA);
+MyResults := LIBRARY(LibToUse, InterfaceCommonToBoth(args));
+</programlisting>
+  </sect2>
+
+  <sect2 id="Query_Library_Restrictions">
+    <title>Restrições</title>
+
+    <para>O sistema reportará um erro se você tentar usar uma implementação de
+    uma biblioteca de consulta que tenha uma INTERFACE diferente daquela
+    especificada na função LIBRARY.</para>
+
+    <para>Há uma restrição especialmente importante no ECL que pode ser
+    incluída em uma biblioteca: serviços de fluxo de trabalho não podem ser
+    incluídos como INDEPENDENT, PERSIST, SUCCESS, e especialmente, STORED. Os
+    atributos STORED não fazem sentido dentro de uma biblioteca de consulta,
+    uma vez que uma biblioteca de consulta deve ser independente de ambas as
+    consultas que a utilizam e de outras bibliotecas de consulta. Em vez de
+    usar atributos STORED (da forma que as consultas Roxie habilitadas para
+    SOAP usam) para especificar parâmetros para as consultas de biblioteca, os
+    parâmetros precisam ser especificados de forma explícita na biblioteca de
+    consulta – seja como um parâmetro individual ou como parte de uma
+    definição de INTERFACE que oferece os argumentos. A consulta que usa a
+    biblioteca de consulta pode utilizar variáveis armazenadas e depois mapear
+    essas variáveis armazenadas para os parâmetros esperados pelas bibliotecas
+    de consulta.</para>
+
+    <para>As bibliotecas de consulta atualmente só podem realizar o EXPORT de
+    datasets, das linhas de dados e das expressões de valores únicos.
+    Especificamente, elas não podem realizar ações EXPORT (como OUTPUT),
+    estruturas TRANSFORM ou de outras estruturas MODULE.</para>
+  </sect2>
+
+  <sect2 id="Notes_on_the_implementation">
+    <title>Notas sobre a implementação</title>
+
+    <para>Há alguns itens que valem a pena ser mencionados sobre a
+    implementação. No Roxie, antes de executar a consulta, todos os gráficos
+    de biblioteca são ampliados para o gráfico de consulta. Quaisquer datasets
+    que são fornecidos como parâmetros para a biblioteca (ou um dataset dentro
+    de um parâmetro de interface) são conectados diretamente ao local em que
+    são usados na biblioteca de consulta, e apenas os resultados usados são
+    avaliados. Isso significa que o uso de uma biblioteca de consulta deve ter
+    pouquíssima sobrecarga em comparação com a inclusão do código ECL
+    diretamente na consulta. OBSERVAÇÃO: Datasets dentro de parâmetros de
+    linha não são transmitidos, de forma que especificar uma ROW que contenha
+    um dataset como um parâmetro para a biblioteca não é tão eficiente quanto
+    usar uma INTERFACE.</para>
+
+    <para>A implementação no hthor não é tão eficiente. Parâmetros de dataset
+    tão totalmente avaliados e especificados para a biblioteca como um bloco
+    de unidade completo, e todos os resultados são avaliados. O Thor ainda não
+    é compatível com as bibliotecas de consulta.</para>
+
+    <para>O outro item a ser observado é que se a biblioteca A usa a
+    biblioteca C, e se a biblioteca B também usa a biblioteca C com os mesmos
+    parâmetros, as denominações das diferentes bibliotecas não serão
+    combinadas. No entanto, se um atributo exportado de uma instância da
+    biblioteca C for especificado para as bibliotecas A e B, então as
+    denominações para a biblioteca C serão combinadas. A maneira pela qual os
+    atributos atualmente tendem a ser estruturados no repositório, por
+    exemplo, calcular get_Dids() e especificar isso em outros atributos,
+    significa que é improvável que cause qualquer problema na prática.</para>
+  </sect2>
+
+  <sect2 id="Suggested_Structure">
+    <title>Estrutura sugerida</title>
+
+    <para>Antes de programar várias bibliotecas, vale a pena investir tempo
+    definindo como os atributos são estruturados para uma biblioteca a fim de
+    que todas as bibliotecas no sistema estejam consistentes. Aqui estão
+    algumas diretrizes para usar durante a fase de concepção da biblioteca de
+    consulta:</para>
+
+    <sect3 id="RoxieQuery_SuggStructure_NamingConventions">
+      <title>Convenções de Nomenclatura</title>
+
+      <para>Gostaria também de sugerir a criação de uma convenção de
+      nomenclatura consistente antes de desenvolver várias bibliotecas. Em
+      especial, é preciso criar uma convenção para os nomes dos argumentos,
+      para a definição da biblioteca, para a implementação do módulo, para a
+      implementação da biblioteca e para o atributo que encapsula o uso da
+      biblioteca. (Por exemplo, algo como IXArgs, Xinterface, DoX, Xlibrary e
+      X()).</para>
+    </sect3>
+
+    <sect3 id="RoxieQuery_SuggStructure_InterfaceToDefineParameters">
+      <title>Use uma INTERFACE para definir parâmetros</title>
+
+      <para>Este mecanismo (exemplo mostrado abaixo) fornece a documentação
+      para os parâmetros exigidos por um serviço. Isso significa que o código
+      dentro da implementação irá acessá-los como args.xxx ou options.xxx de
+      forma que ficará claro quando os parâmetros estão sendo acessados. Isso
+      também simplifica algumas das sugestões a seguir.</para>
+    </sect3>
+
+    <sect3 id="RoxieQuery_SuggStructure_HideTheLibrary">
+      <title>Ocultar a biblioteca</title>
+
+      <para>Tornar a chamada LIBRARY um atributo funcional (exemplo também
+      mostrado abaixo) significa que você pode facilmente modificar todos os
+      usos de uma biblioteca se estiver desenvolvendo uma nova versão. Da
+      mesma forma, é possível alternar facilmente para uso de uma biblioteca
+      interna em vez de alterar apenas uma linha de código.</para>
+    </sect3>
+
+    <sect3 id="RoxieQuery_SuggStructure_UseModuleInheritance">
+      <title>Use a herança MODULE</title>
+
+      <para>Use uma estrutura MODULE (sem a opção LIBRARY) que implemente a
+      INTERFACE da biblioteca, e um MODULE individual derivado do primeiro
+      para implementar a LIBRARY utilizando esse módulo de serviço. Ao ocultar
+      a LIBRARY e usar uma implementação de MODULE individual é possível
+      remover facilmente a biblioteca em conjunto. Além disso, usar uma
+      implementação separada das definições de biblioteca significa que você
+      pode facilmente gerar múltiplas variantes da mesma biblioteca a partir
+      da mesma definição.</para>
+
+      <programlisting>NamesRec := RECORD
+    INTEGER1  NameID;
+    STRING20  FName;
+    STRING20  LName;
+END;
+NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                      NamesRec);
+      
+ //define an INTERFACE for the passed parameters
+IFilterArgs := INTERFACE
+  EXPORT DATASET(namesRec) ds;
+  EXPORT STRING search;
+END;
+
+ //then define an INTERFACE for the query library
+FilterLibIface2(IFilterArgs args) := INTERFACE
+  EXPORT DATASET(namesRec) matches;
+  EXPORT DATASET(namesRec) others;
+END;
+
+ //implement the INTERFACE
+FilterDsLib(IFilterArgs args) := MODULE
+  EXPORT matches := args.ds(Lname = args.search);
+  EXPORT others := args.ds(Lname != args.search);
+END;
+
+ //then derive that MODULE to implement the LIBRARY
+FilterDsLib2(IFilterArgs args) := MODULE(FilterDsLib(args)),LIBRARY(FilterLibIface2)
+END;
+
+ //make the LIBRARY call a function
+FilterDs(IFilterArgs args) := LIBRARY(INTERNAL(FilterDsLib2),FilterLibIface2(args));
+ //easily modified to eliminate the LIBRARY, if desired
+ // FilterDs(IFilterArgs args) := FilterDsLib2(args));
+ //define the parameters to pass as the interface
+SearchArgs := MODULE(IFilterArgs)
+  EXPORT DATASET(namesRec) ds := NamesTable;
+  EXPORT STRING search := 'Holliday';
+END;
+      
+ //use the LIBRARY, passing the parameters
+OUTPUT(FilterDs(SearchArgs).matches);
+OUTPUT(FilterDs(SearchArgs).others);</programlisting>
+    </sect3>
+  </sect2>
+</sect1>

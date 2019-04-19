@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_LOOP-_BREAK">
+  <title>#LOOP / #BREAK</title>
+
+  <para><emphasis role="bold">#LOOP<indexterm>
+      <primary>#LOOP</primary>
+    </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold">[ </emphasis><emphasis>statements
+  </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold">
+  </emphasis></para>
+
+  <para><emphasis role="bold">#BREAK<indexterm>
+      <primary>#BREAK</primary>
+    </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold">[ </emphasis><emphasis>statements
+  </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">#END<indexterm>
+      <primary>#END</primary>
+    </indexterm></emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="81.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>statements</emphasis></entry>
+
+            <entry>As declarações de modelos a serem executadas a cada
+            vez.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>#BREAK</emphasis></entry>
+
+            <entry>Encerra o loop.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>#END</emphasis></entry>
+
+            <entry>O terminador da estrutura #LOOP.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A estrutura <emphasis role="bold">#LOOP </emphasis> itera executando
+  <emphasis>statements</emphasis> a cada passagem pelo loop até que uma
+  declaração #BREAK seja executada. Se não ocorrer um #BREAK, o #LOOP iterará
+  infinitamente.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  // This script creates a set attribute definition of the 1st 10
+  // natural numbers and defines an attribute named "Set10"
+  
+  #DECLARE (SetString)
+  #DECLARE (Ndx)
+  #SET (SetString, '[');    //initialize SetString to [
+  #SET (Ndx, 1);            //initialize Ndx to 1
+  #LOOP
+    #IF (%Ndx% &gt; 9)   //if we've iterated 9 times
+       #BREAK         // break out of the loop
+    #ELSE             //otherwise
+       #APPEND (SetString, %'Ndx'% + ',');
+                     //append Ndx and comma to SetString
+  #SET (Ndx, %Ndx% + 1)
+                     //and increment the value of Ndx
+     #END
+  #END
+  
+  #APPEND (SetString, %'Ndx'% + ']'); //add 10th element and closing ]
+  
+  EXPORT Set10 := %'SetString'%; //generate the ECL code
+                     // This generates:
+                     // EXPORT Set10 := [1,2,3,4,5,6,7,8,9,10];
+</programlisting>
+
+  <para>Ver também: <link linkend="_FOR">#FOR</link>, <link
+  linkend="_DECLARE">#DECLARE</link>, <link linkend="_IF">#IF</link></para>
+</sect1>

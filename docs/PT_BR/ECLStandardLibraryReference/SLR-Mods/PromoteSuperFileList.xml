@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PromoteSuperFileList">
+  <title>PromoteSuperFileList</title>
+
+  <para><emphasis role="bold">STD.File.PromoteSuperFileList<indexterm>
+      <primary>STD.File.PromoteSuperFileList</primary>
+    </indexterm><indexterm>
+      <primary>File.PromoteSuperFileList</primary>
+    </indexterm><indexterm>
+      <primary>PromoteSuperFileList</primary>
+    </indexterm>(</emphasis> <emphasis> supernames </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, addhead </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, deltail </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>, createjustone </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, reverse </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis>oldlist</emphasis> <emphasis role="bold"> :=
+  STD.File.fPromoteSuperFileList<indexterm>
+      <primary>STD.File.fPromoteSuperFileList</primary>
+    </indexterm><indexterm>
+      <primary>File.fPromoteSuperFileList</primary>
+    </indexterm><indexterm>
+      <primary>fPromoteSuperFileList</primary>
+    </indexterm>(</emphasis> <emphasis> supernames </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, addhead </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>, deltail </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, createjustone </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, reverse </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>supernames</emphasis></entry>
+
+          <entry>Um conjunto de strings terminadas por nulo que contém os
+          nomes lógicos dos superarquivos a serem processados. Qualquer um não
+          existentes será criado. O conteúdo de cada superarquivo será movido
+          para o próximo da lista (NB: cada superarquivo deve conter
+          subarquivos diferentes).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>addhead</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém uma lista
+          delimitada por vírgulas de nomes de arquivos lógicos a serem
+          adicionados ao primeiro <emphasis>superfile</emphasis> após a
+          conclusão do processo de promoção.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>deltail</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano que especifica se o conteúdo
+          movido do último superarquivo deve ser fisicamente excluído. Se
+          omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>createjustone</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano que especifica se apenas um único
+          superarquivo deve ser criado (truncar a lista no primeiro
+          superarquivo não existente). Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>reverse</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano que especifica se a ordem de
+          processamento da lista <emphasis>supernames</emphasis> deve ser
+          invertida, o que corresponde a "rebaixar" os subarquivos, em vez de
+          "promovê-los". Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>oldlist</emphasis></entry>
+
+          <entry>O nome do atributo que recebe a string retornada que contém a
+          lista do conteúdo do subarquivo anterior do superarquivo
+          esvaziado.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>PromoteSuperFileList retorna Null; fPromoteSuperFileList
+          returna uma string.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">PromoteSuperFileList </emphasis> move
+  os subarquivos da primeira entrada da lista <emphasis>supernames</emphasis>
+  para a próxima da lista, repetindo o processo posteriormente em toda a lista
+  <emphasis>supernames</emphasis>.</para>
+
+  <para>Esta função não usa transações de superarquivos e é uma operação
+  atômica.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">STD.File.PrSTD.File.PromoteSuperFileList(['Super1','Super2','Super3'],
+         'NewSub1');
+//Moves what was in Super1 to Super2,
+// what was in Super2 to Super3, replacing what was in Super3,
+// and putting NewSub1 in Super1</programlisting>
+</sect1>

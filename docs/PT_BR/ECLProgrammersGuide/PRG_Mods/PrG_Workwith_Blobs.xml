@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Working_with_BLOBs">
+  <title><emphasis role="bold">Trabalhando com BLOBs</emphasis></title>
+
+  <para>O suporte BLOB (Objetos Binários Grandes) no ECL começa com o tipo de
+  valor DATA. Ele pode conter qualquer tipo de dados, tornando a opção
+  perfeita para usar dados BLOB.</para>
+
+  <para>Há basicamente três questões ao trabalhar com dados BLOB:</para>
+
+  <para>1) Como inserir os dados no HPCC (sparying).</para>
+
+  <para>2) Como trabalhar com os dados depois que já estiverem no HPCC.</para>
+
+  <para>3) Como retirar os dados do HPCC (despraying).</para>
+
+  <sect2 id="Spraying_BLOB_Data">
+    <title>Spraying de dados BLOB</title>
+
+    <para>No arquivo HPCCClientTools.PDF, há um capítulo dedicado ao programa
+    DFUplus.exe. Essa é uma ferramenta de linha de comando com opções
+    específicas que permitem que você realize os processos de spray e despray
+    de arquivos em BLOBs no HPCC. Em todos os exemplos abaixo, vamos supor que
+    você tenha um arquivo DFUPLUS.INI na mesma pasta que o executável com o
+    conteúdo padrão descrito na seção do PDF.</para>
+
+    <para>O segredo para que uma operação de spray seja gravada nos BLOBs é o
+    uso da opção <emphasis>prefix=Filename,Filesize </emphasis> (Compilar).
+    Por exemplo, a linha de comando a seguir realiza o spray de todos os
+    arquivos .JPG e .BMP do diretório c:\import da máquina 10.150.51.26 em um
+    arquivo lógico único denominado LE::imagedb:</para>
+
+    <programlisting>C:\&gt;dfuplus action=spray srcip=10.150.51.26 srcfile=c:\import\*.jpg,c:\import\*.bmp 
+            dstcluster=le_thor dstname=LE::imagedb overwrite=1 
+            PREFIX=FILENAME,FILESIZE nosplit=1</programlisting>
+
+    <para>Ao usar caracteres curinga (* e ?) para fazer o spray de vários
+    arquivos de origem (<emphasis>srcfile</emphasis>) para um único
+    <emphasis>dstname</emphasis>, você (DEVE) MUST usar ambas as opções
+    <emphasis>filename</emphasis> e <emphasis>filesize</emphasis>
+    (FILENAME,FILESIZE) se precisar realizar o despray dos conteúdos de cada
+    registro no <emphasis>dstname</emphasis> de volta para os vários arquivos
+    dos quais eles vieram originalmente.</para>
+  </sect2>
+
+  <sect2 id="Working_with_BLOB_Data">
+    <title>Trabalhando Dados BLOB</title>
+
+    <para>Depois de ter realizado o spray dos dados no HPCC, você precisa
+    definir a estrutura RECORD e o DATASET. A estrutura RECORD a seguir define
+    o resultado do spray acima:</para>
+
+    <programlisting>imageRecord := RECORD
+  STRING filename;
+  DATA   image;   
+       //first 4 bytes contain the length of the image data
+  UNSIGNED8  RecPos{virtual(fileposition)};
+END;
+imageData := DATASET('LE::imagedb',imageRecord,FLAT);
+</programlisting>
+
+    <para>O segredo para essa estrutura é o uso de tipos de valor STRING e
+    DATA de comprimento variável. O campo filename recebe o nome completo do
+    arquivo .JPG ou .BMP original que está agora contido no campo de imagem.
+    Os quatro primeiros bytes do campo de imagem contêm um valor inteiro que
+    especifica o número de bytes no arquivo original que estão agora no campo
+    de imagem.</para>
+
+    <para>O tipo de valor DATA é usado aqui para o campo BLOB porque os
+    formatos JPG e BMP são essencialmente dados binários. Porém, se o BLOB
+    tivesse dados XML de múltiplos arquivos, ele poderia ser definido como um
+    tipo de valor STRING . Neste caso, os quatro primeiros bytes do campo
+    ainda conteriam um valor inteiro especificando o número de bytes no
+    arquivo original, seguidos pelos dados XML do arquivo.</para>
+
+    <para>O limite de tamanho máximo para qualquer valor DATA é 4GB.</para>
+
+    <para>A adição do campo RecPos (um campo de "ponteiro de registro" ECL
+    padrão) permite que criemos um INDEX, como este:</para>
+
+    <programlisting>imageKey := INDEX(imageData,{filename,fpos},'LE::imageKey');  
+BUILDINDEX(imageKey);</programlisting>
+
+    <para>Ter um INDEX permite que você trabalhe com o arquivo imageData nas
+    operações JOIN ou FETCH com chave. É claro que também é possível realizar
+    nos arquivos de dados BLOB qualquer operação que você faria com qualquer
+    outro arquivo no ECL.</para>
+  </sect2>
+
+  <sect2 id="Despraying_BLOB_Data">
+    <title>Despraying de Dados BLOB</title>
+
+    <para>O programa DFUplus.exe também permite que você realize o despray de
+    arquivos BLOB do HPCC, dividindo-os novamente em arquivos individuais dos
+    quais foram originados. O segredo para que uma operação de despray seja
+    gravada nos BLOBs para separar os arquivos é usar a opção
+    <emphasis>splitprefix=Filename,Filesize</emphasis> Por exemplo, a linha de
+    comando a seguir realiza o despray de todos os dados BLOB para o diretório
+    c:\import\despray da máquina 10.150.51.26 a partir de um arquivo lógico
+    único denominado LE::imagedb:</para>
+
+    <programlisting>C:\&gt;dfuplus action=despray dstip=10.150.51.26 dstfile=c:\import\despray\*.* 
+            srcname=LE::imagedb PREFIX=FILENAME,FILESIZE nosplit=1</programlisting>
+
+    <para>Depois que esse comando é executado, você deve ter o mesmo grupo de
+    arquivos, que foram originalmente distribuídos aos nós, recriados em um
+    diretório separado.</para>
+  </sect2>
+</sect1>

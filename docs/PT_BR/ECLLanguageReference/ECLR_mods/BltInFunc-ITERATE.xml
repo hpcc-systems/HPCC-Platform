@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ITERATE">
+  <title>ITERATE<indexterm>
+      <primary>ITERATE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">ITERATE<indexterm>
+      <primary>ITERATE function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, transform
+  </emphasis><emphasis role="bold">[, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="94.8"/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>recordset</emphasis></entry>
+
+          <entry>O conjunto de registros para processamento.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transform</emphasis></entry>
+
+          <entry>A função TRANSFORM a ser acionada para cada registro no
+          <emphasis>recordset</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de resultado não
+          é importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+          <entry>Especifica a importância da ordem do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>bool</emphasis></entry>
+
+          <entry>Quando for “False” (Falso), especifica que a ordem do
+          registro de resultado não é importante. Quando for “True’
+          (Verdadeiro), especifica a ordem padrão do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada não é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>numthreads</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade usando os
+          <emphasis>numthreads</emphasis> threads</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+          <entry>Opcional. Substitui o algoritmo usado para essa
+          atividade.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>name</emphasis></entry>
+
+          <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+          parte da lista de algoritmos compatíveis com as opções STABLE e
+          UNSTABLE da função SORT.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold">LOCAL</emphasis> Opcional. Especifica que a
+  operação é realizada em cada nó de supercomputador de forma independente,
+  sem exigir interação com todos os outros nós para obter dados; a operação
+  mantém a distribuição de qualquer operação DISTRIBUTE anterior.</para>
+
+  <para>Return:<emphasis> </emphasis>ITERATE retorna um conjunto de
+  registros.</para>
+
+  <para>A função <emphasis role="bold">ITERATE </emphasis> processa através de
+  todos os registros no <emphasis>recordset </emphasis> um par de registros
+  por vez, executando a função <emphasis>transform</emphasis> em cada par
+  sucessivamente. O primeiro registro no <emphasis>recordset</emphasis> é
+  especificado para <emphasis>transform</emphasis> como o primeiro registro
+  RIGHT, emparelhado com um registro LEFT cujos campos estão todos em branco
+  ou definidos para zero. Cada registro resultante de
+  <emphasis>transform</emphasis> se torna o registro LEFT do próximo
+  par.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Iterate">
+    <title>Requerimentos da Função TRANSFORM - ITERATE</title>
+
+    <para>A <emphasis>função </emphasis> transform<indexterm>
+        <primary>transform function</primary>
+      </indexterm> deve adotar pelo menos dois parâmetros: Registros LEFT e
+    RIGHT que precisam estar no mesmo formato que o recordset resultante. Pode
+    ser especificado um terceiro parâmetro opcional: um COUNTER de número
+    inteiro para especificar o número de vezes que
+    <emphasis>transform</emphasis> foi acionado para o <emphasis>recordset
+    </emphasis> ou para o grupo atual no <emphasis>recordset</emphasis>
+    (consulte a função GROUP ).</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>ResType := RECORD
+  INTEGER1 Val;
+  INTEGER1 Rtot;
+END;
+
+Records := DATASET([{1,0},{2,0},{3,0},{4,0}],ResType);
+/* these are the recs going in: 
+<emphasis role="underline">Val Rtot </emphasis>
+ 1   0
+ 2   0
+ 3   0
+ 4   0 */
+
+ResType T(ResType L, ResType R) := TRANSFORM
+  SELF.Rtot := L.Rtot + R.Val;
+  SELF := R;
+END;
+
+MySet1 := ITERATE(Records,T(LEFT,RIGHT));
+
+/* these are the recs coming out: <emphasis role="underline">
+Val Rtot</emphasis>
+ 1   1
+ 2   3
+ 3   6
+ 4   10 */
+
+//The following code outputs a running balance:
+Run_bal := RECORD
+  Trades.trd_bal;
+  INTEGER8 Balance := 0;
+END;
+TradesBal := TABLE(Trades,Run_Bal);
+
+Run_Bal DoRoll(Run_bal L, Run_bal R) := TRANSFORM
+  SELF.Balance := L.Balance + IF(validmoney(R.trd_bal),R.trd_bal,0);
+  SELF := R;
+END;
+
+MySet2 := ITERATE(TradesBal,DoRoll(LEFT,RIGHT));
+</programlisting>
+
+    <para>See Also: <link linkend="TRANSFORM_Structure">Estrutura
+    TRANSFORM</link>, <link linkend="RECORD_Structure">Estrutura
+    RECORD</link>, <link linkend="ROLLUP">ROLLUP</link></para>
+  </sect2>
+</sect1>
