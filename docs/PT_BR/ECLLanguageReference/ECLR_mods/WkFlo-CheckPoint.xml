@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CHECKPOINT">
+  <title>CHECKPOINT</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: CHECKPOINT<indexterm>
+      <primary>CHECKPOINT</primary>
+    </indexterm>(</emphasis><emphasis> name </emphasis><emphasis role="bold">)
+  <indexterm>
+      <primary>Serviço de fluxo de trabalho CHECKPOINT</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.60pt"/>
+
+        <colspec colwidth="273.20pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>O nome do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A definição do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>Uma constante de string que especifica o nome de
+            armazenamento do valor.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>O serviço <emphasis role="bold">CHECKPOINT </emphasis> armazena o
+  resultado de <emphasis>expression</emphasis> na unidade de trabalho para que
+  permaneça disponível caso a tarefa falhe antes da conclusão, e é excluído
+  automaticamente quando a tarefa é concluída de forma bem-sucedida. Isso é
+  especialmente útil para <emphasis>atributos</emphasis> baseados em
+  sequências de manipulação de dados dispendiosas e grandes. Esse serviço
+  causa implicitamente a avaliação de <emphasis>attribute</emphasis> no escopo
+  global em vez de qualquer escopo que o abrange.</para>
+
+  <para>No entanto, CHECKPOINT somente é útil quando a workunit que não
+  concluiu corretamente é iniciada novamente por meio do ECL Watch. Se uma
+  nova workunit for instanciada, CHECKPOINT não terá efeito nenhum. No geral,
+  o serviço PERSIST é mais útil.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>CountPeople := COUNT(Person) : CHECKPOINT('PeopleCount');
+       //Makes CountPeople available for reuse if
+       // the job does not complete
+</programlisting>
+
+  <para>Ver também: <link linkend="PERSIST">PERSIST</link></para>
+</sect1>

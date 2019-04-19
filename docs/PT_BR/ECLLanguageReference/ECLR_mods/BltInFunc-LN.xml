@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LN">
+  <title>LN</title>
+
+  <para><emphasis role="bold">LN<indexterm>
+      <primary>LN</primary>
+    </indexterm><indexterm>
+      <primary>LN function</primary>
+    </indexterm>(</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="79.50pt" />
+
+      <colspec colwidth="309.30pt" />
+
+      <tbody>
+        <row>
+          <entry>n</entry>
+
+          <entry>O número real que será avaliado.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>LN retorna um valor real único.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">LN </emphasis> retorna o logaritmo natural do parâmetro. Trata-se do oposto da função EXP<indexterm>
+      <primary> EXP Function</primary>
+    </indexterm></para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyLogPI := LN(3.14159); //1.14473</programlisting>
+
+  <para>Ver também: <link linkend="EXP">EXP</link>, <link linkend="SQRT">SQRT</link>, <link linkend="POWER">POWER</link>, <link linkend="LOG">LOG</link></para>
+</sect1>

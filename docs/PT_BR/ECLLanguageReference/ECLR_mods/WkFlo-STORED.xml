@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="STORED_workflow_service">
+  <title>STORED - Workflow Service</title>
+
+  <para><emphasis>[</emphasis><emphasis>attribute </emphasis>:= <emphasis
+  role="bold">]</emphasis><emphasis> expression </emphasis><emphasis
+  role="bold">: STORED<indexterm>
+      <primary>STORED</primary>
+    </indexterm>( </emphasis><emphasis> storedname </emphasis><emphasis
+  role="bold">[, FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm> ][</emphasis>, <emphasis role="bold">FORMAT</emphasis>(
+  <emphasis
+  role="bold">[SELECT(</emphasis><emphasis>valuestring</emphasis>)<emphasis
+  role="bold">] </emphasis><emphasis
+  role="bold">[FIELDWIDTH(</emphasis><emphasis>widthvalue</emphasis>)<emphasis
+  role="bold">]<emphasis
+  role="bold">[,FIELDHEIGHT(</emphasis><emphasis>heightvalue</emphasis>)][,SEQUENCE</emphasis>(<emphasis>sequencevalue</emphasis>)<emphasis
+  role="bold">]<emphasis role="bold">[,NOINPUT</emphasis><emphasis/>)<emphasis
+  role="bold">]</emphasis><emphasis
+  role="bold">[,PASSWORD</emphasis><emphasis/>)<emphasis
+  role="bold">]</emphasis>] )</emphasis> <indexterm>
+      <primary>STORED workflow service</primary>
+    </indexterm>;</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.45pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>Opcional. O nome do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A definição do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>storedname</emphasis></entry>
+
+            <entry>Uma constante de string que contém o nome do resultado do
+            atributo armazenado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Opcional. Quando a expressão for um dataset ou um
+            recordset, FEW especifica que o dataset é totalmente armazenado
+            dentro da workunit. Se não especificada, o dataset será armazenado
+            como um arquivo THOR e a workunit conterá apenas o nome do
+            arquivo. A opção FEW é obrigatória ao usar STORED em uma MACRO com
+            SOAP ativada e quando a entrada esperada for um dataset (tal como
+            tns:xmlDataset).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FORMAT</emphasis></entry>
+
+            <entry>Opcional. FORMAT especifica as opções de formatação do
+            campo em um formulário Web no WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SELECT</emphasis></entry>
+
+            <entry>Opcional. SELECT especifica um controle das entradas em
+            lista suspensa no formulário Web no WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>valuestring</emphasis></entry>
+
+            <entry>Uma string que contém os valores possíveis da lista
+            suspensa. Um asterisco (*) denota o valor padrão. Uma expressão na
+            forma 'apple=1' dentro da string permite que o texto seja exibido
+            e que um valor distinto seja armazenado. Neste exemplo, apple
+            seria exibida, mas o valor 1 será armazenado se o usuário
+            selecionar apple.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FIELDWIDTH</emphasis></entry>
+
+            <entry>Opcional. FIELDWIDTH especifica a largura da caixa das
+            entradas em um formulário Web no WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>widthvalue</emphasis></entry>
+
+            <entry>Uma expressão de valor inteiro que define a largura (o
+            número de caracteres) da caixa das entradas.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FIELDHEIGHT</emphasis></entry>
+
+            <entry>Opcional. FIELDHEIGHT especifica a altura da caixa de
+            entradas em um formulário Web no WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>heightvalue</emphasis></entry>
+
+            <entry>Uma expressão de valor inteiro que define a altura (o
+            número de linhas) da caixa das entradas.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SEQUENCE</emphasis></entry>
+
+            <entry>Opcional. SEQUENCE especifica a ordenação do campo em um
+            formulário Web no WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sequencevalue</emphasis></entry>
+
+            <entry>Uma expressão de valor inteiro que define a localização
+            sequencial da caixa das entradas. Estes valores podem ser esparsos
+            (p.ex., 100, 200, 300) para permitir a inserção de novas entradas
+            futuramente.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOINPUT</emphasis></entry>
+
+            <entry>Opcional. Se NOINPUT for especificado, o campo não será
+            exibido no formulário Web no WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PASSWORD</emphasis></entry>
+
+            <entry>Opcional. Se PASSWORD for especificado, uma caixa de
+            entradas de senha será usada no formulário Web no WsECL, e o valor
+            inserido no campo não será mostrado enquanto estiver sendo
+            inserido. O valor também será ocultado ao visualizar os valores
+            armazenados na tarefa através do ECLWatch ou a partir da linha de
+            comando ao extrair a WU XML.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>O serviço <emphasis role="bold">STORED </emphasis> armazena o
+  resultado da <emphasis>expressão</emphasis> com a workunit que usa o
+  <emphasis>atributo</emphasis> para que permaneça disponível para uso em toda
+  a workunit. Se o nome do <emphasis>atributo</emphasis> for omitido, o valor
+  armazenado só pode ser acessado mais tarde, quando ECL não estiver sendo
+  executado. Se o nome do <emphasis> atributo </emphasis> for fornecido, o
+  valor deste <emphasis>atributo</emphasis> será extraído do armazenamento; se
+  o nome ainda não tiver sido definido, ele será computado, armazenado e então
+  extraído do armazenamento. Este serviço implicitamente faz com que o
+  <emphasis>atributo</emphasis> seja avaliado em um escopo global em vez de um
+  escopo isolado.</para>
+
+  <para>STORED cria um espaço de armazenamento na tarefa onde a interface pode
+  colocar os valores que serão especificados para uma consulta publicada.
+  Consulte a seção <emphasis>Trabalhando com Roxie</emphasis> no
+  <emphasis>Guia do Programador</emphasis>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  COUNT(person) : STORED('myname');
+     // Name in work unit is myname,
+     // stored value accessible only outside ECL
+  fred := COUNT(person) : STORED('fred');
+     // Name in work unit is fred
+  fred := COUNT(person) : STORED('mindy');
+     // Name in work unit is mindy
+
+//FORMAT options for WsECL form
+  
+  Password :='' := STORED('Password',FORMAT(SEQUENCE(1),PASSWORD));
+                                      //password entry box on form
+  Field1 := 1 : STORED('Field1',FORMAT(SEQUENCE(10)));
+  Field2 := 2 : STORED('Field2',FORMAT(SEQUENCE(20)));
+  AddThem := TRUE :STORED ('AddThem',FORMAT(SEQUENCE(15))); 
+                                      // places field in between Field1 and Field2
+  HiddenValue := 12 :STORED ('HiddenValue',FORMAT(NOINPUT)); // not on form
+  TextField1 :='Fill in description' :Stored('Description',
+                                      FORMAT(FIELDWIDTH(25),FIELDHEIGHT(2),
+                                      SEQUENCE(5))); 
+                                       //Creates 25 char wide, 2 row high input box
+
+//SELECT options
+
+  UNSIGNED8 u8 := 0   : STORED('u8', FORMAT(fieldwidth(8), 
+                                     SEQUENCE(18), 
+                                     SELECT('one=1,two=2,three=3,*four=4')));
+  STRING ch1 := 'ban' : STORED('ch1', FORMAT(SELECT('apple=app,pear,*banana=ban'))); 
+                                                   //banana is default
+  STRING ch2 := ''    : STORED('ch2', FORMAT(SELECT(',apple=app,pear,banana=ban'))); 
+                                                   //starts empty, no specified default
+  STRING ch3 := ''    : STORED('ch3', FORMAT(SELECT('apple=app,pear,*,banana=ban')));
+                                                   //empty in middle, empty is default
+
+</programlisting>
+
+  <para>Ver também: <link linkend="STORED">Função STORED,</link>, <link
+  linkend="_WEBSERVICE">#WEBSERVICE</link></para>
+</sect1>

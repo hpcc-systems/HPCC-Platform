@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="NORMALIZE">
+  <title>NORMALIZE</title>
+
+  <para><emphasis role="bold">NORMALIZE<indexterm>
+      <primary>NORMALIZE</primary>
+    </indexterm><indexterm>
+      <primary>NORMALIZE function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, expression, transform
+  </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><emphasis role="bold">NORMALIZE(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold">LEFT<indexterm>
+      <primary>LEFT</primary>
+    </indexterm>.</emphasis><emphasis>childdataset, transform </emphasis>
+  <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.20pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Uma expressão numérica que especifica o número total de
+            vezes para chamar a transformação para o registro.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>A função TRANSFORM para chamar para cada registro no
+            recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>childdataset</emphasis></entry>
+
+            <entry>O nome de campo de um DATASET secundário no recordset. É
+            necessário usar a palavra-chave LEFT como qualificador.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>NORMALIZE retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">NORMALIZE </emphasis> normaliza os
+  registros secundários de um <emphasis>recordset</emphasis> no qual os
+  registros secundários estão anexados no fim dos registros de dados
+  principais. O objetivo é pegar registros de arquivos simples e de
+  comprimento variável, e dividir as informações secundárias. As informações
+  primárias podem ser facilmente extraídas usando TABLE ou PROJECT.</para>
+
+  <sect2 id="NORMALIZE_Form_1">
+    <title>NORMALIZE Form 1</title>
+
+    <para>O form 1 é processada por todos os registros no <emphasis>recordset
+    </emphasis> , desempenhando a função <emphasis>transform</emphasis> e a
+    <emphasis>expressão</emphasis> em determinado número de vezes em cada
+    registro por vez.</para>
+  </sect2>
+
+  <sect2 id="TRANSFORM_Function_Requirements_for_Form_1">
+    <title>Requerimentos da Função TRANSFORM para Form 1</title>
+
+    <para>A função <emphasis>transform</emphasis> precisa adotar no mínimo
+    dois parâmetros: um registro LEFT do mesmo formato que o
+    <emphasis>recordset,</emphasis> e um COUNTER de número inteiro
+    especificando o número de vezes que a função
+    <emphasis>transform</emphasis> foi acionado para esse registro. O formato
+    de recordset resultante não precisa ser o mesmo da entrada.</para>
+  </sect2>
+
+  <sect2 id="NORMALIZE_Form_2">
+    <title>NORMALIZE Form 2</title>
+
+    <para>Form 2 processa todos os registros no <emphasis>recordset
+    </emphasis> iterando a função <emphasis>transform</emphasis> em todos os
+    registros <emphasis>childdataset </emphasis> em cada registro por
+    vez.</para>
+  </sect2>
+
+  <sect2 id="TRANSFORM_Function_Requirements_for_Form_2">
+    <title>Requerimentos da Função TRANSFORM para Form 2</title>
+
+    <para>A função <emphasis>TRANSFORM</emphasis> deve adotar pelo menos um
+    parâmetro: um registro RIGHT de mesmo formato que o
+    <emphasis>childdataset</emphasis>. O formato de recordset resultante não
+    precisa ser o mesmo da entrada.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>//Form 1 example
+NamesRec := RECORD
+  
+UNSIGNED1 numRows;
+STRING20 thename;
+STRING20 addr1 := '';
+STRING20 addr2 := '';
+STRING20 addr3 := '';
+STRING20 addr4 := '';
+END;
+NamesTable := DATASET([ {1,'Kevin','10 Malt Lane'},
+{2,'Liz','10 Malt Lane','3 The cottages'},
+{0,'Mr Nobody'},
+{4,'Anywhere','Here','There','Near','Far'}],
+NamesRec);
+
+OutRec := RECORD
+UNSIGNED1 numRows;
+STRING20 thename;
+STRING20 addr;
+END;
+
+OutRec NormIt(NamesRec L, INTEGER C) := TRANSFORM
+SELF := L;
+SELF.addr := CHOOSE(C, L.addr1, L.addr2, L.addr3,
+             L.addr4);
+END;
+  
+NormAddrs :=
+            NORMALIZE(namesTable,LEFT.numRows,NormIt(LEFT,COUNTER<indexterm>
+        <primary>COUNTER</primary>
+      </indexterm>));
+/* the result is: numRows thename
+            addr
+1 Kevin 10 Malt Lane
+2 Liz 10 Malt Lane
+2 Liz 3 The cottages
+4 Anywhere Here
+4 Anywhere There
+4 Anywhere Near
+4 Anywhere Far */
+//************************
+//Form 2 example
+ChildRec := RECORD
+INTEGER1 NameID;
+STRING20 Addr;
+END;
+DenormedRec := RECORD
+INTEGER1 NameID;
+STRING20 Name;
+DATASET(ChildRec) Children;
+END;
+
+ds := DATASET([ {1,'Kevin',[ {1,'10 Malt Lane'}]},
+{2,'Liz', [ {2,'10 Malt Lane'},
+{2,'3 The cottages'}]},
+{3,'Mr Nobody', []},
+{4,'Anywhere',[ {4,'Far'},
+{4,'Here'},
+{4,'There'},
+{4,'Near'}]} ],
+DenormedRec);
+ChildRec NewChildren(ChildRec R) := TRANSFORM
+SELF := R;
+END;
+NewChilds := NORMALIZE(ds,LEFT.Children,NewChildren(RIGHT));
+</programlisting>
+
+    <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+    TRANSFORM</link>, <link linkend="RECORD_Structure">Estrutura
+    RECORD</link>, <link linkend="DENORMALIZE">DENORMALIZE</link></para>
+  </sect2>
+</sect1>

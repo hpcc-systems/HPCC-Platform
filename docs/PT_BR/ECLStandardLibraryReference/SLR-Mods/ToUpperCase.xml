@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ToUpperCase">
+  <title>ToUpperCase</title>
+
+  <para><emphasis role="bold">STD.Str.ToUpperCase<indexterm>
+      <primary>STD.Str.ToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>Str.ToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>ToUpperCase</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">STD.Uni.ToUpperCase<indexterm>
+      <primary>STD.Uni.ToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.ToUpperCase</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">STD.Uni.LocaleToUpperCase<indexterm>
+      <primary>STD.Uni.LocaleToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>LocaleToUpperCase</primary>
+    </indexterm>(</emphasis> <emphasis> source, locale </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os dados cuja formatação de maiúsculas
+          e minúsculas será alterada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o código de idioma e
+          país a ser usado para determinar a ordem correta de classificação e
+          outras operações.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:<emphasis> </emphasis></entry>
+
+          <entry>ToUpperCase retorna um valor STRING.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>As funções <emphasis role="bold">ToUpperCase </emphasis> retornam a
+  string <emphasis>source</emphasis> com todos os caracteres minúsculos
+  convertidos em maiúsculos.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.Str.ToUpperCase('abcde');
+ //A contains 'ABCDE'
+</programlisting>
+</sect1>

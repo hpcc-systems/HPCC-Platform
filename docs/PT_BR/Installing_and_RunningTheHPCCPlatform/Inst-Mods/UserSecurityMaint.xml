@@ -1,0 +1,1844 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="User_Security_Maint">
+  <title>Manutenção de Segurança do Usuário</title>
+
+  <para>Configurar o HPCC System para usar o Active Directory ou segurança baseada em LDAP permite definir permissões para o controle de acesso aos Recursos, Escopo de arquivos e Escopos da Workunit.</para>
+
+  <sect2 id="User_Security_Intro">
+    <title>Introdução</title>
+
+    <para>HPCC systems<superscript>®</superscript> preserva sua segurança de diversas formas. HPCC Systems<superscript>®</superscript> pode ser configurado para gerenciar os direitos de segurança dos usuários direcionando para o Active Directory da Microsoft no sistema Windows ou para o 389Directory Server no sistema Linux.</para>
+
+    <para>Ao usar a interface Permissões no ECL Watch, os administradores podem controlar o acesso aos recursos no ECL IDE, ECL Watch, ECL Plus, DFU Plus, e nos módulos ECL no atributo Repositório. Você também pode optar por implementar o controle de acesso a arquivos e workunit habilitando essa configuração no servidor Dali.</para>
+
+    <para>Estabeleça as permissões por grupo ou por usuário e determine-as por associação com um recurso específico do HPCC System. As permissões podem ser determinadas para cada combinação única de um grupo e de um recurso. As permissões são divididas entre as seguintes categorias:<informaltable frame="all">
+        <tgroup cols="2" colsep="1">
+          <colspec colwidth="185pt" />
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">Esp Features for SMC</emphasis></entry>
+
+              <entry>Controla o acesso a recursos no ECLWatch e a recursos similares acessados a partir do ECL IDE.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Esp Features for WsEclAccess</emphasis></entry>
+
+              <entry>Controla o acesso ao serviço Web WS-ECL</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Esp Features for EclDirectAccess</emphasis></entry>
+
+              <entry>Controla o acesso ao serviço Web do ECLDirect</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">File Scopes</emphasis></entry>
+
+              <entry>Controla o acesso aos arquivos de dados aplicando permissões aos escopo de arquivos</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Workunit Scopes</emphasis></entry>
+
+              <entry>Controla o acesso às workunit aplicando permissões aos Escopos de tarefa</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Repository Modules</emphasis></entry>
+
+              <entry>Controla o acesso ao atributo Repositório e aos módulos no repositório (antigo)</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="Sec_Adm_w_ECLWatch">
+    <title>Administração de Segurança utilizando o ECL Watch</title>
+
+    <para>É preciso ter direitos de administrador para administrar as permissões. Após obter direitos de administrador, abra o ECL Watch em seu navegador usando o seguinte URL:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para><emphasis
+        role="bold">http://nnn.nnn.nnn.nnn:pppp</emphasis><emphasis
+        role="bold"> (onde nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a porta. A porta padrão é 8010)<emphasis>.
+        </emphasis></emphasis></para>
+      </listitem>
+    </itemizedlist>
+
+    <para>A administração da segurança é controlada através da área  <emphasis
+    role="bold">Security</emphasis>  do ECL Watch. Para acessar a área de Security, clique no ícone<emphasis role="bold">Operations</emphasis> , e em seguida clique no link  <emphasis role="bold">Security&lt;/emphasis  &gt;</emphasis>  a partir do submenu de navegação.</para>
+
+    <para><graphic fileref="../../images/ECLWAOpSec.jpg"
+    vendor="eclwatchSS" />As três áreas nas quais as permissões devem ser definidas são:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para><emphasis role="bold">Users</emphasis>. Mostra a configuração atual de todos os usuários. Use esta área para adicionar ou remover um usuário, editar as informações do usuário, definir/redefinir a senha do usuário e visualizar as permissões que estão atualmente atribuídas para o usuário.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">Groups</emphasis>. Mostra a configuração atual de todos os grupos. Use esta área para adicionar ou remover um grupo, visualizar e editar os membros do grupo, visualizar e editar as permissões que foram determinadas para o grupo.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">Permissions</emphasis>. Mostra os recursos do HPCC System onde as permissões devem ser determinadas. Use esta área para visualizar as permissões atualmente determinadas para qualquer área do HPCC System, para adicionar grupos e usuários e para definir ou modificar permissões em relação a um recurso específico.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic
+              fileref="../../images/caution.png" /></entry>
+
+              <entry><para><emphasis role="bold">OBSERVAÇÃO:</emphasis> É preciso ter cautela ao determinar qualquer configuração de permissão para  <emphasis role="bold">negar</emphasis>
+              . A permissão mais restrita sempre se aplica. </para></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <sect3 id="My_Account_Info" role="brk">
+      <title>Informações sobre sua conta</title>
+
+      <para>Para obter mais informações sobre sua conta no ECL Watch, clique no link  <emphasis role="bold">LOGGED IN AS:</emphasis> localizado no topo da página do ECL Watch .</para>
+
+      <para><graphic fileref="../../images/ECLWMyAccount.jpg"
+      vendor="eclwatchSS" /> <orderedlist>
+          <listitem>
+            <para>Clique no link  <emphasis role="bold">LOGGED IN AS:</emphasis>
+            </para>
+
+            <para>A aba User Details será exibida com as informações de sua conta.<graphic fileref="../../images/ECLWUserDetails.jpg"
+            vendor="eclwatchSS" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Confirme o User Name que você usou para entrar no sistema.</para>
+
+            <para>Observe que são necessários direitos de administrador para gerenciar usuários e permissões.</para>
+
+            <para>Verifique se você está usando uma conta com direitos de administrador se precisar gerenciar usuários ou permissões.</para>
+          </listitem>
+
+          <listitem>
+            <para>Verifique a data de validade da senha ou se a senha está prestes a expirar.</para>
+
+            <para>Se desejar, você também pode mudar sua senha aqui.</para>
+          </listitem>
+        </orderedlist></para>
+    </sect3>
+
+    <sect3 id="UsingSecurity_SettingAndModifyingUserPermissions" role="brk">
+      <title>Configurando e modificando permissões de usuários</title>
+
+      <para>Em um ambiente habilitado para segurança, o acesso ao ECL Watch e seus recursos é controlado com o uso de um login e senha A área  <emphasis
+      role="bold">Users</emphasis> permite controlar quem acessa o ECL Watch e os recursos do seu HPCC System para os quais esses usuários têm acesso. As permissões dos usuários podem ser definidas com base nas necessidades individuais de cada usuário, e também é possível adicionar usuários aos grupos que já tenham sido configurados. Use o item  <emphasis role="bold">Users</emphasis>  do menu para:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Adicionar um novo usuário (<emphasis role="bold">observação</emphasis>: o Username não pode ser alterado)</para>
+        </listitem>
+
+        <listitem>
+          <para>Remover um usuário</para>
+        </listitem>
+
+        <listitem>
+          <para>Adicionar o usuário a um grupo</para>
+        </listitem>
+
+        <listitem>
+          <para>Alterar a senha do usuário</para>
+        </listitem>
+
+        <listitem>
+          <para>Modificar os detalhes ou as permissões de um usuário</para>
+        </listitem>
+      </itemizedlist>
+    </sect3>
+
+    <sect3 id="Adding_Users" role="brk">
+      <title>Adicionando e editando usuários</title>
+
+      <para>Para acessar as seções de administração do usuário, clique no ícone <emphasis
+      role="bold"> Operations</emphasis>  e em seguida clique no link  <emphasis
+      role="bold">Security</emphasis>  no submenu de navegação. Clique na guia  <emphasis role="bold">Users</emphasis>  para adicionar ou editar usuários.</para>
+
+      <graphic fileref="../../images/Permissions001.jpg" vendor="eclwatchSS" />
+
+      <para>Todos os usuários atuais são identificados na lista pelo seu Username e Full Name.</para>
+
+      <sect4 id="UsingSecurity_AddANewUser">
+        <title>Para adicionar um novo usuário a lista de usuários autenticados:</title>
+
+        <para>Você precisa ter privilégio de administrador para adicionar um novo usuário.
+        <graphic fileref="../../images/Perm007.jpg"
+        vendor="eclwatchSS" /></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Pressione o botão  <emphasis role="bold">Add</emphasis>
+            .</para>
+
+            <para>A caixa de diálogo Adicionar usuário será exibida.</para>
+          </listitem>
+
+          <listitem>
+            <para>Insira um  <emphasis role="bold">User ID</emphasis>.  </para>
+
+            <para>Este é o login que será usado no ECL Watch, ECL IDE, WsECL, etc.</para>
+          </listitem>
+
+          <listitem>
+            <para>Insira o  <emphasis role="bold">First Name</emphasis>  e o 
+            <emphasis role="bold">Last Name</emphasis>  do usuário.</para>
+
+            <para>Estas informações ajudam a identificar o usuário e é exibida no campo <emphasis role="bold">Full Name</emphasis> na janela principal  <emphasis role="bold">User</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Insira uma  <emphasis role="bold">senha</emphasis>  para o usuário e confirme-a no campo  <emphasis role="bold">Retype Password</emphasis> .  </para>
+
+            <para><variablelist>
+                <varlistentry>
+                  <term>OBSERVAÇÃO:</term>
+
+                  <listitem>
+                    <para>A senha deve estar em conformidade com a política do servidor do gerenciador de segurança.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Add</emphasis>
+            .</para>
+
+            <para>Após ter adicionado essas informações com sucesso, uma nova guia será aberta para que você possa verificar as informações do novo usuário.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão  <emphasis role="bold">Save</emphasis>
+            .</para>
+          </listitem>
+        </orderedlist>
+
+        <para>Após ter sido adicionado, o novo usuário será exibido na lista e você poderá modificar os detalhes e determinar as permissões conforme exigido.</para>
+      </sect4>
+
+      <sect4 id="UsingSecurity_ModifyUsersDetails">
+        <title>Modificar detalhes do usuário:</title>
+
+        <para>No submenu de navegação, clique no ícone<emphasis role="bold"> Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique na  <emphasis role="bold">aba<emphasis>
+             Users</emphasis></emphasis>.</para>
+
+            <para>Os usuários serão exibidos em uma lista.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione o(s) usuário(s) que deseja modificar. Selecione o(s) usuário(s) que deseja modificar. Clique no link <emphasis
+            role="bold">Username</emphasis> para abrir a aba de detalhes do usuário.</para>
+
+            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação 
+            <emphasis role="bold">Open</emphasis> .</para>
+
+            <para><graphic fileref="../../images/Perm008.jpg" />Uma aba será aberta para cada usuário selecionado. Cada aba de usuário contém várias sub-abas.</para>
+
+            <para>Os detalhes do usuário estão localizados na aba <emphasis
+            role="bold">Summary</emphasis> . </para>
+          </listitem>
+
+          <listitem>
+            <para>Modifique os detalhes do usuário como solicitado (caso tenha selecionado mais de um usuário, repita a operação para cada um deles).</para>
+
+            <variablelist>
+              <varlistentry>
+                <term>Observação:</term>
+
+                <listitem>
+                  <para>O <emphasis role="bold">Username</emphasis> não pode ser alterado.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Save</emphasis>
+            .</para>
+
+            <para>Uma mensagem de confirmação será exibida.</para>
+          </listitem>
+        </orderedlist>
+      </sect4>
+
+      <sect4 id="UsingSecurity_AddAUserToAGroup">
+        <title>Para adicionar um usuário para um grupo:</title>
+
+        <para>No submenu de navegação, clique no ícone <emphasis role="bold">Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique na  <emphasis role="bold">aba<emphasis>
+            Users</emphasis></emphasis>.</para>
+
+            <para>Os usuários serão exibidos em uma lista.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione o(s) usuário(s) que deseja modificar. Clique no link <emphasis
+            role="bold">User Name</emphasis> para abrir a aba de detalhes do usuário.&gt;  </para>
+
+            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação
+            <emphasis role="bold">Open</emphasis> .</para>
+
+            <para><graphic fileref="../../images/Perm008.jpg" />Uma aba será aberta para cada usuário selecionado. Cada aba de usuário contém várias sub-abas.</para>
+
+            <para>Os detalhes do usuário estão localizados na aba  <emphasis
+            role="bold">Summary</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique na aba do usuário para fazer a modificação desejada (caso tenha selecionado mais de um usuário, repita a operação para cada um deles).</para>
+
+            <para>A aba do usuário contém várias sub-abas. <graphic
+            fileref="../../images/Perm009.jpg" /></para>
+
+            <para>Clique na subaba  <emphasis role="bold">Member of</emphasis>
+             para modificar os grupos do usuário.</para>
+          </listitem>
+
+          <listitem>
+            <para>Uma lista dos grupos disponíveis será exibida na aba  <emphasis role="bold">Member of</emphasis>  desse usuário.</para>
+
+            <para>Para adicionar o usuário ao grupo, marque a caixa de seleção ao lado do grupo desejado.</para>
+          </listitem>
+
+          <listitem>
+            <para>As alterações serão salvas automaticamente. Feche a aba.</para>
+          </listitem>
+        </orderedlist>
+      </sect4>
+
+      <sect4 id="UsingSecurity_PromoteUsertoAdministrator">
+        <title>Promover um usuário para Administrador</title>
+
+        <para>Você precisa ter acesso em nível de administrador para modificar as credenciais de um usuário. Para mudar da função Usuário para Administrador do HPCC , adicione o usuário ao grupo  <emphasis role="bold">Administrators</emphasis> .</para>
+
+        <para>No submenu de navegação, clique no ícone <emphasis role="bold"> Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> . <graphic
+        fileref="../../images/Permissions001.jpg" /></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique na  <emphasis role="bold">aba <emphasis>
+            Users</emphasis></emphasis>.</para>
+
+            <para>Os usuários serão exibidos em uma lista.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione o(s) usuário(s) que deseja mudar a função. Clique no link 
+            <emphasis role="bold">Username</emphasis>  para abrir a aba de detalhes do usuário.</para>
+
+            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação 
+            <emphasis role="bold">Open</emphasis> .</para>
+
+            <para><graphic fileref="../../images/Perm008.jpg" />Uma aba será aberta para cada usuário selecionado. Cada aba de usuário contém várias sub-abas.</para>
+
+            <para>Os detalhes do usuário estão localizados na aba  <emphasis
+            role="bold">Summary</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique na aba do usuário para fazer a modificação desejada (caso tenha selecionado mais de um usuário, repita a operação para cada um deles).</para>
+
+            <para>A aba do usuário contém várias sub-abas.</para>
+
+            <para>Clique na subaba  <emphasis role="bold">Member of</emphasis>
+            . <graphic fileref="../../images/Perm016.jpg" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione <emphasis role="bold">Administrators</emphasis>  marcando a caixa de seleção.</para>
+
+            <para><variablelist>
+                <varlistentry>
+                  <term>OBSERVAÇÃO:</term>
+
+                  <listitem>
+                    <para>O nome do grupo padrão Administrador pode variar. Por exemplo, no Active Directory é "Administrators", já no OpenLDAP é "Directory Administrators".</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
+          </listitem>
+
+          <listitem>
+            <para>As alterações serão salvas automaticamente. Feche a(s) aba(s).</para>
+          </listitem>
+        </orderedlist>
+      </sect4>
+
+      <sect4 id="UsingSecurity_DeleteUserFromGroup">
+        <title>Excluir um usuário de um grupo:</title>
+
+        <para>Você precisa ter acesso em nível de administrador para remover o usuário de um grupo.</para>
+
+        <para>No submenu de navegação, clique no ícone  <emphasis role="bold">Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Clique no  <emphasis role="bold">hiperlink<emphasis>
+              Users</emphasis></emphasis>.</para>
+
+              <para>Os usuários serão exibidos em uma lista.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione o(s) usuário(s) que deseja remover. Clique no link 
+              <emphasis role="bold">Username</emphasis>  para abrir a aba de detalhes do usuário.</para>
+
+              <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação  <emphasis role="bold">Open</emphasis> .</para>
+
+              <para><graphic fileref="../../images/Perm008.jpg" />Uma aba será aberta para cada usuário selecionado. Cada aba de usuário contém várias sub-abas.</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique na guia do usuário que deseja modificar (caso tenha selecionado múltiplos usuários, repita a operação para cada um deles).</para>
+
+              <para>A aba do usuário contém várias sub-abas. <graphic
+              fileref="../../images/Perm009.jpg" /></para>
+
+              <para>Clique na subaba  <emphasis role="bold">Member of</emphasis>
+               para modificar os grupos do usuário.</para>
+            </listitem>
+
+            <listitem>
+              <para>Há uma lista dos grupos disponíveis na aba  <emphasis role="bold">Member of</emphasis>  desse usuário.</para>
+
+              <para>Há uma caixa de seleção marcada ao lado de cada grupo ao qual o usuário pertence.</para>
+
+              <para>Para remover o usuário de um grupo, desmarque a caixa de seleção ao lado do grupo desejado.</para>
+            </listitem>
+
+            <listitem>
+              <para>As alterações serão salvas automaticamente. Feche a aba.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+
+      <sect4 id="UsingSecurity_ChangeUsersPassword">
+        <title>Alterar a senha do usuário:</title>
+
+        <para>No submenu de navegação, clique no ícone <emphasis role="bold"> Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique na  <emphasis role="bold">aba <emphasis>
+            Users.</emphasis></emphasis>  </para>
+
+            <para>Os usuários serão exibidos em uma lista.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione o(s) usuário(s) que deseja modificar. Clique no link  <emphasis
+            role="bold">Username</emphasis>  para abrir a aba de detalhes do usuário.</para>
+
+            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação 
+            <emphasis role="bold">Open</emphasis> . <graphic
+            fileref="../../images/Perm008.jpg" /></para>
+
+            <para>Uma aba será aberta para cada usuário selecionado. Essa aba contém várias sub-abas.</para>
+
+            <para>Os detalhes do usuário estão localizados na aba  <emphasis
+            role="bold">Summary</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione a aba Summary.</para>
+          </listitem>
+
+          <listitem>
+            <para>Altere a senha nos campos  <emphasis
+            role="bold">Password</emphasis>  e  <emphasis role="bold">Retype new Password</emphasis>  na aba de detalhes do usuário conforme solicitado (caso tenha selecionado mais de um usuário, repita o procedimento para cada um dos demais).  </para>
+
+            <para><emphasis role="bold">Observação</emphasis>: O  <emphasis
+            role="bold">Username</emphasis>  não pode ser alterado.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão  <emphasis role="bold">Save</emphasis>
+            .</para>
+
+            <para>Uma mensagem de confirmação será exibida.</para>
+          </listitem>
+        </orderedlist>
+      </sect4>
+
+      <sect4 id="UsingSecurity_DeleteUserFromListofAuthenticatedUsers">
+        <title>Excluir um usuário da lista de usuários autenticados:</title>
+
+        <para>No submenu de navegação, clique no ícone <emphasis role="bold"> Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Clique na aba  <emphasis role="bold">Users</emphasis>
+              .</para>
+
+              <para>Os usuários serão exibidos em uma lista.</para>
+            </listitem>
+
+            <listitem>
+              <para>Marque a caixa à esquerda do nome do(s) usuário(s) que deseja remover.</para>
+
+              <para><emphasis role="bold">Observação:</emphasis> Estes usuários não terão mais acesso ao ECL Watch.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de ação  <emphasis role="bold">Delete</emphasis> .</para>
+
+              <para>A confirmação será exibida.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+    </sect3>
+
+    <sect3 id="UsingSecurity_SettingPermissionsForIndividualUser">
+      <title>Configurar permissões para um usuário individual</title>
+
+      <para>Haverá casos em que você precisará modificar as permissões para usuários individuais. Por exemplo, os usuários podem ter necessidades individuais de segurança que não sejam totalmente cobertas em nenhum grupo; ou poderá haver situações em que um usuário solicitará acesso temporário a um recurso do HPCC. PAs permissões configuradas nesta área do ECL Watch afetam apenas o usuário selecionado. A maioria das permissões individuais configuradas aqui substitui as que foram configuradas em qualquer grupo ao qual o usuário pertença, exceto em casos de negação explícita.</para>
+
+      <sect4>
+        <title>Configurando permissões para um usuário individual:</title>
+
+        <para>No submenu de navegação, clique no ícone<emphasis role="bold"> Operations</emphasis> e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique na  <emphasis role="bold">aba <emphasis>
+            Users</emphasis></emphasis>.</para>
+
+            <para>Os usuários serão exibidos em uma lista.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione o(s) usuário(s) que deseja modificar. Clique no link <emphasis
+            role="bold">Username</emphasis> cpara abrir a guia de detalhes do usuário.</para>
+
+            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do Username. Isso ativará os botões de ação para Users. Pressione o botão de ação 
+            <emphasis role="bold">Open</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique na aba do nome do usuário para modificar (caso tenha selecionado múltiplos usuários, repita a operação para cada um deles).</para>
+
+            <para>A aba do usuário contém várias sub-abas. <graphic
+            fileref="../../images/Perm010.jpg" /></para>
+
+            <para>Clique na subaba  <emphasis role="bold">Active Permissions</emphasis>  para visualizar as permissões atuais do usuário.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique na aba  <emphasis role="bold">Available Permissions</emphasis> para ver todos os conjuntos de permissões disponíveis para esse usuário.</para>
+
+            <para>Ao selecionar as permissões na aba Available Permissions disponíveis, elas serão exibidas e podem ser configuradas na aba Active Permissions.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique na seta ao lado do recurso para exibir as permissões que podem ser configuradas para esse recurso.  <graphic
+            fileref="../../images/Perm011.jpg" vendor="eclwatchSS" /></para>
+
+            <para>A lista dos grupos de permissão atualmente configurados para este usuário e dos grupos que foram herdados pelo usuário também está listada. Clique na seta para permitir a definição das configurações individuais do recurso.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pode haver mais de uma configuração de recurso disponível em cada grupo. Por isso, não se esqueça de definir as permissões para cada configuração conforme requerido.</para>
+          </listitem>
+
+          <listitem>
+            <para>Marque as caixas que  <emphasis role="bold">permitem (allow)</emphasis>
+             e  <emphasis role="bold">negam (deny)</emphasis>  acesso ao usuário conforme requerido. <graphic fileref="../../images/Perm012.jpg" /></para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="../../images/caution.png" /></entry>
+
+                      <entry><para><emphasis role="bold">OBSERVAÇÃO:</emphasis> É preciso ter cautela ao determinar qualquer configuração de permissão para  <emphasis
+                      role="bold">negar</emphasis>  um direito. A permissão mais restrita sempre se aplica. </para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>As alterações serão salvas automaticamente. Feche a aba.</para>
+          </listitem>
+        </orderedlist>
+      </sect4>
+    </sect3>
+
+    <sect3 id="UsingSecurity_SettingUpModifyingGroupPermissions">
+      <title>onfigurando e modificando grupos de permissões</title>
+
+      <para>A organização dos grupos garante que todos os usuários com as mesmas necessidades de permissão tenham as mesmas configurações de permissão. Você pode fornecer aos usuários o acesso necessário às áreas de recursos do HPCC. Não há limite quanto ao número de grupos que podem ser criados. Você pode criar quantos grupos forem precisos para controlar o acesso de todos os seus usuários, independentemente das workunit desempenhadas por eles.</para>
+
+      <para>Use o item  <emphasis role="bold">Groups</emphasis> do menu para:<itemizedlist>
+          <listitem>
+            <para>Adicionar um novo grupo.</para>
+          </listitem>
+
+          <listitem>
+            <para>Remover um grupo.</para>
+          </listitem>
+
+          <listitem>
+            <para>Adicionar membros a um grupo</para>
+          </listitem>
+
+          <listitem>
+            <para>Modificar as permissões de um grupo</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <sect4 id="UsingSecurity_AddingEditingGroups">
+        <title>Adicionando e editando grupos</title>
+
+        <para>Ao adicionar ou alterar as permissões de um grupo, todos os membros desse grupo receberão essas configurações de permissão. Por isso, é importante ter certeza de estar concedendo ou negando acesso aos recursos apropriados para os membros desse grupo. Se precisar fazer alterações para um único usuário (ou para um pequeno número de usuários), será melhor fazer tais alterações para cada usuário individual como ilustrado nas seções anteriores. <graphic fileref="../../images/Perm001a.jpg"
+        vendor="eclwatchSS" />Para modificar grupos, clique no ícone <emphasis
+        role="bold"> Operations</emphasis> , e em seguida no link  <emphasis
+        role="bold">Security</emphasis>  do submenu de navegação. Clique na aba  <emphasis role="bold">Groups</emphasis> .</para>
+      </sect4>
+
+      <sect4 id="UsingSecurity_ToAddNewGroup">
+        <title>Adicionando um novo grupo:</title>
+
+        <para>No submenu de navegação, clique no ícone  <emphasis role="bold">Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> </para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Clique na aba  <emphasis role="bold">Groups</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de ação  <emphasis role="bold">Add</emphasis> . <graphic fileref="../../images/Perm013.jpg"
+              vendor="eclwatchSS" /></para>
+
+              <para>Isso abrirá a caixa de diálogo onde é possível inserir um nome para o grupo.</para>
+            </listitem>
+
+            <listitem>
+              <para>Insira o  <emphasis role="bold">Group Name</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Insira um nome completamente distinto para o dono do grupo no campo  <emphasis role="bold">Manager by</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <para>Insira uma descrição para o grupo. (opcional)</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão  <emphasis role="bold">Add</emphasis>
+              .</para>
+
+              <para>Isso abrirá uma nova aba e várias sub-abas para o grupo</para>
+
+              <para>A subaba  <emphasis role="bold">Summary</emphasis>  exibe o nome do grupo.</para>
+
+              <para>A aba  <emphasis role="bold">Members</emphasis>  exibe a lista dos usuários; marque a caixa de seleção ao lado de cada usuário para adicioná-lo ao grupo.</para>
+
+              <para>A aba  <emphasis role="bold">Active Group Permissions</emphasis>  exibe as permissões aplicadas ao grupo.</para>
+
+              <para>A aba <emphasis role="bold"> Available Groups Permissios</emphasis>  exibe todas as permissões disponíveis; a seleção a partir da guia Permissões disponíveis aplica as permissões à guia Permissão de grupo ativo.</para>
+
+              <para>Você pode definir as permissões e adicionar membros a esse grupo nas respectivas sub-abas do grupo.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+
+      <sect4 id="UsingSecurity_ToDeleteGroup">
+        <title>Excluir um grupo:</title>
+
+        <para>No submenu de navegação, clique no ícone  <emphasis role="bold">Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Clique na aba  <emphasis role="bold">Groups</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <para>Localize o grupo na lista e marque a caixa de seleção ao lado dele.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de ação  <emphasis role="bold">Delete</emphasis> .  </para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de confirmação  <emphasis role="bold">OK</emphasis> </para>
+
+              <para>O grupo não será mais exibido na lista.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+
+      <sect4 id="UsingSecurity_ToAddNewMembersToGroup">
+        <title>Adicionar novos membros para um grupo:</title>
+
+        <para>No submenu de navegação, clique no ícone  <emphasis role="bold">Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Clique na aba  <emphasis role="bold">Groups</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <para>Localize o grupo na lista e marque a caixa de seleção ao lado dele.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> .</para>
+
+              <para>Isso abrirá uma nova aba para o grupo.</para>
+
+              <para>As sub-abas exibem: <emphasis
+              role="bold"></emphasis>Summary <emphasis
+              role="bold">, </emphasis>Members,  <emphasis role="bold">Active Group Permissions</emphasis>, e  <emphasis
+              role="bold">Available Group Permission</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba  <emphasis role="bold">Members</emphasis>
+              </para>
+
+              <para>A aba Members exibirá uma lista de todos os usuários no sistema. Aqueles que pertencem ao grupo selecionado terão a caixa de seleção marcada ao lado.</para>
+            </listitem>
+
+            <listitem>
+              <para>Marque a(s) caixa(s) à esquerda do nome dos usuários que deseja adicionar ao grupo.</para>
+            </listitem>
+
+            <listitem>
+              <para>As alterações serão salvas automaticamente. Feche a aba.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+
+      <sect4 id="UsingSecurity_ToDeleteMembersFromGroup">
+        <title>Excluir membros de um grupo:</title>
+
+        <para>No submenu de navegação, clique no ícone  <emphasis role="bold">Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Clique na aba  <emphasis role="bold">Groups</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <para>Localize o grupo na lista e marque a caixa de seleção ao lado dele.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> .</para>
+
+              <para>Isso abrirá uma nova aba para o grupo.</para>
+
+              <para>A aba Grupos possui diversas sub-abas: <emphasis
+              role="bold">Summary</emphasis>, <emphasis
+              role="bold"> Members</emphasis>,  <emphasis role="bold">Active Group Permissions, </emphasis> e <emphasis role="bold">
+               Available Group Permissions</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba  <emphasis role="bold">Members</emphasis>
+              .</para>
+
+              <para>A aba Members exibirá uma lista de todos os usuários no sistema. Aqueles que pertencem ao grupo selecionado terão a caixa de seleção marcada ao lado.</para>
+            </listitem>
+
+            <listitem>
+              <para>Desmarque a(s) caixa(s) à esquerda para todos os usuários que deseja remover do grupo.</para>
+            </listitem>
+
+            <listitem>
+              <para>As alterações serão salvas automaticamente. Feche a aba.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+    </sect3>
+
+    <sect3 id="UsingSecurity_SettingPermissionsForGroup">
+      <title>Configurar Permissões para Grupo</title>
+
+      <para>Por padrão, todos os usuários são membros do grupo  <emphasis
+      role="bold">Authenticated Users </emphasis>. O grupo  <emphasis
+      role="bold">Authenticated Users</emphasis>  possui direitos de acesso a quase todos os recursos. Para definir controles mais restritos, é preciso criar grupos específicos com permissões mais limitadas.</para>
+
+      <para>Você pode criar grupos apenas com os direitos de acesso que deseja conceder. Essa abordagem oferece maior flexibilidade, já que uma única ID de usuário pode estar associada a vários grupos.</para>
+
+      <para>Como prática recomendada, use  <emphasis
+      role="bold">Allow</emphasis>  em vez de  <emphasis
+      role="bold">Deny</emphasis>  para controlar o acesso. Quando possível, use a função Deny “negar” apenas como exceção. Caso queira negar o acesso de um usuário a algum controle específico, recomenda-se criar um grupo para isso e adicionar o(s) usuário(s) neste grupo para, então, negar o acesso somente para esse grupo.</para>
+
+      <para>Lembre-se de que o controle mais restritivo tem precedência. Por exemplo, se um usuário faz parte de um grupo que não dá permissão de acesso a um determinado arquivo, porém este mesmo usuário também faz parte de outro grupo cujo acesso a tal arquivo é permitido, o usuário continuará sem permissão para acessar o arquivo.</para>
+
+      <sect4 id="UsingSecurity_ToSetPermissionsForGroup">
+        <title>Configurando Permissões para Grupo:</title>
+
+        <para>No submenu de navegação, clique no ícone  <emphasis role="bold">Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> . <graphic fileref="../../images/Perm001a.jpg"
+        vendor="eclwatchSS" /></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique na aba  <emphasis role="bold">Groups</emphasis>
+            .</para>
+          </listitem>
+
+          <listitem>
+            <para>Localize o grupo na lista e marque a caixa de seleção ao lado dele.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> .</para>
+
+            <para>Isso abrirá uma nova aba para o grupo. <graphic
+            fileref="../../images/Perm010b.jpg" vendor="eclwatchSS" /></para>
+
+            <para>A guia do grupo exibirá as sub-abas: <emphasis
+            role="bold">Summary</emphasis>,  <emphasis
+            role="bold">Members</emphasis>,  <emphasis role="bold">Active Group Permissions, </emphasis> e <emphasis role="bold"> Available Group Permissions</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione a sub-aba  <emphasis role="bold">Available Group Permissions
+            </emphasis>. Isso exibirá todos os recursos de permissão disponíveis.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique na seta à esquerda de  <emphasis
+            role="bold">Resource</emphasis>  para expandir e mostrar as configurações de permissão para os recursos.</para>
+
+            <para><graphic fileref="../../images/Perm011b.jpg"
+            vendor="eclwatchSS" />Os recursos de permissão dos grupos serão exibidos.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pode haver mais de uma configuração de recurso disponível em cada grupo. Por isso, não se esqueça de definir as permissões para cada configuração conforme requerido.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Marque as caixas  <emphasis role="bold">Allow</emphasis>
+            e  <emphasis role="bold">Deny</emphasis>  conforme requerido para o grupo. <graphic fileref="../../images/Perm012b.jpg" /></para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="../../images/caution.png" /></entry>
+
+                      <entry><para><emphasis role="bold">OBSERVAÇÃO:</emphasis> É preciso ter cautela ao determinar qualquer configuração de permissão para  <emphasis
+                      role="bold">negar</emphasis>  um acesso. A permissão mais restrita sempre se aplica. </para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Pode haver mais de uma configuração de recurso disponível, selecione o(s) recurso(s) necessário(s) na lista suspensa.</para>
+
+            <para>Repita o procedimento para cada recurso aplicável.</para>
+          </listitem>
+
+          <listitem>
+            <para>As alterações serão salvas automaticamente. Feche a aba.</para>
+          </listitem>
+        </orderedlist>
+      </sect4>
+    </sect3>
+  </sect2>
+
+  <sect2 id="Feature_Access">
+    <title>Controle de acesso em nível de recurso</title>
+
+    <para>O acesso às permissões específicas está disponível através do ECL Watch. Para modificar as permissões específicas, é preciso ter acesso em nível de administrador. Para acessar as permissões específicas, clique no ícone  <emphasis
+    role="bold">Operations</emphasis> , e em seguida clique no link  <emphasis
+    role="bold">Security</emphasis>  a partir do submenu de navegação.
+    <graphic fileref="../../images/Perm005.jpg" vendor="eclwatchSS" /></para>
+
+    <para>Para usar os controles de nível específico, aplique o recurso específico da aba <emphasis role="bold"> Available Permissions</emphasis>  para a aba 
+    <emphasis role="bold">Active Permissions</emphasis>  para usuários e grupos. O uso de controles de nível específico permitirá que você:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Veja as funcionalidades e as permissões para qualquer recurso</para>
+      </listitem>
+
+      <listitem>
+        <para>Edite as permissões para qualquer recurso</para>
+      </listitem>
+
+      <listitem>
+        <para>Atualize as permissões de usuários e grupos para um recurso específico</para>
+      </listitem>
+    </itemizedlist>
+  </sect2>
+
+  <sect2 id="Feature_Resources" role="brk">
+    <title>Recursos</title>
+
+    <para>Há muitos outros recursos para os quais você pode configurar o controle de acesso no HPCC. O acesso aos recursos do HPCC system é controlado através dos Recursos do 
+    <emphasis role="bold">ESP Features for SMC</emphasis> . <graphic
+    fileref="../../images/Perm006.jpg" vendor="eclwatchSS" /></para>
+
+    <para>Os recursos disponíveis estão listados abaixo da aba  <emphasis
+    role="bold">Permissions</emphasis> . Você pode visualizar e obter acesso aos controles específicos aqui. No entanto, os controles específicos devem ser aplicados aos usuários e não aos grupos. Ao clicar no link do nome específico, será aberta a guia que mostra os usuários e grupos onde essas permissões específicas são aplicadas.</para>
+
+    <para>As configurações de permissão dos recursos do ECL Watch que não estão listadas são irrelevantes e não devem ser usadas.</para>
+
+    <sect3 id="ApplyPermissionsFeatureResource">
+      <title>Aplicar permissões para um recurso:</title>
+
+      <para>Para usar permissões específicas, é preciso aplicá-las a um usuário ou grupo(s). Para acessar as permissões específicas, clique no ícone  <emphasis
+      role="bold">Operations</emphasis>  , e em seguida clique no link  <emphasis
+      role="bold">Security</emphasis>  a partir do submenu de navegação.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Identifique o(s) usuário(s) ou grupo(s) que deseja modificar as permissões específicas.</para>
+
+          <para>Selecione a aba apropriada. (Users or Groups)</para>
+        </listitem>
+
+        <listitem>
+          <para>Marque a(s) caixa(s) de seleção ao lado do(s) usuário(s) ou grupo(s) que deseja modificar.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> . Uma aba será aberta para cada usuário ou grupo.</para>
+        </listitem>
+
+        <listitem>
+          <para>Clique na sub-aba  <emphasis role="bold">Available Permissions</emphasis> .</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Clique na seta à esquerda do recurso para mostrar as especificações desse recurso.  <graphic
+          fileref="../../images/Perm006b.jpg" vendor="eclwatchSS" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Localize o(s) recurso(s) específico(s) que deseja atualizar. <graphic
+          fileref="../../images/Perm012.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Clique nas colunas  <emphasis
+          role="bold">“allow”</emphasis>  e  <emphasis
+          role="bold">“deny” </emphasis> na(s) caixa(s) de seleção.</para>
+        </listitem>
+
+        <listitem>
+          <para>As alterações serão salvas automaticamente. Feche a(s) aba(s).</para>
+
+          <para><emphasis role="bold">Observação:</emphasis> Esse processo deve ser realizado individualmente para cada usuário ou grupo.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3 id="FeaturePermissions" role="brk">
+      <title>Recursos de Permissões SMC</title>
+
+      <para>A tabela a seguir descreve o nível de acesso exigido para que esses recursos do ECL Watch do HPCC possam ser usados.</para>
+
+      <para><informaltable>
+          <tgroup cols="3">
+            <colspec colwidth="145pt" />
+
+            <colspec />
+
+            <colspec colwidth="85pt" />
+
+            <thead>
+              <row>
+                <entry>Name</entry>
+
+                <entry>Descrição</entry>
+
+                <entry>Acesso</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>ClusterTopologyAccess</entry>
+
+                <entry>Acesso à Topologia do cluster</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Ver arquivos de log.</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>DfuAccess</entry>
+
+                <entry>Acesso aos arquivos lógicos DFU</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Remover arquivos, Adicionar aos superarquivos e remover dos superarquivos</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Apagar metadados do histórico do arquivo </entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>DfuExceptions</entry>
+
+                <entry>Acesso à leitura de Exceções DFU</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry>DfuWorkunitsAccess</entry>
+
+                <entry>Acesso à leitura de Workunit DFU</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Acesso para Criar, Excluir, Atualizar, Enviar e Abortar DFU Workunits</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry>DfuXrefAccess</entry>
+
+                <entry>Acesso à leitura de DFU XREF</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Limpar diretório</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Fazer alterações e gerar relatórios XREF</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>EclDirectAccess</entry>
+
+                <entry>Acesso ao serviço ECL Direct.</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>ESDLConfigAccess</entry>
+
+                <entry>ESDL Acesso à configuração</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Publicar definição e ligação ESDL, configurar método de ligação ESDL.</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Apagar definições ESDL, apagar ligações ESDL</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>FileDesprayAccess</entry>
+
+                <entry>Permite que o usuário faça o despray (consolidar dados dos nós) dos arquivos lógicos.</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry>FileIOAccess</entry>
+
+                <entry>Acesso à leitura de arquivos na Zona de entrada de arquivos</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Acesso à leitura de arquivos na Zona de entrada de arquivos</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry>PackageMapAccess</entry>
+
+                <entry>Acesso à(ao) ListPackage, ListPackages, GetPackage, GetPackageMapById, ValidatePackage, GetQueryFileMapping, GetPackageMapSelectOptions, GetPartFromPackageMap</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access a(ao) AddPackage, CopyPackageMap, ActivatePackage, DeActivatePackage, AddPartToPackageMap, RemovePartFromPackageMap</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Apagar Pacote</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>FileScopeAccess</entry>
+
+                <entry>Permite acesso à consulta, configuração e remoção de permissões do escopo de arquivos</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>FileDesprayAccess</entry>
+
+                <entry>Acesso ao spraying (processo de distribuição dos dados aos nós) e cópia</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Renomear, spray, copiar e replicar arquivos</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Apagar da Zona de entrada de arquivos</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>MachineInfoAccess</entry>
+
+                <entry>Acesso às informações da máquina/pré-voo</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry>MetricsAccess</entry>
+
+                <entry>Acesso às informações sobre métricas SNMP (Métricas Roxie)</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry>OthersWorkunitsAccess</entry>
+
+                <entry>Acesso à visualização de workunit de outro usuário</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Acesso à Modificar ou reenviar workunit do usuário</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Acesso à Remover workunit de outros usuários</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>OwnWorkunitsAccess</entry>
+
+                <entry>Acesso à visualização da própria workunit</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Acesso à Criar ou modificar a própria workunit</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Acesso a remoção da própria workunit</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>RoxieControlAccess</entry>
+
+                <entry>Acesso aos comandos de controle do Roxie</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry>SmcAccess</entry>
+
+                <entry>Acesso ao ECL Watch (Serviço SMC)</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry>ThorQueueAccess</entry>
+
+                <entry>Acesso ao controle da fila de workunit do Thor</entry>
+
+                <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>WsEclAccess</entry>
+
+                <entry>Acesso ao serviço WS ECL</entry>
+
+                <entry>Completo</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <sect4 id="FeaturePermissions_Login">
+        <title>Algumas Notas de Permissões de Recursos</title>
+
+        <itemizedlist>
+          <listitem>
+            <para>Para o SMCAccess é obrigatório ter feito o login no ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <para>ThorQueueAccess permite manipular a fila promovendo ou rebaixando as workunit de acordo com a prioridade.</para>
+          </listitem>
+
+          <listitem>
+            <para>ThorQueueAccess também permite pausar ou limpar a fila do Thor. Você também pode ver as estatísticas de uso do Thor.</para>
+          </listitem>
+
+          <listitem>
+            <para>Dependendo do nível de acesso do usuário, é possível visualizar, modificar e remover suas próprias workunit ou as workunit de outros usuários. Trata-se do OwnWorkunitsAccess e OthersWorkunitsAccess, respectivamente.</para>
+          </listitem>
+
+          <listitem>
+            <para>As permissões do DfuWorkunitsAccess permitem que os usuários visualizem ou manipulem as workunit DFU .</para>
+          </listitem>
+
+          <listitem>
+            <para>Os usuários precisam ter autorização para ver os arquivos na zona de entrada de arquivos, assim como também para inserir arquivos lá. Também é preciso obter permissões adicionais para fazer o spray (distribuir aos nós) e copiar arquivos da zona de entrada de arquivos para o cluster, assim como para fazer o despray (consolidar dados dos nós) dos arquivos do cluster para a zona de entrada de arquivos.</para>
+          </listitem>
+        </itemizedlist>
+      </sect4>
+
+      <sect4 id="FeaturePermissions_DFUFiles">
+        <title>DFU Xref</title>
+
+        <para>XREF é usado para monitorar os arquivos nos clusters. Os relatórios gerados mostram onde a organização é necessária nos clusters, e os usuários precisam obter permissão adicional para usar este recurso.</para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/tip.jpg" /></entry>
+
+                <entry><para>Em um sistema maior, sugerimos limitar o número de usuários que têm permissão para gerar relatórios XREF configurando o acesso ao DfuXrefAccess para FULL (Completo) apenas para esses usuários.</para><para> </para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+      </sect4>
+
+      <sect4 id="FeaturePermissions_UserPermissions">
+        <title>Usuários/Permissões</title>
+
+        <para>Para poder visualizar a área  <emphasis
+        role="bold">Users/Permissions</emphasis>  no ECL Watch, o usuário precisa ser um membro do grupo Administradores (ou de nome similar) com permissões adequadas no servidor LDAP ou Active Directory.</para>
+      </sect4>
+    </sect3>
+  </sect2>
+
+  <sect2 id="FeaturePermissions_FileAccessControl">
+    <title><emphasis role="bold">Controle de Acesso a Arquivos</emphasis></title>
+
+    <para>A tecnologia do  <emphasis role="bold">servidor LDAP Dali</emphasis>
+     do HPCC permite configurar permissões de acesso seguro às pastas de arquivo de dados (ou escopos de arquivo). Isso é controlado pelo uso dos recursos de escopo de arquivos.</para>
+
+    <para>Um UO denominado  <emphasis role="bold">Files</emphasis>  é criado automaticamente quando o servidor Dali é inicializado. Para proteger as pastas de dados, crie escopos de arquivo para essa pasta e aplique os direitos para cada escopo.</para>
+
+    <para><figure>
+        <title>Permissões de escopo de arquivos </title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/Perm006.jpg" vendor="eclwatchSS" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Por exemplo, abaixo de  <emphasis role="bold">Files</emphasis>  há uma unidade (OU) representando o cluster, como  <emphasis
+    role="bold">thor</emphasis>  (ou o nome configurado para seu cluster). Além disso, logo abaixo poderia ter uma unidade denominada 
+    <emphasis role="bold">collectionx</emphasis>  que contém duas unidades: 
+    <emphasis role="bold">publicdata</emphasis>  e  <emphasis
+    role="bold">securedata.   </emphasis>A pasta  <emphasis role="bold">publicdata
+    </emphasis> possui direitos concedidos a um grande grupo de usuários; já para a pasta 
+    <emphasis role="bold">securedata </emphasis> foi concedido o acesso limitado. Isso permite impedir que usuários não autorizados acessem os arquivos da pasta  <emphasis role="bold">securedata</emphasis>  folder.</para>
+
+    <para>A estrutura descrita acima corresponde a essa estrutura lógica:</para>
+
+    <para><emphasis role="bold">collectionx::securedata </emphasis></para>
+
+    <para>A qual corresponde a essa estrutura física:</para>
+
+    <para><emphasis
+    role="bold">/var/lib/HPCCSystems/hpcc-data/thor/collectionx/securedata
+    </emphasis></para>
+
+    <para>Além disso, logo abaixo poderia ter uma unidade denominada collectionx que contém duas unidades: publicdata e securedata.</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Acesso aos arquivos de rede usando UNCs, Serviços de Terminal, ou SSH.</para>
+      </listitem>
+
+      <listitem>
+        <para>Utilitários administrativos</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>A tentativa de acesso a um arquivo em uma pasta sem que a permissão tenha sido concedida, resultará em um dos seguintes erros:</para>
+
+    <programlisting>DFS Exception: 4 Create access denied for scope &lt;filepath&gt;</programlisting>
+
+    <para>ou</para>
+
+    <programlisting>DFS Exception: 3 Lookup access denied for scope &lt;filepath&gt;</programlisting>
+
+    <para>(onde &lt;filepath&gt; corresponde ao caminho completo do escopo de arquivo lógico)</para>
+  </sect2>
+
+  <sect2 id="Adding_File_Scopes">
+    <title>Criando um escopo de arquivo</title>
+
+    <para>Para aplicar as permissões a um escopo de arquivos, primeiramente é preciso criar o(s) escopo(s) de arquivos.</para>
+
+    <para>Para criar o(s) escopo(s) de arquivos, clique no ícone  <emphasis
+    role="bold">Operations</emphasis> , e em seguida no link  <emphasis
+    role="bold">Security</emphasis>  localizados no submenu de navegação.</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Clique na aba <emphasis role="bold">Permissions</emphasis>
+        .</para>
+
+        <para>Os recursos específicos serão exibidos.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Clique na seta à esquerda do recurso  <emphasis role="bold">File Scopes</emphasis>  para exibir os escopos do arquivo. <graphic
+        fileref="../../images/Perm06-A.jpg" vendor="eclwatchSS" /></para>
+      </listitem>
+
+      <listitem>
+        <para>Pressione o botão <emphasis role="bold">Add</emphasis> .</para>
+      </listitem>
+
+      <listitem>
+        <para>Selecione  <emphasis role="bold">File Scopes</emphasis>  na lista suspensa. <graphic fileref="../../images/Perm06-C.jpg"
+        vendor="eclwatchSS" /></para>
+      </listitem>
+
+      <listitem>
+        <para>Digite no o nome exato do escopo que deseja adicionar.
+        <emphasis role="bold">Digite no campo </emphasis> Name <graphic
+        fileref="../../images/Perm06-B.jpg" vendor="eclwatchSS" /></para>
+
+        <para> o nome exato do escopo que deseja adicionar. <emphasis
+        role="bold">Digite uma breve descrição no campo <emphasis> Description.</emphasis></emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>Pressione o botão <emphasis role="bold">Add</emphasis> .</para>
+
+        <para>O novo escopo será exibido na lista.</para>
+      </listitem>
+    </orderedlist>
+
+    <sect3 id="AddingFileScopes_SettingScopePermissions">
+      <title>Configurando permissões para escopos de arquivos</title>
+
+      <para>Você precisa estabelecer permissões para os escopos de arquivo dos usuários ou grupos. Se desejar aplicar o escopo em um novo grupo, crie o(s) grupo(s) como requerido.</para>
+
+      <para>Para configurar as permissões de escopo de arquivos, clique no ícone  <emphasis
+      role="bold">Operations</emphasis>  e no link  <emphasis
+      role="bold">Security</emphasis>  a partir do submenu de navegação.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Selecione a aba  <emphasis role="bold">File Scopes</emphasis>
+          .</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione o escopo a ser modificado. Clique no link  <emphasis
+          role="bold">Permissions</emphasis>  desse escopo. <graphic
+          fileref="../../images/Perm018.jpg" vendor="eclwatchSS" /></para>
+        </listitem>
+
+        <listitem>
+          <para>As permissões definidas para os usuários e grupos desse escopo serão exibidas. <graphic fileref="../../images/Perm019.jpg"
+          vendor="eclwatchSS" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Marque (ou desmarque) as caixas de seleção nas colunas  <emphasis
+          role="bold">allow</emphasis>  e  <emphasis
+          role="bold">deny </emphasis> dos usuários ou grupos exibidos.</para>
+        </listitem>
+
+        <listitem>
+          <para>Para adicionar usuários ou grupos ao escopo, pressione o botão  <emphasis
+          role="bold">Add</emphasis> .</para>
+
+          <para>A caixa de diálogo Adicionar permissão será exibida.</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione o usuário ou o grupo que deseja adicionar a permissão a partir da lista suspensa.
+          <graphic fileref="../../images/Perm020.jpg"
+          vendor="eclwatchSS" /></para>
+
+          <para>Após ter selecionado o usuário ou grupo, o botão Adicionar e as caixas de seleção “permitir” e “negar” serão ativadas.</para>
+        </listitem>
+
+        <listitem>
+          <para>Marque as caixas “permitir” e “negar” para configurar as permissões para este escopo. <graphic
+          fileref="../../images/Perm021.jpg" vendor="eclwatchSS" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Adicionar</emphasis> .</para>
+        </listitem>
+
+        <listitem>
+          <para>As alterações serão salvas automaticamente. Feche a(s) aba(s).</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3 id="Security_FileScopeFeatures">
+      <title>Permissões de escopo de arquivos</title>
+
+      <para>Abaixo da lista de escopo de arquivos há botões que permitem:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Redefinir o(s) arquivo(s) selecionado(s) para  <emphasis role="bold">Default Permissions</emphasis> . </para>
+
+          <para>Isso permite remover rapidamente quaisquer configurações de permissão adicionadas a um arquivo e redefinir para o acesso padrão.</para>
+        </listitem>
+
+        <listitem>
+          <para>Permitir ou negar acesso aos arquivos físicos na zona de entrada de arquivos</para>
+
+          <para>Isso oferece uma maneira de permitir ou negar acesso ao escopo de arquivo principal. Por padrão, apenas os administradores têm acesso a esse escopo.</para>
+        </listitem>
+
+        <listitem>
+          <para>Verificar permissões do arquivo para um usuário ou grupo</para>
+
+          <para>Isso oferece uma maneira de verificar o acesso de um usuário ou grupo a um arquivo lógico.</para>
+
+          <para><graphic fileref="../../images/Perm030.jpg"
+          vendor="eclwatchSS" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Limpar cache de permissões</para>
+
+          <para>Isso limpa o cache de permissões e permite que quaisquer outras configurações de permissão passem a vigorar de imediato.</para>
+        </listitem>
+
+        <listitem>
+          <para>Habilitar/Desabilitar busca de escopo</para>
+
+          <para>Isso fornece meios de habilitar ou desabilitar busca de escopo. Habilite a busca de escopos para verificar permissões de acesso aos escopos para os usuários. Este procedimento afetará o desempenho. A função Disable busca de escopo ignora quaisquer permissões de escopo e remove todos os controles de acesso, mas melhora o desempenho. Desabilitar o controle de acesso não é recomendado.</para>
+
+          <para>Mudar essa configuração através do ECL Watch, como descrito aqui, é apenas uma substituição temporária. Quando o Dali é reinicializado, essa configuração será revertida para seu estado definido na configuração environment.xml.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><graphic fileref="../../images/Perm031.jpg"
+      vendor="eclwatchSS" /></para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="Security_WorkunitAccessControl">
+    <title>Controle de Acesso a Workunit</title>
+
+    <para>Existem 2 aspectos sobre a segurança da tarefa (WU) security:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>A Autenticação de recursos para workunit permite configurar permissões para controlar se os usuários podem visualizar suas próprias WUs e/ou as WUs de outros usuários.</para>
+      </listitem>
+
+      <listitem>
+        <para>A segurança do escopo do workunit permite configurar permissões para escopos individuais da WU. Todas as workunit possuem um valor de escopo. Todas as tarefas possuem um valor de escopo.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Ambos os métodos podem ser usados (separadamente ou em conjunto), e a restrição mais estrita sempre se aplica.</para>
+
+    <para>Em outras palavras, se alguém tiver permissão para ver as WUs no escopo  <emphasis>johndoe </emphasis>, mas não tem permissão para ver as WUs de outros usuários nas permissões de Autenticação de recursos, esse usuário terá o acesso à visualização de WUs no escopo <emphasis> johndoe</emphasis>
+     negado.</para>
+
+    <para>Por outro lado, se o usuário tiver permissão de acesso à visualização de WUs de outros usuários, mas não tiver permissão de acesso ao escopo  <emphasis>johndoe </emphasis> da WU<emphasis>
+    </emphasis>, esse usuário poderá ver outras WUs nesse escopo.</para>
+
+    <para><emphasis role="bold">Observação:</emphasis> Caso não tenha acesso à WU, você nunca poderá visualizá-la ou sequer saber da sua existência.</para>
+
+    <para>Por padrão, uma WU enviada possui o escopo da ID do usuário. Por exemplo, a WU que JohnDoe enviou possui o valor  <emphasis>scope=johndoe</emphasis>  na WU. Este valor em uma WU permite que ESP e seus serviços LDAP verifiquem as permissões e as coloquem em vigor.</para>
+
+    <para>Você pode substituir o escopo padrão usando o código ECL:</para>
+
+    <para><programlisting>#workunit(‘scope’,’MyScopeValue’);</programlisting></para>
+
+    <sect3 id="Securing_Workunit_Scopes">
+      <title>Protegendo os escopos dos workunits</title>
+
+      <para>ESP (na inicialização) cria automaticamente uma OU no LDAP denominada  <emphasis
+      role="bold">Workunits</emphasis>  (a menos que ele já exista).  Se uma OU de escopo específico não existir no LDAP (p.ex., o escopo johndoe usado no exemplo anterior), as permissões da OU primária serão usadas.  Todos os escopos da WU estão localizados abaixo da OU das 
+      <emphasis>workunit</emphasis> , tanto de forma implícita quanto explícita.</para>
+
+      <para>Se uma OU de escopo específico não existir no LDAP (p.ex., o escopo johndoe usado no exemplo anterior), as permissões da OU primária serão usadas. Em outras palavras, o escopo de  <emphasis>johndoe</emphasis>  está implicitamente abaixo da OU  <emphasis>workunit</emphasis>  mesmo não estando listado de maneira explícita na estrutura do LDAP ; consequentemente, ele usaria as permissões concedidas às  <emphasis>workunit primárias</emphasis></para>
+    </sect3>
+
+    <sect3 id="Workunits_Feature_Permissions">
+      <title>Permissões de Recursos de Workunits</title>
+
+      <para>Ao usar o recurso de  <emphasis role="bold">escopos da Workunit</emphasis>  na área  <emphasis role="bold">Permissions</emphasis>  do ECL Watch, as permissões de qualquer escopo podem ser redefinidas para as configurações padrão de permissão para seu sistema. As configurações de permissão para os Escopos de tarefa podem ser definidas da seguinte forma:<informaltable>
+          <tgroup cols="2">
+            <thead>
+              <row>
+                <entry>Descrição</entry>
+
+                <entry>Acesso</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>View WUs in that scope (Visualização de WUs nesse escopo)</entry>
+
+                <entry>Leitura</entry>
+              </row>
+
+              <row>
+                <entry>Create/modify a WU in that scope (Criar ou modificar uma WU nesse escopo)</entry>
+
+                <entry>Gravação</entry>
+              </row>
+
+              <row>
+                <entry>Delete a WU in that scope (Remover uma WU nesse escopo)</entry>
+
+                <entry>Completo</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="Adding_WorkUnit_Scopes">
+    <title>Permissões de Recursos das Workunits</title>
+
+    <para>Para adicionar permissões ao escopo de tarefa, clique no ícone  <emphasis
+    role="bold">Operations</emphasis>  e no link  <emphasis
+    role="bold">Security</emphasis>  a partir do submenu de navegação.</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Clique na <emphasis role="bold"> aba </emphasis>
+        Permissions.</para>
+
+        <para>Os recursos específicos serão exibidos.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Clique na seta à esquerda do recurso  <emphasis
+        role="bold">Workunit Scopes</emphasis>  para exibir os escopos do arquivo.  <graphic fileref="../../images/Perm06W.jpg"
+        vendor="eclwatchSS" /></para>
+      </listitem>
+
+      <listitem>
+        <para>Pressione o botão  <emphasis role="bold">Add</emphasis> .</para>
+      </listitem>
+
+      <listitem>
+        <para>Selecione <emphasis role="bold"> Workunits Scopes</emphasis>  na lista suspensa. <graphic fileref="../../images/Perm006-W.jpg"
+        vendor="eclwatchSS" /></para>
+      </listitem>
+
+      <listitem>
+        <para>Digite no o nome exato do escopo que deseja adicionar.
+        <emphasis role="bold">Digite no campo Name</emphasis>  o nome exato do escopo que deseja adicionar. <graphic
+        fileref="../../images/PermW04.jpg" vendor="eclwatchSS" /></para>
+
+        <para>Digite uma breve descrição no campo  <emphasis
+        role="bold">Description<emphasis> .</emphasis></emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>Pressione o botão  <emphasis role="bold">Add</emphasis> .</para>
+
+        <para>O novo escopo será exibido na lista.</para>
+      </listitem>
+    </orderedlist>
+
+    <sect3 id="UsingSecurity_SetScopePermissions">
+      <title>Ajustar permissões do Escopo.</title>
+
+      <para>Aplique os escopos de workunit a um grupo. Se desejar aplicar o escopo em um novo grupo, crie o(s) grupo(s) como requerido.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Vá para a aba  <emphasis role="bold">Groups</emphasis> .</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione um grupo no qual deseja aplicar o escopo marcando a caixa ao lado do nome do grupo.</para>
+
+          <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> . Você pode selecionar múltiplos grupos; uma guia será aberta para cada um deles.</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione a aba  <emphasis role="bold">Group Permissions</emphasis>
+           para esse grupo. (caso tenha selecionado mais de um grupo, realize esse mesmo procedimento para cada grupo)</para>
+        </listitem>
+
+        <listitem>
+          <para>lique na seta à esquerda de Workunit Scopes para exibir os escopos disponíveis.<graphic
+          fileref="../../images/PermW05.jpg" vendor="eclwatchSS" /></para>
+
+          <para>Os escopos de tarefa serão exibidos. Marque as caixas de forma adequada para configurar as permissões para este escopo.</para>
+        </listitem>
+
+        <listitem>
+          <para>Para configurar as permissões neste escopo para outro grupo, abra e acesse a guia do grupo desejado.</para>
+        </listitem>
+
+        <listitem>
+          <para>Para configurar permissões neste escopo para um usuário, selecione a guia.</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione o usuário e pressione o botão de ação Edit.</para>
+
+          <para>Uma nova guia será aberta para esse usuário.</para>
+        </listitem>
+
+        <listitem>
+          <para>Nessa aba, clique na sub-aba  <emphasis role="bold">User Permissions</emphasis> .</para>
+        </listitem>
+
+        <listitem>
+          <para>Localize o novo escopo listado no recurso apropriado.</para>
+
+          <para>Configure as permissões de acesso da forma adequada para esse usuário.</para>
+        </listitem>
+
+        <listitem>
+          <para>As alterações serão salvas automaticamente. Feche a(s) aba(s).</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+  </sect2>
+
+  <sect2 id="permissions_cache" role="brk">
+    <title>Cache de Permissão</title>
+
+    <para>O botão 
+    <emphasis>Clear Permissions Cache</emphasis>  é um recurso bastante útil e pode ser encontrado na aba Permissions. O botão  <emphasis>Clear Permissions Cache</emphasis>  apaga as permissões armazenadas em cache do Dali e da ESP.</para>
+
+    <para>Ao alterar uma permissão no ECL Watch, as configurações são armazenadas em cache no servidor da ESP e armazenadas no servidor Dali. As informações armazenadas em cache são atualizadas em um intervalo configurável. Esse intervalo pode ser definido no Configuration Manager, na aba  <emphasis>LDAP Server settings Attributes</emphasis> . O tempo limite padrão do cache é 5 minutos.</para>
+
+    <para><graphic fileref="../../images/Perm002.jpg"
+    vendor="eclwatchSS" />O Cache de permissões pode ser apagado de qualquer lugar na aba ECL Watch Permissions.</para>
+
+    <para>Se quiser que uma alteração de permissão comece a vigorar de imediato, apague o cache e force o Dali a atualizar as configurações de permissão pressionando o botão  <emphasis role="bold">Clear Permission Cache</emphasis>
+    . Esta ação transfere as configurações ao pressionar o botão. Use esse recurso criteriosamente, pois o desempenho geral do sistema será temporariamente afetado enquanto as configurações do LDAP são preenchidas novamente na Armazenagem de dados do Dali System.</para>
+  </sect2>
+
+  <sect2 id="Advanced_Permissions" role="brk">
+    <title>Permissões Avançadas</title>
+
+    <para>Trata-se do botão  <emphasis
+    role="bold">Advanced</emphasis> (Permissions) localizado na aba Permissions. O botão/menu Advanced oferece acesso ao gerenciamento da segurança do escopo de arquivos e workunit. O botão Advanced é habilitado apenas quando você selecionar Files Scope ou Workunit Scopes na aba Permissions.</para>
+
+    <para><graphic fileref="../../images/Perm022.jpg"
+    vendor="eclwatchSS" /></para>
+
+    <para>Pressione o botão Advanced para exibir o menu de permissões avançadas. O menu Advanced é sensível ao contexto, portanto, se você selecionar Escopo de arquivos na aba Permissions, poderá optar apenas por aplicar as permissões dos escopos de arquivo que são relevantes; isso também se aplica ao selecionar escopos de tarefa.</para>
+
+    <para><emphasis role="bold">Verificações de arquivos</emphasis></para>
+
+    <para>Usando o menu Avançado com a opção Escopo de arquivos selecionada:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Habilite ou desabilite a segurança do escopo de arquivos</para>
+      </listitem>
+
+      <listitem>
+        <para>Acesse a página de permissão padrão do escopo de arquivos</para>
+      </listitem>
+
+      <listitem>
+        <para>Acesse a página de permissão para Arquivos físicos.</para>
+      </listitem>
+
+      <listitem>
+        <para>Verificar as permissões do arquivo – Essa opção abre uma caixa de diálogo onde é possível inserir um nome de arquivo e selecionar usuários ou grupos para o escopo de segurança do arquivo.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para><graphic fileref="../../images/Perm023.jpg"
+    vendor="eclwatchSS" /></para>
+
+    <para><emphasis role="bold">Verificação de tarefa</emphasis></para>
+
+    <para>O uso do menu Avançado com a opção Escopos de tarefa selecionada abre apenas a guia Permissões padrão das Permissões dos Escopos de tarefa (Padrão).</para>
+
+    <para><emphasis role="bold">OBSERVAÇÃO:</emphasis> A segurança dos escopos de tarefa ou de arquivo precisa estar habilitada nas configurações do seu sistema para que você possa usar o recurso de segurança dos escopos de tarefa ou de arquivo no sistema.</para>
+
+    <!-- /*Note: Maybe include the doc or steps for configuring your system to use File or Workunit scope security */
+-->
+  </sect2>
+</sect1>

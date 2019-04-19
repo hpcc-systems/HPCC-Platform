@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Attribute_Visibility">
+  <title>Visibilidade das definições<indexterm>
+      <primary>Definition Visibility</primary>
+    </indexterm></title>
+
+  <para>Código ECL e suas definições são armazenados em arquivos .ECL
+  <indexterm>
+      <primary>.ECL files</primary>
+    </indexterm> em seu repositório, que são organizados em módulos
+  (diretórios ou pastas em disco). Cada arquivo .ECL pode conter apenas uma
+  definição EXPORT ou SHARED única (consulte abaixo) juntamente com quaisquer
+  definições locais de apoio necessárias para definir completamente o
+  resultado da definição. O nome do arquivo e o nome de sua definição EXPORT
+  ou SHARED precisam coincidir de forma exata.</para>
+
+  <para>Em um módulo (diretório ou pasta em disco), você pode ter quantas
+  definições EXPORT e/ou SHARED precisar. Uma declaração IMPORT (veja a
+  <emphasis role="bold">IMPORTAÇÃO </emphasis>uma declaração IMPORT (consulte
+  a palavra-chave IMPORT) identifica quaisquer outros módulos cujas definições
+  visíveis estarão disponíveis para uso na definição atual.</para>
+
+  <para>Os seguintes escopos de visibilidade de definição fundamentais estão
+  disponíveis no ECL: <emphasis role="bold">"Global", Module</emphasis> e
+  <emphasis role="bold"> Local</emphasis>.</para>
+
+  <sect2 id="Global_attribute_visibility">
+    <title>"Global"</title>
+
+    <para>As definições expressadas como <emphasis
+    role="bold">EXPORT</emphasis><indexterm>
+        <primary>EXPORT</primary>
+      </indexterm> (consulte a palavra-chave <emphasis
+    role="bold">EXPORT</emphasis> ) estão disponíveis no módulo em que são
+    definidas e em qualquer outro módulo que realize o <emphasis
+    role="bold">IMPORTs</emphasis> desse módulo (consulte a palavra-chave
+    IMPORT).</para>
+
+    <programlisting>//inside the Definition1.ecl file (in AnotherModule folder) you have:
+EXPORT Definition1 := 5;  
+   //EXPORT makes Definition1 available to other modules and
+   //also available throughout its own module</programlisting>
+  </sect2>
+
+  <sect2 id="Module">
+    <title>Module</title>
+
+    <para>O escopo das definições expressadas como <emphasis
+    role="bold">SHARED<indexterm>
+        <primary>SHARED</primary>
+      </indexterm></emphasis> (consulte a palavra-chave <emphasis
+    role="bold">SHARED</emphasis> ) é limitado para esse módulo, estando elas
+    disponíveis em todo o módulo (diferentemente das definições locais). Isso
+    permite que você mantenha privadas quaisquer definições que são
+    necessárias apenas para implementar funcionalidades internas. Definições
+    SHARED são usadas para apoiar definições EXPORT.</para>
+
+    <programlisting>//inside the Definition2.ecl file you have:
+IMPORT AnotherModule;
+   //makes definitions from AnotherModule available to this code, as needed
+
+SHARED Definition2 := AnotherModule.Definition1 + 5;  
+   //Definition2 available throughout its own module, only
+
+//*****************************************************************************
+//then inside the Definition3.ecl file (in the same folder as Definition2) you have:
+IMPORT $;  
+   //makes definitions from the current module available to this code, as needed
+
+EXPORT Definition3 := $.Definition2 + 5;
+  //make Definition3 available to other modules and
+  //also available throughout its own module</programlisting>
+  </sect2>
+
+  <sect2 id="Local">
+    <title>Local</title>
+
+    <para>Uma definição sem as palavras-chave EXPORT ou SHARED só está
+    disponível para definições subsequentes até o final da próxima definição
+    EXPORT ou SHARED. Isso torna essas definições privadas úteis apenas no
+    escopo daquela definição EXPORT ou SHARED, o que permite que você mantenha
+    privadas quaisquer definições que são necessárias apenas para implementar
+    funcionalidades internas. As definições locais ( Local ) são usadas para
+    apoiar a definição EXPORT ou SHARED nos arquivos em que estejam presentes.
+    As definições locais ( Local ) são referenciadas apenas por seu nome de
+    definição, sem a necessidade de qualificação.</para>
+
+    <programlisting>//then inside the Definition4.ecl file (in the same folder as Definition2) you have:
+IMPORT $;  
+   //makes definitions from the current module available to this code, as needed
+
+LocalDef := 5;
+  //local -- available through the end of Definition4's definition, only
+
+EXPORT Definition4 := LocalDef + 5;
+//EXPORT terminates scope for LocalDef
+
+LocalDef2 := Definition4 + LocalDef;
+  //INVALID SYNTAX -- LocalDef is out of scope here
+  //and any local definitions following the EXPORT
+  //or SHARED definition in the file are meaningless 
+  //since they can never be used by anything
+</programlisting>
+
+    <para>A palavra-chave <emphasis role="bold">LOCAL</emphasis><indexterm>
+        <primary>LOCAL</primary>
+      </indexterm> é válida para uso em qualquer estrutura aninhada, mas é
+    mais útil em uma estrutura FUNCTIONMACRO para identificar de forma clara
+    que o escopo de uma definição é limitado ao código gerado na
+    FUNCTIONMACRO.</para>
+
+    <programlisting>AddOne(num) := FUNCTIONMACRO
+  LOCAL numPlus := num + 1;
+  RETURN numPlus;
+ENDMACRO;
+
+numPlus := 'this is a syntax error without LOCAL in the FUNCTIONMACRO';
+numPlus;
+AddOne(5);
+</programlisting>
+
+    <para>Ver também: <link linkend="IMPORT">IMPORT</link>, <link
+    linkend="EXPORT">EXPORT</link>, <link linkend="SHARED">SHARED</link>,
+    <link linkend="MODULE_Structure">MODULE</link>, <link
+    linkend="FUNCTIONMACRO_Structure">FUNCTIONMACRO</link></para>
+  </sect2>
+</sect1>

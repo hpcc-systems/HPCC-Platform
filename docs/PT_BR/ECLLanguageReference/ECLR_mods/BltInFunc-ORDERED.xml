@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ORDERED">
+  <title>ORDERED</title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attributename</emphasis>
+  :=<emphasis role="bold"> ] ORDERED<indexterm>
+      <primary>ORDERED</primary>
+    </indexterm><indexterm>
+      <primary>ORDERED action</primary>
+    </indexterm>(</emphasis><emphasis> actionlist </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82.95pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attributename</emphasis></entry>
+
+            <entry>Opcional. O nome da ação, que transforma a ação em
+            definição de atributo, consequentemente não é executado até que
+            attributename seja usado como uma ação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>actionlist</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula das ações a serem
+            executadas na ordem. Podem ser ações ECL ou ações
+            externas.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A ação <emphasis role="bold">ORDERED </emphasis> executa os itens da
+  <emphasis>actionlist</emphasis> na ordem em que aparecem na
+  <emphasis>actionlist</emphasis>. Isto é útil quando uma ação subsequente
+  exige o resultado de uma ação precedente.</para>
+
+  <para>Possui os requisitos de ordenação de SEQUENTIAL. Esta não é a maneira
+  mais útil de ordenar ações que não têm nada em comum, por exemplo, gerar
+  arquivos e em seguida enviar e-mail. Se houver alguma chance de um valor
+  compartilhado que possa mudar o significado, você deve usar
+  SEQUENTIAL.</para>
+
+  <para>Por definição, PERSIST em um atributo significa que o atributo é
+  avaliado fora de qualquer ordem de avaliação específica. Consequentemente,
+  ORDERED não possui nenhum efeito sobre os atributos PERSISTed.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>Act1 :=
+        OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
+Act2 :=
+        OUTPUT(Person,{Person.per_first_name,Person.per_last_name})
+Act2 := OUTPUT(Person,{Person.per_last_name})));
+//by naming these actions, they become inactive
+        attributes
+//that only execute when the attribute names are called as
+        actions
+ORDERED(Act1,PARALLEL(Act2,Act3));
+//executes Act1 alone, and then executes Act2 and Act3 together
+</programlisting>
+
+  <para>Ver também: <link linkend="PARALLEL_function">PARALLEL</link>, <link
+  linkend="PERSIST">PERSIST</link>, <link
+  linkend="SEQUENTIAL">SEQUENTIAL</link></para>
+</sect1>

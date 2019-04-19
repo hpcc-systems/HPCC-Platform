@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DICTIONARY">
+  <title>DICTIONARY<indexterm>
+      <primary>DICTIONARY</primary>
+    </indexterm></title>
+
+  <para><emphasis>attr</emphasis> <emphasis role="bold">:=
+  DICTIONARY(</emphasis> <emphasis>dataset, structure</emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <para><emphasis role="bold">DICTIONARY(</emphasis>
+  <emphasis>structure</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>attr</emphasis></entry>
+
+          <entry>O nome da estrutura DICTIONARY a ser usada posteriormente em
+          outras definições.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dataset</emphasis></entry>
+
+          <entry>O nome de um DATASET ou conjunto de registros de onde derivar
+          o DICTIONARY. Isso pode ser definido em linha (semelhante a um
+          DATASET em linha).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>structure</emphasis></entry>
+
+          <entry>A estrutura RECORD (muitas vezes, definida em linha) que
+          especifica o layout dos campos. O(s) primeiro(s) campo(s) é(são)
+          campo(s)-chave, seguido(s) opcionalmente pelo operador "resultados
+          em" (=&gt;) e campos adicionais de carga útil. Isso é semelhante à
+          versão da carga útil de um INDEX. A carga útil pode especificar
+          campos individuais ou pode usar o nome do <emphasis>dataset
+          </emphasis> para incluir todos os campos não chave no
+          payload.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Um <emphasis role="bold">DICTIONARY</emphasis> permite verificar
+  eficientemente se um determinado valor de dados está em uma lista (usando o
+  operador IN) ou simplesmente mapear dados. Isso é semelhante a um LOOKUP
+  JOIN que pode ser usado em qualquer contexto.</para>
+
+  <sect2 id="DICTIONARY_Definition">
+    <title>Definição DICTIONARY</title>
+
+    <para>A declaração DICTIONARY define um conjunto de registros únicos
+    derivados do parâmetro <emphasis>dataset</emphasis> e indexado pelo(s)
+    primeiro(s) campo(s) nomeado(s) no parâmetro
+    <emphasis>structure</emphasis> . O DICTIONARY contém um registro para cada
+    valor único no(s) campo(s)-chave. Você pode acessar um registro individual
+    anexando colchetes ([ ]) ao nome do <emphasis>attr</emphasis> do
+    DICTIONARY, que contém o(s) valor(es) do(s) campo(s)-chave que
+    identifica(m) o registro específico a ser acessado.</para>
+  </sect2>
+
+  <sect2 id="Child_DICTIONARY">
+    <title>DICTIONARY como Tipo de Valor</title>
+
+    <para>A segunda forma do DICTIONARY é um tipo de valor com o parâmetro
+    <emphasis>structure</emphasis> especificando a estrutura RECORD dos dados.
+    Esse tipo de dados permite especificar um DICTIONARY como um dataset
+    secundário, de forma semelhante a como DATASET pode ser usado para definir
+    um dataset secundário. Isso também pode ser usado para passar um
+    DICTIONARY como parâmetro.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>ColorCodes := DATASET([{'Black' ,0 },
+                       {'Brown' ,1 },
+                       {'Red'   ,2 },
+                       {'Orange',3 },
+                       {'Yellow',4 },
+                       {'Green' ,5 },
+                       {'Blue'  ,6 },
+                       {'Violet',7 },
+                       {'Grey'  ,8 },
+                       {'White' ,9 }], {STRING color,UNSIGNED1 code});
+
+ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});    //multi-field key
+ColorCodeDCT  := DICTIONARY(ColorCodes,{Color =&gt; Code}); //payload field
+CodeColorDCT  := DICTIONARY(ColorCodes,{Code =&gt; Color});
+
+//mapping examples
+MapCode2Color(UNSIGNED1 code) := CodeColorDCT[code].color;
+MapColor2Code(STRING color)   := ColorCodeDCT[color].code;
+
+OUTPUT(MapColor2Code('Red'));     //2
+OUTPUT(MapCode2Color(4));         //'Yellow'
+
+//Search term examples
+OUTPUT('Green' IN ColorCodeDCT);  //true
+OUTPUT(6 IN CodeColorDCT);        //true
+OUTPUT(ROW({'Red',2},RECORDOF(ColorCodes)) IN ColorCodesDCT); //multi-field key, true 
+
+//multi-field payload examples
+rec := RECORD
+  STRING10  color;
+  UNSIGNED1 code; 
+  STRING10  name;
+END;
+Ds := DATASET([{'Black' ,0 , 'Fred'},
+               {'Brown' ,1 , 'Seth'},
+               {'Red'   ,2 , 'Sue'},
+               {'White' ,3 , 'Jo'}], rec);
+
+DsDCT := DICTIONARY(DS,{color =&gt; DS});
+
+OUTPUT('Red' IN DsDCT); //true
+DsDCT['Red'].code;      //2
+DsDCT['Red'].name;      //Sue
+
+//inline DCT examples
+InlineDCT := DICTIONARY([{'Black' =&gt; 0 , 'Fred'},
+                         {'Brown' =&gt; 1 , 'Sam'},
+                         {'Red'   =&gt; 2 , 'Sue'},
+                         {'White' =&gt; 3 , 'Jo'} ], 
+                        {STRING10 color =&gt; UNSIGNED1 code,STRING10 name});
+
+OUTPUT('Red' IN InlineDCT); //true
+InlineDCT['Red'].code;      //2
+InlineDCT['Red'].name;      //Sue
+InlineDCT['Red'];           //Red   2   Sue
+
+//Form 2 examples -- parameter passing
+MyDCTfunc(DICTIONARY({STRING10 color =&gt; UNSIGNED1 code,STRING10 name}) DCT,
+          STRING10 key) := DCT[key].name;
+MyDCTfunc(InlineDCT,'White');  //Jo
+MyDCTfunc(DsDCT,'Brown');      //Seth
+</programlisting>
+
+    <para>Ver também: <link linkend="DATASET">DATASET</link>, <link
+    linkend="RECORD_Structure">Estrutura RECORD</link>, <link
+    linkend="INDEX_record_structure">INDEX</link>, <link
+    linkend="IN_Operator">Operador IN</link></para>
+  </sect2>
+</sect1>

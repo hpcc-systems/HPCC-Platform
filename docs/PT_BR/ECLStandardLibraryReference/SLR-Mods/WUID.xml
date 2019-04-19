@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WUID">
+  <title>WUID</title>
+
+  <para><emphasis role="bold">STD.System.Job.WUID<indexterm>
+      <primary>STD.System.Job.WUID</primary>
+    </indexterm> <indexterm>
+      <primary>System.Job.WUID</primary>
+    </indexterm> <indexterm>
+      <primary>Job.WUID</primary>
+    </indexterm> <indexterm>
+      <primary>WUID</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WUID retorna um valor VARSTRING.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">WUID </emphasis> retorna o identificador de workunit da workunit atual. Esse identificador é o mesmo que a constante de tempo de compilação WORKUNIT. </para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.System.Job.WUID();   </programlisting>
+</sect1>

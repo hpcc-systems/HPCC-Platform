@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GROUP_function">
+  <title>GROUP</title>
+
+  <para><emphasis role="bold">GROUP<indexterm>
+      <primary>Group</primary>
+    </indexterm><indexterm>
+      <primary>GROUP function</primary>
+    </indexterm>( </emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, breakcriteria </emphasis><emphasis
+  role="bold">[</emphasis>,<emphasis role="bold"> ALL<indexterm>
+      <primary>ALL</primary>
+    </indexterm> ] ] [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">]
+  </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82.30pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros a ser fragmentado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>breakcriteria</emphasis></entry>
+
+            <entry>Opcional. Uma lista delimitada por vírgula de expressões ou
+            campos principais no conjunto de registros que especifica como
+            fragmentar o recordset. A palavra-chave RECORD pode ser usada para
+            indicar todos os campos no conjunto de registros, e/ou você pode
+            usar a palavra-chave EXCEPT para listar os campos não agrupados na
+            estrutura. Também é possível usar a palavra ROW para indicar que
+            cada registro no conjunto de registros é um grupo individual. Se
+            omitida, o conjunto de registros será desagrupado de qualquer
+            agrupamento prévio.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Opcional. Indica que o <emphasis>breakcriteria</emphasis> é
+            aplicado sem levar em conta qualquer ordem prévia. Se omitido,
+            GROUP supõe que o conjunto de registros já foi classificado na
+            ordem do <emphasis>breakcriteria</emphasis> .</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>GROUP retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">GROUP </emphasis>fragmenta um
+  <emphasis>recordset</emphasis> em um conjunto de valores. Isso permite novas
+  agregações e operações (tais como ITERATE, DEDUP, ROLLUP, SORT e outras)
+  dentro dos subconjuntos definidos dos dados – a operação é executada
+  individualmente em cada subconjunto. Isso significa que o código de condição
+  de limite gravado na função TRANSFORM para essas funções que o utilizam será
+  diferente do código de um <emphasis>recordset</emphasis> que tenha sido
+  apenas CLASSIFICADO SORTed.</para>
+
+  <para>O <emphasis>recordset</emphasis> deve ser classificado através dos
+  mesmos elementos que o <emphasis>breakcriteria</emphasis> se a opção ALL não
+  tiver sido especificada.</para>
+
+  <para>O <emphasis>recordset</emphasis> fica “desagrupado” ao ser usado em
+  uma função TABLE, pela função JOIN em algumas circunstâncias (consulte
+  JOIN), por UNGROUP, ou por outra função GROUP com o segundo parâmetro
+  omitido.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyRec := RECORD
+ STRING20 Last;
+ STRING20 First;
+END;
+SortedSet := SORT(Person,Person.last_name); //sort by last name
+GroupedSet := GROUP(SortedSet,last_name);  //then group them
+
+SecondSort := SORT(GroupedSet,Person.first_name);
+   //sorts by first name within each last name group
+   // this is a "sort within group"
+
+UnGroupedSet := GROUP(GroupedSet); //ungroup the dataset
+MyTable := TABLE(SecondSort,MyRec); //create table of sorted names
+</programlisting>
+
+  <para>Ver também: <link linkend="REGROUP">REGROUP</link>, <link
+  linkend="COMBINE">COMBINE</link>, <link linkend="UNGROUP">UNGROUP</link>,
+  <link linkend="EXCEPT">EXCEPT</link></para>
+</sect1>

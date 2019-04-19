@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="INTEGER">
+  <title>INTEGER<indexterm>
+      <primary>INTEGER</primary>
+    </indexterm></title>
+
+  <para><emphasis
+  role="bold">[</emphasis><emphasis>IntType</emphasis><emphasis role="bold">]
+  [UNSIGNED] INTEGER[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis><emphasis role="bold"/></para>
+
+  <para><emphasis
+  role="bold">[</emphasis><emphasis>IntType</emphasis><emphasis role="bold">]
+  UNSIGNED<indexterm>
+      <primary>UNSIGNED</primary>
+    </indexterm><indexterm>
+      <primary>UNSIGNED value type</primary>
+    </indexterm><indexterm>
+      <primary>INTEGER value type</primary>
+    </indexterm></emphasis><emphasis>n</emphasis></para>
+
+  <para><emphasis role="bold">Um valor inteiro de
+  </emphasis><emphasis>n</emphasis> bytes. Os valores válidos para
+  <emphasis>n</emphasis> são: 1, 2, 3, 4, 5, 6, 7,ou 8. Se
+  <emphasis>n</emphasis> não for especificado para INTEGER, o padrão será 8
+  bytes.</para>
+
+  <para>O <emphasis>IntType</emphasis> opcional pode especificar o estilo de
+  valores inteiros <indexterm>
+      <primary>BIG_</primary>
+    </indexterm> ENDIANBIG_ENDIAN (Tipo Sun/UNIX, válido apenas dentro de uma
+  estrutura RECORD) ou <indexterm>
+      <primary>LITTLE_ENDIANLITTLE_ENDIAN</primary>
+    </indexterm> (Tipo Intel). Estes dois <emphasis>IntTypes</emphasis>
+  possuem ordenações internas de byte opostas. Se a palavra-chave opcional
+  <emphasis>UNSIGNED</emphasis> não estiver presente, o valor inteiro será
+  sinalizado.</para>
+
+  <para>Se a palavra-chave opcional UNSIGNED não estiver presente, o valor
+  inteiro será sinalizado. Declarações de valores inteiros não sinalizadas
+  podem ser contraídas para UNSIGNED<emphasis>n </emphasis>em vez de UNSIGNED
+  INTEGER<emphasis>n</emphasis>.</para>
+
+  <sect2 id="Integer_Value_Ranges">
+    <title>Intervalo de Valores INTEGER</title>
+
+    <informaltable>
+      <tgroup cols="3">
+        <tbody>
+          <row>
+            <entry>Tamanho</entry>
+
+            <entry>Valores sinalizados</entry>
+
+            <entry>Valores não sinalizados</entry>
+          </row>
+
+          <row>
+            <entry>1-byte</entry>
+
+            <entry>-128 a 127</entry>
+
+            <entry>0 a 255</entry>
+          </row>
+
+          <row>
+            <entry>2-byte</entry>
+
+            <entry>-32.768 a 32.767</entry>
+
+            <entry>0 a 65.535</entry>
+          </row>
+
+          <row>
+            <entry>3-byte</entry>
+
+            <entry>-8.388.608 a 8.388.607</entry>
+
+            <entry>0 a 16.777.215</entry>
+          </row>
+
+          <row>
+            <entry>4-byte</entry>
+
+            <entry>-2.147.483.648 a 2.147.483.647</entry>
+
+            <entry>0 a 4.294.967.295</entry>
+          </row>
+
+          <row>
+            <entry>5-byte</entry>
+
+            <entry>-549.755.813.888 a 549.755.813.887</entry>
+
+            <entry>0 a 4.294.967.295</entry>
+          </row>
+
+          <row>
+            <entry>6-byte</entry>
+
+            <entry>-140.737.488.355.328 a 140.737.488.355.327</entry>
+
+            <entry>0 a 4.294.967.295</entry>
+          </row>
+
+          <row>
+            <entry>7-byte</entry>
+
+            <entry>-36.028.797.018.963.968 a 36.028.797.018.963.967</entry>
+
+            <entry>0 a 4.294.967.295</entry>
+          </row>
+
+          <row>
+            <entry>8-byte</entry>
+
+            <entry>-9.223.372.036.854.775.808 a
+            9.223.372.036.854.775.807</entry>
+
+            <entry>0 a 4.294.967.295</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Exemplo:</para>
+
+    <programlisting>INTEGER1 MyValue := MAP(MyString = '1' =&gt; MyString, '0');
+       //MyValue is 1 or 0, changing type from string to integer
+UNSIGNED INTEGER1 MyValue := 255; //max value possible in 1 byte
+UNSIGNED1 MyValue := 255;
+       //MyValue contains the max value possible in a single byte
+MyRec := RECORD
+  LITTLE_ENDIAN INTEGER2 MyLittleEndianValue := 1;
+  BIG_ENDIAN INTEGER2 MyBigEndianValue := 1;
+       //the physical byte-order is opposite in these two
+END</programlisting>
+  </sect2>
+</sect1>

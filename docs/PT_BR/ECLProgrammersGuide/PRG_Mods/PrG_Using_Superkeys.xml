@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Using_SuperKeys">
+  <title><emphasis role="bold">Utilizando Superchaves</emphasis></title>
+
+  <para>Um superarquivo cujos subarquivos são INDEXes (e nao DATASETs)
+  corresponde a uma Superchave. Conforme descrito no tópico anterior,
+  <emphasis>Como indexar em Superarquivos</emphasis> , há um problema com o
+  uso de uma superchave para tentar indexar em um superarquivo. Assim sendo,
+  para que servem as superchaves afinal?</para>
+
+  <para>No tópico <emphasis>Como usar chaves ECL (arquivos INDEX)</emphasis> ,
+  doi demonstrada a técnica de criar e usar INDEXes que contêm campos de
+  conteúdo. Ao colocar os campos de conteúdo no próprio INDEX, elimina-se a
+  necessidade de acessar diretamente o dataset de base do qual o INDEX foi
+  compilado. Assim sendo, o problema se torna discutível.</para>
+
+  <para>As superchaves são compiladas com chaves de conteúdo. E já que a
+  operação primária para uma chave de conteúdo é o JOIN de meia chave, esse
+  também se torna o principal uso operacional da superchave.</para>
+
+  <para>Ambos superarquivos e superchaves podem ser usados em operações no
+  Thor ou Roxie.</para>
+
+  <para>As definições dos atributos a seguir usadas pelos exemplos de códigos
+  neste artigo são declaradas no atributo de estrutura MODULE
+  DeclareData:</para>
+
+  <programlisting>EXPORT SubKey1 := '~PROGGUIDE::SUPERKEY::Accounts1';
+EXPORT SubKey2 := '~PROGGUIDE::SUPERKEY::Accounts2';
+EXPORT SubKey3 := '~PROGGUIDE::SUPERKEY::Accounts3';
+EXPORT SubKey4 := '~PROGGUIDE::SUPERKEY::Accounts4';
+EXPORT SubIDX1 := '~PROGGUIDE::SUPERKEY::KEY::AcctsIDX1';
+EXPORT SubIDX2 := '~PROGGUIDE::SUPERKEY::KEY::AcctsIDX2';
+EXPORT SubIDX3 := '~PROGGUIDE::SUPERKEY::KEY::AcctsIDX3';
+EXPORT SubIDX4 := '~PROGGUIDE::SUPERKEY::KEY::AcctsIDX4';
+EXPORT AcctSKname :=
+        '~PROGGUIDE::SUPERKEY::KEY::AcctsSK';
+EXPORT AcctSK := INDEX(Accounts,{PersonID},
+</programlisting>
+
+  <sect2 id="Building_SuperKeys">
+    <title>Construindo Superchaves</title>
+
+    <para>Antes que uma superchave possa ser criada, primeiro é necessário ter
+    alguns INDEXes para usar. O código a seguir (contido no arquivo
+    SuperKey1.ECL) cria quatro chaves de conteúdo individuais a partir do
+    dataset Account:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+s1 := $.DeclareData.Accounts(Account[1] = '1');
+s2 := $.DeclareData.Accounts(Account[1] = '2');
+s3 := $.DeclareData.Accounts(Account[1] = '3');
+s4 := $.DeclareData.Accounts(Account[1] IN ['4','5','6','7','8','9']);
+ 
+Rec := $.DeclareData.Layout_Accounts_Link;
+RecPlus := {Rec,UNSIGNED8 RecPos{virtual(fileposition)}};
+d1 := DATASET($.DeclareData.SubKey1,RecPlus,THOR);
+d2 := DATASET($.DeclareData.SubKey2,RecPlus,THOR);
+d3 := DATASET($.DeclareData.SubKey3,RecPlus,THOR);
+d4 := DATASET($.DeclareData.SubKey4,RecPlus,THOR);
+
+i1 := INDEX(d1,{PersonID},
+            {Account,OpenDate,IndustryCode,AcctType,AcctRate,
+             Code1,Code2,HighCredit,Balance,RecPos},
+            $.DeclareData.SubIDX1);
+i2 := INDEX(d2,{PersonID},
+            {Account,OpenDate,IndustryCode,AcctType,AcctRate,
+             Code1,Code2,HighCredit,Balance,RecPos},
+            $.DeclareData.SubIDX2);
+i3 := INDEX(d3,{PersonID},
+            {Account,OpenDate,IndustryCode,AcctType,AcctRate,
+             Code1,Code2,HighCredit,Balance,RecPos},
+            $.DeclareData.SubIDX3);
+i4 := INDEX(d4,{PersonID},
+            {Account,OpenDate,IndustryCode,AcctType,AcctRate,
+             Code1,Code2,HighCredit,Balance,RecPos},
+            $.DeclareData.SubIDX4);
+
+BldDat := PARALLEL(
+        IF(~Std.File.FileExists($.DeclareData.SubKey1),
+           OUTPUT(s1,
+                 {PersonID,Account,OpenDate,IndustryCode,AcctType,
+                  AcctRate,Code1,Code2,HighCredit,Balance},
+                 $.DeclareData.SubKey1)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubKey2),
+           OUTPUT(s2,
+                  {PersonID,Account,OpenDate,IndustryCode,AcctType,
+                   AcctRate,Code1,Code2,HighCredit,Balance},
+                  $.DeclareData.SubKey2)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubKey3),
+           OUTPUT(s3,
+                  {PersonID,Account,OpenDate,IndustryCode,AcctType,
+                   AcctRate,Code1,Code2,HighCredit,Balance},
+                  $.DeclareData.SubKey3)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubKey4),
+           OUTPUT(s4,
+                  {PersonID,Account,OpenDate,IndustryCode,AcctType,
+                   AcctRate,Code1,Code2,HighCredit,Balance},
+                  $.DeclareData.SubKey4)));
+
+BldIDX := PARALLEL(
+        IF(~Std.File.FileExists($.DeclareData.SubIDX1),
+           BUILDINDEX(i1)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubIDX2),
+           BUILDINDEX(i2)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubIDX3),
+           BUILDINDEX(i3)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubIDX4),
+           BUILDINDEX(i4)));
+
+SEQUENTIAL(BldDat,BldIDX);
+</programlisting>
+
+    <para>Esse código compila sequencialmente os arquivos lógicos ao usar
+    subconjuntos de registros do dataset Accounts e gravar esses registros
+    para arquivos em disco. Depois que os arquivos lógicos existem
+    fisicamente, as ações BUILDINDEX gravam as chaves de conteúdo em
+    disco.</para>
+
+    <para>Um ponto interessante para esse código é o uso da função
+    Std.File.FileExists para detectar se esses arquivos já foram criados. O
+    código na próxima seção também usa a função Std.File.SuperFileExists para
+    detectar se o superarquivo já foi criado e criá-lo somente caso ele ainda
+    não exista. Essa técnica permite que o código de exemplo neste artigo seja
+    executado de modo correto, independentemente do usuário já ter passado
+    pelos exemplos ou não.</para>
+  </sect2>
+
+  <sect2 id="Creating_a_SuperKey">
+    <title>Criando uma Superchave</title>
+
+    <para>O processo de criação de uma superchave é exatamente o mesmo daquele
+    usado para criar um superarquivo. O código a seguir (contido no arquivo
+    SuperKey2.ECL) cria uma superchave e adiciona as duas primeiras chaves de
+    conteúdo a ela:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+   IF(~Std.File.SuperFileExists($.DeclareData.AcctSKname),
+      Std.File.CreateSuperFile($.DeclareData.AcctSKname)),
+   Std.File.StartSuperFileTransaction(),
+   Std.File.ClearSuperFile($.DeclareData.AcctSKname),
+   Std.File.AddSuperFile($.DeclareData.AcctSKname,$.DeclareData.SubIDX1),
+   Std.File.AddSuperFile($.DeclareData.AcctSKname,$.DeclareData.SubIDX2),
+   Std.File.FinishSuperFileTransaction());
+</programlisting>
+  </sect2>
+
+  <sect2 id="Using_a_SuperKey">
+    <title>Utilizando uma Superchave</title>
+
+    <para>Depois de ter uma superchave pronta para usar, é possível usá-la nos
+    JOINs de meia chave, como demonstrado neste código (contido no arquivo
+    SuperKey3.ECL):</para>
+
+    <programlisting>IMPORT $;
+
+r1 := RECORD
+  $.DeclareData.Layout_Person;
+  $.DeclareData.Layout_Accounts;
+END;
+
+r1 Xform($.DeclareData.Person.FilePlus L, $.DeclareData.AcctSK R) := TRANSFORM
+  SELF := L;
+  SELF := R;
+END;
+
+J3 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
+           $.DeclareData.AcctSK,
+           LEFT.PersonID=RIGHT.PersonID,
+           Xform(LEFT,RIGHT));		
+ 
+OUTPUT(J3,ALL);
+</programlisting>
+  </sect2>
+
+  <sect2 id="Maintaining_SuperKeys">
+    <title>Manutenção de superchaves</title>
+
+    <para>Uma superchave é simplesmente um superarquivo cujos subarquivos
+    componentes são chaves de conteúdo. Assim sendo, compilar e manter uma
+    superchave constitui exatamente no mesmo processo já descrito no tópico
+    <emphasis>Como criar e manter superarquivos</emphasis> . A única diferença
+    significa está na maneira pela qual você cria os sub-arquivos de
+    componente, cujo processo já foi descrito no tópico <emphasis>Como usar
+    chaves ECL (arquivos INDEX)</emphasis> .</para>
+  </sect2>
+</sect1>

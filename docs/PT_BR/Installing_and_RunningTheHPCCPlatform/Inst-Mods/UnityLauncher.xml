@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Unity_Launcher">
+  <title>Unity Launcher Icon (Inicializador de Unidade)</title>
+
+  <para>A plataforma do HPCC suporta o uso de um ícone do Inicializador de unidade Ubuntu (Unity Launcher).</para>
+
+  <para>A partir de um ícone no Inicializador de unidade da versão do Ubunto para desktop, é possível iniciar, interromper, reiniciar ou consultar o status de um sistema de nó único instalado.</para>
+
+  <para><variablelist>
+      <varlistentry>
+        <term>Observação:</term>
+
+        <listitem>
+          <para>Atualmente, esse recurso é útil apenas em um sistema de nó único. As versões futuras podem vir a operar de outra forma e ser compatíveis com HPCC System<superscript>®</superscript>.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist></para>
+
+  <sect2 id="UnityLauncher_AddIcon">
+    <title><emphasis role="bold">Para adicionar o ícone:</emphasis></title>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Use a busca no Dash Home para localizar o <superscript>ícone da aplicação no HPCC Systems</superscript> ®.</para>
+
+        <figure>
+          <title>Ícone da Aplicação HPCC.</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/GS-100.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Clique e arraste o ícone para a barra do Inicializador de Unidade.</para>
+
+        <para><figure>
+            <title>Inicializador de unidade</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/GS-101.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Solte-o na barra.</para>
+      </listitem>
+    </orderedlist>
+
+    <variablelist>
+      <varlistentry>
+        <term>Observação:</term>
+
+        <listitem>
+          <para>Na versão 12.04 ou mais recente do Ubuntu é possível mover o ícone para qualquer posição na barra arrastando e soltando na posição desejada.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </sect2>
+
+  <sect2 id="UnityLauncher_UseIcon">
+    <title><emphasis role="bold">Para Usar o Ícone:</emphasis></title>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Clique no ícone com o botão direito e selecione a ação desejada no menu.</para>
+
+        <para><figure>
+            <title>Menu contextual</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/GS-102.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>O resultado será exibido em uma janela do terminal.</para>
+
+        <figure>
+          <title>Resultados</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/GS-103.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </listitem>
+
+      <listitem>
+        <para>Feche a janela ao terminar.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+</sect1>

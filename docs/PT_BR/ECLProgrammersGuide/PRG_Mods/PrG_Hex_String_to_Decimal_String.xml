@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Hex_String_to_Decimal_String">
+  <title>Hex String para Decimal String</title>
+
+  <para>Recebi um e-mail solicitando a sugestão de uma forma de converter uma
+  cadeia com valores hexadecimais para uma cadeia com o decimal equivalente
+  àquele valor. O problema era que esse código precisava ser executado no
+  Roxie e a função biblioteca do plugin StringLib.String2Data não estava
+  disponível para uso em consultas Roxie naquele momento. Dessa forma, era
+  necessária uma solução completamente em ECL.</para>
+
+  <para>Essa função de exemplo (contida no arquivo Hex2Decimal.ECL) oferece
+  essa funcionalidade, enquanto também demonstra o uso prático dos números
+  inteiros BIG ENDIAN e de transferência de tipo.</para>
+
+  <programlisting>HexStr2Decimal(STRING HexIn) := FUNCTION
+
+  //type re-definitions to make code more readable below
+  BE1 := BIG_ENDIAN UNSIGNED1;
+  BE2 := BIG_ENDIAN UNSIGNED2;
+  BE3 := BIG_ENDIAN UNSIGNED3;
+  BE4 := BIG_ENDIAN UNSIGNED4;
+  BE5 := BIG_ENDIAN UNSIGNED5;
+  BE6 := BIG_ENDIAN UNSIGNED6;
+  BE7 := BIG_ENDIAN UNSIGNED7;
+  BE8 := BIG_ENDIAN UNSIGNED8;
+
+  TrimHex := TRIM(HexIn,ALL);
+  HexLen := LENGTH(TrimHex);
+  UseHex := IF(HexLen % 2 = 1,'0','') + TrimHex;
+
+  //a sub-function to translate two hex chars to a packed hex format
+  STRING1 Str2Data(STRING2 Hex) := FUNCTION
+    UNSIGNED1 N1 :=
+        CASE( Hex[1],
+            '0'=&gt;00x,'1'=&gt;10x,'2'=&gt;20x,'3'=&gt;30x,
+            '4'=&gt;40x,'5'=&gt;50x,'6'=&gt;60x,'7'=&gt;70x,
+            '8'=&gt;80x,'9'=&gt;90x,'A'=&gt;0A0x,'B'=&gt;0B0x,
+            'C'=&gt;0C0x,'D'=&gt;0D0x,'E'=&gt;0E0x,'F'=&gt;0F0x,00x);
+     UNSIGNED1 N2 :=
+        CASE( Hex[2],
+            '0'=&gt;00x,'1'=&gt;01x,'2'=&gt;02x,'3'=&gt;03x,
+            '4'=&gt;04x,'5'=&gt;05x,'6'=&gt;06x,'7'=&gt;07x,
+            '8'=&gt;08x,'9'=&gt;09x,'A'=&gt;0Ax,'B'=&gt;0Bx,
+            'C'=&gt;0Cx,'D'=&gt;0Dx,'E'=&gt;0Ex,'F'=&gt;0Fx,00x);
+     RETURN (&gt;STRING1&lt;)(N1 | N2);
+  END;
+
+  UseHexLen := LENGTH(TRIM(UseHex));
+  InHex2 := Str2Data(UseHex[1..2]);
+  InHex4 := InHex2 + Str2Data(UseHex[3..4]);
+  InHex6 := InHex4 + Str2Data(UseHex[5..6]);
+  InHex8 := InHex6 + Str2Data(UseHex[7..8]);
+  InHex10 := InHex8 + Str2Data(UseHex[9..10]);;
+  InHex12 := InHex10 + Str2Data(UseHex[11..12]);
+  InHex14 := InHex12 + Str2Data(UseHex[13..14]);
+  InHex16 := InHex14 + Str2Data(UseHex[15..16]);
+  RETURN CASE(UseHexLen,
+          2 =&gt; (STRING)(&gt;BE1&lt;)InHex2,
+          4 =&gt; (STRING)(&gt;BE2&lt;)InHex4,
+          6 =&gt; (STRING)(&gt;BE3&lt;)InHex6,
+          8 =&gt; (STRING)(&gt;BE4&lt;)InHex8,
+          10 =&gt; (STRING)(&gt;BE5&lt;)InHex10,
+          12 =&gt; (STRING)(&gt;BE6&lt;)InHex12,
+          14 =&gt; (STRING)(&gt;BE7&lt;)InHex14,
+          16 =&gt; (STRING)(&gt;BE8&lt;)InHex16,
+          'ERROR');
+END;
+</programlisting>
+
+  <para>Essa HexStr2Decimal FUNCTION usa um parâmetro de STRING de comprimento
+  variável contendo o valor hexadecimal para avaliação. Ela começa redefinindo
+  os oito tamanhos possíveis de números inteiros BIG ENDIAN não assinados.
+  Essa redefinição é apenas para fins estéticos – para melhorar a legibilidade
+  do código subsequente.</para>
+
+  <para>Os próximos três atributos detectam se um número par ou ímpar de
+  caracteres hexadecimais foi especificado. Se um número ímpar for
+  especificado, então um caractere "0" será anexado ao valor especificado para
+  garantir que os valores hexadecimais sejam colocados nos nibbles
+  corretos.</para>
+
+  <para>A Str2Data FUNCTION usa um parâmetro da STRING de dois caracteres e
+  converte cada caractere para o valor hexadecimal apropriado para cada nibble
+  da STRING resultante de um caractere. O primeiro caractere define o primeiro
+  nibble, enquanto o segundo define o segundo nibble. Esses dois valores
+  passam pela operação OR juntos (usando o operador bitwise |), e o resultado
+  passa por uma transferência de tipo para uma cadeia de um caractere usando a
+  sintaxe abreviada (&gt;STRING1&lt;) para que o padrão de bits permaneça
+  inalterado. O resultado RETURN desta FUNCTION é uma STRING1 porque cada
+  parte sucessiva de dois caracteres do parâmetro de entrada da FUNCTION
+  HexStr2Decimal passará pela FUNCTION Str2Data e será concatenado com todos
+  os resultados anteriores.</para>
+
+  <para>O atributo UseHexLen determina o tamanho adequado do número inteiro
+  BIGENDIAN a ser usado na conversão de hexadecimal em decimal, enquanto os
+  atributos InHex2 até o InHex16 definem o valor hexadecimal final
+  acondicionado para avaliação. A função CASE usa esse UseHexLen para
+  determinar qual atributo InHex deve ser utilizado para o número de bytes do
+  valor hexadecimal especificado. Apenas os números pares de caracteres
+  hexadecimais são permitidos (o que significa que o acionamento da função
+  precisaria adicionar um zero à esquerda para quaisquer valores hexadecimais
+  ímpares para conversão) e o número máximo de caracteres permitido é
+  dezesseis (representando um valor hexadecimal acondicionado de oito bytes
+  para conversão).</para>
+
+  <para>Em todo os casos, o resultado do atributo InHex passa por uma
+  transferência de tipo para o número inteiro BIG ENDIAN. A conversão de tipo
+  padrão para STRING realiza a conversão do valor real de hexadecimal para
+  decimal.</para>
+
+  <para>Os seguintes acionamentos retornam os resultados indicados:</para>
+
+  <programlisting>OUTPUT(HexStr2Decimal('0101'));               // 257
+OUTPUT(HexStr2Decimal('FF'));                 // 255
+OUTPUT(HexStr2Decimal('FFFF'));               // 65535
+OUTPUT(HexStr2Decimal('FFFFFF'));             // 16777215
+OUTPUT(HexStr2Decimal('FFFFFFFF'));           // 4294967295
+OUTPUT(HexStr2Decimal('FFFFFFFFFF'));         // 1099511627775
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFF'));       // 281474976710655
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFFFF'));     // 72057594037927935
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFFFFFF'));   // 18446744073709551615
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFFFFFFFF')); // ERROR
+</programlisting>
+</sect1>

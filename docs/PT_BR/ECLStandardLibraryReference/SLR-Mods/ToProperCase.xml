@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ToProperCase">
+  <title>ToTitleCase</title>
+
+  <para><emphasis role="bold">STD.Str.ToTitleCase<indexterm>
+      <primary>STD.Str.ToTitleCase</primary>
+    </indexterm><indexterm>
+      <primary>Str.ToTitleCase</primary>
+    </indexterm><indexterm>
+      <primary>ToTitleCase</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.ToTitleCase<indexterm>
+      <primary>STD.Uni.ToTitleCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.ToTitleCase</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">STD.Uni.LocaleToTitleCase<indexterm>
+      <primary>STD.Uni.LocaleToTitleCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleToTitleCase</primary>
+    </indexterm><indexterm>
+      <primary>LocaleToTitleCase</primary>
+    </indexterm>(</emphasis> <emphasis> source, locale </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os dados cuja formatação de maiúsculas
+          e minúsculas será alterada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o código de idioma e
+          país a ser usado para determinar a ordem correta de classificação e
+          outras operações.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:<emphasis> </emphasis></entry>
+
+          <entry>ToTitleCase retorna um valor STRING ou UNICODE, conforme
+          apropriado.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>As funções <emphasis role="bold">ToTitleCase </emphasis> retornam a
+  string <emphasis>source</emphasis> com a primeira letra de cada palavra em
+  maiúscula e todas as demais letras em minúsculas.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.Str.ToTitleCase('ABCDE ABCDE ');  //A contains 'Abcde Abcde'
+B := STD.Str.ToTitleCase('john smith-jones');  //B contains 'John Smith-Jones'
+
+</programlisting>
+
+  <para/>
+</sect1>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FindWord">
+  <title>FindWord</title>
+
+  <para><emphasis role="bold">STD.Str.FindWord<indexterm>
+      <primary>STD.Str.FindWord</primary>
+    </indexterm><indexterm>
+      <primary>Str.FindWord</primary>
+    </indexterm><indexterm>
+      <primary>FindWord</primary>
+    </indexterm>(</emphasis> <emphasis>src, word, ignore_case</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">STD.Uni.FindWord<indexterm>
+      <primary>STD.Uni.FindWord</primary>
+    </indexterm><indexterm>
+      <primary>Uni.FindWord</primary>
+    </indexterm>(</emphasis> <emphasis>src, word, ignore_case</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>src</emphasis></entry>
+
+          <entry>Uma string que contém os dados a serem pesquisados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>word </emphasis></entry>
+
+          <entry>Uma string que contém a substring a ser pesquisada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>ignore_case </emphasis></entry>
+
+          <entry>Um valor booleano verdadeiro ou falso que indica se
+          maiúsculas e minúsculas devem ser diferenciadas.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>FindWord retorna um valor BOOLEAN</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">FindWord </emphasis> retorna TRUE se a
+  string <emphasis>word</emphasis> é encontrada na string
+  <emphasis>src</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+src := 'Now is the winter of our discontent';
+word := 'now';
+
+STD.Str.FindWord(src,word);      // false - case not ignored
+STD.Str.FindWord(src,word,TRUE); // true  - with case ignored word is found</programlisting>
+
+  <para/>
+</sect1>

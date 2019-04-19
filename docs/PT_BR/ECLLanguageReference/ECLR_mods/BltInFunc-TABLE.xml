@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TABLE">
+  <title>TABLE</title>
+
+  <para><emphasis role="bold">TABLE<indexterm>
+      <primary>TABLE</primary>
+    </indexterm><indexterm>
+      <primary>TABLE Function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, format</emphasis><emphasis
+  role="bold"> [</emphasis><emphasis>, expression</emphasis><emphasis
+  role="bold"> [</emphasis>,<emphasis role="bold">FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm> | MANY<indexterm>
+      <primary>MANY</primary>
+    </indexterm>] [</emphasis>, <emphasis role="bold">UNSORTED<indexterm>
+      <primary>UNSORTED</primary>
+    </indexterm>]] [</emphasis>, <emphasis role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] [, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ] [, MERGE<indexterm>
+      <primary>MERGE</primary>
+    </indexterm> ] [, SKEW<indexterm>
+      <primary>SKEW</primary>
+    </indexterm>(</emphasis><emphasis>limit</emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, target</emphasis><emphasis role="bold">]
+  ) [, THRESHOLD<indexterm>
+      <primary>THRESHOLD</primary>
+    </indexterm>(</emphasis><emphasis>size</emphasis><emphasis role="bold">) ]
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="86.85pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto para processamento. Pode ser o nome de um
+            dataset ou de um recordset derivado de algumas condições de
+            filtro, ou qualquer expressão que resulte em um recordset
+            derivado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>format</emphasis></entry>
+
+            <entry>Uma definição de estrutura RECORD <indexterm>
+                <primary>RECORD structure</primary>
+              </indexterm> que define o tipo, o nome e a fonte de dados para
+            cada campo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Opcional. Especifica uma cláusula "agrupar por". É possível
+            ter mais de uma expressão separada por vírgula para criar uma
+            cláusula de "agrupar por" lógica e única. Se a expressão for um
+            campo do recordset, então há um registro de grupo único na tabela
+            resultante para cada valor distinto da expressão. Do contrário, a
+            expressão é uma expressão de tipo LEFT/RIGHT no modo de
+            DEDUP.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Opcional. Indica que a expressão resultará em menos de
+            10.000 grupos distintos. Isso permite otimização para gerar um
+            resultado significativamente mais rápido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MANY</emphasis></entry>
+
+            <entry>Opcional. Indica que a expressão resultará em vários grupos
+            distintos.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSORTED</emphasis></entry>
+
+            <entry>Opcional. Especifica que você não se importa com a ordem
+            dos grupos. Isso permite otimização para gerar um resultado
+            significativamente mais rápido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a atividade faz parte de uma
+            operação de leitura de índice, a qual permite que o otimizador
+            gere o código ideal para a operação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MERGE</emphasis></entry>
+
+            <entry>Opcional. Especifica que os resultados são agregados em
+            cada nó e depois os intermediários agregados são novamente
+            agregados globalmente. Esse é um método seguro de agregação que se
+            destaca especialmente bem se os dados adjacentes tiverem sido
+            distorcidos. Se souber que o número de grupos será baixo, então
+            FEW será ainda mais rápido, evitando a classificação local dos
+            dados subjacentes.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SKEW</emphasis></entry>
+
+            <entry>Indica que você sabe que os dados não serão espalhados
+            uniformemente entre os nós (serão distorcidos e você opta por
+            substituir o padrão especificando seu próprio valor limite para
+            permitir que a tarefa continue, apesar da distorção).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>limit</emphasis></entry>
+
+            <entry>Um valor entre zero (0) e um (1,0 = 100%) indicando a
+            porcentagem máxima de distorção a ser permitida antes que a tarefa
+            falhe (a distorção padrão é 1,0 / &lt;número de escravos no
+            cluster&gt;).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>target</emphasis></entry>
+
+            <entry>Opcional. Um valor entre zero (0) e um (1,0 = 100%)
+            indicando a porcentagem máxima de distorção desejada a ser
+            permitida (a distorção padrão é 1,0 / &lt;número de escravos no
+            cluster&gt;).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+
+            <entry>Indica o tamanho mínimo de uma única parte antes que o
+            limite SKEW seja aplicado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>size</emphasis></entry>
+
+            <entry>Um valor inteiro indicando o número mínimo de bytes para
+            uma parte única. O padrão é 1.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TABLE retorna uma nova tabela.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">TABLE </emphasis> é similar a OUTPUT,
+  mas, em vez de gravar registros em um arquivo, ela salva esses registros em
+  uma nova tabela (um novo dataset no supercomputador) na memória. A nova
+  tabela é temporária e existe apenas enquanto a consulta específica que a
+  invocou está em execução.</para>
+
+  <para>A nova tabela herda a lógica implícita que o <emphasis>recordset
+  </emphasis> possui (se aplicável), exceto caso a
+  <emphasis>expressão</emphasis> opcional seja usada para realizar a
+  agregação. Isso significa que o registro primário está disponível ao
+  processar registros de tabela e que você também pode acessar o conjunto de
+  registros secundários de cada registro de tabela. Há duas formas de usar
+  TABLE: a forma de "fatia vertical" e a de "relatório de referência
+  cruzada".</para>
+
+  <para>Para a forma de "fatia vertical", não há um parâmetro de
+  <emphasis>expressão</emphasis> especificado. O número de registros no
+  <emphasis>recordset</emphasis> de entrada é igual ao número de registros
+  produzidos.</para>
+
+  <para>Para a forma de "relatório de referência cruzada", normalmente há um
+  parâmetro de <emphasis>expressão</emphasis> e, o mais importante, a
+  estrutura <emphasis>RECORD do formato</emphasis> de resultado <indexterm>
+      <primary>RECORD structure</primary>
+    </indexterm> contém, no mínimo, um campo que usa uma função agregada com a
+  palavra-chave GROUP como seu primeiro parâmetro. O número de registros
+  produzidos é igual ao número de valores distintos da
+  <emphasis>expressão</emphasis>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>//"vertical slice" form:
+MyFormat := RECORD
+STRING25 Lname := Person.per_last_name;
+Person.per_first_name;
+STRING5 NewField := '';
+END;
+PersonTable := TABLE(Person,MyFormat);
+// adding a new field is one use of this form of TABLE
+
+
+//"CrossTab Report" form:
+rec := RECORD
+Person.per_st;
+StCnt := COUNT(GROUP);
+END
+Mytable := TABLE(Person,rec,per_st,FEW);
+// group persons by state in Mytable to produce a
+        crosstab
+</programlisting>
+
+  <para>Ver também: <link linkend="OUTPUT">OUTPUT</link>, <link
+  linkend="GROUP">GROUP</link>, <link linkend="DATASET">DATASET</link>, <link
+  linkend="RECORD_Structure">Estrutura RECORD</link></para>
+</sect1>

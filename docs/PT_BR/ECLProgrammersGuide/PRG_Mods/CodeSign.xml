@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="code-signing">
+  <title><emphasis role="strong">Assinatura do Código, Linguagens Embarcadas e Segurança</emphasis></title>
+
+  <para>As versões da plataforma HPCC Systems<superscript>®</superscript>  anteriores a 6.0.0 sempre concederam algum controle em relação às operações permitidas no código ECL. Isso era feito (entre outros motivos) como forma de garantir que operações como PIPE ou C++ incorporado não possam ser usadas para contornar os controles de acesso sobre os arquivos através da leitura direta pelo sistema operacional.</para>
+
+  <para>A versão 6.0.0 (e outras mais recentes) possui dois recursos que oferecem mais flexibilidade sobre o controle dessas operações.</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>Agora é possível limitar quais funções SERVICE são acionadas no tempo de compilação usando o atributo FOLD. Normalmente, por motivos de segurança,  FOLD só deve ser acionado em módulos assinados.</para>
+    </listitem>
+
+    <listitem>
+      <para>É possível configurar os direitos de acesso (que controlam a capacidade de usar PIPE, C++ incorporado, ou o uso restrito de um SERVICE) como dependentes do código que está sendo assinado. Isso significa que podemos fornecer um código assinado na Biblioteca padrão ECL que faça uso desses recursos sem a necessidade de abri-lo a ninguém para acionar qualquer coisa.</para>
+    </listitem>
+  </itemizedlist>
+
+  <sect2 id="ECLCCOptions">
+    <title>Parâmetros de Configuração ECLCC</title>
+
+    <para>No Gerenciador de Configurações, o componente ECLCC Server possui uma guia denominada 
+    <emphasis role="bold">Options</emphasis>. Esta guia permite inserir pares de valores de nome nas permissões para executar vários tipos de código ou plugins incorporados.</para>
+
+    <para><emphasis role="bold">Name</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="75.80pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>--allow</emphasis></entry>
+
+              <entry>Permite a opção especificada</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>--deny</emphasis></entry>
+
+              <entry>Nega a opção especificada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>--allowsigned</emphasis></entry>
+
+              <entry>Permite a opção especificada se o código foi assinado e se há a presença de uma chave.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Observação: Partes da Biblioteca padrão podem não funcionar se o uso do C++ e das definições externas for negado. De um modo geral  <emphasis
+    role="bold">allowsigned</emphasis>  é preferencial.</para>
+
+    <para><emphasis role="bold">Cluster</emphasis></para>
+
+    <para>Especifica o cluster para o qual esta regra se aplica. Se o cluster for deixado em branco, a restrição se aplicará a todos os clusters no ambiente.</para>
+
+    <para><emphasis role="bold">Value</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="75.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>cpp</emphasis></entry>
+
+            <entry>Permitir/Negar C++ e outras linguagens incorporadas. Para linguagens diferentes de C++ e Cassandra, também deve ser instalado um plugin opcional.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pipe:</emphasis></entry>
+
+            <entry>Permitir/Negar o uso de aplicações externas através do comando PIPE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>extern:</emphasis></entry>
+
+            <entry>Permitir/Negar uma função externa (SERVICE)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>datafile:</emphasis></entry>
+
+            <entry>(Válido apenas para --allowedsigned). Isso especifica que o acesso aos dados é permitido apenas se o código tiver sido assinado e se houver uma chave. </entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para></para>
+  </sect2>
+
+  <sect2 id="codesigning">
+    <title>Assinatura do Código</title>
+
+    <para>A assinatura do código é semelhante a forma com que os e-mails podem ser assinados, de forma a provar sua identidade e que o código não foi adulterado, usando o pacote padrão gpg.</para>
+
+    <para>Um arquivo assinado conterá uma assinatura anexa com um hash criptográfico do conteúdo do arquivo e a chave privada do assinante. Qualquer pessoa que tiver a chave pública do assinante poderá verificar a validade da assinatura e que o conteúdo não foi alterado.</para>
+
+    <para>Assinamos as definições SERVICE fornecidas pelos plugins padrão ECL e incluímos a chave pública na instalação da plataforma HPCC. O código que tenta usar as definições de serviço assinadas continuará funcionando como antes, porém o código que tentar acionar funções arbitrárias da biblioteca usando definições SERVICE fornecidas pelo usuário resultará em erros de compilação se o código não estiver assinado e se a configuração externa (veja acima) estiver definida para “deny” ou “allowsigned”.</para>
+
+    <para>Administradores do sistema podem instalar chaves adicionais na máquina do ECLCC Server. Por isso, se você quiser usar suas próprias definições de serviço, elas podem ser assinadas usando uma chave que tenha sido instalada da seguinte forma:</para>
+
+    <para><programlisting>gpg --output &lt;signed-ecl&gt; --default-key &lt;key-id&gt; --clearsign &lt;ecl-file-to-sign&gt;</programlisting></para>
+
+    <para>Com este método, uma pessoa de confiança pode assinar o código para indicar que seu uso é aceitável por pessoas não confiáveis sem permitir que essas pessoas executem um código arbitrário.</para>
+  </sect2>
+</sect1>

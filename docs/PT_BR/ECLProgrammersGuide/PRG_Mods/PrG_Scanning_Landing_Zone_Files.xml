@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Scanning_Landing_Zone_Files">
+  <title><emphasis>Escaneando Zona de Entrada de Arquivos (Landing Zones)</emphasis></title>
+
+  <para>Imagine a seguinte situação: você acabou de receber um arquivo de dados que foi colocado em sua zona de entrada de arquivos. Antes de realizar o spray (distribuição aos nós) para o cluster Thor e começar a trabalhar com ele, você quer conferi-lo rapidamente para checar com precisão que tipo de dados ele contém e se o formato desses dados corresponde ao formato recebido do fornecedor.  Há várias maneiras de se fazer isso, incluindo mapear uma unidade para sua zona de entrada de arquivo e usar um editor de texto/hex para abrir o arquivo e acessar o conteúdo. </para>
+
+  <para>Este tópico vai lhe ensinar como fazer isso através do ECL IDE usando o ECL. Aqui está o código (contido no atributo MODULE DeclareData):</para>
+
+  <programlisting>EXPORT MAC_ScanFile(IP, infile, scansize) := MACRO ds := DATASET(Std.File.ExternalLogicalFileName(IP, infile),{DATA1 S},THOR )[1..scansize]; OUTPUT(TABLE(ds,{hex := ds.s,txt := (STRING1)ds.s}),ALL); Rec := RECORD UNSIGNED2 C; DATA S {MAXLENGTH(8*1024)}; END; Rec XF1(ds L,INTEGER C) := TRANSFORM SELF.C := C; SELF.S := L.s; END; ds2 := PROJECT(ds,XF1(LEFT,COUNTER)); Rec XF2(Rec L,Rec R) := TRANSFORM SELF.S := L.S[1 .. R.C-1] + R.S[1]; SELF := L; END; Rolled := ROLLUP(ds2,TRUE,XF2(LEFT,RIGHT)); OUTPUT(TRANSFER(Rolled[1].S,STRING)); ENDMACRO;
+</programlisting>
+
+  <para>Ele está gravado como uma MACRO porque você poderia ter múltiplas zonas de entrada de arquivos e você, com com certeza, vai querer conferir diferentes arquivos por vez. Consequentemente, a MACRO que gera o código de processo padrão para verificar o arquivo é exatamente o que precisamos aqui.</para>
+
+  <para>Essa MACRO usa três parâmetros: o IP da zona de entrada de arquivo que contém o arquivo, o caminho totalmente qualificado para o arquivo na zona de entrada de arquivos e o número de bytes para leitura (máximo de 8K)</para>
+
+  <para>O DATASET inicial usa a função Std.File.ExternalLogicalFileName para nomear o arquivo. É necessário definir a estrutura RECORD único um único campo DATA para garantir que ambos os campos binário e de texto possam ser lidos corretamente. Especificar o DATASET como um arquivo THOR (independentemente do tipo real do arquivo) simplifica a leitura como um arquivo de registro de comprimento fixo. Os colchetes no final da declaração DATASET limitam automaticamente o número de registros de 1 byte lidos para o primeiro número  <emphasis>scansize</emphasis>  de bytes no arquivo. </para>
+
+  <para>A primeira ação OUTPUT permite que você veja os dados hexadecimais brutos do arquivo.</para>
+
+  <para>A função TABLE dobra os dados de entrada, produzindo um DATA1 que exibe o valor de Hex e uma STRING1 que realiza conversões de tipo de cada byte para uma STRING1 a ser exibida. É preciso ver o valor Hex bruto porque a maioria dos campos binários não conterá caracteres que possam ser exibidos em texto (e os que são exibidos em texto podem confundir você quanto ao conteúdo real do campo). Os caracteres binários que não podem ser exibidos aparecem como uma caixa quadrada na exibição da coluna de texto.</para>
+
+  <para>A seguir, vamos elaborar uma visão mais textualmente legível dos dados. Para fazer isso, vamos começar com a estrutura RECORD, que define um campo de contador de bytes (UNSIGNED2 C) e um campo de comprimento variável (DATA S {MAXLENGTH(8*1024)} para incluir a representação dos dados como uma linha horizontal única de texto.</para>
+
+  <para>XF1 TRANSFORM e a função PROJECT associada transferem os dados do formato de entrada para o formato necessário para implementar esses dados em uma única cadeia de texto.  É preciso adicionar o campo de contador de bytes para garantir que os espaços em branco não sejam removidos acidentalmente da exibição final.</para>
+
+  <para>XF2 TRANSFORM e a função ROLLUP associada realizam o acréscimo real dos dados. O parâmetro da condição TRUE garante que apenas um registro seja gerado contendo todos os bytes de entrada inseridos em um único registro.</para>
+
+  <para>A última ação OUTPUT usa a função TRANSFER em vez da conversão de tipo para garantir que todos os caracteres de texto nos dados originais sejam representados de forma precisa.</para>
+
+  <para>Essa MACRO é acionada da seguinte forma:</para>
+
+  <programlisting>IMPORT ProgrammersGuide AS PG; PG.DeclareData.MAC_ScanFile( '10.173.9.4','C:\\training\\import\\BOCA.XML', 200);
+</programlisting>
+
+  <para>Ao ver o resultado, a guia QueryBuilder Result_1 exibe uma coluna de valores hexadecimais e o caractere de texto (se aplicável) ao lado deles na segunda coluna. Essa visão de byte por byte dos dados foi projetada para permitir que você veja os valores hexadecimais brutos de cada byte ao longo de sua representação em texto. Essa é a visão primária a ser usada ao analisar o conteúdo dos arquivos que contêm dados binários.</para>
+
+  <para>A aba QueryBuilder Result_2 exibe um só registro com um único campo. É possível clicar no campo para destacá-lo, clicar com o botão direito e selecionar “Copy" no menu pop-up, e depois colar o texto em qualquer editor de texto para visualizá-lo.  Os campos binários serão exibidos como blocos quadrados ou caracteres "lixo", dependendo de seu valor de Hex. Depois de colados em um editor de texto, é possível procurar facilmente por padrões de dados que indiquem o início para campos ou registros e verificar se as informações de layout de dados entregues pelo fornecedor de dados são precisas ou não.</para>
+</sect1>

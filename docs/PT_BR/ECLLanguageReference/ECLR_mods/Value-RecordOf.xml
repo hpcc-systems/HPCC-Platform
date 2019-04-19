@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RECORDOF">
+  <title>RECORDOF</title>
+
+  <para><emphasis role="bold">RECORDOF<indexterm>
+      <primary>RECORDOF</primary>
+    </indexterm><indexterm>
+      <primary>RECORDOF datatype</primary>
+    </indexterm>(</emphasis><emphasis> recordset , </emphasis><emphasis
+  role="bold">[LOOKUP])</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>recordset</emphasis></entry>
+
+          <entry>O conjunto de registros de dados cuja estrutura RECORD será
+          usada. Pode ser um DATASET ou qualquer conjunto de registros
+          derivado. Se o atributo LOOKUP for usado, isso pode ser um nome de
+          arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LOOKUP</emphasis></entry>
+
+          <entry>Opcional. Especifica que o layout de arquivo deve ser
+          consultado no tempo de compilação. Consulte <emphasis>Resolução de
+          layout de arquivo no tempo </emphasis> de compilação <emphasis>no
+          Guia do Programador</emphasis> para obter mais detalhes.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A declaração <emphasis role="bold">RECORDOF </emphasis> especifica o
+  uso de apenas o layout de registro do <emphasis>recordset </emphasis> em
+  situações onde seria necessário herdar a estrutura dos campos, mas não seus
+  valores padrão, como declarações de DATASET secundário dentro de estruturas
+  RECORD.</para>
+
+  <para>Essa função permite que você mantenha as estruturas RECORD locais no
+  DATASET, cujo layout são definidos por essas estruturas, e ainda consiga
+  referenciar a estrutura (sem valores padrão) onde necessário.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>Layout_People_Slim := RECORD
+   STD_People.RecID;
+   STD_People.ID;
+   STD_People.FirstName;
+   STD_People.LastName;
+   STD_People.MiddleName;
+   STD_People.NameSuffix;
+   STD_People.FileDate;
+   STD_People.BureauCode;
+   STD_People.Gender;
+   STD_People.BirthDate;
+   STD_People.StreetAddress;
+   UNSIGNED8 CSZ_ID;
+END;
+       
+STD_Accounts := TABLE(UID_Accounts,Layout_STD_AcctsFile);
+      
+CombinedRec := RECORD,MAXLENGTH(100000)
+  Layout_People_Slim;
+  UNSIGNED1 ChildCount;
+  DATASET(RECORDOF(STD_Accounts)) ChildAccts;
+END;
+        //This ChildAccts definition is equivalent to:
+        // DATASET(Layout_STD_AcctsFile) ChildAccts;
+        //but doesn't require Layout_STD_AcctsFile to be visible (SHARED or
+        // EXPORT)</programlisting>
+
+  <para>Ver também: <link linkend="DATASET">DATASET</link>, <link
+  linkend="RECORD_Structure">Estrutura RECORD</link></para>
+</sect1>

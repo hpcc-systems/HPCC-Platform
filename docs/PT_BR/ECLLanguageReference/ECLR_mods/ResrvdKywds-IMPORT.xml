@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IMPORT">
+  <title>IMPORT</title>
+
+  <para><emphasis role="bold">IMPORT<indexterm>
+      <primary>IMPORT</primary>
+    </indexterm> </emphasis><emphasis>module-selector-list</emphasis>;</para>
+
+  <para><emphasis role="bold">IMPORT </emphasis><emphasis>folder
+  </emphasis><emphasis role="bold"> AS<indexterm>
+      <primary>AS</primary>
+    </indexterm> </emphasis><emphasis>alias </emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <para><emphasis role="bold">IMPORT </emphasis><emphasis>symbol-list
+  </emphasis><emphasis role="bold"> FROM<indexterm>
+      <primary>FROM</primary>
+    </indexterm> </emphasis><emphasis>folder </emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <para><emphasis
+  role="bold">IMPORT</emphasis><emphasis>language</emphasis>;</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="110"/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>module-selector-list</emphasis></entry>
+
+          <entry>Uma lista delimitada por vírgula de pastas ou nomes de
+          arquivos no repositório. O símbolo monetário ($) torna disponível
+          todas as definições na pasta atual. O acento circunflexo (^) pode
+          ser usado como abreviação do contêiner da pasta atual. O uso do
+          acento circunflexo no especificador de módulo (como por exemplo,
+          myModule.^) seleciona o contêiner dessa pasta. O acento circunflexo
+          principal especifica a raíz lógica da árvore do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>folder</emphasis></entry>
+
+          <entry>Nome da pasta ou do arquivo no repositório.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">AS<indexterm>
+              <primary>IMPORT AS</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Define um nome de <emphasis>alias </emphasis> local para a
+          <emphasis>pasta</emphasis>, sendo normalmente usado para criar nomes
+          locais mais curtos para facilitar a digitação.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>alias</emphasis></entry>
+
+          <entry>O nome abreviado a ser usado em vez do nome da <emphasis>
+          pasta</emphasis> .</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>symbol-list</emphasis></entry>
+
+          <entry>Uma lista, delimitada por vírgula, de definições da
+          <emphasis>pasta</emphasis> a ser disponibilizada sem qualificação.
+          Um único asterisco (*) deve ser usado para disponibilizar todas as
+          definições da <emphasis>pasta</emphasis> sem a necessidade de
+          qualificação.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">FROM<indexterm>
+              <primary>IMPORT FROM</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Especifica o nome da <emphasis>pasta</emphasis> na qual a
+          <emphasis>symbol-list</emphasis> reside.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>language</emphasis></entry>
+
+          <entry>Especifica o nome de uma linguagem de programação externa
+          cujo código você deseja incorporar à sua ECL. O módulo de suporte à
+          linguagem – para a linguagem que deseja incorporar – precisa estar
+          instalado em seu diretório de plugins. Isso faz com que a
+          <emphasis>linguagem</emphasis> possa ser usada pela estrutura EMBED
+          e/ou pela função IMPORT.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A palavra-chave <emphasis role="bold">IMPORT</emphasis> disponibiliza
+  as definições EXPORT (e SHARED da mesma <emphasis>pasta</emphasis>) para
+  serem usadas no código ECL atual.</para>
+
+  <para/>
+
+  <para>Exemplos:</para>
+
+  <programlisting>IMPORT $;                      //makes all definitions from the same folder available
+
+IMPORT $, Std;                 //makes the standard library functions available, also
+
+IMPORT MyModule;               //makes available the definitions from MyModule folder
+
+IMPORT $.^.MyOtherModule       //makes available the definitions from MyOtherModule folder,
+                               //located in the same container as the current folder
+
+IMPORT $.^.^.SomeOtherModule   //makes available the definitions from SomeOtherModule folder,
+                               //which is located in the grandparent folder of current folder
+
+IMPORT SomeFolder.SomeFile;    //make the specific file available
+
+IMPORT SomeReallyLongFolderName AS SN;  //alias the long name as "SN"
+
+IMPORT ^ as root;              //allows access to non-modules defined 
+                               //in the root of the repository
+
+IMPORT Def1,Def2 FROM Fred;    //makes Def1 and Def2 from Fred folder available, unqualified
+
+IMPORT * FROM Fred;            //makes everything from Fred available, unqualified
+
+IMPORT Dev.Me.Project1;        //makes the Dev/Me/Project1 folder available 
+
+IMPORT Python;                 //makes Python language code embeddable
+</programlisting>
+
+  <para>Ver também: <link linkend="EXPORT">EXPORT</link>, <link
+  linkend="SHARED">SHARED</link>, <link linkend="EMBED_Structure">Estrutura
+  EMBED</link>, <link linkend="IMPORT_function">Função IMPORT</link></para>
+</sect1>

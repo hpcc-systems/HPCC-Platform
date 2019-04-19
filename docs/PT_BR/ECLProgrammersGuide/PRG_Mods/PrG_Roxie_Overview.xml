@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Roxie_Overview" role="nobrk">
+  <title><emphasis role="bold">Visão Geral do Roxie</emphasis></title>
+
+  <para>Vamos começar com algumas definições:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="87.45pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">Thor</emphasis></entry>
+
+            <entry>Um cluster do HPCC projetado especificamente para manipular
+            processos com uma quantidade enorme de dados (ETL). Essa é uma
+            ferramenta de preparo de dados de back-office e não é voltada para
+            consultas em nível de produção para o usuário final. Consulte os
+            manuais de operação do HPCC para obter a documentação
+            completa.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">Roxie</emphasis></entry>
+
+            <entry>Um cluster do HPCC projetado especificamente para atender
+            consultas padrão, proporcionando uma taxa de produção de mais de
+            mil respostas por segundo (a taxa de respostas real para qualquer
+            consulta depende, obviamente, de sua complexidade). Essa é uma
+            ferramenta de nível de produção projetada para aplicações de
+            missão crítica. Consulte os manuais de operação do HPCC para obter
+            a documentação completa.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">hThor</emphasis></entry>
+
+            <entry>Uma plataforma de P&amp;D projetada para desenvolvimento
+            interativo e iterativo e testes de consultas Roxie. Esse não é um
+            cluster separado, mas uma implementação "acumulada" do ECL Agent e
+            Thor. Consulte os manuais de operação do HPCC para obter a
+            documentação completa.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <sect2 id="Thor">
+    <title>Thor</title>
+
+    <para>Os clusters Thor são usados para realizar todo o trabalho de preparo
+    "pesado" do dados para processar os dados brutos em formatos padrão. Após
+    a conclusão deste processo, os usuários finais podem consultar esses dados
+    padronizados para recolher informações reais. No entanto, usuários finais
+    normalmente querem esses resultados "imediatamente ou para ontem" – e
+    normalmente mais de um usuário final quer o resultado ao mesmo tempo. A
+    plataforma Thor só funciona em uma consulta por vez, o que a torna seu uso
+    impraticável por usuários finais, e é essa a razão pela qual a plataforma
+    Roxie foi criada.</para>
+  </sect2>
+
+  <sect2 id="Roxie">
+    <title>Roxie</title>
+
+    <para>Clusters Roxie podem processar milhares de usuários finais
+    simultaneamente e proporcionar a todos eles a percepção dos resultados que
+    desejam obter "imediatamente ou para ontem". Eles fazem isso ao permitir
+    que os usuários finais executem apenas consultas padrão e pré-compiladas
+    que tenham sido desenvolvidas especificamente para serem usadas pelo
+    usuário final no cluster Roxie. Normalmente, essas consultas usam índices
+    e, dessa forma, oferecem um desempenho extremamente rápido. No entanto,
+    usar o cluster Roxie como uma ferramenta de desenvolvimento é
+    impraticável, já que todas as suas consultas precisam ser pré-compiladas e
+    os dados usados precisam ter sido previamente implementados. Dessa forma,
+    o processo de testes e desenvolvimento de consultas é realizado usando o
+    Doxie.</para>
+  </sect2>
+
+  <sect2 id="Doxie">
+    <title>hThor</title>
+
+    <para>hThor não é um cluster independente, mas uma instância do ECL Agent
+    (que opera em um servidor único) que emula a operação de um cluster Roxie.
+    Assim como as consultas Thor, as consultas hThor são compiladas a cada
+    execução. As consultas hThor acessam os dados diretamente a partir dos
+    discos de um cluster Thor sem interferir nas operações do Thor. Isso faz
+    dele uma ferramenta adequada para criar consultas voltadas para uso em um
+    cluster Roxie.</para>
+  </sect2>
+
+  <sect2 id="How_to_Structure_Roxie_Queries">
+    <title>Como Desenvolver Consultas Roxie</title>
+
+    <para>Para começar a criar consultas para uso em clusters Roxie, o
+    primeiro passo é decidir que dados consultar e como indexar esses dados
+    para que usuários finais vejam seu resultado em tempo mínimo. O processo
+    de colocação dos dados em sua forma mais útil e de indexação é realizado
+    em um cluster Thor. Os artigos anteriores sobre indexação e superarquivos
+    deverão orientá-lo sobre como fazer isso.</para>
+
+    <para>Depois que os dados estão prontos para uso, é possível criar sua
+    consulta. As consultas para clusters Roxie sempre contêm no mínimo uma
+    ação – normalmente, uma OUTPUT simples para retornar o conjunto de
+    resultados.</para>
+
+    <para>As consultas Roxie usam um SOAP (Protocolo Simples de Acesso a
+    Objetos) ou interface JSON (Notação de Objeto em JavaScrip) para
+    "especificar" valores de dados. Os valores especificados pela interface se
+    resumem nas definições com o serviço de fluxo de trabalho STORED. Seu
+    código ECL pode então usar essas definições para determinar os valores
+    especificados e retornar o resultado adequado para o usuário final.</para>
+
+    <para>Aqui está um exemplo simples de uma estrutura de consulta Roxie
+    (contida no arquivo RoxieOverview1.ECL):</para>
+
+    <programlisting>IMPORT $;
+
+EXPORT RoxieOverview1 := FUNCTION
+
+STRING30 lname_value := '' : STORED('LastName');
+STRING30 fname_value := '' : STORED('FirstName');
+
+IDX  := $.DeclareData.IDX__Person_LastName_FirstName;
+Base := $.DeclareData.Person.FilePlus;
+
+Fetched := IF(fname_value = '', 
+              FETCH(Base, IDX(LastName=lname_value), RIGHT.RecPos),
+              FETCH(Base, IDX(LastName=lname_value, FirstName=fname_value), RIGHT.RecPos));
+
+RETURN OUTPUT(CHOOSEN(Fetched,2000));
+
+END;</programlisting>
+
+    <para>Observe que FUNCTION não recebe parâmetros. Em vez disso, as
+    definições lname_value e fname_value possuem o serviço de fluxo de
+    trabalho STORED que fornece nomes de armazenamento. A interface SOAP/JSON
+    usa os nomes de armazenamento para especificar os valores, uma vez que a
+    opção STORED abre um espaço de armazenamento na tarefa onde a interface
+    pode colocar os valores a serem especificados para o serviço.</para>
+
+    <para>Esse código usa a função FETCH por ser o exemplo mais simples do uso
+    de um INDEX no ECL. Geralmente, as consultas Roxie usam operações JOIN de
+    meia chave com chaves de conteúdo (o artigo <emphasis>Consultas Complexas
+    Roxie</emphasis> aborda esse problema). Note que o OUTPUT possui CHOOSEN,
+    um exemplo simples de como se certificar de que é preciso limitar a
+    quantidade máxima de dados que pode ser retornada da consulta para uma
+    quantidade "cabível" – não faz tanto sentido ter uma consulta Roxie que
+    possa acabar retornando 10 bilhões de registros para o PC de um usuário
+    final (qualquer um que realmente precise de tantos dados deve usar o Thor,
+    e não o Roxie).</para>
+  </sect2>
+
+  <sect2 id="Testing_Queries_with_Doxie">
+    <title>Testando Consultas</title>
+
+    <para>Depois de gravar sua consulta, você, naturalmente, vai querer
+    testá-la. É aí que o hThor entra em cena. hThor é um sistema de testes
+    interativos que pode ser usado antes da implementação de consultas no
+    Roxie. A maneira mais fácil de descrever o processo é acompanhá-lo usando
+    essa consulta simples como exemplo.</para>
+
+    <para>1. Abra o arquivo Samples\ProgrammersGuide\RoxieOverview1.ECL</para>
+
+    <para>Agora você está pronto para publicar essa consulta no hThor.</para>
+
+    <para>2. Selecione "hthor" na lista suspensa Target</para>
+
+    <para>3. Clique na seta para baixo no botão Submit e selecione
+    Compile</para>
+
+    <para>4. Abra a workunit compilada e selecione a aba ECL Watch</para>
+
+    <para>5. Pressione o botão Publish</para>
+
+    <para>Abra a página do ECL Watch (não use o ECL IDE – abra a página no
+    Internet Explorer). Abra a página do ECL Watch (não use o ECL IDE – abra a
+    página no Internet Explorer). O IP do ECL Watch é o mesmo IP usado para
+    configurar o ECL IDE para acessar o ambiente no qual está trabalhando. A
+    porta é 8010.</para>
+
+    <para>6. Clique em <emphasis role="underline">System Servers (Servidores
+    do Sistema)</emphasis> na seção Topology</para>
+
+    <para>7. Localize a seção <emphasis role="bold">ESP
+    Servers</emphasis></para>
+
+    <para>8. Clique no link do nome do ESP Server para exibir sua lista de
+    serviços e suas portas</para>
+
+    <para>9. Note o número de porta ao lado do tipo de serviço <emphasis
+    role="bold">wsecl</emphasis> (normalmente é 8002, mas pode ser definida
+    para um valor diferente)</para>
+
+    <para>Após ter descoberto o IP e a porta para seu serviço wsecl (o serviço
+    que faz com que o hthor "finja" ser um Roxie), é possível acessar e
+    executar a consulta.</para>
+
+    <para>10. Uma maneira fácil de fazer isso é clicar com o botão direito no
+    link wsecl e abri-lo em uma nova aba ou janela (ou você pode editar a
+    barra de endereços do Internet Explorer para indicar o IP:port
+    correto.</para>
+
+    <para>11. Pressione a tecla Enter</para>
+
+    <para>Uma caixa de login será exibida – seu ID e senha são os mesmos
+    usados no ECL IDE. Depois de fazer login, será exibida uma lista do grupo
+    de consultas em forma de árvore à esquerda.</para>
+
+    <para>12. Clique na ramificação <emphasis
+    role="underline">hthor</emphasis></para>
+
+    <para>Uma lista de todas as consultas publicadas no hthor é exibida na
+    árvore. Neste caso, há apenas uma.</para>
+
+    <para>13. Clique na ramificação <emphasis
+    role="underline">RoxieOverview1.1</emphasis></para>
+
+    <para>É exibida uma página da Web contendo dois controles de entrada e um
+    botão <emphasis role="bold">Submit</emphasis> .</para>
+
+    <para>14. Digite um sobrenome do grupo de sobrenomes usado pelo código no
+    GenData.ECL para gerar os arquivos de dados para este <emphasis>Guia do
+    Programador (Progammers’s Guide)</emphasis></para>
+
+    <para>COOLING é um bom exemplo para ser usado. Observe que por se tratar
+    de um exemplo extremamente simples, será necessário digitá-lo em
+    totalmente caixa alta ALL CAPS; caso contrário, FETCH irá falhar ao tentar
+    localizar os registros correspondentes (isso se deve apenas à simplicidade
+    desse código ECL e não a alguma falta inerente no sistema).</para>
+
+    <para>15. Pressione o botão <emphasis role="bold">Submit</emphasis>
+    .</para>
+
+    <para>As consultas são pré-compiladas ao serem publicadas, de forma que
+    após um segundo, você deve ver um resultado em XML contendo 1.000
+    registros.</para>
+  </sect2>
+
+  <sect2 id="Deploying_Queries_to_Roxie">
+    <title>Implantando Consultas para o Roxie</title>
+
+    <para>Depois de ter realizado testes suficientes no hThor , para garantir
+    que a consulta funciona como o esperado, o único passo necessário é
+    implementá-la e testá-la também no Roxie (apenas para estar totalmente
+    seguro de que tudo está funcionando da maneira correta). Após ter
+    realizado o teste no Roxie, é possível informar aos usuários que a
+    consulta está disponível para uso.</para>
+
+    <para>O processo de implementação do Roxie é feito da mesma maneira que
+    foi realizado para o hThor, exceto pelo fato de que é necessário definir
+    uma lista de Destino para o Roxie.</para>
+
+    <para>Depois de implementar a consulta, é possível testá-la da mesma
+    maneira que foi testada no hThor, porém o novo serviço aparecerá em seu
+    Roxie na lista de árvore.</para>
+  </sect2>
+</sect1>

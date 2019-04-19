@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_DECLARE">
+  <title>#DECLARE</title>
+
+  <para><emphasis role="bold">#DECLARE<indexterm>
+      <primary>#DECLARE</primary>
+    </indexterm>( </emphasis><emphasis>symbol </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="76.70pt"/>
+
+        <colspec colwidth="276.10pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>symbol</emphasis></entry>
+
+            <entry>O nome da variável do modelo.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A declaração <emphasis role="bold">#DECLARE </emphasis> declara um
+  <emphasis>symbol</emphasis> definido pelo usuário para uso no modelo. O
+  <emphasis>symbol</emphasis> é simplesmente criado e não é inicializado para
+  nenhum valor específico. Portanto, pode ser destinado a conter dados string
+  ou numéricos.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  #DECLARE(MySymbol); //declare a symbol named "MySymbol"
+  #SET(MySymbol,1); //initialize MySymbol to 1
+</programlisting>
+
+  <para>Ver também: <link linkend="_SET">#SET</link>, <link
+  linkend="_APPEND">#APPEND</link></para>
+</sect1>

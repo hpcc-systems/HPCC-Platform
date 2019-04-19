@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LogicalFileList">
+  <title>LogicalFileList</title>
+
+  <para><emphasis role="bold">STD.File.LogicalFileList<indexterm>
+      <primary>STD.File.LogicalFileList</primary>
+    </indexterm><indexterm>
+      <primary>File.LogicalFileList</primary>
+    </indexterm><indexterm>
+      <primary>LogicalFileList</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis role="bold">[
+  </emphasis> <emphasis>pattern </emphasis> <emphasis role="bold">] [,
+  </emphasis> <emphasis>includenormal</emphasis> <emphasis role="bold"> ] [,
+  </emphasis> <emphasis>includesuper</emphasis> <emphasis role="bold">
+  ]</emphasis> <emphasis role="bold"> [, </emphasis> <emphasis>unknownszero
+  </emphasis> <emphasis role="bold">] </emphasis><emphasis role="bold"> [,
+  </emphasis> <emphasis>foreigndali </emphasis> <emphasis role="bold">]
+  )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>pattern</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém a máscara
+          dos arquivos a serem listados. Se omitida, o padrão é "*" (todos os
+          arquivos).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>includenormal</emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano que indica se arquivos
+          "normais" devem ser incluídos. Se omitido, o padrão é TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>includesuper</emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano que indica se superarquivos
+          devem ser incluídos. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>unknownszero</emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano que indica que tamanhos de
+          arquivos desconhecidos devem ser definidos como zero (0) em vez de
+          um negativo (-1). Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>foreigndali</emphasis></entry>
+
+          <entry>Opcional. O endereço IP do Dali estrangeiro usado para
+          resolver o arquivo. Um valor em branco significa que o arquivo é
+          resolvido localmente. Se omitido, o padrão é em branco.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis/></entry>
+
+          <entry>LogicalFileList retorna um dataset no seguinte
+          formato:</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><programlisting format="linespecific">EXPORT FsLogicalFileNameRecord := RECORD
+  STRING name;
+END;
+
+EXPORT FsLogicalFileInfoRecord := RECORD(FsLogicalFileNameRecord)
+  BOOLEAN superfile;
+  UNSIGNED8 size;
+  UNSIGNED8 rowcount;
+  STRING19 modified;
+  STRING owner;
+  STRING cluster;
+END;
+</programlisting>A função <emphasis role="bold">LogicalFileList </emphasis>
+  retorna uma lista dos arquivos lógicos nos arquivos do ambiente como um
+  dataset no formato listado acima.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.File.LogicalFileList());
+  //returns all normal files
+    
+OUTPUT(STD.File.LogicalFileList(,FALSE,TRUE));
+  //returns all SuperFiles</programlisting>
+</sect1>

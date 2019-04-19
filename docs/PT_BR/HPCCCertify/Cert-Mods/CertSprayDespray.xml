@@ -1,0 +1,318 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="Cert_Spray_Despray">
+  <title>Spray e Despray de Dados</title>
+
+  <para>Esta seção verifica a capacidade dos sistemas de executar Spray e Despray de dados.</para>
+
+  <para>O spraying acessa um arquivo e distribui partes desse arquivo entre os nós. O Despray é o oposto, o sistema combina dados de vários nós em um único arquivo.</para>
+
+  <sect1 id="Move_data_to_Landing_Zone">
+    <title>Confirmar Despray</title>
+
+    <para>A próxima etapa para verificar se o sistema está funcionando adequadamente é testar os recursos de Despray. No Despray, o sistema combina dados de vários clusters em um único arquivo, que pode ser movido para a Zona de Entrada de Arquivos da Refinaria de Dados.</para>
+
+    <sect2 id="DesprayFromECLWatch">
+      <title>Despray no ECL Watch</title>
+
+      <!--The following cromulent information can also be found in the DataTutorial.***-->
+
+      <para>O despray é o oposto do spraying e é uma boa forma de certificar o funcionamento correto dessa parte.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Para executar o despray, acesse o ECL Watch em uma janela de navegador.</para>
+
+          <para>Abra o ECL Watch em seu navegador usando a seguinte URL:</para>
+
+          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp 
+          </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP do ESP Server e pppp é a porta. A porta padrão é 8010)</emphasis></para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="../../images/tip.jpg" /></entry>
+
+                    <entry><para><emphasis role="bold">OBSERVAÇÃO</emphasis>: Para copiar um URL para a área de transferência, clique no  <inlinegraphic
+                    fileref="../../images/CS-1421.jpg" /> ícone na linha de ícones no topo da página do ECL Watch.
+                    </para><para>Será aberta uma janela com a URL completa. Selecione toda a URL para copiá-la para a área de transferência e colá-la em outro lugar. </para><para> </para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Clique no ícone  <emphasis role="bold">Files</emphasis>  e selecione Logical Files.</para>
+
+          <para><figure>
+              <title>Navegar pelos arquivos</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/CSimg14.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Marque a caixa ao lado de  <emphasis
+          role="bold">certification::full_test_distributed_index</emphasis>  e pressione o botão  <emphasis role="bold">Despray</emphasis> . <graphic fileref="../../images/CSimg15.jpg" /></para>
+
+          <para>A caixa de diálogo  <emphasis role="bold">Despray de arquivo</emphasis>  é exibida.</para>
+        </listitem>
+
+        <listitem>
+          <para>Insira informações sobre o  <emphasis role="bold">Target (destino)</emphasis>
+          .</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold"> Destino</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Drop Zone</emphasis></entry>
+
+                    <entry>Use a lista suspensa para selecionar a máquina na qual será realizado o despray. Os itens na lista são zonas de entrada de arquivos definidos na configuração do sistema. O seu sistema pode ter apenas um.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">IP Address</emphasis></entry>
+
+                    <entry>Isso é pré-preenchido com base na máquina selecionada.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Path</emphasis></entry>
+
+                    <entry>O caminho completo do arquivo do destino.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Split Prefix</emphasis></entry>
+
+                    <entry>Prefixo</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Logical Name</emphasis></entry>
+
+                    <entry>O arquivo lógico para o spray (preenchido automaticamente e não pode ser alterado)</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target Name</emphasis></entry>
+
+                    <entry>O nome do arquivo de destino. Isso é preenchido automaticamente com a última parte do nome do arquivo lógico, mas pode ser alterado.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Marque essa caixa para substituir um arquivo com mesmo nome, se existir.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Use Single Connection</emphasis></entry>
+
+                    <entry>Marque essa caixa para usar uma única conexão de rede única o despray do arquivo.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão  <emphasis role="bold">Despray</emphasis>
+          .</para>
+
+          <para>Uma nova aba DFU Workunit é aberta para cada workunit. É possível ver o andamento de cada operação de despray na aba. Se um job falhar, as informações relacionadas à causa da falha também são exibidas.</para>
+        </listitem>
+      </orderedlist>
+
+      <sect3 id="LandingZone_Expected_Results">
+        <title>RESULTADOS ESPERADOS:</title>
+
+        <para>Após a conclusão da operação de despray, você terá um único arquivo. Esse arquivo pode ser recuperado da zona de entrada de arquivos. Isso certificará que a operação de despray está funcionando corretamente.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1 id="CertifySpray">
+    <title>Certificar (Confirmar) Spray</title>
+
+    <para>Será executado o spray do arquivo da Zona de Entrada de Arquivos para a Refinaria de Dados, o que certificará que o processo de transferência funciona corretamente.</para>
+
+    <!--The following is a comment***
+
+-->
+
+    <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
+      <title>Spray de um Arquivo de Dados para o seu Cluster Thor</title>
+
+      <para>Para usar um arquivo de dados em nosso cluster HPCC, precisamos antes executar um spray desse arquivo para um cluster Thor. O <emphasis>spray</emphasis> ou
+      <emphasis>importação</emphasis> , é a transferência de um arquivo de dados de um local para um cluster Thor. O termo spray foi adotado devido à natureza da transferência dos arquivos – o arquivo é particionado entre todos os nós em um cluster.</para>
+
+      <para>Para este exemplo, executaremos o spray do arquivo full_test_distributed que acabamos de colocar na zona de entrada de arquivos.</para>
+
+      <para>Executaremos o spray do arquivo para o nosso cluster Thor, atribuindo a ele o nome lógico de  <emphasis
+      role="bold">certification::full_test_distributed</emphasis>. O Utilitário de arquivo distribuído mantém uma lista de arquivos lógicos e seus locais de arquivos físicos correspondentes.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Clique no ícone  <emphasis role="bold">Files</emphasis> , e, em seguida, no botão Landing Zone (Zona de Entrada de Arquivos) na barra de navegação.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique na seta ao lado da zona de entrada de arquivos para ampliar a lista.</para>
+
+            <para>Os arquivos na zona de entrada de arquivos são exibidos.</para>
+          </listitem>
+
+          <listitem>
+            <para>Marque as caixas de seleção dos arquivos para os quais deseja executar o spray (<emphasis>full_test_distributed</emphasis>) e clique no link 
+            <emphasis role="bold">Fixed</emphasis> .</para>
+
+            <para>A caixa de diálogo  <emphasis role="bold">Fixed Spray</emphasis>  é mostrada.</para>
+
+            <para><graphic fileref="../../images/CSimg15a.jpg" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha os detalhes necessários:</para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="122.40pt" />
+
+                  <colspec colwidth="333.00pt" />
+
+                  <tbody>
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Destino</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Group</emphasis></entry>
+
+                      <entry>Selecione o nome do cluster para o qual você deseja fazer o spray. Só é possível selecionar um cluster no seu ambiente.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Name Prefix</emphasis></entry>
+
+                      <entry>O prefixo do arquivo lógico. Neste caso, 
+                      <emphasis role="bold">certification</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Target Name</emphasis></entry>
+
+                      <entry>O nome de arquivo lógico a ser criado. Ele é preenchido automaticamente com o nome do arquivo fonte na zona de entrada de arquivos, mas pode ser alterado.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Record Length</emphasis></entry>
+
+                      <entry>O tamanho de cada registro. Neste caso:
+                      <emphasis role="bold">47</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Opções:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis
+                      role="bold">Overwrite</emphasis></entry>
+
+                      <entry>Marque esta caixa para substituir arquivos de mesmo nome.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis
+                      role="bold">Replicate</emphasis></entry>
+
+                      <entry><para>Marque essa caixa para criar cópias de backup de todas as partes do arquivo no diretório de backup (por convenção, na unidade secundária do nó seguindo no cluster).</para><para><emphasis role="bold">Essa opção só está disponível em sistemas onde a replicação tiver sido ativada.</emphasis></para></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                      <entry>Marque esta caixa para compactar os arquivos.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                      <entry>Marque esta caixa para impedir a divisão de partes do arquivo em várias partes de destino.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Fail if no source file</emphasis></entry>
+
+                      <entry>Marque essa caixa para permitir que o spray falhe se nenhum arquivo de origem for encontrado.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Spray
+            </emphasis>.</para>
+
+            <para>Uma aba  <emphasis role="bold">DFU Workunit</emphasis>  é exibida para cada job. Uma aba Tarefa DFU é exibida para cada tarefa. Se um job falhar, as informações relacionadas à causa da falha também são exibidas.</para>
+          </listitem>
+        </orderedlist></para>
+    </sect2>
+
+    <sect2 id="SPRAY_RESULTS" role="brk">
+      <title>RESULTADOS ESPERADOS</title>
+
+      <orderedlist>
+        <listitem>
+          <para>Clique no ícone  <emphasis role="bold">Files</emphasis>  e depois clique em Logical Files.</para>
+
+          <para><figure>
+              <title>Navegar pelos arquivos</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/CSimg14.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Clique no arquivo usado para spray e selecione  <emphasis
+          role="bold">Open</emphasis>  para ver os detalhes dos arquivos lógicos.</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione a aba Contents para ver o conteúdo.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+  </sect1>
+</chapter>

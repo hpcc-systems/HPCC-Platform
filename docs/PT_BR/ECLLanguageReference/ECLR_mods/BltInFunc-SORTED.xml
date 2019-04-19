@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SORTED">
+  <title>SORTED</title>
+
+  <para><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED function</primary>
+    </indexterm>(</emphasis><emphasis>recordset,value</emphasis><emphasis
+  role="bold">)</emphasis><emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED</primary>
+    </indexterm>(</emphasis><emphasis>index</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="77.90pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros classificados. Pode ser o nome de
+            um dataset ou de um recordset derivado de algumas condições de
+            filtro, ou qualquer expressão que resulte em um recordset
+            derivado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula das expressões ou dos
+            campos principais nos quais ele foi classificado, sendo leftmost o
+            critério de classificação mais significativo. Um sinal de
+            subtração a frente (-) indica uma classificação em ordem
+            decrescente daquele elemento. Você pode ter vários parâmetros de
+            valor para indicar os tipos na classificação. É possível usar as
+            palavras-chave RECORD para indicar uma classificação na ordem
+            crescente em todos os campos, e/ou usar a palavra-chave EXCEPT
+            para listar os campos que não serão classificados no
+            recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>index</emphasis></entry>
+
+            <entry>O nome de atributo de uma definição INDEX. Isso é
+            equivalente a adicionar a opção SORTED para a definição
+            INDEX.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SORTED é uma diretiva de compilador que não retorna
+            nada.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">SORTED </emphasis>indica para o
+  compilador ECL que o <emphasis>recordset</emphasis> já está classificado
+  segundo os <emphasis>valores</emphasis> especificados. É possível definir
+  qualquer quantidade de parâmetros de <emphasis>valor</emphasis> , sendo o
+  leftmost o critério de classificação mais importante. Um sinal negativo (-)
+  à esquerda de qualquer parâmetro de <emphasis>valor</emphasis> indica uma
+  ordem decrescente para o parâmetro. SORTED normalmente se refere a um
+  DATASET para indicar a ordem na qual os dados já estão classificados.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>InputRec := RECORD
+INTEGER4 Attr1;
+STRING20 Attr2;
+INTEGER8 Cid;
+END;
+MyFile := DATASET('filename',InputRec,FLAT)
+MySortedFile := SORTED(MyFile,MyFile.Cid)
+// Input file already sorted by Cid
+</programlisting>
+
+  <para>Ver também: <link linkend="SORT">SORT</link>, <link
+  linkend="DATASET">DATASET</link>, <link linkend="RANK">RANK</link>, <link
+  linkend="RANKED">RANKED</link>, <link
+  linkend="INDEX_record_structure">INDEX</link></para>
+</sect1>

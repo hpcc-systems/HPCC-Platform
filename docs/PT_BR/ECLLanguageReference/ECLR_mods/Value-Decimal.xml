@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DECIMAL">
+  <title>DECIMAL<indexterm>
+      <primary>DECIMAL</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">[UNSIGNED<indexterm>
+      <primary>UNSIGNED</primary>
+    </indexterm>] DECIMAL</emphasis><emphasis role="bold">n
+  </emphasis><emphasis role="bold">[ </emphasis><emphasis role="bold">_y
+  </emphasis><emphasis role="bold">]</emphasis><emphasis
+  role="bold"><indexterm>
+      <primary>DECIMAL value type</primary>
+    </indexterm></emphasis></para>
+
+  <para><emphasis role="bold">UDECIMAL</emphasis><emphasis
+  role="bold">n<indexterm>
+      <primary>UDECIMALn</primary>
+    </indexterm> </emphasis><emphasis role="bold">[ </emphasis><emphasis
+  role="bold">_y </emphasis><emphasis role="bold">]</emphasis></para>
+
+  <para>Um valor decimal <indexterm>
+      <primary>compactado</primary>
+    </indexterm> de <emphasis>n</emphasis> dígitos totais (até o máximo de
+  32). Se o valor _<emphasis>y</emphasis> estiver presente, o
+  <emphasis>y</emphasis> define o número das casas decimais no valor.</para>
+
+  <para>Se a palavra-chave UNSIGNED for omitida, o nibble mais à direita
+  deterá o sinal. As declarações decimais não sinalizadas podem ser
+  compactadas para usar a sintaxe opcional UDECIMAL <emphasis>n</emphasis> em
+  vez de UNSIGNEDDECIMAL <emphasis>n</emphasis>.</para>
+
+  <para>O uso exclusivo de valores DECIMAIS DECIMAL em computação invoca as
+  bibliotecas matemáticas Binary Coded Decimal (BCD) (matemática de base 10),
+  permitindo até 32 dígitos de precisão (que pode estar em qualquer um dos
+  lados do ponto decimal).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>DECIMAL5_2 MyDecimal := 123.45;
+        //five total digits with two decimal places
+      
+OutputFormat199 := RECORD
+   UNSIGNED DECIMAL9 Person.SSN;
+        //unsigned packed decimal<indexterm>
+      <primary>packed decimal</primary>
+    </indexterm> containing 9 digits,
+        // occupying 5 bytes in a flat file
+        
+UDECIMAL10 Person.phone;
+        //unsigned packed decimal<indexterm>
+      <primary>packed decimal</primary>
+    </indexterm> containing 10 digits,
+        // occupying 5 bytes in a flat file
+     
+END;</programlisting>
+</sect1>

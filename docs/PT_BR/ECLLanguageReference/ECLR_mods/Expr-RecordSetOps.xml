@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Record_SetRecord_Set_Operators">
+  <title>Record Set<indexterm>
+      <primary>Record Set</primary>
+    </indexterm> Operators<indexterm>
+      <primary>Operadores Record Set</primary>
+    </indexterm></title>
+
+  <para>Os seguintes operadores de conjunto de registros são suportados (todos
+  exigem que os arquivos foram criados usando estruturas RECORD
+  idênticas<indexterm>
+      <primary>Estrutura RECORD</primary>
+    </indexterm>):</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup align="left" cols="2">
+      <colspec colwidth="94.80pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry>+</entry>
+
+          <entry>Anexa todos os registros de ambos os arquivos,
+          independentemente da ordem</entry>
+        </row>
+
+        <row>
+          <entry>&amp;</entry>
+
+          <entry>Anexa todos os registros de ambos os arquivos, mantendo a
+          ordem do registro em cada nó</entry>
+        </row>
+
+        <row>
+          <entry>-</entry>
+
+          <entry>Subtrai registros de um arquivo</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyLayout := RECORD
+  UNSIGNED Num;
+  STRING Number;
+END;
+
+FirstRecSet := DATASET([{1, 'ONE'}, {2, 'Two'}, {3, 'Three'}, {4, 'Four'}], MyLayout);
+SecondRecSet := DATASET([{5, 'FIVE'}, {6, 'SIX'}, {7, 'SEVEN'}, {8, 'EIGHT'}], MyLayout);
+
+ExcludeThese := SecondRecSet(Num &gt; 6);
+
+WholeRecSet := FirstRecSet + SecondRecSet;
+ResultSet   := WholeRecSet-ExcludeThese;
+
+OUTPUT (WholeRecSet);
+OUTPUT(ResultSet);
+</programlisting>
+
+  <sect2 id="Prefix_Append_Operator">
+    <title>Prefixo anexo ao operador.</title>
+
+    <para><emphasis role="bold">(+)
+    (</emphasis><emphasis>ds_list</emphasis><emphasis role="bold">)
+    [</emphasis><emphasis>, options</emphasis><emphasis role="bold">]
+    )</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="92.05pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">(+)</emphasis></entry>
+
+            <entry>O prefixo anexo ao operador.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>ds_list</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula dos conjuntos de registro
+            a serem anexados (dois ou mais). Todos os conjuntos de registro
+            devem ter estruturas RECORD idênticas.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>Opcional. Uma lista delimitada por vírgula das opções da
+            lista abaixo.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O prefixo anexar operador <emphasis>(+)</emphasis> oferece mais
+    flexibilidade do que o prefixo simples inserir operadores descrito acima.
+    Ele permite que dicas e outras opções sejam associadas com o operador. Uma
+    sintaxe semelhante será adicionada em uma mudança futura para outros
+    prefixos inserir operadores.</para>
+
+    <para>As seguintes <emphasis>opções</emphasis> podem ser usadas:</para>
+
+    <para><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+    <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+    [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+    role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+    </emphasis><emphasis role="bold">) ]</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="92.05pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Exemplo:</para>
+
+    <programlisting>ds_1 := (+)(ds1, ds2, UNORDERED);
+  //equivalent to: ds := ds1 + ds2;        
+  
+ds_2 := (+)(ds1, ds2);
+  //equivalent to: ds := ds1 &amp; ds2;                
+
+ds_3 := (+)(ds1, ds2, ds3);
+  //multiple file appends are supported</programlisting>
+  </sect2>
+</sect1>

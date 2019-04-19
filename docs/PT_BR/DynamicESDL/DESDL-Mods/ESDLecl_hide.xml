@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_ecl_hide">
+  <title><emphasis role="bold">ecl_hide<indexterm>
+      <primary>ecl_hide</primary>
+    </indexterm></emphasis></title>
+
+  <para>O atributo <emphasis>ecl_hide</emphasis> oculta o campo do ECL (ou
+  seja, o campo é removido quando o código ECL é gerado). Este atributo é
+  usado em alguns casos especiais.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>ESPstruct Date
+ {
+    [leading_zero(4)] Year;
+    [leading_zero(2)] Month;
+    [leading_zero(2)] Day;
+ }; </programlisting>
+
+  <para>Neste caso, a estrutura Relative é definida recursivamente, e o ECL
+  não é compatível com tal estrutura. Por isso, usamos
+  <emphasis>ecl_hide</emphasis> para evitar uma definição recursiva no
+  ECL.</para>
+
+  <para>Às vezes, um campo é ocultado do ECL por outros motivos. Nestes casos,
+  o atributo <emphasis>ecl_hide</emphasis> não é necessário.</para>
+</sect1>

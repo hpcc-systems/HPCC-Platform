@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>ECL Scheduler</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Equipe de documentação</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>2012</pubdate>
+  </bookinfo>
+
+  <chapter id="ECLSched_comp">
+    <title>Componente do ECL</title>
+
+    <sect1 id="ECLSched_component" role="nobrk">
+      <title>Instalação e Configuração</title>
+
+      <para>O Agendador ECL é instalado juntamente com a plataforma do HPCC.
+      Ele é iniciado e interrompido usando hpcc-init, da mesma forma que todos
+      os outros componentes do HPCC.</para>
+    </sect1>
+
+    <sect1>
+      <title>Utilizando o ECL Scheduler</title>
+
+      <sect2>
+        <title>Declarações utilizadas na Linguagem ECL</title>
+
+        <para>As seguintes declarações da Linguagem ECL são utilizadas:</para>
+
+        <sect3>
+          <title>WHEN</title>
+
+          <para>O serviço <emphasis role="bold">WHEN </emphasis> executa a
+          ação sempre que o evento for acionado. A opção <emphasis
+          role="bold">COUNT </emphasis>, não obrigatória, especifica o número
+          de eventos para acionar as instâncias da ação.</para>
+        </sect3>
+
+        <sect3>
+          <title>NOTIFY</title>
+
+          <para>A ação <emphasis role="bold">NOTIFY </emphasis> aciona o
+          evento para que o serviço do fluxo de trabalho <emphasis
+          role="bold">WHEN </emphasis> possa dar andamento nas operações que
+          ele precisa executar.</para>
+        </sect3>
+
+        <sect3>
+          <title>EVENT</title>
+
+          <para>A função <emphasis role="bold">EVENT </emphasis> retorna um
+          evento acionado, que pode ser usado no serviço do fluxo de trabalho
+          <emphasis role="bold">WHEN </emphasis>ou na ação <emphasis
+          role="bold">NOTIFY</emphasis> . EVENT não é uma declaração, mas um
+          parâmetro para que o WHEN/NOTIFY descreva para que tipo de evento
+          ele é usado.</para>
+        </sect3>
+
+        <sect3>
+          <title>CRON</title>
+
+          <para>A função <emphasis role="bold">CRON </emphasis> determina um
+          evento de controladores de tempo a serem usados no serviço do fluxo
+          de trabalho <emphasis role="bold">WHEN </emphasis>. Essa função é um
+          sinônimo de <emphasis role="bold">EVENT('CRON', time)</emphasis>. O
+          termo CRON individual não é uma declaração, mas um parâmetro para
+          que o WHEN/NOTIFY descreva para que tipo de evento ele é
+          usado.</para>
+        </sect3>
+
+        <sect3>
+          <title>WAIT</title>
+
+          <para>A função <emphasis role="bold">WAIT </emphasis> é uma
+          constante de string com o EventName a ser aguardado. É muito usada
+          como o serviço de fluxo de trabalho <emphasis role="bold">WHEN
+          </emphasis> , mas pode ser usada no código de condição.</para>
+        </sect3>
+      </sect2>
+
+      <sect2>
+        <title>Monitorando Funções na Biblioteca Padrão (Standard
+        Library-STD.File)</title>
+
+        <sect3>
+          <title>MonitorFile</title>
+
+          <para>A função <emphasis role="bold">MonitorFile </emphasis>cria um
+          job do monitor de arquivos no DFU Server para um arquivo
+          físico.</para>
+        </sect3>
+
+        <sect3>
+          <title>MonitorLogicalFileName</title>
+
+          <para>A função <emphasis role="bold">MonitorLogicalFileName
+          </emphasis>cria um job do monitor de arquivos no DFU Server para um
+          arquivo lógico.</para>
+        </sect3>
+      </sect2>
+
+      <sect2>
+        <title>DFUPlus: Opções do Monitor</title>
+
+        <para><programlisting>     dfuplus action=monitor event=MyEvent</programlisting></para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term><emphasis role="bold">Observação</emphasis> :</term>
+
+              <listitem>
+                <para>O monitoramento de arquivos no DFUServer (usando a
+                Biblioteca padrão ou o DFUPlus) cria uma DFU Workunit .
+                Durante o monitoramento, o estado da Workunit é
+                <emphasis>monitorado </emphasis>e ao acionar o evento, ele é
+                definido para <emphasis>finalizado</emphasis>. ocê pode
+                abortar o "monitoramento” da DFU Workunit cancelar o
+                monitoramento do ECL Watch.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="ECLSched_Interface">
+      <title>Interface no ECL Watch</title>
+
+      <para>Para acessar a interface do ECL Scheduler no ECL Watch, clique no
+      <emphasis role="bold"> Event Scheduler </emphasis>link localizado no
+      submenu de navegação. A interface do Agendador será exibida juntamente
+      com as workunit agendadas, se houver.</para>
+
+      <para>A lista de workunits agendadas possui duas colunas importantes, a
+      <emphasis role="bold">EventName </emphasis> e a <emphasis
+      role="bold">EventText</emphasis>.</para>
+
+      <para><figure>
+          <title>Interface do ECL Scheduler</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ESCHed01.jpg"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>O EventName é criado no momento em que uma workunit é agendada. O
+      EventText é um subevento que o acompanha.</para>
+
+      <para>Um evento pode ser acionado ao inserir o EventName e o Event Text
+      nas caixas apropriadas, e clicando em seguida no botão <emphasis
+      role="bold">Push Event</emphasis> . Trata-se do mesmo procedimento
+      adotado ao acionar um evento usando NOTIFY.</para>
+
+      <sect2 id="ECLSched_WorkunitList">
+        <title>Lista de Workunit do Agendador</title>
+
+        <para>A busca por workunit agendadas pode ser realizada por cluster ou
+        EventName. Para filtrar por cluster ou por EventName, clique no botão
+        de ação <emphasis role="bold">Filter</emphasis> . O submenu Filter
+        será então exibido. Preencha os valores dos critérios de filtro
+        (EventName ou cluster) e pressione o botão <emphasis
+        role="bold">Apply</emphasis> . Ao especificar quaisquer opções de
+        filtro, o botão de ação Filter exibe <emphasis>Filter Set</emphasis>.
+        <figure>
+            <title>Workunit na interface do Agendador</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ESCHed02.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>É possível classificar as workunit clicando no título da
+        coluna.</para>
+
+        <para>Para ver os detalhes da tarefa, clique no link ID da workunit
+        (WUID).</para>
+
+        <para>Você pode modificar as workunit agendadas na página Workunit
+        Detail no ECL Watch. Selecione a página Workunit Details e pressione o
+        botão <emphasis role="bold">Reschedule</emphasis> para agendar
+        novamente uma workunit desagendada. Pressione o botão <emphasis
+        role="bold">Deschedule</emphasis> para impedir que a workunit agendada
+        seja executada. Também é possível acessar as opções Reshedule e
+        Deschedule no menu contextual ao clicar em uma workunit com o botão
+        direito</para>
+
+        <para>Se estiver usando a cláusula WHEN e contiver um número COUNT,
+        quando for reagendada, a workunit reiniciará o COUNT de onde parou e
+        continuará com o COUNT restante. Após o COUNT ter sido concluído pela
+        tarefa, a opção de reagendamento não estará mais disponível.</para>
+      </sect2>
+
+      <sect2 id="ECLSched_PushingEvents" role="brk">
+        <title>Enviando Eventos</title>
+
+        <para>O Gerenciador de evento permite acionar ou “enviar” um evento
+        para ajudar a gerenciar e testar suas workunit agendadas.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Pressione o botão de ação <emphasis role="bold">Push
+              Event</emphasis> .</para>
+
+              <para>A caixa de diálogo Push Event será aberta.</para>
+            </listitem>
+
+            <listitem>
+              <para>Digite o EventName (Nome do evento):</para>
+
+              <para>O EventName é uma constante de strings, com distinção
+              entre maiúsculas e minúsculas, que nomeia o evento para
+              interceptação.</para>
+
+              <para>Ver também: EVENT</para>
+            </listitem>
+
+            <listitem>
+              <para>Insira o EventText:</para>
+
+              <para>O EventText é uma constante de strings, com distinção
+              entre maiúsculas e minúsculas, que nomeia o tipo de evento
+              específico para interceptação. Ele pode conter * e ? como
+              elemento curinga.</para>
+
+              <para>Ver também: EVENT</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Apply</emphasis>
+              .</para>
+
+              <para>Isso é o equivalente a</para>
+
+              <para><programlisting>  NOTIFY(EVENT(EventName,EventText));</programlisting></para>
+
+              <para>Ver também: NOTIFY, EVENT</para>
+
+              <para><figure>
+                  <title>PushEvent</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ESCHed03.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CONST">
+  <title>CONST</title>
+
+  <para><emphasis role="bold">CONST<indexterm>
+      <primary>CONST</primary>
+    </indexterm><indexterm>
+      <primary>CONST Function</primary>
+    </indexterm></emphasis></para>
+
+  <para>A palavra-chave <emphasis role="bold"> CONST </emphasis> define que o valor especificado como parâmetro sempre será tratado como uma constante. Trata-se essencialmente de um indicador que permite ao compilador otimizar seu código de forma adequada ao declarar funções externas.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>STRING CatStrings(CONST STRING S1, CONST STRING S2) := S1 + S2;</programlisting>
+
+  <para>Ver também: <link linkend="Function_Attributes__Parameter_Passing">Funções (Especificação de parâmetro</link>),  <link linkend="SERVICE_Structure">Estrutura SERVICE</link></para>
+</sect1>

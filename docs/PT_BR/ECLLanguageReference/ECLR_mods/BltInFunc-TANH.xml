@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TANH">
+  <title>TANH</title>
+
+  <para><emphasis role="bold">TANH<indexterm>
+      <primary>TANH</primary>
+    </indexterm><indexterm>
+      <primary>TANH Function</primary>
+    </indexterm>(</emphasis><emphasis>angle</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.10pt"/>
+
+        <colspec colwidth="274.70pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>angle</emphasis></entry>
+
+            <entry>O valor radiano REAL para o qual será localizada a tangente
+            hiperbólica.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TANH retorna um valor REAL único.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">TANH </emphasis> retorna a tangente
+  hiperbólica do <emphasis>ângulo</emphasis>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
+
+Deg2Rad := 0.0174532925199; //number of radians in a degree
+  
+Angle45 := 45 * Deg2Rad;    //translate 45 degrees into radians
+  
+HyperbolicTangent45 := TANH(Angle45);
+                           //get hyperbolic tangent of the angle
+</programlisting>
+
+  <para>Ver também: <link linkend="ACOS">ACOS</link>, <link
+  linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link
+  linkend="SIN">SIN</link>, <link linkend="ATAN">ATAN</link>, <link
+  linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link
+  linkend="TAN">TAN</link></para>
+</sect1>

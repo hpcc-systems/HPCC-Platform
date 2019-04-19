@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REGROUP">
+  <title>REGROUP</title>
+
+  <para><emphasis role="bold">REGROUP<indexterm>
+      <primary>REGROUP</primary>
+    </indexterm><indexterm>
+      <primary>REGROUP function</primary>
+    </indexterm>(</emphasis><emphasis>recset,…,recset</emphasis> <emphasis
+  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="77.85pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry>recset</entry>
+
+            <entry>Um conjunto agrupado de registros. Cada recset deve ser
+            exatamente do mesmo tipo e deve conter o mesmo número de
+            grupos.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>REGROUP retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">REGROUP </emphasis> combina os
+  <emphasis>recsets </emphasis> agrupados em um único conjunto de registros
+  agrupado. Isto é obtido combinando cada grupo no primeiro
+  <emphasis>recset</emphasis> com os grupos na mesma posição ordinal dentro de
+  cada <emphasis>recset</emphasis> subsequente.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>inrec := {UNSIGNED6 did};
+
+outrec := RECORD(inrec)
+  STRING20 name;
+  UNSIGNED score;
+END;
+
+ds := DATASET([1,2,3,4,5,6], inrec);
+dsg := GROUP(ds, ROW);
+
+i1 := DATASET([{1, 'Kevin', 10},
+               {2, 'Richard', 5},
+               {5, 'Nigel', 2},
+               {0, '', 0}], outrec);
+i2 := DATASET([{1, 'Kevin Halligan', 12},
+               {2, 'Ricardo Chapman', 15},
+               {3, 'Jake Smith', 20},
+               {5, 'David Hicks', 100},
+               {0, '', 0}], outrec);
+i3 := DATASET([{1, 'Halligan', 8},
+               {2, 'Ricardo', 8},
+               {6, 'Pete', 4},
+               {6, 'Peter', 8},
+               {6, 'Petie', 1},
+               {0, '', 0}], outrec);
+
+j1 := JOIN(dsg, i1, LEFT.did = RIGHT.did, LEFT OUTER, MANY LOOKUP);
+j2 := JOIN(dsg, i2, LEFT.did = RIGHT.did, LEFT OUTER, MANY LOOKUP);
+j3 := JOIN(dsg, i3, LEFT.did = RIGHT.did, LEFT OUTER, MANY LOOKUP);
+  
+combined := REGROUP(j1, j2, j3);
+OUTPUT(j1);
+OUTPUT(j2);
+OUTPUT(j3);
+OUTPUT(combined);
+</programlisting>
+
+  <para>Ver também: <link linkend="GROUP">GROUP</link>, <link
+  linkend="COMBINE">COMBINE</link></para>
+</sect1>

@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Controlling_Roxie_Queries">
+  <title><emphasis role="bold">Controlando Consultas Roxie</emphasis></title>
+
+  <para>Há várias funções ECL projetadas especificamente para ajudar a
+  otimizar as consultas para execução no Roxie. Esses incluem PRELOAD,
+  ALLNODES, THISNODE, LOCAL, e NOLOCAL Entender como todas essas funções
+  operam conjuntamente pode fazer uma enorme diferença no desempenho de suas
+  consultas Roxie.</para>
+
+  <sect2 id="How_Graphs_Execute">
+    <title>Como os gráficos são executados</title>
+
+    <para>Gravar consultas eficientes para o Roxie ou o Thor pode exigir a
+    compreensão sobre como os diferentes clusters operam. Isso gera três
+    perguntas:</para>
+
+    <para>Como o gráfico é executado: em um nó único ou em todos os nós em
+    paralelo?</para>
+
+    <para>Como os datasets são acessados por cada nó executado o gráfico:
+    apenas as partes que são locais ao nó ou todas as partes em todos os
+    nós?</para>
+
+    <para>Uma operação é coordenada com a mesma operação em outros nós, ou
+    cada nó opera de modo independente?</para>
+
+    <para>As consultas "normalmente" são executadas em cada tipo de cluster da
+    seguinte maneira:</para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="77.40pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">Thor</emphasis></entry>
+
+              <entry>Os gráficos são executados em múltiplos nós filhos em
+              paralelo.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>As leituras de índice/disco são feitas localmente por
+              cada nó filho.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>Todos os demais acessos ao disco (FETCH, keyed JOIN,
+              etc.) são feitos de forma eficiente em todos os nós.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>A coordenação com operações em outros nós é controlada
+              pela presença ou ausência da opção LOCAL.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>Não há suporte para consultas secundárias (isso pode ser
+              mudado nas próximas versões).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">hthor</emphasis></entry>
+
+              <entry>Os gráficos executados em um nó único do ECL Agent
+              (servidor Roxie).</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>Todas as partes do dataset/índice são acessadas pelo
+              acesso direto ao disco rígido do nó com os dados – sem outra
+              interação com os outros nós.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>Consultas secundárias sempre são executadas no mesmo nó
+              como principais.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Roxie</emphasis></entry>
+
+              <entry>Os gráficos executados em um nó único (servidor
+              Roxie).</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>Todas as partes do dataset/índice são acessadas pelo
+              acesso direto ao disco rígido do nó com os dados – sem outra
+              interação com os outros nós.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>Consultas secundárias podem ser executadas em um único nó
+              do Agent em vez de um nó de servidor Roxie.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="ALLNODES_vs_THISNODE">
+    <title>ALLNODES vs. THISNODE</title>
+
+    <para>No Roxie, os gráficos são executados em um nó único do servidor
+    Roxie, a menos que a função ALLNODES() seja usada. ALLNODES() faz com que
+    a parte da consulta incluída seja executada em todos os nós de agente em
+    paralelo. Os resultados são calculados de forma independente em cada nó e
+    depois são agregados, sem ordenação dos registros. Ela é geralmente usada
+    para realizar um processamento remoto complexo que exige apenas o acesso
+    ao índice local, reduzindo significativamente o tráfego de rede entre os
+    nós.</para>
+
+    <para>Por padrão, tudo que estiver em ALLNODES() será executado em todos
+    os nós; às vezes, porém, a consulta ALLNODES() exige alguma entrada ou
+    argumentos que não devem ser executados em todos os nós – por exemplo, o
+    melhor palpite anterior sobre os resultados, ou algumas informações que
+    controlam a consulta paralela. A função THISNODE() pode ser usada nos
+    elementos acerca que serão ser avaliados pelo nó atual.</para>
+
+    <para>Um uso típico seria:</para>
+
+    <programlisting>bestSearchResults := ALLNODES(doRemoteSearch(THISNODE(searchWords),THISNODE(previousResults)))
+</programlisting>
+
+    <para>Onde 'searchWords' e 'previousResults' são calculados de forma
+    efetiva no nó atual e depois especificados como parâmetros para cada
+    instância do doRemoteSearch(), sendo executado em paralelo em todos os
+    nós.</para>
+  </sect2>
+
+  <sect2 id="LOCAL_vs_NOLOCAL">
+    <title>LOCAL vs. NOLOCAL</title>
+
+    <para>A opção LOCAL disponível em várias funções (como JOIN, SORT, etc.) e
+    as funções LOCAL() e NOLOCAL() controlam se os gráficos executados em um
+    determinado nó acessam todas as partes de um arquivo/índice ou apenas
+    aquelas associadas ao nó específico (LOCAL). Geralmente, dentro do
+    contexto ALLNODES(), busca-se apenas acessar as partes de índices locais a
+    partir de um único nó, uma vez que cada nó está processando suas partes
+    associadas de forma independente. Especificar que uma leitura de índice ou
+    uma JOIN com chave seja LOCAL significa que apenas a parte local é usada
+    em cada nó. A leitura local de um INDEX de parte única será avaliada no
+    primeiro nó agent (ou o nó farmer se não estiver em ALLNODES).</para>
+
+    <para>A avaliação local pode ser especificada de duas maneiras:</para>
+
+    <blockquote>
+      <para>1) Como uma operação de dataset:</para>
+
+      <programlisting>LOCAL(MyIndex)(myField = searchField)</programlisting>
+
+      <para>2) Como uma opção na operação:</para>
+
+      <programlisting>JOIN(... ,LOCAL) 
+FETCH(... ,LOCAL)</programlisting>
+    </blockquote>
+
+    <para>A função LOCAL(<emphasis>dataset</emphasis>) faz com que toda
+    operação no <emphasis>dataset</emphasis> acesse a chave/arquivo em nível
+    local. Por exemplo,</para>
+
+    <programlisting>LOCAL(JOIN(index1, index2,...))</programlisting>
+
+    <para>será lido como index1 e index2 localmente. A regra é aplicada
+    recursivamente até atingir um dos seguintes:</para>
+
+    <blockquote>
+      <para>Uso da função NOLOCAL()</para>
+
+      <para>Um atributo não local – a operação permanece fora do local, mas
+      itens secundários ainda são marcados como locais conforme
+      necessário</para>
+
+      <para>GLOBAL() ou THISNODE() ou operação de fluxo de trabalho – já que
+      será avaliada em um contexto diferente</para>
+
+      <para>Uso da função ALLNODES() (como em uma consulta secundária
+      aninhada)</para>
+    </blockquote>
+
+    <para>Observe que:</para>
+
+    <para>JOIN(x, LOCAL(index1)...) é tratado da mesma forma que JOIN(x,
+    index1, ..., local).</para>
+
+    <para>LOCAL também é suportado como uma opção em um INDEX, mas a função
+    LOCAL() é preferida uma vez que ela geralmente depende do contexto no qual
+    um índice é usado para saber se o acesso deve ou não ser local.</para>
+
+    <para>Um atributo não local é suportado sempre que um atributo LOCAL for
+    permitido – para substituir uma função LOCAL() delimitadora,</para>
+
+    <para>O uso de LOCAL para indicar que o acesso do dataset/chave é local
+    não entra em conflito com o seu uso para controlar a coordenação de uma
+    operação com outros nós, uma vez que não há operação que possivelmente
+    seja coordenada com outros nós e que também acesse índices ou
+    datasets.</para>
+  </sect2>
+
+  <sect2 id="NOROOT_Indexes">
+    <title>Índices NOROOT</title>
+
+    <para>A função ALLNODES() é especialmente útil se houver mais de um índice
+    co-distribuído em um determinado valor para que todas as informações
+    relacionadas a um determinado valor de campo de chave estejam associadas
+    ao mesmo nó. No entanto, os índices geralmente são classificados de forma
+    global. <emphasis role="bold">Adicionar a opção NOROOT em uma ação BUILD
+    ou declaração INDEX indica que o índice </emphasis><emphasis
+    role="bold">não é</emphasis><emphasis role="bold"> classificado em nível
+    global, e que não há índice de raiz para indicar qual parte do índice
+    conterá uma determinada entrada.</emphasis></para>
+  </sect2>
+</sect1>

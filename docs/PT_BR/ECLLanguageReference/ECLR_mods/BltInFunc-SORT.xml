@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SORT">
+  <title>SORT</title>
+
+  <para><emphasis role="bold">SORT<indexterm>
+      <primary>SORT</primary>
+    </indexterm><indexterm>
+      <primary>SORT function</primary>
+    </indexterm>(</emphasis><emphasis>recordset,value </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">JOINED<indexterm>
+      <primary>JOINED</primary>
+    </indexterm>(</emphasis><emphasis> joinedset </emphasis><emphasis
+  role="bold">)][</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">SKEW<indexterm>
+      <primary>SKEW</primary>
+    </indexterm>(</emphasis><emphasis> limit </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,target</emphasis><emphasis
+  role="bold">]</emphasis><emphasis> </emphasis><emphasis
+  role="bold">)]</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
+  </emphasis><emphasis role="bold">THRESHOLD<indexterm>
+      <primary>THRESHOLD</primary>
+    </indexterm>( </emphasis><emphasis>size</emphasis><emphasis role="bold">
+  )]</emphasis><emphasis role="bold">[</emphasis><emphasis>,
+  </emphasis><emphasis role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
+  role="bold">FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm>]</emphasis><emphasis role="bold"> [, STABLE<indexterm>
+      <primary>STABLE</primary>
+    </indexterm> [ ( </emphasis><emphasis>algorithm</emphasis><emphasis
+  role="bold"> )] | UNSTABLE<indexterm>
+      <primary>UNSTABLE</primary>
+    </indexterm> [ ( </emphasis><emphasis>algorithm</emphasis><emphasis
+  role="bold"> )] ] </emphasis> <emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="89.75pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento. Pode ser o nome
+            de um dataset ou de um record set derivado de algumas condições de
+            filtro, ou qualquer expressão que resulte em um record set
+            derivado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula das expressões ou dos
+            campos principais no recordset em que ocorrerá a classificação,
+            sendo leftmost o critério de classificação mais significativo. Um
+            sinal de subtração a frente (-) indica uma classificação em ordem
+            decrescente daquele elemento. Você pode ter vários parâmetros de
+            valor para indicar os tipos na classificação. É possível usar as
+            palavras-chave RECORD (ou WHOLE RECORD) para indicar uma
+            classificação na ordem crescente em todos os campos, e/ou usar a
+            palavra-chave EXCEPT para listar os campos que não serão
+            classificados no recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">JOINED</emphasis></entry>
+
+            <entry>Opcional. Indica que esta classificação usará os mesmos
+            pontos-base já usados por <emphasis>joinedset</emphasis> , para
+            que os recursos correspondentes entre o recordset e
+            <emphasis>joinedset</emphasis> fiquem nos mesmos nós do
+            supercomputador. Usado para otimizar as junções do supercomputador
+            onde <emphasis>joinedset</emphasis> é muito grande e recordset é
+            pequeno.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>joinedset</emphasis></entry>
+
+            <entry>Um conjunto de registros que já foi classificado
+            anteriormente pelos mesmos parâmetros de valor do
+            recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SKEW</emphasis></entry>
+
+            <entry>Opcional. Indica que você sabe que os dados não são
+            espalhados uniformemente entre os nós (são distorcidos) e você
+            opta por substituir o padrão especificando seu próprio valor
+            limite para permitir que a tarefa continue apesar da
+            distorção.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>limit</emphasis></entry>
+
+            <entry>Um valor entre zero (0) e um (1,0 = 100%) indicando a
+            porcentagem máxima da distorção a ser permitida antes que a tarefa
+            falhe (o padrão é 0,1 = 10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>target</emphasis></entry>
+
+            <entry>Opcional. Um valor entre zero (0) e um (1,0 = 100%)
+            indicando a porcentagem máxima desejada da distorção a ser
+            permitida (o padrão é 0,1 = 10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+
+            <entry>Opcional. Indica o tamanho mínimo de uma única parte do
+            recordset antes que o limite SKEW seja aplicado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>size</emphasis></entry>
+
+            <entry>Um valor inteiro indicando o número mínimo de bytes para
+            uma parte única.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior. Ocorrerá um
+            erro se o recordset tiver sido GROUPed.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Opcional. Especifica que poucos registros serão
+            classificados. Isso evita lançar SORT no disco se outra atividade
+            intensiva de recursos estiver sendo executada
+            simultaneamente.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica uma classificação estável – as
+            duplicações são exibidas na mesma ordem da entrada. Este é o
+            padrão se nenhuma classificação STABLE ou UNSTABLE for
+            especificada. É ignorado caso não seja suportado pela plataforma
+            de destino.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>algorithm</emphasis></entry>
+
+            <entry>Opcional. Uma constante da string que especifica o
+            algoritmo de classificação a ser usado (consulte a lista de
+            valores válidos abaixo). Se omitida, o algoritmo padrão depende da
+            plataforma que será o alvo da consulta.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica uma classificação instável – as
+            duplicações podem ser exibidas em qualquer ordem. É ignorado caso
+            não seja suportado pela plataforma de destino.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SORT retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">SORT </emphasis> ordena o
+  <emphasis>recordset</emphasis> de acordo com os <emphasis>valores</emphasis>
+  especificados e (se LOCAL não for especificado) divide o resultado de forma
+  que todos os registros com mesmos <emphasis>valores</emphasis> estejam no
+  mesmo nó. SORT é geralmente usada para gerar conjuntos de registro operados
+  pelas funções DEDUP, GROUP, e <indexterm>
+      <primary>ROLLUP</primary>
+    </indexterm>, para que essas funções possam operar de forma ideal A
+  classificação do resultado final é, obviamente, outro método comum de
+  uso.</para>
+
+  <sect2 id="Sorting_Algorithms">
+    <title>Algoritmos de classificação</title>
+
+    <para>Existem três algoritmos de classificação disponíveis: <indexterm>
+        <primary>quicksort</primary>
+      </indexterm> quicksort<indexterm>
+        <primary>, insertionsort</primary>
+      </indexterm>insertionsort<indexterm>
+        <primary>, e</primary>
+      </indexterm>heapsort<indexterm>
+        <primary>heapsort</primary>
+      </indexterm>. Os três não estão disponíveis em todas as plataformas. A
+    especificação de um algoritmo inválido para a plataforma visada gerará um
+    aviso, e o algoritmo padrão dessa plataforma será implementado.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="84.55pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">Thor<indexterm>
+                  <primary>Thor</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Suporta quicksort estável e instável – se necessário, a
+              classificação será lançada no disco. A classificação paralela
+              ocorre automaticamente em clusters com nós de várias CPUs ou
+              núcleo de várias CPUs.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry/>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">hthor<indexterm>
+                  <primary>hthor</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Suporta quicksort estável e instável, insertionsort
+              estável e instável, e heapsort estável – a classificação será
+              lançada no disco se necessário. Heapsort estável será padrão se
+              ambos STABLE e UNSTABLE forem omitidos ou se STABLE estiver
+              presente sem um parâmetro de algoritmo.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>Quicksort instável será padrão se UNSTABLE estiver
+              presente sem um parâmetro de algoritmo.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry/>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Roxie<indexterm>
+                  <primary>Roxie</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Suporta quicksort instável, insertionsort estável, e
+              heapsort estável – a classificação não é lançada no
+              disco.</entry>
+            </row>
+
+            <row>
+              <entry/>
+
+              <entry>Heapsort estável será padrão se ambos STABLE e UNSTABLE
+              forem omitidos ou se STABLE estiver presente sem um parâmetro de
+              algoritmo. Quando há mais de 1024 linhas, insertionsort
+              implementa blocking e heapmerging.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="Quick_Sort">
+    <title>Classificação rápida</title>
+
+    <para>Uma classificação rápida não faz nada até receber a última linha de
+    sua entrada, não produzindo nenhum resultado até a classificação ser
+    concluída, de forma que o tempo necessário para realizar a classificação
+    não pode se sobrepor ao tempo para processar a entrada nem para produzir
+    seu resultado. Em circunstâncias normais, esse tipo de classificação leva
+    o menor tempo possível da CPU. Há casos excepcionais e raros onde ela pode
+    ser realizada de forma inadequada (o famoso "problema de mediana de três"
+    é um exemplo), mas é improvável que você cruze com um desses no
+    caminho.</para>
+
+    <para>Em um cluster Thor onde cada nó possui múltiplas CPUs ou núcleos de
+    CPU, é possível dividir o problema de classificação rápida e executar
+    seções do trabalho em paralelo. Isso acontece automaticamente se o
+    hardware oferecer suporte para o recurso. Fazer isso não melhora a
+    quantidade de tempo real de CPU usado (na verdade, em um ponto de vista
+    fracionado, ele até aumenta devido à sobrecarga de divisão da tarefa), mas
+    o tempo geral necessário para realizar a operação de classificação é
+    significativamente reduzido. Em um cluster com duas CPUs/nós de núcleo,
+    deve levar apenas metade do tempo, cerca de um quarto do tempo em um
+    cluster com nós de processador de quatro núcleos e assim por
+    diante.</para>
+  </sect2>
+
+  <sect2 id="Insertion_Sort">
+    <title>Classificação por Inserção</title>
+
+    <para>Uma classificação de inserção faz todo esse trabalho enquanto recebe
+    sua entrada. Observe que o algoritmo usado realiza uma pesquisa binária
+    para inserção (diferentemente de uma classificação de inserção clássica).
+    Em circunstâncias normais, essa classificação deve gerar o pior tempo de
+    CPU. Em casos nos quais a fonte de entrada seja lenta, mas não vinculada à
+    CPU (por exemplo, uma leitura de dados remota e lenta ou entrada de um
+    SOAPCALL lento), o tempo necessário para realizar a classificação é
+    completamente sobreposto à entrada.</para>
+  </sect2>
+
+  <sect2 id="Heap_Sort">
+    <title>Classificação em Pilha</title>
+
+    <para>Uma classificação heap realiza cerca de metade de seu trabalho ao
+    receber a entrada e a outra metade ao gerar o resultado. Em circunstâncias
+    normais, espera-se que leve mais tempo de CPU do que uma classificação
+    rápida, mas menos do que uma classificação de inserção. Dessa forma, em
+    consultas nas quais a fonte de entrada é lenta, mas não vinculada à CPU,
+    metade do tempo necessário para realizar a classificação é sobreposto à
+    entrada. Da mesma maneira, em consultas nas quais o processamento do
+    resultado é lento, mas não vinculado à CPU, a outra metade do tempo
+    necessário para realizar a classificação é sobreposta ao resultado. Além
+    disso, se o processamento de classificação terminar sem consumir toda a
+    sua entrada, então parte do seu trabalho pode ser totalmente evitada
+    (cerca de metade, no caso de limite no qual não há consumo do resultado),
+    economizando tempo de CPU e tempo total.</para>
+
+    <para>Em alguns casos, como quando uma SORT é rapidamente seguida por um
+    CHOOSEN, o compilador poderá detectar que apenas uma parte do resultado de
+    classificação será necessária e substituí-la por uma implementação mais
+    eficiente. Isso não será aplicável no caso geral.</para>
+  </sect2>
+
+  <sect2 id="Stable_vs_Unstable">
+    <title>Estável vs. Instável</title>
+
+    <para>Uma classificação estável é necessária quando a entrada possa conter
+    itens em duplicidade (isso é, registros que possuem os mesmos valores para
+    todos os campos de classificação) e será necessário que os itens em
+    duplicidade apareçam no resultado na mesma ordem que aparecem na entrada
+    Quando a entrada não contém itens em duplicidade, ou quando você não se
+    importa em qual ordem os itens em duplicidade aparecem no resultado, uma
+    classificação instável será suficiente.</para>
+
+    <para>Normalmente, uma classificação instável será um pouco mais rápida do
+    que a versão estável do mesmo algoritmo. No entanto, em casos nos quais o
+    algoritmo de classificação ideal só está disponível em uma versão estável,
+    ele pode, muitas vezes, ser melhor do que a versão instável de um
+    algoritmo diferente.</para>
+  </sect2>
+
+  <sect2 id="Performance_Considerations">
+    <title>Considerações sobre desempenho</title>
+
+    <para>A discussão a seguir se aplica principalmente às classificações
+    locais, já que o Thor é a única plataforma que realiza classificações
+    globais e não proporciona uma escolha de algoritmos.</para>
+
+    <sect3 id="CPU_time_vs_Total_time">
+      <title>Tempo de CPU vs. tempo total</title>
+
+      <para>Em algumas situações, uma consulta pode levar o menor tempo de CPU
+      usando uma classificação rápida, mas pode levar mais tempo total porque
+      o tempo de classificação não pode ser sobreposto ao tempo exigido por
+      uma tarefa com alto consumo de E/S antes ou depois dela. Em um sistema
+      no qual apenas um subgrafo ou consulta é executado por vez (THor ou
+      hthor), isso pode fazer da classificação rápida uma escolha inadequada –
+      já que o tempo extra é simplesmente desperdiçado. Em um sistema no qual
+      vários subgrafos ou consultas são executados simultaneamente (como um
+      Roxie carregado) há uma concessão, já que minimizar o tempo total
+      reduzirá a latência da consulta específica – mas minimizar o tempo de
+      CPU maximizará o rendimento de todo o sistema.</para>
+
+      <para>Ao considerar a classificação rápida paralela, podemos ver que ela
+      deve reduzir significativamente a latência para essa consulta; mas, se
+      outras CPUs/núcleos estiverem em uso para outras tarefas (como quando
+      dois Thors estão em execução nas mesmas duas máquinas de núcleo/CPUs),
+      isso não vai aumentar (e diminuirá levemente) o rendimento das
+      máquinas.</para>
+    </sect3>
+
+    <sect3 id="Spilling_to_disk">
+      <title>Gravando em disco</title>
+
+      <para>Normalmente, os registros são classificados na memória. Quando não
+      há memória suficiente, pode ocorrer vazamento para o disco. Isso
+      significa que blocos de registros são classificados na memória e
+      gravados em disco e os blocos classificados são então combinados do
+      disco na conclusão. Isso diminui expressivamente a velocidade da
+      classificação. Isso também significa que o tempo de processamento para a
+      classificação de heap será mais longo, já que não poderá mais se
+      sobrepor ao seu resultado.</para>
+
+      <para><emphasis role="bold">Quando não houver memória suficiente para
+      manter todos os registros e o vazamento para disco não estiver
+      disponível (como na plataforma Roxie), a consulta
+      falhará.</emphasis></para>
+    </sect3>
+
+    <sect3 id="How_sorting_affects_JOINs">
+      <title>Como a classificação afeta JOINs</title>
+
+      <para>Uma operação normal de JOIN exige que ambas as suas entradas sejam
+      classificadas pelos campos usados nas mesmas proporções da condição de
+      correspondência. O supercomputador realiza automaticamente essas
+      classificações "nos bastidores", exceto se souber que uma entrada já
+      tenha sido classificada corretamente. Dessa forma, algumas das
+      considerações que se aplicam na hora de levar em conta um algoritmo para
+      um SORT também podem ser aplicáveis a um JOIN. Para aproveitar esses
+      algoritmos de classificação alternativos em um contexto de JOIN, é
+      necessário usar SORT nos datasets de entrada como desejado e depois
+      especificar a opção NOSORT no JOIN.</para>
+
+      <para>Observe que não é necessário realizar classificação para operações
+      de JOIN usando as opções KEYED (ou meia chave), LOOKUP ou ALL. Em
+      algumas circunstâncias (normalmente em consultas Roxie ou em casos nos
+      quais o otimizador acredita que há poucos registros no dataset de
+      entrada direito), o otimizador do supercomputador realizará
+      automaticamente uma LOOKUP ou JOIN ALL em vez de JOIN regular. Isso
+      significa que, se você tiver realizado SORT e especificado a opção
+      NOSORT no JOIN, acabará perdendo essa possível otimização.</para>
+
+      <para>Exemplo:</para>
+
+      <programlisting>MySet1 := SORT(Person,-last_name, first_name);
+// descending last name, ascending first name
+
+MySet2 := SORT(Person,RECORD,EXCEPT per_sex,per_marital_status);
+// sort by all fields except sex and marital status
+
+MySet3 := SORT(Person,last_name, first_name,STABLE('quicksort'));
+// stable quick sort, not supported by Roxie
+
+MySet4 := SORT(Person,last_name, first_name,UNSTABLE('heapsort'));
+// unstable heap sort,
+// not supported by any platform,
+// therefore ignored
+
+MySet5 := SORT(Person,last_name,first_name,STABLE('insertionsort'));
+// stable insertion sort, not supported by Thor
+</programlisting>
+
+      <para>Ver também: <link linkend="SORTED">SORTED</link>, <link
+      linkend="RANK">RANK</link>, <link linkend="RANKED">RANKED</link>, <link
+      linkend="EXCEPT">EXCEPT</link></para>
+    </sect3>
+  </sect2>
+</sect1>

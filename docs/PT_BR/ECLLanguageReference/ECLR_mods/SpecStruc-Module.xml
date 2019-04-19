@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MODULE_Structure">
+  <title>Estrutura MODULE<indexterm>
+      <primary>MODULE Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>modulename </emphasis><emphasis role="bold">[
+  (</emphasis><emphasis> parameters </emphasis><emphasis role="bold">) ] :=
+  MODULE<indexterm>
+      <primary>MODULE</primary>
+    </indexterm> [ (</emphasis><emphasis> inherit </emphasis><emphasis
+  role="bold">) ] [, VIRTUAL<indexterm>
+      <primary>VIRTUAL</primary>
+    </indexterm> ]</emphasis><emphasis role="bold"> [, LIBRARY<indexterm>
+      <primary>LIBRARY</primary>
+    </indexterm>(</emphasis><emphasis>interface</emphasis><emphasis
+  role="bold">) ]</emphasis><emphasis role="bold"> <emphasis role="bold">[,
+  FORWARD<indexterm>
+      <primary>FORWARD</primary>
+    </indexterm> ]</emphasis></emphasis><emphasis/></para>
+
+  <para><emphasis>members;</emphasis></para>
+
+  <para><emphasis/><emphasis role="bold">END;</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>modulename</emphasis></entry>
+
+          <entry>O nome de definição do ECL para o módulo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameters</emphasis></entry>
+
+          <entry>Opcional. Os parâmetros a serem disponibilizados a todas as
+          <emphasis>definições</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>inherit</emphasis></entry>
+
+          <entry>Uma lista delimitada por vírgula da INTERFACE ou das
+          estruturas MODULE abstratas nas quais essa instância será baseada. A
+          instância atual herda todos os <emphasis>members</emphasis> das
+          estruturas de base. Esse pode não ser um parâmetro
+          especificado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>members</emphasis></entry>
+
+          <entry>As definições que compõem o módulo. Essas definições podem
+          receber parâmetros, incluir ações (tais como OUTPUT), e podem usar
+          os tipos de escopo EXPORT ou SHARED . Podem não incluir INTERFACE ou
+          MODULEs abstratos (veja abaixo). Se a opção LIBRARY for
+          especificada, as <emphasis>definições </emphasis> devem implementar
+          exatamente os membros que foram EXPORTADOS EXPORTed da
+          <emphasis>interface</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">VIRTUAL</emphasis></entry>
+
+          <entry>Opcional. Especifica que o MODULE define uma interface
+          abstrata cujas <emphasis>definições</emphasis> não exigem que os
+          valores sejam definidos para elas.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LIBRARY</emphasis></entry>
+
+          <entry>Opcional. Especifica que o MODULE implementa uma definição de
+          <emphasis>interface</emphasis> da biblioteca de consulta.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>interface</emphasis></entry>
+
+          <entry>Refere-se à INTERFACE que define os
+          <emphasis>parâmetros</emphasis> especificados para a biblioteca de
+          consulta.<indexterm>
+              <primary>query library</primary>
+            </indexterm>. Os <emphasis>parâmetros</emphasis> especificados
+          para o MODULE devem corresponder exatamente aos parâmetros
+          especificados para a <emphasis>interface</emphasis>
+          determinada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">FORWARD</emphasis></entry>
+
+          <entry>Opcional. Adia o processamento das definições até que elas
+          sejam usadas. A adição de , <emphasis role="bold">FORWARD</emphasis>
+          em um MODULE adia o processamento das definições neste módulo até
+          que elas sejam usadas. Isso gera dois efeitos principais: Impede a
+          obtenção de dependências para definições que nunca são usadas e
+          permite que as definições anteriores se refiram às definições
+          posteriores. <emphasis role="bold">Note: Referências circulares
+          ainda são ilegais.</emphasis></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A estrutura <emphasis role="bold">MODULE </emphasis> é um contêiner
+  que permite agrupar definições relacionadas. Os
+  <emphasis>parâmetros</emphasis> especificados ao MODULE são compartilhados
+  por todas as definições relacionadas dos <emphasis>membros </emphasis>. Isso
+  é semelhante à estrutura FUNCTION , exceto pelo fato de que que não há um
+  RETURN.</para>
+
+  <sect2 id="Attribute_Visibility_Rules">
+    <title>Visibilidade das definições<indexterm>
+        <primary>Definition Visibility</primary>
+      </indexterm> As regras</title>
+
+    <para>de escopo para os <emphasis>membros</emphasis> são iguais as que
+    foram descritas anteriormente na discussão <emphasis
+    role="bold">Visibilidade das definições</emphasis> :</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>As definições locais são visíveis apenas através da próxima
+        definição EXPORT ou SHARED (incluindo <emphasis>membros</emphasis> da
+        estrutura MODULE aninhada, se a próxima definição EXPORT ou SHARED for
+        um MODULE).</para>
+      </listitem>
+
+      <listitem>
+        <para>As definições SHARED são visíveis para todas as definições
+        subsequentes dentro da estrutura (incluindo <emphasis>membros
+        </emphasis> de quaisquer estruturas MODULE aninhadas), mas não fora
+        dela.</para>
+      </listitem>
+
+      <listitem>
+        <para>As definições EXPORT são visíveis dentro da estrutura MODULE
+        (incluindo <emphasis>membros</emphasis> de quaisquer estruturas MODULE
+        subsequentes aninhadas) e fora dela.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Quaisquer <emphasis>membros</emphasis> das definições EXPORT podem
+    ser referenciados usando um nível adicional da sintaxe padrão
+    object.property. Por exemplo, supondo que a estrutura EXPORT
+    MyModuleStructure MODULE esteja contida em um Módulo de repositório do ECL
+    denominado MyModule, e que ele contém um <emphasis>membro</emphasis> de
+    EXPORT denominado MyDefinition, você referenciaria essa
+    <emphasis>definição</emphasis> como:</para>
+
+    <para><programlisting>MyModule.MyModuleStructure.MyDefinition
+
+MyMod := MODULE
+  SHARED x := 88;
+  y := 42;
+  EXPORT InMod := MODULE //nested MODULE
+    EXPORT Val1 := x + 10;
+    EXPORT Val2 := y + 10;
+  END;
+END;
+
+MyMod.InMod.Val1;
+MyMod.InMod.Val2;</programlisting></para>
+  </sect2>
+
+  <sect2 id="Side-Effect_Actions">
+    <title>Ações MODULE Side-Effect</title>
+
+    <para>As ações de efeitos colaterais são permitidas MODULE apenas com o
+    uso da função WHEN, como neste exemplo:</para>
+
+    <programlisting>//An Example with a side-effect action 
+EXPORT customerNames := MODULE 
+  EXPORT Layout := RECORD 
+    STRING20 surname;  
+    STRING10 forename; 
+    INTEGER2 age := 25; 
+  END; 
+  Act := OUTPUT('customer file used by user &lt;x&gt;'); 
+  EXPORT File := WHEN(DATASET([{'x','y',22}],Layout),Act); 
+END; 
+BOOLEAN doIt := TRUE : STORED('doIt'); 
+IF (doIt, OUTPUT(customerNames.File));
+//This code produces two results: the dataset, and the string</programlisting>
+  </sect2>
+
+  <sect2 id="Concrete_vs_Abstract_Modules">
+    <title>Módulos Concrete vs. Abstract (VIRTUAL)</title>
+
+    <para>UM MÓDULO pode conter uma mistura de <emphasis>membros</emphasis>
+    VIRTUAL e não-VIRTUAL. As regras são:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>ALL TODOS os <emphasis>membros</emphasis> são VIRTUAIS se o
+        MODULE tiver a opção VIRTUAL ou se for uma INTERFACE</para>
+      </listitem>
+
+      <listitem>
+        <para>Um <emphasis>membro</emphasis> é VIRTUAL se for declarado com o
+        uso das palavras-chave EXPORT VIRTUAL ou SHARED VIRTUAL</para>
+      </listitem>
+
+      <listitem>
+        <para>Um <emphasis>membro</emphasis> é VIRTUAL se a definição do mesmo
+        nome no módulo <emphasis>herdado</emphasis> for VIRTUAL.</para>
+      </listitem>
+
+      <listitem>
+        <para>Alguns <emphasis>membros</emphasis> nunca podem ser virtuais –
+        estruturas RECORD.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Todos os <emphasis>membros</emphasis> EXPORTed e SHARED de um módulo
+    abstrato <emphasis>herdado</emphasis> pode ser substituído por um item de
+    redefinição na instância atual, seja essa instância atual abstrata ou
+    concreta. As definições substituídas devem corresponder exatamente ao tipo
+    e parâmetros dos <emphasis>membros </emphasis>
+    <emphasis>herdados</emphasis>. Várias interfaces <emphasis>herdadas
+    </emphasis> podem conter definições de mesmo nome se forem do mesmo tipo e
+    receberem os mesmos parâmetros; porém, se esses
+    <emphasis>membros</emphasis> <emphasis> herdados</emphasis> possuem
+    valores definidos, o conflito é solucionado pela substituição daquele
+    <emphasis>membro </emphasis> na instância atual.</para>
+  </sect2>
+
+  <sect2 id="LIBRARY_Modules">
+    <title>Módulos LIBRARY</title>
+
+    <para>Um MODULE com a opção LIBRARY define um conjunto relacionado de
+    funções que devem ser usadas como uma biblioteca de consulta (veja as
+    discussões sobre função LIBRARY e ação BUILD). Há várias restrições sobre
+    o que pode ser incluído em uma biblioteca de consulta. São elas:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Não deve conter ações de efeitos colaterais (como OUTPUT ou
+        BUILD)</para>
+      </listitem>
+
+      <listitem>
+        <para>Não deve conter definições com serviços de tarefa anexado a elas
+        (tais como PERSIST, STORED, SUCCESS, etc.)</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Pode apenas EXPORTAR:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Definições de dataset/recordset</para>
+      </listitem>
+
+      <listitem>
+        <para>Definições de datarow (tais como a função ROW <indexterm>
+            <primary>ROW</primary>
+          </indexterm>)</para>
+      </listitem>
+
+      <listitem>
+        <para>Definições de valor único e booleano</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>E pode NÃO exportar:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Ações (como OUTPUT ou BUILD)</para>
+      </listitem>
+
+      <listitem>
+        <para>Funções TRANSFORM</para>
+      </listitem>
+
+      <listitem>
+        <para>Estrutura MODULE</para>
+      </listitem>
+
+      <listitem>
+        <para>Definições MACRO</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Exemplo:</para>
+
+    <programlisting>EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
+  f := namesTable; //local to the "g" definition
+  SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
+          //SHARED = visible only within the structure
+  EXPORT included := g(surname != search);
+  EXPORT excluded := g(surname = search);
+          //EXPORT = visible outside the structure
+END;
+filtered := filterDataset('Halliday', TRUE);
+OUTPUT(filtered.included,,NAMED('Included'));
+OUTPUT(filtered.excluded,,NAMED('Excluded'));
+       
+//same result, different coding style:
+EXPORT filterDataset(BOOLEAN onlyOldies) := MODULE
+  f := namesTable;
+  SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
+  EXPORT included(STRING search) := g(surname &lt;&gt; search);
+  EXPORT excluded(STRING search) := g(surname = search);
+END;
+filtered := filterDataset(TRUE);
+OUTPUT(filtered.included('Halliday'),,NAMED('Included'));
+OUTPUT(filterDataset(true).excluded('Halliday'),,NAMED('Excluded'));
+          
+          
+//VIRTUAL examples
+Mod1 := MODULE,VIRTUAL //a fully abstract module
+  EXPORT val := 1;
+  EXPORT func(INTEGER sc) := val * sc;
+END;
+         
+Mod2 := MODULE(Mod1) //instance
+  EXPORT val := 3; //a concete member, overriding default value
+                   //while func remains abstract
+END;
+     
+Mod3 := MODULE(Mod1) //a fully concete instance
+  EXPORT func(INTEGER sc) := val + sc; //overrides inherited func
+END;
+OUTPUT(Mod2.func(5)); //result is 15
+OUTPUT(Mod3.func(5)); //result is 6
+
+//FORWARD example
+EXPORT MyModule := MODULE, FORWARD
+  EXPORT INTEGER foo := bar;
+  EXPORT INTEGER bar := 42;
+END;
+
+MyModule.foo;
+
+</programlisting>
+
+    <para>Ver também: <link linkend="FUNCTION_Structure">Estrutura
+    FUNCTION</link>, <link linkend="Attribute_Visibility">Visibilidade das
+    definições</link>, <link linkend="INTERFACE_Structure">Estrutura
+    INTERFACE</link>, <link linkend="LIBRARY">LIBRARY</link>, <link
+    linkend="BUILD">BUILD</link></para>
+  </sect2>
+</sect1>

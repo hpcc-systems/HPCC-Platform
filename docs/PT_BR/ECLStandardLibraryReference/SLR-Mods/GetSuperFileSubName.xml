@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetSuperFileSubName">
+  <title>GetSuperFileSubName</title>
+
+  <para><emphasis role="bold">STD.File.GetSuperFileSubName<indexterm>
+      <primary>STD.File.GetSuperFileSubName</primary>
+    </indexterm><indexterm>
+      <primary>File.GetSuperFileSubName</primary>
+    </indexterm><indexterm>
+      <primary>GetSuperFileSubName</primary>
+    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
+  <emphasis role="bold">[,</emphasis> <emphasis>absolutepath</emphasis>
+  <emphasis role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subfile</emphasis></entry>
+
+          <entry>Um inteiro no intervalo de 1 (um) até o número total de
+          subarquivos em <emphasis>superfile</emphasis> que especifica a
+          posição ordinal do subarquivo cujo nome será retornado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>absolutepath</emphasis></entry>
+
+          <entry>Opcional. Um TRUE/FALSE booleano para indicar se um til (~)
+          deve ser acrescentado ao início do nome do arquivo lógico
+          estrangeiro. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetSuperFileSubName retorna um valor VARSTRING.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">GetSuperFileSubName </emphasis> retorna
+  o nome lógico do <emphasis>subfile</emphasis> especificado no
+  <emphasis>superfile</emphasis>.</para>
+
+  <para>Essa função não é incluída em uma transação do superarquivo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.File.GetSuperFileSubName('~CLASS::RT::IN::SF1', 1);
+   //get name of first sub-file
+//this example gets the name of the first sub-file in
+// a foreign superfile
+sf := '~thor_data400::BASE::Business_Header';
+sub := STD.File.GetSuperFileSubName(  STD.File.ForeignLogicalFileName (sf,
+         '10.150.29.161',
+         TRUE),
+  1,TRUE);
+OUTPUT(STD.File.ForeignLogicalFileName(sub,''));</programlisting>
+</sect1>

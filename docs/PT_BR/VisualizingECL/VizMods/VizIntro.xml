@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="VizIntro">
+  <title><emphasis>Introdução a Visualização</emphasis></title>
+
+  <para>O pacote de Visualização é um complemento de código público à
+  plataforma do HPCC que permite criar visualizações dos resultados das
+  consultas gravadas no ECL.</para>
+
+  <para>As visualizações são um meio importante de transmissão das informações
+  dos dados massivos Uma boa representação visual pode ajudar a gerar uma
+  análise acionável. Uma representação visualmente abrangente das informações
+  pode ajudar a tornar o obscuro em algo mais óbvio.</para>
+
+  <para>As visualizações são um meio importante de transmissão das informações
+  dos dados massivos O processamento de big data é apenas uma parte da
+  solução; também é preciso compreender a complexidade dos dados. Os métodos
+  de visualização dos dados simplificam aquilo que é complexo.</para>
+
+  <para>O pacote Visualização aumenta a funcionalidade da plataforma do HPCC
+  permitindo a esquematização dos dados em diagramas, gráficos e mapas para
+  adicionar uma representação visual que possa ser facilmente
+  compreendida.</para>
+
+  <para>Além disso, a estrutura de visualização subjacente suporta recursos
+  avançados para permitir a combinação de gráficos para criar painéis
+  interativos.</para>
+
+  <sect1 id="VizInstall">
+    <title>Instalação</title>
+
+    <para>Para instalar o pacote de Visualização, use a interface de linha de
+    comando do ecl.</para>
+
+    <para/>
+
+    <para><programlisting>ecl bundle install https://github.com/hpcc-systems/Visualizer.git</programlisting></para>
+
+    <para>Para usar o comando "ecl bundle install &amp;lt;git url&amp;gt;", é
+    preciso ter o git instalado e configurado em seu sistema. O Git precisa
+    estar acessível ao usuário (no caminho).</para>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="VizUsing">
+    <title>Usando a biblioteca de Visualização</title>
+
+    <para>Uma vez instalado você Importa (IMPORT) a biblioteca e acionar
+    qualquer método que seja adequado para a forma dos seus dados.</para>
+
+    <para>Os seguintes passos devem ser seguidos para criar uma visualização
+    básica:</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Criação de um dataset adequado.</para>
+        </listitem>
+
+        <listitem>
+          <para>Crie um dataset com um nome adequado para que a visualização
+          possa localizar os dados.</para>
+        </listitem>
+
+        <listitem>
+          <para>Crie (e gere) a visualização, fazendo referência ao nome
+          criado na etapa 2.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <para>Para alterar a aparência da visualização, as propriedades visuais
+    podem ser fornecidas durante a criação da visualização ou aplicadas no
+    tempo de execução através do editor de propriedades visuais em tempo
+    real.</para>
+
+    <para>Por exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+ds := DATASET([ {'English', 5},
+                {'History', 17},
+                {'Geography', 7},
+                {'Chemistry', 16},
+                {'Irish', 26},
+                {'Spanish', 67},
+                {'Bioligy', 66},
+                {'Physics', 46},
+                {'Math', 98}],
+                {STRING subject, INTEGER4 year});
+data_example := OUTPUT(ds, NAMED('Chart2D__test'));
+data_example;
+viz_bubble := Visualizer.TwoD.Bubble('bubble',, 'Chart2D__test');
+viz_bubble;
+</programlisting>
+
+    <para>Este código cria um gráfico de bolha como mostrado abaixo:</para>
+
+    <graphic fileref="../../images/viz10.jpg"/>
+
+    <para/>
+
+    <para>Consulte <link linkend="VizMethods">Métodos</link> para obter
+    detalhes sobre as categorias dos métodos de visualização e todos os
+    métodos disponíveis.</para>
+  </sect1>
+
+  <sect1 id="VizViewing">
+    <title>Exibindo a Visualização</title>
+
+    <para>Após executar uma consulta com a visualização incluída, a
+    visualização pode ser vista no ECL Watch. As visualizações são adicionadas
+    às tarefas como <emphasis>recursos</emphasis> adicionais e podem ser
+    vistas na guia <emphasis role="bold">Resources </emphasis> localizada na
+    página Detalhes da Workunit.</para>
+
+    <para>Abra a workunit seleciona a aba <emphasis
+    role="bold">Resources</emphasis> .</para>
+
+    <para><graphic fileref="../../images/viz07.jpg"/></para>
+  </sect1>
+
+  <sect1 id="VizDermProp">
+    <title>Propriedades de Aparência</title>
+
+    <para>A camada de aparência fornece um meio de configurar a maneira pela
+    qual uma visualização é exibida. Por exemplo, você pode alterar a
+    palletteID para um novo esquema de cores. Após executar uma consulta com a
+    visualização incluída, a visualização pode ser vista no ECL Watch.</para>
+
+    <para>O <emphasis role="bold">Editor de visualização</emphasis> permite
+    alterar a aparência da visualização após ela ter sido executada. As mesmas
+    propriedades podem ser especificadas no ECL no momento em que a
+    visualização for criada.</para>
+
+    <para>Você pode definir propriedades em seu código ECL ou posteriormente
+    no ECL Watch:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Abra a workunit e seleciona a aba <emphasis
+        role="bold">Resources</emphasis> .</para>
+      </listitem>
+
+      <listitem>
+        <para>Pressione o botão <emphasis role="bold">Properties</emphasis>
+        .</para>
+
+        <graphic fileref="../../images/viz08.jpg"/>
+      </listitem>
+
+      <listitem>
+        <para>Edite as propriedades da forma desejada. <emphasis
+        role="bold"/></para>
+
+        <para><graphic fileref="../../images/viz09.jpg"/></para>
+      </listitem>
+
+      <listitem>
+        <para>Pressione o botão <emphasis role="bold">Save</emphasis>
+        .<emphasis role="bold"/></para>
+      </listitem>
+    </orderedlist>
+
+    <para/>
+  </sect1>
+</chapter>

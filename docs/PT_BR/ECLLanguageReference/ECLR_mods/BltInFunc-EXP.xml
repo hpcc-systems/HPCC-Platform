@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EXP">
+  <title>EXP<indexterm>
+      <primary>EXP</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">EXP<indexterm>
+      <primary>EXP function</primary>
+    </indexterm>(</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.50pt"/>
+
+        <colspec colwidth="309.30pt"/>
+
+        <tbody>
+          <row>
+            <entry>n</entry>
+
+            <entry>O número real que será avaliado.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>EXP retorna um valor real único.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">EXP </emphasis> retorna valor
+  exponencial natural do parâmetro (en). Este é o oposto da função LN da
+  <indexterm>
+      <primary>LN function</primary>
+    </indexterm>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyPI := EXP(3.14159);
+Interim := ROUND(1000 * (EXP(MyPI)/(1 + EXP(MyPI))));</programlisting>
+
+  <para>Ver também: <link linkend="LN">LN</link>, <link
+  linkend="SQRT">SQRT</link>, <link linkend="POWER">POWER</link></para>
+</sect1>

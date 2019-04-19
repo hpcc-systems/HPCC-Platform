@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IsLeapYear">
+  <title>IsLeapYear</title>
+
+  <para><emphasis role="bold">STD.Date.IsLeapYear<indexterm>
+      <primary>STD.Date.IsLeapYear</primary>
+    </indexterm><indexterm>
+      <primary>Date.IsLeapYear</primary>
+    </indexterm><indexterm>
+      <primary>IsLeapYear</primary>
+    </indexterm>(</emphasis> <emphasis>ano</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>year</emphasis></entry>
+
+          <entry>A year value in the INTEGER2 format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>IsLeapYear retorna um valor BOOLEAN</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">IsLeapYear</emphasis> retorna TRUE se
+  <emphasis>year</emphasis> é um ano bissexto no calendário gregoriano (ou
+  gregoriano proléptico).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+INTEGER2 MyYear := 2012;   //2012
+  
+D := STD.Date.IsLeapYear(MyYear);
+    //D contains TRUE, 2012 is a leap year
+  
+  </programlisting>
+
+  <para/>
+</sect1>

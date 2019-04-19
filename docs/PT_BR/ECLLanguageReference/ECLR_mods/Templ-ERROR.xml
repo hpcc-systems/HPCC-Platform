@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_ERROR">
+  <title>#ERROR</title>
+
+  <para><emphasis role="bold">#ERROR<indexterm>
+      <primary>#ERROR</primary>
+    </indexterm>( </emphasis><emphasis>ERROR ( errorcode , errormessage )
+  ;</emphasis> <emphasis role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="81.55pt"/>
+
+        <colspec colwidth="271.25pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>ERROR ( errorcode , errormessage )
+            ;</emphasis></entry>
+
+            <entry>Uma constante de string que contém a mensagem a ser
+            exibida.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A declaração <emphasis role="bold">#ERROR </emphasis> interrompe
+  imediatamente o processamento na tarefa e exibe <emphasis>
+  errormessage</emphasis>. Essa declaração pode ser usada fora de um escopo
+  XML e não exige um LOADXML anterior para instanciar um escopo XML.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  #IF(TRUE)
+    #ERROR('broken');
+    OUTPUT('broken');
+  #ELSE
+    #WARNING('maybe broken');
+    OUTPUT('maybe broken');
+  #END;
+</programlisting>
+
+  <para>Ver também: <link linkend="_WARNING">#WARNING</link></para>
+</sect1>

@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DeleteLogicalFile">
+  <title>DeleteLogicalFile</title>
+
+  <para><emphasis role="bold">STD.File.DeleteLogicalFile<indexterm>
+      <primary>STD.File.DeleteLogicalFiles</primary>
+    </indexterm><indexterm>
+      <primary>File.DeleteLogicalFiles</primary>
+    </indexterm><indexterm>
+      <primary>DeleteLogicalFiles</primary>
+    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, ifexists </emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>ifexists</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano que indica se um erro deverá ser publicado se o  <emphasis>filename</emphasis>  não existir. Se omitido, o padrão é FALSE.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">DeleteLogicalFile </emphasis> remove o arquivo nomeado do disco.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.File.DeleteLogicalFile('Fred');
+</programlisting>
+</sect1>

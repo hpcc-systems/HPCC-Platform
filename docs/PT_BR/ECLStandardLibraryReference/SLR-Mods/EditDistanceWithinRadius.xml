@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EditDistanceWithinRadius">
+  <title>EditDistanceWithinRadius</title>
+
+  <para><emphasis role="bold">STD.Str.EditDistanceWithinRadius<indexterm>
+      <primary>STD.Str.EditDistanceWithinRadius</primary>
+    </indexterm><indexterm>
+      <primary>Str.EditDistanceWithinRadius</primary>
+    </indexterm><indexterm>
+      <primary>EditDistanceWithinRadius</primary>
+    </indexterm>(</emphasis> <emphasis>string1, string2, radius</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.EditDistanceWithinRadius<indexterm>
+      <primary>STD.Uni.EditDistanceWithinRadius</primary>
+    </indexterm><indexterm>
+      <primary>Uni.EditDistanceWithinRadius</primary>
+    </indexterm>(</emphasis> <emphasis>string1, string2, radius,
+  locale</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>string1</emphasis></entry>
+
+          <entry>A primeira string de um par de strings a ser
+          comparado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>string2</emphasis></entry>
+
+          <entry>A segunda string de um par de strings a ser
+          comparado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>radius</emphasis></entry>
+
+          <entry>Um inteiro que especifica a distância máxima de edição
+          aceitável.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o código de idioma e
+          país a ser usado para determinar a ordem correta de classificação e
+          outras operações.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>EditDistanceWithinRadius returna um valor BOOLEAN.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">EditDistanceWithinRadius </emphasis>
+  retorna TRUE se a distância de edição entre <emphasis>string1</emphasis> e
+  <emphasis>string2</emphasis> está dentro de <emphasis>radius</emphasis>. Os
+  espaços à direita e à esquerda nas duas strings são eliminados antes da
+  comparação.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Str.EditDistance('CAT','BAIT');               //returns 2
+
+STD.Str.EditDistanceWithinRadius('CAT','BAIT',1); //returns FALSE
+STD.Str.EditDistanceWithinRadius('CAT','BAIT',2); //returns TRUE
+</programlisting>
+</sect1>

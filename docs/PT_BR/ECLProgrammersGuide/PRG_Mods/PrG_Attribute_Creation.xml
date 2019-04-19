@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Attribute_Creation" role="nobrk">
+  <title>Criação de Atributos</title>
+
+  <sect2 id="Similarities_and_Differences">
+    <title>Similaridades e Diferenças</title>
+
+    <para>As semelhanças vêm da exigência fundamental de solucionar qualquer
+    problema de processamento: Primeiro, entender o problema.</para>
+
+    <para>Depois disso, em diversos ambientes de programação, usa-se uma
+    abordagem descendente para mapear a linha de lógica mais direta para que a
+    entrada seja transformada no resultado desejado. É aí que o processo se
+    diverge no ECL, uma vez que a própria ferramenta exige uma maneira
+    diferente de se pensar sobre como formar a solução – e a rota direta nem
+    sempre é a mais rápida. ECL exige uma abordagem ascendente para a solução
+    de problemas.</para>
+  </sect2>
+
+  <sect2 id="Atomic_Programming">
+    <title>Programação "Atômica"</title>
+
+    <para>No ECL, após entender qual resultado final deve ser obtido, a linha
+    direta do início do problema até o resultado final é ignorada e, em vez
+    disso, o problema começa a ser dividido no máximo número de partes
+    possível – quanto menor ele for, melhor. Ao criar bits "atômicos" de
+    código ECL, você cuidou de toda a parte conhecida e fácil do problema.
+    Isso normalmente consiste em 80% do caminho até a solução sem precisar
+    fazer nada terrivelmente difícil.</para>
+
+    <para>Depois de ter reduzido os bits ao máximo possível, é possível então
+    começar a combiná-los para percorrer os outros 20% do caminho e chegar à
+    solução final. Em outras palavras, você começa fazendo as partes pequenas
+    mais fáceis e depois usa esses bits de forma combinada para gerar uma
+    lógica cada vez mais complexa que desenvolve sua solução de modo
+    orgânico.</para>
+  </sect2>
+
+  <sect2 id="Growing_Solutions">
+    <title>Soluções para o crescimento</title>
+
+    <para>Os blocos de construção de atributos básicos no ECL são os tipos de
+    atributos Set, Boolean, Recordset e Value. Cada um desses pode ser
+    "atomizado" conforme necessário para que possam ser usados de forma
+    combinada para produzir "moléculas" de lógica mais complexa que podem
+    então ser novamente combinadas para produzir um "organismo" completo que
+    gera o resultado final.</para>
+
+    <para>Por exemplo, suponha que você tem um problema que exige a produção
+    de um grupo de registros onde um determinado campo em sua saída precisa
+    conter um dos vários valores especificados (vamos imaginar 1, 3, 4 ou 7).
+    Em muitas linguagens de programação, o pseudo-código para produzir esse
+    resultado se pareceria o seguinte:</para>
+
+    <programlisting>Start at top of MyFile
+Loop through MyFile records
+ If MyField = 1 or MyField = 3 or MyField = 4 or MyField = 7 
+  Include record in output set
+ Else
+  Throw out record and go back to top of loop
+end if and loop
+</programlisting>
+
+    <para>Enquanto no ECL, o código atual seria:</para>
+
+    <programlisting>SetValidValues := [1,3,4,7];                    //Set Definition
+IsValidRec := MyFile.MyField IN SetValidValues; //Boolean
+ValRecsMyFile := MyFile(IsValidRec);            //filtered Recordset 
+OUTPUT(ValRecsMyFile);
+</programlisting>
+
+    <para>O processo por trás da programação desse código é:</para>
+
+    <para>"Sei que tenho um conjunto de valores constantes na especificação,
+    por isso posso começar criando um atributo de conjunto dos valores
+    válidos...</para>
+
+    <para>"E agora que tenho um conjunto definido, posso usar esse conjunto
+    para criar um atributo booleano para testar se o campo no qual estou
+    interessado contém um dos valores válidos...</para>
+
+    <para>"E agora que tenho um booleano definido, posso usar esse booleano
+    como a condição de filtro para produzir o recordset de que preciso para
+    obter o resultado."</para>
+
+    <para>O processo começa com a criação de um "átomo" de atributo do
+    conjunto, seguido de seu uso para criar a "molécula" booleana e depois
+    usar essa "molécula" booleana para ampliar o "organismo" – a solução
+    final.</para>
+  </sect2>
+
+  <sect2 id="Ugly_ECL_is_Possible_Too">
+    <title>Também é possível usar um "Feio" ECL</title>
+
+    <para>É claro que o determinado conjunto de ECL teria que ser programado
+    da seguinte forma (seguindo um processo de raciocínio mais
+    descendente):</para>
+
+    <programlisting>OUTPUT(MyFile(MyField IN [1,3,4,7]));</programlisting>
+
+    <para>O resultado final, neste caso, seria o mesmo.</para>
+
+    <para>No entanto, a utilidade geral desse código é reduzida
+    significativamente porque, na primeira forma, todos os bits "atômicos"
+    estão disponíveis para serem reutilizados em outro lugar quando problemas
+    similares acontecem. Na segunda forma, eles não estão disponíveis. E em
+    todos os estilos de programação, a reutilização de código é considerada
+    uma boa prática.</para>
+  </sect2>
+
+  <sect2 id="Easy_Optimization">
+    <title>Otimização Fácil</title>
+
+    <para>O mais importante: ao dividir seu código ECL nos menores componentes
+    possíveis, permite-se que o compilador de otimização do ECL trabalhe da
+    melhor forma possível para determinar como o resultado desejado pode ser
+    alcançado. Isso leva a outra dicotomia entre ECL e outras linguagens de
+    programação: normalmente, quanto menos códigos você escrever, mais
+    "elegante" será a solução; porém, no ECL, quanto <emphasis
+    role="underline">mais</emphasis> códigos, melhor e mais elegante será a
+    solução gerada para você. Lembre-se de que atributos são apenas <emphasis
+    role="bold">definições</emphasis> que informam o compilador <emphasis
+    role="underline">o que</emphasis> fazer, não <emphasis
+    role="underline">como</emphasis> fazer Quanto mais você "desintegrar" o
+    problema em suas partes componentes, maior será a margem de trabalho
+    oferecida ao otimizador para a produção do código executável mais
+    eficiente e rápido possível.</para>
+  </sect2>
+</sect1>

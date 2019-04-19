@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REGEXFIND">
+  <title>REGEXFIND</title>
+
+  <para><emphasis role="bold">REGEXFIND<indexterm>
+      <primary>REGEXFIND</primary>
+    </indexterm><indexterm>
+      <primary>REGEXFIND function</primary>
+    </indexterm>(</emphasis><emphasis>regex, text </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, flag </emphasis><emphasis role="bold">]
+  [, NOCASE<indexterm>
+      <primary>NOCASE</primary>
+    </indexterm>])</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="81.35pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>regex</emphasis></entry>
+
+            <entry>Uma expressão Perl regular padrão.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
+            <entry>O texto a ser analisado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>flag</emphasis></entry>
+
+            <entry>Opcional. Especifica o texto a ser retornado. Se omitido,
+            REGEXFIND retorna TRUE ou FALSE caso regex tenha ou não sido
+            localizado no texto. Se for 0, a parte do texto em que
+            <emphasis>regex</emphasis> foi correspondido será retornada. Se
+            for &gt;= 1, o texto correspondido pelo grupo nth em
+            <emphasis>regex</emphasis> será retornado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOCASE</emphasis></entry>
+
+            <entry>Opcional. Especifica uma busca sem distinção entre
+            maiúsculas e minúsculas.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>REGEXFIND retorna um único valor.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">REGEXFIND </emphasis> usa
+  <emphasis>regex<indexterm>
+      <primary>regex</primary>
+    </indexterm></emphasis> para analisar o <emphasis>texto</emphasis> e
+  localizar correspondências. A <emphasis>regex</emphasis> uma expressão Perl
+  regular padrão<indexterm>
+      <primary>Perl regular expression</primary>
+    </indexterm>. Usamos bibliotecas de terceiros para suportar isso.
+  Portanto, para texto de código único consulte os documentos Boost em
+  <emphasis>text</emphasis> <ulink
+  url="http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html">http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html</ulink>.
+  Observe que a versão da biblioteca Boost pode variar de acordo com sua
+  distribuição. Para <emphasis>texto</emphasis> unicode, consulte os
+  documentos ICU nas seções “Regular Expression Metacharacters”
+  (Metacaracteres de expressão regular) e “Regular Expression Operators”
+  (Operadores de expressão regular) em <emphasis
+  role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
+  e os links indicados lá, especificamente a seção “UnicodeSet patterns”
+  (Padrões UnicodeSet) em http://userguide.icu-project.org/strings/unicodeset.
+  <emphasis
+  role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
+  Nós usamos a versão 2.6, que deve suportar todos os recursos
+  listados.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>namesRecord := RECORD
+STRING20 surname;
+STRING10 forename;
+STRING10 userdate;
+END;
+namesTbl := DATASET([ {'Halligan','Kevin','10/14/1998'},
+{'Halligan','Liz','12/01/1998'},
+{'Halligan','Jason','01/01/2000'},
+{'MacPherson','Jimmy','03/14/2003'} ],
+namesRecord);
+searchpattern := '^(.*)/(.*)/(.*)$';
+search := '10/14/1998';
+
+filtered := namesTbl(REGEXFIND('^(Mc|Mac)', surname));
+
+OUTPUT(filtered); //1 record -- MacPherson
+OUTPUT(namesTbl,{(string30)REGEXFIND(searchpattern,userdate,0),
+(string30)REGEXFIND(searchpattern,userdate,1),
+(string30)REGEXFIND(searchpattern,userdate,2),
+(string30)REGEXFIND(searchpattern,userdate,3)});
+
+REGEXFIND(searchpattern, search, 0); //returns
+        '10/14/1998'
+REGEXFIND(searchpattern, search, 1); //returns '10'
+REGEXFIND(searchpattern, search, 2); //returns '14'
+REGEXFIND(searchpattern, search, 3); //returns '1998'
+</programlisting>
+
+  <para>Ver também: <link linkend="PARSE">PARSE</link>, <link
+  linkend="REGEXFINDSET">REGEXFINDSET</link>, <link
+  linkend="REGEXREPLACE">REGEXREPLACE</link></para>
+</sect1>

@@ -1,0 +1,1901 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <title>Utilizando o ECL Watch</title>
+
+  <bookinfo>
+    <title>Utilizando o ECL Watch</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="ECLWatch_Intro">
+    <title>Introduzindo o ECL Watch</title>
+
+    <para>ECL Watch consiste de um serviço executado no Enterprise Services
+    Platform (ESP), um componente middleware na plataforma do HPCC.</para>
+
+    <para>O ECL Watch oferece uma interface para o HPCC System e permite que
+    você veja informações e interrogue nós para confirmar se todos os
+    processos esperados estão funcionando. Este é um plugin útil para
+    administradores de sistema na hora de verificar processos, examinar
+    topologias e ver logs. Também é útil para programadores ECL monitorar o
+    status dos jobs, arquivos e outras informações pertinentes. Isso oferece
+    uma visão simples sobre o sistema e um meio para realizar a manutenção em
+    arquivos de dados e workunit.</para>
+
+    <para>A interface do ECL Watch constitui de um conjunto de páginas baseado
+    em um navegador, onde é possível acessar e se comunicar com o HPCC System.
+    Para executar o <emphasis role="bold">ECL Watch</emphasis> usando o seu
+    navegador, acesse o nó em seu sistema que executa o <emphasis
+    role="bold">ESP/ECL Watch</emphasis> na porta 8010. Por exemplo,
+    http://nnn.nnn.nnn.nnn:8010, onde nnn.nnn.nnn.nnn é o endereço IP do nó do
+    ESP/ECL Watch. Esse procedimento abrirá o ECL Watch.</para>
+
+    <para>O ECL Watch é organizado por categorias baseadas em várias funções
+    de sistema. Essas funções ou ações são acessíveis através dos links no
+    topo da página inicial principal. No entanto, há vários itens do ECL Watch
+    com funcionalidades universalmente comuns nas páginas do ECL Watch.</para>
+
+    <sect1 id="Common_Elements">
+      <title>Elementos Comuns</title>
+
+      <para>Há alguns elementos comuns que são úteis em qualquer parte do ECL
+      Watch.</para>
+
+      <sect2 id="OpenInNewPage">
+        <title>Abrir em Nova Página</title>
+
+        <para>O link <emphasis role="bold">Open in New Page</emphasis> permite
+        que você abra uma nova janela diretamente para o item que está sendo
+        acessado. <figure>
+            <title>Abrir em Nova Página</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA500.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Abrir a visão atual em uma nova página é útil de diversas
+        maneiras:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Open in New Page (Abrir em página
+            nova)</emphasis> é um link compartilhável. Clique com o botão
+            direito em <emphasis role="bold">Open in New Page</emphasis> e
+            <emphasis>selecione Copy link address (Copiar endereço do
+            link)</emphasis> no menu contextual. Agora é possível salvar,
+            compartilhar ou enviar esse link para que o destinatário possa
+            abrir uma janela diretamente para a (nova) página.</para>
+          </listitem>
+
+          <listitem>
+            <para>As novas páginas mantêm estados de filtro. Se você possui um
+            filtro e compartilha esse link, a nova página conterá esse mesmo
+            conjunto de filtro.</para>
+          </listitem>
+
+          <listitem>
+            <para>A nova página funciona em tempo real. (Se o recurso de
+            atualização automática estiver ativado para a página) O
+            destinatário não precisa redefinir a página ou atualizar para ver
+            seu estado atual.</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="ListWidgets">
+        <title>Lista de Widgets</title>
+
+        <para><figure>
+            <title>Lista de Widgets</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA-Comm.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>O ECL Watch normalmente exibe itens no formato de uma lista.
+        Listas de workunit, de arquivos lógicos, de consultas Roxie e afins.
+        Os seguintes elementos no ECL Watch funcionam em qualquer lista de
+        widget:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Download como CSV (workunit, workunit DFU, arquivos
+              lógicos e consultas Roxie)</para>
+            </listitem>
+
+            <listitem>
+              <para>Caixa de seleção de coluna. Selecione todas as linhas
+              marcando a caixa de seleção na parte superior (segure a tecla
+              Shift e clique para selecionar um intervalo)</para>
+            </listitem>
+
+            <listitem>
+              <para>Classificar por cabeçalho de coluna. Clique no cabeçalho
+              de coluna para classificar a coluna de acordo com o
+              conteúdo.</para>
+            </listitem>
+
+            <listitem>
+              <para>Redimensione larguras de coluna arrastando as
+              bordas.</para>
+            </listitem>
+
+            <listitem>
+              <para>Filtros que possibilitam que você defina critérios para os
+              itens a serem exibidos na lista.</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <sect3>
+          <title>Filtros.</title>
+
+          <para>As opções de filtro em uma lista permitem que você use
+          critérios especificados para definir o que é exibido na lista.
+          Pressione o botão <emphasis role="bold">Filter</emphasis> para
+          exibir as opções de filtro. Ao especificar quaisquer opções de
+          filtro, o botão de ação Filter muda, exibe <emphasis
+          role="bold">Filter Set</emphasis> (Conjunto de filtro) e a imagem do
+          indicador de filtro se acende. Ao copiar, um link <emphasis
+          role="bold">Open in New Page</emphasis> um novo filtro será
+          configurado, a condição do filtro persistirá. As condições de filtro
+          limitam os resultados exibidos até que o filtro seja apagado.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="ECLWA_BannerItems">
+        <title>Itens do Banner</title>
+
+        <para>A área de banner do ECL Watch aparece no topo de todas as
+        páginas.</para>
+
+        <sect3 id="ECLWAtchHomeButton">
+          <title>Botão Home</title>
+
+          <para>O botão de página inicial do HPCC Systems também é o link de
+          menu Activity. Mais do que apenas uma decoração, o botão de Home do
+          ECL Watch abre de fato a página Activity, que será abordada de forma
+          mais detalhada no próximo capítulo.</para>
+
+          <para>Os ícones à esquerda do botão Home são destinados às
+          diferentes áreas do ECL Watch. Cada uma das áreas do link será
+          discutida nos próximos capítulos.</para>
+        </sect3>
+
+        <sect3 id="MonitorIndicatorLight">
+          <title>Luz indicadora do monitor</title>
+
+          <para>A luz indicadora “Monitorador” fornece um status da
+          integridade geral do sistema. Se você configurou o monitoramento e
+          geração de relatórios (consulte <emphasis>Monitoramento e Relatórios
+          do HPCC</emphasis>), essa luz será exibida em uma cor baseada na
+          integridade geral do sistema (configurável). Se não houver
+          monitorador ou relatório configurado para o seu sistema, a luz será
+          exibida na cor preta.</para>
+        </sect3>
+
+        <sect3 id="DownloadAsCSV">
+          <title>Download como CSV</title>
+
+          <para>Com a maioria das listas no ECL Watch, é possível fazer o
+          download das linhas selecionadas como um arquivo formatado em CSV. É
+          possível então abrir o arquivo CSV em qualquer aplicativo de
+          planilha compatível com formatos CSV.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="ECLWatch_GlobalSearch">
+        <title>Pesquisa Global</title>
+
+        <para>A caixa de busca global está disponível na barra de navegação no
+        topo da página do ECL Watch.<figure>
+            <title>Caixa de busca global</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA008.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>É possível procurar por workunit DFU, workunit de ECL, arquivos
+        lógicos e consultas Queries usando a caixa de busca global. A caixa de
+        busca global também é compatível com o uso de elementos curingas. Para
+        limitar ou filtrar seus resultados de busca, é possível usar
+        palavras-chave conforme exibidas na caixa de busca vazia.</para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>file:</term>
+
+              <listitem>
+                <para>Comece a string de busca com <emphasis>file:</emphasis>
+                para procurar arquivos lógicos</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>wuid:.</term>
+
+              <listitem>
+                <para>Comece a string de busca com <emphasis>wuid:</emphasis>
+                para procurar apenas por IDs de workunit.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>ecl:</term>
+
+              <listitem>
+                <para>Comece a string de busca com <emphasis>ecl:</emphasis>
+                para procurar por código ECL nas workunit.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>dfu:</term>
+
+              <listitem>
+                <para>Comece a string de busca com <emphasis>dfu:</emphasis>
+                para procurar apenas por workunit DFU.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>query:</term>
+
+              <listitem>
+                <para>Comece a string de busca com <emphasis>query:</emphasis>
+                para procurar apenas por consultas publicadas.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>Exemplos de uso da busca global:</para>
+
+        <para>Insira <emphasis>W201510*</emphasis> na caixa de busca e ela
+        exibirá todas as tarefas desde outubro de 2015.</para>
+
+        <para>Insira <emphasis>file:keys</emphasis> na caixa de busca e ela
+        exibirá todos os arquivos lógicos que contenham a palavra "keys".
+        <figure>
+            <title>Exemplo de busca global</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA015.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <!-- Enter <i>ecl:output</i> into the global search box and it will return all of the workunits that contain "output" in the ECL page of ECL Watch-->
+      </sect2>
+
+      <sect2>
+        <title>Menu Advanced</title>
+
+        <para>Há uma seção, na parte superior direita da barra de navegação,
+        com algumas informações e recursos úteis. Essa seção mostra com qual
+        usuário você está conectado (se seu sistema estiver com a autenticação
+        ativada). O menu “Advanced” (Avançado) está localizado ao lado direito
+        da barra de navegação. É possível acessar vários itens no menu.</para>
+
+        <para><figure>
+            <title>Menu Advanced</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA007b.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Pode haver um número exibido no link do menu. Um número exibido
+        ao lado dele indica quantos erros e avisos foram gerados durante a
+        sessão. Clique no menu Advanced para exibir uma lista de
+        recursos.</para>
+
+        <sect3 id="ECLWatch_AdvancedMenuAccess">
+          <title>Acesso ao menu Advanced</title>
+
+          <para>Os itens de menu Advanced (Avançado) são acessados através do
+          link do menu localizado no canto direito superior do ECL Watch.<!--Removed some content stashed in GitStash : ECLWA-1115.xml others culled stored in git-br H8872-NewestECLfor50 **--></para>
+
+          <para>O link <emphasis role="bold">Set Banner (Fixar
+          Banner)</emphasis> permite que você configure uma mensagem de banner
+          personalizada no topo da janela do navegador ao abrir o ECL Watch. É
+          possível usar esse recurso para enviar mensagens para os
+          usuários.</para>
+
+          <para>O link <emphasis role="bold">Error/Warning(s)
+          (Erro/aviso(s))</emphasis> exibe uma aba que exibe mensagens de
+          erro, avisos e informações. É possível filtrar essa página marcando
+          as caixas na parte inferior da aba. Um recurso de cópia também está
+          disponível.</para>
+
+          <para>O link <emphasis role="bold">Transition Guide (Guia de
+          Transição)</emphasis> abre uma nova guia do navegador para a página
+          onde você pode encontrar mais informações sobre a transição usando a
+          versão anterior do HPCC e do ECL Watch.</para>
+
+          <para>O link <emphasis role="bold">Additional Resources</emphasis>
+          (Recursos adicionais) abre um submenu que fornece links para áreas
+          no site do HPCC Systems<superscript>®</superscript> <emphasis
+          role="bold">, onde é possível localizar recursos adicionais como
+          </emphasis> Red Book <emphasis role="bold">,</emphasis> Forums
+          <emphasis role="bold"> (Fóruns de usuários) e o </emphasis>Issue
+          Reporting <emphasis role="bold"> (Relatórios de
+          problemas)</emphasis>.</para>
+
+          <para>O <emphasis role="bold">link Configuration
+          (Configuração)</emphasis> direciona para a exibição da versão XML do
+          arquivo de configuração em uso pelo seu sistema.</para>
+
+          <para>O link <emphasis role="bold">About (Sobre)</emphasis> abre uma
+          caixa de diálogo que exibe algumas informações sobre a versão da
+          plataforma HPCC e os controles gráficos instalados em seu
+          servidor.</para>
+        </sect3>
+
+        <sect3 id="ECLWatch_AdvancedMenuLoggedInAs" role="nobrk">
+          <title>Conectar como</title>
+
+          <para>O link <emphasis role="bold">Logged In As: (Entrou no sistema
+          como:)</emphasis> , localizado no topo da página ECL Watch, exibe
+          informações sobre o usuário atual em um cluster configurado para
+          autenticação. <figure>
+              <title>Logged In As</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWMyAccount.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Clique no link <emphasis role="bold"><emphasis
+                role="bold">LOGGED IN AS</emphasis></emphasis> :</para>
+
+                <para>A janela User Details (Detalhes do usuário) é aberta A
+                janela padrão abre na aba Summary (Resumo).</para>
+
+                <para><figure>
+                    <title>Janela “User Details”</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/ECLWA474.jpg"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <para>Na aba Summary da página User Details, é possível
+                confirmar o nome do usuário que você usou para se conectar ao
+                sistema.</para>
+
+                <para>É possível alterar a sua senha.</para>
+
+                <para>Observe que são necessários direitos de administrador
+                para gerenciar usuários e permissões.</para>
+
+                <para>Verifique se você está usando uma conta com direitos de
+                administrador se precisar gerenciar usuários ou
+                permissões.</para>
+              </listitem>
+
+              <listitem>
+                <para>Verifique a data de validade da senha ou se a senha está
+                prestes a expirar.</para>
+              </listitem>
+            </orderedlist></para>
+
+          <sect4 id="ECLWatch_AdvancedMenuChangePassword" role="nobrk">
+            <title>Alterar a Senha</title>
+
+            <para>Se a autenticação estiver ativada em seu HPCC System, é
+            possível alterar sua senha diretamente da janela User Details.
+            <orderedlist>
+                <listitem>
+                  <para>Clique no link <emphasis role="bold"><emphasis
+                  role="bold">LOGGED IN AS</emphasis></emphasis> :</para>
+
+                  <para>A janela User Details (Detalhes do usuário) é aberta A
+                  janela padrão abre na aba Summary (Resumo). Há campos na aba
+                  Summary onde é possível alterar a senha.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Insira a nova senha desejada.</para>
+
+                  <para>Verifique se ela atende aos critérios que seu sistema
+                  possa ter para senhas.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Confirme a nova senha.</para>
+
+                  <para>Verifique se ela corresponde à senha inserida no campo
+                  anterior.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Pressione o botão Save. Ele se encontra na parte
+                  superior esquerda da janela.</para>
+                </listitem>
+              </orderedlist></para>
+          </sect4>
+
+          <sect4 id="ECLWatch_AdvancedMenuPermissionGroups">
+            <title>Grupos de Permissão</title>
+
+            <para>A segunda aba na janela User Details, marcada como Member of
+            (Membro de), exibe uma lista de grupos. Os grupos aos quais a sua
+            conta pertence são indicados com uma marca de seleção.</para>
+
+            <para>É necessário ser administrador para modificar qualquer uma
+            das configurações de grupo.</para>
+          </sect4>
+
+          <sect4 id="ECLWatch_AdvancedMenuUserPermissions">
+            <title>Aba User Permissions (Permissões de usuário)</title>
+
+            <para>A terceira aba User Details, chamada como <emphasis
+            role="bold">User Permissions (Permissões de usuário)</emphasis>, e
+            exibe uma lista de configurações de permissionamento. Observe que
+            são necessários direitos de administrador para gerenciar usuários
+            e permissões. Verifique se você está usando uma conta com direitos
+            de administrador se precisar gerenciar usuários ou
+            permissões.</para>
+
+            <para>É aí onde você pode acessar a área de permissões de usuário.
+            Uma descrição mais detalhada das configurações de permissões de
+            usuário será abordada na seção <link
+            linkend="User_Permissions_Chapter">User Permissions </link>
+            .</para>
+          </sect4>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="ECLWatch_Home_Chapter">
+    <title>Da página inicial do ECL Watch</title>
+
+    <para>Na página inicial do <emphasis role="bold">ECL Watch</emphasis> ,
+    clique na barra de navegação na parte superior para localizar os links
+    <emphasis role="bold">Activity</emphasis>, <emphasis
+    role="bold">Scheduler</emphasis> e <emphasis role="bold">Search
+    Results</emphasis> . É possível acessar as respectivas páginas pelos links
+    ou guias no topo da página inicial do ECL Watch.</para>
+
+    <para><figure>
+        <title>Link da página inicial do ECL Watch</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLWA010.jpg" vendor="eclwatchSS"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Há vários ícones usados pelo ECL Watch. A tabela a seguir descreve a
+    maioria dos ícones que você irá encontrar.</para>
+
+    <para><informaltable colsep="1" frame="all">
+        <tgroup cols="2">
+          <colspec colwidth="46pt"/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">Ícone</emphasis></entry>
+
+              <entry><emphasis role="bold">Definição</emphasis></entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/ECLWaCluster.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Cluster do sistema</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/ECLWaClustPaused.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Cluster do sistema em pausa</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/ECLWaClustNotFound.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Cluster do sistema não encontrado</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_complete.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Workunit compilada, Concluído</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_running.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Workunit em execução, Compilando, Debug em
+              execução</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_fail.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Workunit falhou, Cancelada</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_warn.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Workunit bloqueada, Programada, Em espera, Enviando
+              Arquivos, Debug em pausa, Em pausa</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_archived.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Workunit arquivada</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_abort.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Workunit sendo cancelada</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_submit.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Workunit enviada</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_deleted.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Workunit removida.</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/workunit.png"
+              vendor="eclwatchSS"/></entry>
+
+              <entry>Estado desconhecido da Workunit</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <sect1 id="ECLWatch_Activity" role="nobrk">
+      <title>Atividade</title>
+
+      <para>A guia Activity mostra atividades de todos os clusters no
+      ambiente. A página Activity oferece acesso às workunit de administração
+      da fila de workunit do cluster, como; progresso do monitorador,
+      definição de prioridade, descer ou subir uma tarefa na fila, pausar uma
+      tarefa, cancelar uma tarefa e pausar ou retomar uma fila.</para>
+
+      <!--***Note specific Activity task details have been REMOVED (to DocShare/WKSPCE/ECLWa400)***-->
+
+      <para>Ao acessar o URL do ECL Watch, a página inicial do ECL Watch
+      mostra a aba Activity. Para acessar a aba Activity de qualquer outra
+      página no <emphasis role="bold">ECL Watch</emphasis> , clique na imagem
+      do ECL Watch localizada no topo de qualquer página como mostrado
+      acima.</para>
+
+      <sect2 id="ECLWatch_ClusterActivity">
+        <title>Atividade de Cluster</title>
+
+        <para>As informações sobre os clusters de sistema e qualquer atividade
+        nesses clusters podem ser acessadas na aba Activity do ECL Watch.
+        Selecione a aba <emphasis role="bold">Activity</emphasis> abaixo da
+        imagem do <emphasis role="bold">ECL Watch</emphasis> no submenu de
+        navegação. Isso exibe a aba Activity.</para>
+
+        <para><figure>
+            <title>Atividade de clusters</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA1002b.jpg" vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Todos os clusters de sistema são exibidos. Caso haja qualquer
+        atividade em um cluster, um ícone será exibido ao lado do cluster para
+        indicar a existência de alguma atividade. No exemplo acima, o ícone
+        para ampliar o cluster Thor indica que há alguma atividade no cluster
+        Thor. Clique no ícone para expandir o cluster e ver a atividade nesse
+        cluster.</para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Botões Cluster</title>
+
+        <figure>
+          <title>Botões Cluster</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA1005.jpg" vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>Marque a caixa ao lado de um cluster para ativar os botões de
+        ação do cluster. Os botões de ação do cluster permitirão que você
+        realize as ações a seguir na fila de jobs do cluster
+        selecionado.</para>
+
+        <sect3>
+          <title>Pause</title>
+
+          <para>Pausar a fila de jobs do cluster. O job que está atualmente em
+          execução é concluído, mas nenhuma outra será executado até a
+          consulta ser retomada.</para>
+        </sect3>
+
+        <sect3>
+          <title>Resume</title>
+
+          <para>Retomar uma fila de jobs pausados. A execução de quaisquer
+          jobs em espera serão retomadas na ordem em que foram
+          listadas.</para>
+        </sect3>
+
+        <sect3>
+          <title>Limpar</title>
+
+          <para>Remover todas as workunits da fila de jobs. O estado das
+          workunits removidas é definido como cancelado. Quaisquer workunits
+          que estavam em espera na fila podem ser reenviadas manualmente
+          depois, se desejado.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="WorkUnitActivityTab">
+        <title>Atividade da Workunit no Cluster</title>
+
+        <para><figure>
+            <title>Botões da workunit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA1002c.jpg" vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </sect2>
+
+      <sect2>
+        <title>Botões da workunit</title>
+
+        <para>Marque a caixa ao lado de uma workunit para selecioná-la e
+        ativar os botões de ação da workunit.</para>
+
+        <para>Uma vez ativados, os botões da workunit permitirão que você
+        realize as ações a seguir nas workunit selecionadas.</para>
+
+        <sect3>
+          <title>Open</title>
+
+          <para>Abrir uma aba (workunit) para a workunit selecionada.</para>
+        </sect3>
+
+        <sect3>
+          <title>Pause</title>
+
+          <para>Pressione o botão <emphasis role="bold">Pause</emphasis> para
+          completar o subgráfico atual e depois colocar a tarefa em estado
+          pausado.</para>
+        </sect3>
+
+        <sect3>
+          <title>Pause Now</title>
+
+          <para>Pressione o botão <emphasis role="bold">Pause Now</emphasis>
+          para interromper o subgráfico atual (cancelá-lo) e colocar o job em
+          um estado pausado.</para>
+        </sect3>
+
+        <sect3>
+          <title>Resume</title>
+
+          <para>Retoma o processamento de qualquer job pausado.</para>
+        </sect3>
+
+        <sect3>
+          <title>Abort</title>
+
+          <para>Cancela um job em execução. Um job cancelado não pode ser
+          retomado.</para>
+        </sect3>
+
+        <sect3>
+          <title>High, Normal, Low</title>
+
+          <para><figure>
+              <title>Prioridade</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA1003b.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>É possível aumentar ou diminuir a prioridade do job na
+          fila. Selecione o job e depois pressione um dos botões adequados:
+          <emphasis role="bold">High</emphasis> ou <emphasis role="bold">
+          Low</emphasis>. Por padrão, todas as workunit são definidas para
+          prioridade Normal.</para>
+
+          <para>Pressione o botão <emphasis role="bold">High</emphasis> para
+          aumentar a prioridade do job selecionado para High. Pressione o
+          botão <emphasis role="bold">Low</emphasis> para diminuir a
+          prioridade do job selecionado.</para>
+        </sect3>
+
+        <sect3>
+          <title>Top, Bottom, Up, Down</title>
+
+          <para><figure>
+              <title>Posição na fila</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA1003c.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>É possível alterar a posição de um job na fila usando os
+          botões Top, Bottom, Up and Down.</para>
+
+          <para>Selecione a workunit a ser movida; isso ativará os botões de
+          ação.</para>
+
+          <para>Pressione o botão <emphasis role="bold">Top</emphasis> para
+          mover um job selecionada para o topo da fila de processamento.
+          Pressione o botão <emphasis role="bold">Up</emphasis> para subir um
+          job em uma posição na fila. Pressione o botão <emphasis
+          role="bold">Down</emphasis> para descer o job em uma posição na
+          fila. Pressione o botão <emphasis role="bold">Bottom</emphasis> para
+          mover o job para o final da fila.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="cluster_Info" role="brk">
+        <title>Informações do Cluster</title>
+
+        <para>É possível acessar mais informações sobre os clusters Thor na
+        aba Activity principal.</para>
+
+        <para>Selecione o cluster de destino na aba <emphasis
+        role="bold">Activity</emphasis> principal marcando a caixa ao lado
+        dele. <figure>
+            <title>Abrir cluster</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA002.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Isso habilita o botão <emphasis role="bold">Open</emphasis> .
+        Pressione o botão Open para abrir uma nova aba para esse
+        cluster.</para>
+
+        <para>A aba do cluster exibe os grupos nesse cluster. Marque a caixa
+        ao lado do grupo do cluster e pressione o botão Open. <figure>
+            <title>Abrir os grupos de cluster</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA003.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Abra a aba de grupo de cluster (por exemplo, mythor) e selecione
+        o grupo da aba Groups para ver as informações da atividade daquele
+        grupo de cluster. <figure>
+            <title>Abas de atividade de cluster</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA004.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Na aba do grupo de cluster é possível acessar as informações
+        sobre o cluster. Essa aba de grupo de cluster é formada por três abas.
+        A aba <emphasis role="bold">Summary</emphasis> fornece um instantâneo
+        desse grupo.</para>
+
+        <para>Também é possível clicar no link sobre o nome do cluster para
+        examinar.</para>
+
+        <sect3 id="ClusterUsageTab">
+          <title>Aba Cluster Usage</title>
+
+          <para>A aba <emphasis role="bold">Usage</emphasis> oferece acesso a
+          um gráfico de uso. A aba de uso fornece informações sobre o uso do
+          cluster. <figure>
+              <title>Gráfico de uso</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA0UG01.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Para exibir o gráfico de uso, é possível inserir alguns
+          valores nos campos exibidos na aba de uso inicial. Opcionalmente, é
+          possível simplesmente aceitar os valores padrão para os últimos 30
+          dias. Em seguida, pressione o botão <emphasis role="bold">Get Usage
+          Graph (Obter gráfico de uso)</emphasis> para exibir o
+          gráfico.</para>
+
+          <para>O gráfico mostra o uso do cluster ao longo do tempo. Mais
+          informações sobre o uso do cluster são especificadas através de um
+          código de cores. A coluna à direita detalha o uso geral, além da
+          porcentagem, durante horários dentro e fora do expediente. É
+          possível alterar esses valores usando os campos acima do gráfico e
+          depois pressionar o botão <emphasis role="bold">Get Usage Graph
+          </emphasis> novamente.</para>
+
+          <sect4>
+            <title id="ClusterLogFile">Arquivo de log de cluster</title>
+
+            <para>A aba <emphasis role="bold">Log Files</emphasis> é onde você
+            pode ver o log desse grupo de cluster. <figure>
+                <title>Arquivo de log de cluster</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/ECLWA005.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Você pode usar várias opções de exibição de log para filtrar
+            o arquivo de log. É possível filtrar por linhas, páginas ou hora.
+            Use as opções de filtro na aba Log File para filtrar o log
+            exibido. É possível também fazer o download do arquivo de log para
+            acessá-lo off-line.</para>
+          </sect4>
+        </sect3>
+      </sect2>
+
+      <sect2 id="ECLWatch_AutoRefresh">
+        <title>Atualização automática</title>
+
+        <para><figure>
+            <title>Atualização automática</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA011.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>A página <emphasis role="bold">Activity</emphasis> exibe as
+        workunit ECL ou DFU ativas que estão em execução ou na fila no
+        cluster. Para atualizar a lista, pressione o botão <emphasis
+        role="bold">Refresh</emphasis> . A atualização automática mostra a
+        lista em tempo real, mas esse recurso é desativado por padrão.</para>
+
+        <para>Para ativar a atualização automática, acione o botão “Auto
+        Refresh”.</para>
+
+        <para>Em um ambiente com um grande número de usuários ativos, o
+        recurso de atualização automática pode afetar o desempenho do servidor
+        ESP.</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="ECLWatch_EventScheduler">
+      <title>ECL Event Scheduler</title>
+
+      <para>A página ECL Event Scheduler oferece uma interface para o
+      agendador ECL. A interface do ECL Scheduler (agendador) permite que você
+      veja uma lista das workunit agendadas. Ela também pode acionar um
+      evento. Um “Event (Evento)” é uma constante de cadeias (strings), sem
+      distinção entre maiúsculas e minúsculas, que nomeia o evento para
+      interceptação</para>
+
+      <para>O agendamento ECL oferece uma maneira para automatizar processos
+      no código ECL ou para sequenciar os processos para eles funcionem em
+      sequência. Por exemplo, é possível gravar o código ECL que supervisiona
+      uma zona de entrada de arquivos para a chegada de um arquivo e, quando
+      ele chega, realiza a distribuição aos nós do Thor, processa, compila um
+      índice e depois o adiciona a um superarquivo.</para>
+
+      <para>O agendamento ECL é baseado em eventos. O agendador ECL monitora
+      uma lista de agendamentos que contém workunit e eventos registrados e
+      executa quaisquer workunit associadas a um evento quando o evento é
+      acionado.</para>
+
+      <para>Seu código ECL pode ser executado quando um evento for acionado,
+      ou pode acionar um evento. Se você enviar o código contendo uma cláusula
+      <emphasis role="bold">WHEN </emphasis>, o evento e a workunit são
+      registrados na Lista de agendamento. Quando um evento é acionado, a
+      workunit é compilada e executada. Quando a workunit é concluída, o ECL
+      Scheduler a remove da lista de agendamento.</para>
+
+      <para>Por exemplo, se quiser enviar uma workunit utilizando <emphasis
+      role="bold">WHEN(‘Event1’,’MyEvent’, COUNT(2)) </emphasis>ela será
+      executada duas vezes (o valor de <emphasis role="bold">COUNT</emphasis>)
+      antes que o ECL Scheduler a remova da lista de agendamento e que a
+      workunit seja marcada como concluída.</para>
+
+      <para>Para obter mais detalhes sobre <emphasis id="WHEN"
+      role="bold">WHEN</emphasis> ou <emphasis id="NOTIFY"
+      role="bold">NOTIFY.</emphasis> ou sobre quaisquer funções de linguagem
+      ECL ou palavras-chave, consulte o Referência Linguagem ECL. É possível
+      acessar uma cópia na página <ulink
+      url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
+      no site do no site do <superscript>HPCC Systems</superscript> ®.</para>
+
+      <!--***NOTE: Be sure to UPDATE these images when they find a home in ECLWATCH***-->
+    </sect1>
+
+    <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedComp.xml"
+                xpointer="xpointer(//*[@id='ECLSched_Interface'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="ECLWatch_ECLWorkunits">
+    <title>Workunits ECL</title>
+
+    <para>O ECL Watch fornece informações sobre trabalhos e tarefas ECL. Os
+    links para páginas que contêm informações sobre workunit ECL aparecem na
+    barra de navegação ao longo da parte superior da página do ECL Watch. Lá,
+    você encontrará links para workunit ECL, marcadas simplesmente como
+    workunit, além do link para o ECL Playground. Também é possível não apenas
+    encontrar informações sobre as workunit, como também realizar operações em
+    workunit.</para>
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="xpointer(//*[@id='ECLWorkunits'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLPlayground/ECLPlay-Mods/ECL_Playground.xml"
+                xpointer="xpointer(//*[@id='ECL_Playground'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="ECLWatch_FilesChapter">
+    <title>Arquivos</title>
+
+    <para>Este capítulo contém seções sobre arquivos da plataforma HPCC,
+    disponíveis no link <emphasis role="bold">Files</emphasis> no ECL
+    Watch.</para>
+
+    <para>Em uma plataforma HPCC, os arquivos de dados são particionados entre
+    nós. As partes de arquivos, referenciadas usando nomes de arquivos
+    lógicos, são armazenadas no Utilitário de arquivos distribuídos. Isso
+    permite que a coleta de partes de arquivo seja referenciada como uma
+    entidade única.</para>
+
+    <!--  Might this be chapter for Xref?***-->
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="xpointer(//*[@id='ECLWatchLogicalFiles'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="xpointer(//*[@id='DFUWorkunits'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="xpointer(//*[@id='Landing_Zones'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <sect1 id="spray_and_despray">
+      <title>Spray/Despray</title>
+
+      <para>Esta seção trata dos processos de spray (distribuição dos nós) e
+      despray (consolidação de dados dos nós) ao seu cluster usando o ECL
+      Watch. A função de spray é integrada na página de zona de entrada de
+      arquivos, como detalhado na seção <link linkend="Upload_Files">Upload
+      Files (Carregar arquivos)</link> .</para>
+
+      <para>Para realizar o processo de spray de um arquivo em seu cluster,
+      primeiro é necessário carregar o arquivo na sua zona de entrada de
+      arquivos. As etapas para carregar o arquivo foram explicadas na seção
+      anterior.</para>
+
+      <para>Depois de carregar o arquivo na zona de entrada de arquivos, é
+      possível selecioná-lo para realizar o spray na página Landing Zone (Zona
+      de entrada de arquivos). Depois de selecionado, os botões de Spray são
+      ativados.</para>
+
+      <para><figure>
+          <title>Página de zona de entrada de arquivos</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA440.jpg" vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <sect2 id="Spray-to-cluster">
+        <title>Spray de Dados para o Cluster</title>
+
+        <para>Com os botões de <emphasis role="bold">Spray:</emphasis>
+        ativados, basta pressionar o botão adequado para o Spray que deseja
+        realizar. Preencha os valores adequados quando solicitado para
+        concluir o spray.</para>
+      </sect2>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='LZ_Spray'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Spray_Fixed'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Spray_Delimited'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Spray_XML'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Spray_JSON'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Spray_Variable'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Spray_Blob'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Desprays'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Copy'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Remote_Copy'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+    </sect1>
+
+    <sect1 id="ECLWatch_Xref">
+      <title>XRef</title>
+
+      <para>Abaixo do ícone <emphasis role="bold">Files</emphasis> , no
+      submenu de navegação, há um link para o XRef. Este link irá direcioná-lo
+      para a página XRef. Na página XRef, é possível executar o utilitário
+      XREF.</para>
+
+      <para><figure>
+          <title>Página dos Clusters XRef</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA435.jpg" vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>O utilitário XREF fornece a capacidade de localizar arquivos
+      “órfãos” (orphaned), "perdidos” (lost) e "encontrados” (found). Os
+      arquivos Órfãos (Orphans) são aqueles encontrados nos nós, mas que não
+      são registrados no Sistema de arquivos distribuídos.</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>Arquivo encontrado (Found File)</term>
+
+          <listitem>
+            <para>Um arquivo encontrado possui partes de arquivo em disco que
+            não estão referenciadas no servidor Dali. Todas as partes de
+            arquivo são levadas em conta para que possam ser adicionadas
+            novamente no servidor Dali. Elas também podem ser excluídas do
+            cluster, caso seja necessário.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Arquivo órfão (Orphan File)</term>
+
+          <listitem>
+            <para>Um arquivo órfão é aquele sem uma entrada Dali e sem um
+            conjunto completo de arquivos físicos. Já que alguns dos arquivos
+            físicos não foram encontrados, esse é um arquivo incompleto que
+            não pode ser usado para adicionar uma entrada de arquivo lógico de
+            volta ao servidor Dali. Essas partes de arquivos órfãos não
+            possuem uma referência no servidor Dali.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Arquivo perdido (Lost File)</term>
+
+          <listitem>
+            <para>Um arquivo lógico que não possui, no mínimo, uma parte de
+            arquivo em ambos locais primário e replicado no armazenamento.
+            Ainda assim, o arquivo lógico é referenciado no servidor Dali. A
+            exclusão do arquivo remove a referência do servidor Dali e
+            quaisquer partes restantes em disco.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic fileref="images/tip.jpg"/></entry>
+
+              <entry><para>Em um sistema maior, sugerimos limitar o número de
+              usuários que têm permissão para gerar relatórios XREF
+              configurando o acesso ao DfuXrefAccess para FULL (Completo)
+              apenas para esses usuários.</para><para> </para></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+
+      <para>Para gerar uma lista:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Generate</emphasis>
+          .</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic fileref="images/tip.jpg"/></entry>
+
+                  <entry><para>O servidor Sasha normalmente executa o Xref nos
+                  horários programados quando implementado.</para><para>
+                  </para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+      </itemizedlist>
+
+      <para>Para ver os resultados:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Clique em uma das guias ((Found Files (Arquivos encontrados),
+          Orphan Files (Arquivos órfãos), Lost Files (Arquivos perdidos),
+          Diretórios ou Erros/avisos).</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2 id="ECLWatch_WorkingWithXref">
+        <title>Trabalhando com os resultados XREF:</title>
+
+        <para>Após o XRef ser concluído, é possível ver uma lista dos
+        relatórios disponíveis. Clique em cada uma das abas para ver a página
+        de resultados de cada tipo.</para>
+
+        <figure>
+          <title>Erros de XRef</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA435b.jpg" vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>As páginas Orphan and Lost Files (Arquivos perdidos e Arquivos
+        órfãos) listam quaisquer arquivos perdidos e órfãos. É difícil
+        recuperar arquivos perdidos e órfãos, a menos que você tenha cópias
+        das partes faltantes necessárias para reconstruir o arquivo (por
+        exemplo, se uma parte faltante estiver em um disco rígido que foi
+        trocado).</para>
+
+        <figure>
+          <title>XRef: Excluir Arquivos Órfãos</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA436.jpg" vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>Normalmente, esses arquivos precisarão ser removidos. Para
+        remover, marque as caixas ao lado dos arquivos que você deseja
+        eliminar e pressione o botão Delete</para>
+
+        <para>Arquivos encontrados podem e normalmente são reanexados. <figure>
+            <title>XRef: Anexar arquivos encontrados</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA437.jpg" vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Marque as caixas ao lado dos arquivos que você deseja reanexar e
+        pressione o botão Attach.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="ECLWatch_Queries">
+    <title>Consultas</title>
+
+    <para>O link para o cabeçalho Published Queries (Consultas publicadas)
+    (ícone) oferece mais informações e detalhes sobre as consultas em relação
+    aos destinos disponíveis.</para>
+
+    <!-- <para>Include ROXIE (RDDE). List of Clusters.</para>
+
+    <para>Queries &gt; Browse</para>
+
+    <para>Queries &gt; Browse &gt; Thor</para>
+
+    <para>Queries &gt; Browse &gt; Roxie</para>
+
+    <para>Queries &gt; Browse &gt; hThor</para>
+
+    <para>I. Dynamic</para>
+
+    <para>II. Clusters</para> -->
+
+    <para>Clique no hiperlink Published Queries (Consultas publicadas) (ícone)
+    para exibir as consultas publicadas e os mapas do pacote de dados no
+    cluster.</para>
+
+    <figure>
+      <title>Link da Consulta</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/ECLWA00Q.jpg" vendor="eclwatchSS"/>
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchQueries.xml"
+                xpointer="xpointer(//*[@id='Queries_Page'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="ECLWatch_OperationsLink">
+    <title>Operações de T.I.</title>
+
+    <para>O link Operations (Operações) oferece acesso a diversos componentes
+    úteis para a operação diária do sistema, além de certo acesso
+    administrativo do sistema. <figure>
+        <title>Menu Operations</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLWA460.jpg" vendor="eclwatchSS"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Há links para clusters de destino, processos de clusters e
+    servidores do sistema. Esses links abrem páginas com mais informações
+    sobre a topologia específica para os clusters selecionados. Essas páginas
+    são úteis na hora de se certificar de que seu sistema esteja configurado e
+    operando corretamente.</para>
+
+    <para>Há alguns links sobre o tipo de administração de sistema, como
+    usuários, grupos, permissões e Resources (Recursos). Esses links permitem
+    que você realize algumas tarefas de administração de sistema através do
+    ECL Watch.</para>
+
+    <sect1 id="ECLWatch_Operations_Topology">
+      <title>Topologia</title>
+
+      <para>A página Topology (Topologia) exibe uma árvore com informações
+      sobre seus clusters, serviços e nós.</para>
+
+      <para>Clique no link <emphasis role="bold">Topology</emphasis> pelo
+      submenu de navegação Operations para acessar a página Topology
+      (Topologia).</para>
+
+      <para><figure>
+          <title>Página Topologia</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA463.jpg" vendor="ECLWatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <sect2 id="TopologyTargets" role="brk">
+        <title>Targets (Destinos)</title>
+
+        <para>O botão <emphasis role="bold">Targets (Destinos)</emphasis>
+        exibe seus clusters de acordo com o tipo.</para>
+
+        <para>Clique na seta à esquerda do objeto/pasta Cluster para expandir.
+        A visão expandida é exibida.</para>
+
+        <para><figure>
+            <title>Visão expandida</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA464.jpg" vendor="ECLWatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure>A visão expandida exibe os objetos e nós no contêiner
+        selecionado. Selecione o nó ou objeto para exibir mais informações ou
+        para acessar os logs. As abas Summary, Configuration e Logs ao lado
+        esquerdo da página exibem informações relevantes do componente
+        selecionado.</para>
+      </sect2>
+
+      <sect2 id="TopologyServices" role="brk">
+        <title>Serviços</title>
+
+        <para>Pressione o botão <emphasis role="bold">Services
+        (Serviços)</emphasis> para exibir informações sobre os diversos
+        serviços em execução no seu cluster.</para>
+
+        <para>Clique na seta à esquerda do serviço que você deseja expandir. A
+        visão expandida é exibida.</para>
+
+        <para><figure>
+            <title>Serviços expandidos</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA465.jpg" vendor="ECLWatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>A função serviços expandidos oferece uma visão em árvore
+        orientada por serviços que proporciona acesso aos serviços. Abra a
+        árvore e selecione o componente para ver as abas Summary,
+        Configuration, ou Logs do componente selecionado.</para>
+      </sect2>
+
+      <sect2 id="ECLWatch_Operations_TopologyMachines" role="brk">
+        <title>Máquinas</title>
+
+        <para>Pressione o botão de ação <emphasis role="bold">Machines
+        (Máquinas) </emphasis> para exibir mais informações sobre as diversas
+        máquinas ou nós em execução nos seus clusters.</para>
+
+        <para><figure>
+            <title>Visualização Máquinas</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA466.jpg" vendor="ECLWatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>O botão de ação <emphasis role="bold">Machines</emphasis> abre
+        uma visão da árvore orientada por nós. Abra os nós para ver os
+        serviços em cada um deles. Selecione o componente para ver as abas
+        Summary, Configuration ou Logs do componente selecionado.</para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Status de cópia de arquivos Roxie</title>
+
+        <para>Na seção Topology dos clusters Roxie, a aba <emphasis
+        role="bold">Roxie Files Copy Status (Status de cópia de arquivos
+        Roxie)</emphasis> mostra o número de arquivos que um cluster ainda
+        precisa copiar.<figure>
+            <title>Status da cópia de arquivo</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA467.jpg" vendor="ECLWatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="ECLWatch_Operations_DiskUsage">
+      <title>Uso do Disco</title>
+
+      <para>Ao clicar no link Operations, a página “Disk Usage” é exibida por
+      padrão. A página “Disk Usage” oferece informações sobre o espaço
+      disponível no sistema e o que está ocupando esse espaço. <figure>
+          <title>Disk Usage (Uso do Disco)</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA462.jpg"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>É possível procurar ou filtrar os resultados usando o botão de
+      ação <emphasis role="bold">Filter</emphasis> .</para>
+    </sect1>
+
+    <sect1 id="ECLWatch_Operations_TargetClusters">
+      <title>Operações: Clusters de destino</title>
+
+      <para>O link Clusters de destino, na barra do submenu de navegação da
+      página Operations, abre o link para a página Target Clusters. Essa
+      página oferece informações de máquina sobre os clusters que você
+      configurou em sua máquina. <figure>
+          <title>Clusters de destino</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA461.jpg"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+    </sect1>
+
+    <sect1 id="ECLWatch-DynamicESDL">
+      <title>ESDL Dinâmica</title>
+
+      <para>A aba Dynamic ESDL no ECL Watch exibe os ESPServices disponíveis.
+      É possível explorar os serviços DESDL e as conexões ESDL, também
+      conhecidas como configurações de serviço.</para>
+
+      <para>Para acessar a ESDL Dynamic pelo ECL Watch, clique no link
+      <emphasis role="bold">Operations</emphasis> e depois em <emphasis
+      role="bold">Dynamic ESDL</emphasis> na barra de submenu de
+      navegação.</para>
+
+      <figure>
+        <title>Resumo da Dynamic ESDL</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/DESDL03.jpg"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>A aba <emphasis role="bold">Dynamic ESDL</emphasis> contém uma
+      lista de todos os ESP Services baseados em DESDL e suas informações de
+      conexão ESDL. Os serviços ESP baseados em DESDL disponíveis são listados
+      no painel navegador à esquerda como secundários de seu processo
+      ESP.</para>
+
+      <para>A aba <emphasis role="bold">Definitions</emphasis> , também
+      acessível pelo submenu do botão <emphasis role="bold">Dynamic
+      ESDL</emphasis> , lista todas as definições de ESDL disponíveis e
+      oferece uma visão sobre qualquer uma das definições. Essas definições
+      são usadas para definir de forma dinâmica as interfaces para os serviços
+      Web ESP existentes.</para>
+
+      <para>Para obter mais informações sobre a Dynamic ESDL, consulte a
+      documentação; <emphasis>Dynamic ESDL</emphasis> disponível no portal
+      HPCC Systems: <ulink
+      url="https://hpccsystems.com/training/documentation/learning-ecl/">https://hpccsystems.com/training/documentation/learning-ecl/dynamic-esdl</ulink></para>
+
+      <sect2 id="USING_Dynamic_ESDL">
+        <title>Utilizando Dynamic ESDL</title>
+
+        <para>Para usar essa interface, selecione um serviço ESP na lista de
+        serviços. Clique no ícone de triângulo ao lado do processo ESP para
+        expandir e exibir os serviços DESDL Selecione o serviço DESDL desejado
+        no painel do navegador.</para>
+
+        <para>As informações do serviço selecionado são exibidas na aba
+        <emphasis role="bold">Summary</emphasis> à direita.</para>
+
+        <para>Selecione a aba <emphasis role="bold">Binding
+        (Conexões)</emphasis> para exibir as definições no formato XML e as
+        informações de configuração. Pressione o botão Definition para
+        visualizar o XML.</para>
+
+        <para><figure>
+            <title>Definição da Conexão da Dynamic ESDL</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/DESDL02.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Você pode selecionar Serviços ESP e atribuir-lhes uma interface
+        (uma Definição ESDL) e configurar cada método disponível.</para>
+
+        <sect3 id="Configure_ESDL_Bindings">
+          <title>Configurando Conexões ESDL</title>
+
+          <para>É possível selecionar um serviço e, se houver uma conexão para
+          ele, você poderá revisar, apagar ou modificar a configuração dessa
+          conexão.</para>
+
+          <para>Pressione o botão <emphasis
+          role="bold">Configuration</emphasis> para ver ou editar as
+          configurações do método. Os métodos são configurados adicionando ou
+          editando esses atributos. <figure>
+              <title>Configuração da conexão da Dynamic EDSL</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DESDL04.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para><emphasis role="bold">Para adicionar um
+          atributo:</emphasis></para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Expanda os atributos de configuração do método de
+                destino (se houver mais de um método) e exiba os atributos e
+                valores.</para>
+              </listitem>
+
+              <listitem>
+                <para>Marque a caixa de seleção próxima à método que será
+                removida.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão Add Atribute. Isso abre a janela
+                <emphasis role="bold">Add attributes/values</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Digite o Atributo e o Valor para o método,</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão Save.</para>
+              </listitem>
+            </orderedlist><emphasis role="bold">Para remover atributos e
+          valores</emphasis>:.</para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Marque a caixa de seleção próxima à método que será
+                removida.</para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione a caixa para o atributo desejado (e valor)
+                para remover.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Remove
+                Attribute(s)</emphasis> . Isso remove o atributo.</para>
+              </listitem>
+            </orderedlist></para>
+
+          <para>Se uma configuração não possui uma conexão, é possível
+          adicionar uma.</para>
+        </sect3>
+
+        <sect3>
+          <title>Adicionar uma conexão</title>
+
+          <para>Para adicionar uma conexão de serviço a um serviço ESP
+          <emphasis>não configurado</emphasis> . Selecione o serviço ESP não
+          configurado e depois pressione o botão <emphasis role="bold">Add
+          Binding</emphasis> .</para>
+
+          <para><figure>
+              <title>Adicionar uma conexão de serviço</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DESDL05.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>Isso abrirá uma caixa de diálogo que lista as interfaces
+          disponíveis que possuem definições. Selecione a interface para ligar
+          ao serviço ESP.</para>
+
+          <para><figure>
+              <title>Adicionar a definição</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DESDL06.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>Pressione o botão <emphasis role="bold">Apply</emphasis>
+          para aplicar a definição.</para>
+        </sect3>
+
+        <sect3>
+          <title>Remover uma conexão</title>
+
+          <para>Para remover uma conexão de um serviço ESP
+          <emphasis>configurado</emphasis> . Selecione o ESP Service que
+          contém a conexão a ser removida.</para>
+
+          <para><figure>
+              <title>Remover conexão de serviço</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DESDL07.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>Pressione o botão <emphasis role="bold">Delete
+          Binding</emphasis> . Confirme que você deseja apagar a conexão
+          pressionando OK na caixa de diálogo de confirmação.</para>
+
+          <para>A conexão será então apagada.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
+                xpointer="xpointer(//*[@id='Preflight_system_servers'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
+                xpointer="xpointer(//*[@id='Preflight_Data_Refinery'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <!--
+    /*commented whole sect out*/
+    <sect1 role="nobrk">
+      <title>Users</title>
+      /*PROBABLY NOT NEEDED - AND CAN BE DELETED*/
+      <para>There are User Administration features available through ECL
+      Watch. Common system administration tasks are accessible through the
+      Operations menu in ECL Watch. The links to Users, Groups, Permissions,
+      and Resources allow you to manage these components of your HPCC system
+      from the ECL Watch interface.</para>
+
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
+                  xpointer="xpointer(//*[@id='Sec_Adm_w_ECLWatch'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1> 
+ -->
+  </chapter>
+
+  <chapter id="User_Permissions_Chapter">
+    <title>Permissões de Usuários</title>
+
+    <sect1 id="ECLWatch_Operations_UserAdministrations" role="nobrk">
+      <title>Administração de usuário</title>
+
+      <para>Há recursos de Administração de usuário disponíveis pelo ECL
+      Watch.</para>
+
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
+                  xpointer="xpointer(//*[@id='Sec_Adm_w_ECLWatch'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+    </sect1>
+  </chapter>
+
+  <chapter id="Plug-Ins_for_ECLWatch">
+    <title>Plugins</title>
+
+    <para>É possível adicionar funcionalidades ao ECL Watch através da
+    instalação de plugins. Esses plugins foram projetados para serem
+    integrados à interface do ECL Watch. Após instalar um plugin aprovado, o
+    ícone de plugin é exibido na barra de navegação no topo da página do ECL
+    Watch para oferecer acesso aos plugins. Clique no ícone de plugin para ver
+    a página de plugins no ECL Watch. <figure>
+        <title>Ícone de plugin do ECL Watch</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLWaPlug.jpg" vendor="VM_welcome"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <sect1 id="Ganglia_in_ECLWatch">
+      <title>Ganglia no ECL Watch</title>
+
+      <para>Com o plugin de monitorador Ganglia instalado no HPCC
+      Systems<superscript>®</superscript> , é possível ver estatísticas e
+      gráficos Ganglia pela interface do ECL Watch. O monitorador padrão exibe
+      várias das principais estatísticas, mas é possível personalizar e
+      configurar as visualizações.</para>
+
+      <figure>
+        <title>Ganglia no ECL Watch</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/GAN051.jpg" vendor="VM_welcome"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <sect2 id="Customize_Monitoring" role="brk">
+        <title>Monitoramento Customizado</title>
+
+        <para>A página padrão do Ganglia possui uma aba para “Monitoramento
+        personalizado”, na qual é possível adicionar componentes
+        personalizados do monitorador. <figure>
+            <title>Monitoramento personalizado do Ganglia</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWa481.jpg" vendor="VM_welcome"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Para personalizar a página de monitoramento:</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold">Custom
+              Monitoring</emphasis> .</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Metrics</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <para>Use os menus suspensos para exibir os diversos utilitários
+              de geração de gráficos.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para><figure>
+            <title>Personalizar as métricas</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWa482.jpg" vendor="VM_welcome"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </sect2>
+
+      <sect2 id="ECLWatch_Monitoring_InstallingGanglia">
+        <title>Instalando o Ganglia no ECL Watch</title>
+
+        <para>Para usar o Ganglia no ECL Watch, é necessário instalar o
+        Ganglia no HPCC System. Para obter detalhes sobre como instalar o
+        Ganglia para o ECL Watch, consulte o manual <emphasis>Monitoramento e
+        Relatórios no HPCC</emphasis> .</para>
+      </sect2>
+    </sect1>
+
+    <xi:include href="HPCCMonitoring/MonRep-Mods/NagiosInECLWa.xml"
+                xpointer="xpointer(//*[@id='Nagios_in_ECLWatch'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Resources">
+    <title>Recursos</title>
+
+    <para>O link de recursos está disponível abaixo do ícone Operations. O
+    link de recursos no ECL Watch oferece um link para o portal da Web do HPCC
+    Systems<superscript>®</superscript> . Visite o portal da Web do HPCC
+    Systems<superscript>®</superscript> em <ulink
+    url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> para acessar
+    atualizações de software, plugins, suporte, documentação e muito mais. No
+    portal web, você encontrará recursos úteis para execução e manutenção do
+    HPCC.</para>
+
+    <para>Também é possível acessar o link de recursos na página do portal da
+    Web do HPCC Systems<superscript>®</superscript> clicando no link <emphasis
+    role="bold">Additional Resources (Recursos adicionais)</emphasis>
+    disponível no submenu na parte superior direita da barra de
+    navegação.</para>
+
+    <para>O ECL Watch oferece um link para a página de download do portal do
+    HPCC: <ulink
+    url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.
+    Essa é uma página onde é possível fazer downloads de pacotes de
+    instalação, imagens virtuais, código fonte, documentação e
+    tutoriais.</para>
+  </chapter>
+</book>

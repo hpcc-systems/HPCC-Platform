@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FinishSuperFileTransaction">
+  <title>FinishSuperFileTransaction</title>
+
+  <para><emphasis role="bold">STD.File.FinishSuperFileTransaction<indexterm>
+      <primary>STD.File.FinishSuperFileTransaction</primary>
+    </indexterm><indexterm>
+      <primary>File.FinishSuperFileTransaction</primary>
+    </indexterm><indexterm>
+      <primary>FinishSuperFileTransaction</primary>
+    </indexterm>( [ </emphasis> <emphasis>rollback </emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>rollback</emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano que indica se a transação deve ser confirmada (FALSE) ou revertida (TRUE). Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Null.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">FinishSuperFileTransaction
+  </emphasis> termina um período de transação de manutenção de um superarquivo. Se o indicador  <emphasis>rollback </emphasis> é FALSE, a transação é confirmada atomicamente e o período de transação é encerrado. Caso contrário, a transação é revertida e o período de transação é encerrado.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">STD.File.FinishSuperFileTransaction();</programlisting>
+</sect1>

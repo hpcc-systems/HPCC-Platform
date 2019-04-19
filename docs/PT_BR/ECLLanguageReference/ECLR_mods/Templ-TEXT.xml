@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_TEXT">
+  <title>#TEXT</title>
+
+  <para><emphasis role="bold">#TEXT<indexterm>
+      <primary>#TEXT</primary>
+    </indexterm>( </emphasis><emphasis> argument </emphasis><emphasis
+  role="bold"> );</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.65pt"/>
+
+        <colspec colwidth="274.15pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>argument</emphasis></entry>
+
+            <entry>O parâmetro MACRO cujo texto será fornecido.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A declaração <emphasis role="bold">#TEXT </emphasis> retorna o texto
+  do <emphasis>argument</emphasis> especificado à MACRO. Essa declaração pode
+  ser usada fora de um escopo XML e não exige um LOADXML anterior para
+  instanciar um escopo XML.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  extractFields(ds, outDs, f1, f2='?') := MACRO
+  
+  #UNIQUENAME(r);
+  
+  %r% := RECORD
+    f1 := ds.f1;
+  #IF (#TEXT(f2)&lt;&gt;'?')
+    #TEXT(f2)+':';
+    f2 := ds.f2;
+  #END
+   END;
+  
+  outDs := TABLE(ds, %r%);
+  ENDMACRO;
+  
+  extractFields(people, justSurname, lastname);
+  OUTPUT(justSurname);
+  
+  extractFields(people, justName, lastname, firstname);
+  OUTPUT(justName);
+</programlisting>
+
+  <para>Ver também: <link linkend="MACRO_Structure">MACRO</link></para>
+</sect1>

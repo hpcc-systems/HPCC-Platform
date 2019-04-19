@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="addWorkunitError">
+  <title>addWorkunitError</title>
+
+  <para><emphasis role="bold">STD.System.Log.addWorkunitError<indexterm>
+      <primary>STD.System.Log.addWorkunitError</primary>
+    </indexterm> <indexterm>
+      <primary>System.Log.addWorkunitError</primary>
+    </indexterm> <indexterm>
+      <primary>Log.addWorkunitError</primary>
+    </indexterm> <indexterm>
+      <primary>addWorkunitError</primary>
+    </indexterm>(</emphasis> <emphasis> text </emphasis><emphasis
+  role="bold">[</emphasis> <emphasis>, code </emphasis><emphasis role="bold">]
+  )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>text</emphasis></entry>
+
+          <entry>Uma string que contém o texto a ser gravado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>code</emphasis></entry>
+
+          <entry>Opcional. O código número a ser associado ao
+          <emphasis>text</emphasis>. Se omitido, o padrão é zero (0).</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>addWorkunitError não retorna um valor.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A ação <emphasis role="bold">addWorkunitError </emphasis> grava a
+  string <emphasis>text</emphasis> no arquivo eclagent.log da workunit e
+  também exibe o <emphasis>code</emphasis> e o <emphasis>text</emphasis> na
+  caixa de ferramentas Syntax Errors, juntamente com a seção Erros da página
+  da workunit no ECL Watch.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.System.Log.addWorkunitError('Got Here',1);    
+   //write text to log and display "1: Got Here" in Errors
+</programlisting>
+</sect1>

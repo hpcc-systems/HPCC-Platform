@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EBCDIC">
+  <title>EBCDIC<indexterm>
+      <primary>EBCDIC</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">EBCDIC<indexterm>
+      <primary>EBCDIC function</primary>
+    </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.25pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento. Pode ser o nome de um dataset ou de um recordset derivado de algumas condições de filtro, ou qualquer expressão que resulte em um recordset derivado.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado não é importante.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de resultado.</entry>
+          </row>
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do registro de resultado não é importante. Quando for “True’ (Verdadeiro), especifica a ordem padrão do registro de resultado.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é importante.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não é importante.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os threads numthreads. <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa atividade.</entry>
+          </row>
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer parte da lista de algoritmos compatíveis com as opções STABLE e UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>EBCDIC retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>..</para>
+
+  <para>A função  <emphasis role="bold">ASCII </emphasis>retorna o 
+  <emphasis>recordset  </emphasis>com todos os campos da STRING traduzidos do EBCDIC para ASCII.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>EBCDICRecs := EBCDIC(SomeASCIIInput);</programlisting>
+
+  <para>Ver também: <link linkend="ASCII">ASCII</link></para>
+</sect1>

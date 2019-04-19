@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Group">
+   <title>
+      <emphasis role="bold">Group</emphasis>
+   </title>
+   <para>
+      <emphasis role="bold">STD.System.Thorlib.Group<indexterm>
+      <primary>STD.System.ThorLib.Group</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.ThorLib.Group</primary>
+    </indexterm>
+    <indexterm>
+      <primary>ThorLib.Group</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Group</primary>
+    </indexterm>
+( )</emphasis>
+   </para>
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+
+    <entry>Return:<emphasis> </emphasis></entry><entry>Group retrona um valor VARSTRING </entry>
+
+
+        </row>
+
+      </tbody>
+    </tgroup>
+  </informaltable>
+   <para>A função  <emphasis role="bold">Group </emphasis> retorna o nome do grupo de nós onde a workunit está sendo executada. Essa função não é permitida em clusters Roxie. Esse nome é usado no código ECL para especificar o CLUSTER de destino para uma ação OUTPUT ou um atributo PERSISTed.</para>
+   <para>Exemplo:</para>
+   <programlisting format="linespecific">A := Thorlib.Group();</programlisting>
+</sect1>

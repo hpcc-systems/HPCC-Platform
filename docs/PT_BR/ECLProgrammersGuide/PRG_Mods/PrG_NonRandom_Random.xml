@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Non-Random_RANDOM">
+  <title><emphasis role="bold">Non-Random RANDOM</emphasis></title>
+
+  <para>Haverá situações em que você precisará de um número aleatório e, após
+  obtê-lo, você quer que aquele valor permaneça o mesmo durante toda a duração
+  da workunit. Por exemplo, o “problema” com este código é que ele terá três
+  OUTPUT de valores distintos (este código está em
+  NonRandomRandom.ECL):</para>
+
+  <programlisting>INTEGER1 Rand1 := (RANDOM() % 25) + 1; 
+OUTPUT(Rand1); 
+OUTPUT(Rand1); 
+OUTPUT(Rand1);</programlisting>
+
+  <para>Para que o valor “random” (aleatório) continue sendo o mesmo durante a
+  workunit, basta adicionar o serviço de fluxo de trabalho STORED à definição
+  do atributo, como exemplificamos aqui (este código também consta no
+  NonRandomRandom.ECL):</para>
+
+  <programlisting>INTEGER1 Rand2 :<guimenu>=</guimenu> (RANDOM() % 25) + 1 : STORED('MyRandomValue'); 
+OUTPUT(Rand2); 
+OUTPUT(Rand2); 
+OUTPUT(Rand2);</programlisting>
+
+  <para>Isso fará com que o valor “random” (aleatório) seja calculado uma vez
+  e seja usado durante todo o restante da workunit.</para>
+
+  <para>O serviço do fluxo de trabalho GLOBAL faria a mesma coisa, mas usar
+  STORED é mais vantajoso porque o valor “random” (aleatório) usado para a
+  workunit será exibido na página do ECL Watch daquela tarefa. Isso permite um
+  melhor debug do código, pois você verá qual valor “random” (aleatório) exato
+  foi usado na tarefa.</para>
+</sect1>

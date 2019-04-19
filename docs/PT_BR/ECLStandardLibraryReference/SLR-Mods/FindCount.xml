@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FindCount">
+  <title>FindCount</title>
+
+  <para><emphasis role="bold">STD.Str.FindCount<indexterm>
+      <primary>STD.Str.FindCount</primary>
+    </indexterm><indexterm>
+      <primary>Str.FindCount</primary>
+    </indexterm><indexterm>
+      <primary>FindCount</primary>
+    </indexterm>(</emphasis> <emphasis>source, target</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os dados a serem pesquisados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>target </emphasis></entry>
+
+          <entry>Uma string que contém a substring a ser pesquisada.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>StringFindCount retorna um valor INTEGER.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">FindCount </emphasis> retorna o número
+  de instâncias não sobrepostas da string <emphasis>target </emphasis> dentro
+  da string <emphasis>source</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := IF(STD.Str.FindCount('ABCDE', 'BC') = 1,
+   'Success',
+   'Failure - 1');  //success
+    
+B := IF(STD.Str.FindCount('ABCDEABCDE', 'BC') = 1,
+   'Success',
+   'Failure - 1');  //failure
+</programlisting>
+</sect1>

@@ -1,0 +1,581 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>Dynamic ESDL</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Dynamic ESDL</title>
+
+    <para>A ESDL (Enterprise Service Description Language) dinâmica é uma
+    metodologia que ajuda você a desenvolver e gerenciar interfaces de
+    consulta baseadas na Web de forma rápida e consistente.</para>
+
+    <para>A Dynamic ESDL adota uma abordagem de desenvolvimento
+    "interface-first". Ela aproveita a linguagem ESDL para criar uma interface
+    comum "contract" de modo que ambos os desenvolvedores de consultas Roxie e
+    de interface Web possam aderir. O objetivo é permitir que os
+    desenvolvedores criem web-services de produção com interfaces limpas que
+    capazes de evoluir e crescer ao longo do tempo sem interromper as
+    aplicações existentes.</para>
+
+    <para>O suporte de versões embutidas do ESDL ajuda a garantir que
+    aplicações implementadas e compiladas continuem a operar mesmo com
+    mudanças na interface do serviço implementado para novas
+    funcionalidades.</para>
+
+    <para>A capacidade do ESDL de definir e reutilizar estruturas comuns ajuda
+    a manter as interfaces consistentes entre os métodos.</para>
+
+    <para>O serviço Dynamic ESDL foi desenvolvido para dimensionar
+    horizontalmente, e ganchos são fornecidos para adicionar processos de
+    registro (logging) e segurança personalizados para ajudar a criar web
+    services totalmente "prontos para produção".</para>
+
+    <para>Depois que um serviço é implementado, desenvolvedores de aplicações
+    e usuários finais podem utilizá-lo usando REST, JSON, XML, SOAP ou
+    postagens codificadas por formulário. O Dynamic ESDL oferece acesso rápido
+    e fácil a um WSDL, formulários dinâmicos, amostras de busca e de
+    respostas, e interfaces de testes para permitir que os desenvolvedores
+    testem as mudanças lógicas, as alterações de dados ou os novos recursos,
+    além de interagirem com o serviço diretamente usando SOAP, XML ou
+    JSON.</para>
+  </chapter>
+
+  <chapter id="DESDLWorkflowTutorial">
+    <title>Tutorial de Fluxo de Trabalho</title>
+
+    <sect1 id="DESDLWorkflowOverview" role="nobrk">
+      <title>Visão geral</title>
+
+      <para>Nesta seção vamos:</para>
+
+      <para/>
+
+      <itemizedlist>
+        <listitem>
+          <para>Usar o Configuration Manager (Gerenciador de Configurações)
+          para adicionar um ESP Service baseado em Dynamic ESDL e vinculá-lo a
+          uma porta em um servidor ESP</para>
+
+          <para/>
+        </listitem>
+
+        <listitem>
+          <para>Criar uma definição do ESDL Service usando o editor no ECL
+          IDE.</para>
+
+          <para/>
+        </listitem>
+
+        <listitem>
+          <para>Gerar um ECL a partir da definição de ESDL Service no ECL IDE.
+          Esta etapa gera automaticamente um arquivo ECL no repositório ECL.
+          Você usará as definições neste arquivo ECL ao gravar a consulta ECL
+          que apresentará o resultado (a lógica de negócios).</para>
+
+          <para/>
+        </listitem>
+
+        <listitem>
+          <para>Compilar a consulta da lógica ECL e depois publicá-la em um
+          cluster Roxie.</para>
+
+          <para>Neste ponto, você pode testar a consulta usando o
+          WsECL.</para>
+
+          <para/>
+        </listitem>
+
+        <listitem>
+          <para>Publicar a definição de Dynamic ESDL do ECL IDE.</para>
+
+          <para/>
+        </listitem>
+
+        <listitem>
+          <para>Vincular os métodos de serviço às consultas Roxie usando uma
+          configuração formatada em XML.</para>
+
+          <para/>
+        </listitem>
+      </itemizedlist>
+
+      <para><emphasis role="bold">Segurança DESDL e LDAP</emphasis></para>
+
+      <para>Se sua plataforma HPCC está configurada para usar a segurança
+      LDAP, é necessário assegurar que todos os usuários que publicarão
+      definições ESDL tenham acesso direto ao <emphasis role="bold"> ESDL
+      configuration service</emphasis> definido para <emphasis
+      role="bold">Allow Full</emphasis>, como mostrado abaixo.</para>
+
+      <para><graphic fileref="images/desdl-LDAP.jpg"/></para>
+
+      <para/>
+
+      <para/>
+    </sect1>
+
+    <sect1 id="DESDLConfigureAndBind">
+      <title>Configurar e Conectar o ESDL Service</title>
+
+      <para>Nesta parte do tutorial, vamos adicionar um serviço ESP e uma
+      ligação de serviço que reserva uma porta para o serviço Dynamic ESDL.
+      Essa etapa não depende do desenvolvimento e da publicação da consulta
+      Roxie real, de forma que você pode configurá-la antes ou depois que a
+      consulta estiver pronta.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Caso esteja em execução, pare o HPCC System usando este
+          comando em uma janela de terminal:</para>
+
+          <para><emphasis role="bold">Centos/Red Hat</emphasis>
+          <programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+
+          <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+          <para><programlisting>sudo service hpcc-init stop</programlisting></para>
+
+          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png"/></entry>
+
+                    <entry>Este comando pode ser usado para confirmar que os
+                    processos do HPCC foram interrompidos (Centos/Red
+                    Hat).<para> <programlisting>sudo /sbin/service hpcc-init status</programlisting>
+                    <phrase>Para Ubuntu</phrase> <programlisting>sudo service hpcc-init status
+</programlisting> <phrase>Debian 6 (Squeeze)</phrase> <programlisting>sudo /etc/init.d/hpcc-init status</programlisting>
+                    </para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Inicie o serviço do Gerenciador de Configurações.<emphasis
+          role="bold"/><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Utilizando um navegador de Internet, acesse a interface do
+          Configuration Manager:</para>
+
+          <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
+
+          <para>O assistente de inicialização do Configuration Manager é
+          exibido.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Selecione <emphasis role="bold">Advanced View</emphasis> e
+          depois selecione o arquivo XML do ambiente de origem para
+          editar.</para>
+
+          <para><graphic fileref="images/desdl-openconfig.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Next</emphasis>
+          .</para>
+        </listitem>
+
+        <listitem>
+          <para>Clique com o botão direito em <emphasis role="bold">Esp
+          Services</emphasis> e selecione <emphasis role="bold"> Dynamic
+          ESDL</emphasis> em <emphasis role="bold">New ESP
+          Services</emphasis>.</para>
+
+          <para><graphic fileref="images/desdl-addDESDL.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Forneça um nome ao arquivo do ambiente.</para>
+
+          <para><graphic fileref="images/dsdl-NametheService.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Selecione seu ESP, e depois selecione a guia ESP Service
+          Bindings.</para>
+
+          <para><graphic fileref="images/desdl-ESPSVCBinding.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Clique com o botão direito na lista de ligações e selecione
+          <emphasis role="bold">Add.</emphasis></para>
+
+          <para><graphic fileref="images/desdl-AddSVCBinding.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <para>Informe um nome, porta e selecione o serviço na lista
+          suspensa. A definição de serviço que você adicionou será exibida na
+          lista de serviços disponíveis.</para>
+
+          <para><graphic fileref="images/desdl-NameSVCBinding.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <para>Copie o novo arquivo NewEnvironment.xml do diretório de origem
+          para /etc/HPCCSystems e renomeie o arquivo para
+          environment.xml</para>
+
+          <programlisting># for example
+sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png"/></entry>
+
+                    <entry>Certifique-se de que você possua direitos
+                    suficientes para gravar arquivos no diretório de destino
+                    antes de copiar. Se solicitado a substituir o arquivo de
+                    destino, responda <emphasis
+                    role="bold">yes</emphasis>.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Copie o arquivo <emphasis
+          role="bold">/etc/HPCCSystems/environment.xml </emphasis> para
+          <emphasis role="bold">/etc/HPCCSystems/ </emphasis> em <emphasis
+          role="bold">cada </emphasis> nó.</para>
+
+          <para>Você pode criar um script para forçar o arquivo XML para todos
+          os nós. Um script de amostra é fornecido com o HPCC. Os comandos a
+          seguir copiam os arquivos XML para todos os nós como exigido:</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Reinicie o HPCC System em <emphasis role="bold">todos os
+          </emphasis> nós. O comando a seguir inicia o HPCC System em um nó
+          individual:</para>
+
+          <para><emphasis role="bold">Centos/Red Hat</emphasis>
+          <programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+
+          <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+          <para><programlisting>sudo service hpcc-init start</programlisting></para>
+
+          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+
+          <para/>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+                  <entry><para>Você pode criar um script para forçar esse
+                  arquivo para todos os nós. Um script de amostra é fornecido
+                  com o HPCC. Use o comando a seguir para iniciar o HPCC em
+                  todos os nós.</para> <para> <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting>
+                  </para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para/>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1 id="DESDLWriteDef">
+      <title>Escrever a Definição do Serviço ESDL</title>
+
+      <para>Nesta parte do tutorial, vamos gravar as Definições de serviço no
+      ECL IDE. A listagem de programa abaixo mostra um serviço ESDL chamado
+      <emphasis>MathService</emphasis>. Ele contém um método,
+      <emphasis>AddThis</emphasis>, com uma solicitação e uma resposta
+      definida.</para>
+
+      <programlisting>ESPservice [auth_feature("None")]  MathService
+{
+  ESPmethod AddThis(AddThisRequest, AddThisResponse);
+};
+
+ESPrequest AddThisRequest 
+{
+  int  FirstNumber;
+  int  SecondNumber;
+};
+    
+ESPresponse AddThisResponse 
+{
+  int  Answer;
+};
+
+</programlisting>
+
+      <orderedlist>
+        <listitem>
+          <para>Salve o arquivo como MathService.ecm.</para>
+
+          <para/>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1 id="DESDLGenerateDefs">
+      <title>Gerar as definições ECL a partir das definições do Serviço
+      ESDL</title>
+
+      <para>Nesta seção vamos gerar um ECL a partir do arquivo de definição do
+      serviço ESDL. Isso usará o executável esdl instalado com as ferramentas
+      de cliente.</para>
+
+      <para>Você encontrará isso em C:\Program Files
+      (x86)\HPCCSystems\5.2.0\clienttools\bin em uma máquina Windows</para>
+
+      <para>ou /opt/HPCCSystems/bin/ em uma máquina Linux.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Na linha de comando, execute:</para>
+
+            <para><programlisting>esdl ecl MathService.ecm .</programlisting>Ao
+            Salvar foi gerado automaticamente um arquivo com o nome
+            MathService.ecl no diretório atual.</para>
+
+            <programlisting><emphasis role="green">/*** Not to be hand edited (changes will be lost on re-generation) ***/
+/*** ECL Interface generated by esdl2ecl version 1.0 from MathService.xml. ***/
+/*===================================================*/</emphasis>
+
+export MathService := MODULE
+
+export t_AddThisRequest := record
+  integer FirstNumber {xpath('FirstNumber')};
+  integer SecondNumber {xpath('SecondNumber')};
+end;
+
+export t_AddThisResponse := record
+  integer Answer {xpath('Answer')};
+end;
+end;
+
+<emphasis role="green">/*** Not to be hand edited (changes will be lost on re-generation) ***/
+/*** ECL Interface generated by esdl2ecl version 1.0 from MathService.xml. ***/
+/*===================================================*/</emphasis>
+</programlisting>
+
+            <para/>
+          </listitem>
+
+          <listitem>
+            <para>Copie o arquivo MathService.ecl para um módulo no seu
+            Repositório ECL. Por exemplo, "myMathService."</para>
+          </listitem>
+
+          <listitem>
+            <para>Escreva ECL para dar suporte ao serviço:</para>
+
+            <programlisting>IMPORT MathService;
+rec_in := MathService.MathService.t_AddThisRequest;
+
+First_Row := ROW ([], rec_in) : STORED ('AddThisRequest', FEW);
+
+res:= first_row.FirstNumber + first_row.SecondNumber; 
+ds_out := ROW ({res},MathService.MathService.t_AddThisResponse);
+OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Compile e Publique no seu cluster Roxie.</para>
+          </listitem>
+
+          <listitem>
+            <para>Teste o serviço usando o WsECL:<programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8002 </programlisting></para>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+
+    <sect1 id="DESDLPublishandBind">
+      <title>Publicar as Definições de Serviço ESDL e Conectar o Serviço
+      ESDL</title>
+
+      <para>Nesta parte do tutorial, vamos publicar as definições de ESDL
+      Service no armazém de dados do sistema e ligar os métodos à consulta
+      Roxie publicada.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Publicar a definição de Dynamic ESDL do ECL IDE.</para>
+
+            <programlisting>esdl publish MathService MathService.ecm -s nnn.nnn.nnn.nnn -p 8010 --version 1</programlisting>
+
+            <para>Substitua nnn.nnn.nnn.nnn pelo endereço IP do seu servidor
+            ECL Watch ESP.</para>
+          </listitem>
+
+          <listitem>
+            <para>Crie o arquivo xml de configuração</para>
+
+            <programlisting>&lt;Methods&gt; 
+  &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
+   &lt;!--Optional Method Context Information start--&gt;
+    &lt;Gateways&gt;
+      &lt;Gateway name="mygateway" url="1.1.1.1:2222/someservice/somemethod/&gt;
+      &lt;Gateway name="anothergateway" url="2.2.2.2:9999/someservice/somemethod/&gt;
+    &lt;/Gateways&gt;
+   &lt;!--Optional Method Context Information end--&gt;
+ &lt;/Method&gt; 
+&lt;/Methods&gt;</programlisting>
+
+            <para>Onde nome é o nome do(s) seu(s) método(s) e url é o endereço
+            IP e porta do servidor Roxie, finalmente, o queryname é o nome
+            publicado (alias) da consulta. Para um Roxie de vários nós, você
+            pode usar um intervalo na forma de nnn.nnn.nnn.n-nnn. O ESP agenda
+            pedidos para o destino Roxie em um round-robin.</para>
+
+            <para>Opicionalmente, seu método pode incluir informações de
+            contexto conforme ilustrado no exemplo a seguir. As informações de
+            contexto devem ser formatadas de forma que possam ser consumidas
+            pela consulta ECL de destino. O HPCC DESDL ESP não impõe nenhuma
+            restrição nas informações de contexto transmitidas no arquivo de
+            configuração, desde que seja um XML válido.</para>
+
+            <!-- /* Refer to DESDL XML Configurations?  */  Ex. For more information on XXXX see XXXX.-->
+          </listitem>
+
+          <listitem>
+            <para>Save o arquivo como MathSvcCfg.xml</para>
+          </listitem>
+
+          <listitem>
+            <para>Vincular os métodos de serviço às consultas Roxie usando uma
+            configuração formatada em XML.</para>
+
+            <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config 
+MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010
+</programlisting>
+
+            <para>Onde myesp é o nome do seu processo ESP, 8003 é a porta que
+            você reservou para seu serviço Dynamic ESDL.</para>
+
+            <para/>
+          </listitem>
+
+          <listitem>
+            <para>Teste o serviço usando a nova interface:<programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8003</programlisting></para>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+  </chapter>
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
+              xpointer="xpointer(//*[@id='ESDL_CLI'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <!-- Moved the ESDL Language Reference to a separate book -->
+</book>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RemoteDirectory">
+  <title>RemoteDirectory</title>
+
+  <para><emphasis role="bold">STD.File.RemoteDirectory<indexterm>
+      <primary>STD.File.RemoteDirectory</primary>
+    </indexterm><indexterm>
+      <primary>File.RemoteDirectory</primary>
+    </indexterm><indexterm>
+      <primary>RemoteDirectory</primary>
+    </indexterm>(</emphasis> <emphasis> machineIP, directory </emphasis>
+  <emphasis role="bold">[</emphasis> <emphasis>, mask </emphasis> <emphasis
+  role="bold">][</emphasis> <emphasis>, includesubs </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>machineIP</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o endereço IP da
+          máquina remota.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>directory</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém a path para os
+          diretório para leitura. A string deve estar no formato adequado para
+          o sistema operacional executado na máquina remota.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>mask</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém a máscara
+          de arquivo que especifica quais arquivos serão incluídos no
+          resultado. Se omitida, o padrão é "*" (todos os arquivos).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>includesubdir</emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano que sinaliza se é necessário
+          incluir arquivos dos subdiretórios abaixo do
+          <emphasis>diretório</emphasis>. Se omitido, o padrão é
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Retorna um dataset no seguinte formato:</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <programlisting>EXPORT FsFilenameRecord := RECORD 
+  STRING name;       //filename 
+  UNSIGNED8 size;    //filesize 
+  STRING19 modified; //date-time stamp 
+END;</programlisting>
+
+  <para>A função <emphasis role="bold">RemoteDirectory </emphasis> retorna uma
+  lista de arquivos como um dataset no formato listado acima para o
+  <emphasis>machineIP</emphasis> e o <emphasis>diretório</emphasis>
+  especificados. Se <emphasis>includesubdir</emphasis> for definido como TRUE,
+  o campo de nome conterá o caminho relativo para o arquivo no dir
+  <emphasis>etório</emphasis> especificado.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.File.RemoteDirectory('edata12','\in','*.d00'));
+OUTPUT(STD.File.RemoteDirectory('10.150.254.6',
+      '/var/lib/HPCCSystems/hpcc-data/thor/','acc*',TRUE));</programlisting>
+</sect1>

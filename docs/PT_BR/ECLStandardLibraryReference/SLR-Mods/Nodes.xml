@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Nodes">
+  <title><emphasis role="bold">Nodes</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Thorlib.Nodes<indexterm>
+      <primary>STD.System.Thorlib.Nodes</primary>
+    </indexterm><indexterm>
+      <primary>System.Thorlib.Nodes</primary>
+    </indexterm><indexterm>
+      <primary>Thorlib.Nodes</primary>
+    </indexterm><indexterm>
+      <primary>Nodes</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Node retorna um valor UNSIGNED INTEGER4.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">Nodes </emphasis> retorna o número de nós no cluster Thor (para hThor e Roxie, retorna sempre 1). Esse número é o mesmo que a constante de tempo de compilação CLUSTERSIZE. A função Nodes é avaliada a cada vez que é chamada. Portanto, a opção entre usar a função e a constante depende das circunstâncias.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.System.Thorlib.Nodes();</programlisting>
+</sect1>

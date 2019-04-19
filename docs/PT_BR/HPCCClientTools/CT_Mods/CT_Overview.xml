@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="CT_Overview">
+  <title><emphasis role="bold">Visão geral</emphasis></title>
+
+  <para>Este manual contém informações para o conjunto de Ferramentas do
+  cliente a serem usadas no HPCC da LexisNexis. Essas ferramentas
+  incluem:</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis role="bold">ECL IDE</emphasis></entry>
+
+          <entry>Um ambiente de desenvolvimento integrado para que os
+          programadores de ECL possam criar, editar e executar códigos
+          ECL.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECL Debugger</emphasis></entry>
+
+          <entry>Uma ferramenta de desenvolvimento integrada ao ECL IDE, usada
+          para fazer a depuração das consultas na medida em que elas são
+          criadas.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECLPlus</emphasis></entry>
+
+          <entry>Ferramenta de execução ECL da linha de comando para facilitar
+          a automação da execução do código ECL.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECL</emphasis></entry>
+
+          <entry>Ferramenta ECL de linha de comando.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECL Compiler</emphasis></entry>
+
+          <entry>Compilador ECL de linha de comando.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DFUPlus</emphasis></entry>
+
+          <entry>Ferramenta de gerenciamento do Utilitário de Arquivo
+          Distribuído da linha de comando, facilita a automação do spray do
+          arquivo de dados, do despray e de outras tarefas comuns de manuseio
+          de arquivos.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ESDL</emphasis></entry>
+
+          <entry>Ferramenta de gerenciamento ESDL de linha de comando.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold"> </emphasis></para>
+
+  <sect1 id="Documentation_Conventions">
+    <title>Convenções de documentação</title>
+
+    <sect2 id="ECL_Language">
+      <title><emphasis>Linguagem ECL</emphasis></title>
+
+      <para>Embora o ECL não faça distinção entre maiúsculas e minúsculas, as
+      palavras-chave reservadas do ECL e as funções contidas neste documento
+      são sempre exibidas com todos os caracteres EM MAIÚSCULA ( ALL CAPS )
+      para dar destaque e facilitar a identificação.</para>
+
+      <sect3 id="CT_ECL_ExampleCode">
+        <title>Código de exemplo</title>
+
+        <para>Todos os códigos de exemplo neste documento aparecem com a
+        seguinte fonte:</para>
+
+        <programlisting>MyECLFileName := COUNT(Person);
+// MyECLFileName is a user-defined ECL file
+// COUNT is a built-in ECL function
+// Person is the name of a dataset</programlisting>
+
+        <para>Nomes de arquivos ECL e os nomes de conjunto de registros são
+        sempre mostrados no código de exemplo em caixa mista (maiúsculas e
+        minúsculas). Palavras em execução podem ser usadas para identificar
+        explicitamente a finalidade nos exemplos.</para>
+      </sect3>
+
+      <sect3 id="CT_ECL_Actions">
+        <title>Ações</title>
+
+        <para>Nas seções passo a passo, haverá ações explícitas a serem
+        realizadas. Todas elas são mostradas com um marcador ou um número (da
+        etapa) para diferenciar as etapas de ação do texto explicativo, como
+        mostrado aqui:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>As ações do teclado e mouse são todas mostradas em caixa
+              baixa, tais como: Pressione a tecla Enter</para>
+            </listitem>
+
+            <listitem>
+              <para>Os itens na tela que devem ser selecionados são mostrados
+              em negrito, como por exemplo: pressione o botão <emphasis
+              role="bold">OK </emphasis>.</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="Installation" role="brk">
+      <title>Instalação</title>
+
+      <para>O programa de instalação instala todas as ferramentas do cliente,
+      incluindo ECLPlus, DFUPlus, e as ferramentas ECL de linha de
+      comando.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Na página de download do HPCC
+          Systems<superscript>®</superscript> , <ulink
+          url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
+
+          <para>Faça o download das Ferramentas do cliente apropriadas para
+          seu sistema operacional. (disponível para CentOS, Ubuntu, Mac OSX,
+          ou Windows)</para>
+        </listitem>
+
+        <listitem>
+          <para>Instale o software de ferramentas do cliente em sua
+          máquina.</para>
+
+          <para><emphasis role="bold">Windows: </emphasis></para>
+
+          <para>Execute o arquivo executável, p.ex.:
+          hpccsystems-clienttools_community-4.X.X-XWindows-i386.exe em sua
+          máquina. Siga os comandos para concluir a instalação.</para>
+
+          <para><emphasis role="bold">Sistemas baseados em RPM
+          (CentOS/RedHat): </emphasis></para>
+
+          <para>Será fornecido um pacote de instalação do RPM. Instale o RPM
+          com o comutador -Uvh, o “U” ou “atualização” fará uma atualização se
+          uma versão prévia já tiver sido instalada. <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting></para>
+
+          <para><emphasis role="bold">Sistemas baseados em Debian
+          (Ubuntu):</emphasis></para>
+
+          <para>Um pacote Debian é disponibilizado para instalações Ubuntu.
+          Para instalar o pacote, use:</para>
+
+          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+
+          <para><emphasis role="bold">Mac OSX:</emphasis></para>
+
+          <para>Execute o arquivo de instalação, p.ex.:
+          hpccsystems-clienttools_community-4.X.X-XDarwin-x86_64.dmg. Siga os
+          comandos para concluir a instalação.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+  </sect1>
+</chapter>

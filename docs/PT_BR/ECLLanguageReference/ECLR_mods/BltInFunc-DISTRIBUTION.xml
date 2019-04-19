@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DISTRIBUTION">
+  <title>DISTRIBUTION<indexterm>
+      <primary>DISTRIBUTION</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DISTRIBUTION<indexterm>
+      <primary>DISTRIBUTION function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, fields</emphasis><emphasis role="bold">
+  ] [</emphasis><emphasis>,</emphasis><emphasis role="bold"> NAMED<indexterm>
+      <primary>NAMED</primary>
+    </indexterm>( </emphasis><emphasis>name</emphasis><emphasis role="bold"> )
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="81.95pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros no qual as estatísticas serão
+            executadas.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>fields</emphasis></entry>
+
+            <entry>Opcional. Uma lista de campos delimitada por vírgula no
+            conjunto de registros para o qual a ação será limitada. Se
+            omitido, todos os campos serão incluídos.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NAMED</emphasis></entry>
+
+            <entry>Opcional. Especifica o nome do resultado que aparece na
+            workunit.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>Uma constante de string que contém o rótulo do
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A ação <emphasis role="bold">DISTRIBUTION</emphasis> gera um relatório
+  de tabela de referência cruzada em formato XML indicando quantos registros
+  exclusivos existem no <emphasis>recordset</emphasis> para cada valor em cada
+  campo deste <emphasis>recordset</emphasis>.</para>
+
+  <para>Quando há um número excessivamente amplo de valores distintos, a ação
+  retorna uma estimativa na seguinte forma:</para>
+
+  <para><programlisting>&lt;XML&gt;
+ &lt;Field name="seqnum" estimate="4000000"/&gt; 
+&lt;/XML&gt;</programlisting></para>
+
+  <para>O tipo de dado DECIMAL não é suportado por esta ação.
+  Alternativamente, você pode usar o tipo de dados REAL.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
+     {STRING1 Value1,STRING1 Value2});
+DISTRIBUTION(SomeFile);
+/* The result comes back looking like this:
+&lt;XML&gt;
+&lt;Field name="Value1" distinct="3"&gt;
+ &lt;Value count="1"&gt;A&lt;/Value&gt;
+ &lt;Value count="1"&gt;B&lt;/Value&gt;
+ &lt;Value count="2"&gt;C&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;Field name="Value2" distinct="3"&gt;
+ &lt;Value count="1"&gt;C&lt;/Value&gt;
+ &lt;Value count="2"&gt;G&lt;/Value&gt;
+ &lt;Value count="1"&gt;X&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;/XML&gt;
+*/
+
+//******************************************
+namesRecord := RECORD
+  STRING20 surname;
+  STRING10 forename;
+  INTEGER2 age;
+END;
+
+namesTable := DATASET([
+  {'Halligan','Kevin',31},
+  {'Halligan','Liz',30},
+  {'Salter','Abi',10},
+  {'X','Z',5}], namesRecord);
+
+DISTRIBUTION(namesTable, surname, forename, NAMED('Stats'));
+/* The result comes back looking like this:
+&lt;XML&gt;
+&lt;Field name="surname" distinct="3"&gt;
+ &lt;Value count="2"&gt;Halligan&lt;/Value&gt;
+ &lt;Value count="1"&gt;X&lt;/Value&gt;
+ &lt;Value count="1"&gt;Salter&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;Field name="forename" distinct="4"&gt;
+ &lt;Value count="1"&gt;Abi&lt;/Value&gt;
+ &lt;Value count="1"&gt;Kevin&lt;/Value&gt;
+ &lt;Value count="1"&gt;Liz&lt;/Value&gt;
+ &lt;Value count="1"&gt;Z&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;/XML&gt;
+*/
+
+//Post-processing the result with PARSE:
+x := DATASET(ROW(TRANSFORM({STRING line},
+       SELF.line := WORKUNIT('Stats', STRING))));
+res := RECORD
+  STRING Fieldname := XMLTEXT('@name');
+  STRING Cnt := XMLTEXT('@distinct');
+END;
+
+out := PARSE(x, line, res, XML('XML/Field'));
+out;
+</programlisting>
+</sect1>

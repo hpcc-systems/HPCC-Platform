@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="STORED">
+  <title>STORED</title>
+
+  <para><emphasis role="bold">STORED<indexterm>
+      <primary>STORED</primary>
+    </indexterm><indexterm>
+      <primary>STORED function</primary>
+    </indexterm>( </emphasis><emphasis>interface </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis>interface<indexterm>
+      <primary>interface</primary>
+    </indexterm></emphasis> O nome de um atributo de estrutura
+  INTERFACE.</para>
+
+  <para>A função <emphasis role="bold">STORED </emphasis> é uma forma de
+  atalho da definição de atributos a ser usada em uma interface SOAP . É
+  equivalente a definição de uma estrutura MODULE que herda todos os atributos
+  da <emphasis>interface</emphasis> e adiciona o serviço de fluxo de trabalho
+  STORED para cada atributo, usando o nome do atributo como nome
+  STORED.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>Iname := INTERFACE
+EXPORT STRING20 Name;
+EXPORT BOOLEAN KeepName := TRUE;
+END;
+
+StoredName := STORED(Iname);
+// is equivalent to:
+// StoredName := MODULE(Iname)
+// EXPORT STRING20 Name := '' : STORED('name');
+// EXPORT BOOLEAN KeepName := TRUE : STORED('keepname');
+// END;
+</programlisting>
+
+  <para>Ver também: <link linkend="STORED_workflow_service">STORED Workflow
+  Service</link>, <link linkend="INTERFACE_Structure">Estrutura
+  INTERFACE</link>, <link linkend="MODULE_Structure">Estrutura
+  MODULE</link></para>
+</sect1>

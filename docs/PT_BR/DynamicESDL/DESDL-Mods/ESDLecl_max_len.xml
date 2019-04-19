@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_ecl_max_len">
+  <title>ecl_max_len <indexterm>
+      <primary>ecl_max_len</primary>
+    </indexterm>(<emphasis role="bold">n</emphasis><emphasis
+  role="bold">)</emphasis></title>
+
+  <para>Este atributo <emphasis>ecl_max_len</emphasis> pede para o gerador ECL
+  usar o ECL <emphasis>maxlength </emphasis>em vez do comprimento padrão do
+  campo.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>[ecl_max_len(50)] string CompanyName;
+[max_len(6)] string Gender;    </programlisting>
+
+  <para>O código ECL gerado é:</para>
+
+  <programlisting>string CompanyName { xpath("CompanyName"),maxlength(50) };
+   string6 Gender { xpath("Gender") };   </programlisting>
+
+  <para><emphasis role="bold">Observação</emphasis>: quando os dois atributos
+  <emphasis>max_len</emphasis> e <emphasis>ecl_max_len</emphasis> estão
+  especificados, <emphasis>ecl_max_len</emphasis> será usado e o
+  <emphasis>max_len </emphasis> ignorado.</para>
+</sect1>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESPmethod">
+  <title><emphasis role="bold">ESPmethod</emphasis></title>
+
+  <para><indexterm>
+      <primary>ESPmethod</primary>
+    </indexterm> Isso estabelece uma definição de método que possa ser
+  referenciada em uma estrutura ESPservice. Esta definição de método deve
+  conter as referências de ESPrequest e ESPresponse estabelecidas
+  previamente.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>
+ ESPservice MyService
+  {
+   ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
+   ESPmethod 
+    [
+     auth_feature("AllowMyMethod2"),
+     description("MyMethod Two"),
+     help("This method does everything MyMethod1 does plus a few extra features"),
+     min_ver("1.2")
+    ]
+   MyMethod2(MyMethod2Request, MyMethod2Response);
+ };
+ 
+      </programlisting>
+</sect1>

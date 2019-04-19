@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LogicalToPhysical">
+   <title>
+      <emphasis role="bold">LogicalToPhysical</emphasis>
+   </title>
+   <para>
+      <emphasis role="bold">STD.System.Thorlib.LogicalToPhysical    <indexterm>
+      <primary>STD.System.ThorLib.LogicalToPhysical</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.ThorLib.LogicalToPhysical</primary>
+    </indexterm>
+    <indexterm>
+      <primary>ThorLib.LogicalToPhysical</primary>
+    </indexterm>
+    <indexterm>
+      <primary>LogicalToPhysical</primary>
+    </indexterm>
+(</emphasis>
+      <emphasis> filename
+        </emphasis>
+      <emphasis role="bold">[</emphasis>
+      <emphasis>, createflag
+        </emphasis>
+      <emphasis role="bold">]</emphasis>
+      <emphasis>
+        </emphasis>
+      <emphasis role="bold">)</emphasis>
+   </para>
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+
+   
+
+   <entry>
+      <emphasis>filename</emphasis> </entry><entry>Uma string terminada por nulo que contém o nome lógico do arquivo.</entry>
+        </row>
+        <row>
+   <entry>
+      <emphasis>createflag</emphasis> </entry><entry>Um valor booleano que indica se  <emphasis>filename</emphasis> deve ser criado. Se omitido, o padrão é FALSE.</entry>
+        </row>
+        <row>
+   <entry>Return:<emphasis> </emphasis></entry><entry>LogicalToPhysical retorna um valor VARSTRING.</entry>
+
+
+        </row>
+
+      </tbody>
+    </tgroup>
+  </informaltable>
+   <para>A função  <emphasis role="bold">LogicalToPhysical </emphasis> (lógico para físico) retorna o nome físico do arquivo representado pelo  <emphasis>nome do arquivo lógico</emphasis>.</para>
+   <para>Exemplo:</para>
+   <programlisting format="linespecific">A := STD.System.Thorlib.LogicalToPhysical('Fred');</programlisting>
+</sect1>

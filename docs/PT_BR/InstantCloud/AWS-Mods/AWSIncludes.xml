@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2>
+  <title>Encontre sua Amazon Access Key ID e Secret Access Key</title>
+
+  <para><orderedlist>
+      <listitem>
+        <para>Acesse  <emphasis role="bold">aws.amazon.com</emphasis>  e faça o login, se necessário.</para>
+      </listitem>
+
+      <listitem>
+        <para>Selecione  <emphasis role="bold">Account</emphasis>.</para>
+      </listitem>
+
+      <listitem>
+        <para>Selecione <emphasis role="bold">Credenciais</emphasis>.</para>
+      </listitem>
+
+      <listitem>
+        <para>Na página, procure a seção  <emphasis
+        role="bold">Access Credentials</emphasis>.</para>
+      </listitem>
+
+      <listitem>
+        <para>Anote sua  <emphasis role="bold">Access Key ID</emphasis>  e sua <emphasis role="bold"> Secrete Access Key</emphasis></para>
+
+        <para><figure>
+            <title>Credenciais</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/AWS_accessKey.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+    </orderedlist></para>
+
+  <para>Partes desta imagem foram intencionalmente desfocadas</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="126.00pt" />
+
+        <colspec colwidth="189.00pt" />
+
+        <tbody>
+          <row>
+            <entry>Access Key ID</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>Secret Access Key</entry>
+
+            <entry></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+</sect2>

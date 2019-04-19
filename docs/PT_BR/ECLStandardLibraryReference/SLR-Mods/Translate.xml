@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Translate">
+  <title>Translate</title>
+
+  <para><emphasis role="bold">STD.Str.Translate<indexterm>
+      <primary>STD.Str.Translate</primary>
+    </indexterm><indexterm>
+      <primary>Str.Translate</primary>
+    </indexterm><indexterm>
+      <primary>Translate</primary>
+    </indexterm>(</emphasis> <emphasis>source, search, replacement</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os caracteres a serem
+          pesquisados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>search </emphasis></entry>
+
+          <entry>Uma string que contém os caracteres a serem substituídos
+          pelos caracteres na string <emphasis>replacement</emphasis>
+          .</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>replacement </emphasis></entry>
+
+          <entry>Uma string que contém os caracteres que serão usados como
+          substituições.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Translate retorna um valor de STRING.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>As funções <emphasis role="bold">Translate </emphasis> retornam a
+  string <emphasis>source</emphasis> com o caractere
+  <emphasis>replacement</emphasis> substituído em todos os caracteres da
+  string <emphasis>source.</emphasis> string Os caracteres da string
+  <emphasis>search</emphasis> são substituídos pelos caracteres na posição
+  equivalente na string <emphasis>replacement</emphasis> .</para>
+
+  <para>Se nenhum caractere da string <emphasis>search</emphasis> estiver na
+  string <emphasis>source</emphasis> , será retornada a string
+  <emphasis>source</emphasis> sem alterações.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+A := STD.Str.Translate('abcabc','ca','yz'); //A contains 'zbyzby'
+</programlisting>
+</sect1>

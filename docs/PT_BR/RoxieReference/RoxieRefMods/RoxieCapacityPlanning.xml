@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Capacity_Planning" role="nobrk">
+  <title>Planejamento de Capacidade</title>
+
+  <para>Os clusters Roxie são clusters de computação de alto desempenho baseado em disco (HPCC) que normalmente usam arquivos indexados. Um cluster é capaz de armazenar e manipular a mesma quantidade de dados contida em seu espaço em disco rígido combinado, porém, isso não produz um desempenho ideal.</para>
+
+  <para>Para maximizar o desempenho, é preciso configurar seu cluster de modo que os nós escravos desempenhem a maioria das tarefas na memória.</para>
+
+  <para>Por exemplo, se uma consulta utiliza três arquivos de dados com um arquivo combinado de tamanho igual a 60 GB, um cluster de 40 canais está de bom tamanho, embora um de 60 canais provavelmente seja melhor.</para>
+
+  <para>Outro ponto a considerar é o tamanho do cluster Thor que cria os arquivos de dados e que faz a indexação dos dados a serem carregados. Seu cluster Roxie de destino deve ter o mesmo tamanho do Thor, no qual os arquivos de dados e índices são criados ou um número seja uniformemente divisível pelo tamanho do seu cluster Roxie. Por exemplo, um Thor de 100 direções para um Roxie de 20 direções seria considerado aceitável.</para>
+
+  <para>Isso se deve a forma na qual os dados são carregados e processados pelos Roxie escravos. Se os dados forem copiados para os nós escravos, as partes do arquivo são copiadas diretamente do local fonte para os locais de destino. Elas NOT (NÃO) são divididas ou redimensionadas para que caibam em um cluster com tamanho diferente. Consequentemente, ao carregar 50 partes de arquivo em um cluster de 40 canais, a parte um irá para o canal um, a parte dois para o canal dois e assim por diante. As partes 41 a 50 irão novamente para o topo, de modo que a parte 41 vá para o canal 1, a parte 42 para o canal 2, etc.  O resultado será uma carga de trabalho desigualmente distribuída e que resultaria em menor desempenho. A velocidade de desempenho de um cluster é igual a de seu nó mais lento.</para>
+
+  <para>A consideração final é o número de processos do servidor em um cluster. Cada escravo também deve ser um servidor, mas você pode dedicar nós adicionais para que sejam apenas processos do servidor. Isso é útil para consultas que exigem o processamento no servidor após os escravos terem retornado os resultados. Essas consultas intensivas de servidor poderiam ser enviadas apenas para endereços IP do servidor dedicado para que a carga seja removida dos nós atuando como servidor e escravo.</para>
+
+  <sect2 id="Configuring_the_Channels">
+    <title>Configurando os Canais</title>
+
+    <para>Na ilustração abaixo, os nós são configurados usando um esquema N+5 para compartilhar canais. Os canais podem ser configurados de várias formas, este é apenas um exemplo.</para>
+
+    <para><graphic fileref="../../images/RM-15.jpg" /></para>
+
+    <para>Nesta representação, cada compartimento contém cinco folhas escravas Roxie (uma fila de servidores na imagem). Usaremos este exemplo para o restante deste manual.</para>
+  </sect2>
+</sect1>

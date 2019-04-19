@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FileExists">
+  <title>FileExists</title>
+
+  <para><emphasis role="bold">STD.File.FileExists<indexterm>
+      <primary>STD.File.FileExists</primary>
+    </indexterm><indexterm>
+      <primary>File.FileExists</primary>
+    </indexterm><indexterm>
+      <primary>FileExists</primary>
+    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
+  role="bold">[, </emphasis> <emphasis>physicalcheck</emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>physicalcheck</emphasis></entry>
+
+          <entry>Opcional. Um booleano TRUE/FALSE que indica se a existência física do  <emphasis>filename</emphasis>  no disco deve ser verificada. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>FileExists retorna um valor BOOLEAN</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">FileExists </emphasis> retorna TRUE se o  <emphasis>filename</emphasis>  especificado está presente no utilitário de arquivos distribuídos (DFU). Se  <emphasis>physicalcheck </emphasis> estiver definido como TRUE, a presença física do arquivo no disco também será verificada.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.File.FileExists('~CLASS::RT::IN::People');</programlisting>
+
+  <para></para>
+
+  <para>Ver também: <link
+  linkend="SuperFileExists">SuperFileExists</link></para>
+</sect1>

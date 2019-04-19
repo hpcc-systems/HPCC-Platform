@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Data_int">
+  <title><emphasis role="bold">int</emphasis></title>
+
+  <para><indexterm>
+      <primary>int</primary>
+    </indexterm>Um valor inteiro</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>int Age;   </programlisting>
+</sect1>

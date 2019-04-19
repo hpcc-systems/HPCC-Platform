@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PIPE">
+  <title>PIPE</title>
+
+  <para><emphasis role="bold">PIPE<indexterm>
+      <primary>PIPE</primary>
+    </indexterm><indexterm>
+      <primary>PIPE function</primary>
+    </indexterm>(</emphasis><emphasis> command, recorddef </emphasis><emphasis
+  role="bold"> [, CSV<indexterm>
+      <primary>CSV</primary>
+    </indexterm> | XML<indexterm>
+      <primary>XML</primary>
+    </indexterm> ] )</emphasis></para>
+
+  <para><emphasis role="bold">PIPE(</emphasis><emphasis> recordset, command
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, recorddef
+  </emphasis><emphasis role="bold">] [</emphasis>,<emphasis role="bold">
+  REPEAT<indexterm>
+      <primary>REPEAT</primary>
+    </indexterm>] [</emphasis>,<emphasis role="bold"> CSV | XML ]
+  [</emphasis>,<emphasis role="bold"> OUTPUT<indexterm>
+      <primary>OUTPUT</primary>
+    </indexterm>( CSV | XML ) ] [</emphasis>,<emphasis role="bold">
+  GROUP<indexterm>
+      <primary>GROUP</primary>
+    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.90pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>command</emphasis></entry>
+
+            <entry>O nome do programa a ser executado, o qual precisa usar
+            quaisquer dados de entrada pelo stdin e produzir seu resultado
+            pelo stdout. Esse programa já precisa ter sido implementado no
+            cluster do HPCC no diretório de instância do Thor (como:
+            /var/lib/HPCCSystems/mythor/), mas pode ser substituído pela
+            configuração de ambiente externalProgDir para o cluster
+            Thor).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recorddef</emphasis></entry>
+
+            <entry>O formato da estrutura RECORD do resultado. Se omitido, o
+            resultado será o mesmo que o formato de entrada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">CSV</emphasis></entry>
+
+            <entry>Opcional. No form 1 (e como o parâmetro para a opção
+            OUTPUT), especifica que o formato de dados de resultado é CSV. No
+            form 2, especifica que o formato de dados de entrada é CSV. Se
+            omitido, o formato será raw.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">XML</emphasis></entry>
+
+            <entry>Opcional. No form 1 (e como o parâmetro para a opção
+            OUTPUT), especifica que o formato de dados de resultado é XML. No
+            form 2, especifica que o formato de dados de entrada é XML. Se
+            omitido, o formato será raw.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O dataset de entrada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">REPEAT</emphasis></entry>
+
+            <entry>Opcional. Especifica que uma nova instância do programa de
+            comando é criada para cada linha no recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">OUTPUT</emphasis></entry>
+
+            <entry>Opcional. Especifica o formato de dados do resultado CSV ou
+            XML.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">GROUP</emphasis></entry>
+
+            <entry>Opcional. Especifica que cada registro de resultado é
+            gerado em um GROUP separado (apenas se REPEAT for
+            especificado).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>PIPE retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">PIPE </emphasis> permite que o código
+  ECL inicie um programa de <emphasis>comando</emphasis> externo em cada nó,
+  paralelizando efetivamente um programa de processamento não paralelo. O PIPE
+  tem dois forms:</para>
+
+  <para>O form 1 não recebe entradas, executa o <emphasis>comando</emphasis> e
+  gera o resultado no formato <emphasis>recorddef </emphasis>. Esse é um pipe
+  de "entrada" (como a opção PIPE em uma definição DATASET).</para>
+
+  <para>O form 2 recebe a entrada <emphasis>recordset</emphasis>, executa o
+  <emphasis>comando</emphasis> e gera o resultado no formato
+  <emphasis>recorddef </emphasis>. Esse é um pipe de "passagem".</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>namesRecord := RECORD
+  STRING10 forename;
+  STRING10 surname;
+  STRING2 nl := '\r\n';
+END;
+
+d := PIPE('pipeRead 200', namesRecord); //form 1 - input pipe
+
+t := PIPE(d, 'pipeThrough'); //form 2 - through pipe
+
+OUTPUT(t,,PIPE('pipeWrite \\thordata\\names.all')); //output pipe
+
+//Form 2 with XML input:
+namesRecord := RECORD
+  STRING10 Firstname{xpath('/Name/FName')};
+  STRING10 Lastname{xpath('/Name/LName')};
+END;
+
+p := PIPE('echo &lt;Name&gt;&lt;FName&gt;George&lt;/FName&gt;&lt;LName&gt;Jetson&lt;/LName&gt;&lt;/Name&gt;', namesRecord, XML); 
+OUTPUT(p);
+</programlisting>
+
+  <para>Ver também: <link linkend="OUTPUT">OUTPUT</link>, <link
+  linkend="DATASET">DATASET</link></para>
+</sect1>

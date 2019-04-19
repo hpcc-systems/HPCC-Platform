@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Packages e Package Maps</title>
+
+  <para>Uma consulta do Roxie pode ter um ou mais arquivos de dados
+  associados. Às vezes, pode ser recomendado atualizar os dados sem alterar a
+  consulta.</para>
+
+  <para>Os pacote de dados são uma maneira de separar a definição de dados da
+  consulta.</para>
+
+  <para>Um pacote de dados define uma superchave a ser usada por uma consulta.
+  Um pacote de dados mais recente que redefine o conteúdo dessa superchave
+  pode ser posteriormente enviado para um cluster Roxie sem recompilação de
+  consultas. Isso permite a atualização dos dados, e garante que você esteja
+  usando um código idêntico na consulta. Além disso, também elimina a
+  necessidade de recompilar e republicá-lo.</para>
+
+  <para>Isso simplifica o controle de alterações e permite que os
+  desenvolvedores de consultas continuem trabalhando sem correr o risco de uma
+  consulta ser implementada para produção antes de estar pronta, embora ainda
+  permita que os dados sejam atualizados.</para>
+
+  <para>Um mapa de pacote de dados oferece uma referência para o conteúdo de
+  uma superchave usada em consultas que substitui a definição original. Isso
+  garante maior flexibilidade e controle sobre os dados usados por uma
+  consulta ou um conjunto de consultas.</para>
+
+  <para>O Roxie resolve os arquivos de dados no tempo de carregamento de
+  consulta. Primeiro, ele vai procurar por um pacote que defina o conteúdo da
+  superchave. Se tal pacote não for encontrado, ele irá procurar no DFU
+  (Utilitário de arquivos distribuídos) do servidor Dali.</para>
+
+  <para>O resultado final é um processo mais rápido e flexível, sem a
+  necessidade de recompilar consultas complexas. Isso permite que você
+  atualize dados sem a chance de implementar um novo código que ainda não
+  tenha sido aprovado para migração até a produção.</para>
+
+  <para>Sem os pacotes, você precisaria seguir uma das seguintes
+  opções:</para>
+
+  <para>- Adicionar novos subarquivos à superchave através do código ECL,
+  ECLWatch, ou DFUPlus, e depois recarregar o cluster.</para>
+
+  <para>- Revisar a consulta para usar um arquivo-chave diferente, compilar e
+  republicá-lo.</para>
+
+  <para>Um arquivo de mapa de pacote pode conter um ou mais pacotes. O arquivo
+  é usado para transferir as informações ao servidor Dali. Depois de ser
+  enviado, o arquivo não é mais usado. Recomenda-se manter uma cópia como
+  backup, mas isso não serve para nenhuma outra finalidade.</para>
+
+  <para>A definição de um superarquivo ou superchave dentro de um arquivo de
+  pacote substitui a definição no Dali, mas NÃO muda a definição de um
+  superarquivo ou superchave no DFU do servidor Dali.</para>
+
+  <para>Informações de pacote são usadas logo que são adicionadas ao Dali e o
+  pacote é ativado. Isso pode ser feito usando o comando <emphasis
+  role="bold">ecl packagemap add --activate</emphasis> (ou <emphasis
+  role="bold">ecl packagemap add</emphasis> &amp; <emphasis role="bold">ecl
+  packagemap activate</emphasis>).</para>
+
+  <!--You should always validate or run the reporting step on the packages (NYI)-->
+
+  <sect1>
+    <title>Exemplo</title>
+
+    <para>Neste exemplo, temos uma consulta com nome MyQuery que usa uma
+    superchave com nome MyDataKey que inclui dois subarquivos:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile1</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile2</emphasis></para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Se quisermos adicionar um terceiro subarquivo, podemos usar um mapa
+    de pacotes para redefinir a definição de superchave MyDataKey de modo que
+    ela contenha três arquivos:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile1</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile2</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile3</emphasis></para>
+      </listitem>
+    </itemizedlist>
+
+    <para><emphasis role="redbold"/></para>
+
+    <para><emphasis role="bold">Exemplo 1:</emphasis></para>
+
+    <programlisting>&lt;RoxiePackages&gt;
+ &lt;Package id="MyQuery"&gt;
+  &lt;Base id="thor::MyData_Key"/&gt;
+ &lt;/Package&gt;
+ &lt;Package id="thor::MyData_Key"&gt;
+  &lt;SuperFile id="~thor::MyData_Key"&gt;
+   &lt;SubFile value="~thor::Mysubfile1"/&gt;
+   &lt;SubFile value="~thor::Mysubfile2"/&gt;
+  &lt;/SuperFile&gt;
+ &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+
+</programlisting>
+
+    <para><emphasis role="bold">Exemplo 2:</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+ &lt;Package id="MyQuery"&gt;
+  &lt;Base id="thor::MyData_Key"/&gt;
+ &lt;/Package&gt;
+ &lt;Package id="thor::MyData_Key"&gt;
+  &lt;SuperFile id="~thor::MyData_Key"&gt;
+   &lt;SubFile value="~thor::Mysubfile1"/&gt;
+   &lt;SubFile value="~thor::Mysubfile2"/&gt;
+   &lt;SubFile value="~thor::Mysubfile3"/&gt;
+  &lt;/SuperFile&gt;
+ &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+
+</programlisting></para>
+  </sect1>
+
+  <sect1>
+    <title>Atualizando Dados</title>
+
+    <para>Esta seção detalha as etapas típicas que um desenvolvedor de
+    consultas e um desenvolvedor de dados seguem logo que uma consulta está
+    pronta para produção.</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Prepare os dados (neste fluxo de trabalho, os dados são
+        definidos como uma superchave)</para>
+      </listitem>
+
+      <listitem>
+        <para>Grave e teste a consulta</para>
+      </listitem>
+
+      <listitem>
+        <para>Publique uma consulta usando os dados</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Posteriormente, quando quiser atualizar os dados:</para>
+
+    <para>Implemente os dados através de uma das seguintes formas:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Crie um mapa de pacotes que contenha um pacote redefinindo o
+        conteúdo da superchave</para>
+      </listitem>
+
+      <listitem>
+        <para>Adicione os mapas de pacotes associando as informações de pacote
+        com um grupo de consultas.</para>
+
+        <!--You should always validate or run the reporting step on the packages (NYI)-->
+      </listitem>
+
+      <listitem>
+        <para>Ative os mapas de pacotes com as informações de pacote
+        pertinentes voltadas para um grupo de consultas.</para>
+
+        <para>Use o comando:</para>
+      </listitem>
+    </itemizedlist>
+
+    <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
+
+    <para/>
+
+    <para>Posteriormente, quando os novos dados chegarem, siga essas etapas
+    para atualizar os dados usando pacotes:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Prepare os dados e crie um novo subarquivo</para>
+      </listitem>
+    </itemizedlist>
+
+    <variablelist>
+      <varlistentry>
+        <term>Observação:</term>
+
+        <listitem>
+          <para>É altamente recomendado não reutilizar um nome de arquivo.
+          Normalmente é melhor criar novos arquivos. O Roxie compartilha
+          identificadores de arquivo de forma que tentar alterar um arquivo
+          existente enquanto ele é carregado pode causar problemas.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Crie um pacote com uma definição de superchave que inclua o novo
+        subarquivo</para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Adicione o mapa de pacotes que redefine o conteúdo da
+        superchave</para>
+
+        <para>Use o comando:</para>
+
+        <!--You should always validate or run the reporting step on the packages (NYI)-->
+      </listitem>
+    </itemizedlist>
+
+    <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
+
+    <para/>
+  </sect1>
+
+  <sect1>
+    <title>Sintaxe de Arquivos Package</title>
+
+    <para>Os arquivos de pacotes são formatados em XML usando as convenções
+    detalhadas nesta seção.</para>
+
+    <para>Um arquivo de pacote precisa começar com <emphasis
+    role="bold">&lt;RoxiePackages&gt;</emphasis> e terminar com <emphasis
+    role="bold">&lt;/RoxiePackages&gt;</emphasis>.</para>
+
+    <para>Tags de pacote possuem um atributo de <emphasis
+    role="bold">id</emphasis> que especifica à que o pacote se refere.</para>
+
+    <para>Dentro da estrutura <emphasis role="bold">&lt;Package&gt;</emphasis>
+    , são realizadas referências para superarquivos ou outros pacotes
+    nomeados. Essa convenção de nomenclatura indireta permite que você agrupe
+    definições de arquivos e referencie o pacote que contenha tal
+    grupo.</para>
+
+    <para>O exemplo mostra primeiramente as referências de consulta e, em
+    seguida, as referências de arquivos; no entanto, a exibição não precisa
+    ser nessa ordem.</para>
+
+    <para><emphasis role="bold">As linhas são numeradas apenas para fins de
+    referência. Os comentários são incluídos apenas para esclarecimento, não
+    sendo, portanto, obrigatórios. </emphasis></para>
+
+    <para><emphasis role="bold">Exemplo</emphasis> :</para>
+
+    <para/>
+
+    <programlisting>  1.  &lt;RoxiePackages&gt;
+ 2.   &lt;!-- Begin Queries --&gt;
+ 3.     &lt;Package id="MyQuery"&gt;
+ 4.     &lt;Base id="thor::MyData_Key"/&gt;
+ 5.    &lt;/Package&gt;
+ 6.    &lt;!-- End Queries --&gt;
+ 7.    &lt;!-- Begin File references --&gt;
+ 8.    &lt;Package id="thor::MyData_Key"&gt;
+ 9.      &lt;SuperFile id="~thor::MyData_Key"&gt;
+10.       &lt;SubFile value="~thor::Mysubfile1"/&gt;
+11.       &lt;SubFile value="~thor::Mysubfile2"/&gt;
+12.        &lt;SubFile value="~thor::Mysubfile3"/&gt;
+13.      &lt;/SuperFile&gt;
+14.    &lt;/Package&gt;
+15.    &lt;!--End File references --&gt;
+16.  &lt;/RoxiePackages&gt;
+</programlisting>
+
+    <para>Neste exemplo, temos uma consulta: <emphasis
+    role="bold">MyQuery</emphasis>. A consulta usa uma superchave definida em
+    um pacote <emphasis role="bold">thor::MyData_Key</emphasis>. Isso é
+    definido posteriormente na linha 8. O pacote <emphasis
+    role="bold"><emphasis role="bold">thor::MyData_Key</emphasis></emphasis>
+    contém uma definição de superchave.</para>
+
+    <para>O exemplo mostra primeiramente as referências de consulta e, em
+    seguida, as referências de arquivos; no entanto, a exibição não precisa
+    ser nessa ordem.</para>
+
+    <para>É possível especificar IP(s) do Dali e/ou cluster(s) de origem a
+    serem usados para resolver arquivos que serão especificados no mapa de
+    pacotes. Isso pode ser especificado em diferentes níveis para influenciar
+    os arquivos em um determinado escopo.</para>
+
+    <para>Por exemplo:</para>
+
+    <para><programlisting>&lt;PackageMap daliip="10.239.8.10"&gt;
+  &lt;Package id="MyPackage" daliip="10.239.7.1" sourceCluster="thor1" &gt;
+    &lt;SuperFile id="thor::Mykey1_idx"&gt;
+      &lt;SubFile value="thor::mySub1"/&gt;
+    &lt;/SuperFile&gt;
+    &lt;SuperFile id="thor::Mykey2_idx"  daliip="10.239.8.1" sourceCluster="thor2"&gt;
+      &lt;SubFile value="thor::mySubKeyA"/&gt;
+      &lt;SubFile value="thor::mySubKeyB"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+&lt;/PackageMap&gt;
+</programlisting></para>
+  </sect1>
+
+  <sect1>
+    <title>Multi-Part package maps</title>
+
+    <para>Na versão 6.0.0 ou posterior, é possível organizar seus mapeamentos
+    do arquivo do mapa de pacote em um conjunto de arquivos que define os
+    arquivos de alguns subconjuntos de consultas. Esses subconjuntos são
+    chamados de partes e podem ser usados para organizar através de vários
+    agrupamentos, como função, arquivos, desenvolvedor e afins.</para>
+
+    <para>Com um arquivo packagmap de parte única como:</para>
+
+    <para><emphasis role="bold">master.pkg</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="my_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::person_superkey"&gt;
+       &lt;SubFile value="thor1::key::people::person_file_today"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="another_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::contact_superkey"&gt;
+      &lt;SubFile value="thor1::key::people::contacts"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="person_query" 2016HondaAccordLX-23041.xhtml preload="1"&gt;
+    &lt;Base id="my_base"/&gt;
+  &lt;/Package&gt;
+  &lt;Package id="contacts_query" preload="1"&gt;
+    &lt;Base id="another_base"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting><parameter>Para adicionar o packagmap no destino e ativá-lo,
+    use:</parameter></para>
+
+    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg --activate</programlisting></para>
+
+    <para>Para atualizar os mapeamentos, é necessário editar o arquivo do mapa
+    de pacotes (ou uma cópia), adicionar e ativar o novo arquivo e depois
+    remover o antigo.</para>
+
+    <para>Usando <emphasis role="bold">parts</emphasis>, é possível gerenciar
+    o pacote de modo mais granular. É possível dividir os mapeamentos em
+    arquivos de partes individuais.</para>
+
+    <para><emphasis role="bold">contacts.pkg</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="contact_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::contacts_superkey"&gt;
+      &lt;SubFile value="thor1::key::people::contacts_file_today"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="contact_query" preload="1"&gt;
+    &lt;Base id="contact_base"/&gt;
+  &lt;/Package&gt;
+  &lt;Package id="contact_references_query" preload="1"&gt;
+    &lt;Base id="contact_base"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting></para>
+
+    <para><emphasis role="bold">persons.pkg</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="person_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::person_superkey"&gt;
+      &lt;SubFile value="thor1::key::people::person_file_today"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="person_query" preload="1"&gt;
+    &lt;Base id="person_base"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting></para>
+
+    <para>Isso permite que você os adicione separadamente:</para>
+
+    <programlisting>ecl packagemap add-part &lt;target&gt; target_pmid contacts.pkg
+ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
+</programlisting>
+
+    <para>E depois, ative todo o mapa de pacotes (que é composto de todas as
+    partes adicionadas ao determinado target_pmid):</para>
+
+    <programlisting>ecl packagemap activate &lt;target&gt; target_pmid</programlisting>
+
+    <para>É possível então alterar as partes individuais e atualizá-las no
+    mapa de pacotes:</para>
+
+    <programlisting>ecl packagemap add-part &lt;target&gt; &lt;target_pmid&gt; persons.pkg --delete-previous</programlisting>
+
+    <para>Observe que o target_pmid é o identificador da coleta de todas as
+    partes do packagmap. O identificador pode ser usado para ativar ou remover
+    todo o conjunto (mapa de pacotes).</para>
+
+    <para>É possível usar a função "get-part" para ver como a parte nomeada é
+    exibida no Dali para um determinado identificador:</para>
+
+    <programlisting>ecl packagemap get-part &lt;target&gt; &lt;packagemap&gt; contents.pkg</programlisting>
+
+    <para>Dessa forma, é possível recuperar a parte, editá-la e substituí-la
+    como mostrado acima. É possível usar a função <emphasis
+    role="bold">remove-part</emphasis> para remover uma parte explicitamente
+    de um mapa de pacotes.</para>
+
+    <para>Ainda é possível tratar todo o mapa de pacotes como um arquivo
+    único, embora sua organização tenha sido alterada para refletir as suas
+    partes:</para>
+
+    <para><emphasis role="bold">multipart.pkg</emphasis></para>
+
+    <para><programlisting>&lt;PackageMaps multipart="1"&gt;
+  &lt;Part id="contacts.pkg"&gt;
+    &lt;Package id="contact_base" preload="1"&gt;
+      &lt;SuperFile id="thor1::people::key::contacts_superkey"&gt;
+        &lt;SubFile value="thor1::key::people::contacts_file_today"/&gt;
+      &lt;/SuperFile&gt;
+    &lt;/Package&gt;
+    &lt;Package id="contact_query" preload="1"&gt;
+      &lt;Base id="contact_base"/&gt;
+    &lt;/Package&gt;
+    &lt;Package id="contact_references_query" preload="1"&gt;
+      &lt;Base id="contact_base"/&gt;
+    &lt;/Package&gt;
+  &lt;/Part&gt;
+  &lt;Part id="persons.pkg"&gt;
+    &lt;Package id="person_base" preload="1"&gt;
+      &lt;SuperFile id="thor1::people::key::person_superkey"&gt;
+        &lt;SubFile value="thor1::key::people::person_file_today"/&gt;
+      &lt;/SuperFile&gt;
+    &lt;/Package&gt;
+    &lt;Package id="person_query" preload="1"&gt;
+      &lt;Base id="person_base"/&gt;
+    &lt;/Package&gt;
+  &lt;/Part&gt;
+&lt;/PackageMaps&gt;
+</programlisting></para>
+
+    <para>Observe agora como o conteúdo está dividido em partes &lt;Part/&gt;.
+    Porém, ainda é possível usar</para>
+
+    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg</programlisting>nesse
+    mapa de pacotes de múltiplas partes e depois continuar gerenciando suas
+    partes individuais. Neste caso:</para>
+
+    <programlisting>ecl packagemap add &lt;target&gt; multipart.pkg
+ecl packagemap add-part &lt;target&gt; multipart.pkg addresses.pkg 
+ecl packagemap activate &lt;target&gt; multipart.pkg
+</programlisting>
+
+    <para>Isso seria útil, por exemplo, ao copiar todo o mapa de pacotes de um
+    destino para outro.</para>
+  </sect1>
+
+  <sect1>
+    <title>Trabalhando com Packages através de linhas de comando ECL</title>
+
+    <para>Essa seção contém detalhes sobre as ações e opções usadas para
+    trabalhar com pacotes. A ferramenta de linha de comando do ECL está
+    totalmente documentada no Manual de ferramentas de cliente.</para>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackageadd'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackagedelete'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackageactivate'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackagedeactivate'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackagelist'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackageinfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackagemapaddpart'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackagemapgetpart'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackagemapremovepart'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="xpointer(//*[@id='eclpackagevalidate'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <sect2 role="brk">
+      <title>Dicas:</title>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Sempre use superarquivos ou superchaves para se beneficiar da
+          nomenclatura indireta e permitir o uso de pacotes. O Roxie não exige
+          isso, mas funciona melhor dessa maneira.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use nomes de arquivos únicos em vez de substituir arquivos
+          existentes. Isso evita substituições acidentais e facilita as
+          reversões.</para>
+        </listitem>
+
+        <listitem>
+          <para>Se você possui um conjunto de chaves, é mais fácil manter se
+          usar superchaves com um arquivo de subíndice único. Múltiplos
+          subarquivos são úteis quando é necessário adicionar os dados
+          rapidamente, mas se houver tempo, é melhor recompilar um novo
+          arquivo-chave único.</para>
+        </listitem>
+
+        <listitem>
+          <para>Antes de remover um mapa de pacotes, verifique se você tem uma
+          cópia como backup.</para>
+
+          <!--You should always validate or run the reporting step on the packages (NYI)-->
+        </listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
+</chapter>

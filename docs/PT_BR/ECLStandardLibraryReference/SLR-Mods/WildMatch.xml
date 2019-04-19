@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WildMatch">
+  <title>WildMatch</title>
+
+  <para><emphasis role="bold">STD.Str.WildMatch<indexterm>
+      <primary>STD.Str.WildMatch</primary>
+    </indexterm><indexterm>
+      <primary>Str.WildMatch</primary>
+    </indexterm><indexterm>
+      <primary>WildMatch</primary>
+    </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.WildMatch<indexterm>
+      <primary>STD.Uni.WildMatch</primary>
+    </indexterm><indexterm>
+      <primary>Uni.WildMatch</primary>
+    </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os dados a serem pesquisados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>pattern </emphasis></entry>
+
+          <entry>Uma string que contém a expressão com curinga a ser correspondida. Os curingas são válidos? (único caractere) e * (vários caracteres).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>nocase</emphasis></entry>
+
+          <entry>Um valor booleano verdadeiro ou falso que indica se é necessário fazer distinção entre maiúsculas e minúsculas.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WildMatch retorna um valor BOOLEAN.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">WildMatch </emphasis> retorna TRUE se o  <emphasis>padrão</emphasis>  corresponder a 
+  <emphasis>fonte</emphasis>.</para>
+
+  <para>A versão de WildMatch Unicode que não faz distinção entre maiúsculas e minúsculas foi otimizada para priorizar a velocidade em vez da precisão. Para uma operação precisa, você deve usar a função Unicode ToUpperCase explicitamente e, em seguida, a versão de WildMatch Unicode que faz distinção entre maiúsculas e minúsculas, ou usar REGEXFIND.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">STD.Str.wildmatch('abcdeabcdec', 'a?c*', false) = TRUE;
+</programlisting>
+
+  <para></para>
+</sect1>

@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="VizBundleGeospatialMethods">
+  <title><emphasis>Métodos Geoespaciais</emphasis></title>
+
+  <para>Esta seção abrange os métodos geoespaciais que criam visualizações na
+  forma de mapas geográficos contidas no módulo Choropleth. Esses métodos
+  projetam dados em mapas usando o sombreamento para representar os
+  valores.</para>
+
+  <para/>
+
+  <sect1 id="VizUSStates">
+    <title>USStates</title>
+
+    <para><emphasis role="bold">Visualizer.Choropleth.USStates(<indexterm>
+        <primary>Visualizer.Choropleth.USStates</primary>
+      </indexterm><indexterm>
+        <primary>Choropleth.USStates</primary>
+      </indexterm><indexterm>
+        <primary>USStates</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo
+            ID</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">USStates </emphasis>o método de visualização
+    representa os dados em um mapa dos EUA.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+  _usStates := DATASET([  {'AL', 4779736}, 
+                         {'AK', 710231}, 
+                         {'AZ', 6392017}, 
+                         {'AR', 2915918}],
+                         {STRING State, INTEGER4 weight});
+  data_usStates := OUTPUT(_usStates, NAMED('choro_usStates'));
+  data_usStates;
+  viz_usstates := Visualizer.Choropleth.USStates('usStates',, 'choro_usStates');
+  viz_usstates;
+</programlisting>
+  </sect1>
+
+  <sect1 id="VizUSCounties">
+    <title>USCounties</title>
+
+    <para><emphasis role="bold">Visualizer.Choropleth.USCounties(<indexterm>
+        <primary>Visualizer.Choropleth.USCounties</primary>
+      </indexterm><indexterm>
+        <primary>Choropleth.USCounties</primary>
+      </indexterm><indexterm>
+        <primary>USCounties</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo
+            ID</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">USCounties </emphasis>o método de
+    visualização representa os dados em um mapa dos condados dos EUA.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+
+  _usCounties := DATASET([    {1073,29.946185501741},
+                                        {1097,0.79566003616637},
+                                        {1117,1.5223596574691},
+                                        {4005,27.311773623042}],
+                                        {STRING FIPS, INTEGER4 weight});
+
+  data_usCounties := OUTPUT(_usCounties, NAMED('choro_usCounties'));
+  data_usCounties;
+  viz_uscounties := Visualizer.Choropleth.USCounties('usCounties',, 'choro_usCounties');
+  viz_uscounties;
+</programlisting>
+  </sect1>
+
+  <sect1 id="VizEuro">
+    <title>Euro</title>
+
+    <para><emphasis role="bold">Visualizer.Choropleth.Euro(<indexterm>
+        <primary>Visualizer.Choropleth.Euro</primary>
+      </indexterm><indexterm>
+        <primary>Choropleth.Euro</primary>
+      </indexterm><indexterm>
+        <primary>Euro</primary>
+      </indexterm><indexterm>
+        <primary>EuroGB</primary>
+      </indexterm><indexterm>
+        <primary>EuroIE</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> ,<emphasis
+    role="bold">[</emphasis><emphasis>region</emphasis><emphasis
+    role="bold">]</emphasis> <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>region</emphasis></entry>
+
+            <entry>Código europeu de 2 letras ( GB, IE, etc.)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo
+            ID</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">Euro </emphasis>O método de visualização
+    representa os dados em um mapa da Europa. Os <emphasis
+    role="bold">métodos</emphasis> EuroIE <emphasis role="bold">e</emphasis>
+    EuroGB são fornecidos como exemplos. Para criar outros métodos específicos
+    para um determinado país, basta usar o método Euro e fornecer o código do
+    país de dois caracteres no parâmetro _region.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+_euroIE := DATASET([    {'Carlow', '27431', '27181', '54612'}, 
+                                    {'Dublin City', '257303', '270309', '527612'}, 
+                                    {'Kilkenny', '47788', '47631', '95419'}, 
+                                    {'Cork', '198658', '201144', '399802'}],
+                                    {STRING region, INTEGER4 males, INTEGER4 females, INTEGER4 total});
+  data_euroIE := OUTPUT(_euroIE, NAMED('choro_euroIE'));
+  data_euroIE;
+  
+  viz_euroIE := Visualizer.Choropleth.EuroIE('euroIE',, 'choro_euroIE', DATASET([{'County', 'region'}, 
+  {'Population', 'total'}], Visualizer.KeyValueDef),, DATASET([{'paletteID', 'Greens'}], Visualizer.KeyValueDef));
+  viz_euroIE;</programlisting>
+  </sect1>
+</chapter>

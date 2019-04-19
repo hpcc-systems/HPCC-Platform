@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FromGregorianYMD">
+  <title>FromGregorianYMD</title>
+
+  <para><emphasis role="bold">STD.Date.FromGregorianYMD<indexterm>
+      <primary>STD.Date.FromGregorianYMD</primary>
+    </indexterm><indexterm>
+      <primary>Date.FromGregorianYMD</primary>
+    </indexterm><indexterm>
+      <primary>FromGregorianYMD</primary>
+    </indexterm>(</emphasis> <emphasis>year, month, day</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>year</emphasis></entry>
+
+          <entry>um valor de ano INTEGER2 no intervalo 0 a 9999.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>month</emphasis></entry>
+
+          <entry>Um valor de mês UNSIGNED1 no intervalo de 1 a 12.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>day</emphasis></entry>
+
+          <entry>Um valor de dia UNSIGNED1 no intervalo de 1 a 31.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>FromGregorianYMD retorna um valor UNSIGNED4.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">FromGregorianYMD</emphasis> retorna um
+  valor Days_t dos parâmetros <emphasis>year</emphasis>,
+  <emphasis>month</emphasis>e <emphasis>day</emphasis> que representa o número
+  de dias desde 31 de dezembro de 1BC no calendário gregoriano (consulte as
+  FAQ do calendário, por Claus Tondering, em
+  http://www.tondering.dk/claus/calendar.html).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+INTEGER2  MyYear  := 2012;  
+UNSIGNED1 MyMonth := 1;   
+UNSIGNED1 MyDay   := 1;  
+  
+D := STD.Date.FromGregorianYMD(MyYear,MyMonth,MyDay);
+    //D contains 734503
+  
+  </programlisting>
+
+  <para/>
+</sect1>

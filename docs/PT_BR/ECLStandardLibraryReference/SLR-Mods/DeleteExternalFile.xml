@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DeleteExternalFile">
+  <title>DeleteExternalFile</title>
+
+  <para><emphasis role="bold">STD.File.DeleteExternalFile<indexterm>
+      <primary>STD.File.DeleteExternalFile</primary>
+    </indexterm><indexterm>
+      <primary>File.DeleteExternalFile</primary>
+    </indexterm><indexterm>
+      <primary>DeleteExternalFile</primary>
+    </indexterm>(</emphasis> <emphasis> location, path </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>location</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o endereço IP da
+          máquina remota.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>path</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o caminho/nome do
+          arquivo a ser removido.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">DeleteExternalFile </emphasis> remove o
+  arquivo físico único especificado por <emphasis>path</emphasis> de
+  <emphasis>location</emphasis>. O programa utilitário dafileserv deve estar
+  executando na máquina em <emphasis>location</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IP   := '10.150.254.6';
+infile := '/c$/training/import/AdvancedECL/people';
+STD.File.DeleteExternalFile(IP,infile);
+</programlisting>
+</sect1>

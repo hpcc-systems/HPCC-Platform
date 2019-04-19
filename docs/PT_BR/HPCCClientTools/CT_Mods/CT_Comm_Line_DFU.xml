@@ -1,0 +1,1586 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>Visão Geral das Ferramentas de Cliente</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Equipe de documentação</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>Setembro de 2011</pubdate>
+  </bookinfo>
+
+  <chapter id="Command_Line_DFU">
+    <title><emphasis role="bold">Interface de linha de comando
+    DFU.</emphasis></title>
+
+    <sect1 id="Command_Line_InterfaceDFU" role="nobrk">
+      <title>Interface de Linha de Comando</title>
+
+      <sect2 id="DFUPlusexe">
+        <title><emphasis role="bold">dfuplus </emphasis><emphasis
+        role="bold">[--version] action=</emphasis><emphasis>operation
+        </emphasis><emphasis
+        role="bold">[</emphasis><emphasis>@filename</emphasis><emphasis
+        role="bold">|</emphasis><emphasis>options</emphasis><emphasis
+        role="bold">]</emphasis></title>
+
+        <para/>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="85.40pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><emphasis>--version</emphasis></entry>
+
+                <entry>exibe informações de versão.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>operation</emphasis></entry>
+
+                <entry>Uma das seguintes ações: spray (Distribuir aos nós),
+                despray (Consolidar dados dos nós), copiar, remover, renomear,
+                listar, adicionar, adicionar superarquivo, remover
+                superarquivo, listar superarquivo, salvar xml, status,
+                abortar, reenviar, monitorar, listar histórico, e apagar
+                histórico</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>@filename</emphasis></entry>
+
+                <entry>Opcional. Nome de um arquivo contendo as opções
+                necessárias. <emphasis>options</emphasis>. Se omitido e
+                nenhuma <emphasis>opção</emphasis> de linha de comando for
+                especificada, as <emphasis>opções</emphasis> apropriadas devem
+                estar no arquivo dfuplus.ini no mesmo diretório do
+                executável.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>options</emphasis></entry>
+
+                <entry>Opcional. Uma lista delimitada dos itens opcionais
+                (listados abaixo) apropriados para
+                <emphasis>executar</emphasis> a operação. Se for ocultada e
+                nenhum <emphasis>@filename</emphasis> tiver sido especificado,
+                as <emphasis>opções</emphasis> adequadas devem estar no
+                arquivo dfuplus.ini, localizado no mesmo diretório que os
+                executáveis..</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>O executável <emphasis role="bold">dfuplus</emphasis> aceita
+        parâmetros de linha de comando a serem enviados para o mecanismo
+        Utilitário de arquivos distribuídos (DFU) através do servidor ESP .
+        Essas <emphasis>opções</emphasis> podem ser especificadas na linha de
+        comando, no <emphasis> @filename</emphasis>, no arquivo dfuplus.ini,
+        localizado no mesmo diretório que o executável, ou em qualquer
+        combinação.</para>
+
+        <para>A análise das opções seguem a seguinte ordem de
+        precedência:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>linha de comando</para>
+          </listitem>
+
+          <listitem>
+            <para>arquivo @filename</para>
+          </listitem>
+
+          <listitem>
+            <para>arquivo ini</para>
+          </listitem>
+
+          <listitem>
+            <para>valor padrão</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><informaltable colsep="1" frame="all" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="../../images/caution.png"
+                  scale="noin"/></entry>
+
+                  <entry>O utilitário dfuplus não carrega arquivos para a zona
+                  de entrada de arquivos. Você deve carregar qualquer arquivo
+                  para sua zona de entrada de arquivos através do ECL Watch ou
+                  de uma ferramenta compatível com um protocolo de cópia de
+                  segurança, como SCP ou SFTP.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <sect3 id="CLI_DFU_GeneralOptions">
+          <title>Opções gerais:</title>
+
+          <para>Ele as seguintes <emphasis>options </emphasis>as opções a
+          seguir são as mais comuns em cada
+          <emphasis>operação</emphasis>:</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis>servidor</emphasis></entry>
+
+                  <entry>A URL (http:// ou https://) e/ou endereço IP do
+                  servidor ESP . A porta também deve ser incluída.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>username</emphasis></entry>
+
+                  <entry>Uma identificação do usuário que possui acesso
+                  autorizado ao <emphasis>servidor</emphasis>.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>password</emphasis></entry>
+
+                  <entry>A senha que autoriza o acesso do
+                  <emphasis>usuário</emphasis>.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>overwrite</emphasis></entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1) indicando
+                  se deve subscrever qualquer arquivo existente de mesmo nome.
+                  Se omitido, o padrão é 0.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>replicate</emphasis></entry>
+
+                  <entry><para>Opcional. Um sinalizador booleano (1 | 0)
+                  indicando se o arquivo deve ser replicado. Se omitido, o
+                  padrão é 1.</para><para><emphasis role="bold">Essa opção só
+                  está disponível em sistemas onde a replicação tiver sido
+                  ativada.</emphasis></para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>autorecover</emphasis></entry>
+
+                  <entry>Opcional. O número de tentativas de recuperação de
+                  uma <emphasis>operação</emphasis> malsucedida. Se omitido, o
+                  padrão é 0.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>nowait</emphasis></emphasis></entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1) indicando
+                  se deve retornar imediatamente sem aguardar pela conclusão
+                  da <emphasis>operação</emphasis>. Se omitido, o padrão é
+                  0.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>connect</emphasis></emphasis></entry>
+
+                  <entry>Opcional. O número de conexões simultâneas para
+                  limitar a <emphasis>operação </emphasis>. Se omitido, o
+                  padrão é 25.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>throttle</emphasis></emphasis></entry>
+
+                  <entry>Opcional. A velocidade de transferência (em
+                  Mbits/segundo) limite da <emphasis>operação</emphasis> . Se
+                  omitida, o padrão é a melhor velocidade do sistema no Linux
+                  e de múltiplos destinos no Windows, ou a velocidade NIC de
+                  uma caixa Windows de destino único.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis><emphasis>norecover</emphasis>
+                  </emphasis></emphasis></entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1) indicando
+                  se é preciso criar ou recuperar a
+                  <emphasis>operação</emphasis> a partir das informações de
+                  recuperação. Se omitido, o padrão é 0.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis><emphasis>nosplit</emphasis>
+                  </emphasis></emphasis></entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1) indicando
+                  se é necessário dividir as partes do arquivo em várias
+                  partes de destino. Se omitido, o padrão é 0.</entry>
+                </row>
+
+                <row>
+                  <entry>compress</entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1) indicando
+                  se o arquivo de destino deve ser compactado.</entry>
+                </row>
+
+                <row>
+                  <entry>push</entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1) indicando
+                  se o padrão push/pull deve ser substituído.</entry>
+                </row>
+
+                <row>
+                  <entry>encrypt=&lt;password&gt;</entry>
+
+                  <entry>Opcional. Condiciona a criptografia do nome do
+                  arquivo de destino ao uso da senha fornecida.</entry>
+                </row>
+
+                <row>
+                  <entry>decrypt=&lt;password&gt;</entry>
+
+                  <entry>Opcional. Condiciona a descriptografia do nome do
+                  arquivo de origem ao uso da senha fornecida.</entry>
+                </row>
+
+                <row>
+                  <entry>jobname=&lt;jobname&gt;</entry>
+
+                  <entry>Especifica um jobname para o job da operação
+                  DFU.</entry>
+                </row>
+
+                <row>
+                  <entry>transferbuffersize=nnn</entry>
+
+                  <entry>Opcional. Substitui o valor do tamanho do buffer do
+                  servidor DFU (o padrão é 64k)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <?hard-pagebreak ?>
+
+        <sect3 id="CLI_DFU_dfuplus.ini">
+          <title>dfuplus.ini</title>
+
+          <para>Qualquer <emphasis>opção</emphasis> pode ser especificada em
+          um arquivo denominado dfuplus.ini localizado no mesmo diretório que
+          o executável. Se o seu sistema operacional faz distinção entre
+          maiúsculas e minúsculas, lembre-se de que o nome do arquivo deve
+          estar em letras minúsculas. As opções que raramente são alteradas
+          podem ser colocadas no arquivo dfuplus.ini. Por exemplo:</para>
+
+          <programlisting>server=http://10.150.50.12:8010 username=rlor password=password overwrite=1 replicate=1</programlisting>
+
+          <para>Em todos os exemplos abaixo, vamos supor que dfuplus.ini
+          contém o conteúdo acima.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="../../images/caution.png"
+                    scale="noin"/></entry>
+
+                    <entry>Não recomendamos armazenar sua senha no arquivo ini
+                    (que não é criptografado). A senha está incluída no
+                    arquivo ini nesses exemplos para simplificar o código de
+                    exemplo.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3 id="CLI_DFU_SprayOperations">
+          <title>Operações de Spray:</title>
+
+          <para>A <emphasis role="bold">operação</emphasis> <emphasis>
+          spray</emphasis> (distribuir aos nós) copia um arquivo da zona de
+          entrada de arquivos e faz a distribuição para todos os nós do HPCC
+          de destino.</para>
+
+          <para>Essas <emphasis>opções </emphasis> são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis> spray</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry>srcip</entry>
+
+                    <entry>Opcional. O endereço IP da máquina de origem. Se
+                    omitido, as informações devem ser fornecidas pelo
+                    parâmetro <emphasis>srcxml</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry>srcfile</entry>
+
+                    <entry>Opcional. O caminho para o arquivo de origem. Pode
+                    conter caracteres curinga (* e ?), permitindo a inclusão
+                    de vários arquivos de origem no spray para um único
+                    dstname. <emphasis>dstname</emphasis>. Se omitido, as
+                    informações devem ser fornecidas pelo parâmetro
+                    <emphasis>srcxml</emphasis> .</entry>
+                  </row>
+
+                  <row>
+                    <entry>srcxml</entry>
+
+                    <entry>O nome do arquivo XML que contém as informações
+                    necessárias para os parâmetros dstip e dstfile .
+                    <emphasis>srcip</emphasis> e <emphasis>srcfile</emphasis>
+                    parâmetros Este arquivo pode ter sido obtido pelo uso
+                    prévio da <emphasis>operação</emphasis> savexml (salvar
+                    xml). Essa opção possibilita combinar vários arquivos de
+                    origem em um único arquivo lógico resultante no
+                    HPCC.</entry>
+                  </row>
+
+                  <row>
+                    <entry>dstname</entry>
+
+                    <entry>O nome lógico do arquivo de destino.</entry>
+                  </row>
+
+                  <row>
+                    <entry>dstcluster</entry>
+
+                    <entry>O nome do cluster de destino.</entry>
+                  </row>
+
+                  <row>
+                    <entry>prefixo</entry>
+
+                    <entry>Opcional. Ambos a seguir (separados por
+                    vírgula):</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis
+                    role="bold">filename{:</emphasis><emphasis>length</emphasis><emphasis
+                    role="bold">}</emphasis></entry>
+
+                    <entry>Precede o nome do arquivo (opcionalmente limitado a
+                    caracteres de <emphasis>comprimento</emphasis> ) dos
+                    dados.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis
+                    role="bold">filesize{:[B|L][1-8]}</emphasis></entry>
+
+                    <entry>Precede o tamanho do arquivo dos dados. Como
+                    alternativa, é possível especificar o formato (<emphasis
+                    role="bold">B</emphasis> especifica big endian, <emphasis
+                    role="bold">L</emphasis> especifica little endian) e o
+                    tamanho desse inteiro (<emphasis role="bold">1</emphasis>
+                    a <emphasis role="bold">8</emphasis> bytes). Se o formato
+                    e tamanho forem omitidos, o padrão é L4. <para>Ao usar
+                    caracteres curinga (* e ?) para fazer o spray de vários
+                    arquivos de origem (srcfile) para um único dstname, você
+                    MUST (DEVE) usar ambas opções filename e filesize se
+                    precisar realizar o despray do conteúdo de cada registro
+                    no dstname de volta para os vários arquivos dos quais eles
+                    vieram originalmente. Se você nunca precisar fazer isso, a
+                    opção filesize pode ser omitida. </para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>expireDays</emphasis></entry>
+
+                    <entry>Opcional. Um valor inteiro indicando o número de
+                    dias restantes para o arquivo ser removido
+                    automaticamente. Se omitido, o padrão é -1 (sem data de
+                    validade).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>format</emphasis></entry>
+
+                    <entry>Opcional. Um dos seguintes valores: <emphasis
+                    role="bold">fixed csv delimited xml recfmv
+                    recfmb</emphasis> Se omitido, o padrão é:</entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">  <emphasis role="bold">fixed</emphasis> Opções de formato xml :</programlisting></entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">    recordsize</programlisting></entry>
+
+                    <entry>O tamanho fixo de cada registro, em bytes.</entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">  <emphasis role="bold">csv/delimited</emphasis> opções:</programlisting></entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">    encoding</programlisting></entry>
+
+                    <entry>Opcional. Um dos seguintes: ascii, utf8, utf8n,
+                    utf16, utf16le, utf16be, utf32, utf32le, utf32be; Se
+                    omitido, o padrão é ascii.</entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">    maxrecordsize</programlisting></entry>
+
+                    <entry>Opcional. O tamanho máximo de cada registro, em
+                    bytes. Se omitido, o padrão é 8192.</entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">    separator</programlisting></entry>
+
+                    <entry>Opcional. O delimitador do campo. Se omitido, o
+                    padrão é a vírgula (\,).</entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">    terminator</programlisting></entry>
+
+                    <entry>Opcional. O delimitador do registro. Se omitido, o
+                    padrão é feed de linha ou linha de retorno
+                    (\r,\r\n).</entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">    quote</programlisting></entry>
+
+                    <entry>Opcional. O caractere de aspas da string. Se
+                    omitido, o padrão é aspas simples (').</entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab"><emphasis role="bold">  xml</emphasis> Opções de formato:</programlisting></entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">    'rowtag'</programlisting></entry>
+
+                    <entry>A tag do XML que identifica cada registro.
+                    Obrigatório.</entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">    encoding</programlisting></entry>
+
+                    <entry>Opcional. Um dos seguintes: utf8 utf8n utf16
+                    utf16le utf16be utf32 utf32le utf32be Se omitido, o padrão
+                    é utf8.</entry>
+                  </row>
+
+                  <row>
+                    <entry><programlisting role="tab">    maxrecordsize</programlisting></entry>
+
+                    <entry>Opcional. O tamanho máximo de cada registro, em
+                    bytes. Se omitido, o padrão é 8192.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Exemplos:</para>
+
+          <programlisting>//fixed spray example:
+dfuplus action=spray srcip=10.150.50.14
+          srcfile=c:\import\timezones.txt dstname=RTTEMP::timezones.txt
+          dstcluster=thor format=fixed recordsize=155
+
+//fixed spray example using a srcxml file:
+dfuplus action=spray srcxml=c:\import\flattimezones.xml
+          dstname=RTTEMP::timezones.txt dstcluster=thor recordsize=155
+
+//csv spray example:
+dfuplus action=spray srcip=10.150.50.14
+          srcfile=c:\import\timezones.csv dstname=RTTEMP::timezones.csv
+          dstcluster=thor format=csv
+
+//the spray.xml file contains:
+&lt;File directory="c:\import\"
+   group="thor"
+   modified="2004-04-27T14:58:38"
+   name="zip"
+   numparts="2"
+   partmask="zip._$P$_of_$N$"&gt;
+&lt;Attr job="zip1"
+   owner="rtaylor"
+   recordSize="5"
+   replicated="1"
+   workunit="D20040427-111857"/&gt;
+&lt;Part modified="2004-04-27T14:58:40"
+   node="10.150.51.29"
+   num="1"
+   size="165"/&gt;
+&lt;Part modified="2004-04-27T14:58:40"
+   node="10.150.51.29"
+   num="2"
+   size="165"/&gt;
+&lt;/File&gt;
+
+//fixed spray example using the above spray.xml file to
+          combine
+// multiple source files into a single logical file
+// in this case, zip._1_of_3, zip._2_of_3, and zip._3_of_3
+          into zip1:
+dfuplus action=spray srcxml=spray.xml
+          dstcluster=thordstname=RTTEMP::myzip1 recordsize=5
+
+//xml spray example:
+dfuplus action=spray srcip=10.150.50.14
+          srcfile=c:\import\timezones.xml dstname=RTTEMP::timezones.xml
+          dstcluster=thor format=xml rowtag=area
+
+//Multiple spray all .JPG and .BMP files under
+// c:\import on 10.150.51.26 to single logical file
+          LE::imagedb:
+dfuplus action=spray srcip=10.150.51.26
+          srcfile=c:\import\*.jpg,c:\import\*.bmp
+
+dstcluster=le_thor dstname=LE::imagedb overwrite=1
+          prefix=FILENAME,FILESIZE nosplit=1
+//this would result in a RECORD structure like this:
+imageRecord := RECORD
+STRING filename;
+DATA image; //first 4 bytes contain the length of the image data
+END;</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_DeSprayOperations">
+          <title>Operações de Despray:</title>
+
+          <para>A <emphasis role="bold">operação </emphasis>
+          <emphasis>despray</emphasis> combina as partes do arquivo de todos
+          os nós do cluster em um único arquivo na zona de entrada de
+          arquivos.</para>
+
+          <para>Essas <emphasis>opções </emphasis> são usadas pela operação
+          <emphasis role="bold">despray</emphasis> :</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis>srcname</emphasis></entry>
+
+                  <entry>O nome lógico do arquivo de origem. Pode conter
+                  caracteres curinga (* e ?), permitindo a inclusão de vários
+                  arquivos de origem no despray para um único
+                  <emphasis>dstname</emphasis>.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>dstip</emphasis></entry>
+
+                  <entry>Opcional. O endereço IP do nó do servidor. Se
+                  omitido, as informações devem ser fornecidas pelo parâmetro
+                  <emphasis>dstxml</emphasis> .</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>dstfile</emphasis></entry>
+
+                  <entry>Opcional. O caminho para o arquivo de destino. Pode
+                  conter caracteres curinga (* e ?) para fazer o despray de um
+                  único <emphasis>srcname</emphasis> para vários
+                  <emphasis>dstfiles</emphasis>. Se omitido, as informações
+                  devem ser fornecidas pelo parâmetro
+                  <emphasis>dstxml</emphasis> .</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>dstxml</emphasis></entry>
+
+                  <entry>O nome do arquivo XML que contém as informações
+                  necessárias para os parâmetros <emphasis>dstip</emphasis> e
+                  <emphasis>dstfile</emphasis> . Este arquivo pode ter sido
+                  obtido pelo uso prévio da <emphasis>operação</emphasis>
+                  savexml (salvar xml). Essa opção divide um único arquivo
+                  lógico resultante no cluster em vários arquivos de
+                  destino.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>splitprefix</emphasis></entry>
+
+                  <entry>Opcional. Ambos a seguir (separados por
+                  vírgula):</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">filename{:</emphasis><emphasis>length</emphasis><emphasis
+                  role="bold">}</emphasis></entry>
+
+                  <entry>Usa o nome do arquivo precedente (veja a opção
+                  <emphasis>prefix (prefixo)</emphasis> para
+                  <emphasis>operação</emphasis> de spray) para dividir os
+                  dados em arquivos individuais.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">filesize{:[B|L][1-8]}</emphasis></entry>
+
+                  <entry>Usa o nome do arquivo precedente (veja a opção
+                  <emphasis>prefix (prefixo)</emphasis> para
+                  <emphasis>operação</emphasis> de spray) para dividir os
+                  dados em arquivos individuais. <para>Ao usar caracteres
+                  curinga (* e ?) para fazer o spray de vários arquivos de
+                  origem (srcfile) para um único dstname, você MUST (DEVE)
+                  usar ambas opções filename e filesize se precisar realizar o
+                  despray do conteúdo de cada registro no dstname de volta
+                  para os vários arquivos dos quais eles vieram originalmente.
+                  Se você nunca precisar fazer isso, a opção filesize pode ser
+                  omitida. </para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Exemplos:</para>
+
+          <programlisting>dfuplus action=despray dstip=10.150.50.14
+   dstfile=c:\import\despray\timezones.txt srcname=RTTEMP::timezones.txt
+//the spray.xml file contains:
+&lt;File directory="c:\import\"
+   group="thor"
+   modified="2004-04-27T14:58:38"
+   name="zip"
+   numparts="2"
+   partmask="zip._$P$_of_$N$"&gt;
+&lt;Attr job="zip1"
+   owner="rtaylor"
+   recordSize="5"
+   replicated="1"
+   workunit="D20040427-111857"/&gt;
+&lt;Part modified="2004-04-27T14:58:40"
+   node="10.150.51.29"
+   num="1"
+   size="165"/&gt;
+&lt;Part modified="2004-04-27T14:58:40"
+   node="10.150.51.29"
+   num="2"
+size="165"/&gt;
+&lt;/File&gt;
+//despray example using the above spray.xml file to split a single
+// logical file into multiple destination files
+// in this case, zip._1_of_3, zip._2_of_3, and zip._3_of_3 from zip1:
+dfuplus action=despray dstxml=spray.xml dstcluster=thor
+          srcname=RTTEMP::myzip1
+
+
+//from a RECORD structure that looks like this:
+imageRecord := RECORD
+STRING filename;
+DATA image; //first 4 bytes contain the length of the image data
+          END;
+
+//you can despray into its component files like this:
+dfuplus action=dspray srcname=le::imagedb
+          dstip=10.150.51.26 dstfile=c:\export\
+          splitprefix=FILENAME,FILESIZE
+</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_CopyOps">
+          <title>Operações de Cópia:</title>
+
+          <para>A <emphasis role="bold">operação </emphasis> <emphasis>copy
+          (copiar)</emphasis> copia um arquivo lógico (todas as partes do
+          arquivo de todos os nós do cluster) normalmente de um cluster para
+          outro. A operação realiza a redistribuição adequada das partes do
+          arquivo, caso os clusters de origem e destino não tenham o mesmo
+          número de nós.</para>
+
+          <para>A operação copy (copiar) também pode ser usada para copiar
+          arquivos de outros ambientes do HPCC (usando a opção
+          <emphasis>srcdali</emphasis> ). Isso também é conhecido como cópia
+          remota. Para fazer a cópia remota de um arquivo que contém um campo
+          de comprimento variável, é preciso incluir a opção <emphasis
+          role="bold">nosplit</emphasis> .</para>
+
+          <para>Essas <emphasis>opções </emphasis>são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis>copy
+          (copiar)</emphasis>:</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis><emphasis>srcname</emphasis></emphasis></entry>
+
+                  <entry>O nome lógico do arquivo de origem.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>dstname</emphasis></entry>
+
+                  <entry>O nome lógico do arquivo de destino.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>dstcluster</emphasis>
+                  </emphasis></entry>
+
+                  <entry>O nome do cluster de destino.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>srcdali</emphasis></emphasis></entry>
+
+                  <entry>Opcional. O endereço IP do servidor Dali de origem,
+                  se for diferente do Dali de destino (associado com o ESP
+                  Server especificado na opção server (servidor) ).
+                  <emphasis>servidor</emphasis> (Compilar).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>srcusername</emphasis></entry>
+
+                  <entry>Opcional. O nome de usuário usado para acessar o
+                  <emphasis>srcdali</emphasis>. Se omitido, o geral Opções
+                  <emphasis>username</emphasis> é usado.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>password</emphasis>
+                  </emphasis></entry>
+
+                  <entry>Opcional. A senha usada para acessar o
+                  <emphasis>srcdali</emphasis>. Se omitido, a
+                  <emphasis>senha</emphasis> nas Opções Gerais será
+                  usada.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>preservecompression</emphasis></entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1) indicando
+                  se a compactação do arquivo de origem deve ser preservada.
+                  Se omitido, o padrão é 1.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=copy srcname=RTTEMP::timezones.txt
+          dstname=srcname=RTTEMP::COPY::timezones.txt dstcluster=thor</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_RemoveOps">
+          <title>Operações de Remoção:</title>
+
+          <para>A operação <emphasis role="bold">remove (remover)</emphasis>
+          apaga um arquivo lógico da armazenagem de dados do sistema,
+          opcionalmente deixando os arquivos físicos no lugar.</para>
+
+          <para>Essas <emphasis>opções </emphasis>são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis> remove
+          (remover)</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><emphasis><emphasis><emphasis>name</emphasis></emphasis></emphasis></entry>
+
+                    <entry>O nome lógico do arquivo a ser removido.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable> Exemplo:</para>
+
+          <programlisting>dfuplus action=remove name=RTTEMP::timezones.txt</programlisting>
+
+          <para/>
+        </sect3>
+
+        <sect3 id="CLI_DFU_renameOps">
+          <title>Operações de Renomear:</title>
+
+          <para>A operação <emphasis role="bold">rename (renomear) </emphasis>
+          renomeia um arquivo lógico no armazenamento de dados do
+          sistema.</para>
+
+          <para>Essas <emphasis>opções </emphasis> são usadas pela <emphasis
+          role="bold">operação </emphasis> <emphasis>remove
+          (renomear)</emphasis>:</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis><emphasis><emphasis><emphasis>srcname</emphasis></emphasis></emphasis></emphasis></entry>
+
+                  <entry>O nome lógico do arquivo de origem.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>dstname</emphasis></emphasis></entry>
+
+                  <entry>O nome lógico do arquivo de destino.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=rename srcname=RTTEMP::timezones.txt dstname=RTTEMP::NewTimezones.txt</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_ListOperations">
+          <title>Operações de listagem:</title>
+
+          <para>A operação <emphasis role="bold">list (listar)</emphasis> cria
+          uma lista de arquivos lógicos no armazenamento de dados do
+          sistema.</para>
+
+          <para>Essas <emphasis>opções </emphasis> são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis>list
+          (listar)</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><emphasis><emphasis><emphasis><emphasis>name</emphasis></emphasis></emphasis></emphasis></entry>
+
+                    <entry>A máscara que define os nomes dos arquivos lógicos
+                    a serem listados.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=list name=*</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_AddOperations">
+          <title>Operações de Adicionar:</title>
+
+          <para>A operação <emphasis role="bold">add (adicionar)</emphasis>
+          adiciona um novo arquivo lógico no armazenamento de dados do
+          sistema.</para>
+
+          <para>Isso também permite <indexterm>
+              <primary>restaurar um superarquivo</primary>
+            </indexterm> cujas informações foram previamente exportadas
+          através da ação savexml (salvar xml). É bastante útil na
+          implementação da Nuvem, onde os arquivos são armazenados em um
+          acumulador de dados até que uma nova instância seja iniciada.</para>
+
+          <para>Essas <emphasis>opções </emphasis> são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis>add
+          (adicionar)</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><emphasis><emphasis><emphasis><emphasis><emphasis>srcxml</emphasis>
+                    </emphasis></emphasis></emphasis></emphasis></entry>
+
+                    <entry>O caminho e nome do arquivo XML de origem que
+                    contém informações lógicas ou do superarquivo exportadas
+                    (geralmente de uma operação savexml prévia).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis><emphasis>dstname</emphasis></emphasis></entry>
+
+                    <entry>O nome lógico do arquivo de destino.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Essas <emphasis>opções </emphasis> são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis> add (adicionar)
+          </emphasis> para adicionar arquivos de um Dali remoto:</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis><emphasis>dstname</emphasis></emphasis></entry>
+
+                  <entry>O nome lógico do arquivo de destino.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>srcname</emphasis></entry>
+
+                  <entry>O nome lógico do arquivo de origem.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>srcdali</emphasis>
+                  </emphasis></entry>
+
+                  <entry>O endereço IP do servidor Dali de origem.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>srcusername</emphasis></entry>
+
+                  <entry>Opcional. O nome de usuário usado para acessar o
+                  <emphasis>srcdali</emphasis>. Se omitido, a <emphasis>nome
+                  do usuário</emphasis> nas Opções Gerais será usada.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>srcpassword</emphasis>
+                  </emphasis></entry>
+
+                  <entry>Opcional. A senha usada para acessar o
+                  <emphasis>srcdali</emphasis>. Se omitido, a
+                  <emphasis>senha</emphasis> nas Opções gerais será
+                  usada.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=add srcxml=flattimezones.xml dstname=flattimezones.txt
+dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
+</programlisting>
+
+          <para/>
+        </sect3>
+
+        <sect3 id="CLI_DFU_AddSuperOperations">
+          <title>Operações de Addsuper:</title>
+
+          <para>A operação <emphasis role="bold">addsuper</emphasis> adiciona
+          subarquivos a um superarquivo existente (veja a <emphasis>seção
+          Gerenciamento de superarquivos </emphasis> na Referência a
+          Biblioteca de Serviços <emphasis>resolução do
+          assunto.)</emphasis></para>
+
+          <para>Essas <emphasis>opções </emphasis> são usadas pela <emphasis
+          role="bold">operação </emphasis>
+          <emphasis>addsuper</emphasis>:</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis><emphasis><emphasis>superfile</emphasis>
+                  </emphasis></emphasis></entry>
+
+                  <entry>O nome lógico do superarquivo.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>subfiles</emphasis></emphasis></entry>
+
+                  <entry>Uma lista (delimitada por vírgula) dos nomes lógicos
+                  dos arquivos a serem adicionados a um superarquivo. Não deve
+                  haver espaço entre os nomes.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>before</emphasis></entry>
+
+                  <entry>Opcional. O nome lógico do subarquivo acompanha os
+                  <emphasis>subarquivos</emphasis> adicionados. Se omitido, os
+                  <emphasis>subarquivos</emphasis> serão adicionados ao
+                  final.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=addsuper superfile=mysuper subfiles=file1,file2</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_RemoveSuperOperations">
+          <title>Operações de Removesuper:</title>
+
+          <para>A operação <emphasis role="bold">removesuper</emphasis> remove
+          subarquivos de um superarquivo existente (veja a seção
+          <emphasis>Gerenciamento de superarquivos </emphasis>na
+          <emphasis>Referência a Biblioteca de Serviços</emphasis>).</para>
+
+          <para>Essas <emphasis>opções </emphasis>são usadas pela <emphasis
+          role="bold">operação </emphasis>
+          <emphasis>removesuper</emphasis>:</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis><emphasis><emphasis>superfile</emphasis>
+                  </emphasis></emphasis></entry>
+
+                  <entry>O nome lógico do superarquivo.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>subfiles</emphasis></emphasis></entry>
+
+                  <entry>Opcional. Uma lista (delimitada por vírgula) dos
+                  nomes lógicos dos arquivos a serem removidos de um
+                  superarquivo. Não deve haver espaço entre os nomes. Se
+                  omitido, todos os arquivos serão removidos do
+                  superarquivo.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>delete</emphasis></entry>
+
+                  <entry>Opcional. Um sinalizador booleano (1 | 0) indicando
+                  se o padrão push/pull deve ser substituído.
+                  <emphasis>subfiles</emphasis> um sinalizador booleano (1 |
+                  0) indicando se os subarquivos também devem ser fisicamente
+                  removidos (além de serem removidos do superarquivo). Se
+                  omitido, o padrão é 1--remover fisicamente.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=removesuper superfile=mysuper subfiles=file1,file2</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_ListSuperOperations">
+          <title>Operações Listsuper:</title>
+
+          <para>A operação <emphasis role="bold">listsuper</emphasis> lista os
+          subarquivos de um superarquivo existente (veja a seção
+          <emphasis>Gerenciamento de superarquivos </emphasis>na
+          <emphasis>Referência a Biblioteca de Serviços</emphasis>).</para>
+
+          <para>Essas <emphasis>opções </emphasis>são usadas pela <emphasis
+          role="bold">operação </emphasis>
+          <emphasis>listasuper</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><emphasis><emphasis><emphasis>superfile</emphasis>
+                    </emphasis></emphasis></entry>
+
+                    <entry>O nome lógico do superarquivo.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=listsuper superfile=mysuper</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_StatusOperations">
+          <title>Operações Status:</title>
+
+          <para>O <emphasis role="bold">status</emphasis> a operação status
+          retorna o status operacional atual de uma workunit.</para>
+
+          <para>Essas <emphasis>opções </emphasis>são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis> status</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><emphasis><emphasis><emphasis>wuid</emphasis>
+                    </emphasis></emphasis></entry>
+
+                    <entry>O identificador de uma workunit</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>Exemplo:</para>
+
+          <programlisting>dfuplus action=status wuid=W20050309-093020</programlisting>
+
+          <para/>
+        </sect3>
+
+        <sect3 id="CLI_DFU_AbortOperations">
+          <title>Operações de Abort (Abortar):</title>
+
+          <para>A operação <emphasis role="bold">abort</emphasis> cancela a
+          execução de uma workunit.</para>
+
+          <para>Essas <emphasis>opções </emphasis>são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis> abort</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><emphasis><emphasis><emphasis>wuid</emphasis>
+                    </emphasis></emphasis></entry>
+
+                    <entry>O identificador de uma workunit</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=abort wuid=W20050309-093020</programlisting>
+
+          <para/>
+        </sect3>
+
+        <sect3 id="CLI_DFU_ResubmitOperations">
+          <title>Operações de Resubmit (Reenviar):</title>
+
+          <para>A operação <emphasis role="bold">resubmit</emphasis> reenvia
+          uma workunit.</para>
+
+          <para>Essas <emphasis>opções </emphasis>são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis>
+          resubmit</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><emphasis><emphasis><emphasis>wuid</emphasis>
+                    </emphasis></emphasis></entry>
+
+                    <entry>O identificador de uma workunit</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=resubmit wuid=W20050309-093020</programlisting>
+
+          <para/>
+        </sect3>
+
+        <sect3 id="CLI_DFU_SaveXMLOperations">
+          <title>Operações Savexml:</title>
+
+          <para>A operação <emphasis role="bold">savexml</emphasis> salva o
+          mapa do arquivo lógico em um arquivo XML.</para>
+
+          <para>Este recurso também permite exportar os metadados de um
+          superarquivo para depois usá-lo para restaurar um superarquivo. É
+          bastante útil na implementação da Nuvem, onde os arquivos são
+          armazenados em um acumulador de dados até que uma nova instância
+          seja iniciada.</para>
+
+          <para>Essas <emphasis>opções </emphasis>são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis>
+          savexml</emphasis>:</para>
+
+          <para><emphasis>srcname</emphasis> O nome lógico do arquivo de
+          origem.</para>
+
+          <para/>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis>srcname</emphasis></entry>
+
+                  <entry>O nome lógico do arquivo de origem. Pode ser um nome
+                  lógico de um superarquivo.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>dstxml</emphasis>
+                  </emphasis></entry>
+
+                  <entry>Opcional. O nome lógico do arquivo XML de destino. Se
+                  omitido, o resultado em XML é enviado para stdout.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=savexml srcname=RTTEMP::timezones.txt
+          dstxml=flattimezones.xml
+    // this results in the following XML file:
+    &lt;File directory="c:\thordata\rttemp"
+          group="thor"
+          modified="2004-06-18T14:17:16"
+          name="timezones.txt"
+          numparts="3"
+          partmask="timezones.txt._$P$_of_$N$"&gt;
+    &lt;Attr job="timezones.txt"
+          owner="rtaylor"
+          recordSize="155"
+          replicated="1"
+          size="51305"
+          workunit="D20040618-101716"/&gt;
+    &lt;OrigName&gt;rttemp::timezones.txt&lt;/OrigName&gt;
+    &lt;Part modified="2004-06-18T14:17:18"
+          node="10.150.50.15"
+          num="1"
+          size="17050"/&gt;
+    &lt;Part modified="2004-06-18T14:17:17"
+          node="10.150.50.18"
+          num="2"
+          size="17050"/&gt;
+    &lt;Part modified="2004-06-18T14:17:17"
+          node="10.150.50.16"
+          num="3"
+          size="17205"/&gt;
+    &lt;/File&gt;</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_MonitorOperations">
+          <title>Operações Monitor:</title>
+
+          <para>A operação <emphasis role="bold">monitor</emphasis> faz com
+          que a tarefa DFU monitora o aparecimento de um arquivo lógico ou
+          físico e aciona um evento quando esse arquivo aparece.</para>
+
+          <para>Essas <emphasis>opções </emphasis>são usadas pela <emphasis
+          role="bold">operação</emphasis> <emphasis>
+          monitor</emphasis>:</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="85.55pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><emphasis>event</emphasis></entry>
+
+                    <entry>O nome do evento definido pelo usuário a ser
+                    acionado. Isso é usado como primeiro parâmetro da função
+                    ECL EVENT .</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>lfn</emphasis></entry>
+
+                    <entry>Opcional. O nome do arquivo lógico no DFU. Essa
+                    opção impede o uso das opções <emphasis>ip</emphasis>,
+                    <emphasis>file</emphasis> e <emphasis>sub</emphasis>
+                    .</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>ip</emphasis></entry>
+
+                    <entry>Opcional. O endereço IP ou nome do servidor onde
+                    residirá o arquivo físico. Pode ser omitido se a função
+                    <emphasis>file (arquivo)</emphasis> apresentar uma URL
+                    completa.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>file</emphasis></entry>
+
+                    <entry>Opcional. O caminho completo de um arquivo físico.
+                    Pode conter caracteres curinga (* e ?).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>sub</emphasis></entry>
+
+                    <entry>Opcional. Especifica a busca do arquivo físico em
+                    subdiretórios se a opção <emphasis>file
+                    (arquivo)</emphasis> tiver caracteres curinga (* e
+                    ?).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>shotlimit</emphasis></entry>
+
+                    <entry>Opcional. O número de eventos de chegada a serem
+                    gerados antes de marcar uma tarefa DFU como concluída. O
+                    valor “menos um” (-1) indica continuidade até que a
+                    workunit seja cancelada manualmente. Se omitido, o valor
+                    padrão é um (1).</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para><emphasis role="bold">Observe as seguintes advertências e
+          restrições:</emphasis></para>
+
+          <para>1) Se existir um arquivo correspondente no momento em que o
+          job do Monitorador DFU for iniciado, esse arquivo <emphasis
+          role="underline">não</emphasis> gerará um evento. Ele só gerará o
+          evento quando o arquivo tiver sido removido e recriado.</para>
+
+          <para>2) Se um arquivo for criado e depois removido (ou removido e
+          depois recriado) entre os intervalos de sondagem, ele não será visto
+          pelo monitor e não acionará um evento.</para>
+
+          <para>3) Os eventos são gerados apenas durante o intervalo de
+          sondagem.</para>
+
+          <para>4) Observe que o <emphasis>evento</emphasis> é gerado se o
+          arquivo físico tiver sido criado desde o último intervalo de
+          sondagem. Consequentemente, o <emphasis>evento</emphasis> poderá
+          ocorrer antes de o arquivo ser fechado e os dados serem todos
+          gravados. Para garantir que o arquivo não seja lido mais tarde,
+          antes de ser concluído, você deve usar uma técnica que impeça essa
+          possibilidade, como por exemplo usar um arquivo 'sinalizado'
+          separado em vez do próprio arquivo, ou renomear o arquivo depois de
+          ele ter sido criado e totalmente gravado.</para>
+
+          <para>5) Ao monitorar arquivos físicos, o parâmetro de subtipo da
+          função EVENT (seu segundo parâmetro) corresponde ao URL completo do
+          arquivo com um IP absoluto em vez do nome DNS/netbios do arquivo.
+          Esse parâmetro não pode ser recuperado, mas pode ser usado apenas
+          para corresponder um valor específico.</para>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=monitor event=MyEvent ip=edata10 file=/dz/arr.txt
+dfuplus action=monitor event=MyEvent ip=10.150.10.75
+            file=c:\dz\* shotlimit=-1 sub=1
+dfuplus action=monitor event=MyEvent file=//10.15.13.21/dz/*.txt
+dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_ListHistory">
+          <title>Operação Listhistory:</title>
+
+          <para>A operação listhistory retorna o metadados do histórico em um
+          arquivo lógico.</para>
+
+          <para>Os metadados do histórico são criados a partir da operação
+          cópia, cópia remota ou spray.</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis>lfn</emphasis></entry>
+
+                  <entry>O nome do arquivo lógico do arquivo de
+                  origem.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>outformat</emphasis></entry>
+
+                  <entry>Opcional. O formato do resultado. Opções válidas:
+                  csv, xml, json, ou ascii. O padrão é xml.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>csvheader</emphasis></entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1) indicando
+                  se as informações de cabeçalho são incluídas na primeira
+                  linha em resultados no formato csv.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=listhistory lfn=progguide::exampledata::accounts 
+  // this results in the following XML file:
+  &lt;History&gt;
+    &lt;Origin ip="127.0.0.1"
+            name="accounts"
+            operation="DFUcopy"
+            owner="EmilyKate"
+            path="/var/lib/HPCCSystems/hpcc-data/thor/progguide/exampledata/"
+            timestamp="2017-05-11T16:47:32"
+            workunit="W20170503-143100"/&gt;
+   &lt;/History&gt;
+
+</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_EraseHistory">
+          <title>Operação Erasehistory:</title>
+
+          <para>A operação erasehistory remove o metadados do histórico de um
+          arquivo lógico.</para>
+
+          <para>Os metadados do histórico são criados a partir da operação
+          cópia, cópia remota ou spray.</para>
+
+          <para>Observação: Se a autenticação LDAP for ativada no sistema, é
+          preciso ter permissão FULL (COMPLETA) de acesso ao DFU para apagar o
+          histórico. Consulte o Guia do Administrador do HPCC Systems para
+          obter mais detalhes.</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis>lfn</emphasis></entry>
+
+                  <entry>O nome do arquivo lógico do arquivo de
+                  origem.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>backup</emphasis></entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1) indicando
+                  se o histórico deve ser gravado no arquivo antes de ele ser
+                  removido. O padrão é 1 (ativado).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>dstxml</emphasis>
+                  </emphasis></entry>
+
+                  <entry>O nome lógico do arquivo XML de destino. Obrigatório
+                  se o backup estiver definido para 1,</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Exemplo:</para>
+
+          <programlisting>dfuplus action=erasehistory lfn=progguide::exampledata::accounts_copy dstxml=c:\temp\jim.xml
+
+  // this removes the history metadata from the file 
+  and writes an XML file containing the following:
+  &lt;History&gt;
+    &lt;Origin ip="127.0.0.1"
+            name="accounts"
+            operation="DFUcopy"
+            owner="EmilyKate"
+            path="/var/lib/HPCCSystems/hpcc-data/thor/progguide/exampledata/"
+            timestamp="2017-05-11T16:47:32"
+            workunit="W20170503-143100"/&gt;
+   &lt;/History&gt;
+
+</programlisting>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

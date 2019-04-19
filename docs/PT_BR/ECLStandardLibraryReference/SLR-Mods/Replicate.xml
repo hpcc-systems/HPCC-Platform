@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Replicate">
+  <title>Replicate</title>
+
+  <para><emphasis role="bold">STD.File.Replicate <indexterm>
+      <primary>STD.File.Replicate</primary>
+    </indexterm> <indexterm>
+      <primary>File.Replicate</primary>
+    </indexterm> <indexterm>
+      <primary>Replicate</primary>
+    </indexterm> (</emphasis> <emphasis> filename </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, timeout </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, espserverIPport</emphasis> <emphasis
+  role="bold">])</emphasis> <emphasis></emphasis></para>
+
+  <para><emphasis>dfuwuid </emphasis> <emphasis role="bold">:= STD.File.fReplicate(</emphasis> <emphasis> filename </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, timeout </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, espserverIPport</emphasis> <emphasis
+  role="bold">]);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>timeout</emphasis></entry>
+
+          <entry>Opcional. Um valor inteiro que indica a configuração de tempo limite. Se omitido, o padrão é -1. Se definido como (0), o controle da execução retorna imediatamente à workunit ECL sem esperar a conclusão da workunit DFU.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>espserverIPport</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o protocolo, o IP, a porta e o diretório ou DNS equivalente do programa do servidor' ESP. Normalmente são os mesmos IP e porta do ECL Watch, com "/FileSpray" anexado. Se omitida, o padrão é o valor contido no atributo lib_system.ws_fs_server.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuwuid</emphasis></entry>
+
+          <entry>O nome do atributo que receberá a string terminada por nulo que contém o ID da tarefa DFU (DFUWUID) gerada para o job.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">Replicate </emphasis> copia as partes individuais de  <emphasis>filename</emphasis>  para os discos espelho do cluster. Normalmente, isso significa que a parte do arquivo na unidade C de um nó é copiada para a unidade D do nó vizinho.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.Replicate('Fred');</programlisting>
+</sect1>

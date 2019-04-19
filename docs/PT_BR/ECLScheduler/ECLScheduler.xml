@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <title>O ECL Scheduler</title>
+
+  <bookinfo>
+    <title>ECL Scheduler</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito bem-vindos e podem ser enviados por e-mail para <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre documentação</emphasis> na linha de assunto e indique o nome do documento, o número das páginas e número da versão atual no corpo da mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems é uma marca comercial registrada da LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>O ECL Scheduler</title>
+
+    <sect1 role="nobrk">
+      <title>Introdução</title>
+
+      <para>O ECL Scheduler (Agendador ECL) é um componente de processamento instalado na plataforma do HPCC System. Ele normalmente é inicializado junto com a plataforma.</para>
+
+      <para>Uma interface para o agendador está disponível através do ECL Watch. A interface do ECL Scheduler permite que você veja uma lista das workunits agendadas. O componente também pode acionar um evento. Um “Evento” é uma constante de cadeias (strings), com distinção entre maiúsculas e minúsculas, que nomeia o evento para interceptação.</para>
+
+      <para>Uma ferramenta de linha de comando,  <emphasis>scheduleadmin</emphasis> , está disponível no servidor instalado em /opt/HPCCSystems/bin.</para>
+
+      <sect2>
+        <title>Agendamento ECL</title>
+
+        <para>O agendamento ECL oferece uma maneira para automatizar processos no código ECL ou para sequenciar os processos para que eles funcionem em sequência. Por exemplo, é possível gravar o código ECL que supervisiona uma zona de entrada de arquivos para a chegada de um arquivo e, quando ele chega, realiza a distribuição aos nós do Thor, processa, compila um índice e depois o adiciona a um superarquivo.</para>
+      </sect2>
+
+      <sect2>
+        <title>Como Funciona</title>
+
+        <para>O agendamento ECL é baseado em eventos. O ECL Scheduler (Agendador ECL) monitora uma lista de agendamentos que contém workunits e eventos registrados e executa quaisquer workunits associadas a um evento quando o evento é acionado.</para>
+
+        <para>Seu código ECL pode ser executado quando um evento for acionado, ou pode acionar um evento. Se você enviar o código contendo uma cláusula  <emphasis
+        role="bold">WHEN </emphasis>, o evento e a workunit são registrados na Lista de agendamento. Quando um evento é acionado, a workunit é compilada e executada. Quando a workunit é concluída, o ECL Scheduler (Agendador ECL) a remove da Lista de agendamento.</para>
+
+        <para>Por exemplo, se você enviar uma workunit usando <emphasis
+        role="bold">WHEN(‘Event1’,’MyEvent’, COUNT(2)) </emphasis>no local adequado, ela será executada duas vezes (o valor de  <emphasis
+        role="bold">COUNT</emphasis>) antes que o ECL Scheduler (Agendador ECL) a remova da lista de agendamento e que a workunit seja marcada como concluída.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedComp.xml"
+              xpointer="xpointer(//*[@id='ECLSched_comp'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedAdmin.xml"
+              xpointer="xpointer(//*[@id='ECLSched-Admin'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <chapter>
+    <title>Uso do ECL</title>
+
+    <para>O ECL Scheduler (Agendador ECL) é uma ferramenta que pode desempenhar uma ação específica baseada em um evento específico. As seguintes funções podem ser visualizadas ou manipuladas no agendador.</para>
+
+    <sect1 id="WHEN">
+      <title>WHEN</title>
+
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHEN.xml"
+                  xpointer="xpointer(//*[@id='SchWhen'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+
+    <sect1 id="NOTIFY">
+      <title>NOTIFY</title>
+
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTIFY.xml"
+                  xpointer="xpointer(//*[@id='SchNOTIFY'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+
+    <sect1>
+      <title>EVENT</title>
+
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENT.xml"
+                  xpointer="xpointer(//*[@id='SchEvent'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+
+    <sect1>
+      <title>CRON</title>
+
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CRON.xml"
+                  xpointer="xpointer(//*[@id='SchCRON'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+
+    <sect1>
+      <title>WAIT</title>
+
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WAIT.xml"
+                  xpointer="xpointer(//*[@id='SchWAIT'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Monitoramento DFU e Relatórios</title>
+
+    <para>Os métodos a seguir são suportados pelo ECL Scheduler (Agendador ECL) e estão incluídos na ECL Standard Library Reference (Referência de biblioteca padrão ECL).</para>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonitorFile.xml"
+                xpointer="xpointer(//*[@id='MonitorFile'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonitorLogicalFileName.xml"
+                xpointer="xpointer(//*[@id='MonitorLogicalFileName'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </chapter>
+</book>

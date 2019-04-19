@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CreateExternalDirectory">
+  <title>CreateExternalDirectory</title>
+
+  <para><emphasis role="bold">STD.File.CreateExternalDirectory<indexterm>
+      <primary>STD.File.CreateExternalDirectory</primary>
+    </indexterm><indexterm>
+      <primary>File.CreateExternalDirectory</primary>
+    </indexterm><indexterm>
+      <primary>CreateExternalDirectory</primary>
+    </indexterm>(</emphasis> <emphasis> location, path </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>location</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o endereço IP da
+          máquina remota.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>path</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o caminho do
+          diretório a ser criado.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">CreateExternalDirectory </emphasis>
+  cria o <emphasis>path</emphasis> em <emphasis>location </emphasis> (se já
+  não existir). O programa utilitário dafileserv deve estar executando na
+  máquina em <emphasis>location</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IP   := '10.150.254.6';
+path := '/c$/training/import/NewDir';
+STD.File.CreateExternalDirectory(IP,path);
+</programlisting>
+</sect1>
