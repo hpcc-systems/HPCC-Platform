@@ -16,7 +16,14 @@
 #    along with All rights reserved. This program is free software: you can redistribute program.  If not, see <http://www.gnu.org/licenses/>.
 #############################################
 
-###<REPLACE>###
+INSTALL_DIR=/opt/HPCCSystems
+CONFIG_DIR=/etc/HPCCSystems
+ENV_XML_FILE=environment.xml
+ENV_CONF_FILE=environment.conf
+PID_DIR=/var/run/HPCCSystems
+LOCK_DIR=/var/lock/HPCCSystems
+LOG_DIR=/var/log/HPCCSystems
+INIT_PATH=/etc/init.d
 
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 source  ${INSTALL_DIR}/etc/init.d/init-functions
@@ -100,15 +107,17 @@ if [ -n "${lpath}" -a -h "${lpath}" ] ; then
 fi
 
 if [ -e /etc/debian_version ]; then
-    echo "Removing DEB"
-    apt-get remove -y hpccsystems-platform
+    pckname=$(apt-cache pkgnames hpccsystems-platform)
+    echo "Removing ${pckname}"
+    apt-get remove -y ${pckname} 
     if [ $? -ne 0 ]; then
        echo "An error has occured during removal.  Try \`apt-get -f remove hpccsystems-platform\` to fix this issue."
        exit 1
     fi
 elif [ -e /etc/redhat-release -o -e /etc/SuSE-release ]; then
-    echo "Removing RPM"
-    yum remove -y hpccsystems-platform
+    pckname=$(rpm -qa | grep hpccsystems-platform)
+    echo "Removing ${pckname}"
+    yum remove -y ${pckname}
     if [ $? -ne 0 ]; then
        echo "An error has occured during removal.  Try to fix any issues and then run \`yum-complete-transaction\`."
        exit 1
