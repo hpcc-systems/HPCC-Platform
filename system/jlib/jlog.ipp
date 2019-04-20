@@ -192,7 +192,7 @@ public:
     {
         StringBuffer buff;
         const char *hn = tree->queryProp("@hn");
-        if (hn)
+        if (hn && getResolveHN())
             buff.append(hn);
         else
             tree->getProp("@ip", buff);
@@ -225,7 +225,7 @@ public:
     IpLogMsgFilter(IPropertyTree * tree)
     {
         const char *hn = tree->queryProp("@hn");
-        if (hn)
+        if (hn && getResolveHN())
             ip.ipset(hn);
         else
             ip.ipset(tree->queryProp("@ip"));

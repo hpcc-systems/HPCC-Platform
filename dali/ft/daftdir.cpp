@@ -687,7 +687,7 @@ void DirectoryCopier::copy()
     StringBuffer targetPath;
     SocketEndpoint ip;
     const char *hn = machine->queryProp("@hn");
-    if (hn)
+    if (hn && getResolveHN())
         ip.ipset(hn);
     else
         ip.ipset(machine->queryProp("@ip"));
@@ -808,7 +808,7 @@ void doPhysicalCopy(IPropertyTree * source, const char * target, IPropertyTree *
 
     SocketEndpoint sourceMachine;
     const char *hn = source->queryProp("machine/@hn");
-    if (hn)
+    if (hn && getResolveHN())
         sourceMachine.ipset(hn);
     else
         sourceMachine.ipset(source->queryProp("machine/@ip"));

@@ -1757,7 +1757,7 @@ public:
         StringBuffer path;
         SocketEndpoint ep;
         const char *hn = machine->queryProp("@hn");
-        if (hn)
+        if (hn && getResolveHN())
             ep.ipset(hn);
         else
             ep.ipset(machine->queryProp("@ip"));
@@ -1969,7 +1969,7 @@ class CXRefManager: public CXRefManagerBase
                 StringBuffer path;
                 SocketEndpoint ep;
                 const char *hn = machine->queryProp("@hn");
-                if (hn)
+                if (hn && getResolveHN())
                     ep.ipset(hn);
                 else
                     ep.ipset(machine->queryProp("@ip"));

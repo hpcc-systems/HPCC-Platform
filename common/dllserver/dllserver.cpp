@@ -183,7 +183,7 @@ public:
     {
         SocketEndpoint ep;
         const char *hn = locationRoot->queryProp("@hn");
-        if (hn)
+        if (hn && getResolveHN())
             ep.ipset(hn);
         else
             ep.ipset(locationRoot->queryProp("@ip"));
@@ -205,7 +205,7 @@ public:
 #endif
         SocketEndpoint ep;
         const char *hn = locationRoot->queryProp("@hn");
-        if (hn)
+        if (hn && getResolveHN())
             ep.ipset(hn);
         else
             ep.ipset(locationRoot->queryProp("@ip"));
@@ -215,7 +215,7 @@ public:
     virtual void getIP(IpAddress & ip)
     {
         const char *hn = locationRoot->queryProp("@hn");
-        if (hn)
+        if (hn && getResolveHN())
             ip.ipset(hn);
         else
             ip.ipset(locationRoot->queryProp("@ip"));
@@ -224,7 +224,7 @@ public:
     {
         SocketEndpoint ep;
         const char *hn = locationRoot->queryProp("@hn");
-        if (hn)
+        if (hn && getResolveHN())
             ep.ipset(hn);
         else
             ep.ipset(locationRoot->queryProp("@ip"));
@@ -287,12 +287,12 @@ void DllLocation::remove(bool removeFiles, bool removeDirectory)
         IpAddress curip;
         IpAddress locip;
         const char *curhn = cur.queryProp("@hn");
-        if (curhn)
+        if (curhn && getResolveHN())
             curip.ipset(curhn);
         else
             curip.ipset(cur.queryProp("@ip"));
         const char *lochn = locationRoot->queryProp("@hn");
-        if (lochn)
+        if (lochn && getResolveHN())
             locip.ipset(lochn);
         else
             locip.ipset(locationRoot->queryProp("@ip"));
@@ -612,7 +612,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
             {
                 IpAddress curip;
                 const char *curhn = cur.queryProp("@hn");
-                if (curhn)
+                if (curhn && getResolveHN())
                     curip.ipset(curhn);
                 else
                     curip.ipset(cur.queryProp("@ip"));

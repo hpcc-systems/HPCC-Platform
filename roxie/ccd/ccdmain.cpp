@@ -1182,7 +1182,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                         ForEach(*accesses)
                         {
                             IPropertyTree &access = accesses->query();
-                            const char *hn = access.queryProp("@hn");
+                            const char *hn = nullptr;
+                            if (getResolveHN())
+                                hn = access.queryProp("@hn");
                             if (!hn)
                                 hn = access.queryProp("@ip");
                             try

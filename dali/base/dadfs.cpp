@@ -7089,7 +7089,7 @@ public:
                 {
                     SocketEndpoint ep;
                     const char *hn = pe2->query().queryProp("@hn");
-                    if (hn)
+                    if (hn && getResolveHN())
                         ep.ipset(hn);
                     else
                         ep.ipset(pe2->query().queryProp("@ip"));
@@ -7382,7 +7382,7 @@ private:
         ForEach(*pe) {
             SocketEndpoint ep;
             const char *hn = pe->query().queryProp("@hn");
-            if (hn)
+            if (hn && getResolveHN())
                 ep.ipset(hn);
             else
                 ep.ipset(pe->query().queryProp("@ip"));
@@ -9227,10 +9227,15 @@ class CInitGroups
         Owned<IPropertyTreeIterator> oldIter = oldClusterGroup->getElements("Node");
         if (newIter->first() && oldIter->first()) {
             for (;;) {
-                const char *oldIp = oldIter->query().queryProp("@hn");
+                const char *oldIp = nullptr;
+                const char *newIp = nullptr;
+                if (getResolveHN())
+                {
+                    oldIp = oldIter->query().queryProp("@hn");
+                    newIp = newIter->query().queryProp("@hn");
+                }
                 if (!oldIp)
                     oldIp = oldIter->query().queryProp("@ip");
-                const char *newIp = newIter->query().queryProp("@hn");
                 if (!newIp)
                     newIp = newIter->query().queryProp("@ip");
                 IpAddress oip(oldIp);
@@ -9587,7 +9592,7 @@ public:
                             ForEach(*iter) {
                                 SocketEndpoint ep;
                                 const char *hn = iter->query().queryProp("@hn");
-                                if (hn)
+                                if (hn && getResolveHN())
                                     ep.ipset(hn);
                                 else
                                     ep.ipset(iter->query().queryProp("@ip"));

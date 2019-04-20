@@ -2974,26 +2974,30 @@ static IpAddress cachehostip;
 static IpAddress localhostip;
 static CriticalSection hostnamesect;
 static StringAttr cacheifs;
-static bool resolveHostnamesInit = false;
+static std::atomic_bool resolveHostnamesInit{false};
+static CriticalSection resolvesect;
 static bool resolveHostnames = true;
 
-void CheckResolveHN()
+bool getResolveHN()
 {
-    // while holding hostnamesect CS ...
     if (!resolveHostnamesInit)
     {
-        resolveHostnamesInit = true;
-        if (!queryEnvironmentConf().getPropBool("resolve_hostnames", true))
-            resolveHostnames = false;
+        CriticalBlock c(resolvesect);
+        if (!resolveHostnamesInit)
+        {
+            resolveHostnamesInit = true;
+            if (!queryEnvironmentConf().getPropBool("resolve_hostnames", true))
+                resolveHostnames = false;
+        }
     }
+    return resolveHostnames;
 }
 
-bool setResolveHN(bool rhn)
+bool setResolveHN(bool newrhn)
 {
-    CriticalBlock c(hostnamesect);
-    CheckResolveHN();
+    getResolveHN();
     bool prv = resolveHostnames;
-    resolveHostnames = rhn;
+    resolveHostnames = newrhn;
     return prv;
 }
 
@@ -3002,7 +3006,7 @@ const char * GetCachedHostName()
     CriticalBlock c(hostnamesect);
     if (!cachehostname.get())
     {
-        CheckResolveHN();
+        getResolveHN();
         char temp[1024];
         if (gethostname(temp, sizeof(temp))==0)
             cachehostname.set(temp);                
@@ -3018,7 +3022,7 @@ IpAddress & queryLocalIP()
     CriticalBlock c(hostnamesect);
     if (localhostip.isNull())
     {
-        CheckResolveHN();
+        getResolveHN();
         if (IP6preferred)
             localhostip.ipset("::1");   //IPv6 
         else
@@ -3032,10 +3036,13 @@ IpAddress & queryHostIP()
     CriticalBlock c(hostnamesect);
     if (!cacheifs.get())
     {
-        CheckResolveHN();
+        getResolveHN();
         const char *ifs = queryEnvironmentConf().queryProp("interface");
         cacheifs.set(ifs);
     }
+    // MCK - TODO getnameinfo() could be slow or fail on VPN
+    //       getInterfaceIp()->setNetAddress()->lookupHostName()->getnameinfo()
+    //       if getnameinfo() hangs or fails - we could use GetCachedHostName()
     IpAddress ip;
     if (getInterfaceIp(ip, cacheifs.get()))
         cachehostip.ipset(ip);
@@ -3148,10 +3155,18 @@ bool IpAddress::isLocal() const
 bool IpAddress::ipequals(const IpAddress & other) const
 {
     // reverse compare for speed
-    // if both are zero then look to names
-    bool hcmp = (memcmp(netaddr, zeroaddr, sizeof(netaddr)))&&(other.netaddr[3]==netaddr[3])&&(IP4only||((other.netaddr[2]==netaddr[2])&&(other.netaddr[1]==netaddr[1])&&(other.netaddr[0]==netaddr[0])));
-    if (hcmp || !resolveHostnames)
+    bool hcmp = (other.netaddr[3]==netaddr[3])&&(IP4only||((other.netaddr[2]==netaddr[2])&&(other.netaddr[1]==netaddr[1])&&(other.netaddr[0]==netaddr[0])));
+
+    if (!getResolveHN())
         return hcmp;
+
+    if (hcmp && memcmp(netaddr, zeroaddr, sizeof(netaddr)))
+        return hcmp;
+
+    // MCK - TODO compare combinations of h1 to h2 ...
+    // name, name.domain.com, dotted-decimal plus loopback to hostname
+
+    // MCK - if name is not dotted-decimal, compare to GetCachedHostName() w/o domain
 
     // if one is loopback
     int hasLB = 0;
@@ -3214,7 +3229,7 @@ bool IpAddress::ipequals(const IpAddress & other) const
     if (hcmp)
         return hcmp;
 
-#if 0
+#if 0 // mck
     {
         CriticalBlock c(hostnamesect);
         FILE *fp;
@@ -3232,7 +3247,7 @@ bool IpAddress::ipequals(const IpAddress & other) const
             fclose(fp);
         }
     }
-#endif
+#endif // mck
 
     return hcmp;
 }
@@ -3301,7 +3316,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr,char *h_name)
 {
     // usually called when name is not a numeric ip ...
 
-    if (resolveHostnames)
+    if (getResolveHN())
     {
         // check these cases first
         if (streq(name, "localhost"))
@@ -3320,6 +3335,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr,char *h_name)
             strcpy(h_name, name);
             return true;
         }
+        // MCK - could compare w/o domain but let code below handle it ...
     }
 
     // if IP4only or using MS V6 can only resolve IPv4 using 
@@ -3366,33 +3382,17 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr,char *h_name)
             netaddr[2] = 0xffff0000;
             netaddr[1] = 0;
             netaddr[0] = 0;
-            if (resolveHostnames)
+            if (getResolveHN())
             {
-                if (::isLoopBack(netaddr))
-                {
-                    IpAddress ipl;
-                    ipl.ipset(queryHostIP());
-                    ipl.copyAddress(netaddr);
-                    strcpy(h_name, "localhost");
-                }
-                else
-                {
-                    // MCK - use name ?
-                    strcpy(h_name, entry->h_name);
-                }
+                // MCK - use name ?
+                // MCK - if it is a loopback addr do we use localhost for h_name ?
+                strcpy(h_name, entry->h_name);
             }
             else
             {
+                // MCK - if it is a loopback addr do we use localhost for h_name ?
                 StringBuffer ipstr;
-                if (::isLoopBack(netaddr))
-                {
-                    IpAddress ipl;
-                    ipl.ipset(queryHostIP());
-                    ipl.copyAddress(netaddr);
-                    ipl.getIpText(ipstr, true);
-                }
-                else
-                    ::getIpTextAddr(netaddr, ipstr);
+                ::getIpTextAddr(netaddr, ipstr);
                 strcpy(h_name, ipstr.str());
             }
             return true;
@@ -3467,33 +3467,17 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr,char *h_name)
             netaddr[1] = 0;
             netaddr[0] = 0;
         }
-        if (resolveHostnames)
+        if (getResolveHN())
         {
-            if (::isLoopBack(netaddr))
-            {
-                IpAddress ipl;
-                ipl.ipset(queryHostIP());
-                ipl.copyAddress(netaddr);
-                strcpy(h_name, "localhost");
-            }
-            else
-            {
-                // MCK - use name ?
-                strcpy(h_name, best->ai_canonname);
-            }
+            // MCK - use name ?
+            // MCK - if it is a loopback addr do we use localhost for h_name ?
+            strcpy(h_name, best->ai_canonname);
         }
         else
         {
+            // MCK - if it is a loopback addr do we use localhost for h_name ?
             StringBuffer ipstr;
-            if (::isLoopBack(netaddr))
-            {
-                IpAddress ipl;
-                ipl.ipset(queryHostIP());
-                ipl.copyAddress(netaddr);
-                ipl.getIpText(ipstr, true);
-            }
-            else
-                ::getIpTextAddr(netaddr, ipstr);
+            ::getIpTextAddr(netaddr, ipstr);
             strcpy(h_name, ipstr.str());
         }
     }
@@ -3515,7 +3499,7 @@ bool IpAddress::ipset(const char *text)
         }
         if (decodeNumericIP(text,netaddr))
         {
-            if (resolveHostnames)
+            if (getResolveHN())
             {
                 // check these cases first
                 if (isLoopBack())
@@ -3525,20 +3509,22 @@ bool IpAddress::ipset(const char *text)
                 }
                 if (!cachehostip.isNull())
                 {
-                    if (cachehostip.addrcompare(netaddr) == 0)
+                    if (!cachehostip.addrcompare(netaddr))
                     {
                         strcpy(h_name, GetCachedHostName());
                         return true;
                     }
                 }
-                // strcpy(h_name, text);
                 // resolve to name
                 StringBuffer hstr;
                 lookupHostName(*this, hstr);
                 strcpy(h_name, hstr.str());
             }
             else
+            {
+                // MCK - if it is a loopback addr do we use localhost for h_name ?
                 strcpy(h_name, text);
+            }
             return true;
         }
         const char *s;
@@ -3548,7 +3534,7 @@ bool IpAddress::ipset(const char *text)
         if (!*s)
         {
             memset(&netaddr, 0, sizeof(netaddr));
-            // MCK - strcpy(h_name, "0.0.0.0");
+            // MCK - use "0.0.0.0" or text ?
             strcpy(h_name, text);
             return false;
         }
@@ -3557,7 +3543,7 @@ bool IpAddress::ipset(const char *text)
             return true;
     }
     memset(&netaddr, 0, sizeof(netaddr));
-    // MCK - strcpy(h_name, "0.0.0.0");
+    // MCK - use "0.0.0.0" or text ?
     if (text&&*text)
         strcpy(h_name, text);
     else
@@ -3596,7 +3582,7 @@ inline char * addbyte(char *s,byte b)
 
 StringBuffer & IpAddress::getIpText(StringBuffer & out, bool getIP) const
 {
-    if (getIP || !resolveHostnames)
+    if (getIP || !getResolveHN())
         return ::getIpTextAddr(netaddr, out);
     return out.append(h_name);
 }
@@ -3638,7 +3624,7 @@ void IpAddress::ipdeserialize(MemoryBuffer & in)
     // MCK - if hostname sent then read it here
     // but need to deal with when older clients won't expect it
 
-    if (resolveHostnames)
+    if (getResolveHN())
     {
         // check these cases first
         if (isLoopBack())
@@ -3648,7 +3634,7 @@ void IpAddress::ipdeserialize(MemoryBuffer & in)
         }
         if (!cachehostip.isNull())
         {
-            if (cachehostip.addrcompare(netaddr) == 0)
+            if (!cachehostip.addrcompare(netaddr))
             {
                 strcpy(h_name, GetCachedHostName());
                 return;
@@ -3662,6 +3648,7 @@ void IpAddress::ipdeserialize(MemoryBuffer & in)
     }
     else
     {
+        // MCK - if it is a loopback addr do we use localhost for h_name ?
         StringBuffer ipstr;
         ::getIpTextAddr(netaddr, ipstr);
         strcpy(h_name, ipstr.str());
@@ -3747,6 +3734,12 @@ unsigned IpAddress::ipsetrange( const char *text)  // e.g. 10.173.72.1-65  ('-' 
 
 size32_t IpAddress::getNetAddress(size32_t maxsz,void *dst) const
 {
+
+    if (getResolveHN())
+    {
+        // MCK - TODO - resolve h_name to dst
+    }
+
     if (maxsz==sizeof(unsigned)) {
         if (::isIp4(netaddr)) {
             *(unsigned *)dst = netaddr[3];
@@ -3776,7 +3769,7 @@ void IpAddress::setNetAddress(size32_t sz,const void *src)
     else
         memset(&netaddr,0,sizeof(netaddr));
 
-    if (resolveHostnames)
+    if (getResolveHN())
     {
         // check these cases first
         if (isLoopBack())
@@ -3786,7 +3779,7 @@ void IpAddress::setNetAddress(size32_t sz,const void *src)
         }
         if (!cachehostip.isNull())
         {
-            if (cachehostip.addrcompare(netaddr) == 0)
+            if (!cachehostip.addrcompare(netaddr))
             {
                 strcpy(h_name, GetCachedHostName());
                 return;
@@ -3800,6 +3793,7 @@ void IpAddress::setNetAddress(size32_t sz,const void *src)
     }
     else
     {
+        // MCK - if it is a loopback addr do we use localhost for h_name ?
         StringBuffer ipstr;
         ::getIpTextAddr(netaddr, ipstr);
         strcpy(h_name, ipstr.str());

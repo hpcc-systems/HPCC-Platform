@@ -130,6 +130,7 @@ extern jlib_decl const char * GetCachedHostName();
 inline StringBuffer & GetHostName(StringBuffer &str) { return str.append(GetCachedHostName()); }
 extern jlib_decl IpAddress &GetHostIp(IpAddress &ip);
 extern jlib_decl IpAddress &localHostToNIC(IpAddress &ip);  
+extern jlib_decl bool getResolveHN();
 extern jlib_decl bool setResolveHN(bool rhn);
 
 class jlib_decl SocketEndpoint : extends IpAddress

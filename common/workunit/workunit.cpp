@@ -4857,7 +4857,7 @@ bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid, bool 
             const char *filename = file.queryProp("@filename");
             SocketEndpoint ep;
             const char *hn = file.queryProp("@hn");
-            if (hn)
+            if (hn && getResolveHN())
                 ep.ipset(hn);
             else
                 ep.ipset(file.queryProp("@ip"));
@@ -10039,7 +10039,7 @@ IStringVal & CLocalWUAssociated::getDescription(IStringVal & str) const
 IStringVal & CLocalWUAssociated::getIp(IStringVal & str) const
 {
     const char *hn = p->queryProp("@hn");
-    if (hn)
+    if (hn && getResolveHN())
         str.set(hn);
     else
         str.set(p->queryProp("@ip"));
