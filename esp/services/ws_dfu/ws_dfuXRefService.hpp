@@ -180,17 +180,16 @@ public:
 
 class CWsDfuXRefEx : public CWsDFUXRef
 {
-private:
-    StringBuffer  user_;
-    StringBuffer  password_;
     Owned<IXRefNodeManager> XRefNodeManager;
     Owned<CXRefExBuilderThread> m_XRefbuilder;
 
-private:
     IXRefFilesNode* getFileNodeInterface(IXRefNode& XRefNode,const char* nodeType);
     void addXRefNode(const char* name, IPropertyTree* pXRefNodeTree);
     void readLostFileQueryResult(IEspContext &context, StringBuffer& buf);
     bool addUniqueXRefNode(const char* processName, BoolHash& uniqueProcesses, IPropertyTree* pXRefNodeTree);
+    IXRefNode* getXRefNodeByCluster(const char* cluster);
+    IUserDescriptor* getUserDescriptor(IEspContext& context);
+    void updateSkew(IPropertyTree &node);
 public:
    IMPLEMENT_IINTERFACE;
 
