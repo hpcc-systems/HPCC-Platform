@@ -3461,19 +3461,26 @@ public:
         return true;
     }
 
-    virtual bool getResources(SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources)
+    virtual bool getResources(SecResourceType rtype, const char * basedn, const char * prefix, const char * searchstr, IArrayOf<ISecResource>& resources)
     {
-        Owned<ILdapConnection> lconn = m_connections->getConnection();
-        return getResources( ((CLdapConnection*)lconn.get())->getLd(), rtype, basedn, prefix, resources);
+        return getResources(nullptr, rtype, basedn, prefix, searchstr, resources);
     }
 
-    virtual bool getResources(LDAP* ld, SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources)
+    virtual bool getResources(LDAP* ld, SecResourceType rtype, const char * basedn, const char * prefix, const char * searchstr, IArrayOf<ISecResource>& resources)
     {
+        Owned<ILdapConnection> lconn;
+        if (nullptr == ld)
+        {
+            lconn.set(m_connections->getConnection());
+            ld = ((CLdapConnection*)lconn.get())->getLd();
+        }
+
         if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
         {
+            assertex(isEmptyString(searchstr));
             assertex(isEmptyString(prefix));
 
-            getManagedScopeTree(rtype, basedn, resources);
+            getManagedScopeTree(ld, rtype, basedn, resources);
             return true;
         }
 
@@ -3482,6 +3489,14 @@ public:
 
         StringBuffer basednbuf;
         LdapUtils::normalizeDn(basedn, m_ldapconfig->getBasedn(), basednbuf);
+        StringBuffer filter("objectClass=*");
+
+        if(searchstr && *searchstr && strcmp(searchstr, "*") != 0)
+        {
+            filter.insert(0, "(&(");
+            filter.appendf(")(|(%s=*%s*)))", "uNCName", searchstr);
+        }
+
 
         const char* fldname;
         LdapServerType servertype = m_ldapconfig->getServerType();
@@ -3491,14 +3506,11 @@ public:
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
 
-        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, "objectClass=*", attrs);
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
-            // Go through the search results by checking message types
             CLDAPGetAttributesWrapper   atts(ld, message);
-            for ( attribute = atts.getFirst();
-                  attribute != NULL;
-                  attribute = atts.getNext())
+            for ( attribute = atts.getFirst(); attribute != NULL; attribute = atts.getNext())
             {
                 StringBuffer descbuf;
                 StringBuffer curname;
@@ -3535,89 +3547,11 @@ public:
         return true;
     }
 
-    virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char* prefix, const char* searchstr, IArrayOf<ISecResource>& resources)
-    {
-        if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
-        {
-            assertex(isEmptyString(searchstr));
-            assertex(isEmptyString(prefix));
-
-            getManagedScopeTree(rtype, basedn, resources);
-            return true;
-        }
-
-        char        *attribute;
-        LDAPMessage *message;
-
-        StringBuffer basednbuf;
-        LdapUtils::normalizeDn(basedn, m_ldapconfig->getBasedn(), basednbuf);
-        StringBuffer filter("objectClass=*");
-
-        if(searchstr && *searchstr && strcmp(searchstr, "*") != 0)
-        {
-            filter.insert(0, "(&(");
-            filter.appendf(")(|(%s=*%s*)))", "uNCName", searchstr);
-        }
-
-        Owned<ILdapConnection> lconn = m_connections->getConnection();
-        LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-
-        const char* fldname;
-        LdapServerType servertype = m_ldapconfig->getServerType();
-        if(servertype == ACTIVE_DIRECTORY && (rtype == RT_DEFAULT || rtype == RT_MODULE || rtype == RT_SERVICE))
-            fldname = "name";
-        else
-            fldname = "ou";
-        char        *attrs[] = {(char*)fldname, "description", NULL};
-
-        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
-        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
-        {
-            // Go through the search results by checking message types
-            StringBuffer descbuf;
-            StringBuffer curname;
-            CLDAPGetAttributesWrapper   atts(ld, message);
-            for ( attribute = atts.getFirst();
-                  attribute != NULL;
-                  attribute = atts.getNext())
-            {
-                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
-                if (vals.hasValues())
-                {
-                    const char * val = vals.queryCharValue(0);
-                    if(val != NULL)
-                    {
-                        if(stricmp(attribute, fldname) == 0)
-                        {
-                            curname.append(val);
-                        }
-                        else if(stricmp(attribute, "description") == 0)
-                        {
-                            descbuf.append(val);
-                        }
-                    }
-                }
-            }
-
-            if(curname.length() == 0)
-                continue;
-            StringBuffer resourcename;
-            if(prefix != NULL && *prefix != '\0')
-                resourcename.append(prefix);
-            resourcename.append(curname.str());
-            CLdapSecResource* resource = new CLdapSecResource(resourcename.str());
-            resource->setDescription(descbuf.str());
-            resources.append(*resource);
-        }
-
-        return true;
-    }
-
     virtual IPropertyTreeIterator* getResourceIterator(SecResourceType rtype, const char * basedn,
         const char* prefix, const char* resourceName, unsigned extraNameFilter)
     {
         IArrayOf<ISecResource> resources;
-        getResourcesEx(rtype, basedn, prefix, resourceName, resources);
+        getResources(nullptr, rtype, basedn, prefix, resourceName, resources);
 
         Owned<IPTree> resourceTree = createPTree("Resources");
         ForEachItemIn(i, resources)
@@ -6180,15 +6114,20 @@ private:
         return addResource(RT_FILE_SCOPE, user, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE));
     }
 
-    virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes)
+    virtual aindex_t getManagedScopeTree(LDAP* ld, SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes)
     {
+        Owned<ILdapConnection> lconn;
+        if (nullptr == ld)
+        {
+            lconn.set(m_connections->getConnection());
+            ld = ((CLdapConnection*)lconn.get())->getLd();
+        }
+
         //Get array of all file scopes listed in files baseDN
         StringBuffer basednbuf;
         LdapUtils::normalizeDn(basedn ? basedn : m_ldapconfig->getResourceBasedn(rtype), m_ldapconfig->getBasedn(), basednbuf);
         basednbuf.toLowerCase();//Will look something like "ou=files,ou=dataland_ecl,dc=internal,dc=sds". Lowercase ensures proper strstr with StringArray elements below
 
-        Owned<ILdapConnection> lconn = m_connections->getConnection();
-        LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         char *attrs[] = {"canonicalName", NULL};
 
         //Call LDAP to get the complete OU tree underneath basdnbuf
