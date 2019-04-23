@@ -63,6 +63,8 @@ class ECLFile:
         self.dir_a = dir_a
         self.dir_inc = dir_inc
         self.cluster = cluster;
+        self.cluster = args.cluster;
+        self.engine = args.engine;
         self.baseEcl = os.path.basename(ecl)
         self.basename = os.path.splitext(self.baseEcl)[0]
         self.baseXml = self.basename + '.xml'
@@ -124,19 +126,20 @@ class ECLFile:
             # It seems there is no Params array in the config file
             pass
 
+        # Process setupExtraX parameters if any
+        if 'setupExtraX' in args:
+            args.setupExtraX.append('destClusterName=' + self.config.ClusterNames[args.engine])
+            for extraX in args.setupExtraX:
+                extraX=self.removeQuote(extraX)
+                optXs = ("-X"+extraX.replace(',',  ',-X')).split(',')
+                self.processKeyValPairs(optXs,  self.optXHash)
+            pass
+
         # Process -X CLI parameters
         if args.X != 'None':
             args.X[0]=self.removeQuote(args.X[0])
             optXs = ("-X"+args.X[0].replace(',',  ',-X')).split(',')
             self.processKeyValPairs(optXs,  self.optXHash)
-            pass
-
-        # Process setupExtraX parameters if any
-        if 'setupExtraX' in args:
-            for extraX in args.setupExtraX:
-                extraX=self.removeQuote(extraX)
-                optXs = ("-X"+extraX.replace(',',  ',-X')).split(',')
-                self.processKeyValPairs(optXs,  self.optXHash)
             pass
 
         self.mergeHashToStrArray(self.optXHash,  self.optX)
@@ -216,7 +219,7 @@ class ECLFile:
         return str
 
     def getExpected(self):
-        path = os.path.join(self.dir_ec, self.cluster)
+        path = os.path.join(self.dir_ec, self.engine)
         logging.debug("%3d. getExpected() checks path:'%s' ",  self.taskId,  path )
         if os.path.isdir(path):
             # we have cluster specific key dir, check keyfile
@@ -471,10 +474,18 @@ class ECLFile:
                 self.diff += "RESULT FILE NOT FOUND. " + self.getResults()
                 raise IOError("RESULT FILE NOT FOUND. " + self.getResults())
             expected = open(expectedKeyPath, 'r').readlines()
+            logging.debug("%3d. expected: " + repr(expected),  self.taskId )
             recieved = open(self.getResults(), 'r').readlines()
+            logging.debug("%3d. recieved: " + repr(recieved),  self.taskId )
             diffLines = ''
+            lineIndex = 1
             for line in difflib.unified_diff(expected, recieved, fromfile=self.xml_e, tofile=self.xml_r):
-                diffLines += str(line)
+                # TO-DO check this whi do not failed in other keyfiles with unicode contnet and why do it failed
+                # with new MySQL on 6.4.x?
+                diffLines += line #str(line)
+                logging.debug("%3d. Line" + str(lineIndex) +":" + line,  self.taskId )
+                lineIndex += 1
+
             logging.debug("%3d. diffLines: " + diffLines,  self.taskId )
             if len(diffLines) > 0:
                 self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())

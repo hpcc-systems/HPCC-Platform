@@ -1,9 +1,9 @@
 {
     "Regress":{
         "roxieTestSocket": ":9876",
-        "espIp" : "127.0.0.1",
+        "espIp" : "10.173.160.101",
         "espSocket": "8010",
-        "dropzoneIp" : "127.0.0.1",
+        "dropzoneIp" :"10.173.160.101",
         "dropzonePath" : "/var/lib/HPCCSystems/mydropzone/",
         "espFileSprayService" : "FileSpray",
         "useSsl" : "False",
@@ -24,24 +24,26 @@
             "roxie"
         ],
         "Clusters": {
-            "hthor" : "hthor",
-            "thor"  : "thor",
-            "roxie" : "roxie"
+            "hthor" : "hthor_160",
+            "thor"  : "thor_160",
+            "roxie" : "roxie_160"
         },
         "ClusterNames": {
-            "hthor" : "myhthor",
-            "thor"  : "mythor",
-            "roxie" : "myroxie"
+            "hthor" : "hthor_160",
+            "thor"  : "thor_160",
+            "roxie" : "roxie_160"
         },
         "timeout":"720",
         "maxAttemptCount":"3",
         "defaultSetupClusters": [
-            "mythor",
-            "myroxie"
+            "roxie",
+            "hthor",
+            "thor"
         ],
         "defaultSetupEngines": [
-            "thor",
-            "roxie"
+            "roxie",
+            "hthor",
+            "thor"
         ],
         "defaultTargetClusters": [
             "all"
@@ -55,7 +57,8 @@
             "soapcall_multihttpheader.ecl:TargetIP=."
         ],
         "engineParams":[
-            "failOnLeaks"
+            "failOnLeaks",
+            "disableLocalOptimizations"
         ],
         "setupExtraParams":{
             "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress"

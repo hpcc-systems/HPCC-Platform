@@ -92,10 +92,10 @@ def setConfig(config):
 def getConfig():
     return gConfig
 
-def getEclRunArgs(test,  cluster):
+def getEclRunArgs(test, engine, cluster):
     retString=''
     test.setJobname("")
-    retString += "ecl run -fpickBestEngine=false --target=%s --cluster=%s --port=%s " % (cluster, cluster, gConfig.espSocket)
+    retString += "ecl run -fpickBestEngine=false --target=%s --cluster=%s --port=%s " % (engine, cluster, gConfig.espSocket)
     retString += "--exception-level=warning --noroot --name=\"%s\" " % (test.getJobname())
     retString += "%s " % (" ".join(test.getFParameters()))
     retString += "%s " % (" ".join(test.getDParameters()))
@@ -212,20 +212,20 @@ def getRealIPAddress():
     return ipAddress
 
 def checkClusters(clusters,  targetSet):
-    targetClusters =[]
+    targetEngines =[]
     if 'all' in clusters:
-        for cluster in gConfig.Clusters:
-            targetClusters.append(str(cluster))
+        for engine in gConfig.Engines:
+            targetEngines.append(str(engine))
     else:
-        for cluster in clusters:
-            cluster = cluster.strip()
-            if cluster in gConfig.Clusters:
-                targetClusters.append(cluster)
+        for engine in clusters:
+            engine = engine.strip()
+            if engine in gConfig.Engines:
+                targetEngines.append(engine)
             else:
-                logging.error("%s. Unknown cluster:'%s' in %s:'%s'!" % (1,  cluster,  targetSet,  clusters))
+                logging.error("%s. Unknown engine:'%s' in %s:'%s'!" % (1,  engine,  targetSet,  clusters))
                 raise Error("4000")
 
-    return  targetClusters
+    return  targetEngines
 
 def isLocalIP(ip):
     retVal=False
