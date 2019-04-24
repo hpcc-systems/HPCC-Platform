@@ -215,6 +215,8 @@ static IClientDFUFileCreateResponse *doCreateDFUFile(IClientWsDfu *dfuClient, co
         case dft_index:
             serviceType = CDFUFileType_Index;
             break;
+        default:
+            throwStringExceptionV(0, "Invalid DFU file type: %u", (unsigned)type);
     }
     dfuReq->setType(serviceType);
     return dfuClient->DFUFileCreateV2(dfuReq);
