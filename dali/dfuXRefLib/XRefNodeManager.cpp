@@ -566,8 +566,7 @@ void CXRefNode::SetChanged(bool bChanged)
 
 void CXRefNode::commit()
 {
-    
-    CriticalSection(commitMutex);
+    CriticalBlock b(commitCrit);
     if(m_conn == 0)
         return;
     Owned<IXRefFilesNode> lost = getLostFiles();
