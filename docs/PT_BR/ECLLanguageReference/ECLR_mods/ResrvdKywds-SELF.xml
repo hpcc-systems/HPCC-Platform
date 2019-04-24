@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SELF">
+  <title>SELF</title>
+
+  <para><emphasis role="bold">SELF<indexterm>
+      <primary>SELF</primary>
+    </indexterm>.</emphasis><emphasis>element</emphasis></para>
+
+  <para><emphasis>element</emphasis> O nome de um campo no tipo de resultado
+  da estrutura RECORD <indexterm>
+      <primary>RECORD Structure</primary>
+    </indexterm> de uma estrutura TRANSFORM <indexterm>
+      <primary>TRANSFORM structure</primary>
+    </indexterm>.</para>
+
+  <para>A <emphasis role="bold">palavra-chave</emphasis> SELF<indexterm>
+      <primary>SELF</primary>
+    </indexterm> é usada nas estruturas TRANSFORM para indicar um campo na
+  estrutura de resultado. Ela não deve ser usada ao lado direito de qualquer
+  definição de atributo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>Ages := RECORD
+        INTEGER8 Age; //a field named "Age"
+END;
+
+TodaysYear := 2001;
+Ages req_output(person l) := TRANSFORM
+        SELF.Age := TodaysYear - l.birthdate[1..4];
+END;</programlisting>
+
+  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+  TRANSFORM</link></para>
+</sect1>

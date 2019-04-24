@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="COUNT">
+  <title>COUNT</title>
+
+  <para><emphasis role="bold">COUNT<indexterm>
+      <primary>COUNT function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>, expression </emphasis><emphasis
+  role="bold">] [, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><emphasis role="bold">COUNT<indexterm>
+      <primary>COUNT</primary>
+    </indexterm>(</emphasis><emphasis>valuelist </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.85pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento. Pode ser o nome
+            de um DATASET ou de um conjunto de registros derivado de algumas
+            condições de filtro, ou qualquer expressão que resulte em um
+            conjunto de registros derivado, ou um nome de uma declaração
+            DICTIONARY . Também pode ser a palavra-chave GROUP para indicar a
+            contagem do número de elementos em cada grupo, quando usada em uma
+            estrutura RECORD para gerar estatísticas de tabela de referência
+            cruzada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Opcional. Uma expressão lógica indicando quais registros
+            devem ser incluídos na contagem. Válido apenas quando o parâmetro
+            recordset for a palavra-chave GROUP para indicar a contagem do
+            número de elementos em um grupo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a atividade faz parte de uma
+            operação de leitura de índice, a qual permite que o otimizador
+            gere o código ideal para a operação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>valuelist</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula das expressões a serem
+            contadas. Também pode ser um SET de valores.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>COUNT retorna um único valor.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">COUNT</emphasis> retorna o número de
+  registros no <emphasis>recordset </emphasis> ou
+  <emphasis>valuelist</emphasis> especificado.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyCount := COUNT(Trades(Trades.trd_rate IN ['3', '4', '5']));
+   // count the number of records in the Trades record
+   // set whose trd_rate field contains 3, 4, or 5
+R1 := RECORD
+  person.per_st;
+  person.per_sex;
+  Number := COUNT(GROUP);
+   //total in each state/sex category
+  Hanks := COUNT(GROUP,person.per_first_name = 'HANK');
+   //total of "Hanks" in each state/sex category
+  NonHanks := COUNT(GROUP,person.per_first_name &lt;&gt; 'HANK');
+   //total of "Non-Hanks" in each state/sex category
+END;
+T1 := TABLE(person, R1,  per_st, per_sex);
+Cnt1    := COUNT(4,8,16,2,1); //returns 5
+SetVals := [4,8,16,2,1];
+Cnt2    := COUNT(SetVals); //returns 5
+</programlisting>
+
+  <para>Ver também: <link linkend="SUM">SUM</link>, <link
+  linkend="AVE">AVE</link>, <link linkend="MIN">MIN</link>, <link
+  linkend="MAX">MAX</link>, <link linkend="GROUP">GROUP</link>, <link
+  linkend="TABLE">TABLE</link></para>
+</sect1>

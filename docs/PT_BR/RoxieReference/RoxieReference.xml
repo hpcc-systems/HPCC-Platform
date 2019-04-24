@@ -1,0 +1,1052 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>Roxie: O Motor de Entrega Rápida de Dados</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>SSystems<superscript>®</superscript> HPCC Systems® é uma marca
+      registrada da LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>SSystems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="Introduction">
+    <title>Introdução</title>
+
+    <para>O mecanismo Roxie – também conhecido como motor de entrega rápida de
+    dados ou RDDE – usa uma combinação de tecnologias e técnicas que produzem
+    um resultado extremamente rápido para consultas a dados indexados e
+    hospedados no HPCC.</para>
+
+    <para>As consultas no Roxie podem ultrapassar milhares por segundo, em
+    comparação com aquelas no Thor que tendem a levar de alguns segundos até
+    alguns minutos cada (de extremidade a extremidade) dependendo da
+    complexidade da consulta.</para>
+
+    <para>Para entender plenamente esse conceito, é melhor analisar a
+    finalidade para a qual cada um desses processos foi projetado:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>A plataforma Thor foi projetada para realizar operações em cada
+        registro (ou na maioria) de um enorme dataset.</para>
+      </listitem>
+
+      <listitem>
+        <para>As consultas podem ser executadas na plataforma hThor se puderem
+        indicar rapidamente pequenos conjuntos de registros nos dados.</para>
+      </listitem>
+
+      <listitem>
+        <para>As consultas Roxie normalmente são usadas para identificar
+        rapidamente pequenos conjuntos de registros repetidamente.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Se você imaginar todos os seus dados como um oceano, o Thor seria
+    usado para realizar operações em todas as águas.</para>
+
+    <para>Uma consulta hThor pode ser usada para encontrar um único peixe
+    nesse mar de dados.</para>
+
+    <para>A consulta seria implementada em um cluster Roxie a ser usado para
+    localizar centenas ou até milhares de peixes individuais, um após o
+    outro.</para>
+
+    <para>As consultas Roxie são implementadas em um cluster Roxie que
+    pré-carrega todas as consultas na memória e as prepara para que estejam
+    prontas para execução logo que uma consulta for recebida.</para>
+
+    <para>As consultas são enviadas ao Roxie através do XML, SOAP ou JSON e os
+    resultados são retornados no mesmo formato. Um Client pode se comunicar
+    diretamente com o cluster Roxie ao abrir um soquete para um dos servidores
+    no cluster, ou ele pode se comunicar por um ESP Service como o
+    WsECL.</para>
+
+    <para>Normalmente, os resultados do Roxie são retornados para o
+    solicitante em vez de serem gravados em um arquivo. No entanto, o Roxie
+    pode gravar arquivos de dados, embora normalmente não seja habitual gravar
+    um arquivo quando uma consulta não é baseada em tarefas.</para>
+
+    <sect1 id="Roxie_Overview">
+      <title>Visão geral do Roxie</title>
+
+      <para>Há normalmente quatro aspectos sobre o uso do Roxie:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Criação de índices em datasets</para>
+        </listitem>
+
+        <listitem>
+          <para>Uso de índices em consultas</para>
+        </listitem>
+
+        <listitem>
+          <para>Compilação e implementação de consultas no cluster
+          Roxie</para>
+        </listitem>
+
+        <listitem>
+          <para>Fornecimento do acesso a essas consultas para interfaces
+          voltadas para clientes através do SOAP ou HTTP.</para>
+
+          <para/>
+        </listitem>
+      </itemizedlist>
+
+      <sect2>
+        <title>Quando fazer uso de Índices</title>
+
+        <para>A plataforma Thor foi projetada para realizar operações com
+        rapidez em grandes datasets não indexados, onde todo o dataset (ou sua
+        maioria) deve ser utilizado. No entanto, se apenas alguns registros
+        forem necessários, um índice pode acessá-los de forma mais eficiente.
+        Na linguagem do ECL, um índice se comporta exatamente como um dataset
+        que parece ser capaz de implementar certas funções (normalmente,
+        funções de filtrar e contar) muito mais rapidamente do que um arquivo
+        simples ou dataset CSV .</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Payload_INDEXes">
+      <title>Índices de Payload</title>
+
+      <para>Em sistemas convencionais de banco de dados, um índice é usado
+      juntamente com um arquivo de dados para localizar registros nesse
+      respectivo arquivo. É possível fazer o mesmo no ECL ao armazenar
+      posições de arquivo no índice e usá-las em uma função FETCH para
+      localizar as linhas de dados correspondentes no arquivo original.</para>
+
+      <para>No entanto, uma vez que se pode armazenar quaisquer campos
+      desejados em um índice, é mais comum em consultas Roxie projetar índices
+      que armazenam ambos os campos de busca e as informações que deseja
+      localizar. Isso elimina a leitura extra de disco para o FETCH. Uma vez
+      que índices são comprimidos, isso também pode economizar espaço em disco
+      se o arquivo de dados original não precisar ser armazenado no cluster
+      Roxie.</para>
+
+      <para>Qualquer campo em um índice que não precise ser pesquisado pode
+      ser especificado como estando na "carga útil" – tais campos são
+      armazenados apenas nos nós de folha da árvore de índice, algo que pode
+      economizar espaço e desempenho nas consultas. Os campos na carga útil
+      podem simplesmente ser campos adicionais do dataset de base, mas também
+      podem conter o resultado de alguma computação preliminar (campos
+      computados).</para>
+    </sect1>
+
+    <sect1 id="Roxie_Superfiles">
+      <title>Superarquivos Roxie</title>
+
+      <para>Um superarquivo ou superchave usada no Roxie pode conter mais de
+      um único subarquivo.</para>
+
+      <para>No entanto, seu superarquivo não pode conter mais de um subarquivo
+      quando o superarquivo for usado para uma operação de FETCH ou em um JOIN
+      de chave completa.</para>
+
+      <para>Caso só exista um subarquivo, é possível gravar uma consulta que
+      utilize superarquivos ou superchaves (ainda que contenham apenas um
+      subarquivo único) e ter a vantagem de atualizar seu Roxie ao
+      simplesmente implementar novos dados sem precisar recompilar as
+      consultas que os usam, só porque o nome do subarquivo mudou. Isso
+      economiza tempo de compilação e, em um ambiente de produção (normalmente
+      o caso do Roxie) onde um arquivo de dados é usado por várias consultas,
+      os benefícios podem ser significativos.</para>
+
+      <para>Consulte o <emphasis>Guia do programador em ECL</emphasis> para
+      obter mais detalhes.</para>
+    </sect1>
+
+    <sect1 id="How-Roxie-Works">
+      <title>Como o Roxie Funciona</title>
+
+      <para>Os clusters Roxie são compostos de várias máquinas conectadas em
+      conjunto para funcionar como uma entidade única. O código fonte do ECL
+      para uma ou mais consultas é compilado e publicado no cluster. Depois de
+      publicado, as consultas podem processar dados rapidamente.</para>
+
+      <para>Cada máquina no cluster atua em duas funções distintas – essas
+      funções são executadas no mesmo processo e dividem boa parte do mesmo
+      código – incluindo o código de consulta compilado – mas podem ser
+      idealizadas como logicamente distintas.</para>
+
+      <para>O <emphasis role="bold">servidor</emphasis> aceita receber
+      consultas, avalia o código do ECL de acordo com o comando fornecido na
+      consulta do cliente e retorna o resultado. Quando o servidor avalia uma
+      função ECL que exige dados do disco, ele determina os nós escravos que
+      podem conter os dados adequados e envia uma solicitação para esses nós a
+      fim de localizar quaisquer correspondências. Os resultados de múltiplos
+      nós escravos são condensados e se tornam a entrada para outras funções
+      do ECL avaliadas no nó do servidor. Normalmente, aplicações solicitantes
+      usam alguma forma de balanceamento de carga para distribuir solicitações
+      de modo uniforme para os servidores disponíveis.</para>
+
+      <para>O processo <emphasis role="bold">escravo</emphasis> aceita
+      solicitações apenas de outros nós do servidor no cluster. Essas
+      solicitações correspondem a uma função única de ECL, como uma leitura de
+      índice filtrado ou uma busca de disco. Os resultados são enviados de
+      volta ao servidor que fez a solicitação original. Para equilibrar o
+      desempenho e gerenciar falhas de hardware, os escravos recebem as
+      solicitações por multicast e normalmente haverá no mínimo dois nós
+      escravos que receberão cada solicitação de um servidor. Os nós escravos
+      se comunicam entre si a fim de evitar um esforço duplicado, de modo que
+      o primeiro escravo que conseguir processar a solicitação deverá informar
+      aos demais que a tarefa já foi concluída. Cada nó em um cluster
+      normalmente processa solicitações de escravo em dois ou mais canais de
+      multicast, geralmente um canal por disco. Se um nó escravo não estiver
+      respondendo, as solicitações nesse canal são processadas por outros nós
+      escravos pares responsáveis pelo canal.</para>
+
+      <para/>
+
+      <para><graphic fileref="images/RM-02.jpg"/></para>
+
+      <para>Esse exemplo mostra um cluster Roxie de 5 nós com cada um
+      configurado para ser tanto um <emphasis role="bold">servidor </emphasis>
+      quanto <emphasis role="bold"> um escravo</emphasis>.</para>
+
+      <para>As consultas que foram compiladas com a plataforma alvo
+      especificada como cluster Roxie podem ser publicadas em um Grupo de
+      Consultas usando o ECLWatch.</para>
+
+      <para>Cada cluster Roxie carrega consultas de uma ou mais listas do
+      Grupo de Consultas.</para>
+
+      <para>Quando uma consulta é adicionada ao Grupo de Consultas que um
+      Roxie está monitorando, o Roxie vai pré-carregar a consulta .so (ou
+      .DLL) e preparar o contexto de execução ao máximo possível para que ela
+      esteja pronta para executar solicitações recebidas para executar a
+      consulta logo que chegar. Isso pode incluir carregar o .so (ou .DLL),
+      solucionar as referências de arquivo e abrir arquivos (se houver
+      identificadores de arquivos suficientes disponíveis), pré-carregar dados
+      na memória, se solicitado, e avaliar o código ECL na consulta que foi
+      marcada como: ONCE.</para>
+
+      <para>Dependendo da configuração, o Roxie pode ler dados remotamente de
+      um cluster Thor no qual foi preparado ou, se preferir, pode ser copiado
+      para o Roxie para que seja acessado localmente.</para>
+
+      <para>Normalmente, um sistema de desenvolvimento pode consultar dados in
+      situ no cluster Thor, enquanto um sistema de produção pode preferir os
+      benefícios de desempenho de copiar dados localmente para o Roxie.</para>
+
+      <para>O Roxie pode ler dados remotamente enquanto são copiados e
+      alternar para a cópia local depois que a operação de cópia for
+      concluída. Isso oferece o benefício de disponibilidade rápida, uma vez
+      que a consulta pode estar ativa antes que os dados sejam copiados,
+      enquanto ainda conta com a vantagem dos benefícios de desempenho de
+      dados locais.</para>
+
+      <xi:include href="RoxieReference/RoxieRefMods/RoxieCopySettings.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+    </sect1>
+
+    <sect1 id="Roxie-Data-Backup">
+      <title>Backup de Dados do Roxie</title>
+
+      <para>Os dados do Roxie são protegidos por três formas de
+      redundância:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Retenção de arquivo de dados de origem original: Quando uma
+          consulta é implementada, os dados são normalmente copiados dos
+          discos rígidos de um cluster Thor. Dessa forma, os dados do Thor
+          podem servir como backup, contanto que não sejam removidos nem
+          alterados no Thor. Os dados do Thor normalmente são retidos por um
+          período suficiente para servir como uma cópia de backup.</para>
+        </listitem>
+
+        <listitem>
+          <para>Redundância de nó par: Cada nó escravo normalmente tem um ou
+          mais nós pares em seu cluster. Cada par armazena uma cópia dos
+          arquivos de dados que serão lidos.</para>
+        </listitem>
+
+        <listitem>
+          <para>Redundância de cluster irmão: Embora não seja necessário, as
+          implementações do Roxie podem ser executadas em múltiplos clusters
+          Roxie configurados de modo idêntico. Quando dois clusters são
+          implementados para produção, cada nó tem um gêmeo idêntico
+          relacionado aos dados e/ou consultas armazenadas no nó no outro
+          cluster.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><?dbfo-need height="8.75in"?>Essa configuração oferece múltiplas
+      cópias redundantes de arquivos de dados. Neste exemplo, há seis cópias
+      de cada arquivo em determinado momento, eliminando a necessidade de usar
+      procedimentos de backup tradicionais para arquivos de dados
+      Roxie.</para>
+
+      <para><graphic fileref="images/RM-03.jpg"/></para>
+
+      <para/>
+    </sect1>
+
+    <sect1>
+      <title>Afinidade do processador</title>
+
+      <para>O Roxie pode obter um melhor desempenho em algumas circunstâncias
+      usando afinidades de thread (linhas de execução) para restringir os
+      threads de uma determinada consulta para um subconjunto de núcleos na
+      máquina. Isso também é conhecido como afinidade de processador ou
+      anexação de CPU. É uma técnica especialmente útil em máquinas de
+      múltiplos soquetes (CPU dupla).</para>
+
+      <para>Isso pode ser definido no Gerenciador de Configurações usando as
+      seguintes opções:</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="3">
+            <colspec colwidth="178.45pt"/>
+
+            <colspec colwidth="65.60pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><emphasis>affinity</emphasis></entry>
+
+                <entry>Padrão: 0</entry>
+
+                <entry>Se for diferente de zero, vincula o processo roxie a
+                usar somente os núcleos especificados (bitmask)</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>coresPerQuery</emphasis></entry>
+
+                <entry>Padrão: 0</entry>
+
+                <entry>Se for diferente de zero, vincula cada consulta de
+                entrada para usar apenas o número especificado de
+                núcleos</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>É possível substituir o coresPerQuery em uma única consulta
+      usando:</para>
+
+      <para><programlisting>#OPTION('bindCores', N); </programlisting></para>
+
+      <para>onde N é o número de núcleos a serem usados.</para>
+
+      <para>Para obter melhores resultados, use um valor para coresPerQuery ou
+      bindCores que seja divisível pelo número de núcleos em cada CPU.</para>
+    </sect1>
+  </chapter>
+
+  <chapter id="Developing_Roxie_Queries">
+    <title>Desenvolvendo Consultas Roxie</title>
+
+    <sect1 id="Development_Path" role="nobrk">
+      <title>Caminho de Desenvolvimento</title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Determine as necessidades.</para>
+        </listitem>
+
+        <listitem>
+          <para>Avalie os dados e determine os campos para indexar.</para>
+        </listitem>
+
+        <listitem>
+          <para>Crie os índices.</para>
+        </listitem>
+
+        <listitem>
+          <para>Crie uma consulta hThor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Teste e ajuste a consulta (usando o hThor).</para>
+        </listitem>
+
+        <listitem>
+          <para>Publique a consulta em um cluster Roxie.</para>
+        </listitem>
+
+        <listitem>
+          <para>Teste e certifique (compare os resultados com aqueles
+          esperados).</para>
+        </listitem>
+      </orderedlist>
+
+      <para/>
+
+      <para><emphasis role="bold">Observação</emphasis> : Essas etapas são
+      detalhadas no Tutorial de Dados e no Guia do Programador do HPCC
+      .</para>
+    </sect1>
+
+    <sect1 id="Methods-to-Submit-Jobs-to-a-Roxie-Cluster">
+      <title>Métodos para Aplicar Jobs a um Cluster Roxie</title>
+
+      <para>Após uma consulta ter sido compilada e implementada, há vários
+      métodos para enviar tarefas que utilizam a consulta. Embora o uso mais
+      comum seja através de aplicações pela interface SOAP ou XML, os outros
+      métodos também são usuais.</para>
+
+      <para>Uma conexão de soquete direta é capaz de se comunicar diretamente
+      com o cluster Roxie, eliminando todos os outros componentes
+      intermediários. Isso oferece uma maneira para certificar o cluster
+      Roxie, sua configuração, a implementação da consulta e a própria
+      consulta.</para>
+
+      <para>SOAPCALL permite que uma consulta do Thor acione uma consulta
+      Roxie (consulte a <emphasis>Referência de Linguagem ECL </emphasis> para
+      obter mais informações). Isso possibilita a combinação dos resultados do
+      Roxie com outras tarefas de processamento de dados realizadas durante o
+      ETL.</para>
+
+      <para>Realizar consultas por um ESP Service usando HTTP ou HTTPS permite
+      o acesso à consultas diretamente de um navegador. O acesso pela Web
+      permite que você conceda fácil acesso a quem desejar. Usando o HTTPS, é
+      possível garantir a segurança de dados através da criptografia Secure
+      Socket Layer (SSL). Isso garante que todos os dados sejam criptografados
+      ao se deslocarem por uma rede ou Internet. Além disso, a autenticação
+      LDAP está disponível para restringir o acesso a um conjunto de
+      usuários.</para>
+
+      <para>Aplicativos personalizados que usam SOAP oferecem máxima
+      flexibilidade e funcionalidade. O processo de desenvolvimento de
+      aplicação é simplificado através da geração automática da Linguagem de
+      Descrição de Serviços Web (WSDL) da Enterprise Services Plataform (ESP).
+      Muitas ferramentas de desenvolvimento (como o Microsoft .NET Studio ou
+      NetBeans JAVA) incluem uma ferramenta para gerar códigos para criar
+      stubs de proxy a partir de um documento WSDL. Isso simplifica o processo
+      de desenvolvimento e garante a exposição de todos os métodos e
+      propriedades necessários.</para>
+
+      <sect2 id="Direct-Socket-Connection-TCP-IP">
+        <title>Conexão Direta com Socket (TCP/IP)<?dbfo-need height="3in"?></title>
+
+        <para><graphic fileref="images/RM-04.jpg"/></para>
+
+        <beginpage/>
+      </sect2>
+
+      <sect2 id="SOAPCALL_via_ECL">
+        <title><emphasis>SOAPCALL via ECL</emphasis></title>
+
+        <para><graphic fileref="images/RM-05.jpg"/></para>
+
+        <para/>
+
+        <para/>
+      </sect2>
+
+      <sect2 id="SOAP-or-HTTP-HTTPS">
+        <title>SOAP ou HTTP/HTTPS<?dbfo-need height="6in"?></title>
+
+        <para><graphic fileref="images/RM-06.PNG" scale="90"
+        scalefit="1"/></para>
+
+        <para/>
+
+        <beginpage/>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Gerenciando Consultas</title>
+
+    <para>As consultas Roxie são gerenciadas através de Grupos de Consultas
+    que são armazenados no Dali. Os Grupos de Consultas controlam quais
+    consultas são carregadas no Roxie quando ele é iniciado e quais são
+    manipuladas ao adicionar ou removê-las conforme necessário. A lista de
+    consultas atualmente mantida em um Grupo de Consultas pode ser visualizada
+    através do ECL Watch.</para>
+
+    <para>Depois que uma consulta é publicada no Grupo de Consultas, ela pode
+    então ser executada no Roxie usando uma interface da Web.</para>
+
+    <sect1>
+      <title>Adicionando uma consulta Roxie ao Grupo de Consultas</title>
+
+      <para>Para adicionar uma consulta Roxie a um Grupo de Consultas:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Use o ECL IDE para gravar sua consulta e depois compilá-la,
+          definindo o destino como o cluster Roxie em seu ambiente
+          HPCC.</para>
+        </listitem>
+
+        <listitem>
+          <para>Acesse a guia ECL Watch para a tarefa compilada e clique no
+          botão Publish. Uma mensagem indicando que sua consulta foi publicada
+          com sucesso é então exibida.</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Visualizando Grupo de Consultas utilizando o ECL Watch</title>
+
+      <para>Usando o ECL Watch, é possível ver a consulta para todos os
+      clusters no seu HPCC. Clique no item de menu <emphasis
+      role="bold">Queries Set/Browser</emphasis> para ver os clusters que
+      estão usando Grupo de Consultas atualmente. Clique no link <emphasis
+      role="bold">myroxie</emphasis> para ver a lista de consultas atualmente
+      disponíveis para o Roxie. Com o uso deste recurso, é possível:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Ver a lista de consultas atualmente disponíveis em um
+          cluster.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Ver detalhes sobre cada consulta, incluindo o ID, o nome da
+          consulta, o ID de tarefa, o(s) DLL(s) que ela usa e se ela está
+          suspendida.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Ver detalhes dos aliases existentes para cada consulta.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Excluir uma Consulta ECL da lista.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Excluir um alias.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Ligar/desligar a configuração de suspensão</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+
+    <sect1>
+      <title>Utilizando o WsECL para executar uma consulta Roxie</title>
+
+      <para>O WsECL é a interface de serviço Web ECL fornecida com o HPCC e
+      disponibilizada no seguinte URL: http://nnn.nnn.nnn.nnn:8002, onde
+      nnn.nnn.nnn.nnn é o endereço IP do seu ESP.</para>
+
+      <para>O WsECL usa informações de Grupo de Consultas para exibir a lista
+      de consultas executáveis disponíveis. Você pode usá-lo, por exemplo,
+      para testar se sua consulta funciona como esperado.</para>
+
+      <para>A página da Web mostra todos os clusters que usam Grupo de
+      Consultas. Amplie o myroxie na árvore e selecione a consulta que deseja
+      executar. Um formulário padrão, gerado a partir dos tipos e nomes de
+      campos de entrada, é exibido. Insira os valores e pressione Enviar para
+      ver os resultados e testar sua consulta.</para>
+    </sect1>
+  </chapter>
+
+  <xi:include href="RoxieReference/RoxieRefMods/Packages.xml"
+              xpointer="element(/1)"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <xi:include href="RoxieReference/RoxieRefMods/directAccessToRoxie.xml"
+              xpointer="element(/1)"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <chapter id="Deploying-Data-to-a-Cluster-using-DFU">
+    <title>Disponibilizando Dados para um Cluster Roxie utilizando DFU</title>
+
+    <para>É possível usar o Utilitário de Arquivos Distribuídos (DFU) no ECL
+    Watch para copiar ou realizar a cópia remota de arquivos de dados para um
+    cluster Roxie. Isso permite que você copie arquivos grandes para um
+    cluster antes da publicação de uma consulta. Se os arquivos de dados forem
+    copiados com antecedência, uma consulta que requeira esses arquivos usará
+    aqueles que já estão em vigor. Se você possui grandes datasets, isso
+    permite que você prepare a implementação da consulta com
+    antecedência.</para>
+
+    <para><emphasis role="bold">Observação:</emphasis> Para usar esse recurso,
+    o utilitário FTSlave precisa estar instalado em cada nó do cluster. Isso é
+    feito automaticamente pelo assistente do Gerenciador de
+    Configurações.</para>
+
+    <sect1 id="Copy">
+      <title>Copia DFU</title>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Abra a página da Web do ECLWatch. É possível acessar essa
+            página usando o seguinte URL: http://nnn.nnn.nnn.nnn:8010, onde
+            nnn.nnn.nnn.nnn é o endereço IP do nó.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no ícone <emphasis role="bold">Files</emphasis> e
+            selecione <emphasis role="bold">Logical Files</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Localize o arquivo para copiar na lista de arquivos e marque
+            a caixa de seleção à esquerda.</para>
+
+            <para><graphic fileref="images/RDDE_DFUcopy.jpg"
+            vendor="eclwatchSS"/></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão Copy e preencha as <emphasis
+            role="bold">informações </emphasis> Group, Target Name <emphasis
+            role="bold"> e </emphasis> Options.</para>
+
+            <para/>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="122.40pt"/>
+
+                  <colspec colwidth="333.00pt"/>
+
+                  <tbody>
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Destino:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Group</entry>
+
+                      <entry>Use a lista suspensa para selecionar o cluster
+                      Roxie para o qual será copiado.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Observação</emphasis>:</entry>
+
+                      <entry>Escolha apenas entre os clusters que estão no
+                      ambiente atual.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Target Name</entry>
+
+                      <entry>O nome do arquivo lógico a ser criado no destino.
+                      Este campo é preenchido automaticamente com base no
+                      arquivo lógico original, mas é possível
+                      alterá-lo.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Opções:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Overwrite</entry>
+
+                      <entry>Marque esta caixa para substituir arquivos de
+                      mesmo nome.</entry>
+                    </row>
+
+                    <row>
+                      <entry>No Split</entry>
+
+                      <entry>Marque esta caixa para impedir a divisão de
+                      partes do arquivo em várias partes de destino.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Wrap</entry>
+
+                      <entry>Marque esta caixa para manter o mesmo número de
+                      partes e agrupar caso o cluster de destino seja menor do
+                      que o original.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Compress</entry>
+
+                      <entry>Marque esta caixa para compactar os
+                      arquivos.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Preservar Estrutura do Super Arquivo</entry>
+
+                      <entry>Marque esta caixa para conservar a estrutura de
+                      um superarquivo.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Copy
+            </emphasis>.</para>
+
+            <para>Uma nova guia é aberta, exibindo informações sobre o novo
+            arquivo.</para>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+
+    <sect1 id="Remote_Copy">
+      <title>Cópia Remota</title>
+
+      <para>A cópia remota permite que você copie dados para um Roxie a partir
+      de um cluster Roxie ou Thor fora do ambiente.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Abra a página da Web do ECLWatch. É possível acessar essa
+            página usando o seguinte URL: http://nnn.nnn.nnn.nnn:8010, onde
+            nnn.nnn.nnn.nnn é o endereço IP do nó.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no ícone <emphasis role="bold">Files</emphasis> e
+            selecione <emphasis role="bold">Logical Files</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão Cópia remota e preencha as
+            informações.</para>
+
+            <para><graphic fileref="images/RDDE_DFUremotecopy.jpg"
+            vendor="eclwatchSS"/></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="122.40pt"/>
+
+                  <colspec colwidth="333.00pt"/>
+
+                  <tbody>
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Source:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Dali</entry>
+
+                      <entry>O IP ou nome do host do Dali para o ambiente que
+                      está sendo copiado.</entry>
+                    </row>
+
+                    <row>
+                      <entry>ID do Usuário</entry>
+
+                      <entry>O nome do usuário usado para ser autenticado no
+                      ambiente remoto.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Password</entry>
+
+                      <entry>A senha que usada para ser autenticada no
+                      ambiente remoto.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Logical Name</entry>
+
+                      <entry>O nome do arquivo lógico a ser copiado.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Destino:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Group</entry>
+
+                      <entry>Use a lista suspensa para selecionar o cluster
+                      Roxie para o qual será copiado.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Observação</emphasis> :</entry>
+
+                      <entry>Escolha apenas entre os clusters que estão no
+                      ambiente atual.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Logical Name</entry>
+
+                      <entry>O nome do arquivo lógico a ser copiado.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Opções:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Overwrite</entry>
+
+                      <entry>Marque esta caixa para substituir arquivos de
+                      mesmo nome.</entry>
+                    </row>
+
+                    <row>
+                      <entry>No Split</entry>
+
+                      <entry>Marque esta caixa para impedir a divisão de
+                      partes do arquivo em várias partes de destino.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Wrap</entry>
+
+                      <entry>Marque esta caixa para manter o mesmo número de
+                      partes e agrupar caso o cluster de destino seja menor do
+                      que o original.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Compress</entry>
+
+                      <entry>Marque esta caixa para compactar os
+                      arquivos.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Preservar Estrutura do Super Arquivo</entry>
+
+                      <entry>Marque esta caixa para conservar a estrutura de
+                      um superarquivo.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Submit
+            </emphasis>.</para>
+
+            <para>Uma nova guia é aberta, exibindo informações sobre o novo
+            arquivo.</para>
+          </listitem>
+        </orderedlist></para>
+
+      <para/>
+    </sect1>
+  </chapter>
+
+  <chapter id="Capacity_Planning_for_Roxie_Clusters">
+    <title>Planejamento de Capacidade para Clusters Roxie</title>
+
+    <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
+                xpointer="xpointer(//*[@id='Capacity_Planning'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="PreFlight_and_Roxie_Metrics">
+    <title>Preflight e Métricas do Roxie</title>
+
+    <para>A seção Operations do ECL Watch oferece o recurso de realizar
+    atividades Preflight. Esses utilitários preflight são usados para
+    verificações de integridade diárias, além de evitar e solucionar
+    problemas. O recurso oferece um local central para coleta de informações
+    de hardware e software a partir de um conjunto remoto de máquinas, e
+    possui várias vantagens para preparação de ambiente diário.</para>
+
+    <para>Essa seção contém informações para realizar verificações de
+    preflight em um cluster Roxie. Para obter detalhes sobre outros
+    componentes, consulte o <emphasis>Guia do Administrador do HPCC
+    System</emphasis>.</para>
+
+    <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
+                xpointer="xpointer(//*[@id='Preflight_Roxie'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <sect1 id="Roxie_Metrics">
+      <title>Métricas Roxie<?dbfo-need height="5in"?></title>
+
+      <para><graphic fileref="images/RM-30.jpg" vendor="eclwatchSS"/></para>
+
+      <para/>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="102.05pt"/>
+
+            <colspec colwidth="293.95pt"/>
+
+            <tbody>
+              <row>
+                <entry>IP Address</entry>
+
+                <entry>O endereço IP do nó do servidor.</entry>
+              </row>
+
+              <row>
+                <entry>slavesActive</entry>
+
+                <entry>O número de escravos ativos daquele servidor.</entry>
+              </row>
+
+              <row>
+                <entry>lastQueryTime</entry>
+
+                <entry>Timestamp da consulta executada mais
+                recentemente.</entry>
+              </row>
+
+              <row>
+                <entry>loQueryActive</entry>
+
+                <entry>O número de consultas ativas de baixa
+                prioridade.</entry>
+              </row>
+
+              <row>
+                <entry>loMin</entry>
+
+                <entry>Tempo mínimo (ms) levado para executar uma consulta de
+                baixa prioridade.</entry>
+              </row>
+
+              <row>
+                <entry>retriesNeeded</entry>
+
+                <entry>Contagem de todos os pacotes de resposta que chegaram
+                em um servidor como resposta à mais de uma tentativa.</entry>
+              </row>
+
+              <row>
+                <entry>loMax</entry>
+
+                <entry>Tempo máximo (ms) levado para executar uma consulta de
+                baixa prioridade.</entry>
+              </row>
+
+              <row>
+                <entry>hiQueryActive</entry>
+
+                <entry>O número de consultas ativas de alta
+                prioridade.</entry>
+              </row>
+
+              <row>
+                <entry>loQueryCount</entry>
+
+                <entry>Número total de consultas de baixa prioridade
+                executadas.</entry>
+              </row>
+
+              <row>
+                <entry>loQueryAverage</entry>
+
+                <entry>Tempo médio levado para executar uma consulta de alta
+                prioridade.</entry>
+              </row>
+
+              <row>
+                <entry>hiQueryCount</entry>
+
+                <entry>Número total de consultas de alta prioridade
+                executadas.</entry>
+              </row>
+
+              <row>
+                <entry>hiMax</entry>
+
+                <entry>Tempo máximo (ms) levado para executar uma consulta de
+                alta prioridade.</entry>
+              </row>
+
+              <row>
+                <entry>hiMin</entry>
+
+                <entry>Tempo mínimo (ms) levado para executar uma consulta de
+                alta prioridade.</entry>
+              </row>
+
+              <row>
+                <entry>heapBlocksAllocated</entry>
+
+                <entry>Número de vezes que o Roxie teve que alocar memória de
+                seu alocador de memória.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect1>
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchQueries.xml"
+                xpointer="xpointer(//*[@id='Queries_Page'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+</book>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CleanSpaces">
+  <title>CleanSpaces</title>
+
+  <para><emphasis role="bold">STD.Str.CleanSpaces<indexterm>
+      <primary>STD.Str.CleanSpaces</primary>
+    </indexterm><indexterm>
+      <primary>Str.CleanSpaces</primary>
+    </indexterm><indexterm>
+      <primary>CleanSpaces</primary>
+    </indexterm>(</emphasis> <emphasis>Source</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.CleanSpaces<indexterm>
+      <primary>STD.Uni.CleanSpaces</primary>
+    </indexterm><indexterm>
+      <primary>Uni.CleanSpaces</primary>
+    </indexterm>(</emphasis> <emphasis>Source</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os dados a serem higienizados.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>CleanSpaces retorna um valor STRING ou UNICODE, conforme o
+          caso.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>odas as variações da função <emphasis role="bold">CleanSpaces
+  </emphasis> retornam uma string <emphasis>source</emphasis> com todas as
+  instâncias de vários caracteres de espaço adjacentes (2 ou mais espaços
+  juntos, ou um caractere de tabulação) reduzidos a um único caractere de
+  espaço. Os espaços à esquerda e à direita também são eliminados.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.Str.CleanSpaces('ABCDE  ABCDE');
+  //A contains 'ABCDE ABCDE'
+UNICODE C := STD.Uni.CleanSpaces(U'ABCDE ABCDE');   //C contains U'ABCDE ABCDE'
+</programlisting>
+
+  <para/>
+</sect1>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ExternalLogicalFileName">
+  <title>ExternalLogicalFileName</title>
+
+  <para><emphasis role="bold">STD.File.ExternalLogicalFileName<indexterm>
+      <primary>STD.File.ExternalLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>File.ExternalLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>ExternalLogicalFileName</primary>
+    </indexterm>(</emphasis> <emphasis> machineIP, filename </emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>machineIP</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o endereço IP da
+          máquina remota.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém caminho/nome do
+          arquivo.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>ExternalLogicalFileName retorna um valor VARSTRING (terminado
+          por nulo).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">ExternalLogicalFileName </emphasis>
+  retorna um nome de arquivo lógico externo codificado adequadamente que pode
+  ser usado para ler um arquivo diretamente de qualquer nó que executa o
+  utilitário dafailesrv (normalmente, uma zona de entrada de arquivos). A
+  função processa caracteres maiúsculos prefixando-os com um caractere de
+  escape na string de retorno.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IP   := '10.150.254.6';
+file := '/c$/training/import/AdvancedECL/people';
+DS1  := DATASET(STD.File.ExternalLogicalFileName(IP,file),
+        Training_Advanced.Layout_PeopleFile, FLAT);
+OUTPUT(STD.File.ExternalLogicalFileName(IP,file));
+//returns:
+//~file::10.150.254.6::c$::training::import::^advanced^e^c^l::people
+OUTPUT(DS1);
+//returns records from the external file
+</programlisting>
+</sect1>

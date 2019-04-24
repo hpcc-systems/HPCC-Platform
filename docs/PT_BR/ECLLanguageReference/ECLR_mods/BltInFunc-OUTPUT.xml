@@ -1,0 +1,1537 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="OUTPUT">
+  <title>OUTPUT</title>
+
+  <para><emphasis><emphasis role="bold">[</emphasis>attr</emphasis>
+  :=<emphasis role="bold"> ] OUTPUT<indexterm>
+      <primary>OUTPUT action</primary>
+    </indexterm><indexterm>
+      <primary>OUTPUT</primary>
+    </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
+  role="bold"> [, [</emphasis><emphasis> format </emphasis><emphasis
+  role="bold">] [</emphasis><emphasis>,file </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>thorfileoptions </emphasis><emphasis
+  role="bold"> ] ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold">
+  NOXPATH<indexterm>
+      <primary>NOXPATH</primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+  :=<emphasis role="bold"> ]
+  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+  [</emphasis><emphasis> format </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> ,file
+  </emphasis><emphasis>,</emphasis><emphasis role="bold"> CSV<indexterm>
+      <primary>CSV</primary>
+    </indexterm> [ (</emphasis><emphasis>csvoptions</emphasis><emphasis
+  role="bold">) ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>csvfileoptions </emphasis><emphasis
+  role="bold"> ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+  :=<emphasis role="bold"> ]
+  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+  [</emphasis><emphasis> format </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> , file </emphasis><emphasis role="bold">
+  </emphasis><emphasis>,</emphasis><emphasis role="bold"> XML<indexterm>
+      <primary>XML</primary>
+    </indexterm> [ (</emphasis><emphasis>xmloptions</emphasis><emphasis
+  role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>xmlfileoptions </emphasis><emphasis
+  role="bold"> ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+  :=<emphasis role="bold"> ]
+  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+  [</emphasis><emphasis> format </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> , file </emphasis><emphasis role="bold">
+  </emphasis><emphasis>,</emphasis><emphasis role="bold"> JSON<indexterm>
+      <primary>JSON</primary>
+    </indexterm> [ (</emphasis><emphasis>jsonoptions</emphasis><emphasis
+  role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>jsonfileoptions </emphasis><emphasis
+  role="bold"> ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  );</emphasis></emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+  :=<emphasis role="bold"> ]
+  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+  [</emphasis><emphasis> format </emphasis><emphasis role="bold">]
+  </emphasis><emphasis> ,</emphasis><emphasis role="bold">PIPE<indexterm>
+      <primary>PIPE</primary>
+    </indexterm>(</emphasis><emphasis> pipeoptions </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+  :=<emphasis role="bold"> ]
+  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">
+  [,</emphasis><emphasis> format </emphasis><emphasis role="bold">]
+  </emphasis><emphasis>, </emphasis><emphasis role="bold">NAMED<indexterm>
+      <primary>NAMED</primary>
+    </indexterm>(</emphasis><emphasis> name </emphasis><emphasis role="bold">)
+  [,EXTEND<indexterm>
+      <primary>EXTEND</primary>
+    </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
+  role="bold">ALL<indexterm>
+      <primary>ALL</primary>
+    </indexterm>] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+  :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> expression
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+  role="bold"> NAMED(</emphasis><emphasis> name </emphasis><emphasis
+  role="bold">) ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+  :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> recordset
+  ,</emphasis><emphasis role="bold"> THOR<indexterm>
+      <primary>THOR</primary>
+    </indexterm> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] );</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="93.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attr</emphasis></entry>
+
+            <entry>Opcional. O nome da ação transforma a ação em uma
+            definição; consequentemente, não é executado até que
+            <emphasis>attr</emphasis> seja usado como ação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento. Pode ser o nome
+            de um dataset ou de um record set derivado de algumas condições de
+            filtro, ou qualquer expressão que resulte em um record set
+            derivado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>format</emphasis></entry>
+
+            <entry>Opcional. O formato dos registros de resultado. Se omitido,
+            todos os campos em <emphasis>recordset</emphasis> serão
+            resultados. Se não for omitido, deve ser o nome de uma definição
+            de estrutura RECORD previamente definida ou um layout de registro
+            "dinâmico” dentro de chaves ({}), e deve atender aos mesmos
+            requisitos da estrutura RECORD para a função TABLE (a forma "corte
+            vertical") definindo o tipo, nome e origem dos dados para cada
+            campo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>file</emphasis></entry>
+
+            <entry>Opcional. O nome lógico do arquivo no qual os registros
+            serão gravados. Consulte a seção Escopo e Nomes de arquivos
+            lógicos da Referência de Linguagem para obter mais detalhes sobre
+            nomes de arquivos lógicos Se omitido, o fluxo dos dados formatados
+            retorna apenas para o emissor do comando (linha de comando ou IDE)
+            e não é gravado em um arquivo de disco.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>thorfileoptions</emphasis></entry>
+
+            <entry>Opcional. Uma lista delimitada por vírgula das opções
+            válidas para um arquivo THOR/FLAT (consulte a seção abaixo para
+            obter mais detalhes).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOXPATH</emphasis></entry>
+
+            <entry>Especifica que qualquer XPATHs definido na estrutura
+            <emphasis>format</emphasis> ou RECORD do
+            <emphasis>recordset</emphasis> é ignorado, sendo substituídos
+            pelos nomes do campo. Isso permite controlar se XPATHs estão sendo
+            usados para obter resultados, assim os XPATHs específicos para
+            entrada xml ou json podem ser ignorados para resultados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for False, especifica que a ordem do registro de
+            resultado não é importante. Quando for True, especifica a ordem
+            padrão do registro de resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os threads
+            <emphasis>numthreads</emphasis> .</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">CSV</emphasis></entry>
+
+            <entry>Especifica que o arquivo é um arquivo ASCII delimitado por
+            campo (geralmente com valores separados por vírgula).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>csvoptions</emphasis></entry>
+
+            <entry>Opcional. Uma lista delimitada por vírgula das opções que
+            definem como o arquivo é delimitado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>csvfileoptions</emphasis></entry>
+
+            <entry>Opcional. Uma lista delimitada por vírgula das opções
+            válidas para um arquivo CSV (consulte a seção abaixo para obter
+            mais detalhes).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">XML</emphasis></entry>
+
+            <entry>Especifica que o arquivo é produzido na forma de dados XML
+            com o nome de cada campo no formato, tornando-se a tag XML para
+            esses dados do campo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>xmloptions</emphasis></entry>
+
+            <entry>Opcional. Uma lista separada por vírgula das opções que
+            definem como o arquivo XML de resultado é delimitado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>xmlfileoptions</emphasis></entry>
+
+            <entry>Opcional. Uma lista delimitada por vírgula das opções
+            válidas para um arquivo XML (consulte a seção abaixo para obter
+            mais detalhes).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">JSON</emphasis></entry>
+
+            <entry>Especifica que o arquivo é produzido na forma de dados JSON
+            com o nome de cada campo no formato, tornando-se a tag JSON para
+            esses dados do campo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>jsonoptions</emphasis></entry>
+
+            <entry>Opcional. Uma lista separada por vírgula das opções que
+            definem como o arquivo JSON de resultado é delimitado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>jsonfileoptions</emphasis></entry>
+
+            <entry>Opcional. Uma lista delimitada por vírgula das opções
+            válidas para um arquivo JSON (consulte a seção abaixo para obter
+            mais detalhes).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PIPE:</emphasis></entry>
+
+            <entry>Indica que o comando especificado é executado com o
+            <emphasis>recordset</emphasis> fornecido como entrada padrão do
+            comando. Este é um pipe de "gravação”.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pipeoptions</emphasis></entry>
+
+            <entry>O nome de um programa a ser executado, que toma o
+            <emphasis>arquivo</emphasis> como seu fluxo de entrada, juntamente
+            com as opções válidas para um PIPE de resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NAMED</emphasis></entry>
+
+            <entry>Especifica o nome do resultado que aparece na workunit. Não
+            é válido se o parâmetro do arquivo estiver presente.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>Uma constante de string que contém o rótulo do resultado.
+            Deve ser uma constante de tempo de compilação e deve cumprir com
+            os requisitos de nomeação de atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">EXTEND</emphasis></entry>
+
+            <entry>Opcional. Especifica o acréscimo ao
+            <emphasis>nome</emphasis> do resultado existente NAMED (NOMEADO)
+            na workunit. O uso deste recurso exige que todos os OUTPUTs NAMED
+            (RESULTADOS NOMEADOS) com o mesmo nome tenham a opção EXTEND
+            disponível, incluindo a primeira instância.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Opcional. Especifica todos que todos os registros no
+            <emphasis>recordset</emphasis> são enviados ao ECL IDE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Qualquer expressão ECL válida que resulta em um único valor
+            escalar.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">THOR</emphasis></entry>
+
+            <entry>Especifica que o record set resultante é armazenado como um
+            arquivo em disco “de propriedade” da workunit, em vez de ser
+            armazenado diretamente dentro da workunit. O nome do arquivo no
+            DFU é scope::RESULT::workunitid.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A ação <emphasis role="bold">OUTPUT </emphasis> um resultado do record
+  set no supercomputador com base na forma e opções que você escolher. Se
+  nenhum <emphasis>arquivo</emphasis> for especificado para gravação, o
+  resultado é armazenado na workunit e retornado para o programa que o acionou
+  na forma de fluxo de dados.</para>
+
+  <sect2 id="OUTPUT_Field_Names">
+    <title>Nome dos Campos OUTPUT</title>
+
+    <para>Os nomes de campo em formato de registro "dinâmico" {...} devem ser
+    exclusivos, caso contrário resultará em erro de sintaxe. Por
+    exemplo:</para>
+
+    <programlisting>          OUTPUT(person(), {module1.attr1, module2.attr1});</programlisting>
+
+    <para>resultará em um erro de sintaxe. Os nomes dos campos do resultado
+    são adotados com base nos nomes de definição.</para>
+
+    <para>Para mudar isso, é possível especificar um nome exclusivo para o
+    campo do resultado no formato de registro “dinâmico”, como este:</para>
+
+    <programlisting>          OUTPUT (person (), {module1.attr1, name: = module2.attr1});</programlisting>
+  </sect2>
+
+  <sect2 id="OUTPUT_Thor-Flat_Files">
+    <title>OUTPUT Arquivos Thor/Flat <indexterm>
+        <primary>Flat Files</primary>
+      </indexterm><indexterm>
+        <primary>OUTPUT Thor/Flat Files</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+    :=<emphasis role="bold"> ] OUTPUT<indexterm>
+        <primary>OUTPUT</primary>
+      </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
+    role="bold"> [, [</emphasis><emphasis> format </emphasis><emphasis
+    role="bold">] [</emphasis><emphasis>,file </emphasis><emphasis
+    role="bold">[, CLUSTER<indexterm>
+        <primary>CLUSTER</primary>
+      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
+    role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
+        <primary>ENCRYPT</primary>
+      </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
+    role="bold">) ] </emphasis></para>
+
+    <para><emphasis role="bold"> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold">COMPRESSED<indexterm>
+        <primary>COMPRESSED</primary>
+      </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold">OVERWRITE<indexterm>
+        <primary>OVERWRITE</primary>
+      </indexterm>]<emphasis role="bold">[, UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]</emphasis></emphasis><emphasis role="bold">
+    [</emphasis><emphasis>,</emphasis><emphasis role="bold">EXPIRE<indexterm>
+        <primary>EXPIRE</primary>
+      </indexterm>( [</emphasis><emphasis> days </emphasis><emphasis
+    role="bold">] ) ] ] ] )</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="93.80pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo em uma lista
+              específica de clusters de destino. Se omitido, o arquivo é
+              gravado no cluster pelo qual a workunit é executada. O número de
+              partes do arquivo físico gravado em disco sempre é determinado
+              pelo número de nós no cluster onde a workunit é executada,
+              independentemente do número de nós nos clusters de
+              destino.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>target</emphasis></entry>
+
+              <entry>Uma lista delimitada por vírgula das constantes de string
+              que contêm os nomes dos clusters para os quais o arquivo será
+              gravado. Os nomes devem estar listados como aparecem na página
+              de Atividade do ECL Watch, ou como são retornados pela função
+              Std.System.Thorlib.Group(); opcionalmente, podem apresentar
+              colchetes contendo uma lista delimitada por vírgula dos números
+              dos nós (baseado em 1) e/ou dos intervalos (especificados com um
+              traço, como p.ex., n-m) para indicar o conjunto específico de
+              nós para gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo em disco
+              usando a criptografia AES de 256 bits e a compactação LZW
+              .</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>key</emphasis></entry>
+
+              <entry>Uma constante de string que contém a chave de
+              criptografia que será usada para criptografar os dados.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo usando a
+              compactação LZW.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+
+              <entry>Opcional. Especifica a substituição do arquivo caso ele
+              exista.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>Especifica que o arquivo deve ser regravado apenas se
+              houver alteração nos dados de código ou de entrada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+
+              <entry>Opcional. Especifica que se trata de um arquivo
+              temporário que pode ser removido automaticamente após um
+              determinado número de dias, após a leitura ter sido
+              feita.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>days</emphasis></entry>
+
+              <entry>Opcional. O número de dias contados a partir da última
+              leitura do arquivo em que o arquivo será automaticamente
+              removido. Se EXPIRE for especificado sem o número de dias, por
+              padrão ele usará as configurações do ExpiryDefault no
+              Sasha.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Esta forma grava o <emphasis>record set</emphasis> em um
+    <emphasis>arquivo</emphasis> especificado no <emphasis>formato</emphasis>
+    determinado. Se o <emphasis>formato</emphasis> for omitido, todos os
+    campos do <emphasis>recordset</emphasis> serão considerados como
+    resultados. Se <emphasis>file</emphasis> se o arquivo for omitido, o
+    resultado é enviado de volta para o programa que o solicitou (geralmente o
+    ECL IDE ou o programa que enviou a consulta SOAP para o Roxie).</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>OutputFormat1 := RECORD
+  People.firstname;
+  People.lastname;
+END;
+  
+A_People := People(lastname[1]='A');
+Score1 := HASHCRC(People.firstname);
+Attr1 := People.firstname[1] = 'A';
+
+OUTPUT(SORT(A_People,Score1),OutputFormat1,'hold01::fred.out');
+  // writes the sorted A_People set to the fred.out file in
+  // the format declared in the OutputFormat1 definition
+
+OUTPUT(People,{firstname,lastname});
+  // writes just First and Last Names to the command issuer
+  // full qualification of the fields is unnecessary, since
+  // the "on-the-fly" records structure is within the
+  // scope of the OUTPUT -- People is assumed
+
+OUTPUT(People(Attr1=FALSE));
+  // writes all Peeople fields from records where Attr1 is
+  // false to the command issuer
+</programlisting>
+  </sect2>
+
+  <sect2 id="OUTPUT_CSV_Files">
+    <title>Saída de arquivos CSV<indexterm>
+        <primary>CSV Files</primary>
+      </indexterm><indexterm>
+        <primary>OUTPUT - CSV Files</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+    :=<emphasis role="bold"> ] OUTPUT<indexterm>
+        <primary>OUTPUT</primary>
+      </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
+    role="bold">, [</emphasis><emphasis> format </emphasis><emphasis
+    role="bold">]</emphasis><emphasis> ,file
+    </emphasis><emphasis>,</emphasis><emphasis role="bold"> CSV<indexterm>
+        <primary>CSV</primary>
+      </indexterm>[ (</emphasis><emphasis>csvoptions</emphasis><emphasis
+    role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
+    role="bold">[, CLUSTER<indexterm>
+        <primary>CLUSTER</primary>
+      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
+    role="bold">)] <emphasis role="bold">[,ENCRYPT<indexterm>
+        <primary>ENCRYPT</primary>
+      </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
+    ]</emphasis> [,COMPRESSED]</emphasis></para>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"> OVERWRITE<indexterm>
+        <primary>OVERWRITE</primary>
+      </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
+    UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"> EXPIRE<indexterm>
+        <primary>EXPIRE</primary>
+      </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
+    role="bold">] ) ] )</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="93.80pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo em uma lista
+              específica de clusters de destino. Se omitido, o arquivo é
+              gravado no cluster pelo qual a workunit é executada. O número de
+              partes do arquivo físico gravado em disco sempre é determinado
+              pelo número de nós no cluster onde a workunit é executada,
+              independentemente do número de nós nos clusters de
+              destino.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>target</emphasis></entry>
+
+              <entry>Uma lista delimitada por vírgula das constantes de string
+              que contêm os nomes dos clusters para os quais o arquivo será
+              gravado. Os nomes devem estar listados como aparecem na página
+              de Atividade do ECL Watch, ou como são retornados pela função
+              Std.System.Thorlib.Group(); opcionalmente, podem apresentar
+              colchetes contendo uma lista delimitada por vírgula dos números
+              dos nós (baseado em 1) e/ou dos intervalos (especificados com um
+              traço, como p.ex., n-m) para indicar o conjunto específico de
+              nós para gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo em disco
+              usando a criptografia AES de 256 bits e a compactação LZW
+              .</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>key</emphasis></entry>
+
+              <entry>Uma constante de string que contém a chave de
+              criptografia que será usada para criptografar os dados.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo usando a
+              compactação LZW.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+
+              <entry>Opcional. Especifica a substituição do arquivo caso ele
+              exista.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>Especifica que o arquivo deve ser regravado apenas se
+              houver alteração nos dados de código ou de entrada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+
+              <entry>Opcional. Especifica que se trata de um arquivo
+              temporário que pode ser removido automaticamente após um
+              determinado número de dias.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>days</emphasis></entry>
+
+              <entry>Opcional. O número de dias em que o arquivo será
+              automaticamente removido. Se omitido, o padrão é sete
+              (7).</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Esta forma grava o <emphasis>recordset</emphasis> no
+    <emphasis>arquivo</emphasis> especificado e no
+    <emphasis>formato</emphasis> determinado na forma de arquivo ASCII com
+    valores separados por vírgula. Um conjunto válido de
+    <emphasis>csvoptions</emphasis> é:</para>
+
+    <para><emphasis role="bold">HEADING<indexterm>
+        <primary>HEADING</primary>
+      </indexterm>( [</emphasis> <emphasis>headertext</emphasis> <emphasis
+    role="bold">[</emphasis> <emphasis>, footertext</emphasis> <emphasis
+    role="bold">] ] [, SINGLE<indexterm>
+        <primary>SINGLE</primary>
+      </indexterm> ][, FORMAT<indexterm>
+        <primary>FORMAT</primary>
+      </indexterm></emphasis><emphasis>(stringfunction)</emphasis><emphasis
+    role="bold"> ] )</emphasis></para>
+
+    <para><emphasis role="bold">SEPARATOR<indexterm>
+        <primary>SEPARATOR</primary>
+      </indexterm>(</emphasis> <emphasis>delimiters</emphasis> <emphasis
+    role="bold">)</emphasis></para>
+
+    <para><emphasis role="bold">TERMINATOR<indexterm>
+        <primary>TERMINATOR</primary>
+      </indexterm>(</emphasis> <emphasis>delimiters</emphasis> <emphasis
+    role="bold">)</emphasis></para>
+
+    <para><emphasis role="bold">QUOTE<indexterm>
+        <primary>QUOTE</primary>
+      </indexterm>( [</emphasis> <emphasis>delimiters</emphasis> <emphasis
+    role="bold">] )</emphasis></para>
+
+    <para><emphasis role="bold">ASCII<indexterm>
+        <primary>ASCII</primary>
+      </indexterm> | EBCDIC<indexterm>
+        <primary>EBCDIC</primary>
+      </indexterm> | UNICODE<indexterm>
+        <primary>UNICODE</primary>
+      </indexterm></emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="95.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">HEADING</emphasis></entry>
+
+            <entry>Especifica os cabeçalhos e os rodapés do arquivo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>headertext</emphasis></entry>
+
+            <entry>Opcional. O texto do registro de cabeçalho a ser colocado
+            no arquivo. Se omitido, os nomes do campo serão
+            utilizados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>footertext</emphasis></entry>
+
+            <entry>Opcional. O texto do registro de rodapé a ser colocado no
+            arquivo. Se omitido, nenhum <emphasis>footertext</emphasis> será
+            gerado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SINGLE</emphasis></entry>
+
+            <entry>Opcional. Especifica o uso da
+            <emphasis>headertext</emphasis> especifica que o texto do
+            cabeçalho é gravado apenas no início da parte 1 e o
+            <emphasis>footertext</emphasis> é gravado apenas no final da parte
+            n (gerando um arquivo CSV “padrão”). Se omitido, o padrão é:
+            <emphasis>headertext</emphasis> e <emphasis>footertext</emphasis>
+            se omitido, o texto de cabeçalho e o texto de rodapé são colocados
+            no início e no fim de cada parte do arquivo (útil para gerar
+            resultados XML complexos).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FORMAT</emphasis></entry>
+
+            <entry>Opcional. Especifica que o texto de cabeçalho deve ser
+            formatado usando <emphasis>stringfunction</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>stringfunction</emphasis></entry>
+
+            <entry>Opcional. A função usada para formatar os títulos
+            (cabeçalhos) da coluna. Pode ser qualquer função que toma um único
+            parâmetro de string e retorna um resultado da string.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SEPARATOR</emphasis></entry>
+
+            <entry>Especifica os delimitadores do campo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>delimiters</emphasis></entry>
+
+            <entry>Uma constante de string única (ou uma lista de constantes
+            de string delimitada por vírgula) que define os caracteres usados
+            para delimitar os dados no arquivo CSV.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TERMINATOR</emphasis></entry>
+
+            <entry>Especifica os delimitadores do registro.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">QUOTE</emphasis></entry>
+
+            <entry>Especifica os <emphasis>delimitadores</emphasis> do texto
+            dos valores da string que podem conter
+            <emphasis>delimitadores</emphasis> SEPARATOR ou TERMINATOR como
+            parte dos seus dados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ASCII</emphasis></entry>
+
+            <entry>Especifica que todos os resultados estão em formato ASCII,
+            incluindo quaisquer campos EBCDIC ou UNICODE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">EBCDIC</emphasis></entry>
+
+            <entry>Especifica que todos os resultados estão em formato EBCDIC,
+            exceto SEPARATOR e TERMINATOR (que são definidos como valores
+            ASCII).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNICODE</emphasis></entry>
+
+            <entry>Especifica que todos os resultados estão em formato Unicode
+            UTF8</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Se nenhuma das opções ASCII, EBCDIC, ou UNICODE forem especificadas,
+    o resultado padrão será no formato ASCII com quaisquer campos UNICODE no
+    formato UTF8. As outras <emphasis>csvoptions</emphasis> padrão são:
+    <programlisting>           CSV(HEADING('',''), SEPARATOR(','), TERMINATOR('\n'), QUOTE())</programlisting></para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>//SINGLE option writes the header only to the first file part:
+OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(SINGLE)));
+
+//This example writes the header and footer to every file part:
+OUTPUT(XMLds,,'~thor::outdata.xml',CSV(HEADING('&lt;XML&gt;','&lt;/XML&gt;')));
+
+//FORMAT option writes the header using the specified formatting function:
+IMPORT STD;
+OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
+</programlisting>
+  </sect2>
+
+  <sect2 id="OUTPUT_XML_Files">
+    <title>Saída de Arquivos XML<indexterm>
+        <primary>XML Files</primary>
+      </indexterm><indexterm>
+        <primary>OUTPUT - XML Files</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+    :=<emphasis role="bold"> ] OUTPUT<indexterm>
+        <primary>OUTPUT</primary>
+      </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
+    role="bold">, [</emphasis><emphasis> format </emphasis><emphasis
+    role="bold">]</emphasis><emphasis> ,file </emphasis><emphasis role="bold">
+    </emphasis><emphasis>,</emphasis><emphasis role="bold">XML<indexterm>
+        <primary>XML</primary>
+      </indexterm> [ (</emphasis><emphasis>xmloptions</emphasis><emphasis
+    role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
+        <primary>ENCRYPT</primary>
+      </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
+    role="bold">) ] [, CLUSTER<indexterm>
+        <primary>CLUSTER</primary>
+      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
+    role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
+    OVERWRITE<indexterm>
+        <primary>OVERWRITE</primary>
+      </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
+    UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"> EXPIRE<indexterm>
+        <primary>EXPIRE</primary>
+      </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
+    role="bold">] ) ] )</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="93.80pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo em uma lista
+              específica de clusters de destino. Se omitido, o arquivo é
+              gravado no cluster pelo qual a workunit é executada. O número de
+              partes do arquivo físico gravado em disco sempre é determinado
+              pelo número de nós no cluster onde a workunit é executada,
+              independentemente do número de nós nos clusters de
+              destino.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>target</emphasis></entry>
+
+              <entry>Uma lista delimitada por vírgula das constantes de string
+              que contêm os nomes dos clusters para os quais o arquivo será
+              gravado. Os nomes devem estar listados como aparecem na página
+              de Atividade do ECL Watch, ou como são retornados pela função
+              Std.System.Thorlib.Group(); opcionalmente, podem apresentar
+              colchetes contendo uma lista delimitada por vírgula dos números
+              dos nós (baseado em 1) e/ou dos intervalos (especificados com um
+              traço, como p.ex., n-m) para indicar o conjunto específico de
+              nós para gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo em disco
+              usando a criptografia AES de 256 bits e a compactação LZW
+              .</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>key</emphasis></entry>
+
+              <entry>Uma constante de string que contém a chave de
+              criptografia que será usada para criptografar os dados.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+
+              <entry>Opcional. Especifica a substituição do arquivo caso ele
+              exista.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>Especifica que o arquivo deve ser regravado apenas se
+              houver alteração nos dados de código ou de entrada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+
+              <entry>Opcional. Especifica que se trata de um arquivo
+              temporário que pode ser removido automaticamente após um
+              determinado número de dias.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>days</emphasis></entry>
+
+              <entry>Opcional. O número de dias em que o arquivo será
+              automaticamente removido. Se omitido, o padrão é sete
+              (7).</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Esta forma grava o <emphasis>recordset</emphasis> em um
+    <emphasis>arquivo</emphasis> específico na forma de dados XML com o nome
+    de cada campo no <emphasis>formato</emphasis> especificado, tornando-se a
+    tag XML para esses dados do arquivo. O conjunto válido de
+    <emphasis>xmloptions</emphasis> é:</para>
+
+    <para><emphasis
+    role="bold">‘</emphasis><emphasis>rowtag</emphasis><emphasis
+    role="bold">'</emphasis></para>
+
+    <para><emphasis role="bold">HEADING<indexterm>
+        <primary>HEADING</primary>
+      </indexterm>( </emphasis><emphasis>headertext </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, footertext </emphasis><emphasis
+    role="bold">] )</emphasis></para>
+
+    <para><emphasis role="bold">TRIM<indexterm>
+        <primary>TRIM</primary>
+      </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
+
+    <para><emphasis role="bold">OPT<indexterm>
+        <primary>OPT</primary>
+      </indexterm><indexterm>
+        <primary>TRIM OPT</primary>
+      </indexterm></emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="84.45pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>rowtag</emphasis></entry>
+
+              <entry>O texto a ser incluído na tag de delimitação do
+              registro.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">HEADING</emphasis></entry>
+
+              <entry>Especifica a inclusão dos registros de cabeçalho e rodapé
+              no arquivo.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>headertext</emphasis></entry>
+
+              <entry>O texto do registro de cabeçalho a ser colocado no
+              arquivo.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>footertext</emphasis></entry>
+
+              <entry>O texto do registro de rodapé a ser colocado no
+              arquivo.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">TRIM</emphasis></entry>
+
+              <entry>Especifica a remoção dos espaços em branco dos campos da
+              string antes da produção do resultado</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OPT</emphasis></entry>
+
+              <entry>Especifica as tags omitidas em qualquer campo de string
+              vazio do resultado.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Se nenhuma <emphasis>xmloptions</emphasis> for especificada, o
+    padrão é:</para>
+
+    <programlisting>         XML('Row',HEADING('&lt;Dataset&gt;\n','&lt;/Dataset&gt;\n'))</programlisting>
+
+    <para>Exemplo:</para>
+
+    <programlisting>R := {STRING10 fname,STRING12 lname};
+B := DATASET([{'Fred','Bell'},{'George','Blanda'},{'Sam',''}],R);
+
+OUTPUT(B,,'fred1.xml', XML); // writes B to the fred1.xml file
+/* the Fred1.XML file looks like this:
+&lt;Dataset&gt;
+  &lt;Row&gt;&lt;fname&gt;Fred &lt;/fname&gt;&lt;lname&gt;Bell&lt;/lname&gt;&lt;/Row&gt;
+  &lt;Row&gt;&lt;fname&gt;George&lt;/fname&gt;&lt;lname&gt;Blanda &lt;/lname&gt;&lt;/Row&gt;
+  &lt;Row&gt;&lt;fname&gt;Sam &lt;/fname&gt;&lt;lname&gt;&lt;/lname&gt;&lt;/Row&gt;
+&lt;/Dataset&gt; */
+
+OUTPUT(B,,'fred2.xml',XML('MyRow', HEADING('&lt;?xml version=1.0 ...?&gt;
+    \n&lt;filetag&gt;\n','&lt;/filetag&gt;\n')));
+/* the Fred2.XML file looks like this:
+&lt;?xml version=1.0 ...?&gt;
+&lt;filetag&gt;
+  &lt;MyRow&gt;&lt;fname&gt;Fred &lt;/fname&gt;&lt;lname&gt;Bell&lt;/lname&gt;&lt;/MyRow&gt;
+  &lt;MyRow&gt;&lt;fname&gt;George&lt;/fname&gt;&lt;lname&gt;Blanda&lt;/lname&gt;&lt;/MyRow&gt;
+  &lt;MyRow&gt;&lt;fname&gt;Sam &lt;/fname&gt;&lt;lname&gt;&lt;/lname&gt;&lt;/MyRow&gt;
+&lt;/filetag&gt; */
+
+OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
+/* the Fred3.XML file looks like this:
+&lt;Dataset&gt;
+  &lt;MyRow&gt;&lt;fname&gt;Fred&lt;/fname&gt;&lt;lname&gt;Bell&lt;/lname&gt;&lt;/MyRow&gt;
+  &lt;MyRow&gt;&lt;fname&gt;George&lt;/fname&gt;&lt;lname&gt;Blanda&lt;/lname&gt;&lt;/MyRow&gt;
+  &lt;MyRow&gt;&lt;fname&gt;Sam&lt;/fname&gt;&lt;/MyRow&gt;
+&lt;/Dataset&gt; */
+</programlisting>
+  </sect2>
+
+  <sect2 id="OUTPUT_JSON_Files">
+    <title>Saída de Arquivos Json<indexterm>
+        <primary>JSON Files</primary>
+      </indexterm><indexterm>
+        <primary>OUTPUT - JSON Files</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+    :=<emphasis role="bold"> ] OUTPUT<indexterm>
+        <primary>OUTPUT</primary>
+      </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
+    role="bold">, [</emphasis><emphasis> format </emphasis><emphasis
+    role="bold">]</emphasis><emphasis> ,file </emphasis><emphasis role="bold">
+    </emphasis><emphasis>,</emphasis><emphasis role="bold">JSON<indexterm>
+        <primary>JSON</primary>
+      </indexterm> [ (</emphasis><emphasis>jsonoptions</emphasis><emphasis
+    role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
+        <primary>ENCRYPT</primary>
+      </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
+    role="bold">) ] [, CLUSTER<indexterm>
+        <primary>CLUSTER</primary>
+      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
+    role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
+    OVERWRITE<indexterm>
+        <primary>OVERWRITE</primary>
+      </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
+    UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"> EXPIRE<indexterm>
+        <primary>EXPIRE</primary>
+      </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
+    role="bold">] ) ] )</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="93.80pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo em uma lista
+              específica de clusters de destino. Se omitido, o arquivo é
+              gravado no cluster pelo qual a workunit é executada. O número de
+              partes do arquivo físico gravado em disco sempre é determinado
+              pelo número de nós no cluster onde a workunit é executada,
+              independentemente do número de nós nos clusters de
+              destino.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>target</emphasis></entry>
+
+              <entry>Uma lista delimitada por vírgula das constantes de string
+              que contêm os nomes dos clusters para os quais o arquivo será
+              gravado. Os nomes devem estar listados como aparecem na página
+              de Atividade do ECL Watch, ou como são retornados pela função
+              Std.System.Thorlib.Group(); opcionalmente, podem apresentar
+              colchetes contendo uma lista delimitada por vírgula dos números
+              dos nós (baseado em 1) e/ou dos intervalos (especificados com um
+              traço, como p.ex., n-m) para indicar o conjunto específico de
+              nós para gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo em disco
+              usando a criptografia AES de 256 bits e a compactação LZW
+              .</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>key</emphasis></entry>
+
+              <entry>Uma constante de string que contém a chave de
+              criptografia que será usada para criptografar os dados.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+
+              <entry>Opcional. Especifica a substituição do arquivo caso ele
+              exista.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>Especifica que o arquivo deve ser regravado apenas se
+              houver alteração nos dados de código ou de entrada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+
+              <entry>Opcional. Especifica que se trata de um arquivo
+              temporário que pode ser removido automaticamente após um
+              determinado número de dias.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>days</emphasis></entry>
+
+              <entry>Opcional. O número de dias em que o arquivo será
+              automaticamente removido. Se omitido, o padrão é sete
+              (7).</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Esta forma grava o <emphasis>recordset</emphasis> em um
+    <emphasis>arquivo</emphasis> específico na forma de dados JSON com o nome
+    de cada campo no <emphasis>formato</emphasis> especificado, tornando-se a
+    tag JSON para esses dados do arquivo. O conjunto válido de
+    <emphasis>jsonoptions</emphasis> é:</para>
+
+    <para><emphasis
+    role="bold">‘</emphasis><emphasis>rowtag</emphasis><emphasis
+    role="bold">'</emphasis></para>
+
+    <para><emphasis role="bold">HEADING<indexterm>
+        <primary>HEADING</primary>
+      </indexterm>( </emphasis><emphasis>headertext </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, footertext </emphasis><emphasis
+    role="bold">] )</emphasis></para>
+
+    <para><emphasis role="bold">TRIM<indexterm>
+        <primary>TRIM</primary>
+      </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
+
+    <para><emphasis role="bold">OPT<indexterm>
+        <primary>OPT</primary>
+      </indexterm><indexterm>
+        <primary>TRIM OPT</primary>
+      </indexterm></emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="84.45pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>rowtag</emphasis></entry>
+
+              <entry>O texto a ser incluído na tag de delimitação do
+              registro.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">HEADING</emphasis></entry>
+
+              <entry>Especifica a inclusão dos registros de cabeçalho e rodapé
+              no arquivo.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>headertext</emphasis></entry>
+
+              <entry>O texto do registro de cabeçalho a ser colocado no
+              arquivo.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>footertext</emphasis></entry>
+
+              <entry>O texto do registro de rodapé a ser colocado no
+              arquivo.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">TRIM</emphasis></entry>
+
+              <entry>Especifica a remoção dos espaços em branco dos campos da
+              string antes da produção do resultado</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OPT</emphasis></entry>
+
+              <entry>Especifica as tags omitidas em qualquer campo de string
+              vazio do resultado.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Se nenhum <emphasis>jsonoptions</emphasis> for especificado, o
+    padrão é:</para>
+
+    <programlisting>         JSON('Row',HEADING('[',']'))</programlisting>
+
+    <para>Exemplo:</para>
+
+    <programlisting>R := {STRING10 fname,STRING12 lname};
+B := DATASET([{'Fred','Bell'},{'George','Blanda'},{'Sam',''}],R);
+
+OUTPUT(B,,'fred1.json', JSON); // writes B to the fred1.json file
+/* the Fred1.json file looks like this:
+{"Row": [
+{"fname": "Fred      ", "lname": "Bell        "},
+{"fname": "George    ", "lname": "Blanda      "},
+{"fname": "Sam       ", "lname": "            "}
+]}
+*/
+OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
+/* the Fred2.json file looks like this:
+["MyResult": [
+{"fname": "Fred      ", "lname": "Bell        "},
+{"fname": "George    ", "lname": "Blanda      "},
+{"fname": "Sam       ", "lname": "            "}
+]]
+</programlisting>
+  </sect2>
+
+  <sect2 id="OUTPUT_PIPE_Files">
+    <title>Saída de Arquivos PIPE<indexterm>
+        <primary>OUTPUT Pipe Files</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+    :=<emphasis role="bold"> ]
+    OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+    [</emphasis><emphasis> format </emphasis><emphasis role="bold">]
+    </emphasis><emphasis> ,</emphasis><emphasis role="bold">PIPE<indexterm>
+        <primary>PIPE</primary>
+      </indexterm>(</emphasis><emphasis> command </emphasis><emphasis
+    role="bold">[</emphasis>, <emphasis role="bold"> CSV<indexterm>
+        <primary>CSV</primary>
+      </indexterm> | XML<indexterm>
+        <primary>XML</primary>
+      </indexterm>])</emphasis><emphasis> </emphasis><emphasis
+    role="bold">[</emphasis>,<emphasis role="bold"> REPEAT<indexterm>
+        <primary>REPEAT</primary>
+      </indexterm>] )</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="93.80pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">PIPE</emphasis></entry>
+
+              <entry>Indica que o comando especificado é executado com o
+              recordset fornecido como entrada padrão do comando. Este é um
+              pipe de "gravação”.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>command</emphasis></entry>
+
+              <entry>O nome de um programa a ser executado que usa o arquivo
+              como seu fluxo de entrada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">CSV</emphasis></entry>
+
+              <entry>Opcional. Especifica que o formato dos dados de resultado
+              é CSV. Se omitido, o formato será raw.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">XML</emphasis></entry>
+
+              <entry>Opcional. Especifica que o formato dos dados de resultado
+              é em XML. Se omitido, o formato será raw.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">REPEAT</emphasis></entry>
+
+              <entry>Opcional. Indica uma nova instância que o comando
+              especificado executa para cada linha no conjunto de
+              registros.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Esta forma envia o <emphasis>recordset</emphasis> no
+    <emphasis>formato </emphasis> especificado na forma de entrada padrão para
+    o <emphasis>comando</emphasis>. Isso é comumente conhecido como "pipe de
+    resultado."</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>OUTPUT(A_People,,PIPE('MyCommandLIneProgram'),OVERWRITE);
+   // sends the A_People to MyCommandLIneProgram as
+   // standard in</programlisting>
+  </sect2>
+
+  <sect2 id="Named_OUTPUT">
+    <title>Saída Named<indexterm>
+        <primary>NAMED OUTPUT</primary>
+      </indexterm><indexterm>
+        <primary>OUTPUT - NAMED Files</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+    :=<emphasis role="bold"> ] OUTPUT<indexterm>
+        <primary>OUTPUT</primary>
+      </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
+    role="bold"> [,</emphasis><emphasis> format </emphasis><emphasis
+    role="bold">] </emphasis><emphasis>,</emphasis><emphasis
+    role="bold">NAMED<indexterm>
+        <primary>NAMED</primary>
+      </indexterm>(</emphasis><emphasis> name </emphasis><emphasis
+    role="bold">) [,EXTEND<indexterm>
+        <primary>EXTEND</primary>
+      </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold">ALL<indexterm>
+        <primary>ALL</primary>
+      </indexterm>])</emphasis></para>
+
+    <para>Esta forma grava o <emphasis>recordset</emphasis> na workunit com o
+    <emphasis>nome</emphasis> especificado. A opção EXTEND permite várias
+    ações OUTPUT em um mesmo resultado <emphasis>nomeado</emphasis> . A opção
+    ALL é usada para substituir CHOOSEN implícita aplicada às consultas
+    interativas no Programa do Compilador de Consultas ECL. Isso especifica o
+    retorno de todos os registros.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>OUTPUT(CHOOSEN(people(firstname[1]='A'),10));
+  // writes the A People to the query builder
+OUTPUT(CHOOSEN(people(firstname[1]='A'),10),ALL);
+  // writes all the A People to the query builder
+OUTPUT(CHOOSEN(people(firstname[1]='A'),10),NAMED('fred'));
+  // writes the A People to the fred named output
+  
+//a NAMED, EXTEND example:
+errMsgRec := RECORD
+  UNSIGNED4 code;
+  STRING text;
+END;
+makeErrMsg(UNSIGNED4 _code,STRING _text) := DATASET([{_code, _text}], errMsgRec);
+rptErrMsg(UNSIGNED4 _code,STRING _text) := OUTPUT(makeErrMsg(_code,_text),
+                                                  NAMED('ErrorResult'),EXTEND);
+
+OUTPUT(DATASET([{100, 'Failed'}],errMsgRec),NAMED('ErrorResult'),EXTEND);
+  //Explicit syntax.
+
+//Something else creates the dataset
+OUTPUT(makeErrMsg(101, 'Failed again'),NAMED('ErrorResult'),EXTEND);
+  
+//output and dataset handled elsewhere.
+rptErrMsg(102, 'And again');
+</programlisting>
+  </sect2>
+
+  <sect2 id="OUTPUT_Scalar_Values">
+    <title>Saída Valores Scalar<indexterm>
+        <primary>OUTPUT Scalar Values</primary>
+      </indexterm><indexterm>
+        <primary>Scalar OUTPUT</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+    :=<emphasis role="bold"> ] OUTPUT<indexterm>
+        <primary>OUTPUT</primary>
+      </indexterm>(</emphasis><emphasis> expression </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold">
+    NAMED<indexterm>
+        <primary>NAMED</primary>
+      </indexterm>(</emphasis><emphasis> name </emphasis><emphasis
+    role="bold">) ] )</emphasis></para>
+
+    <para>Esta forma é usada para permitir o envio da
+    <emphasis>expressão</emphasis> escalar, especialmente dentro das ações
+    <indexterm>
+        <primary>SEQUENTIAL</primary>
+      </indexterm> e PARALLEL.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>OUTPUT(10) // scalar value output
+OUTPUT('Fred') // scalar value output
+</programlisting>
+  </sect2>
+
+  <sect2 id="OUTPUT_Workunit_Files">
+    <title>Saída de Arquivos Workunit<indexterm>
+        <primary>OUTPUT Workunit Files</primary>
+      </indexterm><indexterm>
+        <primary>Workunit OUTPUT</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+    :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> recordset
+    ,</emphasis><emphasis role="bold"> THOR<indexterm>
+        <primary>THOR</primary>
+      </indexterm> )</emphasis></para>
+
+    <para>Esta forma é usada para armazenar o <emphasis>recordset</emphasis>
+    resultante na forma de arquivo em disco "de propriedade" da workunit. O
+    nome do arquivo na DFU é
+    <emphasis>scope</emphasis>::RESULT::<emphasis>workunitid</emphasis>. Isso
+    é útil quando é preciso exibir um <emphasis>recordset</emphasis> de
+    resultado grande no programa Compilador de Consultas ECL, porém sem que os
+    dados ocupem memória no armazenamento de dados do sistema.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>OUTPUT(Person(per_st='FL'), THOR)
+  // output records to screen, but store the 
+  // result on disk instead of in the workunit</programlisting>
+
+    <para>Ver também: <link linkend="TABLE">TABLE</link>, <link
+    linkend="DATASET">DATASET</link>, <link linkend="PIPE">PIPE</link>, <link
+    linkend="CHOOSEN">CHOOSEN</link></para>
+  </sect2>
+</sect1>

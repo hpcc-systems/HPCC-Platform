@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Acesso Direto ao Roxie</title>
+
+  <sect1 role="nobrk">
+    <title>Visão Geral do Acesso a uma Consulta Roxie</title>
+
+    <para>Ele proporciona um meio imediato de teste, oferece uma interface da
+    Web para execução de consultas únicas e oferece o WSDL e esquemas que
+    podem ser usados para geradores de código automatizados para acesso ao
+    SOAP. Para aproveitar esse recurso completamente, é necessário acessar o
+    Roxie diretamente.</para>
+
+    <para>O WsECL ainda desempenha um papel importante ao usar essa técnica.
+    Ele proporciona um meio imediato de teste, oferece uma interface da Web
+    para execução de consultas únicas e oferece o WSDL e esquemas que podem
+    ser usados para geradores de código automatizados para acesso ao SOAP.
+    Também fornece o HTTP-GET e compatibilidade com codificações de
+    formulários. Finalmente, também oferece a interface JSON (Notação de
+    Objeto em JavaScript) que é semelhante à interface direta do Roxie.</para>
+
+    <para/>
+
+    <sect2>
+      <title>Web Services</title>
+
+      <para>Um serviço Web é um componente de software baseado em padrões que
+      pode ser acessado pela Internet. O serviço pode ser complexo ou
+      simples.</para>
+
+      <para>Por exemplo, um serviço Web poderia solicitar um número de
+      orçamentos de ações e retorná-los em um conjunto de resultados em
+      XML.</para>
+
+      <para>Os serviços Web estão disponíveis para qualquer plataforma, modelo
+      de objeto ou linguagem de programação. Isso oferece acesso aos usuários
+      através da Internet, Intranet ou Extranet, independentemente de sua
+      plataforma.</para>
+
+      <para>Além disso, também simplifica o desenvolvimento de sistemas
+      distribuídos. O uso de componentes baseados em padrões protege o
+      investimento de desenvolvimento, independentemente das tendências
+      futuras. As tecnologias de serviço Web são baseadas no protocolo
+      HTTP.</para>
+
+      <sect3>
+        <title><emphasis role="bold">Simples Object Acessos Protocolo
+        (SOAP)</emphasis></title>
+
+        <para>O SOAP é o protocolo baseado em XML mais comum para envio de
+        solicitações e recebimento de respostas dos serviços Web. Basicamente,
+        trata-se de um protocolo para comunicação entre aplicações. Ele foi
+        projetado para comunicação pela Internet e é independente de
+        plataforma e de linguagem. Baseado em XML, o SOAP é simples e
+        extensível.</para>
+      </sect3>
+
+      <sect3>
+        <title>JavaScript Object Notation<emphasis role="bold">
+        (JSON)</emphasis></title>
+
+        <para><emphasis role="bold">JSON</emphasis> é uma formato leve de
+        troca de dados. Ele é de fácil leitura e gravação por humanos. É de
+        fácil interpretação e geração para máquinas. O JSON é baseado em um
+        subconjunto da Linguagem de programação JavaScript, sendo
+        completamente independente de linguagens.</para>
+
+        <para/>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Acessando suas Consultas Roxie</title>
+
+    <para>Depois de desenvolver, compilar e publicar consultas, é necessário
+    oferecer acesso aos usuários.</para>
+
+    <sect2>
+      <title><emphasis role="bold">ESP e WsECL</emphasis></title>
+
+      <para>Uma instalação padrão da plataforma HPCC inclui o Enterprise
+      Service Plataform (ESP) com o serviço WsECL configurado através de uma
+      conexão de serviço para a porta 8002 (configurável).</para>
+
+      <para>O WsECL oferece um meio para acessar todas as suas consultas
+      compiladas e publicadas usando uma interface da Web ou usando SOAP ou
+      JSON.</para>
+
+      <para><emphasis role="bold">Dica: </emphasis>É possível fornecer um nome
+      de tarefa no URL usando este formulário:</para>
+
+      <programlisting>http://ip:port/WsEcl/submit/query/<emphasis role="bold">&lt;targetCluster&gt;</emphasis>/<emphasis
+          role="bold">&lt;query&gt;</emphasis>?_jobname=<emphasis role="bold">&lt;jobname&gt;</emphasis></programlisting>
+
+      <para>Isso é útil para o teste de consultas. Também é adequado para
+      oferecer acesso em tempo real aos usuários. Além disso é possível usar o
+      modo de proxy para ignorar a formatação de resposta WsECL e formatar
+      diretamente a resposta SOAP do Roxie. Consulte <link
+      linkend="proxymode">WsECL e Modo proxy</link></para>
+    </sect2>
+
+    <sect2>
+      <title><emphasis role="bold">Acessando WsECL VIA SOAP</emphasis></title>
+
+      <sect3>
+        <title><emphasis role="bold">WSDL</emphasis></title>
+
+        <para>O Protocolo Simples de Acesso a Objetos (SOAP) define um padrão
+        para comunicação entre processos usando um formato de base XML comum.
+        As bibliotecas do SOAP estão prontamente disponíveis para várias
+        plataformas de desenvolvimento e linguagens, incluindo Microsoft .NET
+        (acessível por C#, VB.NET, ASP.NET, e outras linguagens CLR), Java
+        (p.ex., JAX e Apache AXIS), PERL, e muitas outras.</para>
+
+        <para>A Linguagem de Descrição de Serviço Web (WSDL) é usada para
+        proporcionar uma descrição estruturada de uma interface de serviço
+        Web.</para>
+
+        <para>Muitas das bibliotecas disponíveis para permitir que aplicativos
+        usem o protocolo SOAP também oferecem ferramentas para gerar
+        automaticamente APIs específicas de serviço a partir de um documento
+        WSDL.</para>
+
+        <para>A descrição WSDL está disponível automaticamente para qualquer
+        consulta publicada.</para>
+
+        <para>A URL a seguir pode ser usado para recuperar a descrição WSDL de
+        uma consulta publicada:</para>
+
+        <para>http://<emphasis>nnn.nnn.nnn.nnn</emphasis>:8002/WsEcl/definitions/query/roxie/&lt;queryName&gt;/main/&lt;queryName&gt;.wsdl</para>
+
+        <para>onde <emphasis>nnn.nnn.nnn.nnn</emphasis> é o endereço IP (ou
+        nome do DNS) desse servidor ESP com a ligação para o WsECL.</para>
+
+        <para>8002 é a porta padrão. Se você modificou uma configuração de
+        porta, use a porta selecionada para essa finalidade.</para>
+
+        <para>A sintaxe e a funcionalidade do próprio protocolo SOAP também
+        estão fora do escopo deste documento. A lista a seguir de recursos
+        externos pode ajudar você a entender as tecnologias baseadas em
+        padrões empregadas.</para>
+      </sect3>
+
+      <sect3>
+        <title>SOAP</title>
+
+        <para>http://www.w3.org/TR/soap12-part0</para>
+
+        <para>http://www.w3.org/TR/soap12-part1</para>
+
+        <para>http://www.w3.org/TR/soap12-part2</para>
+      </sect3>
+
+      <sect3>
+        <title><emphasis role="bold">Web Service Definition Language (WSDL)
+        1.1</emphasis></title>
+
+        <para>http://www.w3.org/TR/wsdl</para>
+      </sect3>
+    </sect2>
+
+    <sect2>
+      <title><emphasis role="bold">Acesso Direto VIA SOAP</emphasis></title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Crie e publique sua consulta para um cluster de destino
+          (Roxie).</para>
+        </listitem>
+
+        <listitem>
+          <para>Teste e valide usando o WsECL para acessar a consulta.</para>
+
+          <para>Use a interface padrão fornecida para testar:</para>
+
+          <para>http://nnn.nnn.nnn.nnn:8002/</para>
+
+          <para>, onde nnn.nnn.nnn.nnn é o endereço IP (ou nome do DNS) desse
+          servidor ESP com a ligação para o WsECL.</para>
+
+          <para>8002 é a porta padrão. Se você modificou uma configuração de
+          porta, use a porta selecionada para essa finalidade.</para>
+        </listitem>
+
+        <listitem>
+          <para>Comece a desenvolver a aplicação que esgotará o serviço Web
+          importando o WSDL de:</para>
+
+          <para>http://<emphasis>nnn.nnn.nnn.nnn</emphasis>:8002/WsEcl/definitions/query/roxie/&lt;queryName&gt;/main/&lt;queryName&gt;.wsdl</para>
+
+          <para>, onde nnn.nnn.nnn.nnn é o endereço IP (ou nome do DNS) desse
+          servidor ESP com a ligação para o WsECL.</para>
+
+          <para>8002 é a porta padrão. Se você modificou uma configuração de
+          porta, use a porta selecionada para essa finalidade.</para>
+        </listitem>
+
+        <listitem>
+          <para>Ao terminar os testes, altere o URL de base para:</para>
+
+          <para>http://nnn.nnn.nnn.nnn:9876/</para>
+
+          <para>, onde nnn.nnn.nnn.nnn é o endereço IP (ou nome do DNS) de um
+          servidor Roxie.</para>
+
+          <para>9876 é a porta padrão. Se você modificou uma configuração de
+          porta, use a porta selecionada para essa finalidade.</para>
+        </listitem>
+      </orderedlist>
+
+      <para/>
+    </sect2>
+
+    <sect2>
+      <title><emphasis role="bold">Acesso Direto VIA JSON</emphasis></title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Crie e publique sua consulta para um cluster de destino
+          (Roxie).</para>
+        </listitem>
+
+        <listitem>
+          <para>Teste e valide usando o WsECL para acessar a consulta.</para>
+
+          <para>Use a interface padrão fornecida para testar:</para>
+
+          <para>http://nnn.nnn.nnn.nnn:8002/</para>
+
+          <para>, onde nnn.nnn.nnn.nnn é o endereço IP (ou nome do DNS) desse
+          servidor ESP com a ligação para o WsECL.</para>
+
+          <para>8002 é a porta padrão. Se você modificou uma configuração de
+          porta, use a porta selecionada para essa finalidade.</para>
+        </listitem>
+
+        <listitem>
+          <para>Comece a desenvolver a aplicação que esgotará o serviço Web
+          usando as definições JSON disponíveis a partir do formulário no
+          WsECL.</para>
+        </listitem>
+
+        <listitem>
+          <para>Na lista suspensa, selecione JSON Test e pressione o botão
+          Submit.</para>
+
+          <para><graphic fileref="../../images/json1.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <para>Edite os critérios de consulta à esquerda e depois pressione o
+          botão <emphasis role="bold">Send request</emphasis> .</para>
+        </listitem>
+
+        <listitem>
+          <para>Os resultados são exibidos no lado direito.</para>
+        </listitem>
+
+        <listitem>
+          <para>Edite e reenvie (pressionando o botão <emphasis
+          role="bold">Submit Request</emphasis> ) para ver as respostas para
+          os diferentes critérios.</para>
+
+          <para><graphic fileref="../../images/json2.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <para>Defina a URL de base em sua aplicação para</para>
+
+          <para>http://nnn.nnn.nnn.nnn:9876/</para>
+
+          <para>, onde nnn.nnn.nnn.nnn é o endereço IP (ou nome do DNS) de um
+          servidor Roxie.</para>
+
+          <para>9876 é a porta padrão. Se você modificou uma configuração de
+          porta, use a porta selecionada para essa finalidade.</para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Observação:</emphasis> O serviço WsECL
+      distribui automaticamente a carga enviando consultas para servidores
+      Roxie em repetição alternada. Para utilizar todos os servidores, sua
+      aplicação deve implementar um esquema similar de distribuição de cargas.
+      Também é possível usar um balanceador de cargas e enviar a consulta para
+      o IP virtual criado pelo balanceador de cargas.</para>
+    </sect2>
+
+    <sect2>
+      <title>Acesso Direto VIA JSON</title>
+
+      <para>Para obter uma resposta JSONP , adicione a decoração <emphasis
+      role="bold">&amp;jsonp=&lt;myfunction&gt;</emphasis> ao URL. Isso
+      retorna uma resposta json encapsulada em JavaScript:</para>
+
+      <para><programlisting>myfunction("{"data_1": "hello world", "data_2": ["the","sun","is","up"]}");</programlisting></para>
+    </sect2>
+
+    <sect2 id="proxymode">
+      <title>WsECL e Modo proxy</title>
+
+      <para>Para acionar diretamente o HTTP-GET e HTTP-FORM-POST no Roxie,
+      altere o URL para usar o modo proxy como mostrado
+      abaixo:<programlisting>Change:
+/WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName
+to
+/WsEcl/<emphasis role="bold">proxy</emphasis>/query/RoxieTargetName/QueryName</programlisting></para>
+
+      <para>Acionamentos proxy WsECL parametrizados para o Roxie são
+      compatóveis com um subconjunto dos formatos de parâmetros suportados por
+      acionamentos de modo não proxy.</para>
+
+      <para><programlisting>/WsEcl/proxy/query/mytarget/myquery?param1=value</programlisting>Para
+      parâmetros complexos, use a notação de ponto para especificar os valores
+      aninhados. Por exemplo:</para>
+
+      <programlisting>&lt;MyQuery&gt;
+  &lt;State&gt;FL&lt;/State&gt;
+  &lt;Regs&gt;
+    &lt;Reg&gt;
+      &lt;Name&gt;SOUTH&lt;/Name&gt;
+      &lt;Codes&gt;
+        &lt;Code&gt;PBI&lt;/Code&gt;
+        &lt;Code&gt;FLL&lt;/Code&gt;
+      &lt;/Code&gt;
+    &lt;/Reg&gt;
+    &lt;Reg&gt;
+      &lt;Name&gt;NORTH&lt;/Name&gt;
+      &lt;Codes&gt;
+        &lt;Code&gt;MCO&lt;/Code&gt;
+      &lt;/Code&gt;
+    &lt;/Reg&gt;
+  &lt;/Regs&gt;
+&lt;/MyQuery&gt;</programlisting>
+
+      <para>O URL ou formulário HTTP definiria or seguintes
+      parâmetros:<programlisting>State=FL
+Regs.Reg.0.Name=SOUTH
+Regs.Reg.0.Codes.Code.0=PBI
+Regs.Reg.0.Codes.Code.1=FLL
+Regs.Reg.1.Name=NORTH
+Regs.Reg.1.Codes.Code=MCO</programlisting></para>
+    </sect2>
+
+    <sect2>
+      <title>Modo Expandido no WsECL</title>
+
+      <para>Para incluir os esquemas nos resultados, adicione a opção
+      <emphasis role="bold">expanded</emphasis> a URL como mostrado
+      abaixo:<programlisting>Change:
+/WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName
+to
+/WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName/expanded</programlisting></para>
+    </sect2>
+
+    <sect2 id="RESTful_access" role="brk">
+      <title>Acesso RESTful Direto ao Roxie</title>
+
+      <para>É possível acessar suas consultas Roxie usando uma interface
+      RESTful da seguinte maneira:</para>
+
+      <para><programlisting>http://&lt;ip&gt;:9876/&lt;target&gt;/&lt;queryid&gt;?&lt;stored1&gt;=&lt;value&gt;
+       &amp;&lt;storeddataset&gt;.Row.0.name=abc&amp;storeddataset.Row.0.id=123</programlisting>,
+      onde</para>
+
+      <para>Ip é o endereço IP ou nome de host do servidor Roxie, ou um VIP
+      para um intervalo de IPs para uma torre de servidores Roxie</para>
+
+      <para><emphasis>target</emphasis> é o nome do cluster de destino</para>
+
+      <para><emphasis>queryid</emphasis> é a ID de consulta da consulta
+      publicada.</para>
+
+      <para><emphasis>stored1</emphasis> é uma variável de entrada (usando
+      STORED no ECL) e <emphasis>valor</emphasis> a ser enviado</para>
+
+      <para><emphasis>storeddataset</emphasis> é um dataset a ser especificado
+      para a consulta</para>
+
+      <para>Por exemplo:</para>
+
+      <para><programlisting>http://127.0.0.1:9876/roxie/echotest.1?echoValue=Ziggy%20played%20guitar</programlisting></para>
+
+      <para/>
+    </sect2>
+
+    <sect2>
+      <title>Resultados Roxie</title>
+
+      <para>Por padrão, os resultados das consultas HTTP no Roxie não retornam
+      elementos vazios (tags). Se um valor de campo estiver vazio, a tag não é
+      retornada. No entanto, às vezes, uma aplicação pode esperar que todas as
+      tags sejam retornadas de forma que seja possível adicionar uma decoração
+      de URL para substituir o comportamento padrão. Isso faz com que tags
+      vazias retornem um valor de uma string vazia.</para>
+
+      <para><programlisting>.trim=o</programlisting></para>
+
+      <para>A <emphasis role="bold"> opção .trim=0</emphasis> pode ser
+      adicionada ao SOAP, JSON, URL, ou consultas de formulário da Web para
+      ambos WsECL e Roxie.</para>
+
+      <para><emphasis role="bold">WsECL RESTful:</emphasis></para>
+
+      <para><programlisting>http://ip:port/WsEcl/submit/query/roxie/myquery?param1=abc&amp;.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">WsECL SOAP:</emphasis></para>
+
+      <para><programlisting>http://ip:port/WsEcl/soap/query/roxie/myquery?.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">WsECL JSON:</emphasis></para>
+
+      <para><programlisting>http://ip:port/WsEcl/json/query/roxie/myquery?.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">Roxie Direct SOAP ou JSON:</emphasis></para>
+
+      <para><programlisting>http://ip:port/target/myquery?.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">Roxie Direct RESTful:</emphasis></para>
+
+      <para><programlisting>http://ip:port/roxie/myquery?param1=abc&amp;.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">Envio do formulário:</emphasis></para>
+
+      <para>Para enviar o formulário RESTful para o WsECL ou Roxie, adicione a
+      decoração .trim=0 ao seu URL.</para>
+
+      <para/>
+
+      <para>A execução de qualquer XSLT personalizado deve definir
+      automaticamente a opção .trim=0.</para>
+    </sect2>
+  </sect1>
+</chapter>

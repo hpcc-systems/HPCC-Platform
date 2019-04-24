@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FromStringToDate">
+  <title>FromStringToDate</title>
+
+  <para><emphasis role="bold">STD.Date.FromStringToDate<indexterm>
+      <primary>STD.Date.FromStringToDate</primary>
+    </indexterm><indexterm>
+      <primary>Date.FromStringToDate</primary>
+    </indexterm><indexterm>
+      <primary>FromStringToDate</primary>
+    </indexterm>(</emphasis> <emphasis>date_text, format</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date_text</emphasis></entry>
+
+          <entry>A string a ser convertida</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>formato</emphasis></entry>
+
+          <entry>. O formato da string de entrada. Consulte a documentação de
+          strftime para obter detalhes (&lt;ulink
+          url="http://strftime.org/"&gt;http://strftime.org/&lt;/ulink&gt;)<ulink
+          url="http://strftime.org/">http://strftime.org/</ulink>)</entry>
+        </row>
+
+        <row>
+          <entry>return:</entry>
+
+          <entry>A data correspondida na string. Retornará 0 se não houver
+          correspondência ou se houver correspondência, mas o resultado for
+          uma data inválida.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">FromStringToDate</emphasis> converte
+  uma string em Date_t usando o formato de string relevante. A data resultante
+  deve ser representável dentro do calendário gregoriano após o ano
+  1600.</para>
+
+  <para><programlisting>Supported characters:
+
+    %B          Full month name
+    %b or %h    Abbreviated month name
+    %d          Day of month (two digits)
+    %e          Day of month (two digits, or a space followed by a single digit)
+    %m          Month (two digits)
+    %t          Whitespace
+    %y          year within century (00-99)
+    %Y          Full year (yyyy)
+    %j          Julian day (1-366)
+
+Common date formats
+
+    American    '%m/%d/%Y'  mm/dd/yyyy
+    Euro        '%d/%m/%Y'  dd/mm/yyyy
+    Iso format  '%Y-%m-%d'  yyyy-mm-dd
+    Iso basic   'Y%m%d'     yyyymmdd
+                '%d-%b-%Y'  dd-mon-yyyy    e.g., '21-Mar-1954'
+</programlisting></para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+ 
+D1 := STD.Date.FromStringToDate('19720607', '%Y%m%d');
+    //D1 contains 19720607
+D2 := STD.Date.FromStringToDate('19720007', '%Y%m%d');
+    //D2 contains 0
+D3 := STD.Date.FromStringToDate('4/29/1974', '%m/%d/%Y');
+    //D3 contains 19740429
+D4:= STD.Date.FromStringToDate('29/4/1974', '%d/%m/%Y');
+    //D4 contains 19740429
+ </programlisting>
+
+  <para/>
+</sect1>

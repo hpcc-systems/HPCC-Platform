@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="BOOLEAN" role="nobrk">
+  <title>BOOLEAN</title>
+
+  <para><emphasis role="bold">BOOLEAN<indexterm>
+      <primary>BOOLEAN</primary>
+    </indexterm><indexterm>
+      <primary>BOOLEAN value type</primary>
+    </indexterm></emphasis></para>
+
+  <para>Um valor booleano verdadeiro/falso (true ou false). <emphasis
+  role="bold">TRUE</emphasis><indexterm>
+      <primary>TRUE</primary>
+    </indexterm> e <emphasis role="bold">FALSE<indexterm>
+      <primary>FALSE</primary>
+    </indexterm></emphasis> são palavras-chave reservadas do ECL; são
+  constantes booleanas que podem ser usadas para serem comparadas com um tipo
+  BOOLEAN. Quando BOOLEAN é usado em uma estrutura RECORD , é gerado um valor
+  inteiro de um único byte contendo (1) ou zero (0).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>BOOLEAN MyBoolean := SomeAttribute &gt; 10;
+        // declares MyBoolean a BOOLEAN Attribute
+     
+BOOLEAN MyBoolean(INTEGER p) := p &gt; 10;
+        // MyBoolean takes an INTEGER parameter
+
+BOOLEAN Typtrd := trades.trd_type = 'R';
+        // Typtrd is a Boolean attribute, likely to be used as a filter</programlisting>
+
+  <para>Ver também: <link linkend="TRUE_FALSE">TRUE/FALSE</link></para>
+</sect1>

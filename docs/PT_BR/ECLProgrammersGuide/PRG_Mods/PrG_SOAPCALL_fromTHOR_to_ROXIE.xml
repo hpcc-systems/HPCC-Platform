@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SOAPCALL_from_Thor_to_Roxie">
+  <title><emphasis role="bold">SOAPCALL do Thor para o
+  Roxie</emphasis></title>
+
+  <para>Após ter testado e implementado no Roxie as consultas habilitadas para
+  SOAP, você precisa conseguir usá-las. Muitas consultas do Roxie podem ser
+  iniciadas através de alguma interface de usuário projetada especificamente
+  para possibilitar que usuários finais insiram critérios de busca e obtenham
+  resultados, um por vez. No entanto, às vezes é necessário recuperar dados em
+  modo de lote, onde a mesma consulta é executada uma vez em relação a cada
+  registro de um dataset. Isso faz do Thor um bom candidato à plataforma de
+  solicitação usando o SOAPCALL.</para>
+
+  <sect2 id="One_Record_Input_Record_Set_Return">
+    <title>Uma Entrada de Registro, Retorno do Registros (One Record Input,
+    Record Set Return)</title>
+
+    <para>Este código de exemplo (contido no arquivo Soapcall1.ECL) aciona o
+    serviço previamente implementado no artigo <emphasis role="bold">Visão
+    geral do Roxie </emphasis> ( você precisará alterar o atributo IP neste
+    código para o IP e porta adequados do Roxie para o qual será
+    implementado):</para>
+
+    <programlisting>IMPORT $;
+
+OutRec1 := $.DeclareData.Layout_Person;
+RoxieIP := 'http://127.0.0.1:8002/WsEcl/soap/query/roxie/roxieoverview1.1';
+svc     := 'RoxieOverview1.1';
+     
+InputRec := RECORD
+  STRING30 LastName  := 'KLYDE';
+  STRING30 FirstName := '';
+END;
+//1 rec in, recordset out
+ManyRec1 := SOAPCALL(RoxieIP,
+                     svc,
+                     InputRec,
+                     DATASET(OutRec1));
+OUTPUT(ManyRec1);</programlisting>
+
+    <para>Este exemplo mostra como você faria um SOAPCALL para o serviço
+    especificando-o como um conjunto único de parâmetros para recuperar apenas
+    os registros que estão relacionados ao conjunto de parâmetros
+    especificados. O serviço recebe um conjunto único de dados de entrada e
+    retorna apenas aqueles registros que atendam a esses critérios. O
+    resultado esperado dessa consulta é um conjunto retornado dos 1.000
+    registros cujo campo LastName contém "KLYDE".</para>
+  </sect2>
+
+  <sect2 id="Record_Set_Input_Record_Set_Return">
+    <title>Uma Entrada de Registro, Retorno do Registro (Record Set Input,
+    Record Set Return)</title>
+
+    <para>Este próximo código de exemplo (contido no arquivo Soapcall2.ECL)
+    também aciona o mesmo serviço que o exemplo anterior (lembre-se, você
+    precisará alterar o atributo IP neste código para o IP e porta adequados
+    do Roxie para o qual foi implementado):</para>
+
+    <programlisting>IMPORT $;
+
+OutRec1 := $.DeclareData.Layout_Person;
+RoxieIP := 'http://127.0.0.1:8002/WsEcl/soap/query/roxie/roxieoverview1.1';
+svc     := 'RoxieOverview1.1';
+//recordset in, recordset out
+InRec := RECORD
+  STRING30 LastName {XPATH('LastName')};
+  STRING30 FirstName{XPATH('FirstName')};
+END;
+
+InputDataset := DATASET([{'TRAYLOR','CISSY'},
+                         {'KLYDE','CLYDE'},
+                         {'SMITH','DAR'},
+                         {'BOWEN','PERCIVAL'},
+                         {'ROMNEY','GEORGE'}],Inrec);
+     
+ManyRec2 := SOAPCALL(InputDataset,
+      RoxieIP,
+      svc,
+      Inrec,
+      TRANSFORM(LEFT),
+      DATASET(OutRec1),
+      ONFAIL(SKIP));
+OUTPUT(ManyRec2);</programlisting>
+
+    <para>Este exemplo especifica um dataset que contém múltiplos conjuntos de
+    parâmetros nos quais o serviço vai operar, retornando um grupo de
+    registros único com todos os registros retornados por cada conjunto de
+    parâmetros. Nesta forma, a função TRANSFORM permite que SOAPCALL opere
+    como um PROJECT para produzir registros de entrada que proporcionam os
+    parâmetros de entrada para o serviço.</para>
+
+    <para>O serviço opera em cada registro no dataset de entrada por vez,
+    combinando os resultados de cada um deles em um conjunto único de
+    resultados retornados. A opção ONFAIL indica que se houver qualquer tipo
+    de erro, o registro deve simplesmente ser ignorado. O resultado esperado
+    dessa consulta é um conjunto retornado de três registros para apenas os
+    três registros que corresponderem aos critérios de entrada (CISSY TRAYLOR,
+    CLYDE KLYDE, e PERCIVAL BOWEN).</para>
+  </sect2>
+
+  <sect2 id="Performance_Considerations_PARALLEL">
+    <title>Considerações sobre desempenho: PARALLEL</title>
+
+    <para>A forma do primeiro exemplo usa uma linha única como sua entrada.
+    Quando apenas um URL for especificado, SOAPCALL envia a solicitação para
+    um URL e aguarda uma resposta. Se vários URLs forem especificados, o
+    SOAPCALL envia uma solicitação para o primeiro URL na lista, aguarda uma
+    resposta, envia uma solicitação para o segundo URL, e assim por diante. A
+    opção PARALLEL controla a simultaneidade, de forma que se PARALLEL
+    (<emphasis>n</emphasis>) for especificada, as solicitações são enviadas
+    simultaneamente de cada nó Thor com até <emphasis>n</emphasis>
+    solicitações em voo de uma vez a partir de cada nó.</para>
+
+    <para>A forma do segundo exemplo usa um dataset como sua entrada. Quando
+    apenas um URL é especificado, o comportamento padrão é enviar duas
+    solicitações com a primeira e segunda linhas simultaneamente, aguardar uma
+    resposta, enviar a terceira linha e assim por diante em todo o dataset,
+    com até duas solicitações em voo por vez. Se PARALLEL
+    (<emphasis>n</emphasis>) for especificada, ela envia
+    <emphasis>n</emphasis> solicitações com as primeiras
+    <emphasis>n</emphasis> linhas simultaneamente de cada nó Thor e assim por
+    diante, com até <emphasis>n</emphasis> solicitações em voo de uma vez a
+    partir cada nó.</para>
+
+    <para>Em um mundo ideal, você especificaria um valor PARALLEL que
+    multiplica no mínimo o número de URLs do Roxie, de forma que cada host
+    disponível possa funcionar simultaneamente. Além disso, se estiver usando
+    um dataset como entrada, talvez você queira tentar um valor várias vezes o
+    número de URLs. No entanto, isso pode causar contenção de rede
+    (tempo-limite e conexões perdidas) se for definido como muito
+    elevado.</para>
+
+    <para>A opção PARALLEL deve ser adicionada ao código de ambos os exemplos
+    anteriores para ver que efeito os diferentes valores podem ter em seu
+    ambiente.</para>
+  </sect2>
+
+  <sect2 id="Performance_Considerations_MERGE">
+    <title>Considerações sobre desempenho: MERGE</title>
+
+    <para>A opção MERGE controla o número de linhas por solicitação para a
+    forma que utiliza um dataset (MERGE não se aplica às formas de SOAPCALL
+    que usam uma única linha como entrada). Se MERGE(<emphasis>m</emphasis>)
+    for especificada, cada solicitação contém até <emphasis>m</emphasis>
+    linhas em vez de uma única linha.</para>
+
+    <para>Se a simultaneidade (configuração da opção PARALLEL) for inferior ou
+    igual ao número de URLs, então cada URL normalmente verá apenas uma
+    solicitação por vez (supondo que todos os hosts operem em uma velocidade
+    aproximada). Nesse caso, você pode querer escolher um valor máximo de
+    MERGE que o host e a rede possam suportar: um valor muito alto e uma
+    solicitação enorme podem cancelar ou desacelerar um serviço, enquanto um
+    valor muito baixo aumenta desnecessariamente a sobrecarga enviando muitas
+    solicitações pequenas no lugar de outras maiores. Se a simultaneidade for
+    superior ao número de URLs, então cada URL terá múltiplas solicitações por
+    vez e essas considerações ainda serão aplicadas.</para>
+
+    <para>Supondo que o host processe uma única solicitação em série, há uma
+    consideração adicional. Você precisa assegurar que o valor MERGE seja
+    inferior ao número de linhas no dataset a fim de assegurar que você esteja
+    utilizando a paralelização dos hosts. Se o valor MERGE for superior ou
+    igual ao número de linhas de entrada, você então envia todo o dataset de
+    entrada em uma única solicitação e o host processará as linhas em
+    série.</para>
+
+    <para>Você deve adicionar a opção MERGE ao código do segundo exemplo para
+    ver que efeito os diferentes valores podem ter em seu ambiente.</para>
+  </sect2>
+
+  <sect2 id="A_Real_World_Example">
+    <title>Um Exemplo do Mundo Real</title>
+
+    <para>Um cliente pediu ajuda para resolver um problema – como comparar
+    duas strings e determinar se a primeira contém todas as palavras contidas
+    na segunda, em qualquer ordem, quando há um número indeterminado de
+    palavras em cada string. Esse é um problema bastante simples no ECL. Usar
+    JOIN e ROLLUP seria uma abordagem, ou ainda consultas de child datasets
+    aninhadas (não compatíveis com o Thor no momento da solicitação de ajuda,
+    embora talvez a situação possa ter mudado no momento em que você estiver
+    lendo isso). Todo o código a seguir está contido no arquivo
+    Soapcall3.ECL.</para>
+
+    <para>A primeira necessidade seria criar uma função para extrair todas as
+    palavras discretas de uma string. Esse é o tipo de job na qual a função
+    PARSE se sobressai. E é exatamente isso que o código faz:</para>
+
+    <programlisting>ParseWords(STRING LineIn) := FUNCTION
+  PATTERN Ltrs := PATTERN('[A-Za-z]');
+  PATTERN Char := Ltrs | '-' | '\'';
+  TOKEN   Word := Char+;
+          ds   := DATASET([{LineIn}],{STRING line});
+  RETURN PARSE(ds,line,Word,{STRING Pword := MATCHTEXT(Word)});
+END;</programlisting>
+
+    <para>Essa FUNCTION (contida no Soapcall3.ECL) recebe uma string de
+    entrada e produz um resultado de conjunto de registros de todas as
+    palavras contidas nessa string. Ela define um atributo PATTERN (Char) de
+    caracteres permitidos em uma palavra como o conjunto de todas as letras
+    maiúsculas e minúsculas (definida por PATTERN Ltrs), o hífen e o
+    apóstrofo. Qualquer outro caractere além desses será ignorado.</para>
+
+    <para>Em seguida, ela define uma Palavra como um ou mais caractere de
+    padrão Char permitido. Esse padrão é definido como um TOKEN de forma que
+    apenas a correspondência da palavra completa seja retornada, e não todas
+    as correspondências alternativas possíveis (isto é, retornando apenas o
+    SOAP, em vez de SOAP, SOA, SO, e S – todas as correspondências
+    alternativas que um PATTERN poderia gerar).</para>
+
+    <para>Esse atributo DATASET embutido de um registro (ds) cria o "arquivo"
+    de entrada a ser processado pela função PARSE, produzindo o conjunto de
+    registro de resultado com todas as palavras discretas da string de
+    entrada.</para>
+
+    <para>Em seguida, precisamos de uma consulta Roxie para comparar as duas
+    strings (também contidas no arquivo Soapcall3.ECL):</para>
+
+    <programlisting>EXPORT Soapcall3() := FUNCTION
+  STRING UID     := '' : STORED('UIDstr');
+  STRING LeftIn  := '' : STORED('LeftInStr');
+  STRING RightIn := '' : STORED('RightInStr');
+  BOOLEAN TokenMatch := FUNCTION
+    P1 := ParseWords(LeftIn);
+    P2 := ParseWords(RightIn);
+    SetSrch := SET(P1,Pword);
+    ProjRes := PROJECT(P2,
+                       TRANSFORM({BOOLEAN Fnd},
+                                 SELF.Fnd := LEFT.Pword IN SetSrch));
+    AllRes  := DEDUP(SORT(ProjRes,Fnd));
+    RETURN COUNT(AllRes) = 1 AND AllRes[1].Fnd = TRUE;
+  END;
+  RETURN OUTPUT(DATASET([{UID,TokenMatch}],{STRING UID,BOOLEAN res}));
+END;</programlisting>
+
+    <para>Esta consulta espera receber três porções de dados: uma string com
+    um identificador para comparação (para finalidades de contexto no
+    resultado) e as duas strings cujas palavras serão comparadas.</para>
+
+    <para>A FUNCTION passa as strings de entrada para a função ParseWords a
+    fim de criar dois conjuntos de registros de palavras a partir destas
+    strings. A função SET então redefine o primeiro conjunto de registros como
+    um SET para que o operador IN possa ser usado.</para>
+
+    <para>A operação PROJECT realiza todo o trabalho real. Ela especifica cada
+    palavra por vez a partir da segunda string de entrada até sua função
+    TRANSFORM embutida, que produz um resultado Booleano para essa palavra –
+    TRUE ou FALSE está presente no conjunto de palavras da primeira string de
+    entrada ou não?</para>
+
+    <para>Para determinar se todas as palavras na segunda string estavam
+    contidas na primeira, a função SORT/DEDUP classifica todos os valores
+    Booleanos resultantes e depois remove todas as entradas em duplicidade.
+    Haverá apenas um ou dois registros restantes: um TRUE e um FALSE, ou um
+    único registro TRUE ou FALSE.</para>
+
+    <para>A expressão RETURN detecta qual das três situações ocorreu. Dois
+    registros restantes indicam que algumas palavras, e não todas, estavam
+    presentes. Um único registro indica a presença de todas ou de nenhuma
+    palavra, e se o valor desse registro for TRUE, significa que todas as
+    palavras estavam presentes e a FUNCTION retorna TRUE. Todos os outros
+    casos retornam como FALSE.</para>
+
+    <para>O OUTPUT usa um DATASET embutido de um registro para formatar o
+    resultado. O identificador especificado é novamente especificado
+    juntamente com o resultado Booleano da comparação. O identificador se
+    torna importante quando a consulta é acionada múltiplas vezes no Roxie
+    para processar por meio de um dataset de strings para comparar em um modo
+    de lote, uma vez que os resultados podem não ser retornados na mesma ordem
+    que os registros de entrada. Se fosse usado apenas de forma interativa,
+    esse identificador não seria necessário.</para>
+
+    <para>Depois de ter salvo a consulta no Repositório, é possível testá-la
+    com o hThor e/ou implementá-la no Roxie (o hThor pode ser usado para
+    testes, mas o Roxie é muito mais rápido em se tratando de produção). De
+    qualquer forma, você pode usar SOAPCALL para acessá-lo dessa forma (a
+    única diferença seria o IP e a porta de destino para a consulta (contidas
+    no Soapcall4.ECL):</para>
+
+    <programlisting>RoxieIP := 'http://127.0.0.1:8002/WsEcl/soap/query/roxie/soapcall3.1'; //Roxie
+svc     := 'soapcall3.1';
+
+InRec := RECORD
+  STRING UIDstr{XPATH('UIDstr')}; 
+  STRING LeftInStr{XPATH('LeftInStr')};
+  STRING RightInStr{XPATH('RightInStr')};
+END;
+InDS := DATASET([
+   {'1','the quick brown fox jumped over the lazy red dog','quick fox red dog'},
+   {'2','the quick brown fox jumped over the lazy red dog','quick fox black dog'},
+   {'3','george of the jungle lives here','fox black dog'},
+   {'4','fred and wilma flintstone','fred flintstone'},
+   {'5','yomama comeonah','brake chill'} ],InRec);
+
+RS := SOAPCALL(InDS,
+               RoxieIP,
+               svc,
+               InRec,
+               TRANSFORM(LEFT),
+               DATASET({STRING UIDval{XPATH('uid')},BOOLEAN CompareResult{XPATH('res')}}));
+
+OUTPUT(RS);
+</programlisting>
+
+    <para>É óbvio que <emphasis role="bold">você deve primeiramente alterar o
+    IP e a porta neste código para os valores corretos para seu
+    ambiente</emphasis>. O IP e a porta adequados para uso podem ser
+    localizados consultando a página Servidores do Sistema do seu ECL Watch.
+    Se o destino for o Doxie (também conhecido como ECL Agent ou hthor), use o
+    IP do ESP Server do Thor e a porta para seu serviço wsecl. Se o destino
+    for o Roxie use o IP do ESP Server do Roxie e a porta para seu serviço
+    wsecl. É possível que ambos ESP Servers estejam na mesma caixa. Se for
+    este o caso, a diferença será apenas na atribuição de portas de cada
+    um.</para>
+
+    <para>O segredo dessa consulta SOAPCALL está na estrutura RECORD InRec com
+    suas definições XPATH. Elas precisam corresponder exatamente aos nomes da
+    parte e aos nomes STORED dos atributos de recepção de parâmetro da
+    consulta (NB que eles distinguem maiúsculas de minúsculas, uma vez que o
+    XPATH é XML e XML sempre faz essa distinção). Isso é o que mapeia os
+    campos de dados de entrada pela interface SOAP para os atributos da
+    consulta.</para>
+
+    <para>Esse SOAPCALL recebe um conjunto de registros como entrada e produz
+    um conjunto de registros como seu resultado, tornando-a bastante
+    semelhante ao segundo exemplo acima. Uma pequena mudança em relação ao
+    exemplo anterior deste tipo é o uso do TRANSFORM abreviado em vez da
+    função TRANSFORM completa. Observe também que XPATH para o primeiro campo
+    na estrutura RECORD embutida do parâmetro do DATASET contém um "uid" em
+    minúsculas enquanto se refere obviamente ao campo OUTPUT da consulta
+    denominado "UID" – o XML retornado do serviço SOAP usa nomes de tags em
+    minúsculas para os campos de dados retornados.</para>
+
+    <para>Ao executar isso, será exibido um resultado TRUE para os registros
+    um e quatro, e FALSE para todos os demais.</para>
+  </sect2>
+</sect1>

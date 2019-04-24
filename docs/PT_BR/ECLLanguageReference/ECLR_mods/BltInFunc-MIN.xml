@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MIN">
+  <title>MIN</title>
+
+  <para><emphasis role="bold">MIN<indexterm>
+      <primary>MIN</primary>
+    </indexterm><indexterm>
+      <primary>MIN function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, value </emphasis><emphasis
+  role="bold">[, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><emphasis
+  role="bold">MIN(</emphasis><emphasis>valuelist</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.85pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>recordset</emphasis></entry>
+
+          <entry>O conjunto de registros para processamento. Pode ser o nome
+          de um dataset ou de um recordset derivado de algumas condições de
+          filtro, ou qualquer expressão que resulte em um recordset derivado.
+          Isto também pode ser a palavra-chave GROUP para indicar a
+          localização do valor mínimo do campo em um grupo, quando usado com
+          uma estrutura RECORD para gerar estatísticas de tabela de referência
+          cruzada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>A expressão da qual o valor mínimo será encontrado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+          <entry>Opcional. Especifica que a atividade faz parte de uma
+          operação de leitura de índice, a qual permite que o otimizador gere
+          o código ideal para a operação.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>valuelist</emphasis></entry>
+
+          <entry>Uma lista de expressões delimitada por vírgula da qual o
+          valor mínimo será localizado. Também pode ser um SET de
+          valores.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de resultado não
+          é importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+          <entry>Especifica a importância da ordem do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>bool</emphasis></entry>
+
+          <entry>Quando for “False” (Falso), especifica que a ordem do
+          registro de resultado não é importante. Quando for “True’
+          (Verdadeiro), especifica a ordem padrão do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada não é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>numthreads</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade usando os
+          <emphasis>numthreads</emphasis> threads</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+          <entry>Opcional. Substitui o algoritmo usado para essa
+          atividade.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>name</emphasis></entry>
+
+          <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+          parte da lista de algoritmos compatíveis com as opções STABLE e
+          UNSTABLE da função SORT.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>MIN retorna um único valor.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">MIN </emphasis> retorna o
+  <emphasis>valor</emphasis> mínimo do <emphasis>recordset </emphasis>
+  especificado ou o <emphasis>valuelist</emphasis>. Está configurada para
+  retornar o valor zero caso o <emphasis>recordset</emphasis> esteja
+  vazio.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MinVal1 := MIN(Trades,Trades.trd_rate);
+MinVal2 := MIN(4,8,16,2,1); //returns 1
+SetVals := [4,8,16,2,1];
+MinVal3 := MIN(SetVals); //returns 1
+</programlisting>
+
+  <para>Ver também: <link linkend="MAX">MAX</link>, <link
+  linkend="AVE">AVE</link></para>
+</sect1>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="likely">
+  <title>LIKELY and UNLIKELY</title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] LIKELY<indexterm>
+      <primary>LIKELY</primary>
+    </indexterm>(</emphasis><emphasis>filtercondition</emphasis><emphasis
+  role="bold">, [</emphasis><emphasis> likelihood </emphasis><emphasis
+  role="bold">] </emphasis><emphasis role="bold">);</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] UNLIKELY<indexterm>
+      <primary>UNLIKELY</primary>
+    </indexterm>(</emphasis><emphasis>filtercondition</emphasis><emphasis
+  role="bold">);</emphasis><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.05pt"/>
+
+        <colspec colwidth="309.75pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>filtercondition</emphasis></entry>
+
+            <entry>Uma condição de filtro para a dica.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>likelihood</emphasis></entry>
+
+            <entry>O valor da probabilidade expresso em número decimal entre 0
+            e 1.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A dica LIKELY/UNLIKELY pode ser envolvida em torno de uma condição de
+  filtro para indicar ao gerador de código a probabilidade de a condição de
+  filtro filtrar o registro.</para>
+
+  <para>LIKELY especifica que a condição de filtro provavelmente coincidirá
+  com a maioria dos registros. UNLIKELY especifica que apenas alguns poucos
+  registros provavelmente coincidirão.</para>
+
+  <para>Um valor específico de probabilidade deve ser fornecido para LIKELY. O
+  valor de probabilidade consiste de um número decimal maior do que 0 e menor
+  do que 1. Quanto mais próximo estiver de 1.0, maior será a probabilidade de
+  a condição de filtro coincidir com o registro. Quanto mais próximo estiver
+  de 0.0, menor será a probabilidade de a condição de filtro coincidir com os
+  registros. O gerador de código utiliza as informações de probabilidade para
+  gerar um código melhor.</para>
+
+  <para>O gerador de código usa a dica LIKELY/UNLIKELY juntamente com a
+  contagem de uso determinar o custo do despejo e o custo de uma nova
+  filtragem do dataset toda vez que ele for usado. Os despejos são gerados
+  apenas quando o seu custo é menor do que o custo de uma nova filtragem do
+  dataset.</para>
+
+  <para>Por exemplo, digamos que existe um dataset de pessoas com milhares de
+  registros. Cria-se um filtro para reter todos os registros cuja idade dessas
+  pessoas seja abaixo de 100 anos. O filtro provavelmente reterá 99,9% dos
+  registros. O resultado do filtro é usado por 3 atividades distintas. O custo
+  para despejar os resultados do filtro provavelmente será muito maior do que
+  o de uma nova filtragem do dataset de entrada toda vez que for usado. LIKELY
+  pode ser usado para compartilhar essa informação de probabilidade com o
+  gerador de código para que ele tome decisões sensatas sobre quando o despejo
+  deve ser feito.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>PeopleYoungerThan100 := AllPeople( LIKELY(age &lt; 100, 0.999) );
+// Probably not worth spilling PeopleYoungerThan100
+
+PeopleOlderThan100 := AllPeople( UNLIKELY(age&gt;100) );
+// Probably worth spilling even if PeopleOlderThan100 is used by only a couple of activities</programlisting>
+
+  <para/>
+</sect1>

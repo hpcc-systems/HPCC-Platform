@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FAILCODE">
+  <title>FAILCODE<indexterm>
+      <primary>FAILCODE function</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">FAILCODE<indexterm>
+      <primary>FAILCODE</primary>
+    </indexterm></emphasis></para>
+
+  <para>A função <emphasis role="bold">FAILCODE </emphasis> retorna o último
+  código de falha para ser usada no serviço de fluxo de trabalho FAILURE
+  <indexterm>
+      <primary>FAILURE workflow</primary>
+    </indexterm> ou na estrutura TRANSFORM <indexterm>
+      <primary>TRANSFORM</primary>
+    </indexterm> referenciada na opção ONFAIL do SOAPCALL</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>SPeople := SORT(Person,Person.per_first_name);
+nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND
+                 Person.address))
+:FAILURE(Email.simpleSend(SystemsPersonnel,
+SystemsPersonel.email,FAILCODE));</programlisting>
+
+  <para>Ver também: <link linkend="FAILURE">FAILURE</link>, <link
+  linkend="FAILMESSAGE">FAILMESSAGE</link>, <link
+  linkend="SOAPCALL">SOAPCALL</link></para>
+</sect1>

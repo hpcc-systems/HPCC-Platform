@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="STRING">
+  <title>STRING</title>
+
+  <para><emphasis
+  role="bold">[</emphasis><emphasis>StringType</emphasis><emphasis
+  role="bold">] STRING<indexterm>
+      <primary>STRING</primary>
+    </indexterm>[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis></para>
+
+  <para>Uma string de caracteres de <emphasis>n</emphasis> bytes, completada
+  com espaços (não terminada por nulo). If <emphasis>n </emphasis>se n for
+  omitido, a string terá o tamanho variável necessário para conter o resultado
+  do parâmetro convertido ou passado. Você pode usar indexação de conjunto de
+  qualquer string para extrair uma substring.<indexterm>
+      <primary>STRING value type</primary>
+    </indexterm>.</para>
+
+  <para>O <emphasis>StringType</emphasis> opcional pode especificar ASCII ou
+  EBCDIC. Se <emphasis>StringType</emphasis> não for encontrado, os dados
+  estarão no formato ASCII. A definição de um atributo EBCDIC STRING como
+  valor constante de string implica em uma conversão de ASCII para EBCDIC. No
+  entanto, a definição de um atributo EBCDIC STRING como um valor de constante
+  de string hexadecimal não implica em nenhuma conversão, pois supõe-se que o
+  programador tenha fornecido o valor EBCDIC hexadecimal correto.</para>
+
+  <para>O limite de tamanho máximo para qualquer valor DATA é 4GB.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>STRING1 MyString := IF(SomeAttribute &gt; 10,'1','0');
+        // declares MyString a 1-byte ASCII string
+
+EBCDIC STRING3 MyString1 := 'ABC';
+        //implicit ASCII to EBCDIC conversion
+ 
+EBCDIC STRING3 MyString2 := x'616263';
+        //NO conversion here</programlisting>
+
+  <para>Ver também: <link linkend="LENGTH">LENGTH</link>, <link
+  linkend="TRIM">TRIM</link>, <link
+  linkend="Set_Ordering_and_Indexing">Classificação e indexação de
+  conjuntos</link>, <link linkend="Const_String">Hexadecimal
+  String</link></para>
+</sect1>

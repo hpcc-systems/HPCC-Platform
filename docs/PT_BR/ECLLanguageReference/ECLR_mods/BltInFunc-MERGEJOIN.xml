@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MERGEJOIN">
+  <title>MERGEJOIN<indexterm>
+      <primary>MERGEJOIN</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">MERGEJOIN<indexterm>
+      <primary>MERGEJOIN function</primary>
+    </indexterm>(</emphasis><emphasis>setofdatasets, joincondition,
+  </emphasis><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED</primary>
+    </indexterm>( </emphasis><emphasis>fields</emphasis><emphasis
+  role="bold">) [</emphasis><emphasis>, jointype</emphasis><emphasis
+  role="bold">] [, DEDUP<indexterm>
+      <primary>DEDUP</primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="82.00pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>setofdatasets</emphasis></entry>
+
+          <entry>O SET de conjuntos de registro para processamento
+          ([idx1,idx2,idx3]), normalmente INDEXes, em que todos precisam ter o
+          mesmo formato.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>joincondition</emphasis></entry>
+
+          <entry>Uma expressão que especifica como corresponder registros no
+          <emphasis>setofdatasets</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SORTED</emphasis></entry>
+
+          <entry>Especifica a ordem de classificação de registros no
+          <emphasis>setofdatasets</emphasis> de entrada, além da ordem de
+          classificação de resultado no conjunto de resultados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fields</emphasis></entry>
+
+          <entry>Uma lista delimitada por vírgulas dos campos no
+          <emphasis>setofdatasets</emphasis>, que precisa ser um subconjunto
+          da ordem de classificação de entrada. Todos esses campos precisam
+          ser usados na <emphasis>joincondition</emphasis> , uma vez que
+          definem a ordem na qual os campos passam pela operação
+          STEPPED.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>jointype</emphasis></entry>
+
+          <entry>Opcional. Se omitido, uma junção interna; caso contrário, um
+          dos tipos listados abaixo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DEDUP</emphasis></entry>
+
+          <entry>Opcional. Especifica que o conjunto de resultados contém
+          apenas registros únicos.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de resultado não
+          é importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+          <entry>Especifica a importância da ordem do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>bool</emphasis></entry>
+
+          <entry>Quando for “False” (Falso), especifica que a ordem do
+          registro de resultado não é importante. Quando for “True’
+          (Verdadeiro), especifica a ordem padrão do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada não é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>numthreads</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade usando os
+          <emphasis>numthreads</emphasis> threads.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+          <entry>Opcional. Substitui o algoritmo usado para essa
+          atividade.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>name</emphasis></entry>
+
+          <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+          parte da lista de algoritmos compatíveis com as opções STABLE e
+          UNSTABLE da função SORT.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">MERGEJOIN</emphasis> é uma variação das
+  formas do CONJUNTO DE DATASETS SET OF DATASETs das funções MERGE e JOIN.
+  Assim como MERGE, ela funde os registros de
+  <emphasis>setofdatasets</emphasis> em um único conjunto de resultados, porém
+  como JOIN, ela usa a <emphasis>joincondition</emphasis> e
+  <emphasis>jointype</emphasis> para determinar quais registros serão
+  incluídos no conjunto de resultados. No entanto, ela não usa a função
+  TRANSFORM para gerar o resultado; ela inclui todos os registros,
+  inalterados, do <emphasis>setofdatasets</emphasis> correspondente a
+  <emphasis>joincondition</emphasis>.</para>
+
+  <sect2 id="Matching_Logic_mergejoin">
+    <title>Lógica de Correspondência<indexterm>
+        <primary>Record Matching Logic</primary>
+      </indexterm></title>
+
+    <para>Correspondência de registros <indexterm>
+        <primary>record matching</primary>
+      </indexterm> <emphasis>joincondition</emphasis> pode conter duas partes:
+    uma condição STEPPED que pode opcionalmente ser ANDed com condições sem
+    STEPPED. A expressão STEPPED contém expressões de igualdade dos
+    <emphasis>campos</emphasis> da opção SORTED, e ANDed , usando LEFT e RIGHT
+    como qualificadores do dataset. Caso não esteja presente, a condição
+    STEPPED é deduzida dos <emphasis>campos</emphasis> especificados pela
+    opção SORTED.</para>
+
+    <para>A ordem dos datasets em <emphasis>setofdatasets</emphasis> pode ser
+    importante para a maneira pela qual <emphasis>joincondition</emphasis> é
+    avaliado. A <emphasis>joincondition</emphasis> é duplicada entre pares
+    adjacentes de datasets, o que significa que essa
+    <emphasis>joincondition</emphasis>:</para>
+
+    <para>LEFT.field = RIGHT.field</para>
+
+    <para>quando aplicada em um <emphasis>setofdatasets </emphasis>de três
+    datasets, é logicamente equivalente a:</para>
+
+    <para>ds1.field = ds2.field AND ds2.field = ds3.field</para>
+  </sect2>
+
+  <sect2 id="Join_Types_Mergejoin">
+    <title>Tipos de Join<indexterm>
+        <primary>Join Types</primary>
+      </indexterm>:</title>
+
+    <para>Usando os seguintes <emphasis>jointypes</emphasis> a seguir produzem
+    os seguintes tipos de resultados com base na correspondência de registros
+    produzida por <emphasis>joincondition</emphasis>:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="94.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">INNER<indexterm>
+                <primary>INNER</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Apenas os registros presentes em todos os datasets no
+            <emphasis>setofdatasets</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LEFT OUTER<indexterm>
+                <primary>LEFT OUTER</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>No mínimo um registro para cada registro no primeiro
+            dataset no <emphasis>setofdatasets</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LEFT ONLY<indexterm>
+                <primary>LEFT ONLY</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Um registro para cada registro no primeiro dataset no
+            <emphasis>setofdatasets</emphasis> para o qual não há
+            correspondência em nenhum dos datasets subsequentes.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MOFN<indexterm>
+                <primary>MOFN</primary>
+              </indexterm>(</emphasis>min <emphasis
+            role="bold">[</emphasis>,max<emphasis
+            role="bold">])</emphasis></entry>
+
+            <entry>Um registro para cada registro com registros
+            correspondentes no número mínimo de datasets adjacentes no
+            <emphasis>setofdatasets</emphasis>. Se o número máximo for
+            especificado, o registro não será incluído se o número máximo de
+            correspondências de datasets for excedido.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Exemplo:</para>
+
+    <programlisting>Rec := RECORD,MAXLENGTH(4096)
+  STRING1 Letter;
+  UNSIGNED1 DS;
+END;
+ds1 := DATASET([{'A',1},{'B',1},{'C',1},{'D',1},{'E',1}],Rec);
+ds2 := DATASET([{'A',2},{'B',2},{'H',2},{'I',2},{'J',2}],Rec);
+ds3 := DATASET([{'B',3},{'C',3},{'M',3},{'N',3},{'O',3}],Rec);
+ds4 := DATASET([{'A',4},{'B',4},{'R',4},{'S',4},{'T',4}],Rec);
+ds5 := DATASET([{'B',5},{'V',5},{'W',5},{'X',5},{'Y',5}],Rec);
+SetDS := [ds1,ds2,ds3,ds4,ds5];
+j1 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter));
+j2 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter),LEFT OUTER);
+j3 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter),LEFT ONLY);
+j4 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter),MOFN(3));
+j5 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter),MOFN(3,4));
+OUTPUT(j1);
+OUTPUT(j2);
+OUTPUT(j3);
+OUTPUT(j4);
+OUTPUT(j5);
+</programlisting>
+
+    <para>Ver também: <link linkend="MERGE">MERGE</link>, <link
+    linkend="JOIN">JOIN</link>, <link linkend="STEPPED">STEPPED</link></para>
+  </sect2>
+</sect1>

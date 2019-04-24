@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CompareAtStrength">
+  <title>CompareAtStrength</title>
+
+  <para><emphasis role="bold">STD.Uni.CompareAtStrength<indexterm>
+      <primary>STD.Uni.CompareAtStrength</primary>
+    </indexterm><indexterm>
+      <primary>Uni.CompareAtStrength</primary>
+    </indexterm><indexterm>
+      <primary>CompareAtStrength</primary>
+    </indexterm>(</emphasis> <emphasis>source1, source2, strength</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">STD.Uni.LocaleCompareAtStrength<indexterm>
+      <primary>STD.Uni.LocaleCompareAtStrength</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleCompareAtStrength</primary>
+    </indexterm><indexterm>
+      <primary>LocaleCompareAtStrength</primary>
+    </indexterm>(</emphasis>
+  <emphasis>source1,source2,locale,strength</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source1</emphasis></entry>
+
+          <entry>Uma string que contém os dados a serem comparados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>source2</emphasis></entry>
+
+          <entry>Uma string que contém os dados a serem comparados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>strength</emphasis></entry>
+
+          <entry>Um valor inteiro que indica a forma de comparação. Os valores
+          válidos são:</entry>
+        </row>
+
+        <row>
+          <entry/>
+
+          <entry>1 ignora acentos e maiúsculas/minúsculas e diferencia apenas
+          as letras.</entry>
+        </row>
+
+        <row>
+          <entry/>
+
+          <entry>2 ignora maiúsculas/minúsculas mas diferencia os
+          acentos.</entry>
+        </row>
+
+        <row>
+          <entry/>
+
+          <entry>3 diferencia entre acentos e maiúsculas/minúsculas, mas
+          ignora diferenças entre Hiragana e Katakana, por exemplo.</entry>
+        </row>
+
+        <row>
+          <entry/>
+
+          <entry>4 diferencia entre acentos, maiúsculas/minúsculas e Hiragana
+          e Katakana, por exemplo, mas ignora marcas de cantilena do hebreu,
+          por exemplo.</entry>
+        </row>
+
+        <row>
+          <entry/>
+
+          <entry>5 diferencia entre todas as strings cujas formas decompostas
+          canonicamente (NFD – Forma de normalização D) não são
+          idênticas</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o código de idioma e
+          país a ser usado para determinar a ordem correta de classificação e
+          outras operações.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>CompareAtStrength retorna um valor INTEGER.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>As funções <emphasis role="bold">CompareAtStrength </emphasis>
+  retornam zero (0) se as strings <emphasis>source1</emphasis> e
+  <emphasis>source2</emphasis> contiverem os mesmos dados, ignorando quaisquer
+  diferenças no caso das letras. Essas funções retornam um negativo (-1) se
+  <emphasis>source1</emphasis> &lt; <emphasis>source2</emphasis> ou um
+  positivo (1) se <emphasis>source1</emphasis> &gt;
+  <emphasis>source2</emphasis>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">base := u'caf\u00E9';   // U+00E9 is lowercase e with acute
+prim := u'coffee shop'; // 1st difference, different letters
+seco := u'cafe';        // 2nd difference, accents (no acute)
+tert := u'Caf\u00C9';   // 3rd, caps (U+00C9 is u/c E + acute)
+
+A := STD.Uni.CompareAtStrength(base, prim, 1) != 0;
+ // base and prim differ at all strengths
+
+A := STD.Uni.CompareAtStrength(base, seco, 1) = 0;
+ // base and seco same at strength 1 (differ only at strength 2)
+
+A := STD.Uni.CompareAtStrength(base, tert, 1) = 0;
+  // base and tert same at strength 1 (differ only at strength 3)
+    
+A := STD.Uni.CompareAtStrength(base, seco, 2) != 0;
+ // base and seco differ at strength 2
+
+A := STD.Uni.CompareAtStrength(base, tert, 2) = 0;
+  // base and tert same at strength 2 (differ only at strength 3)
+    
+A := STD.Uni.CompareAtStrength(base, seco, 3) != 0;
+ // base and seco differ at strength 2
+    
+A := STD.Uni.CompareAtStrength(base, tert, 3) != 0;
+ // base and tert differ at strength 3
+</programlisting>
+</sect1>

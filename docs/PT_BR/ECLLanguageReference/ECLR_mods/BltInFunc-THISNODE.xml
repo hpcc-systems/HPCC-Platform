@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="THISNODE">
+  <title>THISNODE</title>
+
+  <para><emphasis role="bold">THISNODE<indexterm>
+      <primary>THISNODE</primary>
+    </indexterm><indexterm>
+      <primary>THISNODE Function</primary>
+    </indexterm>(</emphasis><emphasis>operation</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.00pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>operation</emphasis></entry>
+
+            <entry>O nome de um atributo ou código em linha que resulta em um
+            DATASET ou INDEX.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>THISNODE retorna um conjunto de registros ou
+            índice.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">THISNODE </emphasis> especifica que a
+  <emphasis> operação</emphasis> é realizada em cada nó de forma independente.
+  Ela é geralmente usada em uma operação ALLNODES . <emphasis role="bold">Essa
+  função está disponível para uso apenas no Roxie.</emphasis></para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>ds := ALLNODES(JOIN(THISNODE(GetData(SomeData)),
+      THISNODE(GetIDX(SomeIndex)),
+      LEFT.ID = RIGHT.ID));</programlisting>
+
+  <para>Ver também: <link linkend="ALLNODES">ALLNODES</link>, <link
+  linkend="LOCAL">LOCAL</link>, <link linkend="NOLOCAL">NOLOCAL</link></para>
+</sect1>

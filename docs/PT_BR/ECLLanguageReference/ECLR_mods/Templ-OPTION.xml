@@ -1,0 +1,1547 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_OPTION">
+  <title>#OPTION</title>
+
+  <para><emphasis role="bold">#OPTION<indexterm>
+      <primary>#OPTION</primary>
+    </indexterm>( </emphasis><emphasis> option, value </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="75.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>option</emphasis></entry>
+
+            <entry>Uma constante de string que faz distinção entre maiúsculas
+            e minúsculas e contém o nome da opção a ser definida.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>O valor a ser definido para a opção. Pode ser qualquer tipo
+            de valor, dependendo do tipo esperado pela opção.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Normalmente, a declaração <emphasis role="bold">#OPTION </emphasis> é
+  uma diretiva de compilador que indica ao gerador de código a melhor forma de
+  gerar o código executável de uma workunit. Essa declaração pode ser usada
+  fora de um escopo XML e não exige uma chamada anterior à função LOADXML para
+  instanciar um escopo XML.</para>
+
+  <sect2 id="Definition_of_Terms">
+    <title>Definição de Termos</title>
+
+    <para>Essas definições são termos "apenas para uso interno" usados nas
+    definições de <emphasis>option</emphasis> a seguir.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="78.10pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>DFA</emphasis></entry>
+
+              <entry>Deterministic Finite-state Automaton (Autômato
+              determinístico de estado finito.)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Fold</emphasis></entry>
+
+              <entry>Converter uma expressão complexa em uma expressão
+              equivalente mais simples. Por exemplo, a expressão "1+1"pode ser
+              substituída por "2" sem alterar o resultado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Spill</emphasis></entry>
+
+              <entry>Gravação de resultados intermediários em disco para
+              disponibilizar a memória para as etapas seguintes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Funnel</emphasis></entry>
+
+              <entry>O operador + (anexar arquivo) entre datasets pode ser
+              visualizado como derramar todos os registros em um funil e obter
+              um fluxo único de registros na saída, daí o termo "funil
+              (funnel)".</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>TopN</emphasis></entry>
+
+              <entry>Uma atividade gerada internamente usada em vez de
+              CHOOSEN(SORT(xx), n) quando n é um valor pequeno. Essa atividade
+              pode ser calculada com eficiência muito maior que a
+              classificação de todo o recordset e o descarte de todos eles,
+              exceto os primeiros n.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Activity</emphasis></entry>
+
+              <entry>Um operador da ECL que aceita um ou mais datasets como
+              entrada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Gráficos</emphasis></entry>
+
+              <entry>Todas as Atividades em uma query.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Subgraph</emphasis></entry>
+
+              <entry>Uma coleção de Atividades que podem estar todas ativas ao
+              mesmo tempo no Thor.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Peephole</emphasis></entry>
+
+              <entry>Um método de otimização de código que examina uma pequena
+              quantidade de código não otimizado por vez para combinar as
+              operações em operações mais eficientes.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="OPTION_Available_Options">
+    <title>Opções Disponíveis</title>
+
+    <para><emphasis role="bold">As opções a seguir têm utilidade geral:
+    </emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt"/>
+
+          <colspec colwidth="65.60pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>maxRunTime</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Define o número máximo de segundos de execução de um job
+              antes de esgotar o tempo limite</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>freezePersists</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, não calcular/recalcula PERSISTed</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>expirePersists</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, PERSISTs expirar após o período
+              especificado. Isso é definido na configuração do Sasha
+              (PersistExpiryDefault) ou usando #option
+              ('defaultPersistExpiry', n), onde n é o número de dias.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defaultPersistExpiry</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Se definida, PERSISTs expira após o número de dias
+              especificado (ignorando a configuração PersistExpiryDefault do
+              Sasha).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>multiplePersistInstances</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, múltiplos PERSISTs são o padrão.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defaultNumPersistInstances</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Especifica o número padrão de PERSISTs. Um valor de -1
+              especifica que todas as cópias devem ser mantidas até expirarem
+              ou serem excluídas manualmente.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>check </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, verificar possíveis estouros de
+              registros.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>expandRepeatAnyAsDfa</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se for verdade, expanda ANY * em um DFA.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>forceFakeThor</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, forçar o código a usar hthor.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>forceGenerate</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, forçar a geração de .SO, mesmo se não
+              valer a pena</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>globalFold</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, executar um constant folding (resolução
+              das expressões que podem ser calculadas durante a compilação)
+              global antes da geração .</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>globalOptimize</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, executar uma otimização global.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>groupAllDistribute</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se for verdade, GROUP, ALL gerará um DISTRIBUTE em vez de
+              um SORT global.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>maximizeLexer</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, maximizar a quantidade de trabalho
+              executada no analisador léxico.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>maxLength</emphasis></entry>
+
+              <entry>Padrão: 4096</entry>
+
+              <entry>Especificar o comprimento máximo de um registro.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>minimizeSpillSize</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, se um spill for filtrado/deduplicado etc.
+              durante a leitura, reduzir o tamanho do arquivo de spill
+              dividindo e filtrando antes de gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeGraph</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, otimizar expressões em um gráfico antes da
+              geração</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>orderDiskFunnel</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, se todas as entradas de um funil forem
+              leituras de disco, executar um pull in</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>parseDfaComplexity</emphasis></entry>
+
+              <entry>Padrão: 2000</entry>
+
+              <entry>Complexidade máxima de uma expressão a ser convertida em
+              um DFA.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>pickBestEngine</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, usar hthor se for mais eficiente que o
+              Thor</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetClusterType</emphasis></entry>
+
+              <entry>hthor|Thor|roxie</entry>
+
+              <entry>O tipo de supercomputador para o qual o código está sendo
+              gerado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>topnLimit</emphasis></entry>
+
+              <entry>Padrão: 10000</entry>
+
+              <entry>Número máximo de registros para execução de topN.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>outputLimit</emphasis></entry>
+
+              <entry>Padrão: 10</entry>
+
+              <entry>Define o tamanho máximo (em Mb) do resultado armazenado
+              na workunit.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>sortIndexPayload</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Especifica a classificação (ou não) de campos da carga
+              útil</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>workflow</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Especifica a habilitação/desabilitação de serviços de
+              fluxo de trabalho.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldstored</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Especifica que todas as variáveis armazenadas são
+              substituídas por seus valores padrão ou pelos valores
+              substituídos por #stored. Isso pode reduzir consideravelmente o
+              tamanho do gráfico gerado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>skipFileFormatCrcCheck</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Especifica que a verificação de CRC nos índices gera um
+              aviso e não um erro.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>allowedClusters</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Especifica a lista delimitada por vírgulas dos nomes dos
+              clusters (como uma constante de string) onde a workunit pode ser
+              executada. Isso permite que o job seja alternado entre clusters,
+              de forma manual ou automática, caso o job seja bloqueado em seu
+              cluster atribuído e um outro cluster válido esteja disponível
+              para uso.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>AllowAutoQueueSwitch</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, especifica que a workunit é reatribuída
+              automaticamente para execução em outro cluster disponível
+              listado em allowedClusters quando a bloqueada em seu cluster
+              atribuído.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>performWorkflowCse</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, especifica que o gerador de código detecta
+              automaticamente oportunidades eliminação de subexpressões comuns
+              que podem estar "ocultas" em vários atributos PERSISTed. Se
+              falso, as notificações dessas oportunidades são exibidas para o
+              programador como sugestões para o uso do serviço de fluxo de
+              trabalho INDEPENDENT.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defaultSkewError</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Um valor entre 0,0 e 1,0 que determina a quantidade de
+              distorção necessária para gerar um erro de distorção. Esse valor
+              é ignorado se a ECL forneceu um atributo SKEW.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defaultSkewWarning</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Um valor entre 0,0 e 1,0 que determina a quantidade de
+              distorção necessária para gerar um aviso de distorção. Se
+              definida com um valor superior a defaultSkewError, o valor é
+              ignorado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>overrideSkewError</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Se definida como um valor entre 0,0 e 1,0, substitui
+              todos os valores de atributos SKEW(nn) do ECL no job
+              atual.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defaultSkewThreshold</emphasis></entry>
+
+              <entry>Padrão: 1GB</entry>
+
+              <entry>O tamanho do dataset (em bytes) local em um único nó
+              necessário antes que erros/avisos de Distorção sejam gerados se
+              nenhum THRESHOLD(nn) foi fornecido na ECL.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>overrideSkewThreshold</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>O tamanho do dataset (em bytes) local em um único nó
+              necessário antes que erros/avisos de Distorção sejam gerados.
+              Substitui todos os valores do atributo THRESHOLD(nn) do ECL na
+              job atual.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>applyInstantEclTransformations</emphasis></entry>
+
+              <entry>Padrão false</entry>
+
+              <entry>Limitar saídas não destinadas a arquivos com um
+              CHOOSEN</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>applyInstantEclTransformationsLimit</emphasis></entry>
+
+              <entry>Padrão é 100</entry>
+
+              <entry>Número limite de registros</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>divideByZero</emphasis></entry>
+
+              <entry>Padrão zero</entry>
+
+              <entry>"zero" é avaliado como 0, o comportamento padrão. "fail"
+              faz com que a tarefa falhe e informe um erro de divisão por
+              zero. "nan" (no momento, permitido apenas para números reais)
+              cria um NaN quieto, que será propagado por todas as expressões
+              reais onde for usado. Você pode usar NOT ISVALID(x) para testar
+              se o valor é NaN. A divisão de inteiros e decimais por zero
+              continua a retornar 0.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>outputLimitMb</emphasis></entry>
+
+              <entry>Padrão 10 [MB]</entry>
+
+              <entry>Limite de saída para uma workunit em MB.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>hthorMemoryLimit</emphasis></entry>
+
+              <entry>Padrão 300 [MB]</entry>
+
+              <entry>Substituir o limite de uso de memória definido na opção
+              de configuração defaultMemoryLimitMB do ECL Agent (somente para
+              hThor).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>maxCsvRowSizeMb</emphasis></entry>
+
+              <entry>Padrão 10 [MB]</entry>
+
+              <entry>Limite superior de leitura de uma linha CSV em
+              MB.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>compressInternalSpills</emphasis></entry>
+
+              <entry>Padrão True</entry>
+
+              <entry>(Por exemplo, spills criados por lookahead ou coleta de
+              classificação).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>hdCompressorType</emphasis></entry>
+
+              <entry>Padrão 'FLZ'</entry>
+
+              <entry>Distribuir o compactador a ser usado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>hdCompressorOptions</emphasis></entry>
+
+              <entry>Padrão ''</entry>
+
+              <entry>Distribuir opções do compactador (por exemplo, chave
+              AES)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>splitterSpill</emphasis></entry>
+
+              <entry>Padrão -1</entry>
+
+              <entry>Valor inteiro para indicar se os divisores serão forçados
+              a executar spill ou não. [1 = forçar spill | 0 = forçar na
+              memória | -1 = usar a configuração do ajudante ]</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>loopMaxEmpty</emphasis></entry>
+
+              <entry>Padrão 1000</entry>
+
+              <entry>Número máximo de iterações de LOOP sem resultado antes de
+              informar um erro</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>smallSortThreshold</emphasis></entry>
+
+              <entry>O padrão é 0 (desabilitado).</entry>
+
+              <entry>Se o tamanho estimado for inferior ao limite em bytes,
+              uma abordagem de miniclassificação deve ser usada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>sort_max_deviance</emphasis></entry>
+
+              <entry>Padrão 10 [MB]</entry>
+
+              <entry>Variação máxima (bytes) permitida durante o
+              particionamento da classificação</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>joinHelperThreads</emphasis></entry>
+
+              <entry>Padrão: = igual ao número de núcleos</entry>
+
+              <entry>Número de linhas de execução (threads) a serem usadas no
+              tipo threaded do ajudante de combinação</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>bindCores</emphasis></entry>
+
+              <entry>Padrão = 0</entry>
+
+              <entry>Para consultas Roxie Se diferente de zero, configura a
+              query para usar apenas o número especificado de núcleos. Essa
+              definição substitui o valor coresPerQuery definido para na
+              configuração do Roxie. <indexterm>
+                  <primary>afinidade de processador do Roxie</primary>
+                </indexterm><indexterm>
+                  <primary>anexação de CPU do Roxie</primary>
+                </indexterm><indexterm>
+                  <primary>anexação de CPU</primary>
+                </indexterm><indexterm>
+                  <primary>afinidade de processador</primary>
+                </indexterm></entry>
+            </row>
+
+            <row>
+              <entry><emphasis>translateDFSlayouts</emphasis></entry>
+
+              <entry>Padrão = 0</entry>
+
+              <entry>Especifica que o layout de arquivo deve ser consultado no
+              tempo de compilação. Consulte <emphasis>Resolução de layout de
+              arquivo no tempo de compilação</emphasis> no <emphasis>Guia do
+              Programador</emphasis> para obter mais detalhes.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para><emphasis role="bold">As opções a seguir tratam da geração de
+    gráficos Lógicos em uma workunit. </emphasis></para>
+
+    <para>Gráficos Lógicos<indexterm>
+        <primary>Gráficos Lógicos</primary>
+      </indexterm> são armazenados na workunit e visualizados no ECL Watch.
+    Esses gráficos incluem informações sobre em que atributo/número de
+    linha/coluna os símbolos são definidos. Os atributos exportados são
+    representados por &lt;module&gt;.&lt;attribute&gt; no cabeçalho da
+    atividade. Atributos não exportados (locais) são representados como
+    &lt;module&gt;.&lt;exported-attribute&gt;::&lt;non-exported-name&gt;</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt"/>
+
+          <colspec colwidth="65.60pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>generateLogicalGraph</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, gera um gráfico lógico além de todos os
+              gráficos da workunit.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>generateLogicalGraphOnly</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, gera apenas o Gráfico Lógico da
+              workunit.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphExpandPersist</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, expande atributos PERSISTed.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphExpandStored</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, expande atributos STORED.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphIncludeName</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, gera nomes de atributos no cabeçalho das
+              caixas de atividade.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphIncludeModule</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, gera nomes módulo.atributo no cabeçalho
+              das caixas de atividades.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphDisplayJavadoc</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, gera comentários no estilo de Javadoc
+              integrados na ECL em vez do texto padrão que seria gerado
+              (consulte http://java.sun.com/j2se/javadoc/writingdoccomments/).
+              Os comentários no estilo Javadoc em estruturas ou atributos
+              escalares de RECORD não serão gerados, pois não contam com uma
+              caixa Atividade de gráfico diretamente associada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphDisplayJavadocParameters</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, gera informações sobre parâmetros em todos
+              os comentários no Javadoc-style.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>filteredReadSpillThreshold</emphasis></entry>
+
+              <entry>Padrão: 2</entry>
+
+              <entry>É executado um spill para leituras de disco filtradas
+              duplicadas mais de N vezes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldConstantCast</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, (cast)value é calculado no momento da
+              geração.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldFilter</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, é executado um constant folding (resolução
+              das expressões que podem ser calculadas durante a compilação)
+              para os filtros.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldAssign</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, é executado um constant folding (resolução
+              das expressões que podem ser calculadas durante a compilação)
+              para TRANSFORMs.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldSQL</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, é executado um constant folding (resolução
+              das expressões que podem ser calculadas durante a compilação)
+              para SQL.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeDiskRead</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, incluir projeto e filtro na transformação
+              para uma leitura de disco.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeSQL</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, otimizar SQL.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeThorCounts</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, converter COUNT(diskfile) em uma versão
+              otimizada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>peephole</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, otimizar memcpy/memsets, etc.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotCSE</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, procurar subexpressões comuns em
+              TRANSFORMs/filtros.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>noteRecordSizeInGraph</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Adiciona estimativas de tamanho do registro ao
+              gráfico</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>showActivitySizeInGraph</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Mostrar estimativas do tamanho do ++ gerado no
+              gráfico</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>showMetaInGraph</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Adicionar ordens de distribuição/classificação ao
+              gráfico</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>showRecordCountInGraph</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Mostra estimativas de quantidade de registros no
+              gráfico</entry>
+            </row>
+          </tbody>
+        </tgroup>
+
+        <tgroup cols="1">
+          <colspec colwidth="441.90pt"/>
+
+          <tbody>
+            <row>
+              <entry><emphasis/></entry>
+            </row>
+          </tbody>
+        </tgroup>
+
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt"/>
+
+          <colspec colwidth="65.60pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>spotTopN</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, converter CHOOSEN(SORT()) em uma atividade
+              topN.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotLocalMerge</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, em JOIN local com ambos os lados
+              classificados, gera uma fusão leve.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>countIndex</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, otimizar COUNT(index) para a versão
+              otimizada (também exige optimizeThorCounts).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>allowThroughSpill</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, permitir through spills.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeBoolReturn</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, aprimorar o código ao retornar BOOLEAN de
+              uma função.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeSubString</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, não alocar memória ao processar uma
+              substring.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>thorKeys</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, permitir operações INDEX no Thor.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>regexVersion</emphasis></entry>
+
+              <entry>Padrão: 0</entry>
+
+              <entry>Se definida como 1, especifica o uso da implementação
+              anterior de expressões regulares, que podem ser mais rápidas,
+              mas também podem exceder limites do stack.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>compileOptions</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Especificar opções de substituição do compilador (como
+              /Zm1000 como duplicar o tamanho do heap do compilador para
+              contornar um erro de estouro de heap).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>linkOptions</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Especificar opções de substituição do vinculador.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>otimizarProjetos</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se falso, desabilita a otimização automática de
+              projeção/distribuição de campos.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>notifyOptimizedProjects</emphasis></entry>
+
+              <entry>Padrão: 0</entry>
+
+              <entry>Se definida como 1, informa otimizações para atributos
+              nomeados. Se definida como 2, informa todas as
+              otimizações.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeProjectsPreservePersists</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, desabilita a otimização automática de
+              projeção/distribuição de campos na leitura de arquivos
+              PERSISTed. Se um arquivo PERSISTed é lido em um cluster de
+              tamanho diferente do cluster onde foi criado, a otimização de
+              campos projetados pode significar que não é possível recriar a
+              ordem de distribuição/classificação.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>aggressiveOptimizeProjects</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, habilita tentativas de minimização de
+              tráfego de rede para classificações/distribuições. Normalmente,
+              essa opção não gera benefícios relevantes, mas em alguns casos
+              específicos pode gerar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>PercolateConstants</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se falso, desabilita tentativas de otimizações agressivas
+              de valor de constantes.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para><emphasis role="bold">As </emphasis><emphasis
+    role="bold">opções</emphasis><emphasis role="bold"> a seguir são úteis
+    para a depuração: </emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt"/>
+
+          <colspec colwidth="65.60pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>clusterSize</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Substituir o número de nós no cluster (para
+              testes)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>debugNlp</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, gerar informações de depuração do
+              processamento de NLP no arquivo .cpp.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>resourceMaxMemory</emphasis></entry>
+
+              <entry>Padrão: 400M</entry>
+
+              <entry>Quantidade máxima de memória que pode ser usada por um
+              subgráfico.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>resourceMaxSockets</emphasis></entry>
+
+              <entry>Padrão: 2000</entry>
+
+              <entry>Número máximo de soquetes que podem ser usados por um
+              subgráfico.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>resourceMaxActivities</emphasis></entry>
+
+              <entry>Padrão: 200</entry>
+
+              <entry>Número máximo de atividades que podem ser contidas em um
+              subgráfico.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>unlimitedResources</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, supor abundância de recursos ao
+              atribuí-los para os gráficos.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>traceRowXML</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, ativa o rastreamento em gráfico do ECL
+              Watch. Use apenas com datasets pequenos para fins de
+              depuração.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>_Probe</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, exibir todas as linhas de resultados de
+              conjuntos de resultados intermediários no gráfico do ECL Watch
+              quando usada em conjunto com a opção traceRowXML. Use apenas com
+              datasets pequenos para fins de depuração.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>debugQuery</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, compilar a query usando configurações de
+              depuração.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeLevel</emphasis></entry>
+
+              <entry>Padrão: 3 para roxie, mais 0</entry>
+
+              <entry>Definir o nível de otimização do compilador C++ (as
+              otimizações podem aumentar consideravelmente a duração da
+              compilação).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>checkAsserts</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se true, ativa a verificação de ASSERT.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>soapTraceLevel</emphasis></entry>
+
+              <entry>Padrão: 1</entry>
+
+              <entry>O nível de detalhes para relatar informações de SOAPCALL
+              ou HTTPCALL (defina como 0 para nenhuma, 1 para normal, 2 a 8
+              para obter mais detalhes)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>traceEnabled</emphasis></entry>
+
+              <entry>Padrão: FALSE</entry>
+
+              <entry>Habilita rastreamento para arquivos de log quando ações
+              de TRACE estão presentes. Consulte <link
+              linkend="TRACE">TRACE</link>.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>traceLimit</emphasis></entry>
+
+              <entry>Padrão: 10</entry>
+
+              <entry>Substitui a configuração padrão de KEEP para uma
+              declaração TRACE para indicar quantas declarações TRACE são
+              gravadas no arquivo de log. Consulte <link
+              linkend="TRACE">TRACE:</link>.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para><emphasis role="bold">As </emphasis><emphasis
+    role="bold">opções</emphasis><emphasis role="bold"> a seguir são para uso
+    na geração avançada de código:</emphasis></para>
+
+    <para>Essas <emphasis>opções</emphasis> não devem ser alteradas, a menos
+    que você REALLY saiba o que está fazendo. Normalmente, elas são usadas
+    internamente pelos nossos desenvolvedores para habilitar/desabilitar
+    recurso que ainda estão sendo desenvolvidos. Ocasionalmente, a equipe do
+    suporte técnico pode sugerir que você altere uma dessas configurações para
+    contornar um problema. Caso contrário, as configurações padrão são
+    recomendadas para todos os casos.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt"/>
+
+          <colspec colwidth="65.60pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>filteredReadSpillThreshold</emphasis></entry>
+
+              <entry>Padrão: 2</entry>
+
+              <entry>É executado um spill para leituras de disco filtradas
+              duplicadas mais de N vezes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldConstantCast </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, (cast)value é calculado no momento da
+              geração.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldFilter </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, é executado um constant folding (resolução
+              das expressões que podem ser calculadas durante a compilação)
+              para os filtros.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldAssign </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, é executado um constant folding (resolução
+              das expressões que podem ser calculadas durante a compilação)
+              para TRANSFORMs.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldSQL </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, é executado um constant folding (resolução
+              das expressões que podem ser calculadas durante a compilação)
+              para SQL.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeDiskRead </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, incluir projeto e filtro na transformação
+              para uma leitura de disco.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeSQL </emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, otimizar SQL.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeThorCounts </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, converter COUNT(diskfile) em uma versão
+              otimizada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>peephole </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, otimizar memcpy/memsets, etc.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotCSE </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, procurar subexpressões comuns em
+              TRANSFORMs/filtros.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotTopN </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, converter CHOOSEN(SORT()) em uma atividade
+              topN.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotLocalMerge </emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, em JOIN local com ambos os lados
+              classificados, gera uma fusão leve.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>countIndex </emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, otimizar COUNT(index) para a versão
+              otimizada (também exige optimizeThorCounts).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>allowThroughSpill </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, permitir through spills.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeBoolReturn </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, aprimorar o código ao retornar BOOLEAN de
+              uma função.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeSubString </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, não alocar memória ao processar uma
+              substring.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>thorKeys </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se verdadeiro, permitir operações INDEX no Thor.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>regexVersion </emphasis></entry>
+
+              <entry>Padrão: 0</entry>
+
+              <entry>Se definida como 1, especifica o uso da implementação
+              anterior de expressões regulares, que podem ser mais rápidas,
+              mas também podem exceder limites do stack.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>compileOptions </emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Especificar opções de substituição do compilador (como
+              /Zm1000 como duplicar o tamanho do heap do compilador para
+              contornar um erro de estouro de heap).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>linkOptions </emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Especificar opções de substituição do vinculador.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>otimizarProjetos </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se falso, desabilita a otimização automática de
+              projeção/distribuição de campos.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>notifyOptimizedProjects </emphasis></entry>
+
+              <entry>Padrão: 0</entry>
+
+              <entry>Se definida como 1, informa otimizações para atributos
+              nomeados. Se definida como 2, informa todas as
+              otimizações.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeProjectsPreservePersists
+              </emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, desabilita a otimização automática de
+              projeção/distribuição de campos na leitura de arquivos
+              PERSISTed. Se um arquivo PERSISTed é lido em um cluster de
+              tamanho diferente do cluster onde foi criado, a otimização de
+              campos projetados pode significar que não é possível recriar a
+              ordem de distribuição/classificação.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>aggressiveOptimizeProjects </emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Se verdadeiro, habilita tentativas de minimização de
+              tráfego de rede para classificações/distribuições. Normalmente,
+              essa opção não gera benefícios relevantes, mas em alguns casos
+              específicos pode gerar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>PercolateConstants </emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Se falso, desabilita tentativas de otimizações agressivas
+              de valor de constantes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>exportDependencies</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Gerar informações sobre a interdefinição de
+              dependências</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>maxCompileThreads</emphasis></entry>
+
+              <entry>Padrão: 4 para eclccserver e 1 para eclcc</entry>
+
+              <entry>Número de instâncias de compilador para compilar o
+              c++</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>reportCppWarnings</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Informar os avisos da compilação do c++</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>saveCppTempFiles</emphasis></entry>
+
+              <entry>Padrão: false</entry>
+
+              <entry>Reter os arquivos c++ gerados</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spanMultipleCpp</emphasis></entry>
+
+              <entry>Padrão: true</entry>
+
+              <entry>Gerar uma tarefa em vários arquivos c++</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>activitiesPerCpp</emphasis></entry>
+
+              <entry>Padrão: 500 para Linux ou 800 para Windows</entry>
+
+              <entry>Número de atividades em cada arquivo c++ (exige
+              spanMultipleCpp)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>obfuscateOutput</emphasis></entry>
+
+              <entry>Padrão false</entry>
+
+              <entry>Se verdadeiro, os detalhes são removidos da tarefa
+              gerada, incluindo código da ECL, estimativas de tamanho do
+              registro e número de registros.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>  #OPTION('traceRowXml', TRUE);
+  #OPTION('_Probe', TRUE);
+  
+  my_rec := RECORD
+    STRING20 lname;
+    STRING20 fname;
+    STRING2 age;
+  END;
+  
+  d := DATASET([{ 'PORTLY', 'STUART' , '39'},
+              { 'PORTLY', 'STACIE' , '36'},
+              { 'PORTLY', 'DARA' , ' 1'},
+              { 'PORTLY', 'GARRETT', ' 4'}], my_rec);
+  
+  OUTPUT(d(d.age &gt; ' 1'), {lname, fname, age} );
+  
+  //************************************
+  //This example demonstrates Logical Graphs and
+  // Javadoc-style comment blocks
+  #OPTION('generateLogicalGraphOnly',TRUE);
+  #OPTION('logicalGraphDisplayJavadocParameters',TRUE);
+  
+  /**
+  * Defines a record that contains information about a person
+  */
+  namesRecord :=
+       RECORD
+  string20    surname;
+  string10    forename;
+  integer2    age := 25;
+       END;
+  
+  /**
+  Defines a table that can be used to read the information from the file
+  and then do something with it.
+  */
+  namesTable := DATASET('x',namesRecord,FLAT);
+  
+  
+  /**
+       Allows the name table to be filtered.
+  
+       @param ages The ages that are allowed to be processed.
+            badForename Forname to avoid.
+  
+       @return the filtered dataset.
+  */
+  namesTable filtered(SET OF INTEGER2 ages, STRING badForename) :=
+       namesTable(age in ages, forename != badForename);
+  
+  OUTPUT(filtered([10,20,33], ''));
+</programlisting>
+  </sect2>
+</sect1>

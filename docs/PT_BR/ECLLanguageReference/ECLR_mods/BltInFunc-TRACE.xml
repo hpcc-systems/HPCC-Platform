@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TRACE">
+  <title>TRACE</title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] TRACE<indexterm>
+      <primary>TRACE</primary>
+    </indexterm>(</emphasis><emphasis>baserecset</emphasis><emphasis
+  role="bold">, [</emphasis><emphasis role="bold">
+  </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+  );</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attrname</emphasis></entry>
+
+            <entry>Opcional. O nome para a expressão.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>baserecset</emphasis></entry>
+
+            <entry>O conjunto de registros de dados para o qual TRACE será
+            deifnido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>Opcional. Uma ou mais das opções listadas abaixo.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A expressão <emphasis role="bold"> TRACE </emphasis> define o
+  rastreamento para os arquivos de log (logs escravos do Thor, logs do hThor
+  logs, ou logs do Roxie).</para>
+
+  <para>Você pode adicionar TRACE ao seu código em pontos críticos sem que o
+  desempenho sofra nenhum impacto. Posteriormente, se precisar investigar o
+  comportamento, é possível habilitá-lo sem modificar o código ao definir uma
+  opção ou o BOOLEAN armazenado.</para>
+
+  <para>O rastreamento é codificado aos arquivos de log na seguinte
+  forma:</para>
+
+  <para><programlisting>TRACE: &lt;name&gt;&lt;fieldname&gt;value&lt;/fieldname&gt;...&lt;/name&gt; </programlisting></para>
+
+  <para>O rastreamento não é gerado por padrão, mesmo que as declarações TRACE
+  estejam presentes; o rastreamento é gerado apenas quando o valor de
+  depuração da tarefa traceEnabled está configurado ou se as configurações
+  padrão da plataforma forem alteradas para “sempre gerar rastreamento”. No
+  Roxie, você também pode solicitar o rastreamento em uma consulta
+  implementada especificando traceEnabled=1 na consulta XML.</para>
+
+  <para>Consequentemente, é possível deixar as declarações TRACE no ECL sem
+  nenhuma sobrecarga detectável até que o rastreamento seja ativado. Para
+  ativar o rastreamento:</para>
+
+  <para><programlisting>#OPTION ('traceEnabled'<indexterm>
+        <primary>traceEnabled</primary>
+      </indexterm>, 1) // trace statements enabled </programlisting></para>
+
+  <para>Também é possível substituir o valor padrão de KEEP em nível global,
+  por workunit ou por consulta.</para>
+
+  <para><programlisting>#OPTION ('traceLimit'<indexterm>
+        <primary>traceLimit</primary>
+      </indexterm>, 100) // overrides the default KEEP value (10) </programlisting></para>
+
+  <para>É possível usar um BOOLEAN armazenado como a expressão de filtro de
+  uma atividade de rastreamento para permitir ativar e desativar atividades
+  individuais de rastreamento.</para>
+
+  <sect2 id="TRACE_Options" role="brk">
+    <title>Opções TRACE</title>
+
+    <para>As seguintes opções estão disponíveis para TRACE:</para>
+
+    <para><emphasis
+    role="bold">[</emphasis><emphasis>filterExpression,</emphasis><emphasis
+    role="bold">] [KEEP(</emphasis><emphasis>n</emphasis>),<emphasis
+    role="bold">] [SKIP(</emphasis><emphasis>n</emphasis><emphasis
+    role="bold">),] [SAMPLE(</emphasis><emphasis>n</emphasis><emphasis
+    role="bold">),][NAMED(</emphasis><emphasis>string</emphasis><emphasis
+    role="bold">)]</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="125pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>filterExpression</emphasis></entry>
+
+              <entry>Opcional. Uma expressão válida que age como um filtro.
+              Apenas as linhas correspondentes à condição do filtro são
+              incluídas no rastreamento.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">KEEP(n)</emphasis></entry>
+
+              <entry>Opcional. Especifica o número de linhas para
+              rastrear.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SKIP(n)</emphasis></entry>
+
+              <entry>Opcional. Especifica o número de linhas que devem ser
+              puladas antes do início do rastreamento.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SAMPLE(n)</emphasis></entry>
+
+              <entry>Opcional. Especifica que apenas as linhas nth são
+              rastreadas.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">NAMED(string)</emphasis></entry>
+
+              <entry>Opcional. Especifica o nome das linhas em
+              rastreamento.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Exemplo:</para>
+
+    <para><programlisting>#OPTION ('traceEnabled', TRUE); //TRACE writes to log only if TRUE
+FilterValue := 4;
+myRec := { STRING Name, REAL x, REAL y };
+ds := DATASET([ {'Jim' , 1, 1.00039},
+                {'Jane', 2, 2.07702},
+                {'Emil', 3, 2.86158},
+                {'John', 4, 3.87114},
+                {'Jean', 5, 5.12417},
+                {'Gene', 6, 6.20283} ], myRec);
+myds := TRACE(ds,x&gt;filterValue,NAMED('person')); //trace only if x &gt; filterValue
+myds;</programlisting></para>
+  </sect2>
+</sect1>

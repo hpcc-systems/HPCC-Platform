@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REALFORMAT">
+  <title>REALFORMAT<indexterm>
+      <primary>REALFORMAT</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">REALFORMAT<indexterm>
+      <primary>REALFORMAT Function</primary>
+    </indexterm>(</emphasis><emphasis>expression, width, decimals
+  </emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.45pt"/>
+
+        <colspec colwidth="274.35pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A expressão que especifica o valor REAL a ser
+            formatado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>width</emphasis></entry>
+
+            <entry>O tamanho da string na qual o valor será alinhado à
+            direita.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>Decimais</emphasis></entry>
+
+            <entry>Um valor inteiro que especifica o número de casas
+            decimais.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>REALFORMAT retorna um único valor.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">REALFORMAT </emphasis> retorna o valor
+  da <emphasis>expressão</emphasis> formatada como uma string justificada à
+  direita de caracteres de <emphasis>largura</emphasis> com o número de
+  <emphasis>decimais</emphasis> especificados.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>REAL8 Float := 1000.0063;
+STRING12 FloatStr12 := REALFORMAT(float,12,6);
+OUTPUT(FloatStr12); //results in ' 1000.006300'</programlisting>
+
+  <para>Ver também: <link linkend="INTFORMAT">INTFORMAT</link></para>
+</sect1>

@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SQRT">
+  <title>SQRT</title>
+
+  <para><emphasis role="bold">SQRT<indexterm>
+      <primary>SQRT</primary>
+    </indexterm><indexterm>
+      <primary>SQRT function</primary>
+    </indexterm>(</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.45pt" />
+
+        <colspec colwidth="274.35pt" />
+
+        <tbody>
+          <row>
+            <entry>n</entry>
+
+            <entry>O número real que será avaliado.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SQRT retorna um valor real único.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função  <emphasis role="bold">SQRT </emphasis> retorna a raiz quadrada do parâmetro.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyRoot := SQRT(16.0);</programlisting>
+
+  <para>Ver também: <link linkend="POWER">POWER</link>, <link linkend="EXP">EXP</link>, <link linkend="LN">LN</link>, <link linkend="LOG">LOG</link></para>
+</sect1>

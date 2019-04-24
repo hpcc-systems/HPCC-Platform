@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PROCESS">
+  <title>PROCESS</title>
+
+  <para><emphasis role="bold">PROCESS<indexterm>
+      <primary>PROCESS</primary>
+    </indexterm><indexterm>
+      <primary>PROCESS function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, datarow,</emphasis><emphasis
+  role="bold"> </emphasis><emphasis>datasettransform, rowtransform
+  </emphasis><emphasis role="bold">[, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="85.75pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>datarow</emphasis></entry>
+
+            <entry>O registro RIGHT inicial para processamento, normalmente
+            expresso pela função ROW.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>datasettransform</emphasis></entry>
+
+            <entry>A função TRANSFORM a ser acionada para cada registro no
+            recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>rowtransform</emphasis></entry>
+
+            <entry>A função TRANSFORM a ser acionada para gerar o próximo
+            registro RIGHT do <emphasis>datasettransform</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os threads
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>PROCESS retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">PROCESS </emphasis>opera de maneira
+  similar à ITERATE no sentido de processar todos os registros no
+  <emphasis>recordset</emphasis> (um par de registros por vez), realizando a
+  função <emphasis>datasettransform</emphasis> em cada par de registros por
+  vez. O primeiro registro no recordset é especificado para o
+  <emphasis>datasettransform </emphasis> como o primeiro registro esquerdo,
+  emparelhado com o <emphasis>datarow</emphasis> como o registro direito. O
+  <emphasis>rowtransform</emphasis> é usado para gerar o registro direito para
+  o próximo par. Se o <emphasis>datasettransform</emphasis> ou o
+  <emphasis>rowtransform</emphasis> contiver SKIP, então nenhum registro será
+  gerado pelo <emphasis>datasettransform</emphasis> para o registro
+  ignorado.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Process">
+    <title>Requerimentos da Função TRANSFORM <indexterm>
+        <primary>TRANSFORM Function</primary>
+      </indexterm> - PROCESS<indexterm>
+        <primary>Requerimentos da Função TRANSFORM</primary>
+      </indexterm><indexterm>
+        <primary>Transform Requirements</primary>
+      </indexterm><indexterm>
+        <primary>Transform Requirement Process</primary>
+      </indexterm></title>
+
+    <para>Ambas as funções <emphasis>datasettransform</emphasis> e
+    <emphasis>rowtransform</emphasis> precisam de no mínimo dois parâmetros:
+    um registro LEFT no mesmo formato que o <emphasis>recordset </emphasis> e
+    um registro RIGHT no mesmo formato que o <emphasis>datarow</emphasis>. O
+    formato do recordset resultante para o
+    <emphasis>datasettransform</emphasis> precisa ser idêntico àquele do
+    <emphasis>recordset</emphasis> de entrada. O formato do recordset
+    resultante para o <emphasis>rowtransform </emphasis> precisa ser idêntico
+    àquele do <emphasis>datarow</emphasis> inicial. Opcionalmente, o
+    <emphasis>datsettransform</emphasis> pode usar um terceiro parâmetro: um
+    COUNTER de número inteiro para especificar o número de vezes que a função
+    transform foi acionada para o <emphasis>recordset </emphasis> ou para o
+    grupo atual no <emphasis>recordset</emphasis> (consulte a função
+    GROUP).</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>DSrec := RECORD
+  STRING4 Letter;
+  STRING4 LeftRecIn := '';
+  STRING4 RightRecIn := '';
+END;
+StateRec := RECORD
+  STRING2 Letter;
+END;
+ds := DATASET([{'AA'},{'BB'},{'CC'},{'DD'},{'EE'}],DSrec);
+
+DSrec DSxform(DSrec L,StateRec R) := TRANSFORM
+  SELF.Letter := L.Letter[1..2] + R.Letter;
+  SELF.LeftRecIn := L.Letter;
+  SELF.RightRecIn := R.Letter;
+END;
+StateRec ROWxform(DSrec L,StateRec R) := TRANSFORM
+  SELF.Letter := L.Letter[1] + R.Letter[1];
+END;
+
+p := PROCESS(ds,
+             ROW({'ZZ'},StateRec),
+             DSxform(LEFT,RIGHT),
+             ROWxform(LEFT,RIGHT));
+OUTPUT(p);
+/* Result:
+AAZZ AA ZZ
+BBAZ BB AZ
+CCBA CC BA
+DDCB DD CB
+EEDC EE DC */
+
+//******************************************************************
+// This examples uses different information for state tracking
+// (the point of the PROCESS function) through the input record set.
+  
+w1 := RECORD
+  STRING v{MAXLENGTH(100)};
+END;
+
+s1 := RECORD
+  BOOLEAN priorA;
+END;
+
+ds := DATASET([{'B'},{'A'}, {'C'}, {'D'}], w1);
+
+s1 doState(w1 l, s1 r) := TRANSFORM
+  SELF.priorA := l.v = 'A';
+END;
+
+w1 doRecords(w1 l, s1 r) := TRANSFORM
+  SELF.v := l.v + IF(r.priorA, '***', '');
+END;
+
+initState := ROW({TRUE}, s1);
+
+rs := PROCESS(ds,
+              initState,
+              doRecords(LEFT,RIGHT),
+              doState(LEFT,RIGHT));
+
+OUTPUT(rs);
+/* Result:
+B***
+A
+C***
+D
+*/
+</programlisting>
+
+    <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+    TRANSFORM</link>, <link linkend="RECORD_Structure">Estrutura
+    RECORD</link>, <link linkend="ROW">ROW</link>, <link
+    linkend="ITERATE">ITERATE</link></para>
+  </sect2>
+</sect1>

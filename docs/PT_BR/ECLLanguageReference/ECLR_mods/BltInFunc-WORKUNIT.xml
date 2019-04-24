@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WORKUNIT">
+  <title>WORKUNIT</title>
+
+  <para><emphasis role="bold">WORKUNIT<indexterm>
+      <primary>WORKUNIT</primary>
+    </indexterm></emphasis></para>
+
+  <para><emphasis role="bold"/><emphasis role="bold">WORKUNIT<indexterm>
+      <primary>WORKUNIT Function</primary>
+    </indexterm>( </emphasis><emphasis>named </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, type </emphasis><emphasis role="bold">]
+  )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="77.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>named</emphasis></entry>
+
+            <entry>Uma constante de string que contém o valor scalar da opção
+            NAMED a ser retornado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>type</emphasis></entry>
+
+            <entry>Opcional. O tipo de valor do resultado do valor scalar
+            nomeado a ser retornado.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>Workunit retorna um único valor.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">WORKUNIT </emphasis> retorna os valores
+  armazenados na workunit. Dado nenhum parâmetro, ele retorna o identificador
+  de workunit exclusivo (WUID)<indexterm>
+      <primary>WUID</primary>
+    </indexterm> para a workunit que está sendo executada atualmente; caso
+  contrário, ela retorna o resultado da opção NAMED do OUTPUT ou da ação
+  DISTRIBUTION <indexterm>
+      <primary>DISTRIBUTION action</primary>
+    </indexterm>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  wuid := WORKUNIT //get WUID
+  
+  namesRecord := RECORD
+  STRING20 surname;
+  STRING10 forename;
+  INTEGER2 age;
+  END;
+  
+  namesTable := DATASET([
+  {'Halligan','Kevin',31},
+  {'Halligan','Liz',30},
+  {'Salter','Abi',10},
+  {'X','Z'}], namesRecord);
+  
+  DISTRIBUTION(namesTable, surname, forename,
+          NAMED('Stats'));
+  x := DATASET(ROW(TRANSFORM({STRING line},
+  SELF.line := WORKUNIT('Stats', STRING))));
+</programlisting>
+
+  <para>Ver também: <link linkend="_WORKUNIT">#WORKUNIT</link>, <link
+  linkend="OUTPUT">OUTPUT</link>, <link
+  linkend="DISTRIBUTION">DISTRIBUTION</link></para>
+</sect1>

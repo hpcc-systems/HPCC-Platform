@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_version">
+  <title><emphasis role="bold">version <indexterm>
+      <primary>version</primary>
+    </indexterm>e default_client_version</emphasis></title>
+
+  <para><indexterm>
+      <primary>default_client_version</primary>
+    </indexterm>Os atributo <emphasis role="bold">version</emphasis> e
+  <emphasis role="bold">default_client_version</emphasis> (válidos apenas em
+  ESPService) permitem especificar a versão a ser usada quando uma versão não
+  for especificada de maneira explícita na solicitação.</para>
+
+  <para>O atributo <emphasis role="bold">default_client_version</emphasis> é
+  usado para solicitações de API no formato SOAP, se o client não especificar
+  a versão. O atributo <emphasis role="bold">version</emphasis> é usado para
+  solicitações originadas de um navegador da Internet sem uma decoração de
+  versão no URL.</para>
+
+  <para>Esses atributos fornecem melhor compatibilidade com versões anteriores
+  do API e permitem que os desenvolvedores de API vejam a interface mais
+  recente usando um navegador.</para>
+
+  <para>Se <emphasis role="bold"> o atributo default_client_version</emphasis>
+  for superior ao <emphasis role="bold">version</emphasis>, o serviço usará o
+  atributo <emphasis role="bold">default_client_version</emphasis> para todas
+  as solicitações que não especificarem o atributo <emphasis
+  role="bold">version</emphasis>.</para>
+
+  <para>Mesmo que padrões possam ser especificados para um serviço, os
+  desenvolvedores de API devem ser incentivados a especificar uma versão nas
+  solicitações a fim de garantir a compatibilidade entre a aplicação e o
+  serviço.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting> ESPservice [version("0.02"), default_client_version("0.01")] EsdlExample
+{
+    ESPmethod EchoPersonInfo(EchoPersonInfoRequest, EchoPersonInfoResponse);
+    ESPmethod RoxieEchoPersonInfo(RoxieEchoPersonInfoRequest, RoxieEchoPersonInfoResponse);
+};</programlisting>
+</sect1>

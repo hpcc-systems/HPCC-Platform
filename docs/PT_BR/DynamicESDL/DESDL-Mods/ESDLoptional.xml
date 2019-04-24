@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_optional">
+  <title><emphasis role="bold">opcional</emphasis></title>
+
+  <para><indexterm>
+      <primary>opcional</primary>
+    </indexterm>O atributo optional (opcional) permite especificar que um
+  campo é optional e oculto, ou que não depende da presença ou ausência de uma
+  decoração de URL</para>
+
+  <para>Quando um campo possui um atributo optional , ele fica visível apenas
+  quando a opção aparece no URL. Porém, quando a opção começa com um ponto de
+  exclamação (!), o campo é ocultado apenas se a opção estiver no URL.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>ESPrequest RoxieEchoPersonInfoRequest
+{
+     ESPstruct NameInfo Name;
+                            string First;
+                            string Middle;
+                            string Last;
+     [optional("dev")]      string NickName;
+     [optional("!_NonUS_")] string SSN;
+};</programlisting>
+
+  <para>Supondo que o serviço esteja sendo executado em um servidor com nome
+  de host example.com e que a ligação do serviço esteja definida para
+  8003:</para>
+
+  <para>Se a URL for <programlisting>http://example.com:8003/ </programlisting></para>
+
+  <para>, o SSN estará visível e o NickName ocultado;</para>
+
+  <para>Se a URL for <programlisting>http://example.com:8003/?dev </programlisting></para>
+
+  <para>, o SSN e o NickName estarão visíveis</para>
+
+  <para>Se a URL for <programlisting>http://example.com:8003/?dev&amp;_NonUS_ </programlisting></para>
+
+  <para>, o NickName estará visível e o SSN ocultado.</para>
+
+  <para>Se a URL for <programlisting>http://example.com:8003/?_NonUS_</programlisting>
+  , o NickName e o SSN estarão ocultados.</para>
+</sect1>

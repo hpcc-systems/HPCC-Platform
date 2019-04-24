@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TYPE_Structure" role="nobrk">
+  <title>Estrutura TYPE</title>
+
+  <para><emphasis>TypeName</emphasis><emphasis role="bold"> := TYPE<indexterm>
+      <primary><emphasis role="bold">TYPE</emphasis></primary>
+    </indexterm></emphasis><emphasis role="bold">
+  </emphasis><emphasis/></para>
+
+  <para><emphasis>functions;</emphasis></para>
+
+  <para><emphasis/><emphasis role="bold">END;</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>TypeName</emphasis></entry>
+
+          <entry>O nome da Estrutura TYPE<indexterm>
+              <primary>TYPE structure</primary>
+            </indexterm>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>functions</emphasis></entry>
+
+          <entry>Definições do atributo da função. Geralmente existem
+          múltiplas <emphasis>funções</emphasis>.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A estrutura <emphasis role="bold">TYPE </emphasis>define uma série de
+  <emphasis>funções</emphasis> que são invocadas de forma implícita quando o
+  <emphasis>TypeName</emphasis> é subsequentemente usado em uma estrutura
+  RECORD <indexterm>
+      <primary>RECORD structure</primary>
+    </indexterm> como tipo de valor. Os parâmetros podem ter sido
+  especificados para o atributo da estrutura TYPE , que podem então ser usados
+  em qualquer definição da <emphasis>função</emphasis> . Para especificar os
+  parâmetros, basta anexá-los ao <emphasis>TypeName</emphasis> usado na
+  estrutura RECORD para definir o tipo de valor para o campo.</para>
+
+  <para>Uma estrutura TYPE pode conter apenas definições de função contidas na
+  lista de Funções especiais disponíveis (consulte <emphasis
+  role="bold">Funções especiais da estrutura TYPE </emphasis>).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>STRING4 Rev(STRING4 S) := S[4] + S[3] + S[2] + S[1];
+EXPORT ReverseString4 := TYPE
+        EXPORT STRING4 LOAD(STRING4 S) := Rev(S);
+        EXPORT STRING4 STORE(STRING4 S) := Rev(S);
+END;
+NeedC(INTEGER len) := TYPE
+        EXPORT STRING LOAD(STRING S) := 'C' + S[1..len];
+        EXPORT STRING STORE(STRING S) := S[2..len+1];
+        EXPORT INTEGER PHYSICALLENGTH(STRING S) := len;
+END;
+ScaleInt := TYPE
+        EXPORT REAL LOAD(INTEGER4 I ) := I / 100;
+        EXPORT INTEGER4 STORE(REAL R) := ROUND(R * 100);
+END;
+R := RECORD
+     ReverseString4 F1;
+        // Defines a field size of 4 bytes. When R.F1 is used, 
+        // the ReverseString4.Load function is called passing 
+        // in those four bytes and returning a string result.
+     NeedC(5) F2;
+
+        // Defines a field size of 5 bytes. When R.F2 is used, 
+        // those 5 bytes are passed in to NeedC.Load (along with 
+        // the length 5) and a 6 byte string is returned.
+     ScaleInt F3;
+
+        // Defines a field size of 4. When R.F3 is used, the 
+        //  ScaleInt.Load function returns the number / 100.
+END;</programlisting>
+
+  <para>Ver também: <link linkend="RECORD_Structure">Estrutura RECORD</link>,
+  <link linkend="Type_Sturcture_Special_Functions">Funções especiais da
+  estrutura TYPE</link></para>
+</sect1>

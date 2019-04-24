@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitFilesWritten">
+  <title>WorkunitFilesWritten</title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitFilesWritten
+  <indexterm>
+      <primary>STD.System.Workunit.WorkunitFilesWritten</primary>
+    </indexterm> <indexterm>
+      <primary>System.Workunit.WorkunitFilesWritten</primary>
+    </indexterm> <indexterm>
+      <primary>Workunit.WorkunitFilesWritten</primary>
+    </indexterm> <indexterm>
+      <primary>WorkunitFilesWritten</primary>
+    </indexterm> (</emphasis> <emphasis> wuid </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o identificador da
+          workunit.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WorkunitFilesWritten retorna um valor DATASET.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">WorkunitTimeStamps </emphasis> retorna
+  um DATASET neste formato:</para>
+
+  <programlisting>EXPORT WsFileRead := RECORD
+  STRING name{MAXLENGTH(256)};
+  STRING10 graph;
+  STRING cluster{MAXLENGTH(64)};
+  UNSIGNED4 kind;
+END;</programlisting>
+
+  <para>Cada registro no dataset retornado especifica um arquivo gravado pela
+  workunit.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitFilesWritten('W20070308-164946'));
+/* produces results that look like this
+'rttest::testfetch','graph1','thor','0'
+*/</programlisting>
+</sect1>

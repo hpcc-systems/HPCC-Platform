@@ -1,0 +1,776 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="BUILD">
+  <title>BUILD</title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] BUILD<indexterm>
+      <primary>BUILD</primary>
+    </indexterm>(</emphasis><emphasis>baserecset</emphasis><emphasis
+  role="bold">, [</emphasis><emphasis> indexrec </emphasis><emphasis
+  role="bold">] , </emphasis><emphasis>indexfile </emphasis><emphasis
+  role="bold">[, </emphasis><emphasis>options </emphasis><emphasis
+  role="bold">] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ]
+  BUILD(</emphasis><emphasis>baserecset</emphasis><emphasis
+  role="bold">,</emphasis><emphasis> keys</emphasis><emphasis
+  role="bold">,</emphasis><emphasis> payload</emphasis><emphasis role="bold">,
+  </emphasis><emphasis>indexfile </emphasis><emphasis role="bold">[,
+  </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+  );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef
+  </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
+  </emphasis><emphasis role="bold">] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef, dataset,
+  </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
+  </emphasis><emphasis role="bold">] );</emphasis></para>
+
+  <para><emphasis role="bold">BUILD(</emphasis><emphasis> library
+  </emphasis><emphasis role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attrname</emphasis></entry>
+
+            <entry>Opcional. O nome da ação, que transforma a ação em
+            definição de atributo, consequentemente não é executado até que
+            <emphasis>attrname </emphasis> seja usado como uma ação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>baserecset</emphasis></entry>
+
+            <entry>O conjunto de registro de dados para qual o arquivo de
+            índice será criado. Pode ser um conjunto de registros derivado dos
+            dados de base com os campos principais e a posição do
+            arquivo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>indexrec</emphasis></entry>
+
+            <entry>Opcional. A estrutura RECORD dos campos no indexfile que
+            contém informações-chave e de posição do arquivo a serem
+            mencionadas no <emphasis>baserecset</emphasis>. Os nomes e tipos
+            de campos devem corresponder aos campos de <emphasis>baserecset
+            </emphasis> (os tipos de campos REAL e DECIMAL não são
+            permitidos). Também pode conter campos adicionais que não estejam
+            presentes no <emphasis>baserecset</emphasis> Se omitido, todos os
+            campos em <emphasis>baserecset</emphasis> serão usados. O último
+            campo deve ter o nome de um campo UNSIGNED8 definido usando a
+            função {virtual(filepposition)} na declaração DATASET do
+            <emphasis>baserecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>keys</emphasis></entry>
+
+            <entry>A estrutura RECORD dos campos no
+            <emphasis>indexfile</emphasis> que contém informações-chave e de
+            posição do arquivo a serem mencionadas no
+            <emphasis>baserecset</emphasis>. Os nomes e tipos de campos devem
+            corresponder aos campos de <emphasis>baserecset</emphasis> (os
+            tipos de campos REAL e DECIMAL não são permitidos). Também pode
+            conter campos adicionais que não estejam presentes no
+            <emphasis>baserecset</emphasis>. Se omitido, todos os campos em
+            <emphasis>baserecset</emphasis> serão usados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>payload</emphasis></entry>
+
+            <entry>A estrutura RECORD do <emphasis>indexfile</emphasis> que
+            contém campos adicionais não usados como chaves. Se o nome do
+            <emphasis>baserecset</emphasis> estiver na estrutura, especificará
+            "todos os outros campos ainda não nomeados no parâmetro Keys".
+            Pode conter campos que não estejam presentes no
+            <emphasis>baserecset</emphasis> Esses campos não ocupam espaço nos
+            nós não folha do índice e não podem ser citados em uma cláusula de
+            filtro KEYED()</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>indexfile</emphasis></entry>
+
+            <entry>Uma constante da string que contém o nome do arquivo lógico
+            do índice a ser criado. Consulte a seção Escopo e Nomes de
+            arquivos lógicos para obter mais detalhes sobre nomes de arquivos
+            lógicos.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>Opcional. Uma ou mais das opções listadas abaixo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>indexdef</emphasis></entry>
+
+            <entry>O nome do atributo INDEX a ser compilado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>library</emphasis></entry>
+
+            <entry>O nome de um atributo MODULE com a opção LIBRARY .</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>As primeiras quatro formas da ação <emphasis role="bold">BUILD
+  </emphasis> criam arquivos de índice. Os índices são compactados
+  automaticamente, minimizando a sobrecarga associada ao uso do acesso ao
+  registro indexado. A palavra-chave BUILDINDEX pode ser usada no lugar de
+  BUILD nestas formas.</para>
+
+  <para>A quinta forma cria uma biblioteca de <indexterm>
+      <primary>consulta externa</primary>
+    </indexterm> – uma workunit que implementa a
+  <emphasis>biblioteca</emphasis> especificada. Isso é semelhante à criação da
+  extensão .DLL na programação do Windows, ou da .SO no Linux.</para>
+
+  <sect2 id="Index_BUILD_Options">
+    <title>Opções Index BUILD</title>
+
+    <para>As opções a seguir estão disponíveis em todas as três formas INDEX
+    de BUILD (apenas):</para>
+
+    <para><emphasis role="bold">[, CLUSTER<indexterm>
+        <primary>CLUSTER</primary>
+      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
+    role="bold">)] [, SORTED<indexterm>
+        <primary>SORTED</primary>
+      </indexterm>] [, DISTRIBUTE<indexterm>
+        <primary>DISTRIBUTE</primary>
+      </indexterm>( </emphasis><emphasis>key</emphasis><emphasis role="bold">
+    ) [ , MERGE<indexterm>
+        <primary>MERGE</primary>
+      </indexterm> ] ]</emphasis><emphasis role="bold">[, DATASET<indexterm>
+        <primary>DATASET</primary>
+      </indexterm>( </emphasis><emphasis>basedataset</emphasis><emphasis
+    role="bold"> )] [, OVERWRITE<indexterm>
+        <primary>OVERWRITE</primary>
+      </indexterm>]</emphasis><emphasis role="bold"> [, UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]<emphasis
+    role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+    role="bold">EXPIRE<indexterm>
+        <primary>EXPIRE</primary>
+      </indexterm>( [</emphasis><emphasis>days</emphasis><emphasis
+    role="bold">] ) ]</emphasis>[, FEW<indexterm>
+        <primary>FEW</primary>
+      </indexterm>] [, FILEPOSITION(<emphasis>false</emphasis>)<indexterm>
+        <primary>FILEPOSITION</primary>
+      </indexterm>] [, LOCAL<indexterm>
+        <primary>LOCAL</primary>
+      </indexterm>] [, NOROOT<indexterm>
+        <primary>NOROOT</primary>
+      </indexterm>] [, DISTRIBUTED<indexterm>
+        <primary>DISTRIBUTED</primary>
+      </indexterm>]</emphasis><emphasis role="bold">[, COMPRESSED<indexterm>
+        <primary>COMPRESSION</primary>
+      </indexterm>( LZW<indexterm>
+        <primary>LZW</primary>
+      </indexterm> | ROW<indexterm>
+        <primary>ROW</primary>
+      </indexterm> | FIRST<indexterm>
+        <primary>FIRST</primary>
+      </indexterm>) ] [, WIDTH<indexterm>
+        <primary>WIDTH</primary>
+      </indexterm>(</emphasis><emphasis> nodes </emphasis><emphasis
+    role="bold">) ] [, DEDUP<indexterm>
+        <primary>DEDUP</primary>
+      </indexterm>]<emphasis role="bold">[</emphasis>,<emphasis
+    role="bold">SKEW<indexterm>
+        <primary>SKEW</primary>
+      </indexterm>(</emphasis><emphasis>limit</emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, target</emphasis><emphasis
+    role="bold">] ) [, THRESHOLD<indexterm>
+        <primary>THRESHOLD</primary>
+      </indexterm>(</emphasis><emphasis>size</emphasis><emphasis role="bold">)
+    ] ] <emphasis role="bold">[, MAXLENGTH<indexterm>
+        <primary>MAXLENGTH</primary>
+      </indexterm>[(</emphasis><emphasis>value</emphasis><emphasis
+    role="bold">)] ] ]</emphasis></emphasis></emphasis><emphasis
+    role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+    </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+    (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ]
+    [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">)
+    ][, SET (</emphasis> <emphasis>option, value </emphasis><emphasis
+    role="bold">) ]</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="125pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+
+              <entry>Especifica o uso da <emphasis>indexfile</emphasis>
+              especifica a gravação do nome de arquivo para a lista
+              especificada de clusters de destino. Se omitido, o
+              <emphasis>indexfile</emphasis> será gravado no cluster em que a
+              tarefa é executada. O número de partes do arquivo físico gravado
+              em disco sempre é determinado pelo número de nós no cluster onde
+              a workunit é executada, independentemente do número de nós nos
+              clusters de destino – a menos que a opção WIDTH também tenha
+              sido especificada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>target</emphasis></entry>
+
+              <entry>Uma lista de constantes de string delimitada por vírgulas
+              que contém os nomes dos clusters no qual o arquivo
+              <emphasis>indexfile</emphasis> será gravado. Os nomes devem
+              estar listados como aparecem na página de Atividade do ECL
+              Watch, ou como são retornados pela função
+              Std.System.Thorlib.Group(); opcionalmente, podem apresentar
+              colchetes contendo uma lista delimitada por vírgula dos números
+              dos nós (baseado em 1) e/ou dos intervalos (especificados com um
+              traço, como p.ex., n-m) para indicar o conjunto específico de
+              nós para gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SORTED</emphasis></entry>
+
+              <entry>Especifica que <emphasis>baserecset</emphasis> já foi
+              classificado, significando que a classificação automática com
+              base em todos os campos <emphasis>indexrec</emphasis> não é
+              exigida antes da criação do índice.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">DISTRIBUTE</emphasis></entry>
+
+              <entry>Especifica a compilação do <emphasis>indexfile
+              </emphasis> com base na distribuição da chave.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>key</emphasis></entry>
+
+              <entry>O nome de uma definição do atributo INDEX
+              existente.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">MERGE</emphasis></entry>
+
+              <entry>Opcional. Especifica a fusão do índice resultante na
+              chave especificada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">DATASET</emphasis></entry>
+
+              <entry>Necessário apenas quando <emphasis>baserecset</emphasis>
+              for o resultado de uma operação (como um JOIN) cujo resultado a
+              torna ambígua em relação a qual conjunto de dados físico está
+              sendo indexada (em outras palavras, use essa opção apenas quando
+              receber um erro que não possa ser deduzido). A nomeação do
+              <emphasis>basedataset</emphasis> garante que os links de
+              registro apropriados estão sendo usados no índice.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>basedataset</emphasis></entry>
+
+              <entry>O nome do atributo DATASET a partir do qual
+              <emphasis>baserecset</emphasis> é derivado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+
+              <entry>Especifica a substituição do
+              <emphasis>indexfile</emphasis> caso ele exista.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>specifica que o arquivo deve ser regravado apenas se
+              houver alteração nos dados de código ou de entrada.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+
+              <entry>Opcional. Especifica que se trata de um arquivo
+              temporário que pode ser removido automaticamente após um
+              determinado número de dias, após a leitura ter sido
+              feita.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">FILEPOSITION</emphasis></entry>
+
+              <entry>Opcional. Se o <emphasis>indicador</emphasis> for FALSE,
+              impede que o campo “fileposition” implícito seja criado e não
+              tratará um campo inteiro à direita de forma diferente do resto
+              da carga útil.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>flag</emphasis></entry>
+
+              <entry>Opcional. TRUE ou FALSE, indicando se o campo
+              “fileposition” implícito será ou não criado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>days</emphasis></entry>
+
+              <entry>Opcional. O número de dias contados a partir da última
+              leitura do arquivo em que o arquivo será automaticamente
+              removido. Se omitido, o padrão é sete (7).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">FEW</emphasis></entry>
+
+              <entry>Especifica que <emphasis>o osindexfile</emphasis> foi
+              criado como um só arquivo de parte única. Usado apenas para
+              datasets pequenos (normalmente arquivos do tipo pesquisa, como
+              códigos de estado de 2 caracteres). Essa opção está atualmente
+              obsoleta em função do uso de WIDTH(1).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>indexdef</emphasis></entry>
+
+              <entry>O nome de uma definição do atributo INDEX existente que
+              fornece os parâmetros <emphasis>baserecset</emphasis>,
+              <emphasis> indexrec</emphasis>, e <emphasis>indexfile</emphasis>
+              para uso.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+              <entry>Especifica que a operação é realizada em cada nó de
+              supercomputador de forma independente, sem exigir interação com
+              todos os outros nós para obter dados; a operação mantém a
+              distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">NOROOT</emphasis></entry>
+
+              <entry>Especifica que o índice não é classificado em nível
+              global e que não há índice de raiz para indicar qual parte do
+              índice conterá uma entrada específica. Isso pode ser útil nas
+              consultas Roxie juntamente com o uso de ALLNODES.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">DISTRIBUTED</emphasis></entry>
+
+              <entry>Especifica ambas as opções LOCAL e NOROOT (congruentes
+              com a opção DISTRIBUTED em uma declaração INDEX, a qual
+              especifica que o índice foi criado com as opções LOCAL e
+              NOROOT).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
+
+              <entry>Especifica o tipo de compactação usado. Se omitido, o
+              padrão usado é LZW, uma variante do algoritimo Lempel-Ziv-Welch.
+              A especificação de ROW compacta as entradas do índice com base
+              nas diferenças entre linhas contíguas (usadas apenas com
+              registros de comprimento fixo), e é recomendada para uso em
+              situações onde o tempo mais rápido de descompactação é mais
+              importante do que a quantidade de compactação alcançada. FIRST
+              compacta os elementos principais comuns da chave (recomendado
+              apenas para uso na comparação de cronometragem de
+              tempo).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">WIDTH</emphasis></entry>
+
+              <entry>Especifica a gravação do <emphasis> indexfile</emphasis>
+              para um número diferente de partes de arquivos físicos que o
+              número de nós no cluster em que a tarefa é executada. Se
+              omitido, o padrão será o número de nós no cluster no qual a
+              workunit é executada. Esta opção serve principalmente para criar
+              índices, destinados a serem implementados em um Roxie menor, em
+              um Thor maior (tornando as consultas Roxie mais
+              eficientes).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>nodes</emphasis></entry>
+
+              <entry>O número de partes do arquivo físico a serem gravadas. Se
+              estiver definido para (1), essa opção operará exatamente da
+              mesma forma que a opção FEW acima.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">DEDUP</emphasis></entry>
+
+              <entry>Especifica que as entradas duplicadas são eliminadas do
+              INDEX.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SKEW</emphasis></entry>
+
+              <entry>Indica que você sabe que os dados não serão espalhados
+              uniformemente entre os nós (serão distorcidos e você opta por
+              substituir o padrão especificando seu próprio valor limite para
+              permitir que a tarefa continue, apesar da distorção).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>limit</emphasis></entry>
+
+              <entry>Um valor entre zero (0) e um (1,0 = 100%) indicando a
+              porcentagem máxima de distorção a ser permitida antes que a
+              tarefa falhe (a distorção padrão é 1,0 / &lt;número de escravos
+              no cluster&gt;).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>target</emphasis></entry>
+
+              <entry>Opcional. Um valor entre zero (0) e um (1,0 = 100%)
+              indicando a porcentagem máxima de distorção desejada a ser
+              permitida (a distorção padrão é 1,0 / &lt;número de escravos no
+              cluster&gt;).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+
+              <entry>Indica o tamanho mínimo de uma única parte antes que o
+              limite SKEW seja aplicado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>size</emphasis></entry>
+
+              <entry>Um valor inteiro indicando o número mínimo de bytes para
+              uma parte única. O padrão é 1.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">MAXLENGTH</emphasis></entry>
+
+              <entry>Opcional. Esta opção é usada para criar índices que são
+              compatíveis com versões anteriores às versões 3.0. Especifica o
+              comprimento máximo de um registro de índice de comprimento
+              variável. Os registros de comprimento fixo sempre utilizam o
+              tamanho mínimo exigido. Se o comprimento máximo padrão causar
+              problemas de ineficiência, ele pode ser substituído de forma
+              explícita.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>value</emphasis></entry>
+
+              <entry>Opcional. Um valor inteiro que indica o comprimento
+              máximo. Se omitido, o tamanho máximo será calculado a partir da
+              estrutura do registro. Registros de comprimento variável que não
+              especificam MAXLENGTH podem ser ligeiramente
+              ineficientes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+              <entry>Opcional. Especifica que a ordem do registro de resultado
+              não é importante.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+              <entry>Especifica a importância da ordem do registro de
+              resultado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>bool</emphasis></entry>
+
+              <entry>Quando for “False” (Falso), especifica que a ordem do
+              registro de resultado não é importante. Quando for “True’
+              (Verdadeiro), especifica a ordem padrão do registro de
+              resultado.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+              <entry>Opcional. Especifica que a ordem do registro de entrada é
+              importante.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+              <entry>Opcional. Especifica que a ordem do registro de entrada
+              não é importante.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+              <entry>Opcional. Tenta avaliar essa atividade em
+              paralelo.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>numthreads</emphasis></entry>
+
+              <entry>Opcional. Tenta avaliar essa atividade usando as
+              <emphasis>threads</emphasis> numthreads.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+              <entry>Opcional. Substitui o algoritmo usado para essa
+              atividade.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>name</emphasis></entry>
+
+              <entry>O algoritmo a ser usado para essa atividade. Precisa
+              fazer parte da lista de algoritmos compatíveis com as opções
+              STABLE e UNSTABLE da função SORT.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SET</emphasis></entry>
+
+              <entry>Opcional. SET é usado para definir um valor para uma
+              opção de metadata nomeada. Isso permite que você defina
+              metadados do usuário cujo uso e propósito estejam à altura do
+              desenvolvedor. Currently <emphasis>_nodeSize</emphasis> atual é
+              o único metadata definido pelo sistema, embora outros nomes que
+              começam com sublinhado (_) devem ser considerados como
+              reservados para uso do sistema. É possível usar SET('_nodeSize',
+              '32768') se seu hardware e padrão de uso trabalharam melhor com
+              tamanhos de página maiores. O padrão (8192) pode não ser ideal
+              para todos os cenários em hardware mais atuais. Recomendamos
+              usar uma potência de 2 e não menor que 8k.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>option</emphasis></entry>
+
+              <entry>Uma constante de string – que faz distinção entre
+              maiúsculas e minúsculas – que contém o nome da opção a ser
+              definida.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>value</emphasis></entry>
+
+              <entry>O valor para o qual a opção será definida. Pode ser
+              qualquer tipo de valor, dependendo do tipo esperado pela
+              opção.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para/>
+  </sect2>
+
+  <sect2 id="BUILD_an_Access_Index">
+    <title>BUILD an Access Index</title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ]
+    BUILD(</emphasis><emphasis>baserecset</emphasis><emphasis role="bold">,
+    [</emphasis><emphasis> indexrec </emphasis><emphasis role="bold">] ,
+    </emphasis><emphasis>indexfile </emphasis><emphasis role="bold">[,
+    </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+    );</emphasis></para>
+
+    <para>A forma 1 cria um arquivo de índice que permite o acesso com chave
+    ao <emphasis>baserecset</emphasis>. O índice é usado principalmente pelas
+    operações FETCH e JOIN (com a opção KEYED option).</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>Vehicles := DATASET('vehicles',
+     {STRING2 st,
+      STRING20 city,
+      STRING20 lname,
+      UNSIGNED8 filepos{virtual(fileposition)}},
+     FLAT);
+BUILD(Vehicles,{lname,filepos},'vkey::lname');
+ //build key into Vehicles dataset on last name
+</programlisting>
+  </sect2>
+
+  <sect2 id="BUILD_a_Payload_Index">
+    <title>BUILD a Payload Index</title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ]
+    BUILD(</emphasis><emphasis>baserecset</emphasis><emphasis
+    role="bold">,</emphasis><emphasis> keys</emphasis><emphasis
+    role="bold">,</emphasis><emphasis> payload</emphasis><emphasis
+    role="bold">, </emphasis><emphasis>indexfile </emphasis><emphasis
+    role="bold">[, </emphasis><emphasis>options </emphasis><emphasis
+    role="bold">] );</emphasis></para>
+
+    <para>A forma 2 cria um arquivo de índice contendo campos de
+    <emphasis>payload </emphasis> útil adicionais além das
+    <emphasis>chaves</emphasis>. Essa forma é usada principalmente em
+    operações JOIN com “Half-key" para eliminar a necessidade de acessar
+    diretamente o <emphasis>baserecset</emphasis>. Assim, o desempenho é
+    superior ao da versão da mesma operação com "chave completa" (executada
+    com a opção KEYED no JOIN).</para>
+
+    <para>Por padrão, os campos de <emphasis>payload</emphasis> são
+    classificados durante a operação BUILDINDEX para minimizar o espaço nos
+    nós folha da chave. Essa classificação pode ser controlada usando
+    <emphasis>sortIndexPayload </emphasis> em uma declaração #OPTION .</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>Vehicles := DATASET('vehicles',
+     {STRING2 st,
+      STRING20 city,
+      STRING20 lname,
+      UNSIGNED8 filepos{virtual(fileposition)}},
+      FLAT);
+BUILD(Vehicles,{st,city},{lname},'vkey::st.city');
+ //build key into Vehicles dataset on state and city
+ //payload the last name</programlisting>
+  </sect2>
+
+  <sect2 id="BUILD_from_an_INDEX_Definition">
+    <title>BUILD from an INDEX Definition</title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef
+    </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
+    </emphasis><emphasis role="bold">] );</emphasis></para>
+
+    <para>A forma 3 cria um arquivo de índice usando uma definição INDEX
+    previamente especificada.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>nameKey := INDEX(mainTable,{surname,forename,filepos},'name.idx');
+BUILD(nameKey); //gets all info from the INDEX definition
+</programlisting>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef, dataset
+    </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
+    </emphasis><emphasis role="bold">] );</emphasis></para>
+
+    <para>A forma 4 cria um arquivo de índice em um dataset usando uma
+    definição INDEX previamente especificada.</para>
+
+    <para>Isso é usado para criar um índice cuja definição do dataset é
+    complexa. Isso permite que o índice seja separado de forma lógica do
+    dataset a partir do qual é criado. Isso é útil especificamente quando a
+    definição do dataset é bastante complicada (Mb de origem), já que quando o
+    índice é subsequentemente usado em uma consulta, todos os códigos usados
+    para criá-lo também são interpretados.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>ds = DATASET(100, TRANSFORM({ unsigned id }, SELF.id := COUNTER));
+i := INDEX({ unsigned id }, 'myIndex');
+BUILD(i, ds);
+</programlisting>
+  </sect2>
+
+  <sect2 id="BUILD_a_Query_Library">
+    <title>BUILD a Query Library</title>
+
+    <para><emphasis role="bold">BUILD(</emphasis><emphasis> library
+    </emphasis><emphasis role="bold">);</emphasis></para>
+
+    <para>A forma 5 cria uma biblioteca de consulta externa <emphasis
+    role="bold">para ser usada apenas no Roxie</emphasis>.</para>
+
+    <para>Uma biblioteca de consulta permite que um conjunto de atributos
+    relacionados seja agrupado como uma unidade autocontida, para que o código
+    possa ser compartilhado entre diferentes workunits. Isso reduz o tempo
+    necessário para implementar um conjunto de atributos, podendo reduzir a
+    pegada de memória para o grupo de consultas no Roxie que usam a
+    <emphasis>biblioteca</emphasis>. Além disso, a funcionalidade na
+    <emphasis>biblioteca </emphasis> pode ser atualizada sem a necessidade de
+    reimplementar todas as consultas que utilizam essa funcionalidade.</para>
+
+    <para>As bibliotecas de consulta são adequadas para agrupar conjuntos de
+    funções próximas. Não são adequadas para a inclusão de atributos definidos
+    como MACROs – o significado de uma macro é desconhecido até que os seus
+    parâmetros sejam substituídos.</para>
+
+    <para>A forma do nome da #WORKUNIT<indexterm>
+        <primary>#WORKUNIT</primary>
+      </indexterm> nomeia a workunit que BUILD cria como biblioteca externa.
+    Este nome é o nome da biblioteca externa usada pela função LIBRARY
+    <indexterm>
+        <primary>function LIBRARY</primary>
+      </indexterm> (que fornece acesso à biblioteca a partir da consulta que
+    está usando a <emphasis>biblioteca</emphasis>). <emphasis role="bold">Uma
+    vez que a própria workunit é a biblioteca de consulta externa, BUILD
+    construir(</emphasis><emphasis role="bold">biblioteca)
+    </emphasis><emphasis role="bold">deve ser a única ação na
+    workunit.</emphasis></para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>NamesRec := RECORD
+  INTEGER1  NameID;
+  STRING20  FName;
+  STRING20  LName;
+END;
+FilterLibIface1(DATASET(namesRec) ds, STRING search) := INTERFACE
+  EXPORT DATASET(namesRec) matches;
+  EXPORT DATASET(namesRec) others;
+END;
+
+FilterDsLib1(DATASET(namesRec) ds, STRING search) :=
+      MODULE,LIBRARY(FilterLibIface1)
+  EXPORT matches := ds(Lname  = search);
+  EXPORT others  := ds(Lname != search);
+END;
+#WORKUNIT('name','Ppass.FilterDsLib')
+BUILD(FilterDsLib1);
+</programlisting>
+
+    <para>Ver também: <link linkend="INDEX_record_structure">INDEX</link>,
+    <link linkend="JOIN">JOIN</link>, <link linkend="FETCH">FETCH</link>,
+    <link linkend="MODULE_Structure">MODULE</link>, <link
+    linkend="INTERFACE_Structure">INTERFACE</link>, <link
+    linkend="LIBRARY">LIBRARY</link>, <link
+    linkend="DISTRIBUTE">DISTRIBUTE</link>, <link
+    linkend="_WORKUNIT">#WORKUNIT</link></para>
+  </sect2>
+</sect1>

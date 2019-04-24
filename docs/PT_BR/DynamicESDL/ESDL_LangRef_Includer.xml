@@ -1,0 +1,224 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>Referência da Linguagem ESDL</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito bem-vindos e podem ser enviados por e-mail para <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre documentação</emphasis> na linha de assunto e indique o nome do documento, o número das páginas e número da versão atual no corpo da mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript>  é uma marca registrada da LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="ESDLOverview">
+    <title>Visão Geral da Linguagem ESDL</title>
+
+    <para>ESDL (Enterprise Service Description Language) é uma metodologia que ajuda você a desenvolver e gerenciar interfaces de consulta baseada na web de forma rápida e consistente.</para>
+
+    <para>A ESDL dinâmica adota uma abordagem de desenvolvimento da primeira interface. Ela aproveita a linguagem ESDL para criar uma interface comum "contract" de modo que ambos os desenvolvedores de consultas Roxie e de interface Web possam aderir. O objetivo é permitir que os desenvolvedores criem serviços Web de produção com interfaces limpas que capazes de evoluir e crescer ao longo do tempo sem interromper as aplicações existentes.</para>
+
+    <para>O suporte de versões embutido do ESDL ajuda a garantir que aplicações implementadas e compiladas continuem a operar mesmo com mudanças na interface do serviço implementado para novas funcionalidades.</para>
+
+    <para>A capacidade do ESDL de definir e reutilizar estruturas comuns ajuda a manter as interfaces consistentes entre os métodos.</para>
+
+    <para>O serviço ESDL dinâmico foi desenvolvido para dimensionar horizontalmente, e ganchos são fornecidos para adicionar processos de registro (logging) e segurança personalizados para ajudar a criar serviços Web totalmente "prontos para produção".</para>
+
+    <para>Depois que um serviço é implementado, desenvolvedores de aplicações e usuários finais podem utilizá-lo usando REST, JSON, XML, SOAP ou postagens codificadas por formulário. A ESDL dinâmica oferece acesso rápido e fácil a um WSDL, formulários dinâmicos, amostras de busca e de respostas, e interfaces de testes para permitir que os desenvolvedores testem as mudanças lógicas, as alterações de dados ou os novos recursos, além de interagirem com o serviço diretamente usando SOAP, XML ou JSON.</para>
+  </chapter>
+
+  <chapter id="ESDLStructures" role="nobrk">
+    <title>Estruturas ESDL</title>
+
+    <para></para>
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPstruct.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPrequest.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPresponse.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLESParray.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPenum.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPinclude.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPservice.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPmethod.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </chapter>
+
+  <chapter id="ESDLDatatypes">
+    <title>Datatypes ESDL</title>
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLbooleanbool.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLstring.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLint.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLint64.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLfloat.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLdouble.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLbinary.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLTypeMapping.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </chapter>
+
+  <chapter id="ESDLAttributes">
+    <title>Atributos ESDL</title>
+
+    <para>É possível usar atributos ESDL para estender e substituir o comportamento padrão de uma definição ESDL. Por exemplo, a adição de max_len(n) em uma string estabelece que a string precisará armazenar apenas um certo número de caracteres.</para>
+
+    <para>Vários atributos são tratados como dicas que podem, em comparação com os demais, exercer maior influência sobre algumas implementações. Por exemplo, max_len(n) afetará o código ECL gerado, mas é ignorado quando C++ é gerado.</para>
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_len.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_max_len.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_name.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLcounter_and_count_val.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_count_var.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_null.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLleading_zero.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_hide.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_type.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_keep.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLmin_ver.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_ver.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLdepr_ver.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLget_data_from.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLoptional.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLhelp.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLdescription.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLversion.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLauth_feature.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </chapter>
+</book>

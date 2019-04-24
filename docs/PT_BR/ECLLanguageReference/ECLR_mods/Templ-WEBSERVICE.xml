@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_WEBSERVICE">
+  <title>#WEBSERVICE</title>
+
+  <para><emphasis role="bold">#WEBSERVICE<indexterm>
+      <primary>#WEBSERVICE</primary>
+    </indexterm>( </emphasis><emphasis role="bold">[</emphasis><emphasis
+  role="bold">FIELDS</emphasis>(<emphasis>fieldlist</emphasis>),<emphasis
+  role="bold">][</emphasis><emphasis
+  role="bold">HELP</emphasis>(<emphasis>helptext</emphasis>),<emphasis
+  role="bold">][</emphasis><emphasis
+  role="bold">DESCRIPTION</emphasis>(<emphasis>descriptiontext</emphasis>),<emphasis
+  role="bold">]</emphasis> <emphasis role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="77.25pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">FIELDS</emphasis></entry>
+
+            <entry>O parâmetro FIELDS especifica a sequência de
+            campos<indexterm>
+                <primary>field sequence</primary>
+              </indexterm> em formulários web WsECL. Essa lista é exclusiva.
+            Se o atributo FIELDS está presente, somente os campos da lista de
+            campos serão exibidos no formulário web em WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>fieldlist</emphasis></entry>
+
+            <entry>Uma lista separada por vírgulas de nomes de campos na ordem
+            em que devem aparecer no formulário.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">HELP</emphasis></entry>
+
+            <entry>O parâmetro HELP especifica a adição de texto de ajuda ao
+            formulário web do WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>helptext</emphasis></entry>
+
+            <entry>O texto de ajuda a ser exibido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">DESCRIPTION</emphasis></entry>
+
+            <entry>O parâmetro DESCRIPTION especifica a adição de texto
+            descritivo ao formulário web do WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>descriptiontext</emphasis></entry>
+
+            <entry>O texto de descrição a ser exibido.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A declaração <emphasis role="bold">#WEBSERVICE</emphasis> define
+  opções para os parâmetros de entrada de um formulário web do WsECL para uma
+  query publicada.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>#WEBSERVICE(FIELDS('Field1','AddThem','Field2'),
+            HELP('Enter Integer Values'),
+            DESCRIPTION('If AddThem is TRUE, this adds the two integers')); 
+Field1 := 1 : Stored('Field1');
+Field2 := 2 :Stored('Field2');
+AddThem := TRUE :STORED ('AddThem');
+HiddenValue := 12 :STORED ('HiddenValue'); //not in fieldlist, won't display on WsECl form
+IF(AddThem,OUTPUT(Field1+Field2),OUTPUT('Not Added'));
+
+#WEBSERVICE(FIELDS('field1','field2','*'));//includes unspecified fields on the WsECL form
+</programlisting>
+
+  <para>Ver também: <link
+  linkend="STORED_workflow_service">STORED</link></para>
+</sect1>

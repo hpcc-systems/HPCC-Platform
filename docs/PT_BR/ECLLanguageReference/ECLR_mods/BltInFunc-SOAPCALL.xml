@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SOAPCALL">
+  <title>SOAPCALL<indexterm>
+      <primary>SOAPCALL</primary>
+    </indexterm></title>
+
+  <para><emphasis>result</emphasis><emphasis role="bold"> :=
+  SOAPCALL<indexterm>
+      <primary>SOAPCALL Function</primary>
+    </indexterm>( [ </emphasis><emphasis>recset, </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> url, service, instructure,
+  </emphasis><emphasis role="bold">[ </emphasis><emphasis>transform,
+  </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold">
+  DATASET<indexterm>
+      <primary>DATASET</primary>
+    </indexterm>(</emphasis><emphasis>outstructure</emphasis><emphasis
+  role="bold">) </emphasis><emphasis>| outstructure </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, options </emphasis><emphasis
+  role="bold">]</emphasis> <emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
+
+  <para><emphasis role="bold">SOAPCALL( [ </emphasis><emphasis>recset,
+  </emphasis><emphasis role="bold">]</emphasis><emphasis> url, service,
+  instructure, </emphasis><emphasis role="bold">[
+  </emphasis><emphasis>transform, </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis> options </emphasis><emphasis
+  role="bold">]</emphasis> <emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="121.70pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>result</emphasis></entry>
+
+            <entry>Nome de atributo para o conjunto de registro resultante ou
+            registro individual.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recset</emphasis></entry>
+
+            <entry>Opcional. O recordset da entrada. Se omitida, um registro
+            individual de entrada deve ser definido por valores padrão para
+            cada campo do parâmetro <emphasis>instructure</emphasis> .</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>url</emphasis></entry>
+
+            <entry>Uma string que contém uma lista de URLs delimitados por
+            pipe ( | ) que hospedam o serviço a ser invocado (podem anexar
+            nomes de módulos de repositório). Isso objetiva fornecer meios
+            para o client realizar uma busca federada onde a solicitação é
+            enviada para cada um dos sistemas de destino na lista. Estes URLs
+            podem conter nomes de usuário e senhas em formato padrão, se
+            exigidos. Os nomes de usuário/senhas padrão são aqueles contidos
+            na tarefa. Se acionar um serviços Web ESP , é possível anexar o
+            parâmetro ver_=n.nn para especificar a versão do serviço. Por
+            exemplo: <programlisting>SOAPCALL('http://127.0.0.1:8010/Wsdfu/?ver_=1.22', 
+         'DFUSearchData', 
+         instructure,DATASET(outsructure));</programlisting></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>service</emphasis></entry>
+
+            <entry>Uma expressão da string que contém o nome do serviço a ser
+            invocado. Isso pode estar na forma module.attribute se o serviço
+            estiver em uma plataforma Roxie.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>instructure</emphasis></entry>
+
+            <entry>Uma estrutura RECORD que contém as definições do campo de
+            entrada a partir das quais a entrada XML é construída para o
+            serviço SOAP . O nome das tags no XML são derivados dos nomes dos
+            campos no registro de entrada; isso pode ser substituído ao
+            colocar um xpath no campo ( {xpath('tagname')} – consulte a seção
+            Suporte ao XPATH na discussão sobre Estrutura RECORD). Se o
+            parâmetro <emphasis>recset</emphasis> não estiver presente, cada
+            definição de campo deve conter um valor padrão que constituirá o
+            registro de entrada individual. Se o parâmetro <emphasis>recset
+            </emphasis> estiver presente, cada definição de campo deve conter
+            um valor padrão, a menos que transform também esteja especificada
+            para fornecer valores de dados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>Opcional. A função TRANSFORM é usada para acionar o
+            processamento dos dados <emphasis>instructure</emphasis> . Isso
+            elimina a necessidade de definir valores padrão para todos os
+            campos na estrutura RECORD <emphasis>instructure</emphasis> . A
+            função deve adotar pelo menos um parâmetro: um registro LEFT de
+            mesmo formato que a entrada <emphasis> recset</emphasis>. O
+            formato do conjunto de registro resultante deve ser o mesmo que a
+            entrada <emphasis>instructure</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">DATASET</emphasis>
+            (<emphasis>outstructure</emphasis>)</entry>
+
+            <entry>Especifica o resultado do <emphasis>recordset</emphasis> no
+            formato <emphasis>outstructure</emphasis> .</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outstructure</emphasis></entry>
+
+            <entry>Uma estrutura RECORD que contém as definições do campo de
+            resultado. Se não for usada como parâmetro para a palavra-chave
+            DATASET , ela especifica um resultado de registro individual. Cada
+            definição de campo na estrutura RECORD deve usar um atributo xpath
+            ( {xpath('tagname')} ) para eliminar problemas de distinção entre
+            maiúsculas e minúsculas.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula das especificações
+            opcionais da lista abaixo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SOAPCALL retorna um conjunto de registros, um registro
+            individual ou nenhum.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para><emphasis role="bold">SOAPCALL<indexterm>
+      <primary>Opções SOAPCALL</primary>
+    </indexterm> </emphasis> são funções ou ações que acionam um serviço SOAP
+  (Protocolo Simples de Acesso a Objetos).</para>
+
+  <para>Opções <emphasis>válidas</emphasis> são:</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="135.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">RETRY</emphasis><indexterm>
+                <primary>RETRY</primary>
+              </indexterm>(<emphasis>count</emphasis>)</entry>
+
+            <entry>Especifica quantas vezes houve uma nova tentativa de
+            acionamentos, se ocorrerem erros não fatais. Se omitida, o padrão
+            é três (3).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TIMEOUT</emphasis><indexterm>
+                <primary>TIMEOUT</primary>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
+
+            <entry>Especifica o número tentativas de leitura antes da falha. O
+            <emphasis>period</emphasis> (período) é um número real cuja parte
+            inteira especifica os segundos. Definir para zero (0) indica
+            espera permanente. Se omitido, o padrão é trezentos (300).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TIMELIMIT</emphasis><indexterm>
+                <primary>TIMELIMIT</primary>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
+
+            <entry>Especifica o tempo total permitido para o SOAPCALL. O
+            <emphasis>period (período)</emphasis> é um número real cuja parte
+            inteira especifica os segundos. Se omitido, o padrão é zero (0) –
+            indicando ausência de limite de tempo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">HEADING<indexterm>
+                <primary>HEADING</primary>
+              </indexterm></emphasis>(<emphasis>prefix,suffix</emphasis>)</entry>
+
+            <entry>Especifica as tags para encapsular os campos de entrada XML
+            . Se omitido, o padrão é: HEADING('','').</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">XPATH<indexterm>
+                <primary>XPATH</primary>
+              </indexterm></emphasis>(<emphasis>xpath</emphasis>)</entry>
+
+            <entry>Especifica o caminho usado para acessar as linhas no
+            resultado. Se omitido, o padrão é:
+            'serviceResponse/Results/Result/Dataset/Row'.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MERGE<indexterm>
+                <primary>MERGE</primary>
+              </indexterm></emphasis>(<emphasis>n</emphasis>)</entry>
+
+            <entry>Especifica o processamento de n registros por lote (o
+            bloqueio). Se omitido, o padrão é 1 (valores diferentes de 1 podem
+            ser incompatíveis com serviços não Roxie). Válido para ser usado
+            apenas se o parâmetro <emphasis>recset</emphasis> também estiver
+            presente.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis><indexterm>
+                <primary>PARALLEL</primary>
+              </indexterm>(<emphasis>n</emphasis>)</entry>
+
+            <entry>Especifica o número de threads simultâneas – para processar
+            as consultas do Motor de entrega de dados – para no máximo 50 (o
+            padrão é 2). Isso busca limitar o número de sessões
+            simultâneas.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ONFAIL<indexterm>
+                <primary>ONFAIL</primary>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
+
+            <entry>Especifica acionar a função transform, se o serviço falhar
+            em relação a um registro específico, ou a palavra-chave SKIP. A
+            função TRANSFORM deve produzir um <emphasis>resultype</emphasis>
+            igual à <emphasis>outstructure</emphasis> e pode usar o FAILCODE
+            e/ou FAILMESSAGE<indexterm>
+                <primary>FAILMESSAGE</primary>
+              </indexterm> para fornecer detalhes da falha.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TRIM<indexterm>
+                <primary>TRIM</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Especifica que todos os espaços à direita são removidos das
+            strings antes do resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">RESPONSE
+            </emphasis>(<emphasis>NOTRIM</emphasis>) <indexterm>
+                <primary>NOTRIM</primary>
+              </indexterm></entry>
+
+            <entry>Define o indicador para impedir a remoção de espaços na
+            resposta.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NAMESPACE<indexterm>
+                <primary>NAMESPACE</primary>
+              </indexterm> </emphasis>(<emphasis>namespace</emphasis>)</entry>
+
+            <entry>Especifica o nível superior do
+            <emphasis>NAMESPACE</emphasis> para uma chamada SOAP</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LITERAL<indexterm>
+                <primary>LITERAL</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Especifica que o serviço não é necessariamente implementado
+            no ESP.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SOAPACTION<indexterm>
+                <primary>SOAPACTION</primary>
+              </indexterm> </emphasis>(<emphasis>value</emphasis>)</entry>
+
+            <entry>Especifica um <emphasis>valor </emphasis> onde esse
+            <emphasis>valor </emphasis> é uma expressão da string que
+            normalmente contém um URN ou URL mandatório para uma
+            interoperabilidade adequada do <emphasis>serviço </emphasis>
+            Web.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOG<indexterm>
+                <primary>LOG</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Se especificado, grava detalhes no arquivo de log do motor
+            (hThor, Thor, ou Roxie) para o qual SOAPCALL é enviado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOG
+            </emphasis>(<emphasis>MIN</emphasis>)</entry>
+
+            <entry>Especifica gravar detalhes mínimos do SOAPCALL em um
+            arquivo de log.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOG
+            </emphasis>(<emphasis>expression</emphasis>)</entry>
+
+            <entry>Especifica adicionar a expressão no log ao desempenhar um
+            SOAPCALL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ENCODING</emphasis><indexterm>
+                <primary>ENCODING</primary>
+              </indexterm></entry>
+
+            <entry>Especifica que o serviço Web acionado exige um formato de
+            mensagem diferente, onde o tipo de informação esteja incorporado
+            em XML.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">HTTPHEADER<indexterm>
+                <primary>HTTPHEADER</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Refere-se às informações de cabeçalho a serem especificadas
+            para o serviço.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <sect2 id="SOAPCALL_Function">
+    <title>Função SOAPCALL<indexterm>
+        <primary>Função</primary>
+      </indexterm> SOAPCALL</title>
+
+    <para>Esta forma de função SOAPCALL <indexterm>
+        <primary>SOAPCALL</primary>
+      </indexterm> pode adotar como entrada tanto um registro individual
+    quanto um conjunto de registros, e ambos os tipos de registros podem
+    resultar em um registro individual ou em um conjunto de registros.</para>
+
+    <para>A definição do registro de resultado <emphasis>outstructure
+    </emphasis>pode conter um campo inteiro com um XPATH de "_call_latency"
+    para receber o tempo (em segundos) do acionamento que gerou a linha (desde
+    a criação do soquete ao recebimento da resposta). A latência é inserida em
+    cada linha de retorno do acionamento. Assim, se um acionamento demorou 90
+    segundos e retornou 11 linhas, você então verá 11 linhas com 90 no campo
+    _call_latency.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>OutRec1 := RECORD
+  STRING500 OutData{XPATH('OutData')};
+  UNSIGNED4 Latency{XPATH('_call_latency')};
+END;
+ip := 'http://127.0.0.1:8022/';
+ips := 'https://127.0.0.1:8022/';
+ipspw := 'https://username:password@127.0.0.1:8022/';
+svc := 'MyModule.SomeService';
+
+//1 rec in, 1 rec out
+OneRec1 := SOAPCALL(ips,svc,{STRING500 InData := 'Some Input Data'},OutRec1);
+
+//1 rec in, recordset out
+ManyRec1 := SOAPCALL(ip,svc,{STRING500 InData := 'Some Input Data'},DATASET(OutRec1));
+
+//recordset in, 1 rec out
+OneRec2 := SOAPCALL(InputDataset,ip,svc,{STRING500 InData},OutRec1);
+
+//recordset in, recordset out
+ManyRec2 := 
+ SOAPCALL(InputDataset,ipspw,svc,{STRING500 InData := 'Some In Data'},DATASET(OutRec1));
+
+//TRANSFORM function usage example
+namesRecord := RECORD
+  STRING20 surname;
+  STRING10 forename;
+  INTEGER2 age := 25;
+END;
+ds := DATASET('x',namesRecord,FLAT);
+
+inRecord := RECORD
+  STRING name{xpath('Name')};
+  UNSIGNED6 id{XPATH('ADL')};
+END;
+outRecord := RECORD
+  STRING name{xpath('Name')};
+  UNSIGNED6 id{XPATH('ADL')};
+  REAL8 score;
+END;
+inRecord t(namesRecord l) := TRANSFORM
+  SELF.name := l.surname;
+  SELF.id := l.age;
+END;
+outRecord genDefault1() := TRANSFORM
+  SELF.name := FAILMESSAGE;
+  SELF.id := FAILCODE;
+  SELF.score := (REAL8)FAILMESSAGE('ip');
+END;
+outRecord genDefault2(namesRecord l) := TRANSFORM
+  SELF.name := l.surname;
+  SELF.id := l.age;
+  SELF.score := 0;
+END;
+
+ip := 'http://127.0.0.1:8022/';
+svc:= 'MyModule.SomeService';
+OUTPUT(SOAPCALL(ip, svc,{ STRING20 surname := 'Halligan',STRING20 forename := 'Kevin';},
+DATASET(outRecord), ONFAIL(genDefault1())));
+
+OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), 
+       ONFAIL(genDefault2(LEFT))));
+
+OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP)));
+
+//Using HTTPHEADER to pass Authorization info
+OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
+                HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ=')))
+
+</programlisting>
+  </sect2>
+
+  <sect2 id="SOAPCALL_Action">
+    <title>Ação SOAPCALL<indexterm>
+        <primary>action</primary>
+      </indexterm> SOAPCALL</title>
+
+    <para>A segunda forma de SOAPCALL (a ação), pode adotar como entrada um
+    registro individual ou um conjunto de registros. Nenhum dos tipos de
+    entrada gera qualquer resultado retornado – ele simplesmente inicia o
+    serviço SOAP especificado, fornecendo os dados de entrada.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>//1 rec in, no result
+SOAPCALL( 'https://127.0.0.1:8022/','MyModule.SomeService',
+           {STRING500 InData := 'Some Input Data'});
+
+//recordset in, no result
+SOAPCALL( InputDataset,'https://127.0.0.1:8022/','MyModule.SomeService',{STRING500 InData});
+</programlisting>
+
+    <para>Ver também: <link linkend="RECORD_Structure">Estrutura
+    RECORD</link>, <link linkend="TRANSFORM_Structure">Estrutura
+    TRANSFORM</link></para>
+  </sect2>
+</sect1>

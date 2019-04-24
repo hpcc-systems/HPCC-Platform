@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="NOTHOR">
+  <title>NOTHOR<indexterm>
+      <primary>NOTHOR action</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>name</emphasis>
+  :=<emphasis role="bold"> ] NOTHOR<indexterm>
+      <primary>NOTHOR</primary>
+    </indexterm>(</emphasis><emphasis> action </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="83.15pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>Opcional. O identificador desta ação.</entry>
+          </row>
+
+          <row>
+            <entry>action</entry>
+
+            <entry>A ação a ser executada.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A diretiva de compilador <emphasis role="bold">NOTHOR </emphasis>
+  indica que a <emphasis>ação</emphasis> não deve ser executada no thor, mas
+  em linha e em um contexto global. O NOTHOR permite realizar apenas operações
+  de dataset bastante simples, como a filtragem de registros ou um simples
+  PROJETO PROJECT.</para>
+
+  <para>O NOTHOR precisa ser usado em operações que usam as transações de
+  superarquivo (como o exemplo abaixo), onde o compilador não reconhece o
+  contexto apropriado.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>IMPORT STD;
+rec := RECORD
+  STRING10 S;
+END;
+
+srcnode := '10.239.219.2'; 
+srcdir := '/var/lib/HPCCSystems/mydropzone/';
+
+dir := STD.File.RemoteDirectory(srcnode,srcdir,'*.txt',TRUE);
+
+  //without NOTHOR this code gets this error:
+  // "Cannot call function AddSuperFile in a non-global context"
+NOTHOR(SEQUENTIAL(
+  STD.File.DeleteSuperFile('MultiSuper1'),
+  STD.File.CreateSuperFile('MultiSuper1'),
+  STD.File.StartSuperFileTransaction(),
+  APPLY(dir,STD.File.AddSuperFile('MultiSuper1',
+        STD.File.ExternalLogicalFileName(srcnode,srcdir+name))),
+  STD.File.FinishSuperFileTransaction()));
+
+F1 := DATASET('MultiSuper1', rec, THOR);
+OUTPUT(F1,,'testmulti1',OVERWRITE);
+</programlisting>
+
+  <para>Ver também: <link linkend="SEQUENTIAL">SEQUENTIAL</link></para>
+</sect1>

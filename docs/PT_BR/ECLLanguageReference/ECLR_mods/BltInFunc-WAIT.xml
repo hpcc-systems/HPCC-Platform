@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WAIT">
+  <title>WAIT</title>
+
+  <informalexample id="SchWAIT">
+    <para><emphasis role="bold">WAIT<indexterm>
+        <primary>WAIT</primary>
+      </indexterm><indexterm>
+        <primary>WAIT Function</primary>
+      </indexterm>(</emphasis><emphasis>event</emphasis><emphasis
+    role="bold">)</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="122.40pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>event</emphasis></entry>
+
+              <entry>Uma constante de string com o nome do evento a ser
+              aguardado.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>A ação <emphasis role="bold">WAIT </emphasis> é similar ao serviço
+    de fluxo de trabalho WHEN, mas pode ser usada no código
+    condicional.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>   //You can either do this:
+  action1;
+  action2 : WHEN('expectedEvent');
+  
+  //can also be written as:
+  SEQUENTIAL(action1,WAIT('expectedEvent'),action2);
+</programlisting>
+  </informalexample>
+
+  <para>Ver também: <link linkend="EVENT">EVENT</link>, <link
+  linkend="NOTIFY">NOTIFY</link>, <link linkend="WHEN">WHEN</link>, <link
+  linkend="CRON">CRON</link></para>
+</sect1>

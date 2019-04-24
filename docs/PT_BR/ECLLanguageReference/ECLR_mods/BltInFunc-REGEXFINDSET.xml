@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REGEXFINDSET">
+  <title>REGEXFINDSET</title>
+
+  <para><emphasis role="bold">REGEXFINDSET<indexterm>
+      <primary>REGEXFINDSET</primary>
+    </indexterm><indexterm>
+      <primary>REGEXFINDSET function</primary>
+    </indexterm>(</emphasis><emphasis>regex, text </emphasis><emphasis
+  role="bold"> [, NOCASE<indexterm>
+      <primary>NOCASE</primary>
+    </indexterm>])</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="81.35pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>regex</emphasis></entry>
+
+            <entry>Uma expressão Perl regular padrão.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
+            <entry>O texto a ser analisado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOCASE</emphasis></entry>
+
+            <entry>Opcional. Especifica uma busca sem distinção entre
+            maiúsculas e minúsculas.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>REGEXFINDSET retorna um conjunto de strings.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">REGEXFIND </emphasis> usa
+  <emphasis>regex<indexterm>
+      <primary>regex</primary>
+    </indexterm></emphasis> para analisar o <emphasis>texto</emphasis> e
+  localizar correspondências. A <emphasis>regex</emphasis> uma expressão Perl
+  regular padrão.<indexterm>
+      <primary>Uma expressão Perl regular padrão.</primary>
+    </indexterm>. Usamos bibliotecas de terceiros para suportar isso.
+  Portanto, para <emphasis>texto</emphasis> de código único consulte os
+  documentos Boost em <ulink
+  url="http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html">http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html</ulink>
+  Observe que a versão da biblioteca Boost pode variar de acordo com sua
+  distribuição. Para <emphasis>texto</emphasis> unicode, consulte os
+  documentos ICU nas seções “Regular Expression Metacharacters”
+  (Metacaracteres de expressão regular) e “Regular Expression Operators”
+  (Operadores de expressão regular) em <emphasis
+  role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
+  e os links indicados lá, especificamente a seção “UnicodeSet patterns”
+  (Padrões UnicodeSet) em http://userguide.icu-project.org/strings/unicodeset.
+  <emphasis
+  role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
+  Nós usamos a versão 2.6, que deve suportar todos os recursos
+  listados.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>sampleStr := 
+  'To: jane@example.com From: john@example.com This is the winter of our discontent.';
+eMails:=REGEXFINDSET('\\w+@[a-zA-Z_]+?\\.[a-zA-Z]{2,3}' , sampleStr);
+OUTPUT(eMails);
+
+UNICODE sampleStr2:= 
+  U'To: janë@example.com From john@example.com This is the winter of our discontent.';
+eMails2:= REGEXFINDSET(U'\\w+@[a-zA-Z_]+?\\.[a-zA-Z]{2,3}', sampleStr2);
+OUTPUT(eMails2);
+
+</programlisting>
+
+  <para>Ver também: <link linkend="PARSE">PARSE</link>, <link
+  linkend="REGEXREPLACE">REGEXFIND</link>, <link
+  linkend="REGEXREPLACE">REGEXREPLACE</link></para>
+</sect1>

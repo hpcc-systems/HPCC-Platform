@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Field_and_Attribute_Qualification">
+  <title>Qualificação e Definição de Campo</title>
+
+  <sect2 id="Imported_Attributes">
+    <title>Definições</title>
+
+    <para>Imported<indexterm>
+        <primary>EXPORTed</primary>
+      </indexterm> definidas dentro de outro módulo e <indexterm>
+        <primary>IMPORTed</primary>
+      </indexterm> (<indexterm>
+        <primary>consulte as</primary>
+      </indexterm> palavras-chave <link linkend="EXPORT">EXPORT</link> e <link
+    linkend="IMPORT">IMPORT</link> ) estão disponíveis para uso na definição
+    que contém o IMPORT. As Definições importadas devem ser totalmente
+    qualificadas com seu nome de Módulo e Definição usando a sintaxe de ponto
+    <indexterm>
+        <primary>dot syntax</primary>
+      </indexterm> (módulo.definição).</para>
+
+    <programlisting>IMPORT abc;               //make all exported definitions in the abc module available
+EXPORT Definition1 := 5;  //make Definition1 available to other modules
+Definition2 := abc.Definition2 + Definition1;  
+                          // object qualification needed for Definitions from abc module</programlisting>
+  </sect2>
+
+  <sect2 id="Fields_in_Datasets">
+    <title>Campos no Datasets</title>
+
+    <para>Cada Dataset conta como um escopo qualificado e os campos delas são
+    totalmente qualificados pelo seu nome de Dataset (ou conjunto de
+    registros) e Campo usando a sintaxe de ponto (dataset.campo). Da mesma
+    forma, o conjunto de resultados da função integrada TABLE<indexterm>
+        <primary>TABLE</primary>
+      </indexterm> (consulte a palavra-chave <emphasis
+    role="bold">TABLE</emphasis> ) também atua como um escopo qualificado. O
+    nome do conjunto de registros ao qual um campo pertence é o nome do
+    objeto:</para>
+
+    <programlisting>Young := YearOf(Person.per_dbrth) &lt; 1950;
+MySet := Person(Young);</programlisting>
+
+    <para>Ao atribuir um nome a um Dataset como parte da definição, os campos
+    dessa Definição (ou conjunto de registros) ingressam no escopo. Se
+    Definições parametrizadas (funções) forem aninhadas, apenas o escopo mais
+    interno estará disponível. Ou seja, todos os campos de um Dataset (ou
+    conjunto de registros derivado) estão no escopo na expressão de filtro. O
+    mesmo ocorre para parâmetros de expressões de qualquer função integrada
+    que atribui um nome a um Dataset ou conjunto de registros derivado como um
+    parâmetro.</para>
+
+    <programlisting>MySet1 := Person(YearOf(dbrth) &lt; 1950);
+// MySet1 is the set of Person records who were born before 1950</programlisting>
+
+    <para/>
+
+    <programlisting>MySet2 := Person(EXISTS(OpenTrades(AgeOf(trd_dla) &lt; AgeOf(Person.per_dbrth))));</programlisting>
+
+    <para/>
+
+    <programlisting>// OpenTrades is a pre-defined record set.
+//All Trades fields are in scope in the OpenTrades record set filter 
+//expression, but Person is required here to bring Person.per_dbrth
+// into scope
+//This example compares each trades' Date of Last Activity to the
+// related person's Date Of Birth</programlisting>
+
+    <para>Qualquer campo em um Record Set <emphasis
+    role="underline">pode</emphasis> ser qualificado com o nome do Dataset em
+    que é baseado ou com o nome de qualquer outro Record Set baseado no mesmo
+    dataset. Por exemplo:</para>
+
+    <programlisting>memtrade.trd_drpt
+nondup_trades.trd_drpt
+trades.trd_drpt</programlisting>
+
+    <para>todas as referências são para o mesmo campo no dataset
+    memtrade.</para>
+
+    <para>Normalmente, para fins de consistência, você deve usar o nome do
+    dataset base para qualificação. Você também pode usar o nome do Conjunto
+    de registros atual em qualquer contexto em que o nome do dataset base pode
+    gerar confusão.</para>
+  </sect2>
+
+  <sect2 id="Scope_Resolution_Operator">
+    <title>Operador de Resolução de Escopo</title>
+
+    <para>Os identificadores são examinados na seguinte ordem:</para>
+
+    <para>1. O dataset ativo no momento, se houver</para>
+
+    <para>2. A definição sendo definida e todos os parâmetros em que está
+    baseada</para>
+
+    <para>3. Todas as definições ou parâmetros de qualquer estrutura MODULE ou
+    FUNCTION que contém a definição atual</para>
+
+    <para>Isso pode significar que o acesso à definição ou ao parâmetro
+    desejado pode não ser realizado porque está oculto como um nome de
+    parâmetro ou definição privada que conflita com o nome de um campo do
+    dataset.</para>
+
+    <para>Seria melhor alterar o nome do parâmetro ou da definição privada
+    para impedir o conflito de nomes, mas às vezes isso não é possível.</para>
+
+    <para>Você pode direcionar o acesso a uma correspondência diferente
+    qualificando o nome do campo com o operador de resolução de escopo (o
+    caractere circunflexo (^)), usando-o uma vez para cada etapa na ordem
+    listada acima que você quer ignorar.</para>
+
+    <para>Esse exemplo mostra a ordem de qualificação necessária para alcançar
+    uma determinada definição ou parâmetro:</para>
+
+    <para><programlisting>ds := DATASET([1], { INTEGER SomeValue });
+
+INTEGER SomeValue := 10; //local definition
+
+myModule(INTEGER SomeValue) := MODULE
+
+  EXPORT anotherFunction(INTEGER SomeValue) := FUNCTION
+    tbl := TABLE(ds,{SUM(GROUP, someValue), // 1 - DATASET field
+                     SUM(GROUP, ^.someValue), // 84 - FUNCTION parameter
+                     SUM(GROUP, ^^.someValue), // 42 - MODULE parameter
+                     SUM(GROUP, ^^^.someValue), // 10 - local definition
+                 0});
+     RETURN<indexterm>
+          <primary>RETURN</primary>
+        </indexterm> tbl;
+   END;
+
+   EXPORT result := anotherFunction(84);
+   END;
+
+OUTPUT(myModule(42).result);</programlisting></para>
+
+    <para>Nesse exemplo, há quatro ocorrências do nome "SomeValue":</para>
+
+    <para>um campo em um DATASET.</para>
+
+    <para>uma definição local</para>
+
+    <para>um parâmetro de uma estrutura MODULE</para>
+
+    <para>um parâmetro de uma estrutura FUNCTION</para>
+
+    <para>O código na função TABLE <indexterm>
+        <primary>TABLE function</primary>
+      </indexterm> mostra como fazer referência a cada ocorrência
+    separada.</para>
+
+    <para>Embora essa sintaxe permita exceções quando necessário, a criação de
+    outra definição com um nome diferente é a melhor solução.</para>
+  </sect2>
+</sect1>

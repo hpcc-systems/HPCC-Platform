@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ROLLUP">
+  <title>ROLLUP</title>
+
+  <para><emphasis role="bold">ROLLUP<indexterm>
+      <primary>ROLLUP</primary>
+    </indexterm><indexterm>
+      <primary>ROLLUP function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, condition, transform
+  </emphasis><emphasis role="bold">[, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
+  transform, fieldlist </emphasis><emphasis role="bold">[, LOCAL] [, UNORDERED
+  | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold">GROUP</emphasis><emphasis><indexterm>
+      <primary>GROUP</primary>
+    </indexterm>, transform </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.40pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O recordset a ser processado, normalmente classificado na
+            mesma ordem em que a condição ou <emphasis>fieldlist</emphasis>
+            será testada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>Uma expressão que define registros “duplicados”. As
+            palavras-chave LEFT e RIGHT podem ser usadas como qualificadores
+            de dataset nos campos do <emphasis>recordset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>A função TRANSFORM é usada para acionar cada par de
+            registros duplicados encontrado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>fieldlist</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula de expressões ou campos no
+            conjunto de registros que define os registros “duplicados”. As
+            palavras-chave WHOLE RECORD (ou apenas RECORD) devem ser usadas
+            para indicar todos os campos nessa estrutura, e/ou você pode usar
+            a palavra-chave EXCEPT para listar os campos a serem
+            excluídos.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">GROUP</emphasis></entry>
+
+            <entry>Especifica que o <emphasis>recordset</emphasis> é GROUPed e
+            a operação ROLLUP irá gerar um único registro de resultado para
+            cada grupo. Se não for este o caso, ocorrerá um erro.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ROLLUP retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">ROLLUP</emphasis> é semelhante à função
+  DEDUP <indexterm>
+      <primary>DEDUP function</primary>
+    </indexterm> , porém possui o acionamento da função
+  <emphasis>transform</emphasis> para processar cada par de registro
+  duplicado. Isso permite recuperar informações valiosas do registro
+  “duplicado” antes que ele seja descartado. Dependendo de como você codifica
+  o <emphasis>transform </emphasis>, ROLLUP pode manter o registro LEFT ou
+  RIGHT , ou qualquer mistura de dados de ambos.</para>
+
+  <para>A primeira forma de ROLLUP testa uma condição usando valores dos
+  registros que seriam especificados como LEFT e RIGHT para
+  <emphasis>transform</emphasis>. Os registros são combinados se a condição
+  for true (verdadeira). A segunda forma de ROLLUP compara valores de
+  registros adjacentes no <emphasis>recordset </emphasis>de entrada,
+  combinando-os caso sejam iguais. Estas duas formas adotarão um comportamento
+  diferente se <emphasis>transform</emphasis> modificar alguns dos campos
+  usados na condição de correspondência (veja os exemplos abaixo).</para>
+
+  <para>Para o primeiro par de registros candidatos, o registro LEFT
+  especificado para “transform” corresponde ao primeiro registro do par, e o
+  registro RIGHT o segundo. Para as correspondências subsequentes de mesmo
+  valor, o registro LEFT especificado corresponde ao registro de resultado do
+  acionamento anterior do <emphasis>transform</emphasis> , e o registro RIGHT
+  o próximo registro no <emphasis>recordset</emphasis>, como descrito neste
+  exemplo:</para>
+
+  <programlisting>ds := DATASET([{1,10},{1,20},{1,30},{3,40},{4,50}], 
+              {UNSIGNED r, UNSIGNED n});
+d t(ds L, ds R) := TRANSFORM
+  SELF.r := L.r + R.r;
+  SELF.n := L.n + R.n;
+END;
+ROLLUP(ds, t(LEFT, RIGHT), r);
+/* results in:
+   3  60
+   3  40
+   4  50
+*/
+ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
+/* results in:
+   2  30
+   1  30
+   3  40
+   4  50
+   the third record is not combined because the transform modified the value.
+*/</programlisting>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Rollup">
+    <title>Requerimentos da Função TRANSFORM - ROLLUP</title>
+
+    <para>Para as forms 1 e 2 de ROLLUP, a função
+    <emphasis>transform</emphasis> deve adotar pelo menos dois parâmetros: um
+    registro LEFT e um registro RIGHT , onde ambos devem estar no mesmo
+    formato que o <emphasis>recordset</emphasis>. O formato do conjunto de
+    registros resultante também deve ser o mesmo que as entradas.</para>
+
+    <para>Para a forms 3 de ROLLUP, a função <emphasis>transform</emphasis>
+    deve adotar pelo menos dois parâmetros: um registro LEFT que deve estar no
+    mesmo formato que o <emphasis>recordset, </emphasis> e um ROWS(LEFT) cujo
+    formato deve ser um parâmetro
+    DATASET(RECORDOF(<emphasis>recordset</emphasis>)) . O formato do conjunto
+    de registros resultante deve ser diferente das entradas.</para>
+  </sect2>
+
+  <sect2 id="ROLLUP_Form_1">
+    <title>ROLLUP Form 1</title>
+
+    <para>A form 1 é processada através de todos os registros no
+    <emphasis>recordset </emphasis>, desempenhando a função
+    <emphasis>transform</emphasis> apenas nos pares de registros adjacentes
+    onde a <emphasis>condition</emphasis> de correspondência é atingida
+    (indicando registros duplicados) e passando direto por todos os outros
+    registros até o resultado.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>//a crosstab table of last names and the number of times they occur
+MyRec := RECORD
+  Person.per_last_name;
+  INTEGER4 PersonCount := 1;
+END;
+LnameTable := TABLE(Person,MyRec); //create dataset to work with
+SortedTable := SORT(LnameTable,per_las_name); //sort it first
+
+MyRec Xform(MyRec L,MyRec R) := TRANSFORM
+  SELF.PersonCount := L.PersonCount + 1;
+  SELF := L; //keeping the L rec makes it KEEP(1),LEFT
+// SELF := R; //keeping the R rec would make it KEEP(1),RIGHT
+END;
+XtabOut := ROLLUP(SortedTable,
+                  LEFT.per_last_name=RIGHT.per_last_name,
+                  Xform(LEFT,RIGHT));
+</programlisting>
+  </sect2>
+
+  <sect2 id="ROLLUP_Form_2">
+    <title>ROLLUP Form 2</title>
+
+    <para>A form 2 é processada através de todos os registros no
+    <emphasis>recordset </emphasis>, desempenhando a função
+    <emphasis>transform</emphasis> apenas nos pares de registros adjacentes
+    onde todas as expressões na <emphasis>fieldlist</emphasis> são
+    correspondidas (indicando registros duplicados) e passando por todos os
+    outros registros até o resultado. Esta forma permite usar o mesmo tipo de
+    lógica de exclusão de campo EXCEPT disponível para DEDUP.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>rec := {STRING1 str1,STRING1 str2,STRING1 str3};
+ds := DATASET([{'a', 'b', 'c'},{'a', 'b', 'c'},
+               {'a', 'c', 'c'},{'a', 'c', 'd'}], rec);
+rec tr(rec L, rec R) := TRANSFORM
+  SELF := L;
+END;
+Cat(STRING1 L, STRING1 R) := L + R;
+r1 := ROLLUP(ds, tr(LEFT, RIGHT), str1, str2);
+  //equivalent to LEFT.str1 = RIGHT.str1 AND
+  // LEFT.str2 = RIGHT.str2
+r2 := ROLLUP(ds, tr(LEFT, RIGHT), WHOLE RECORD, EXCEPT str3);
+  //equivalent to LEFT.str1 = RIGHT.str1 AND
+  // LEFT.str2 = RIGHT.str2
+r3 := ROLLUP(ds, tr(LEFT, RIGHT), RECORD, EXCEPT str3); 
+  //equivalent to LEFT.str1 = RIGHT.str1 AND
+  // LEFT.str2 = RIGHT.str2
+r4 := ROLLUP(ds, tr(LEFT, RIGHT), RECORD, EXCEPT str2,str3);
+  //equivalent to LEFT.str1 = RIGHT.str1
+r5 := ROLLUP(ds, tr(LEFT, RIGHT), RECORD);
+  //equivalent to LEFT.str1 = RIGHT.str1 AND
+  // LEFT.str2 = RIGHT.str2 AND
+  // LEFT.str3 = RIGHT.str3
+r6 := ROLLUP(ds, tr(LEFT, RIGHT), str1 + str2);
+  //equivalent to LEFT.str1+LEFT.str2 = RIGHT.str1+RIGHT.str2
+r7 := ROLLUP(ds, tr(LEFT, RIGHT), Cat(str1,str2));
+  //equivalent to Cat(LEFT.str1,LEFT.str2) =
+  // Cat(RIGHT.str1,RIGHT.str2 )
+</programlisting>
+  </sect2>
+
+  <sect2 id="ROLLUP_Form_3">
+    <title>ROLLUP Form 3</title>
+
+    <para>A form 3 é uma forma especial de ROLLUP onde o segundo parâmetro
+    especificado para <emphasis>transform</emphasis> é um GROUP e o primeiro
+    parâmetro é o primeiro registro nesse GROUP. Ela é processada através de
+    todos os grupos no <emphasis>recordset</emphasis>, gerando um registro de
+    resultado para cada grupo. Funções agregadas podem ser usadas dentro de
+    <emphasis>transform</emphasis> (tais como TOPN ou CHOOSEN) no segundo
+    parâmetro. O conjunto de registro de resultado não é agrupado. Esta forma
+    é implicitamente LOCAL devido ao agrupamento.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>inrec := RECORD
+  UNSIGNED6 did;
+END;
+
+outrec := RECORD(inrec)
+  STRING20 name;
+  UNSIGNED score;
+END;
+
+nameRec := RECORD
+  STRING20 name;
+END;
+
+finalRec := RECORD(inrec)
+  DATASET(nameRec) names;
+  STRING20 secondName;
+END;
+
+ds := DATASET([1,2,3,4,5,6], inrec);
+
+dsg := GROUP(ds, ROW);
+
+i1 := DATASET([ {1, 'Kevin', 10},
+                {2, 'Richard', 5},
+                {5,'Nigel', 2},
+                {0, '', 0}], outrec);
+
+i2 := DATASET([ {1, 'Kevin Halligan', 12},
+                {2, 'Richard Charles', 15},
+                {3, 'Blake Smith', 20},
+                {5,'Nigel Hicks', 100},
+                {0, '', 0}], outrec);
+
+i3 := DATASET([ {1, 'Halligan', 8},
+                {2, 'Richard', 8},
+                {6, 'Pete', 4},
+                {6, 'Peter', 8},
+                {6, 'Petie', 1},
+                {0, '', 0}], outrec);
+j1 := JOIN( dsg,
+            i1,
+            LEFT.did = RIGHT.did,
+            TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+            LEFT OUTER, MANY LOOKUP);
+j2 := JOIN( dsg,
+            i2,
+            LEFT.did = RIGHT.did,
+            TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+            LEFT OUTER,
+            MANY LOOKUP);
+
+j3 := JOIN( dsg,
+            i3,
+            LEFT.did = RIGHT.did,
+            TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+            LEFT OUTER,
+            MANY LOOKUP);
+
+combined := REGROUP(j1, j2, j3);
+
+finalRec doRollup(outRec l, DATASET(outRec) allRows) :=
+          TRANSFORM
+  SELF.did := l.did;
+  SELF.names := PROJECT(allRows(score != 0),
+                        TRANSFORM(nameRec, SELF := LEFT));
+  SELF.secondName := allRows(score != 0)[2].name;
+END;
+
+results := ROLLUP(combined, GROUP, doRollup(LEFT,ROWS(LEFT)));
+</programlisting>
+
+    <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+    TRANSFORM</link>, <link linkend="RECORD_Structure">Estrutura
+    RECORD</link>, <link linkend="DEDUP">DEDUP</link>, <link
+    linkend="EXCEPT">EXCEPT</link>, <link linkend="GROUP">GROUP</link></para>
+  </sect2>
+</sect1>

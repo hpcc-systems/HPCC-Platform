@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetColumnMapping">
+  <title>GetColumnMapping</title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> := STD.File.GetColumnMapping<indexterm>
+      <primary>STD.File.GetColumnMapping</primary>
+    </indexterm><indexterm>
+      <primary>File.GetColumnMapping</primary>
+    </indexterm><indexterm>
+      <primary>GetColumnMapping</primary>
+    </indexterm>(</emphasis> <emphasis> file </emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>file</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do arquivo lógico.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetColumnMapping retorna uma string terminada por nulo que contém a lista delimitadas por vírgulas dos mapeamentos de campos de 
+          <emphasis>file</emphasis>.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">GetColumnMapping </emphasis> retorna os mapeamentos de campo de  <emphasis>file</emphasis> no mesmo formato especificado para a função SetColumnMapping.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">Maps := STD.File.GetColumnMapping('Thor::in::SomeFile');
+</programlisting>
+</sect1>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DISTRIBUTED">
+  <title>DISTRIBUTED<indexterm>
+      <primary>DISTRIBUTED</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DISTRIBUTED<indexterm>
+      <primary>DISTRIBUTED function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, expression </emphasis><emphasis
+  role="bold">] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.75pt"/>
+
+        <colspec colwidth="309.05pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros distribuídos.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Opcional. Uma expressão que especifica como o conjunto de
+            registros é distribuído.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DISTRIBUTED retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">DISTRIBUTED</emphasis> é uma diretiva
+  de compilador indicando que os registros do <emphasis>recordset</emphasis>
+  já foram distribuídos entre os nós da Refinaria de Dados com base na
+  <emphasis>expressão</emphasis> especificada. Os registros para os quais a
+  <emphasis>expressão</emphasis> avalia a mesma estão no mesmo nó.</para>
+
+  <para>Se a <emphasis>expressão</emphasis> se a expressão for omitida, a
+  função simplesmente oculta um aviso que é às vezes gerado informando que o
+  <emphasis>recordset</emphasis> não foi distribuído.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
+        //all people with the same SSN are already on the same node</programlisting>
+
+  <para>Ver também: <link linkend="HASH32">HASH32</link>, <link
+  linkend="DISTRIBUTE">DISTRIBUTE</link></para>
+</sect1>

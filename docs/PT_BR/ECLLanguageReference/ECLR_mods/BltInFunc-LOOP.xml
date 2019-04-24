@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LOOP">
+  <title>LOOP</title>
+
+  <para><emphasis role="bold">LOOP<indexterm>
+      <primary>LOOP</primary>
+    </indexterm><indexterm>
+      <primary>LOOP function</primary>
+    </indexterm>(</emphasis><emphasis> dataset,</emphasis><emphasis
+  role="bold"> </emphasis><emphasis>loopcount, loopbody </emphasis><emphasis
+  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ][,
+  FEW] )</emphasis></para>
+
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
+  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopcount,
+  loopfilter, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] [,
+  FEW])</emphasis></para>
+
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
+  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopfilter,
+  loopbody </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] [, FEW])</emphasis></para>
+
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis> dataset, rowfilter,
+  loopcondition, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ][, FEW]
+  )</emphasis></para>
+
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
+  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopfilter,
+  loopcondition, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ][, FEW]
+  )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="85.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>dataset</emphasis></entry>
+
+          <entry>O conjunto de registros a ser processado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>loopcount<indexterm>
+              <primary>loopcount</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Uma expressão de número inteiro que especifica o número de
+          vezes a iterar.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>loopbody<indexterm>
+              <primary>loopbody</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>A operação a ser executada iterativamente. Pode ser PROJECT,
+          JOIN, ou outra operação do tipo. ROWS(LEFT) é sempre usado como o
+          primeiro parâmetro da operação, indicando que o dataset especificado
+          é o parâmetro de entrada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>loopfilter<indexterm>
+              <primary>loopfilter</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Uma expressão lógica que especifica o conjunto de registros
+          cujo processamento ainda não foi concluído. O conjunto de registros
+          que não atende à condição não será mais processado iterativamente e
+          será colocado no final do conjunto de resultado. Esta avaliação
+          ocorre antes de cada iteração do
+          <emphasis>loopbody</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>loopcondition<indexterm>
+              <primary>loopcondition</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Uma expressão lógica que especifica a continuidade da
+          iteração de loopbody enquanto for TRUE.
+          <emphasis>loopbody</emphasis> iteração enquanto TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>rowfilter</emphasis></entry>
+
+          <entry>Uma expressão lógica que especifica um único registro cujo
+          processamento foi concluído. O registro que atende à condição não
+          será mais processado iterativamente e será colocado no final do
+          conjunto de resultado. Esta avaliação ocorre durante de os iteração
+          do <emphasis>loopbody</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de resultado não
+          é importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+          <entry>Especifica a importância da ordem do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>bool</emphasis></entry>
+
+          <entry>Quando for “False” (Falso), especifica que a ordem do
+          registro de resultado não é importante. Quando for “True’
+          (Verdadeiro), especifica a ordem padrão do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada não é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>numthreads</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade usando os
+          <emphasis>numthreads</emphasis> threads</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+          <entry>Opcional. Substitui o algoritmo usado para essa
+          atividade.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>name</emphasis></entry>
+
+          <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+          parte da lista de algoritmos compatíveis com as opções STABLE e
+          UNSTABLE da função SORT.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">FEW</emphasis></entry>
+
+          <entry>Opcional. Indica que as atividades não exigirão uma grande
+          quantidade de memória. Isso pode reduzir o número de subgráficos
+          gerados em um LOOP, que diminui a sobrecarga. Usar apenas em
+          consultas Thor.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>LOOP retorna um conjunto de registros.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">LOOP </emphasis> executa iterativamente
+  a operação <emphasis>loopbody</emphasis> . O <indexterm>
+      <primary>COUNTER</primary>
+    </indexterm> está implícito e disponível para uso para retornar a iteração
+  atual.</para>
+
+  <sect2 id="The_PARALLEL_Option">
+    <title>A opção PARALLEL</title>
+
+    <para>A opção PARALLEL permite que múltiplas iterações de loop sejam
+    executadas em paralelo.</para>
+
+    <para>Há uma restrição: ROWS(LEFT) não pode ser usado diretamente em uma
+    subconsulta de <emphasis>loopbody</emphasis>.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>namesRec := RECORD  
+STRING20 lname;
+STRING10 fname;
+  UNSIGNED2 age := 25;
+  UNSIGNED2 ctr := 0;
+END;
+namesTable2 := DATASET([{'Flintstone','Fred',35},
+    {'Flintstone','Wilma',33},
+    {'Jetson','Georgie',10},
+    {'Mr. T','Z-man'}], namesRec);
+loopBody(DATASET(namesRec) ds, unsigned4 c) :=
+ PROJECT(ds,
+    TRANSFORM(namesRec,
+    SELF.age := LEFT.age*c;
+    SELF.ctr := COUNTER ;
+    SELF := LEFT));
+//Form 1:
+OUTPUT(LOOP(namesTable2,
+  COUNTER &lt;= 10,
+            PROJECT(ROWS(LEFT),
+     TRANSFORM(namesRec,
+     SELF.age := LEFT.age*2;
+     SELF.ctr := LEFT.ctr + COUNTER ;
+     SELF := LEFT))));
+OUTPUT(LOOP(namesTable2, 4, ROWS(LEFT) &amp; ROWS(LEFT)));
+//Form 2:
+OUTPUT(LOOP(namesTable2,
+  10,
+  LEFT.age * COUNTER &lt;= 200,
+            PROJECT(ROWS(LEFT),
+     TRANSFORM(namesRec,
+     SELF.age := LEFT.age*2;
+     SELF := LEFT))));
+//Form 3:
+OUTPUT(LOOP(namesTable2,
+  LEFT.age &lt; 100,
+  loopBody(ROWS(LEFT), COUNTER)));
+//Form 4:
+OUTPUT(LOOP(namesTable2,
+  SUM(ROWS(LEFT), age) &lt; 1000 * COUNTER,
+            PROJECT(ROWS(LEFT),
+     TRANSFORM(namesRec,
+     SELF.age := LEFT.age*2;
+     SELF := LEFT))));
+//Form 5:
+OUTPUT(LOOP(namesTable2,
+  LEFT.age &lt; 100,
+  EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) &lt; 1000,
+  loopBody(ROWS(LEFT), COUNTER)));
+</programlisting>
+  </sect2>
+</sect1>

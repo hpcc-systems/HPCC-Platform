@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DayOfYear">
+  <title>DayOfYear</title>
+
+  <para><emphasis role="bold">STD.Date.DayOfYear<indexterm>
+      <primary>STD.Date.DayOfYear</primary>
+    </indexterm><indexterm>
+      <primary>DayOfYear</primary>
+    </indexterm>(</emphasis> <emphasis role="bold">date)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>Um valor de data no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>DayofYear retorna um valor INTEGER no intervalo de 1 a
+          366.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">DayOfYear</emphasis> retorna um número
+  que representa o dia do ano da data fornecida. A data deve estar no
+  calendário gregoriano, após o ano 1600.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+D1 := STD.Date.DayOfYear(STD.Date.Today());
+      // D1 contains the day of the year for today's date
+</programlisting>
+
+  <para/>
+</sect1>

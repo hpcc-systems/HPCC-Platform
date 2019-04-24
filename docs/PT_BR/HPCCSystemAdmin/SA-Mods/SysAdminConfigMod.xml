@@ -1,0 +1,528 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <chapter id="Usin-HPCC-ConfigMgr">
+    <title>Utilizando o Configuration Manager</title>
+
+    <para id="cfgmgr_introP0">O Configuration Manager é o utilitário no qual configuramos a plataforma HPCC. A configuração da plataforma HPCC é armazenada em um arquivo XML de nome  <emphasis
+    role="bold">environment.xml</emphasis>. Depois de gerar um arquivo de ambiente (xml), ele é salvo em um diretório de origem (o padrão é  <emphasis
+    role="bold">/etc/HPCCSystems/source</emphasis>). Você precisa então parar o sistema para copiá-lo no diretório HPCC ativo e depois distribuí-lo para o local em cada nó e reiniciar o HPCC System. Em nenhum momento durante a configuração você irá trabalhar no arquivo no ambiente em operação.</para>
+
+    <para id="cfgmgr_introP1">Ao instalar o pacote do HPCC System, um arquivo environment.xml de nó único padrão é gerado. Depois disso, é possível usar o Gerenciador de Configurações para modificá-lo e/ou criar um arquivo de ambiente diferente para configurar componentes ou adicionar nós. Há um assistente de Gerenciador de Configurações para ajudar a criar um arquivo de ambiente. Dê a qualquer arquivo de ambiente criado um nome descritivo que indique para que ele serve na fonte. Por exemplo, você pode criar um ambiente sem o Roxie, chamando o arquivo de 
+    <emphasis>environmentNoRoxie.xml</emphasis>.</para>
+
+    <para id="cfgmgr_p1b">Você então copiaria o novo arquivo de configuração gerado do diretório de origem para o diretório  <emphasis
+    role="bold">/etc/HPCCSystems</emphasis> . Renomeie o arquivo para environment.xml e reinicie para reconfigurar o sistema.</para>
+
+    <para id="cfgmgr_introP2">O Configuration Manager também oferece um  <emphasis
+    role="bold">Advanced View</emphasis>  que possibilita maior granularidade para adicionar instâncias de componentes ou alterar as configurações padrão de componentes para usuários mais avançados. Mesmo se você planejar usar a Advanced View, recomendamos começar com um arquivo de configuração gerado pelo assistente e utilizar a ferramenta para editá-lo.</para>
+
+    <para id="cfgmgr_introP3">Mais informações e detalhes específicos para cada componente do Gerenciador de Configurações e atributos desses componentes são detalhadas em  <emphasis>Como usar o Gerenciador de Configurações.</emphasis></para>
+
+    <para>As seções a seguir fornecerão detalhes para configurar um ambiente do HPCC usando o Gerenciador de Configurações.</para>
+
+    <sect1 id="configuring-a-multi-node-system">
+      <title>Utilizando o Gerenciador de Configurações</title>
+
+      <para>Esta seção irá orientá-lo a configurar um ambiente do HPCC usando o Gerenciador de Configurações.</para>
+
+      <para>O pacote HPCC precisa estar instalado em ALL (TODOS) os nós.</para>
+
+      <para>É possível usar qualquer ferramenta ou script de shell desejado.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>SSH para um nó em seu ambiente e fazer login como usuário com privilégio sudo. Sugerimos que esse seja o primeiro nó, que é um nó de suporte; no entanto, isso fica a seu critério.</para>
+        </listitem>
+
+        <listitem>
+          <para>Inicie o serviço do Gerenciador de Configurações no nó (novamente, sugerimos que seja um nó de suporte e que você use o mesmo nó para iniciar o Gerenciador de Configurações todas as vezes, mas isso fica totalmente a seu critério).</para>
+
+          <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
+
+          <para><graphic
+          fileref="../../images/gs_img_configmgrStart.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Usando um navegador de Internet, acesse a interface do Gerenciador de Configurações:</para>
+
+          <programlisting>http://&lt;<emphasis>ip de instalação do sistema</emphasis>&gt;:8015</programlisting>
+
+          <para>O assistente de inicialização do Gerenciador de Configurações é exibido.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>Há diferentes maneiras para configurar o seu HPCC System. É possível usar o  <emphasis role="bold">Generate environment wizard</emphasis>  e utilizar esse ambiente ou, para usuários avançados, a  <emphasis
+      role="bold">Advanced View</emphasis>  para uma personalização mais específica.   Há também a opção de usar o recurso  <emphasis role="bold">Create blank environment</emphasis>  para gerar um ambiente vazio que você poderia então acessar e adicionar os componentes desejados.</para>
+
+      <sect2 id="Env_Wizard">
+        <title>Environment Wizard</title>
+
+        <orderedlist>
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Para usar o assistente, selecione o botão  <emphasis role="bold">Generate new environment using wizard</emphasis> .</para>
+
+            <para><graphic fileref="../../images/GS_ConfigMgrWizStart.jpg"
+            vendor="configmgrSS" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Forneça um nome ao arquivo do ambiente.</para>
+
+            <para>Esse será então o nome do arquivo XML de configuração. Por exemplo, vamos nomear nosso ambiente como 
+            <emphasis>NewEnvironment</emphasis>  e isso criará um arquivo de configuração XML com o nome 
+            <emphasis>NewEnvironment.xml</emphasis>  que iremos usar.<emphasis> </emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão Next.</para>
+
+            <para>Em seguida, você precisará definir os endereços IP que seu HPCC System usará.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Insira os endereços IP ou os nomes de host.</para>
+
+            <para>Os endereços IP podem ser especificados individualmente usando ponto e vírgula como separadores. Também é possível especificar um intervalo de IPs usando um hífen (por exemplo nnn.nnn.nnn.x-y). Na imagem abaixo, especificamos os endereços IP 10.239.219.1 até 10.239.219.100 usando a sintaxe de intervalo, além de um IP único (10.239.219.111).</para>
+
+            <para><graphic fileref="../../images/GS_ConfigMgrWiz002.jpg"
+            vendor="configmgrSS" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão Next.</para>
+
+            <para>Agora você vai definir quantos nós usar para os clusters Roxie e Thor.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Insira os valores adequados conforme indicado.</para>
+
+            <para><graphic fileref="../../images/GS_CMWiz003.jpg"
+            vendor="configmgrSS" /></para>
+
+            <variablelist>
+              <varlistentry>
+                <term>Número de nós de suporte.</term>
+
+                <listitem>
+                  <para>Especifique o número de nós a serem usados para os componentes de suporte. O padrão é 1.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Número de nós do cluster Roxie:</term>
+
+                <listitem>
+                  <para>Especifique o número de nós a serem usados para seu cluster Roxie. Insira zero (0) se você não quiser um cluster Roxie.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Número de nós escravos do cluster Thor</term>
+
+                <listitem>
+                  <para>Especifique o número de nós escravos a serem usados para seu cluster Thor. Um nó mestre Thor será adicionado automaticamente. Insira zero (0) se você não quiser nenhum escravo Thor.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Número de escravos Thor por nó (padrão 1)</term>
+
+                <listitem>
+                  <para>Especifique o número de processos de escravos Thor para instanciar em cada nó escravo. Insira zero (0) se você não quiser um cluster Thor.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Ativar o Roxie sob demanda</term>
+
+                <listitem>
+                  <para>Especifique se você deseja permitir ou não que as consultas sejam executadas imediatamente no Roxie. Isso precisa ser ativado para executar o depurador. (O padrão é true)</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Next</emphasis>
+            .</para>
+
+            <para>O assistente apresenta os parâmetros de configuração.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis role="bold">Finish</emphasis> para aceitar esses valores ou o botão  <emphasis role="bold">Advanced View</emphasis>  para editar no modo avançado.</para>
+
+            <graphic fileref="../../images/GS_ConfigMgrWiz004.jpg" />
+          </listitem>
+        </orderedlist>
+
+        <para>Você agora será notificado de que concluiu o assistente.</para>
+
+        <para><graphic fileref="../../images/GS_ConfigMgrWiz005.jpg" /></para>
+
+        <para>Neste ponto, você criou um arquivo com o nome NewEnvironment.xml no diretório  <emphasis role="bold">/etc/HPCCSystems/source</emphasis>
+        .</para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/OSSgr3.png" /></entry>
+
+                <entry>Lembre-se de que as configurações do HPCC podem variar de acordo com as suas necessidades. Por exemplo, você pode não precisar de um Roxie ou pode precisar de vários clusters Roxie menores. Além disso, em um sistema de produção [Thor] seria necessário assegurar que os nós do Thor e Roxie sejam dedicados e que não contenham nenhum outro processo em execução. Este documento visa mostrar como usar as ferramentas de configuração. Planejamento de capacidade e design de sistema estão disponíveis em um módulo de treinamento.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <sect3 id="Distrib_Conf" role="brk">
+          <title>Distribuindo a Configuração</title>
+
+          <orderedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Para o HPCC System.</para>
+
+              <para>Se estiver em execução, pare o HPCC System (em todos os nós) usando um comando como este:</para>
+
+              <para><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+
+              <variablelist>
+                <varlistentry>
+                  <term>Observação:</term>
+
+                  <listitem>
+                    <para>Você pode ter um sistema de múltiplos nós e um script personalizado como aquele ilustrado no Anexo do documento  <emphasis
+                    role="bluebold">Instalando e Executando a Plataforma HPCC</emphasis>  para iniciar e parar o seu sistema.  Se este for o caso, use o comando adequado para parar o sistema em cada nó.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="../../images/caution.png" /></entry>
+
+                        <entry>Certifique-se de que o HPCC não esteja em execução antes de tentar copiar o arquivo environment.xml.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <para>Salve o arquivo environment.xml em um backup.</para>
+
+              <programlisting># For example sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environment-date.xml </programlisting>
+
+              <variablelist>
+                <varlistentry>
+                  <term>Observação:</term>
+
+                  <listitem>
+                    <para>O arquivo environment.xml do ambiente em execução está situado em seu 
+                    <emphasis role="bold">diretório </emphasis>
+                    /etc/HPCCSystems/ O Gerenciador de Configurações funciona em arquivos no diretório 
+                    <emphasis role="bold">etc/HPCCSystems/source</emphasis>
+                    . É necessário copiar deste local para criar um arquivo environment.xml ativo.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+
+              <para>Também é possível optar por dar um nome mais descritivo ao arquivo do ambiente para ajudar a distinguir quaisquer diferenças.</para>
+
+              <para>Contar com arquivos do ambiente no controle de origem é uma boa maneira de arquivar suas configurações de ambiente.</para>
+            </listitem>
+
+            <listitem>
+              <para>Copie o novo arquivo .xml do diretório de origem para /etc/HPCCSystems e renomeie o arquivo para 
+              <emphasis>environment.xml.</emphasis></para>
+
+              <programlisting># for example sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+
+              <para></para>
+            </listitem>
+
+            <listitem>
+              <para>Copie o arquivo  <emphasis
+              role="bold">/etc/HPCCSystems/environment.xml </emphasis> para 
+              <emphasis role="bold">/etc/HPCCSystems/</emphasis>  em
+              <emphasis> cada</emphasis>  nó.</para>
+
+              <para>Você pode usar um script para forçar o arquivo XML para todos os nós. Consulte a seção  <emphasis>Scripts de exemplo</emphasis>  no documento anexo  <emphasis role="bluebold">Instalando e Excutando a plataforma HPCC</emphasis> . É possível usar os scripts como um modelo para criar seu próprio script e copiar o arquivo environment.xml para todos os seus nós.</para>
+            </listitem>
+
+            <listitem>
+              <para>Reinicie a plataforma HPCC em todos os nós.</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="Advance-SysAdmin-Topic-Chapter">
+    <title>Tópicos avançados do Administrador de Sistemas</title>
+
+    <para>Este capítulo contém informações sobre temas avançados para administradores do HPCC Systems<superscript>®</superscript> .</para>
+
+    <sect1 id="Admin-System-Topic">
+      <title>Tópicos de Administração de Sistemas</title>
+
+      <para>Esse é um tópico administrativo de sistema elaborado para fornecer algumas explicações sobre um aspecto da administração de sistema do HPCC System.</para>
+    </sect1>
+
+    <sect1 id="System_sizings">
+      <title>Dimensionamento do Sistema</title>
+
+      <para>Esta seção oferece orientações na hora de determinar os requisitos de dimensionamento para uma instalação inicial do HPCC. Abaixo estão alguns guias sugeridos de configuração que podem ser úteis ao planejar o seu sistema.</para>
+
+      <sect2 id="SysAdmin_MinSuggestedHW" role="nobrk">
+        <title>Mínimo Hardware Sugerido</title>
+
+        <para>O HPCC foi projetado para ser executado em hardware comum, podendo funcionar até mesmo em hardware inferior. A lista a seguir contém as especificações de hardware mínimas sugeridas. Como requesito absolutamente mínimo, você deve considerar os seguintes componentes de hardware para seu HPCC System. Essas diretrizes foram condensadas com base no uso real de missão crítica (tempo ativo) com alto volume de dados. <informaltable border="all"
+            colsep="1" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="94.50pt" />
+
+              <colspec colwidth="84.50pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Escravo Thor</emphasis></entry>
+
+                  <entry>Processador</entry>
+
+                  <entry>4 x 64 bits Processador Intel cada</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>RAM</entry>
+
+                  <entry>8GB por daemon</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Armazenamento</entry>
+
+                  <entry>RAID - Leitura/gravação sequencial por nó de 200MB/seg</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Rede</entry>
+
+                  <entry>Largura de banda de 1 Gb/s</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Roxie</emphasis></entry>
+
+                  <entry>Processador</entry>
+
+                  <entry>4 x 64 bits</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>RAM</entry>
+
+                  <entry>12 GB por Roxie</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Armazenamento</entry>
+
+                  <entry>400 IOPS e 2 Volumes por (RAID opcional)</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Rede</entry>
+
+                  <entry>Largura de banda de 1 Gb/s</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Dali</emphasis></entry>
+
+                  <entry>Processador</entry>
+
+                  <entry>4 x 64 bits cada</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>RAM</entry>
+
+                  <entry>24GB por Dali</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Armazenamento</entry>
+
+                  <entry>RAID 1, 5, 6, 10 volumes de 200GB</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Outro</emphasis></entry>
+
+                  <entry>Processador</entry>
+
+                  <entry>4 x 64 bits</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>RAM</entry>
+
+                  <entry>12GB</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Armazenamento</entry>
+
+                  <entry>RAID 1, 5, 6, 10 volumes de 200GB</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Rede</entry>
+
+                  <entry>Largura de banda de 1 Gb/s</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Sample_Sizings">
+      <title>Dimensionamento da Amostra</title>
+
+      <para>Esta seção ilustra exemplos dos dimensionamentos de sistema para vários ambientes de trabalho. Diferentemente dos requisitos de sistema, os exemplos a seguir são sugestões para configurar seu sistema nas diversas condições de operação.</para>
+
+      <sect2 id="Sample-Size-HighDataVolume">
+        <title>Tamanho de amostra para alto volume de dados (típico)</title>
+
+        <para>A situação mais comum para o HPCC é utilizá-lo com um alto volume de dados. Esse exemplo de dimensionamento sugerido seria adequado para um local com grandes volumes de dados. Uma boa política é definir o tamanho do Thor para 4 vezes o dos dados de origem em seu HPCC. Normalmente, o Roxie tem ¼ do tamanho do Thor. Isso porque os dados são compactados e o sistema não retém dados transitórios no Roxie. Lembre-se de que não é recomendado que o número de nós do Roxie ultrapasse o número de nós do Thor.</para>
+
+        <sect3 id="SysAdm_SmplSiz_HiDataThor">
+          <title>Considerações sobre Dimensionamento de dados Thor</title>
+
+          <para>Cada nó do Thor pode conter cerca de 2,5 TB de dados (MAX - no máximo), por isso, planeje o número de nós do Thor adequadamente para os seus dados.</para>
+
+          <para>Se possível, use unidades SAS para ambos Thor e Roxie uma vez que elas são quase iguais às unidades SATA atualmente. Caso não use para ambas, tenha unidades SAS pelo menos para seu cluster Roxie.</para>
+
+          <para>O Thor replica os dados e é normalmente configurado para duas cópias.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BestPrac_HiDataRoxie">
+          <title>Consideração sobre Dimensionamento de Dados Roxie</title>
+
+          <para>O Roxie mantém a maior parte de seus dados na memória, por isso é preciso alocar bastante memória para ele. Calcule o tamanho aproximado de seus dados e faça a alocação adequadamente. Você deve aumentar o número de nós ou a quantidade de memória.</para>
+
+          <para>Recomendamos alocar um Dali para cada cluster Roxie.</para>
+
+          <para>O Roxie deve ter um espelho. Isso é útil no momento em que você precisar atualizar os dados. O espelho é então atualizado, transformando-se posteriormente em primário no momento em que o outro é desativado. Essa é uma prática recomendada, mas não uma obrigação, exceto no caso de alta disponibilidade.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_HevyProc_LowData">
+        <title>Dimensionamento de Amostra para Alto Processamento com Baixo Volume de Dados</title>
+
+        <para>A seção a seguir fornece exemplos de dimensionamento para processamento pesado, com a quantidade de dados aproximada indicada.</para>
+
+        <sect3 id="SysAdm_BestPrac_750GB">
+          <title>750 GB de Dados Brutos</title>
+
+          <para>Thor = 3 (escravos) + 2 (gerenciamento) = 5 nós</para>
+
+          <para>Roxie = 3 (agentes) + 1 (Dali) = 4 nós (isso significará que o ambiente ficará fora do ar durante a implementação de consultas)</para>
+
+          <para>Reservas = 2</para>
+
+          <para>Total = 13 nós</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BestPrac_1250GB">
+          <title>1250 GB de Dados Brutos</title>
+
+          <para>Thor = 6 (escravos) + 2 (gerenciamento) = 8 nós</para>
+
+          <para>Roxie = 4 (agentes) + 1 (Dali) = 5 nós (isso significará que o ambiente ficará fora do ar durante a implementação de consultas)</para>
+
+          <para>Reservas = 2</para>
+
+          <para>Total = 17 nós</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BestPrac_2000GB">
+          <title>2000 GB de Dados Brutos</title>
+
+          <para>Thor = 8 (escravos) + 3 (gerenciamento) = 11 nós</para>
+
+          <para>Roxie = 4 (agentes) + 1 (Dali) = 5 nós (isso significará que o ambiente ficará fora do ar durante a implementação de consultas)</para>
+
+          <para>Reservas = 2</para>
+
+          <para>Total = 20 nós</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BestPrac_3500GB">
+          <title>3500 GB de Dados Brutos</title>
+
+          <para>Thor = 12 (escravos) + 5 (gerenciamento) = 17 nós</para>
+
+          <para>Roxie = 6 (agentes) + 1 (Dali) = 7 nós (isso significará que o ambiente ficará fora do ar durante a implementação de consultas)</para>
+
+          <para>Reservas = 2</para>
+
+          <para>Total = 28 nós</para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

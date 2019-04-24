@@ -1,0 +1,1578 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <title>HPCC Systems<superscript>®</superscript> Instant Cloud para
+  AWS</title>
+
+  <bookinfo>
+    <title>HPCC Systems<superscript>®</superscript> Instant Cloud para
+    AWS</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems é uma marca comercial registrada da LexisNexis Risk
+      Data Management Inc.</para>
+
+      <para>Amazon Web Services, AWS, Amazon EC2, EC2, Amazon Elastic Compute
+      Cloud, Amazon S3, Amazon Simple Storage Service, são marcas comerciais,
+      marcas registradas ou identidades visuais da AWS nos EUA e/ou em outros
+      países.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+
+      <para><emphasis role="redbold"/></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>SSystems</corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/AWS_InstantCloud_COVER_registeredTm.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="InstaCloud_Intro">
+    <title>Introdução</title>
+
+    <para>Este guia fornece informações e orientação sobre como executar a
+    plataforma HPCC Systems<superscript>®</superscript> dentro do Amazon Web
+    Services (AWS) Elastic Cloud (EC2) usando a página Instant Cloud para AWS
+    .</para>
+
+    <para>Isso permite <emphasis role="bold">instanciar</emphasis> e executar
+    clusters do HPCC Systems de diferentes tamanhos em tempo real.</para>
+
+    <para>O procedimento é útil para:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Validação de conceito</para>
+      </listitem>
+
+      <listitem>
+        <para>Experimentação</para>
+      </listitem>
+
+      <listitem>
+        <para>Aprendizagem</para>
+      </listitem>
+
+      <listitem>
+        <para>Usar a plataforma HPCC Systems sem estar sujeito a custos
+        administrativos e de hardware.</para>
+      </listitem>
+
+      <listitem>
+        <para>Crie e use um cluster do HPCC Systems imediatamente sem precisar
+        comprar ou instalar um novo hardware.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>É possível criar um cluster pequeno para tarefas menores ou clusters
+    maiores para tarefas grandes. Essa flexibilidade permite combinar custo e
+    poder de processamento para a tarefa em questão.</para>
+
+    <para>Instanciar nós EC2 temporários permite “locar” a capacidade
+    computacional sem assumir compromissos em longo prazo. Dessa forma, você
+    paga por utilização em vez de desembolsar um valor fixo alto logo no
+    início.</para>
+
+    <para><emphasis role="bold">Lembre-se de que você deve encerrar quaisquer
+    instâncias desnecessárias para evitar pagar por um tempo de computação
+    desnecessário. </emphasis><emphasis role="redbold">Todos os custos da AWS
+    são de sua total responsabilidade.</emphasis></para>
+
+    <para>Estamos trabalhando com a Amazon para aprimorar os processos de
+    configuração. <emphasis role="bold">Em breve, teremos um guia que mostrará
+    como executar um cluster do HPCC Systems em um ambiente do tipo Amazon
+    Elastic Map Reduce (EMR).</emphasis> Esperamos que esse método seja mais
+    robusto e fácil de configurar e operar. Além disso, o HPCC Systems está
+    desenvolvendo seu próprio Enterprise Cloud, mas esse projeto ainda não
+    está pronto para ser lançado.</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <?dbfo keep-together="always"?>
+
+      <tgroup cols="2">
+        <colspec colwidth="49.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+            <entry>Sugerimos a <emphasis role="bold">leitura</emphasis>
+            completa deste documento antes de começar.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <sect1 id="InstaCloud_PreReqs">
+      <title>Pré-requisitos e Suposições</title>
+
+      <para>Você vai precisar de:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Uma conta Amazon Web Services com EC2 habilitado</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma estação de trabalho com conexão à Internet para acessar o
+          Amazon Web Services; A estação de trabalho pode ser um:</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para><emphasis>PC (Computador) Windows ou </emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis>Linux com o Eclipse IDE e o plugin ECL para
+                Eclipse (disponível em breve)</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis>Mac<superscript/> com o Eclipse IDE e o plugin
+                ECL para Eclipse (disponível em breve)</emphasis></para>
+              </listitem>
+            </itemizedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Um navegador de Internet (Firefox, Internet Explorer, ou
+          Chrome)</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Opcionalmente, você poderia se beneficiar se tiver:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Uma ferramenta SSH, como PuTTY</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma ferramenta de geração e conversão de chaves, como
+          PuTTYGen</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma ferramenta de cópia de segurança (tais como WinSCP)</para>
+        </listitem>
+
+        <listitem>
+          <para>Familiaridade com navegação em sistemas de arquivo
+          Linux</para>
+        </listitem>
+      </itemizedlist>
+
+      <!--***eclipse info needs to be added when released-->
+
+      <para/>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+                <entry>Para obter instruções detalhadas da Amazon sobre
+                PuTTY/pcsp/PUTTYGen , acesse: <para><ulink
+                url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink></para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect1>
+  </chapter>
+
+  <chapter id="InstaCloudLaunch">
+    <title>Utilizando o Instant Cloud Launch</title>
+
+    <sect1 id="InstaCloud_PreLaunch" role="nobrk">
+      <title>Antes de Começar</title>
+
+      <para>Nesta seção, reuniremos algumas informações necessárias antes de
+      começar. Isso inclui:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Sua ID de chave de acesso e a Chave de acesso secreta do
+          AWS</para>
+        </listitem>
+
+        <listitem>
+          <para>O tamanho do cluster desejado.</para>
+        </listitem>
+      </itemizedlist>
+
+      <!--Include follows-->
+
+      <xi:include href="InstantCloud/AWS-Mods/AWSIncludes.xml"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+    </sect1>
+
+    <sect1 id="InstaCloud_Login">
+      <title>Login</title>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Abra o navegador e acesse <ulink
+            url="https://aws.hpccsystems.com">https://aws.hpccsystems.com/</ulink>.</para>
+
+            <para>Caso não tenha feito o login, o link do <emphasis
+            role="bold">Login</emphasis> será exibido no topo da página. Se a
+            tela exibir o link <emphasis role="bold">Logout</emphasis> , isso
+            significa que você já está logado no sistema.</para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique sua <emphasis role="bold">Access Key
+            ID</emphasis> e <emphasis role="bold">Secret Access
+            Key</emphasis>. Estas informações nunca serão armazenadas em
+            nossos sistemas.</para>
+
+            <para>Caso estas informações não estejam acessíveis, clique no
+            link abaixo de <emphasis role="bold">Can't find your Access Key
+            ID? </emphasis> para ir à seção de AWS Management
+            Console.<emphasis role="bluebold"/></para>
+
+            <para><figure>
+                <title>Login</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_InstantCloud_Login.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Partes desta imagem foram intencionalmente desfocadas</para>
+          </listitem>
+
+          <listitem>
+            <para>Marque a caixa de seleção para aceitar os Termos de
+            uso.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Login </emphasis>
+            .</para>
+
+            <para>A janela <emphasis role="bold">View Clusters </emphasis>
+            será exibida. A janela mostrará todos os clusters iniciados. Aqui,
+            você pode acessar o link para iniciar um novo cluster.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no link <emphasis role="bold">Launch Cluster
+            </emphasis> no topo da página.</para>
+
+            <para>A janela <emphasis role="bold">Launch a New HPCC
+            </emphasis>será exibida.</para>
+
+            <para/>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+
+    <sect1 id="InstaCloud_LaunchNewHPCC">
+      <title>Iniciar um Novo cluster HPCC</title>
+
+      <para>Nesta seção, iniciaremos um conjunto de máquinas Ubuntu 12.04 que
+      serão usadas em sua plataforma Thor do HPCC Systems. A página Instant
+      Cloud usa a entrada que você especificar para criar os clusters.</para>
+
+      <para>Ao pressionar o botão <emphasis role="bold">Launch Cluster
+      </emphasis>, você poderá:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Cria um nome de cluster exclusivo.</para>
+        </listitem>
+
+        <listitem>
+          <para>Cria um Grupo de segurança com acesso às portas TCP e UDP
+          habilitado.</para>
+        </listitem>
+
+        <listitem>
+          <para>Cria um Par de chaves.</para>
+        </listitem>
+
+        <listitem>
+          <para>Inicia o m1.large nós solicitados usando AMI (ami-e01698d0)
+          fornecida.</para>
+        </listitem>
+
+        <listitem>
+          <para>Reúne IPs privado e público.</para>
+        </listitem>
+
+        <listitem>
+          <para>Instala os pacotes da plataforma HPCC Systems.</para>
+        </listitem>
+
+        <listitem>
+          <para>Configura o Cluster Thor, o Cluster Roxie, e os nós de suporte
+          exigidos.</para>
+        </listitem>
+
+        <listitem>
+          <para>Cria o usuário interno (HPCC).</para>
+        </listitem>
+
+        <listitem>
+          <para>Propaga o arquivo environment.xml para todos os nós.</para>
+        </listitem>
+
+        <listitem>
+          <para>Inicializa todos os componentes.</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2 id="IC_LaunchThor" role="brk">
+        <title>Iniciar um Novo cluster Thor</title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Especifique a quantidade de nós Thor e Roxie a ser
+            instanciada.</para>
+
+            <para><figure>
+                <title>Iniciar um Novo cluster Thor</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_OneClick_LaunchNew.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Opcionalmente, especifique a(s) ID(s) da imagem para anexar
+            os dados à sua zona de entrada de arquivos.</para>
+
+            <para>Isso seria uma "imagem" salva anteriormente da armazenagem
+            de dados da zona de entrada de arquivos.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Launch
+            Cluster</emphasis> .</para>
+
+            <para>A janela <emphasis role="bold">Cluster Launch Log
+            </emphasis> será exibida. Essa janela mostra os detalhes durante a
+            inicialização (ela é atualizada automaticamente durante a
+            inicialização ou encerramento). Ela também exibe sua ID do Cluster
+            (um identificador exclusivo) que pode ser útil para identificar o
+            cluster quando mais de um cluster estiver sendo executado.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Aguarde até que o <emphasis role="bold">Cluster Launch
+            Log</emphasis> diga <emphasis role="bold">Status: Ready</emphasis>
+            , indicando a conclusão dos processos de inicialização.</para>
+
+            <para><figure>
+                <title>Iniciar Cluster</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_OneClick_LaunchLog.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique no link <emphasis role="bluebold">View
+            Clusters</emphasis> para ver os clusters que estão sendo
+            executados.</para>
+
+            <para>Essa lista possui links para a página do ECL Watch, para a
+            página Iniciar Log, para o arquivo de configuração do cluster,
+            para a lista de IPs, e para a chave SSH.</para>
+
+            <para>Também possui um link que permite <emphasis
+            role="bold">Encerrar</emphasis> a instanciação do cluster.</para>
+
+            <para><figure>
+                <title>View Clusters</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_OneClick_ViewClusters.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="IC_TerminatingInstances" role="brk">
+        <title>Encerrando as instâncias</title>
+
+        <para>Se precisar salvar seus dados, primeiro será necessário fazer o
+        despray (consolidar dados dos nós) e salvar do seu cluster antes
+        desligar. Informações adicionais sobre o processamento de dados em uma
+        plataforma HPCC Systems estão disponíveis no manual <emphasis>Data
+        Handling</emphasis> (Processamento de dados). Consulte a seção <link
+        linkend="InstaCloud_NextSteps">“Próximos passos”</link> para obter
+        informações sobre como fazer o download de outros manuais.</para>
+
+        <para><emphasis role="bold">Para encerrar seu cluster:
+        </emphasis><orderedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Abra a página <emphasis role="bold">View
+              Clusters</emphasis> usando o link localizado no topo da
+              página.</para>
+
+              <figure>
+                <title>Clusters em Execução</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_OneClick_ViewClustersTerminate.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Clique no link <emphasis
+              role="bluebold">Terminate</emphasis> próximo ao cluster que você
+              deseja fechar.</para>
+
+              <para><figure>
+                  <title>Terminate Cluster</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_OneClick_005.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Terminate
+              Cluster</emphasis> pressione o botão Encerrar Cluster e confirme
+              quando solicitado.</para>
+
+              <para>A página <emphasis role="bold">Cluster Launch</emphasis>
+              Log será exibida, mostrando a atividade durante o
+              encerramento.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Aguarde até que o Log de inicialização do cluster diga
+              <emphasis role="bold">Status: Terminated</emphasis>.</para>
+
+              <para><figure>
+                  <title>Cluster Encerrado</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_OneClick_Terminated.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>omo alternativa, acesse o Console de Gerenciamento do AWS
+              (AWS management console) para confirmar que suas instâncias
+              foram encerradas de forma adequada.</para>
+
+              <para><emphasis role="redbold">Todos os custos de sua conta AWS
+              são de sua total responsabilidade.</emphasis></para>
+            </listitem>
+          </orderedlist></para>
+
+        <para/>
+      </sect2>
+
+      <sect2 id="InstaCloudOtherTasks" role="brk">
+        <title>Other Tarefas</title>
+
+        <para/>
+
+        <para><!--***  Log Out Comments FAQs Forum AWS Access Keys AWS Management Console AWS Health Dashboard AWS Limit Increase Request
+--></para>
+
+        <sect3 id="IC_ViewClusters">
+          <title>Visualizar Clusters</title>
+
+          <para>Através da página <emphasis role="bold">View
+          Clusters</emphasis> você pode acessar a Data/Hora de inicialização
+          de cada cluster, a ID do cluster, o número de nós, a Zona, a página
+          do ECL Watch, o Status, o Log de inicialização, o Arquivo de
+          configuração, os endereços IP, e a chave SSH.</para>
+
+          <para>A página também fornece um link para encerrar um cluster com
+          um único clique.</para>
+
+          <para><figure>
+              <title>Clusters em Execução</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/AWS_OneClick_ViewClustersTerminate.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+
+        <sect3 id="IC_ManageSSHKeys">
+          <title>Gerenciar chaves SSH</title>
+
+          <para>A página de gerenciamento da Chave SSH permite baixar a chave
+          SSH do seu cluster (arquivo .PEM) que será usada para autenticar a
+          seção SSH , como por exemplo uma seção de console que utiliza PuTTY.
+          A página também mostra como remover a chave do One-Click
+          System.</para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Abra a página <emphasis role="bold">View
+                Clusters</emphasis> usando o link <emphasis
+                role="bluebold">View Clusters</emphasis> localizado no topo da
+                página.</para>
+
+                <figure>
+                  <title>Clusters em Execução</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_OneClick_003a.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Clique no link <emphasis role="bluebold">Key</emphasis>
+                próximo ao cluster.</para>
+
+                <para><figure>
+                    <title>Gerenciamento da chave</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/AWS_OneClick_006.jpg"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <para>Clique no link <emphasis role="bluebold">arquivo pem
+                </emphasis> para baixar a chave.</para>
+
+                <para>Este arquivo deve ser armazenado em um lugar
+                seguro.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Delete SSH Key
+                </emphasis> para remover a chave SSH do One-Click
+                system.</para>
+
+                <para>Observação: Este procedimento não remove as chaves do
+                seu cluster em execução. Ele apenas remove as chaves do
+                sistema Instant Cloud e impede downloads futuros da chave. Uma
+                vez removida, a chave não pode ser recuperada.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="InstaCloud_RunningECL">
+    <title>Executando ECL</title>
+
+    <para/>
+
+    <sect1 id="ECL-on-a-single-node-system" role="nobrk">
+      <title>Executando ECL no seu cluster HPCC Systems</title>
+
+      <para>Agora que a plataforma está em execução, você pode criar e
+      executar alguns ECL<footnote>
+          <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+          role="bold">C</emphasis>ontrol <emphasis role="bold">
+          L</emphasis>anguage (ECL) é uma linguagem de programação declarativa
+          e centrada em dados usada para gerenciar todos os aspectos da
+          junção, classificação e compilação de dados massivos que realmente
+          diferenciam o HPCC (High Performance Computing Cluster) das demais
+          tecnologias na sua capacidade de fornecer análise de dados flexíveis
+          em escala massiva.</para>
+        </footnote> Codifique usando o ECL IDE, o compilador ECL da linha de
+      comando, ou a ferramenta ECLPlus.</para>
+
+      <sect2 id="IC_InstallECLIDEandClienTools">
+        <title>Instalar o ECL IDE e HPCC Client Tools</title>
+
+        <para>O ECL IDE precisa ser instalado apenas uma vez. Pule esta seção
+        caso ele já tenha sido instalado.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Em um navegador da Internet, conecte-se ao ECL Watch
+              usando http://<emphasis
+              role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (onde
+              PUBLIC_DNS é o nome do DNS público do seu servidor ESP).</para>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt"/>
+
+                    <colspec/>
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png"/></entry>
+
+                        <entry>Seu endereço IP poderá ser diferente dos
+                        endereços fornecidos nas imagens de exemplo. Favor
+                        usar o endereço IP do <emphasis
+                        role="bold">seu</emphasis> nó.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>No menu ECL Watch Advanced, selecione o link <emphasis
+              role="bold">Additional Resources </emphasis>.</para>
+
+              <para><figure>
+                  <title>Página ECL Watch Resource</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/GS_1311.jpg"
+                                 vendor="eclwatchSS"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <para>Siga o link para a página do portal de download do HPCC
+              System.</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no link <emphasis role="bold">ECL IDE </emphasis>.
+              (ao lado direito da coluna Download, abaixo do título Free
+              Community Edition)</para>
+            </listitem>
+
+            <listitem>
+              <para>Siga as instruções na página da Internet para instalar o
+              ECL IDE.</para>
+            </listitem>
+
+            <listitem>
+              <para>Instale o ECL IDE, seguindo os prompts no programa de
+              instalação. Após o ECL IDE ter sido instalado com sucesso, você
+              pode prosseguir.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="InsCloud_RunningBasicECLprogram" role="brk">
+        <title>Executando o programa ECL do ECL IDE</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Abra o ECL IDE em sua estação de trabalho Windows, a
+              partir do menu Iniciar. (<emphasis role="bold">Start</emphasis>
+              &gt;&gt; <emphasis role="bold">All Programs</emphasis> &gt;&gt;
+              <emphasis role="bold"> HPCCSystems</emphasis> &gt;&gt; <emphasis
+              role="bold">ECL IDE</emphasis> ).</para>
+
+              <informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png"/></entry>
+
+                      <entry>Você pode criar um atalho em sua área de trabalho
+                      para acessar rapidamente o ECL IDE.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+
+            <listitem>
+              <para>Na janela de Login , pressione o botão <emphasis
+              role="bold">Preferences</emphasis> .</para>
+            </listitem>
+
+            <listitem>
+              <para>No controle de entrada <emphasis
+              role="bold">Server</emphasis> , digite o IP público do ESP
+              Server de seu servidor ESP) e pressione o botão <emphasis
+              role="bold">Ok</emphasis> .</para>
+
+              <para><figure>
+                  <title>Janela de Login</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_IDE_Preferences.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Digite a <emphasis role="bold">Login ID (ID do
+              Login)</emphasis> e <emphasis role="bold"> senha</emphasis>
+              fornecidas na caixa de diálogo Login.</para>
+
+              <informaltable colsep="1" rowsep="1">
+                <tgroup cols="2">
+                  <colspec colwidth="80pt"/>
+
+                  <colspec colwidth="100pt"/>
+
+                  <tbody>
+                    <row>
+                      <entry>Login ID</entry>
+
+                      <entry><emphasis
+                      role="bluebold">hpccdemo</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Password</entry>
+
+                      <entry><emphasis
+                      role="bluebold">hpccdemo</emphasis></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+
+              <figure>
+                <title>Janela de Login</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg06a.JPG"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>
+            </listitem>
+
+            <listitem>
+              <para>Abra uma nova <emphasis role="bold">Janela do
+              compilador</emphasis> (CTRL+N) e escreva o seguinte
+              código:</para>
+
+              <para><programlisting>OUTPUT('Hello World');
+</programlisting></para>
+
+              <para>Isso também poderia ser escrito como:</para>
+
+              <para><programlisting>'Hello World';
+</programlisting>Na segunda listagem de programa, a palavra-chave OUTPUT é
+              ocultada. Isso ocorre possivelmente porque a linguagem é
+              declarativa e a ação OUTPUT é implícita.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bluebold">thor</emphasis> como
+              seu cluster de destino.</para>
+
+              <para><emphasis role="bold">Thor</emphasis> é o componente da
+              Refinaria de dados do seu HPCC. Trata-se de um cluster de
+              computador massivamente paralelo baseado em disco, otimizado
+              para classificar, manipular e transformar uma quantidade massiva
+              de dados.</para>
+
+              <para><figure>
+                  <title>Selecionar destino</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg10.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Pressione o botão de verificação de sintaxe localizado na
+              barra de ferramentas principal (ou pressione F7).</para>
+
+              <para><figure>
+                  <title>Verificação de sintaxe</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg09.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure>Uma verificação se sintaxe bem-sucedida exibe a
+              mensagem “No errors...”.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Pressione o botão <emphasis role="bold">Submit</emphasis>
+              (ou as teclas ctrl+enter).</para>
+
+              <para><figure>
+                  <title>Job Concluído</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg11.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure>A marcação na cor verde indica uma conclusão
+              bem-sucedida.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Clique na guia do número da workunit e, em seguida, na
+              guia Result 1 para ver os resultados.</para>
+
+              <para><figure>
+                  <title>Resultado do job concluído</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg12.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="InstaCloud_MoreECLExamplesChap">
+    <title>Mais exemplos ECL</title>
+
+    <para>Esta seção contém exemplos adicionais de ECL que podem ser usados em
+    sua plataforma Thor do HPCC. Eles podem ser executados em um sistema de nó
+    único ou em um cluster maior com vários nós.</para>
+
+    <sect1 id="InstaCloud_ECLAnagram1Example" role="nobrk">
+      <title>Exemplo ECL: Anagram1</title>
+
+      <para>Este exemplo pega uma STRING e gera todos os anagramas possíveis a
+      partir dela. Este código serve de base para um segundo exemplo que
+      analisa quais destas são palavras reais usando um arquivo de dados da
+      lista de palavras.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Abra o ECL IDE (<emphasis role="bold">Start </emphasis>
+            &gt;&gt; <emphasis role="bold"> All Programs</emphasis> &gt;&gt;
+            <emphasis role="bold">HPCC Systems</emphasis> &gt;&gt; ECL IDE ) e
+            faça o login no HPCC.</para>
+          </listitem>
+
+          <listitem>
+            <para>Abra uma nova <emphasis role="bold">Janela do
+            compilador</emphasis> (CTRL+N) e escreva o seguinte
+            código:<programlisting>STRING Word := 'FRED' :STORED('Word');
+R := RECORD
+        STRING SoFar {MAXLENGTH(200)};
+        STRING Rest {MAXLENGTH(200)};
+     END;
+Init := DATASET([{'',Word}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+                SELF.SoFar := le.SoFar + le.Rest[c];
+                SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+// Boundary Conditions handled automatically
+  END;
+RETURN NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER));
+  END;
+L := LOOP(Init,LENGTH(TRIM(Word)),Pluck1(ROWS(LEFT)));
+OUTPUT(L);</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione <emphasis role="bold">thor</emphasis> como seu
+            cluster de destino.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão de verificação de sintaxe localizado na
+            barra de ferramentas principal (ou pressione F7)</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis role="bold">Submit</emphasis>
+            (ou as teclas ctrl+enter).</para>
+
+            <para><figure>
+                <title>Job Concluído</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11a.JPG"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>A marcação na cor verde indica uma conclusão
+            bem-sucedida.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique na guia do número da workunit e, em seguida, na guia
+            Result 1 para ver os resultados.</para>
+
+            <para><figure>
+                <title>Resultado do job concluído</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11b.JPG"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist></para>
+
+      <?hard-pagebreak ?>
+    </sect1>
+
+    <sect1 id="InstaCloud_ECLAnagram2Example">
+      <title>Anagram2</title>
+
+      <para>Neste exemplo, vamos baixar um arquivo de dados de código público
+      de palavras do dicionário, spray.<footnote>
+          <para>Um <emphasis>spray</emphasis> ou <emphasis>
+          importação</emphasis> é a transferência de um arquivo de dados de um
+          local (como a zona de entrada de arquivos) para um cluster da
+          Refinaria de dados. O termo spray foi adotado devido à natureza da
+          transferência dos arquivos – o arquivo é particionado entre todos os
+          nós em um cluster.</para>
+        </footnote> esse arquivo para nosso cluster Thor, e em seguida validar
+      os anagramas em comparação com esse arquivo para determinar quais
+      palavras são válidas. A etapa de validação usa um JOIN da lista de
+      anagramas para o arquivo do dicionário. O uso de um índice e de uma
+      junção com chave seria mais eficiente, mas isso serve apenas como um
+      simples exemplo.</para>
+
+      <sect2>
+        <title>Fazer o download da Lista de Palavras</title>
+
+        <para>Vamos baixar a lista de palavras em <ulink
+        url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Faça o download o pacote <emphasis>Official 12 Dicts
+              </emphasis>. Os arquivos estão disponíveis no formato tar.gz ou
+              ZIP.</para>
+            </listitem>
+
+            <listitem>
+              <para>Extraia o arquivo <emphasis
+              role="bold">2of12.txt</emphasis> para uma pasta em sua máquina
+              local.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="Load_the_Incoming_Data">
+        <title>Carregar o arquivo de dicionário para sua Zona de Entrada de
+        Arquivo</title>
+
+        <para>Nesta etapa, você copiará os arquivos de dados para um local
+        onde eles possam ser distribuídos aos nós de seu cluster Thor do HPCC.
+        Uma zona de entrada de arquivos é um local de armazenagem anexado ao
+        seu HPCC. Ela possui um utilitário em execução para facilitar o
+        spraying (processo de distribuir dados aos nós) para um
+        cluster.</para>
+
+        <para>Para arquivos de dados menores, com tamanho máximo de 2GB, você
+        pode usar o utilitário enviar/baixar arquivo no ECL Watch. Este
+        arquivo de dados possui apenas 400 kb (aproximadamente).</para>
+
+        <para>Em seguida, você distribuirá (ou fará o spray) o dataset para
+        todos os nós no cluster Thor do HPCC. O poder do HPCC vem da sua
+        capacidade de atribuir vários processadores para trabalhar nas
+        diferentes partes do arquivo de dados em paralelo. Até mesmo na VM
+        Edition, que possui apenas um nó único, os dados precisam ser
+        distribuídos aos nós do cluster.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Em um navegador da Internet, conecte-se ao ECL Watch usando
+            http://<emphasis
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (onde
+            PUBLIC_DNS é o nome do DNS público do seu servidor ESP).</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png"/></entry>
+
+                      <entry>Seu endereço IP poderá ser diferente dos
+                      endereços fornecidos nas imagens de exemplo. Use o
+                      endereço IP fornecido pela <emphasis
+                      role="bold">sua</emphasis> instalação.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>No ECL Watch, clique no ícone <emphasis
+            role="bold">Files</emphasis> e no link <emphasis
+            role="bold">Landing Zones</emphasis> localizados no submenu de
+            navegação.</para>
+
+            <para>Pressione o botão de ação <emphasis role="bold">Upload
+            </emphasis>.</para>
+
+            <para><figure>
+                <title>Enviar</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Uma caixa de diálogo será aberta. <emphasis
+            role="bold">Navegue</emphasis> e selecione o arquivo a ser enviado
+            e pressione o botão <emphasis role="bold">Open</emphasis> .
+            <figure>
+                <title>O arquivo selecionado deve aparecer no</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04a.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>campo <emphasis role="bold"> File Name</emphasis> . O
+            arquivo de dados possui o seguinte nome: <emphasis
+            role="bold">2of12.txt.</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Start</emphasis>
+            para concluir o envio do arquivo.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Spray_the_Data_to_THOR" role="brk">
+        <title>Spray do arquivo de dados para o seu <emphasis>Thor
+        Cluster</emphasis></title>
+
+        <para>Para usar o arquivo de dados em seu Thor do HPCC System, é
+        preciso fazer o "spray” (distribuir) desse arquivo para todos os nós.
+        O <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> um
+        spray ou importação é a transferência de um arquivo de dados de um
+        local (como a zona de entrada de arquivos) para diversas partes do
+        arquivo ou nós em um cluster.</para>
+
+        <para>O arquivo distribuído passa a ter um <emphasis>nome de arquivo
+        lógico</emphasis> como segue<emphasis
+        role="bold">:~thor::word_list_csv </emphasis> O sistema mantém uma
+        lista de arquivos lógicos e as localizações dos arquivos físicos
+        correspondentes das partes do arquivo.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Em um navegador da Internet, conecte-se ao ECL Watch usando
+            http://<emphasis
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (onde
+            PUBLIC_DNS é o nome do DNS público do seu servidor ESP).</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no hiperlink <emphasis
+            role="bold">Arquivos</emphasis> e no link <emphasis
+            role="bold">Zona de entrada de arquivos</emphasis> localizados no
+            submenu de navegação. Selecione a zona de entrada de arquivos
+            apropriada (caso haja mais de uma zona de entrada de arquivos).
+            Clique na seta à esquerda da sua zona de entrada de arquivos para
+            expandir.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione o arquivo na zona de entrada de arquivos marcando
+            a caixa ao lado dele.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Marque a caixa ao lado de 2of12.txt, e pressione o botão
+            <emphasis role="bold">Delimited</emphasis> .</para>
+
+            <para><figure>
+                <title>Spray delimitado</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/GSSprayDict.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>A <emphasis role="bold">página DFU Spray
+            Delimited</emphasis> será exibida.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione "mythor" na lista suspensa do Grupo Target.</para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha o Targer Scope como <emphasis>
+            thor</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha os demais parâmetros (caso ainda não tenham sido
+            preenchidos).</para>
+
+            <para><itemizedlist>
+                <listitem>
+                  <para>Máximo tamanho do registro 8192</para>
+                </listitem>
+
+                <listitem>
+                  <para>Separador \,</para>
+                </listitem>
+
+                <listitem>
+                  <para>Terminador de linhas \n,\r\n</para>
+                </listitem>
+
+                <listitem>
+                  <para>Aspas: '</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha o Target Name usando o restante do nome do arquivo
+            lógico desejado: word_list_csv<emphasis role="bold">
+            </emphasis></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Não se esqueça de marcar a <emphasis role="bold"> caixa
+            </emphasis> Overwrite.</para>
+
+            <para>Se disponível, certifique-se de que a caixa <emphasis
+            role="bold">Replicate</emphasis> esteja marcada. (A opção replicar
+            está disponível apenas em sistemas em que a replicação tenha sido
+            ativada.)</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis
+            role="bold">Spray</emphasis><emphasis role="bold">
+            </emphasis>.</para>
+
+            <para>A guia exibe a tarefa DFU onde é possível ver o progresso do
+            spray (distribuição aos nós).</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="InstaCloud_RunTheECLonThor" role="brk">
+        <title>Executar o ECL no Thor<parameter/></title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Abra uma nova <emphasis role="bold">Janela do
+              compilador</emphasis> (CTRL+N) e escreva o seguinte
+              código:<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bold">thor</emphasis> como seu
+              cluster de destino.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de verificação de sintaxe localizado na
+              barra de ferramentas principal (ou pressione F7)</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis
+              role="bold">Submit</emphasis><emphasis role="bold">
+              </emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Quando o envio estiver concluído, selecione a <emphasis
+              role="bold"> </emphasis>guia Workunit e em seguida a guia
+              Results.</para>
+            </listitem>
+
+            <listitem>
+              <para>Examine o resultado.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="InstaCloud_DataHandling_Chap">
+    <title>Data Handling (Processamento dos Dados)</title>
+
+    <para>Esta seção explica o processamento de dados em uma configuração AWS.
+    Informações adicionais sobre o processamento de dados em uma plataforma
+    HPCC Systems estão disponíveis no manual <emphasis>Data Handling
+    (Processamento dos Dados)</emphasis> manual.</para>
+
+    <sect1 id="InstaCloud_UsingS3Buckets" role="nobrk">
+      <title>Utilizando o S3 buckets</title>
+
+      <para>Os buckets do S3 fornecem um meio de armazenamento constante
+      dentro do Amazon Web Services. Você precisa configurar uma conta no AWS
+      para ativar um conjunto de Chaves de acesso habilitadas e criar buckets
+      do S3. Após ter criado e ativado seu conjunto de chaves de acesso, e
+      criado um bucket do S3 exclusivo, ambos serão usados em futuras
+      instanciações.</para>
+
+      <!--*** include follows-->
+
+      <xi:include href="InstantCloud/AWS-Mods/AWSIncludes.xml"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <sect2 id="InstaCloud_InstallS3Pkgs">
+        <title role="brk">Instalar e configurar pacotes do S3 em seu nó da
+        zona de entrada de arquivos</title>
+
+        <para>Para mover arquivos do – ou para – o armazenamento do S3, os
+        pacotes do S3 devem estar instalados e configurados no nó da sua zona
+        de entrada de arquivos.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Abrir a janela do console e conectar-se ao nó da Zona de
+              entrada de arquivos (LZ)</para>
+            </listitem>
+
+            <listitem>
+              <para>Execute esses comandos:</para>
+
+              <para><programlisting>sudo apt-get install s3cmd s3cmd --configure
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Insira sua <emphasis role="bold">Access
+              Key</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Insira sua <emphasis role="bold">Secret Access
+              Key</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Deixe a senha criptografada em branco</para>
+            </listitem>
+
+            <listitem>
+              <para>Deixe o caminho para o programa GPG em branco</para>
+            </listitem>
+
+            <listitem>
+              <para>Responda à pergunta “Use HTTPS?”</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Digite “não” para melhorar o desempenho</para>
+                </listitem>
+
+                <listitem>
+                  <para>Digite “sim” se a privacidade de dados for uma
+                  preocupação para você.</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+
+            <listitem>
+              <para>Deixe o servidor proxy em branco</para>
+            </listitem>
+
+            <listitem>
+              <para>Insira <emphasis role="bold">Yes </emphasis>em Test
+              Access</para>
+            </listitem>
+
+            <listitem>
+              <para>Insira <emphasis role="bold">Yes</emphasis> em Save
+              Settings</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="InstaCloud_CreatingUsingS3Buckets">
+        <title>Criando e utilizando S3 Buckets</title>
+
+        <para>Para armazenar dados no S3, é preciso criar um bucket exclusivo
+        para todo o sistema s3. Uma vez criado, esse bucket existirá mesmo ao
+        fechar as instâncias dos servidores.</para>
+
+        <para>Você pode fazer o despray (consolidar dados dos nós) de um
+        arquivo do Thor para a zona de entrada de arquivos, e depois copiar
+        para um bucket do S3 para um armazenamento constante. Mais tarde, você
+        pode copiar os arquivos do bucket do S3 para a zona de entrada de
+        arquivos e fazer o spray do arquivo para o cluster Thor. Informações
+        adicionais sobre o processamento de dados em uma plataforma HPCC
+        Systems estão disponíveis no manual <emphasis> Processamento de
+        dados</emphasis> .</para>
+
+        <sect3 id="InstaCloud_CreateABucket">
+          <title>Criar um bucket</title>
+
+          <para><programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting></para>
+        </sect3>
+
+        <sect3 id="InstaCloud_ListBuckets">
+          <title>Listar um Buckets</title>
+
+          <para><programlisting>s3cmd ls</programlisting></para>
+        </sect3>
+
+        <sect3 id="InstaCloud_UploadAFileToBucket">
+          <title>Enviar um arquivo para o bucket</title>
+
+          <para><programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
+</programlisting></para>
+        </sect3>
+
+        <sect3 id="InstaCloud_RetrieveFileFromBucket">
+          <title>Obter um arquivo do bucket</title>
+
+          <para><programlisting>s3cmd get s3://your-unique-bucket-name/myfile.csv myfile.csv
+</programlisting>Acesse <ulink
+          url="http://s3tools.org/s3cmd">http://s3tools.org/s3cmd</ulink> para
+          obter mais informações sobre como usar o s3cmd</para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="InstaCloud_NextSteps">
+    <title>Próximos passos</title>
+
+    <para>Para se familiarizar com o que o seu sistema é capaz de fazer,
+    recomendamos realizar as seguintes etapas:<itemizedlist spacing="compact">
+        <listitem>
+          <para>O <emphasis role="bold">Tutorial de dados do
+          HPCC</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Exemplo</emphasis> da teoria dos seis
+          graus de separação (de Kevin bacon).</para>
+        </listitem>
+
+        <listitem>
+          <para>Ler <emphasis role="bold">Como usar o Gerenciador de
+          Configurações</emphasis> para aprender como configurar uma
+          plataforma do HPCC usando a Visão avançada.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use suas novas habilidades para processar seu próprio dataset
+          massivo!</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>O Portal do HPCC Systems ( <ulink
+    url="http://hpccsystems.com">HPCCSystems.com</ulink> ) também é um recurso
+    valioso para obter mais informações, incluindo:</para>
+
+    <itemizedlist spacing="compact">
+      <listitem>
+        <para>Vídeo tutoriais</para>
+      </listitem>
+
+      <listitem>
+        <para>Exemplos adicionais</para>
+      </listitem>
+
+      <listitem>
+        <para>Informe técnico</para>
+      </listitem>
+
+      <listitem>
+        <para>Documentação</para>
+      </listitem>
+
+      <listitem>
+        <para>Fóruns de usuários</para>
+      </listitem>
+    </itemizedlist>
+  </chapter>
+</book>

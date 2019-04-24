@@ -1,0 +1,551 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="SSLModuleWrapperChap">
+  <title>Chapter Level Wrapper</title>
+
+  <para>Este é um resumo do capítulo de um módulo &lt;Sect1&gt;
+  incluído.</para>
+
+  <sect1 id="ssl4esp">
+    <title>Configurando o Servidor ESP para utilizar HTTPS (SSL)</title>
+
+    <para>O servidor Enterprise Service Plataform (ESP) do HPCC suporta o
+    protocolo SSL usado para enviar e receber dados ou documentos
+    privados.</para>
+
+    <para>O SSL funciona com uso de uma chave privada para criptografar e
+    descriptografar dados transferidos pela conexão por SSL Por convenção,
+    URLs que usam uma conexão por SSL começam com HTTPS em vez de HTTP.</para>
+
+    <para>A opção do SSL no ESP Server permite uma comunicação segura e
+    criptografada entre um navegador ou a aplicação SOAP client e a plataforma
+    do HPCC.</para>
+
+    <para>Os recursos do SSL são configurados no Gerenciador de Configurações,
+    porém exigem que um certificado seja instalado no servidor ESP. As
+    bibliotecas OpenSSL oferecem formas de criar os arquivos do certificado
+    necessário em uma das duas formas.</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Você pode usar as bibliotecas OpenSSL para criar uma chave
+        privada e uma Solicitação de assinatura do certificado (CSR) para
+        adquirir um certificado de um Órgão de Emissão de Certificados (como o
+        VeriSign).</para>
+      </listitem>
+
+      <listitem>
+        <para>Você pode usar essa CSR para gerar seu próprio certificado
+        autoassinado e, em seguida, para instalar o certificado e a chave
+        privada em seu ESP Server.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>De qualquer forma, uma vez instalado e configurado, o tráfego de
+    rede é criptografado e protegido. As chaves pública e privada usam a
+    criptografia RSA de 1024 bit.</para>
+
+    <sect2 id="ConfigureESP_GenerateRSAPrivateKey">
+      <title><emphasis role="bold">Gerar uma Chave RSA
+      Private</emphasis></title>
+
+      <para>Use as bibliotecas OpenSSL para criar uma chave privada RSA e uma
+      Solicitação de assinatura do certificado (CSR). Isso também pode ser a
+      base para um certificado auto-assinado. Os certificados auto-assinados
+      são usados internamente ou para testes.</para>
+
+      <para>Em nosso exemplo, criamos uma chave privada RSA de 1024 bit que é
+      criptografada através do algoritmo 3 DES e armazenada no formato Privacy
+      Enhanced Mail (PEM).</para>
+
+      <programlisting>openssl genrsa -des3 -out server.key 1024</programlisting>
+
+      <para>Quando solicitado, informe uma frase secreta. Ela será usada como
+      base da criptografia.</para>
+
+      <para><emphasis role="bold">Lembre-se desta frase secreta, pois você
+      terá que inseri-la no Gerenciador de Configurações mais
+      tarde.</emphasis></para>
+    </sect2>
+
+    <sect2 id="ConfigureESP_GenerateCSReq" role="brk">
+      <title><emphasis role="bold">Gerar um CSR - (Certificate Signing
+      Request)</emphasis></title>
+
+      <para>Após ter uma chave privada, você pode usá-la para criar uma
+      Solicitação de Assinatura do Certificado (CSR). Sua CSR pode ser usada
+      para solicitar um certificado assinado de um Órgão de Emissão de
+      Certificados (como VeriSign ou Network Solutions). Você também pode usar
+      a CSR para criar um certificado autoassinado.</para>
+
+      <programlisting>openssl req -new -key server.key -out server.csr </programlisting>
+
+      <para>Responda as perguntas quando solicitado:</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="243.90pt"/>
+
+            <colspec colwidth="234.90pt"/>
+
+            <tbody>
+              <row>
+                <entry>Nome do país (código de 2 letras):</entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>Nome do estado ou província (nome completo):</entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>Nome da localidade (p.ex., cidade):</entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>Nome da organização (p.ex., empresa):</entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>Nome da Unidade organizacional (p.ex., seção):</entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>Nome comum (p.ex., nome do host do servidor):</entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>Endereço de e-mail:</entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>Uma senha de desafio (opcional):</entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>Outro nome de empresa (opcional):</entry>
+
+                <entry/>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect2>
+
+    <sect2 id="ConfigureESP_GenerateSelf-Signed_Certificate">
+      <title><emphasis role="bold">Gerar um Certificado
+      Auto-assinado</emphasis></title>
+
+      <para>Para gerar um certificado temporário, válido por até 365 dias,
+      preencha o comando a seguir:</para>
+
+      <programlisting>openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt </programlisting>
+
+      <para>Quando solicitado, digite a frase secreta usada anteriormente ao
+      criar sua CSR.</para>
+    </sect2>
+
+    <sect2 id="ConfigureESP_InstallPrivateKeyandCertificate">
+      <title><emphasis role="bold">Instalando um Certificado e Chave Privada
+      para o seu servidor ESP</emphasis></title>
+
+      <para>É preciso instalar o certificado e a chave privada em todos os nós
+      do servidor ESP que hospedarão uma ligação de serviço usando o protocolo
+      SSL.</para>
+
+      <para>Sua chave privada e seu certificado devem ser copiados para
+      /var/lib/HPCCSystems/myesp/.</para>
+
+      <programlisting># For example:
+sudo cp server.crt /var/lib/HPCCSystems/myesp/certificate.cer
+sudo cp server.key /var/lib/HPCCSystems/myesp/privatekey.cer</programlisting>
+    </sect2>
+
+    <sect2 id="ConfigureHTTPSonESPServer" role="brk">
+      <title><emphasis role="bold">Configurar o HTTPS no seu Servidor
+      ESP</emphasis></title>
+
+      <sect3 id="Start_ConfigMgrAdvancedMode">
+        <title><emphasis role="bold">Inicie o Gerenciador de Configurações em
+        Modo Avançado</emphasis></title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Inicie o serviço do Gerenciador de Configurações em um nó
+            (geralmente o primeiro nó é considerado como o nó principal e é
+            usado para esta tarefa, mas isso fica a seu critério).</para>
+
+            <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Usando um navegador de Internet, acesse a interface do
+            Gerenciador de Configurações.</para>
+
+            <para>Use o URL de http://nnn.nnn.nnn.nnn:pppp, onde
+            nnn.nnn.nnn.nnn é o endereço IP do nó que está executando o
+            Gerenciador de Configurações e pppp é a porta (o padrão é
+            8015).</para>
+
+            <para>O assistente de inicialização do Gerenciador de
+            Configurações é exibido.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione <emphasis role="bold"> Visão
+            avançada</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione um arquivo XML da lista suspensa.</para>
+
+            <para>Essa lista é preenchida a partir das versões de um arquivo
+            XML no diretório <emphasis
+            role="bold">/etc/HPCCSystems/source/</emphasis> do seu
+            servidor.</para>
+
+            <para><emphasis role="bold">Dica</emphasis>: O arquivo XML
+            correspondente ao environment.xml ativo será destacado.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Avançar</emphasis>
+            .</para>
+
+            <para>A interface Advanced View do Gerenciador de Configurações
+            será exibida.</para>
+          </listitem>
+
+          <listitem>
+            <para>Marque a caixa <emphasis role="bold">Write Acess
+            </emphasis>no topo da página.</para>
+          </listitem>
+        </orderedlist>
+      </sect3>
+
+      <sect3 id="Configure_ESP_forHTTPS" role="brk">
+        <title><emphasis role="bold">Configurar o ESP</emphasis></title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Selecione ESP - MyEsp no painel do navegador ao lado
+            esquerdo.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecionar a guia <emphasis role="bold">HTTPS</emphasis> .
+            <figure>
+                <title>Selecionar guia HTTPS</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="../../images/ssl-01.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>No controle de entrada da <emphasis role="bold">passphrase
+            (frase secreta)</emphasis> , digite a frase secreta usada
+            anteriormente ao criar sua chave privada.</para>
+          </listitem>
+
+          <listitem>
+            <para>Quando solicitado, informe a frase secreta novamente.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no ícone de disco para salvar.</para>
+          </listitem>
+        </orderedlist>
+      </sect3>
+
+      <sect3 id="ConfigureOneorMoreSSLEnabledServiceBindings">
+        <title><emphasis role="bold">Configura um ou mais ligações de
+        SSL-Enabled Service.</emphasis></title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Selecione a aba ESP Service Bindings.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique com o botão direito na lista de serviços e selecione
+            <emphasis role="bold">Add</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Forneça um nome para a ligação (p.ex., myws_ecl_ssl)</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione myws_ecl na lista suspensa de serviços.</para>
+
+            <figure>
+              <title>myws_ecl</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ssl-02.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+
+          <listitem>
+            <para>Selecione https na lista suspensa de protocolos.</para>
+
+            <figure>
+              <title>Selecionar HTTPS</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ssl-04.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+
+            <para><emphasis role="bold">Observação:</emphasis> Caso não tenha
+            editado previamente a porta, a alteração de http para https faz
+            com que o Gerenciador de Configurações altere automaticamente a
+            porta para a porta padrão usada para https (18002). Essa alteração
+            ocorrerá automaticamente apenas se a porta não tiver sido
+            editada.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no ícone de disco para salvar.</para>
+          </listitem>
+        </orderedlist>
+      </sect3>
+    </sect2>
+
+    <sect2 id="DistributeEnvironmentConfigFileToAllNodes" role="brk">
+      <title><emphasis role="bold">Distribuir o arquivo de configuração do
+      ambiente para todos os nós, Reiniciar e Certificar</emphasis></title>
+
+      <para>Após ter configurado seu ambiente da forma desejada, é preciso
+      copiar o arquivo de configuração para os demais nós.</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Se o sistema estiver em execução, pare o sistema.</para>
+
+          <para>Certifique-se de que o sistema não esteja em execução antes de
+          tentar mover o arquivo environment.xml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Salve o arquivo environment.xml em um backup.</para>
+
+          <programlisting># for example sudo cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak
+</programlisting>
+
+          <para>Observação: o arquivo environment.xml do ambiente em execução
+          está localizado em seu diretório <emphasis
+          role="bold">/etc/HPCCSystems/ </emphasis>. O Gerenciador de
+          Configurações funciona em arquivos no diretório <emphasis
+          role="bold">/etc/HPCCSystems/source </emphasis>. É necessário copiar
+          o arquivo XML deste local para criar um arquivo environment.xml
+          ativo.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie o novo arquivo NewEnvironment.xml do diretório de origem
+          para /etc/HPCCSystems e renomeie o arquivo para
+          environment.xml</para>
+
+          <programlisting># for example sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml
+</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Copie o <emphasis
+          role="bold">/etc/HPCCSystems/environment.xml</emphasis> para o
+          <emphasis role="bold"> /etc/HPCCSystems/ </emphasis> em cada
+          nó.</para>
+
+          <para>Se preferir, use um script para automatizar essa etapa,
+          especialmente se você tiver muitos nós. Consulte a seção Scripts de
+          exemplo na seção Anexos do manual Como instalar e executar a
+          plataforma do HPCC.</para>
+        </listitem>
+
+        <listitem>
+          <para>Reinicie o HPCC System e certifique os componentes como de
+          costume.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+  </sect1>
+
+  <sect1 id="ssl4Roxie">
+    <title>Configurando SSL para o Roxie</title>
+
+    <para>O Roxie também pode ser configurado para usar o protocolo SSL. Caso
+    já tenha configurado o ESP Server para usar o protocolo SSL, como descrito
+    na seção anterior, você pode já ter concluído algumas dessas etapas.
+    Consulte a seção <link linkend="ssl4esp">SSL para ESP</link> para obter
+    mais informações sobre como criar chaves e certificados.</para>
+
+    <sect2 id="ConfigureHTTPS_RoxieCluster">
+      <title><emphasis role="bold">Configurar o HTTPS no seu Servidor de
+      cluster Roxie</emphasis></title>
+
+      <sect3 id="Start_TheConfigMgrAdvancedMode">
+        <title><emphasis role="bold">Inicie o Gerenciador de Configurações em
+        Modo Avançado</emphasis></title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Inicie o serviço do Gerenciador de Configurações em um nó
+            (geralmente o primeiro nó é considerado como o nó principal e é
+            usado para esta tarefa, mas isso fica a seu critério).</para>
+
+            <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Usando um navegador de Internet, acesse a interface do
+            Gerenciador de Configurações.</para>
+
+            <para>Use o URL de http://nnn.nnn.nnn.nnn:pppp, onde
+            nnn.nnn.nnn.nnn é o endereço IP do nó que está executando o
+            Gerenciador de Configurações e pppp é a porta (o padrão é
+            8015).</para>
+
+            <para>O assistente de inicialização do Gerenciador de
+            Configurações é exibido.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione <emphasis role="bold">Advanced
+            View</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione um arquivo XML da lista suspensa.</para>
+
+            <para>Essa lista é preenchida a partir das versões de um arquivo
+            XML no diretório <emphasis
+            role="bold">/etc/HPCCSystems/source/</emphasis> .</para>
+
+            <para><emphasis role="bold">Dica</emphasis>: O arquivo XML
+            correspondente ao environment.xml ativo será destacado.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Avançar</emphasis>
+            .</para>
+
+            <para>A interface Advanced View do Gerenciador de Configurações
+            será exibida.</para>
+          </listitem>
+
+          <listitem>
+            <para>Marque a caixa <emphasis role="bold">Write Access
+            </emphasis> no topo da página.</para>
+          </listitem>
+        </orderedlist>
+      </sect3>
+
+      <sect3 id="Configure_Roxie_forHTTPS" role="brk">
+        <title><emphasis role="bold">Configurar Roxie SSL</emphasis></title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Selecione seu cluster Roxie no painel do navegador ao lado
+            esquerdo.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione a aba <emphasis role="bold">Ports</emphasis>
+            .</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique com o botão direito na lista de portas e selecione
+            <emphasis role="bold">Add</emphasis>.<figure>
+                <title>Selecionar a aba Port</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="../../images/CM-RoxSSL01.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>O número da porta padrão é 9876. Altere o número da porta
+            padrão para, por exemplo, 19876.</para>
+          </listitem>
+
+          <listitem>
+            <para>Mude o protocolo de <emphasis>Native</emphasis> para
+            <emphasis>SSL</emphasis> no menu suspenso (imagem).</para>
+          </listitem>
+
+          <listitem>
+            <para>No controle de entrada da <emphasis role="bold">passphrase
+            (frase secreta)</emphasis> , digite a frase secreta usada
+            anteriormente ao criar sua chave privada. Deixe este campo em
+            branco caso não tenha usado uma frase secreta.</para>
+          </listitem>
+
+          <listitem>
+            <para>Quando solicitado, informe a frase secreta novamente.</para>
+          </listitem>
+
+          <listitem>
+            <para>Insira o nome do arquivo do certificado.</para>
+          </listitem>
+
+          <listitem>
+            <para>Insira o nome do arquivo da chave.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no ícone de disco para salvar.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>O local de pesquisa padrão para os arquivos de certificado e
+        chave está em <emphasis>/var/lib/HPCCSystems/myroxie</emphasis>. Você
+        pode especificar o caminho completo se quiser que esses arquivos
+        estejam em um local diferente. Os arquivos de certificado e chave
+        devem estar disponíveis para cada nó do Roxie.</para>
+      </sect3>
+
+      <sect3 id="Distribute_Environment_ConfigFileToAllNodes" role="brk">
+        <title><emphasis role="bold">Distribuir o arquivo de configuração do
+        ambiente para todos os nós, Reiniciar e Certificar</emphasis></title>
+
+        <para>Após ter configurado seu ambiente da forma desejada, é preciso
+        copiar o arquivo de configuração para os demais nós. Para obter mais
+        informações sobre como distribuir seu ambiente, consulte a seção <link
+        linkend="DistributeEnvironmentConfigFileToAllNodes">acima</link>
+        Distribuir o arquivo de configuração do ambiente.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</chapter>

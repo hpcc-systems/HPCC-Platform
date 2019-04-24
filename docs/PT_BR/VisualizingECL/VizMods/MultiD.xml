@@ -1,0 +1,694 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="VizBundleChart2dMethods">
+  <title><emphasis>Métodos Multidimensionais</emphasis></title>
+
+  <para>Esta seção abrange os métodos de criação de visualizações
+  multidimensionais contidas no módulo MultiD. Esses métodos oferecem formas
+  de representação dos dados em um ambiente multidimensional.</para>
+
+  <para/>
+
+  <sect1 id="VizMultiDArea">
+    <title>Área</title>
+
+    <para><emphasis role="bold">Visualizer.MuiltD.Área(<indexterm>
+        <primary>Visualizer.MultiD.Área</primary>
+      </indexterm><indexterm>
+        <primary>MultiD.Área</primary>
+      </indexterm><indexterm>
+        <primary>Área</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da Coluna de mapeamento &lt;--&gt; ID do campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">método de visualização </emphasis> Área
+    exibe dados quantitativos na forma gráfica. A área entre o eixo e cada
+    linha é mostrada e pode ser destacada através de sombreamento ou uso de
+    cores. Isso é normalmente usado para comparar duas ou mais
+    quantidades.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;                  
+  ds := DATASET([ {'English', 5, 43, 41, 92},
+                  {'History', 17, 43, 83, 93},
+                  {'Geography', 7, 45, 52, 83},
+                  {'Chemistry', 16, 73, 52, 83},
+                  {'Spanish', 26, 83, 11, 72},
+                  {'Bioligy', 66, 60, 85, 6},
+                  {'Physics', 46, 20, 53, 7},
+                  {'Math', 98, 30, 23, 13}],
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+  data_exams;
+  
+  viz_area := Visualizer.MultiD.Area('area',, 'MultiD__test');
+  Viz_area;</programlisting>
+  </sect1>
+
+  <sect1 id="VizMultiDBar">
+    <title>Barras</title>
+
+    <para><emphasis role="bold">Visualizer.MuiltD.Bar(<indexterm>
+        <primary>Visualizer.MultiD.Bar</primary>
+      </indexterm><indexterm>
+        <primary>MultiD.Bar</primary>
+      </indexterm><indexterm>
+        <primary>Bar</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da Coluna de mapeamento &lt;--&gt; ID do campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">método de visualização </emphasis> Barras
+    exibe um gráfico contendo barras horizontais retangulares onde cada
+    comprimento representa o valor dos dados.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;                  
+  ds := DATASET([ {'English', 5, 43, 41, 92},
+                  {'History', 17, 43, 83, 93},
+                  {'Geography', 7, 45, 52, 83},
+                  {'Chemistry', 16, 73, 52, 83},
+                  {'Spanish', 26, 83, 11, 72},
+                  {'Bioligy', 66, 60, 85, 6},
+                  {'Physics', 46, 20, 53, 7},
+                  {'Math', 98, 30, 23, 13}],
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+  data_exams;
+  
+  viz_bar := Visualizer.MultiD.Bar('bar',, 'MultiD__test');
+  viz_bar;</programlisting>
+  </sect1>
+
+  <sect1 id="VizMultiDColumn">
+    <title>Colunas</title>
+
+    <para><emphasis role="bold">Visualizer.MuiltD.Column(<indexterm>
+        <primary>Visualizer.MultiD.Column</primary>
+      </indexterm><indexterm>
+        <primary>MultiD.Column</primary>
+      </indexterm><indexterm>
+        <primary>Column</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da Coluna de mapeamento &lt;--&gt; ID do campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">método de visualização </emphasis> Colunas
+    exibe um gráfico contendo barras verticais retangulares onde cada
+    comprimento representa o valor dos dados.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;                  
+  ds := DATASET([ {'English', 5, 43, 41, 92},
+                  {'History', 17, 43, 83, 93},
+                  {'Geography', 7, 45, 52, 83},
+                  {'Chemistry', 16, 73, 52, 83},
+                  {'Spanish', 26, 83, 11, 72},
+                  {'Bioligy', 66, 60, 85, 6},
+                  {'Physics', 46, 20, 53, 7},
+                  {'Math', 98, 30, 23, 13}],
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+  data_exams;
+  
+  viz_Column := Visualizer.MultiD.Column('column',, 'MultiD__test');
+  viz_Column;</programlisting>
+  </sect1>
+
+  <sect1 id="VizMultiDHexBin">
+    <title>Hexágono</title>
+
+    <para><emphasis role="bold">Visualizer.MuiltD.HexBin(<indexterm>
+        <primary>Visualizer.MultiD.HexBin</primary>
+      </indexterm><indexterm>
+        <primary>MultiD.HexBin</primary>
+      </indexterm><indexterm>
+        <primary>HexBin</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da Coluna de mapeamento &lt;--&gt; ID do campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">método de visualização </emphasis> Hexágono
+    exibe um gráfico com caixas hexagonais indicando duas ou mais variáveis
+    contínuas entre si. A categorização hexagonal é útil para agregar valores
+    de dados em uma exibição mais ampla. Por exemplo, em vez de mostrar
+    milhares de pontos em uma representação dispersa, é possível combinar
+    pontos em alguns hexágonos para mostrar a distribuição.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;                  
+  ds := DATASET([ {'English', 5, 43, 41, 92},
+                  {'History', 17, 43, 83, 93},
+                  {'Geography', 7, 45, 52, 83},
+                  {'Chemistry', 16, 73, 52, 83},
+                  {'Spanish', 26, 83, 11, 72},
+                  {'Bioligy', 66, 60, 85, 6},
+                  {'Physics', 46, 20, 53, 7},
+                  {'Math', 98, 30, 23, 13}],
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+  data_exams;
+  
+  viz_hexBin := Visualizer.MultiD.HexBin('hexBin',, 'MultiD__test');
+  viz_hexBin;</programlisting>
+  </sect1>
+
+  <sect1 id="VizMultiDLine">
+    <title>Linha</title>
+
+    <para><emphasis role="bold">Visualizer.MuiltD.Line(<indexterm>
+        <primary>Visualizer.MultiD.Line</primary>
+      </indexterm><indexterm>
+        <primary>MultiD.Line</primary>
+      </indexterm><indexterm>
+        <primary>Line</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da Coluna de mapeamento &lt;--&gt; ID do campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">método de visualização </emphasis> Linha
+    exibe um gráfico de linha que usa pontos conectados por linhas para
+    mostrar a mudança dos valores.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;                  
+  ds := DATASET([ {'English', 5, 43, 41, 92},
+                  {'History', 17, 43, 83, 93},
+                  {'Geography', 7, 45, 52, 83},
+                  {'Chemistry', 16, 73, 52, 83},
+                  {'Spanish', 26, 83, 11, 72},
+                  {'Bioligy', 66, 60, 85, 6},
+                  {'Physics', 46, 20, 53, 7},
+                  {'Math', 98, 30, 23, 13}],
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+  data_exams;
+  
+  viz_line := Visualizer.MultiD.Line('line',, 'MultiD__test');
+  viz_line;</programlisting>
+  </sect1>
+
+  <sect1 id="VizMultiDScatter">
+    <title>Dispersão</title>
+
+    <para><emphasis role="bold">Visualizer.MuiltD.Scatter(<indexterm>
+        <primary>Visualizer.MultiD.Scatter</primary>
+      </indexterm><indexterm>
+        <primary>MultiD.Scatter</primary>
+      </indexterm><indexterm>
+        <primary>Scatter</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da Coluna de mapeamento &lt;--&gt; ID do campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold"> método de visualização </emphasis>Scatter
+    (Dispersão) exibe um gráfico de dispersão usando os eixos horizontal e
+    vertical para representar os pontos dos dados.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;                  
+  ds := DATASET([ {'English', 5, 43, 41, 92},
+                  {'History', 17, 43, 83, 93},
+                  {'Geography', 7, 45, 52, 83},
+                  {'Chemistry', 16, 73, 52, 83},
+                  {'Spanish', 26, 83, 11, 72},
+                  {'Bioligy', 66, 60, 85, 6},
+                  {'Physics', 46, 20, 53, 7},
+                  {'Math', 98, 30, 23, 13}],
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+  data_exams;
+  viz_scatter := Visualizer.MultiD.Scatter('scatter',, 'MultiD__test');
+  viz_scatter;</programlisting>
+  </sect1>
+
+  <sect1 id="VizMultiDStep">
+    <title>Step (Escada ou Degrau)</title>
+
+    <para><emphasis role="bold">Visualizer.MuiltD.Step(<indexterm>
+        <primary>Visualizer.MultiD.Step</primary>
+      </indexterm><indexterm>
+        <primary>MultiD.Step</primary>
+      </indexterm><indexterm>
+        <primary>Step</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da Coluna de mapeamento &lt;--&gt; ID do campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold"> método de visualização </emphasis> Step
+    (Escada ou Degrau) mostra um gráfico de escada constituído por linhas em
+    intervalor ou “degraus” horizontais.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;                  
+  ds := DATASET([ {'English', 5, 43, 41, 92},
+                  {'History', 17, 43, 83, 93},
+                  {'Geography', 7, 45, 52, 83},
+                  {'Chemistry', 16, 73, 52, 83},
+                  {'Spanish', 26, 83, 11, 72},
+                  {'Bioligy', 66, 60, 85, 6},
+                  {'Physics', 46, 20, 53, 7},
+                  {'Math', 98, 30, 23, 13}],
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+  data_exams;
+  viz_step := Visualizer.MultiD.Step('step',, 'MultiD__test');
+  viz_step;</programlisting>
+  </sect1>
+</chapter>

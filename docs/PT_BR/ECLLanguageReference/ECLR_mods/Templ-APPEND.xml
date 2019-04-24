@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_APPEND">
+  <title>#APPEND</title>
+
+  <para><emphasis role="bold">#APPEND<indexterm>
+      <primary>#APPEND</primary>
+    </indexterm>( </emphasis><emphasis>symbol, expression </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.35pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>symbol</emphasis></entry>
+
+            <entry>O nome de um símbolo definido pelo usuário previamente
+            declarado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A expressão de string que especifica a string a ser
+            concatenada ao conteúdo dos símbolos existentes.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A declaração <emphasis role="bold">#APPEND </emphasis> adiciona o
+  valor da <emphasis>expressão</emphasis> ao final do conteúdo da string
+  existente do <emphasis>símbolo</emphasis>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  #DECLARE(MySymbol);         //declare a symbol named "MySymbol"
+  #SET(MySymbol,'Hello');     //initialize MySymbol to "Hello"
+  #APPEND(MySymbol,' World'); //make MySymbol's value "Hello World"
+</programlisting>
+
+  <para>Ver também: <link linkend="_DECLARE">#DECLARE</link>, <link
+  linkend="_SET">#SET</link></para>
+</sect1>

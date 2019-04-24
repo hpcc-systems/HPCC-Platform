@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Hour">
+  <title>Hour</title>
+
+  <para><emphasis role="bold">STD.Date.Hour<indexterm>
+      <primary>STD.Date.Hour</primary>
+    </indexterm><indexterm>
+      <primary>Date.Hour</primary>
+    </indexterm><indexterm>
+      <primary>Hour</primary>
+    </indexterm>(</emphasis> <emphasis>time</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>time</emphasis></entry>
+
+          <entry>Um valor de hora no formato Time_.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>Hour retorna um valor INTEGER que representa as horas no
+          intervalo de 0 a 23.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">Hour</emphasis> retorna as horas do
+  valor de <emphasis>time</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+MyTime:= STD.Date.CurrentTime(TRUE);   //Local Time
+  
+t1 := STD.Date.Hour(MyTime);
+    //t1 contains the hour of the current local time
+</programlisting>
+
+  <para/>
+</sect1>

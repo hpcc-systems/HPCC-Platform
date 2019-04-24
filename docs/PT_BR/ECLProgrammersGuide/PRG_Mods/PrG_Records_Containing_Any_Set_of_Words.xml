@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Records_Containing_Any_of_a_Set_of_Words">
+  <title><emphasis>Registros Contendo Qualquer Conjuntos de
+  Palavras</emphasis></title>
+
+  <para>Parte do problema de limpeza de dados é a possível presença de
+  profanação ou nomes de personagens de desenhos animados nos dados. Isso pode
+  se tornar um problema sempre que você estiver trabalhando com dados
+  originados do registro direto por usuários finais em um site. O código a
+  seguir (contido no arquivo BadWordSearch.ECL) vai detectar a presença de
+  qualquer conjunto de palavras obscenas em um determinado campo:</para>
+
+  <programlisting>IMPORT std;
+
+SetBadWords := ['JUNK', 'GARBAGE', 'CRUD'];
+BadWordDS := DATASET(SetBadWords,{STRING10 word});
+
+SearchDS := DATASET([{1,'FRED','FLINTSTONE'},
+                     {2,'GEORGE','KRUEGER'},
+                     {3,'CRUDOLA','BAR'},
+                     {4,'JUNKER','KNIGHT'},
+                     {5,'GARBAGEGUY','MANGIA'},
+                     {6,'FREDDY','KRUEGER'},
+                     {7,'TIM','TINY'},
+                     {8,'JOHN','JONES'},
+                     {9,'MIKE','JETSON'}],
+                    {UNSIGNED6 ID,STRING10 firstname,STRING10 lastname});
+
+outrec := RECORD
+  SearchDS.ID;
+  SearchDS.firstname;
+  BOOLEAN FoundWord;
+END;
+
+{BOOLEAN Found} FindWord(BadWordDS L, STRING10 inword) := TRANSFORM
+  SELF.Found := Std.Str.Find(inword,TRIM(L.word),1)&gt;0;
+END;
+
+outrec CheckWords(SearchDS L) := TRANSFORM
+  SELF.FoundWord := EXISTS(PROJECT(BadWordDS,FindWord(LEFT,L.firstname))(Found=TRUE));
+  SELF := L;
+END;
+
+result := PROJECT(SearchDS,CheckWords(LEFT));
+
+OUTPUT(result(FoundWord=TRUE));
+OUTPUT(result(FoundWord=FALSE));
+</programlisting>
+
+  <para>Esse código é um PROJECT simples de cada registro que você deseja
+  procurar. O resultado será um conjunto de registros contendo o campo ID de
+  registro, o campo de busca de primeiro nome e um campo de sinalizador
+  BOOLEAN FoundWord, indicando se alguma palavra obscena foi
+  localizada.</para>
+
+  <para>A busca em si é feita por um PROJECT aninhado do campo a ser procurado
+  em relação ao DATASET de palavras obscenas. Usar a função EXISTS para
+  detectar se algum registro foi retornado desse PROJECT, o campo Found
+  retornado é TRUE, define o valor de campo de sinalizador FoundWord.</para>
+
+  <para>A função Std.Str.Find apenas detecta a presença de quaisquer palavras
+  obscenas em qualquer lugar na cadeia de busca O OUTPUT do conjunto de
+  registros onde o FoundWord é TRUE e permite o pós-processamento para avaliar
+  se o registro vale a pena ser mantido ou se pode ser descartado
+  (provavelmente exigindo intervenção humana).</para>
+
+  <para>O código acima é um exemplo específico dessa técnica, mas seria muito
+  mais útil ter uma MACRO que realizasse essa tarefa, algo como (também
+  contido no arquivo BadWordSearch.ECL):</para>
+
+  <programlisting>MAC_FindBadWords(BadWordSet,InFile,IDfld,SeekFld,ResAttr,MatchType=1) := MACRO
+  #UNIQUENAME(BadWordDS)
+  %BadWordDS% := DATASET(BadWordSet,{STRING word{MAXLENGTH(50)}});
+
+  #UNIQUENAME(outrec)
+  %outrec% := RECORD
+    InFile.IDfld;
+    InFile.SeekFld;
+    BOOLEAN FoundWord := FALSE;
+    UNSIGNED2 FoundPos := 0;
+  END;
+
+  #UNIQUENAME(ChkTbl)
+  %ChkTbl% := TABLE(InFile,%outrec%);
+
+  #UNIQUENAME(FindWord)
+  {BOOLEAN Found,UNSIGNED2 FoundPos} 
+    %FindWord%(%BadWordDS% L,INTEGER C,STRING inword) := TRANSFORM
+  #IF(MatchType=1) //"contains" search
+    SELF.Found := Std.Str.Find(inword,TRIM(L.word),1) &gt; 0;
+  #END
+  #IF(MatchType=2) //"exact match" search
+    SELF.Found := inword = L.word;
+  #END
+  #IF(MatchType=3) //"starts with" search
+    SELF.Found := Std.Str.Find(inword,TRIM(L.word),1) = 1;
+  #END
+    SELF.FoundPos := IF(SELF.FOUND=TRUE,C,0);
+  END;
+  #UNIQUENAME(CheckWords)
+  %outrec% %CheckWords%(%ChkTbl% L) := TRANSFORM
+    WordDS := PROJECT(%BadWordDS%,%FindWord%(LEFT,COUNTER,L.SeekFld));
+    SELF.FoundWord := EXISTS(WordDS(Found=TRUE));
+    SELF.FoundPos := WordDS(Found=TRUE)[1].FoundPos;
+    SELF := L; 
+  END;
+  ResAttr := PROJECT(%ChkTbl%,%CheckWords%(LEFT));
+ENDMACRO;
+</programlisting>
+
+  <para>Essa MACRO faz um pouco mais do que o exemplo anterior. Ela começa
+  passando pelo:</para>
+
+  <para>* Conjunto de palavras a ser localizado</para>
+
+  <para>* Arquivo para busca</para>
+
+  <para>* Campo de identificador único para o registro de busca</para>
+
+  <para>* Campo para pesquisa</para>
+
+  <para>* Nome de atributo do conjunto de registro resultante</para>
+
+  <para>* Tipo de correspondência a ser realizada (com padrão para 1)</para>
+
+  <para>Especificar o conjunto de palavras para busca permite que a MACRO
+  opere em relação a qualquer conjunto determinado de strings. Especificar o
+  nome de atributo de resultado permite um pós-processamento simplificado dos
+  dados.</para>
+
+  <para>Essa MACRO vai além do exemplo anterior no parâmetro MatchType, que
+  permite que a MACRO use a função Template Language #IF para gerar três tipos
+  diferentes de buscas a partir de uma mesma base de códigos: uma busca com
+  "contém" (o padrão), uma correspondência exata e uma busca de "começa
+  com".</para>
+
+  <para>Ela também possui uma estrutura de RECORD de saída expandida que
+  inclui um campo FoundPos para incluir o ponteiro à primeira entrada no
+  conjunto especificado combinado. Isso possibilita que o pós-processamento
+  detecte correspondências de posição no conjunto para que "pares combinados"
+  de palavras possam ser detectados, como neste exemplo (também contido no
+  arquivo BadWordSearch.ECL):</para>
+
+  <programlisting>SetCartoonFirstNames := ['GEORGE','FRED', 'FREDDY'];
+SetCartoonLastNames := ['JETSON','FLINTSTONE','KRUEGER'];
+
+MAC_FindBadWords(SetCartoonFirstNames,SearchDS,ID,firstname,Res1,2)
+MAC_FindBadWords(SetCartoonLastNames,SearchDS,ID,lastname,Res2,2)
+
+Cartoons := JOIN(Res1(FoundWord=TRUE),
+                 Res2(FoundWord=TRUE),
+                 LEFT.ID=RIGHT.ID AND LEFT.FoundPos=RIGHT.FoundPos);
+
+MAC_FindBadWords(SetBadWords,SearchDS,ID,firstname,Res3,3)
+MAC_FindBadWords(SetBadWords,SearchDS,ID,lastname,Res4)
+SetBadGuys := SET(Cartoons,ID) +
+              SET(Res3(FoundWord=TRUE),ID) +
+              SET(Res4(FoundWord=TRUE),ID);
+
+GoodGuys := SearchDS(ID NOT IN SetBadGuys);
+BadGuys := SearchDS(ID IN SetBadGuys);
+OUTPUT(BadGuys,NAMED('BadGuys'));
+OUTPUT(GoodGuys,NAMED('GoodGuys'));
+</programlisting>
+
+  <para>Observe que a posição dos nomes de personagens de desenhos animados em
+  seus conjuntos individuais define um único nome de personagem para procurar
+  em múltiplas passagens. Acionar a MACRO duas vezes e procurar pelo primeiro
+  e último nomes separadamente permite o pós-processamento dos resultados com
+  um JOIN interno mais simples onde o mesmo registro foi localizado em cada um
+  e, o mais importante, onde os valores de posição das correspondências são os
+  mesmos. Isso evita que "GEORGE KRUEGER" seja marcado indevidamente como um
+  nome de personagem de desenho animado.</para>
+</sect1>

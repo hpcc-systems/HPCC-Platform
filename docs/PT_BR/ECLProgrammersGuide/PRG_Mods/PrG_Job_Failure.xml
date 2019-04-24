@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Job_Failure">
+  <title><emphasis role="bold">"Falha" do Job</emphasis></title>
+
+  <para>Às vezes, os jobs falham. E, às vezes, esse comportamento ocorre por concepção.</para>
+
+  <para>Por exemplo, tentar enviar um resultado inteiro gerado de volta ao programa ECL IDE quando tal resultado contém mais de 10 megabytes de dados levará a uma “falha” do job com o erro "Dataset muito grande para ser enviado à workunit (limite de 10 megabytes)." Essa “falha” do job é calculada naquela parte do sistema (e você pode redefinir este limite para cada workunit usando #OPTION), porque no momento em que estiver gravando toda essa quantidade de dados, a gravação deve ser feita em um arquivo para despray (consolidação de dados aos nós). Caso contrário, a armazenagem de dados em seu sistema será rapidamente preenchida.</para>
+
+  <para>Outros exemplos deste tipo de “falha” calculada pelo sistema: ao exceder os limites de distorção ou de qualquer outro tempo de execução. Alguns desses limites podem ser redefinidos (mas, geralmente, essa NÃO é a melhor solução). Além disso, a “falha” calculada é um sinal de que há algo inerentemente errado com o job e de que, talvez, a abordagem usada precise ser repensada.</para>
+
+  <para>Entre em contato com a equipe de Suporte técnico ao surgir qualquer problema. Nós ajudaremos você a criar uma estratégia para fazer o que precisa ser feito sem gerar estas “falhas” calculadas pelo sistema.</para>
+</sect1>

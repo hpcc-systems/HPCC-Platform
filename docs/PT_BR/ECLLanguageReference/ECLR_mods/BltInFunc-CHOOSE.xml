@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CHOOSE">
+  <title>CHOOSE</title>
+
+  <para><emphasis role="bold">CHOOSE<indexterm>
+      <primary>CHOOSE</primary>
+    </indexterm><indexterm>
+      <primary>CHOOSE function</primary>
+    </indexterm>(</emphasis><emphasis>expression, value,… , value,
+  elsevalue</emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>expressão</emphasis></entry>
+
+            <entry>Uma expressão aritmética que resulta em um valor inteiro
+            positivo e que determina qual parâmetro de valor será
+            retornado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>Os valores a serem retornados. Deverá haver a quantidade de
+            parâmetros de valor necessária para especificar todos os valores
+            esperados da expressão. Isso pode ser qualquer expressão ou
+            ação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>elsevalue</emphasis></entry>
+
+            <entry>O valor a ser retornado quando a expressão retorna um valor
+            fora do intervalo. O último parâmetro é sempre
+            <emphasis>elsevalue</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CHOOSE retorna um único valor.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">CHOOSE </emphasis>avalia a
+  <emphasis>expressão</emphasis> e retorna o parâmetro de
+  <emphasis>valor</emphasis> cuja posição ordinal na lista de parâmetros
+  corresponde ao resultado da <emphasis>expressão</emphasis>. Se não houver
+  correspondência, ela retorna o <emphasis>elsevalue</emphasis>. Todos os
+  <emphasis>valores</emphasis> e <emphasis>elsevalue</emphasis> devem ser do
+  mesmo tipo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyExp := 1+2;
+MyChoice := CHOOSE(MyExp,9,8,7,6,5); // returns 7
+MyChoice := CHOOSE(MyExp,1,2,3,4,5);  // returns 3
+MyChoice := CHOOSE(MyExp,15,14,13,12,11);  // returns 13
+WorstRate := CHOOSE(IntRate,1,2,3,4,5,6,6,6,6,0);
+ // WorstRate receives 6 if the IntRate is 7, 8, or 9
+</programlisting>
+
+  <para>Ver também: <link linkend="CASE">CASE</link>, <link
+  linkend="IF">IF</link>, <link linkend="MAP">MAP</link></para>
+</sect1>

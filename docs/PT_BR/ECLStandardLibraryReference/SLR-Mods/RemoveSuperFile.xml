@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RemoveSuperFile">
+  <title>RemoveSuperFile</title>
+
+  <para><emphasis role="bold">STD.File.RemoveSuperFile<indexterm>
+      <primary>STD.File.RemoveSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.RemoveSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>RemoveSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
+  <emphasis role="bold">[</emphasis> <emphasis>, delete</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, removecontents</emphasis> <emphasis
+  role="bold">])</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subfile</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          subarquivo. Esse subarquivo pode ser outro superarquivo, bem como um
+          arquivo ou superarquivo estrangeiro.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>delete</emphasis></entry>
+
+          <entry>Um indicador booleano que especifica se o
+          <emphasis>subfile</emphasis> deve ser excluído do disco ou apenas
+          removido da lista de arquivos do <emphasis>superfile </emphasis>. Se
+          omitido, o padrão é apenas remover o arquivo da lista de arquivos do
+          <emphasis>superfile </emphasis> . <emphasis role="bold">Essa opção
+          não deve ser usada se o subarquivo for um arquivo ou superarquivo
+          estrangeiro.</emphasis></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>removecontents</emphasis></entry>
+
+          <entry>Um indicador booleano que especifica que o conteúdo de um
+          <emphasis>subfile</emphasis> que um superarquivo será removido
+          recursivamente.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Nulo</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">RemoveSuperFile </emphasis>remove o
+  <emphasis>subarquivo</emphasis> da lista de arquivos que compõem o
+  <emphasis>superfile</emphasis>.</para>
+
+  <para>Essa função pode ser incluída em uma transação de superarquivo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">SEQUENTIAL(
+ STD.File.StartSuperFileTransaction(),
+ STD.File.RemoveSuperFile('MySuperFile','MySubFile'),
+ STD.File.FinishSuperFileTransaction()
+);</programlisting>
+</sect1>

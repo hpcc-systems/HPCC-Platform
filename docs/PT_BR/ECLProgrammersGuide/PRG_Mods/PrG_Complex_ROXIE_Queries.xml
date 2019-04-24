@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Complex_Roxie_Query_Techniques">
+  <title><emphasis role="bold">Técnicas de Consultas
+  Complexas</emphasis></title>
+
+  <para>As técnicas de codificação ECL usadas nas consultas Roxie podem ser
+  bastante complexas, usando múltiplas chaves, chaves de contéudo, JOINs de
+  meia chave, a função KEYDIFF e vários outros recursos da linguagem ECL. No
+  entanto, todas essas técnicas compartilham do mesmo objetivo: maximizar o
+  desempenho da consulta para que seu resultado seja entregue do modo mais
+  eficiente possível, maximizando a taxa de produtividade de transação total
+  para o Roxie que atende a consulta.</para>
+
+  <sect2 id="Key_Selection_Based_on_Input">
+    <title>Seleção de Chave Baseada na Entrada</title>
+
+    <para>Tudo começa com a arquitetura de seus dados e as chaves compiladas a
+    partir deles. Normalmente, um único dataset teria múltiplos índices para
+    fornecer vários métodos de acesso aos dados. Dessa forma, uma das
+    principais técnicas usadas em consultas Roxie é detectar qual dos
+    conjuntos de possíveis valores foi especificado para a consulta e, baseado
+    nesses valores, escolher o INDEX correto a ser usado.</para>
+
+    <para>A base para detectar quais valores foram especificados para a
+    consulta é determinada pelos atributos STORED definidos para receber os
+    valores especificados. A interface SOAP preenche automaticamente esses
+    atributos com quaisquer valores que tenham sido especificados para a
+    consulta. Isso significa que o código de consulta precisa apenas
+    interrogar esses parâmetros quanto a presença de valores diferentes dos de
+    seus padrões.</para>
+
+    <para>Este exemplo demonstra a técnica:</para>
+
+    <programlisting>IMPORT $;
+EXPORT PeopleSearchService() := FUNCTION
+  STRING30 lname_value := '' : STORED('LastName');
+  STRING30 fname_value := '' : STORED('FirstName');
+  IDX  := $.IDX__Person_LastName_FirstName;
+  Base := $.Person.FilePlus;
+     
+  Fetched := IF(fname_value = '',
+                FETCH(Base,IDX(LastName=lname_value),RIGHT.RecPos),
+                FETCH(Base,IDX(LastName=lname_value,FirstName=fname_value),RIGHT.RecPos));
+  RETURN OUTPUT(CHOOSEN(Fetched,2000));
+END;</programlisting>
+
+    <para>Essa consulta é escrita supondo que o parâmetro LastName sempre será
+    especificado, de forma que IF precisa apenas detectar se um FirstName
+    também foi inserido pelo usuário. Em caso afirmativo, o filtro no
+    parâmetro de índice para FETCH precisa apenas filtrar esse valor, caso
+    contrário o FETCH precisa apenas filtrar o índice com o valor
+    LastName.</para>
+
+    <para>Esse código pode ser escrito de várias maneiras. Aqui está uma
+    alternativa:</para>
+
+    <programlisting>IMPORT $;
+EXPORT PeopleSearchService() := FUNCTION
+  STRING30 lname_value := '' : STORED('LastName');
+  STRING30 fname_value := '' : STORED('FirstName');
+  IDX  := $.IDX__Person_LastName_FirstName;
+  Base := $.Person.FilePlus;
+  IndxFilter := IF(fname_value = '',
+                   IDX.LastName=lname_value,
+                   IDX.LastName=lname_value AND IDX.FirstName=fname_value);
+  Fetched := FETCH(Base,IDX(IndxFilter),RIGHT.RecPos);
+  RETURN OUTPUT(CHOOSEN(Fetched,2000));
+END;</programlisting>
+
+    <para>Neste exemplo, IF apenas compila a expressão de filtro correta a ser
+    usada por FETCH. O uso desta forma facilita a leitura e a manutenção do
+    código ao removeras múltiplas formas possíveis da lógica de filtro da
+    função que a utiliza.</para>
+  </sect2>
+
+  <sect2 id="PG_Keyed_Joins">
+    <title>Joins chavedos</title>
+
+    <para>Embora a função FETCH tenha sido projetada especificamente para
+    acesso indexados aos dados, na prática, a operação JOIN de meia chave é
+    normalmente usada em consultas Roxie. A principal razão para isso é a
+    flexibilidade oferecida por JOIN.</para>
+
+    <para>As vantagens de uso de operações JOIN com chave em qualquer consulta
+    são discutidas de maneira mais detalhada no tópico <emphasis>Como usar
+    chaves ECL (arquivos INDEX)</emphasis> . Essas vantagens garantem
+    benefícios tremendos para as consultas Roxie. Devido à natureza do Roxie,
+    a melhor vantagem de JOINs com chave vem do uso de JOINs de meia chave que
+    utilizam chaves de conteúdo (acabando com a necessidade de operações FETCH
+    adicionais).</para>
+  </sect2>
+
+  <sect2 id="Limiting_Output">
+    <title>Limitando a saída</title>
+
+    <para>Uma das principais considerações para desenvolver uma consulta Roxie
+    é a quantidade de dados que pode acabar sendo retornada da consulta. Uma
+    vez que as operações JOIN podem acabar resultando em enormes datasets,
+    deve-se ter o cuidado de limitar o número de registros que qualquer
+    consulta possa retornar para um número razoável de acordo com o tipo
+    específico de consulta. Aqui estão algumas técnicas para se fazer
+    isso:</para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="61.60pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>*</entry>
+
+              <entry>As funções CHOOSEN e LIMIT devem ser usadas para limitar
+              leituras de índice para o número máximo.</entry>
+            </row>
+
+            <row>
+              <entry>*</entry>
+
+              <entry>JOINs com chave devem usar a opção ATMOST, KEEP, ou
+              LIMIT.</entry>
+            </row>
+
+            <row>
+              <entry>*</entry>
+
+              <entry>Quando um dataset secundário aninhado é definido, ele
+              deve ter a opção MAXCOUNT definida no campo DATASET secundário
+              da estrutura RECORD, e o código que compila o dataset secundário
+              aninhado deve usar CHOOSEN com um valor que corresponda
+              exatamente ao MAXCOUNT.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Todas essas técnicas ajudarão a garantir que, quando o usuário final
+    espera obter cerca de dez resultados, ele não acabe com dez
+    milhões.</para>
+  </sect2>
+</sect1>

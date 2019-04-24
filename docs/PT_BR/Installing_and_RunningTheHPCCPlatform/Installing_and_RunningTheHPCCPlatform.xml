@@ -1,0 +1,3552 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <title>Instalando &amp; Executando a Plataforma HPCC</title>
+
+  <bookinfo>
+    <title>Instalando &amp; Executando a Plataforma HPCC</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>SSystems<superscript>®</superscript> HPCC Systems® é uma marca
+      registrada da LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas. Todos os nomes e
+      dados de exemplo usados neste manual são fictícios. Qualquer semelhança
+      com pessoas reais, vivas ou mortas, é mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>SSystems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="Welcome">
+    <title>Boas Vindas</title>
+
+    <para>Estas instruções servem como orientação durante a instalação e
+    execução do HPCC<footnote>
+        <para><emphasis role="bold">H</emphasis>igh <emphasis
+        role="bold">P</emphasis>erformance <emphasis
+        role="bold">C</emphasis>omputing <emphasis
+        role="bold">C</emphasis>luster (HPCC) é uma plataforma de computação
+        de processamento massivamente paralelo que soluciona problemas de big
+        data. Acesse <ulink
+        url="http://hpccsystems.com/Why-HPCC/How-it-works"> o link
+        http://hpccsystems.com/Why-HPCC/How-it-works</ulink> para obter mais
+        detalhes.</para>
+      </footnote> Community Edition em um único nó para iniciar e, em seguida,
+    opcionalmente, expandi-lo para um cluster maior de nós.</para>
+
+    <para>A tecnologia Thor do HPCC foi projetada para processar, analisar e
+    localizar links e associações em grandes volumes de dados complexos de
+    forma eficaz. Ela é capaz de detectar relações não óbvias, fazer ajustes
+    para suportar petabytes de dados, e é significativamente mais rápida do
+    que as tecnologias concorrentes – embora exija menos hardware e
+    recursos.</para>
+
+    <para>A tecnologia Roxie do HPCC – também conhecida como Motor de entrega
+    rápida de dados ou (Rapid Data Delivery Engine-RDDERoxie – usa uma
+    combinação de tecnologias e técnicas que produzem resultados extremamente
+    rápidos para consultas em dados indexados.</para>
+
+    <para>Isso é convertido na obtenção de respostas de melhor qualidade e em
+    menos tempo para que as organizações possam lidar com uma quantidade
+    massiva de dados e transformar a informação em conhecimento de maneira
+    eficaz.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+              <entry>Sugerimos a leitura completa deste documento antes de
+              começar. O processo deve levar de uma a duas horas para ser
+              concluído, dependendo da velocidade do seu download.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <sect1 id="Quick_Start">
+      <title>Guia de Introdução</title>
+
+      <para>Recomendamos dedicar tempo para a leitura completa deste manual;
+      porém, segue abaixo um guia rápido com o resumo das etapas. A plataforma
+      do HPCC System abrange vários aspectos e este guia foi criado para
+      ajudá-lo a usufruir ao máximo de todas as vantagens que o sistema
+      oferece. Esta seção não deve substituir conteúdos mais abrangentes
+      contidos na parte restante deste livro.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Instalar o HPCC.</para>
+
+          <para>Baixe o pacote de instalação em <ulink
+          url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>
+          .</para>
+
+          <para>No CentOS/Red Hat:</para>
+
+          <para><programlisting> sudo yum install hpccsystems-platform&lt;rpm_file_name&gt;</programlisting>No
+          Ubuntu/Debian:</para>
+
+          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Inicie seu HPCC Systems</para>
+
+          <para>No CentOS/Red Hat:</para>
+
+          <para><programlisting>sudo service hpcc-init start</programlisting></para>
+
+          <para>Sistemas baseados em Debian (Ubuntu):</para>
+
+          <programlisting>sudo service hpcc-init start</programlisting>
+
+          <para>Debian 6 (Squeeze ou algumas versões Ubuntu):</para>
+
+          <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Execute o <emphasis role="bold">ECL Watch</emphasis>. Saia do
+          seu sistema.</para>
+
+          <para>Usando um navegador, vá para o <emphasis role="bold">ECL
+          Watch</emphasis> executado na porta 8010 do seu Nó do HPCC .</para>
+
+          <para>Por exemplo, http://nnn.nnn.nnn.nnn:8010, onde nnn.nnn.nnn.nnn
+          é o endereço IP do seu nó.</para>
+        </listitem>
+
+        <listitem>
+          <para>Crie e execute alguns ECL.</para>
+
+          <para>Isso pode ser feito no ECL Watch, clique no link Área de
+          recreio (Playground).</para>
+        </listitem>
+
+        <listitem>
+          <para>Obtenha e instale o ECL IDE e as ferramentas do Client.</para>
+        </listitem>
+      </orderedlist>
+
+      <sect2 id="Installing_NowWhat">
+        <title>E agora?</title>
+
+        <para>Agora que seu HPCC já foi inicializado e está em execução, o que
+        você deseja fazer? Talvez avalie suas necessidades e crie uma
+        configuração customizada que atenda essas necessidades. Talvez você
+        queira expandir seu sistema e adicionar nós. Esses tópicos e muitos
+        outros serão abordados nas seções seguintes.</para>
+
+        <para>Para se familiarizar com o que o seu sistema é capaz de fazer,
+        recomendamos realizar as seguintes etapas:<itemizedlist
+            spacing="compact">
+            <listitem>
+              <para>O <emphasis role="bold">Tutorial de dados do
+              HPCC:</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Exemplo </emphasis> da teoria dos
+              seis graus de separação (de Kevin bacon)</para>
+            </listitem>
+
+            <listitem>
+              <para>Leitura <emphasis role="bold">Como usar o Gerenciador de
+              Configurações</emphasis> para aprender como configurar uma
+              plataforma do HPCC usando a Advanced View.</para>
+            </listitem>
+
+            <listitem>
+              <para>Use suas novas habilidades para processar seu próprio
+              dataset massivo!</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="HPCC-installation-and-startup">
+    <title>Instalação e Inicialização do HPCC</title>
+
+    <para>Para começar, siga essas etapas para instalar os pacotes e os
+    componentes de inicialização em uma configuração de nó único. Após ter
+    sido instalado com sucesso, o Gerenciador de Configurações será usado para
+    customizar ou expandir seu sistema.</para>
+
+    <para>O Gerenciador de Configurações é o utilitário no qual configuramos a
+    plataforma HPCC. Ele é executado em seu Linux Server (servidor Linux) e o
+    acesso à sua interface é feito através de um navegador.<figure>
+        <title>Visão geral do sistema: Thor</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/GS-Thor01.jpg"/>
+          </imageobject>
+        </mediaobject>
+      </figure><figure>
+        <title>Visão geral do sistema: Roxie</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/GS-Roxie01.jpg"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <sect1 id="initial-set-up-single-node">
+      <title>Configuração Inicial-Nó único</title>
+
+      <para>Essa seção abrange a instalação do HPCC em um nó único. Isso
+      permitirá que o HPCC System opere com sucesso; porém, a verdadeira força
+      do HPCC é observada quando ele é executado em um ambiente com nós
+      múltiplos e pode alavancar a capacidade de realizar operações usando o
+      Processamento Massivamente Paralelo (MPP).</para>
+
+      <para>Além disso, em um sistema de produção, seria necessário dedicar um
+      ou mais nós para cada processo do servidor. Consulte o manual Como usar
+      o <emphasis>Gerenciador de Configurações </emphasis> para obter mais
+      detalhes.</para>
+
+      <sect2 id="installing-the-Package">
+        <title>Instalando o Pacote</title>
+
+        <para>A instalação e o pacote que você baixou podem variar conforme o
+        sistema operacional que planeja utilizar. Os pacotes de instalação não
+        serão instalados com sucesso se suas dependências não estiverem
+        presentes no sistema de destino.</para>
+
+        <para>Os pacotes estão disponíveis no site do HPCC
+        Systems<superscript>®</superscript> : <ulink
+        url="http://hpccsystems.com/download/free-community-edition">
+        http://hpccsystems.com/download/</ulink></para>
+
+        <para>Para instalar o pacote, siga as instruções apropriadas de
+        instalação:</para>
+
+        <sect3 id="Installing_CentOS-RedHat-Suse">
+          <title>Centos/Red Hat</title>
+
+          <para>Para instalar a plataforma, você precisa ter a permissão
+          adequada para a instalação de pacotes. Caso tenha direitos sudo,
+          você poderá instalar as plataformas usando yum.</para>
+
+          <programlisting>sudo yum install &lt;hpccsystems platform rpm package&gt;</programlisting>
+
+          <para>Caso contrário, o pacote pode ser instalado com rpm (uso
+          recomendado das opções -Uvh); porém, seria necessário negociar a
+          instalação de quaisquer dependências adicionais.</para>
+        </sect3>
+
+        <sect3 id="Installing_Ubuntu-Debian">
+          <title>Ubuntu/Debian</title>
+
+          <para>Um pacote Debian é disponibilizado para instalações Ubuntu.
+          Para instalar o pacote, use:</para>
+
+          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+
+          <para>Após instalar o pacote, execute o seguinte para atualizar
+          quaisquer dependências.</para>
+
+          <para><programlisting>sudo apt-get install -f </programlisting>Outra
+          possibilidade seria a combinação dos dois:</para>
+
+          <para><programlisting>sudo dpkg –I &lt;deb filename&gt; &amp;&amp; sudo apt-get install –f</programlisting></para>
+        </sect3>
+
+        <sect3 id="HPCC_Plug-Ins" role="brk">
+          <title>Plugins</title>
+
+          <para>Há vários plugins opcionais que você poderia escolher para
+          adicionar à sua instalação.</para>
+
+          <para>Para sistemas baseados em RPM , a instalação pode ser feita
+          usando yum.</para>
+
+          <para><programlisting>sudo yum install &lt;hpccsystems plugin plugin_name&gt;  </programlisting>Você
+          pode também escolher adicionar plugins opcionalmente utilizando
+          rpm:</para>
+
+          <programlisting>sudo rpm -Uvh &lt;hpccsystems plugin plugin_name&gt; </programlisting>
+
+          <para>Para instalar plugins opcionais em um pacote Ubuntu/Debian
+          package, use:</para>
+
+          <programlisting>sudo dpkg -i &lt;hpccsystems plugin plugin_name&gt;  </programlisting>
+
+          <para>Os plugins opcionais são:</para>
+
+          <para><informaltable>
+              <tgroup cols="2">
+                <tbody>
+                  <row>
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Python : pyembed</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>JAVA : javaembed</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>JavaScript : v8embed</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>R : rembed</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>MySql : mysqlembed</para>
+                        </listitem>
+                      </itemizedlist></entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Kafka : kafka</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>MemCache : memcached</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Redis : redis</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>SQL Lite : sqlite3embed</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Outras tecnologias, como suporte ao Cassandra
+          (cassandraembed), estão incluídas no pacote da plataforma.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="initial-startup" role="brk">
+        <title><emphasis>Primeira Inicialização</emphasis></title>
+
+        <orderedlist>
+          <listitem>
+            <para>Inicie o sistema utilizando a configuração padrão.</para>
+
+            <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting><graphic
+            fileref="images/GS-InitStart.jpg"/><informaltable colsep="1"
+                frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png"/></entry>
+
+                      <entry>Há arquivos de log para cada componente nos
+                      diretórios abaixo <emphasis
+                      role="bold">/var/log/HPCCSystems </emphasis> (local
+                      padrão), incluindo o log hpcc-init log para o processo
+                      de inicialização. Em caso de falha de inicialização de
+                      qualquer componente, esses logs podem ajudar na solução
+                      de problemas.<para>*Informações adicionais sobre o
+                      sistema hpcc-init e logs estão na <link
+                      linkend="hpcc-init"> seção Anexos do hpcc-init</link> .
+                      </para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+
+            <para><emphasis role="bold">Observação:</emphasis> Em muitos
+            sistemas, o comando "service" ainda pode funcionar, no entanto, em
+            algumas versões do Ubuntu, ele não fornece nenhum registro
+            (logging).</para>
+
+            <programlisting>sudo service hpcc-init start</programlisting>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="ECL-on-a-single-node-system" role="brk">
+        <title>Executado um Consuta ECL em seu sistema Nó-Único</title>
+
+        <para>Agora que o sistema de nó único está em execução, você pode
+        criar e executar alguns ECL<footnote>
+            <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+            role="bold">C</emphasis>ontrol <emphasis
+            role="bold">L</emphasis>enterprise Control Language (ECL) é uma
+            linguagem de programação declarativa e centrada em dados usada
+            para gerenciar todos os aspectos da junção, classificação e
+            compilação de dados massivos que realmente diferenciam o HPCC das
+            demais tecnologias na sua capacidade de fornecer análise de dados
+            flexíveis em escala massiva.</para>
+          </footnote> Codifique usando o ECL IDE, o compilador ECL da linha de
+        comando, ou a ferramenta de linha de comando ECL.</para>
+
+        <sect3 id="InstallTheECLIDEandClientTools">
+          <title>Instalar o ECL IDE e o HPCC Client Tools</title>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Em seu navegador, acesse o URL do <emphasis
+                role="bold">ECL Watch</emphasis> . Por exemplo,
+                http://nnn.nnn.nnn.nnn:8010, onde nnn.nnn.nnn.nnn é o endereço
+                IP do seu nó.</para>
+
+                <para><informaltable colsep="1" frame="all" rowsep="1">
+                    <?dbfo keep-together="always"?>
+
+                    <tgroup cols="2">
+                      <colspec colwidth="49.50pt"/>
+
+                      <colspec/>
+
+                      <tbody>
+                        <row>
+                          <entry><inlinegraphic
+                          fileref="images/caution.png"/></entry>
+
+                          <entry>Poderá ser diferente dos endereços fornecidos
+                          nas imagens de exemplo. Favor usar o endereço IP do
+                          <emphasis role="bold">seu</emphasis> nó.</entry>
+                        </row>
+                      </tbody>
+                    </tgroup>
+                  </informaltable></para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>No menu Avançado do ECL Watch, selecione o link
+                <emphasis role="bold">Additional Resources </emphasis>.</para>
+
+                <para><figure>
+                    <title>Página de Recursos do ECL Watch</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/GS_1311.jpg"
+                                   vendor="eclwatchSS"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+
+                <para>Siga o link para a página do portal de download do HPCC
+                System.</para>
+              </listitem>
+
+              <listitem>
+                <para>Clique no link <emphasis role="bold">ECL IDE
+                </emphasis>. (ao lado direito da coluna Download, abaixo do
+                título Free Community Edition)</para>
+              </listitem>
+
+              <listitem>
+                <para>Siga as instruções na página da Internet para instalar o
+                ECL IDE.</para>
+              </listitem>
+
+              <listitem>
+                <para>Instale o ECL IDE, seguindo os prompts no programa de
+                instalação. Após o ECL IDE ter sido instalado com sucesso,
+                você pode prosseguir.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+
+        <sect3 id="RunningABasicECLProgram" role="brk">
+          <title>Executando o programa ECL do ECL IDE</title>
+
+          <para>Agora que o pacote está instalado em seu nó do Linux e o
+          ECLIDE está instalado em sua estação de trabalho Windows, você pode
+          executar seu primeiro programa do ECL. Os programas do ECL podem ser
+          executados localmente ou de forma remota. Para tarefas ECL maiores,
+          será preciso segmentar um cluster remoto de máquinas, que pode não
+          estar executando o mesmo sistema operacional que a máquina em que
+          você está trabalhando.</para>
+
+          <para>Nesta seção, nós usaremos <emphasis role="bold">interface de
+          linha de comando ECL</emphasis> para que o compilador possa compilar
+          e executar o código ECL localmente.</para>
+
+          <para>Isso deve estar em seu caminho para que possa ser executado em
+          qualquer local no servidor. Também é instalado em uma máquina
+          Windows no momento da instalação do ECL IDE. Para ser compilado e
+          executado no Windows, você também precisará do compilador Visual
+          Studio 2008 C++ (consulte <emphasis> a seção Requisitos da estação
+          de trabalho do usuário </emphasis> para obter mais detalhes).</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Crie um arquivo denominado hello.ecl e digite o texto a
+              seguir (incluindo as aspas): <programlisting>output('Hello world'); </programlisting></para>
+
+              <para>Você pode usar o editor de sua preferência ou a linha de
+              comando digitando o seguinte</para>
+
+              <para><programlisting>echo "Output('Hello world');" &gt; hello.ecl</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Compile seu programa usando eclcc adicionando o seguinte
+              comando:<programlisting>eclcc hello.ecl</programlisting></para>
+
+              <!--  ***       If you prefer, you can pipe the source code directly into the
+            compiler as shown in the following example:
+            <para><programlisting>echo \'hello again\'| eclcc -</programlisting></para> -->
+            </listitem>
+
+            <listitem>
+              <para>Um arquivo executável será criado e poderá ser executado
+              da seguinte maneira:</para>
+
+              <para><programlisting># on a Linux machine: ./a.out # on a Windows machine: a.out
+</programlisting></para>
+
+              <para>Isso gera o resultado "Hello world" (sem as aspas) para a
+              saída padrão, sua janela de terminal neste exemplo. Você pode
+              redirecionar ou transferir o resultado para um arquivo ou
+              programa desejado. Isso confirma que o compilador está
+              funcionando adequadamente.</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+
+        <sect3 id="RunningRemotelyUsingECLCmdLine">
+          <title>Executando Remotamente utilizando as linhas de comando
+          ECL</title>
+
+          <para>A aplicação <emphasis role="bold">Interface de linha de
+          comando (CLI) </emphasis> ECL aceita parâmetros de linha de comando
+          para enviar diretamente a um mecanismo de execução ECL . Esse
+          utilitário pode ser usado para controlar a criação e execução de
+          jobs ECL maiores que visam um sistema remoto. Para compilar jobs em
+          um sistema remoto, o eclcc é usado para criar um arquivo do código
+          ECL a ser compilado e a ECL CLI é usada para enviá-lo a um cluster
+          de destino, onde ser feita a compilação pelo servidor do compilador
+          remoto (eclccserver).</para>
+
+          <para>Para enviar um job usando a CLI ecl, verifique se o HPCC foi
+          inicializado e use a seguinte sintaxe: <programlisting>ecl run hello.ecl --target=hthor --server=&lt;IP Address of the ESP node&gt;:8010</programlisting></para>
+
+          <para>ou</para>
+
+          <para><programlisting>ecl run hello.ecl --target=hthor --server=&lt;</programlisting></para>
+
+          <para>endereço IP do nó do ESP&gt;:8010</para>
+
+          <para>A Workunit<footnote>
+              <para>Uma Workunit é um registro de um trabalho enviado ao HPCC.
+              Ela contém um identificador-- ID da workunit, o código ECL,
+              resultados, e outras informações sobre o job</para>
+            </footnote> O resultado é retornado à linha de comando.</para>
+
+          <para>Veja detalhes completos da workunit usando a interface do ECL
+          Watch em seu HPCC acessando http://nnn.nnn.nnn.nnn:8010, onde
+          nnn.nnn.nnn.nnn é o IP do nó do seu servidor ESP. Busque por uma
+          workunit usando o ID dela ou selecione ECL Workunits/Browse e
+          localize sua tarefa na lista fornecida.</para>
+
+          <para>Definir um arquivo <emphasis role="bold">ecl.ini</emphasis>
+          facilita a execução da tarefa quando as mesmas configurações são
+          usadas todas as vezes que uma tarefa é enviada dessa forma. Consulte
+          o manual <emphasis>Ferramentas de cliente do HPCC </emphasis> para
+          obter mais detalhes.</para>
+
+          <para>Se o seu ECL for mais complexo do que um único arquivo de
+          fonte, você pode usar o compilador eclcc localmente para criar um
+          arquivo que será enviado para o eclccServer:</para>
+
+          <para><programlisting>eclcc hello.ecl -E | ecl run - --target=thor --server=&lt;Endereço IP do ESP&gt;:8010</programlisting></para>
+
+          <para>O parâmetro de destino precisa designar o nome do cluster de
+          destino válido como listado na seção topologia do seu
+          ambiente.</para>
+        </sect3>
+
+        <sect3 id="RunningABasicECLProgramFromtheIDE" role="brk">
+          <title>Executando o programa ECL do ECL IDE</title>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Abra o ECL IDE em sua estação de trabalho Windows, a
+                partir do menu Iniciar. (Start <emphasis
+                role="bold">&gt;&gt;</emphasis> All Programs <emphasis
+                role="bold">&gt;&gt;</emphasis> HPCCSystems <emphasis
+                role="bold">&gt;&gt;</emphasis> ECL IDE ).</para>
+
+                <informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt"/>
+
+                    <colspec/>
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/OSSgr3.png"/></entry>
+
+                        <entry>Você pode criar um atalho em sua área de
+                        trabalho para acessar rapidamente o ECL IDE.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Insira o <emphasis role="bold">ID de Login</emphasis> e
+                <emphasis role="bold"> a Senha</emphasis> fornecida na caixa
+                de diálogo Login.</para>
+
+                <informaltable colsep="1" rowsep="1">
+                  <tgroup cols="2">
+                    <colspec colwidth="80pt"/>
+
+                    <colspec colwidth="100pt"/>
+
+                    <tbody>
+                      <row>
+                        <entry>Login ID</entry>
+
+                        <entry>hpccdemo</entry>
+                      </row>
+
+                      <row>
+                        <entry>Password</entry>
+
+                        <entry>hpccdemo</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable>
+
+                <figure>
+                  <title>Janela de Login</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg06a.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure>
+              </listitem>
+
+              <listitem>
+                <para>Abra uma nova <emphasis role="bold">Janela do
+                compilador</emphasis> (CTRL+N) e escreva o seguinte
+                código:</para>
+
+                <para><programlisting>OUTPUT('Hello World');
+</programlisting></para>
+
+                <para>Isso também poderia ser escrito como:</para>
+
+                <para><programlisting>'Hello World';
+</programlisting>Na segunda listagem de programa, a palavra-chave OUTPUT é
+                ocultada. Isso ocorre possivelmente porque a linguagem é
+                declarativa e a ação OUTPUT é implícita.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Selecione <emphasis role="bold">thor</emphasis> como seu
+                cluster de destino.</para>
+
+                <para><emphasis role="bold">Thor</emphasis> é o componente da
+                Refinaria de dados do seu HPCC. Trata-se de um cluster de
+                computador massivamente paralelo baseado em disco, otimizado
+                para classificar, manipular e transformar uma quantidade
+                massiva de dados.</para>
+
+                <para><figure>
+                    <title>Selecionar destino</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/vmimg10.JPG"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Pressione o botão de verificação de sintaxe localizado
+                na barra de ferramentas principal (ou pressione F7).</para>
+
+                <para><figure>
+                    <title>Verificação de sintaxe</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/vmimg09.JPG"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure>Uma verificação se sintaxe bem-sucedida exibe a
+                mensagem “No errors...”.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Pressione o botão <emphasis role="bold">Go</emphasis>
+                (ou as teclas ctrl+enter).</para>
+
+                <para><figure>
+                    <title>Job Concluído</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/vmimg11.JPG"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure>A marcação na cor verde indica uma conclusão
+                bem-sucedida.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Clique na aba do número da workunit e, em seguida, na
+                aba Result 1 para ver os resultados.</para>
+
+                <para><figure>
+                    <title>Resultado do job concluído</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/vmimg12.JPG"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Multi-Node-System">
+      <title>Configurando um Sistema de Múltiplos Nós</title>
+
+      <para>Embora o sistema de nó único seja completamente funcional, ele não
+      se beneficia do verdadeiro poder de um HPCC--a capacidade de realizar
+      operações usando o Processamento massivamente paralelo (MPP). Esta seção
+      fornecerá as etapas para expandir seu sistema de nó único para um
+      sistema de vários nós através do assistente do Gerenciador de
+      Configurações.</para>
+
+      <para>Para executar um sistema de vários nós, certifique-se de que todos
+      os mesmos pacotes estejam instalados em cada nó. Siga as etapas abaixo
+      para configurar seu sistema de vários nós para obter todos os benefícios
+      do poder de um Processamento massivamente paralelo.</para>
+
+      <sect2 id="configuring-a-multi-node-system">
+        <title>Utilizando o Gerenciador de Configurações</title>
+
+        <para>Esta seção detalhará a reconfiguração do sistema para usar
+        vários nós. Antes de iniciar essa seção, você precisa ter baixado os
+        pacotes corretos para sua distro no site do HPCC
+        Systems<superscript>®</superscript> : <ulink
+        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Caso esteja em execução, para o HPCC System utilizando este
+            comando:</para>
+
+            <para><emphasis role="bold">Centos/Red
+            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+
+            <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+            <para><programlisting>sudo service hpcc-init stop</programlisting></para>
+
+            <para><emphasis role="bold">Debian 6 (Squeeze ou algumas versões
+            Ubuntu)</emphasis></para>
+
+            <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png"/></entry>
+
+                      <entry>Este comando pode ser usado para confirmar que os
+                      processos do HPCC foram
+                      interrompidos.<para><programlisting>sudo /sbin/service hpcc-init status</programlisting><phrase>Para
+                      Ubuntu</phrase><programlisting>sudo service hpcc-init status
+</programlisting><phrase>Debian 6 (Squeeze ou algumas versões
+                      Ubuntu):</phrase><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Inicie o serviço do Gerenciador de Configurações.<emphasis
+            role="bold"/><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+
+            <para><graphic fileref="images/gs_img_configmgrStart.jpg"/></para>
+          </listitem>
+
+          <listitem>
+            <para>Deixe esta janela aberta. Se desejar, você pode
+            minimizá-la.</para>
+          </listitem>
+
+          <listitem>
+            <para>Usando um navegador de Internet, acesse a interface do
+            Gerenciador de Configurações:</para>
+
+            <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
+          </listitem>
+
+          <listitem>
+            <para>O assistente de inicialização do Gerenciador de
+            Configurações é exibido. Para usar o assistente, selecione o botão
+            Generate novo ambiente usando o assistente.</para>
+
+            <para><graphic fileref="images/GS_ConfigMgrWizStart.jpg"/></para>
+          </listitem>
+
+          <listitem>
+            <para>Forneça um nome ao arquivo do ambiente.</para>
+
+            <para>Esse será então o nome do arquivo configuration xml. Por
+            exemplo, nomearemos como
+            <emphasis>NewEnvironment.xml</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Next</emphasis>
+            .</para>
+
+            <para>Em seguida, você precisará definir os endereços IP que seu
+            sistema usará.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Digite todos os endereços IP que deseja usar no HPCC. Também
+            é possível digitar o(s) nome(s) do(s) host(s).</para>
+
+            <para>Os endereços IP não precisam ser contíguos. Na imagem
+            abaixo, especificamos os endereços IP nn.nnn.nnn.1-100 e
+            nn.nnn.nnn.111. Eles são separados com um ponto e vírgula.</para>
+
+            <para>Você pode especificar um intervalo de IPs usando um hífen
+            (p.ex., NNN.NNN.NNN.1-100). Os endereços IP podem ser
+            especificados individualmente usando ponto e vírgula como
+            separadores.</para>
+
+            <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg"/></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Next</emphasis>
+            .</para>
+
+            <para>Agora você vai definir quantos nós usar para os clusters
+            Roxie e Thor.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Insira os valores adequados conforme indicado.</para>
+
+            <para><graphic fileref="images/GS_CMWiz003.jpg"/></para>
+
+            <variablelist>
+              <varlistentry>
+                <term>Número de nós de suporte.</term>
+
+                <listitem>
+                  <para>Especifique o número de nós a serem usados para os
+                  componentes de suporte. O padrão é 1.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Número de nós do cluster Roxie:</term>
+
+                <listitem>
+                  <para>Especifique o número de nós a serem usados para seu
+                  cluster Roxie. Insira zero (0) se você não quiser um cluster
+                  Roxie.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Número de nós escravos do cluster Thor</term>
+
+                <listitem>
+                  <para>Especifique o número de nós escravos a serem usados
+                  para seu cluster Thor. Um nó mestre Thor será adicionado
+                  automaticamente.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Número de escravos Thor por nó (padrão 1)</term>
+
+                <listitem>
+                  <para>Especifique o número de processos de escravos Thor
+                  para instanciar em cada nó escravo. Insira zero (0) se você
+                  não quiser um cluster Thor.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Ativar o Roxie sob demanda</term>
+
+                <listitem>
+                  <para>Especifique se você deseja permitir ou não que as
+                  consultas sejam executadas imediatamente no Roxie. Isso
+                  precisa ser ativado para executar o depurador. (O padrão é
+                  true)</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão Next</para>
+
+            <para>O Resumo do ambiente será exibido.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique em <emphasis role="bold">Finish</emphasis> para
+            aceitar esses valores. Esse procedimento salvará o arquivo.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png"/></entry>
+
+                      <entry>Lembre-se de que as configurações do HPCC podem
+                      variar de acordo com as suas necessidades. Por exemplo,
+                      você pode não precisar de um Roxie ou pode precisar de
+                      vários clusters Roxie menores. Além disso, em um sistema
+                      de produção [Thor] seria necessário assegurar que os nós
+                      do Thor e Roxie sejam dedicados e que não contenham
+                      nenhum outro processo em execução. Este documento visa
+                      mostrar como usar as ferramentas de configuração.
+                      Planejamento de capacidade e design de sistema estão
+                      disponíveis em um módulo de treinamento.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+
+            <graphic fileref="images/GS_ConfigMgrWiz004.jpg"/>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png"/></entry>
+
+                      <entry>É possível redimensionar o Resumo do ambiente
+                      clicando e arrastando o canto inferior direito.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Você agora será notificado de que concluiu o
+            procedimento.</para>
+
+            <para><graphic fileref="images/GS_ConfigMgrWiz005.jpg"/></para>
+
+            <para>Neste ponto, o sistema criou um arquivo com o nome
+            NewEnvironment.xml no diretório <emphasis
+            role="bold">/etc/HPCCSystems/source</emphasis> :</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pare o Gerenciador de Configurações no terminal em que você
+            o iniciou pressionando as teclas CTRL-C.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png"/></entry>
+
+                      <entry>Certifique-se de que o sistema não esteja em
+                      execução antes de tentar mover o arquivo
+                      environment.xml.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Copie o novo arquivo NewEnvironment.xml do diretório de
+            origem para /etc/HPCCSystems e renomeie o arquivo para
+            environment.xml</para>
+
+            <programlisting># for example sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png"/></entry>
+
+                      <entry>Certifique-se de que você possua direitos
+                      suficientes para gravar arquivo(s) no diretório de
+                      destino antes de copiar. Se solicitado a substituir o
+                      arquivo de destino, responda <emphasis
+                      role="bold">yes</emphasis>.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Se você adicionou novas máquinas no cluster, será necessário
+            copiar e instalar o pacote do HPCC em todos os nós e gerar e
+            clonar as chaves SSH. Isso pode ser feito usando o script
+            install-cluster.sh fornecido com o HPCC. Use o comando a
+            seguir:</para>
+
+            <programlisting>/opt/HPCCSystems/sbin/install-cluster.sh -k &lt;package-file-name&gt;</programlisting>
+
+            <para>Onde&lt;package-file-name&gt; é o nome do arquivo do pacote
+            que você deseja instalar em cada nó – isso estará no formato
+            hpccsystems-platform<emphasis>-xxxx-n.n.nnnn</emphasis>.rpm (ou
+            .deb) dependendo da versão e da distribuição. A seção Anexos
+            contém mais detalhes, incluindo outras opções que podem ser usadas
+            com esse comando.</para>
+          </listitem>
+
+          <listitem>
+            <para>Copie o arquivo <emphasis
+            role="bold">/etc/HPCCSystems/environment.xml</emphasis> para
+            <emphasis role="bold"> /etc/HPCCSystems/ </emphasis> em <emphasis
+            role="bold"> cada</emphasis> nó.</para>
+
+            <para>Você pode criar um script para forçar o arquivo XML para
+            todos os nós. Um script de amostra é fornecido com o HPCC. Os
+            comandos a seguir copiam os arquivos XML para todos os nós como
+            exigido:</para>
+
+            <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+</programlisting>Consulte o anexo para obter mais informações sobre o uso
+            desse script.</para>
+          </listitem>
+        </orderedlist>
+
+        <?hard-pagebreak ?>
+
+        <orderedlist continuation="continues">
+          <listitem>
+            <para>Reinicie o HPCC System em <emphasis
+            role="bold">todos</emphasis> os nós. O comando a seguir inicia o
+            HPCC System em um nó individual:</para>
+
+            <para><emphasis role="bold">Centos/Red
+            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+
+            <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+            <para><programlisting>sudo service hpcc-init start</programlisting></para>
+
+            <para><emphasis role="bold">Debian 6 (Squeeze ou algumas versões
+            Ubuntu)</emphasis></para>
+
+            <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+
+            <informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png"/></entry>
+
+                    <entry><para>Você pode usar um script para lançar esse
+                    comando para todos os nós. Um script de amostra é
+                    fornecido com o HPCC. Use o comando a seguir para iniciar
+                    o HPCC em todos os nós:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
+
+            <para>Este script também pode ser usado para parar o HPCC em todos
+            os nós e para iniciar e parar os componentes individuais em todos
+            os nós. Consulte o anexo (Appendix) para obter mais
+            detalhes.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Starting-and-stopping">
+      <title>Iniciando e Parando</title>
+
+      <sect2 id="Start-Stop-Reset">
+        <title><emphasis>Início, Parar, Reiniciar os
+        Sistema</emphasis></title>
+
+        <para>Após ter definido o ambiente do seu sistema, o sistema <emphasis
+        role="bold">init </emphasis> pode ser usado para iniciar, parar ou
+        reiniciar componentes.</para>
+
+        <para>Os seguintes comandos podem ser usados:</para>
+
+        <sect3 id="StartStop_ToStartSystem">
+          <title>Para iniciar o Sistema:</title>
+
+          <para><emphasis role="bold">Centos/Red
+          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+
+          <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+          <para><programlisting>sudo service hpcc-init start</programlisting></para>
+
+          <para><emphasis role="bold">Debian 6 (Squeeze ou algumas versões
+          Ubuntu)</emphasis></para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+        </sect3>
+
+        <sect3 id="StartStop_StopTheSystem">
+          <title>Para parar o sistema:</title>
+
+          <para><emphasis role="bold">Centos/Red
+          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+
+          <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+          <para><programlisting>sudo service hpcc-init stop</programlisting></para>
+
+          <para><emphasis role="bold">Debian 6 (Squeeze ou algumas versões
+          Ubuntu)</emphasis></para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png"/></entry>
+
+                    <entry>Você pode usar um script para iniciar ou parar
+                    múltiplos nós no sistema. Veja <emphasis>Scripts de
+                    exemplo</emphasis> na seção Appendix (Anexos).</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3 id="StartStop_SingleComponents">
+          <title>Iniciar ou Parar um Único Componentes</title>
+
+          <para>Para iniciar ou parar um único componente, use a flag -c no
+          init system como segue.</para>
+
+          <para><emphasis role="bold">Centos/Red
+          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
+
+          <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+          <para><programlisting>sudo service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
+
+          <para><emphasis role="bold">Debian 6 (Squeeze ou algumas versões
+          Ubuntu)</emphasis></para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png"/></entry>
+
+                    <entry>Para parar a dafilesrv (uma aplicação auxiliar ), é
+                    preciso usar este comando: sudo /sbin/service dafilesrv
+                    stop. Consulte a seção Aplicações Auxiliares para obter
+                    mais detalhes.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Starting-Stopping-Config-Manager">
+        <title><emphasis>Iniciar ou Parar o Gerenciador de
+        Configurações</emphasis></title>
+
+        <para>Configure o sistema como desejar usando o Gerenciador de
+        Configurações.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Caso esteja em execução, pare o HPCC System usando este
+            comando em <emphasis role="bold">cada</emphasis> nó:</para>
+
+            <para><emphasis role="bold">Centos/Red
+            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+
+            <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+            <para><programlisting>sudo service hpcc-init stop</programlisting></para>
+
+            <para><emphasis role="bold">Debian 6 (Squeeze ou algumas versões
+            Ubuntu)</emphasis></para>
+
+            <programlisting>sudo /etc/init.d/hpcc-init stop
+</programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Inicie o serviço do Gerenciador de Configurações em um nó
+            (geralmente o primeiro nó é considerado como o nó principal e é
+            usado para esta tarefa, mas isso fica a seu critério).</para>
+
+            <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Usando um navegador de Internet, acesse a interface do
+            Gerenciador de Configurações:</para>
+
+            <programlisting>http://&lt;<emphasis>ip de instalação do sistema</emphasis>&gt;:8015</programlisting>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <!-- <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />   -->
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
+                xpointer="xpointer(//*[@id='ssl4esp'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
+                xpointer="xpointer(//*[@id='ssl4Roxie'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Installing_MoreECLExamples">
+    <title>Mais Exemplos</title>
+
+    <para>Esta seção contém outros exemplos do ECL que podem ser usados no
+    cluster do seu HPCC . Eles podem ser executados em um sistema de nó único
+    ou em um cluster maior com vários nós.</para>
+
+    <sect1 id="ECLExample_Anagram1" role="nobrk">
+      <title>Exemplo ECL: Anagram1</title>
+
+      <para>Este exemplo pega uma STRING e gera todos os anagramas possíveis a
+      partir dela. Este código serve de base para um segundo exemplo que
+      analisa quais destas são palavras reais usando um arquivo de dados da
+      lista de palavras.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Abra o ECL IDE (Start <emphasis
+            role="bold">&gt;&gt;</emphasis> All Programs <emphasis
+            role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
+            role="bold"> &gt;&gt;</emphasis> ECL IDE ) e conecte-se ao seu
+            HPCC.</para>
+          </listitem>
+
+          <listitem>
+            <para>Abra uma nova janela no Compilador ( <emphasis
+            role="bold">CTRL+N</emphasis> ) e escreva o seguinte
+            código:<programlisting>STRING Word := 'FRED' :STORED('Word');
+R := RECORD
+        STRING SoFar {MAXLENGTH(200)};
+        STRING Rest {MAXLENGTH(200)};
+     END;
+Init := DATASET([{'',Word}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+                SELF.SoFar := le.SoFar + le.Rest[c];
+                SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..]; 
+// Boundary Conditions handled automatically
+  END;
+RETURN NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER));
+  END;
+L := LOOP(Init,LENGTH(TRIM(Word)),Pluck1(ROWS(LEFT)));
+OUTPUT(L);</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione <emphasis role="bold">thor</emphasis> selecione
+            Roxie como seu cluster de destino.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão de verificação de sintaxe localizado na
+            barra de ferramentas principal (ou pressione F7)</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis role="bold">Submit</emphasis>
+            (ou as teclas ctrl+enter).</para>
+
+            <para><figure>
+                <title>Job Concluído</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11a.JPG"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>A marcação na cor verde indica uma conclusão
+            bem-sucedida.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique na aba do número da workunit e, em seguida, na aba
+            Result 1 para ver os resultados.</para>
+
+            <para><figure>
+                <title>Resultado do job concluído</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11b.JPG"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist></para>
+
+      <?hard-pagebreak ?>
+    </sect1>
+
+    <sect1 id="ECLRoxieExample_Anagram2">
+      <title>Exemplo Roxie: Anagram2</title>
+
+      <para>Neste exemplo, vamos baixar um arquivo de dados de código aberto
+      com palavras do dicionário, fazer o spray (distribuir aos nós) desse
+      arquivo para nosso cluster Thor e validar nossos anagramas em relação a
+      esse arquivo para que possamos determinar quais palavras são válidas. A
+      etapa de validação usa um JOIN da lista de anagramas para o arquivo do
+      dicionário. O uso de um índice e de uma junção com chave seria mais
+      eficiente, mas isso serve apenas como um simples exemplo.</para>
+
+      <sect2 id="RoxieExample_DownloadWordList">
+        <title>Fazer o download da Lista de Palavras</title>
+
+        <para>Vamos baixar a lista de palavras em <ulink
+        url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Faça o download o pacote <emphasis>Official 12 Dicts
+              </emphasis>. Os arquivos estão disponíveis no formato tar.gz ou
+              ZIP .</para>
+            </listitem>
+
+            <listitem>
+              <para>Extraia o arquivo <emphasis
+              role="bold">2of12.txt</emphasis> para uma pasta em sua máquina
+              local.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="Load_the_Incoming_Data">
+        <title>Carregar o arquivo de dicionário para sua Zona de Entrada de
+        Arquivo</title>
+
+        <para>Nesta etapa, você copiará os arquivos de dados para um local
+        onde eles possam ser distribuídos aos nós de seu cluster HPCC. Uma
+        zona de entrada de arquivos é um local de armazenagem anexado ao seu
+        HPCC. Ela possui um utilitário em execução para facilitar o spraying
+        (processo de distribuir dados aos nós) para um cluster.</para>
+
+        <para>Para arquivos de dados menores, com tamanho máximo de 2GB, você
+        pode usar o utilitário enviar/baixar arquivo no ECL Watch. Este
+        arquivo de dados possui apenas 400 kb (aproximadamente).</para>
+
+        <para>Em seguida, você distribuirá (ou fará o spray) o dataset para
+        todos os nós no cluster do HPCC . O poder do HPCC vem da sua
+        capacidade de atribuir vários processadores para trabalhar nas
+        diferentes partes do arquivo de dados em paralelo. Até mesmo na VM
+        Edition, que possui apenas um nó único, os dados precisam ser
+        distribuídos aos nós do cluster.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Em seu navegador, acesse a URL do <emphasis
+            role="bold">Selecione ECL Watch</emphasis> . Por exemplo,
+            http://nnn.nnn.nnn.nnn:8010, onde nnn.nnn.nnn.nnn é o endereço IP
+            do seu ESP Server.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png"/></entry>
+
+                      <entry>Poderá ser diferente dos endereços fornecidos nas
+                      imagens de exemplo. Use o endereço IP fornecido pela
+                      <emphasis role="bold">sua</emphasis> instalação.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>No ECL Watch, clique no ícone <emphasis
+            role="bold">File</emphasis> e em <emphasis role="bold">Landing
+            Zones</emphasis> no submenu de navegação.</para>
+
+            <para>Pressione o botão <emphasis role="bold">Upload
+            </emphasis>.</para>
+
+            <para><figure>
+                <title>Upload</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Uma caixa de diálogo será aberta. <emphasis role="bold">
+            Navegue </emphasis> e selecione o arquivo a ser enviado e
+            pressione o botão <emphasis role="bold">Open</emphasis> . <figure>
+                <title>Enviar Arquivo</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04a.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>O arquivo selecionado deve aparecer no campo <emphasis
+            role="bold">File Name</emphasis> . O arquivo de dados possui o
+            seguinte nome: <emphasis role="bold">2of12.txt</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Start</emphasis>
+            para concluir o envio do arquivo.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Spray_the_Data_to_THOR">
+        <title>Spray do arquivo de dados para o Cluster da sua
+        <emphasis>Refinaria de Dados (Thor)</emphasis></title>
+
+        <para>Para usar o arquivo de dados em seu HPCC System, é preciso fazer
+        o "spray” (distribuir) desse arquivo para todos os nós. Um
+        <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> é a
+        transferência de um arquivo de dados de um local (como a zona de
+        entrada de arquivos) para diversas partes do arquivo ou nós em um
+        cluster.</para>
+
+        <para>O arquivo distribuído passa a ter um <emphasis>
+        nome_de_arquivo_lógico </emphasis> como segue<emphasis role="bold">:
+        ~thor::word_list_csv </emphasis> O sistema mantém uma lista de
+        arquivos lógicos e as localizações dos arquivos físicos
+        correspondentes das partes do arquivo.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Abra o ECL Watch usando a URL:</para>
+
+            <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
+            nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a
+            porta. A porta padrão é 8010)</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no
+            link <emphasis role="bold">Landing Zones (Zona de entrada de
+            arquivos)</emphasis> localizados no submenu de navegação.
+            Selecione a zona de entrada de arquivos apropriada (caso haja mais
+            de uma zona de entrada de arquivos). Clique na seta à esquerda da
+            sua zona de entrada de arquivos para expandir.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione o arquivo na zona de entrada de arquivos marcando
+            a caixa ao lado dele.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Marque a caixa ao lado de 2of12.txt, e pressione o botão
+            <emphasis role="bold">Delimited</emphasis> .</para>
+
+            <para><figure>
+                <title>Spray delimitado</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/GSSprayDict.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>A página <emphasis role="bold">Spray delimitado do
+            DFU</emphasis> será exibida.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione "mythor" na lista suspensa do Grupo de
+            destino.</para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha o Target Scope (Escopo de destino) como <emphasis>
+            thor</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha os demais parâmetros (caso ainda não tenham sido
+            preenchidos).</para>
+
+            <para><itemizedlist>
+                <listitem>
+                  <para>Máximo tamanho do registro 8192</para>
+                </listitem>
+
+                <listitem>
+                  <para>Separador \,</para>
+                </listitem>
+
+                <listitem>
+                  <para>Terminador de linhas \n,\r\n</para>
+                </listitem>
+
+                <listitem>
+                  <para>Aspas: '</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha o Target Name usando o restante do nome do arquivo
+            lógico desejado: word_list_csv<emphasis role="bold">
+            </emphasis></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Não se esqueça de verificar que a caixa <emphasis
+            role="bold">Overwrite</emphasis> esteja marcada.</para>
+
+            <para>Se disponível, certifique-se de que a caixa <emphasis
+            role="bold">Replicate</emphasis> esteja marcada. (A opção replicar
+            está disponível apenas em sistemas em que a replicação tenha sido
+            ativada.)</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis
+            role="bold">Spray</emphasis><emphasis role="bold">
+            </emphasis>.</para>
+
+            <para>A aba exibe a workunit DFU onde é possível ver o progresso
+            do spray (distribuição aos nós).</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="RunTheQueryOnThor">
+        <title>Executa a consulta no Thor</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Abra uma nova janela no Compilador ( <emphasis
+              role="bold">Janela do compilador</emphasis> e escreva o seguinte
+              código:<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bold">thor</emphasis> como seu
+              cluster de destino.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de verificação de sintaxe localizado na
+              barra de ferramentas principal (ou pressione F7)</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis
+              role="bold">Submit</emphasis><emphasis role="bold">
+              </emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Quando o envio estiver concluído, selecione a aba
+              Workunit<emphasis role="bold"> </emphasis>e em seguida a aba
+              Result.</para>
+            </listitem>
+
+            <listitem>
+              <para>Examine o resultado.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="RoxieExample_CompileAndPublishtheQuery">
+        <title>Compilar e Publicar a consulta para o Roxie</title>
+
+        <para><orderedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Clique com o botão direito na pasta <emphasis
+              role="bold">My Files</emphasis> na janela Repository e selecione
+              <emphasis role="bold">Inssert Folder</emphasis> no menu
+              pop-up.</para>
+
+              <para><figure>
+                  <title>Inserir Pasta</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/DTimg04.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Insira <emphasis role="bold">Anagram</emphasis> para o
+              rótulo e pressione o botão OK.</para>
+
+              <para><figure>
+                  <title>Inserir o título da pasta</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1005.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Clique com o botão direito na pasta <emphasis
+              role="bold">Anagram </emphasis> e selecione <emphasis
+              role="bold">Insert File</emphasis> no menu pop-up.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Insira <emphasis role="bold">ValidateAnagrams</emphasis>
+              para o título e depois pressione o botão Ok.</para>
+
+              <para>Uma janela do compilador será aberta.</para>
+
+              <para><figure>
+                  <title>Janela do compilador</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1006.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Escreva o seguinte código (ele pode ser copiado de outra
+              janela do compilador):<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bold">Roxie</emphasis> como seu
+              cluster de destino.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de verificação de sintaxe localizado na
+              barra de ferramentas principal (ou pressione F7)</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Na janela do compilador, no canto superior esquerdo, há
+              uma seta suspensa ao lado do botão <emphasis
+              role="bold">Submit</emphasis> . Selecione a seta para exibir a
+              opção <emphasis role="bold">Compile(Compilar)</emphasis>
+              .</para>
+
+              <figure>
+                <title>Compilar</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg17.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis
+              role="bold">Compilar.</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Quando o envio estiver concluído, selecione a aba
+              Workunit<emphasis role="bold"> </emphasis> e em seguida a aba
+              Resultados.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Quando a tarefa for concluída, ela exibirá um círculo
+              verde indicando que foi compilada.</para>
+
+              <para><figure>
+                  <title>Compilada</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1007.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="Deploy_the_Query_to_Roxie">
+        <title>Publicar a consulta Roxie.</title>
+
+        <para>Agora vamos publicar a consulta em um cluster Roxie.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Selecione a aba workunit para o ValidateAnagrams que você
+            acabou de compilar.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione a aba ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis role="bold">Publish</emphasis> ,
+            preencha a caixa de diálogo e pressione <emphasis
+            role="bold">Submit</emphasis>.</para>
+
+            <para><figure>
+                <title>Publicar Consulta</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1008.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>Uma mensagem de confirmação será exibida quando a
+            consulta for publicada com sucesso.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Run_the_Roxie_Query">
+        <title>Executar a consulta Roxie no WsECL</title>
+
+        <para>Agora que a consulta foi publicada em um cluster Roxie, podemos
+        executá-la usando o serviço WsECL. WsECL é uma interface Web para
+        consultas em uma plataforma do HPCC . Use a seguinte URL:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
+        nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a porta. A
+        porta padrão é 8002)</emphasis></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Clique no sinal + ao lado de <emphasis
+            role="bold">myroxie</emphasis> para expandir a árvore.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique em <emphasis
+            role="bold">ValidateAnagrams.1</emphasis> .</para>
+
+            <para>O formulário do serviço será exibido.</para>
+
+            <para><figure>
+                <title>RoxieECL</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1009.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione Tabelas de resultado (Output Tables) na lista
+            suspensa.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Forneça uma palavra para que seja feito o anagrama (p.ex.,
+            TEACHER) e pressione o botão Submit.</para>
+
+            <para>Os resultados serão exibidos.</para>
+
+            <para><figure>
+                <title>RoxieResults</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1010.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="ExampleECL_NextSteps">
+    <title>Próximos passos</title>
+
+    <para>O menu no ECL IDE disponibiliza vários documentos que fornecem
+    detalhes sobre os vários aspectos do HPCC.</para>
+
+    <para>Você pode acessar estes documentos a partir do menu Help (Ajuda):
+    Help <emphasis role="bold">&gt;&gt;</emphasis> Documentation.</para>
+
+    <para><figure>
+        <title>Help Menu</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/vmimg07.JPG"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Você também pode localizar essa documentação no menu Iniciar:
+    <emphasis role="bold">Start</emphasis> menu :</para>
+
+    <para>Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
+    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
+    role="bold">&gt;&gt;</emphasis> ECL IDE <emphasis
+    role="bold">&gt;&gt;</emphasis> Docs</para>
+
+    <para>Para se familiarizar com o que o seu sistema é capaz de fazer,
+    recomendamos realizar as seguintes etapas:<itemizedlist spacing="compact">
+        <listitem>
+          <para>O <emphasis role="bold">Tutorial de Dados</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">O exemplo</emphasis> da Teoria dos seis
+          graus de separação de Kevin Bacon</para>
+        </listitem>
+
+        <listitem>
+          <para>Ler <emphasis role="bold">Como usar o Gerenciador de
+          Configurações</emphasis> para aprender como configurar uma
+          plataforma do HPCC usando a Advanced View (Visão Avançada)</para>
+        </listitem>
+
+        <listitem>
+          <para>Use suas novas habilidades para processar seu próprio dataset
+          massivo!</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>O portal do HPCC Systems<superscript>®</superscript> também é um
+    recurso valioso para obter mais informações, incluindo:</para>
+
+    <itemizedlist spacing="compact">
+      <listitem>
+        <para>Vídeo tutoriais</para>
+      </listitem>
+
+      <listitem>
+        <para>Exemplos adicionais</para>
+      </listitem>
+
+      <listitem>
+        <para>Informe técnico</para>
+      </listitem>
+
+      <listitem>
+        <para>Documentação</para>
+      </listitem>
+    </itemizedlist>
+  </chapter>
+
+  <chapter id="Appendix">
+    <title>Apêndice</title>
+
+    <sect1 id="Example-Scripts" role="nobrk">
+      <title>Scripts de exemplo</title>
+
+      <para>Para configuração de vários nós, primeiramente é preciso instalar
+      os pacotes em cada nó. Essa instalação pode ser feita manualmente ou
+      você pode usar os scripts para copiar e instalar os pacotes. A cópia e a
+      instalação em cada nó não é algo prático em um sistema grande que
+      contenha muitos nós. Por isso, fornecemos alguns scripts para você usar
+      ou para servirem de exemplo na preparação de seu próprio script.</para>
+
+      <para>Os scripts estão instalados no diretório <emphasis role="bold">
+      /opt/HPCCSystems/sbin</emphasis> . Os scripts devem ser executados como
+      sudo ou um usuário com os privilégios apropriados em todos os nós. Os
+      scripts são capazes de processar multitarefas.</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/caution.png"/></entry>
+
+                <entry>Lembre-se de que você deve ter privilégios suficientes
+                para usar sudo como administrador, a fim de usar o script
+                install-cluster.sh. Para usar os scripts hpcc-push.sh ou
+                hpcc-run.sh scripts, é preciso usar sudo como usuário do
+                <emphasis role="bold">HPCC</emphasis>.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <sect2 id="ExampleScripts_install-cluster.sh">
+        <title>install-cluster.sh</title>
+
+        <para><emphasis
+        role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k | -p
+        &lt;directory&gt;] [-n &lt;value&gt;] &lt;package-name&gt;
+        </emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="150pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>&lt;package-name&gt;</entry>
+
+                  <entry>Nome do pacote do HPCC a ser instalado.
+                  Obrigatório</entry>
+                </row>
+
+                <row>
+                  <entry>-h</entry>
+
+                  <entry>Ajuda Opcional.</entry>
+                </row>
+
+                <row>
+                  <entry>-k, --newkey</entry>
+
+                  <entry>Quando especificado, o script gera e distribui chaves
+                  ssh para todos os hosts. Opcional.</entry>
+                </row>
+
+                <row>
+                  <entry>-p, --pushkeydir</entry>
+
+                  <entry>Lança a chave ssh existente para a máquina remota.
+                  Opcional. Use -k ou -p, mas não ambos.</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --concurrent</entry>
+
+                  <entry>Quando especificado, denota o número de execuções
+                  simultâneas. O padrão é 5. Opcional.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para><emphasis role="bold">Você pode executar esse script como
+        qualquer usuário com permissões suficientes de execução. Porém, quando
+        o nome do usuário e senha forem solicitados, você deve informar as
+        credenciais de um usuário com direitos sudo suficientes para executar
+        comandos como administrador em todos os nós. </emphasis></para>
+
+        <para>Antes de usar esse script, você precisa ter criado e definido um
+        arquivo environment.xml (usando o assistente ou o modo avançado do
+        Gerenciador de Configurações). Este script:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Lê o arquivo ativo environment.xml e reúne uma lista de nós
+            sobre os quais irá agir.</para>
+          </listitem>
+
+          <listitem>
+            <para>Instala o(s) pacote(s) da plataforma do HPCC em todos os nós
+            especificados.</para>
+          </listitem>
+
+          <listitem>
+            <para>Força e implementa o arquivo de ambiente (environment.xml)
+            para todos os nós especificados.</para>
+          </listitem>
+
+          <listitem>
+            <para>Opcionalmente, se você especificar a opção -k ele também
+            gera as chaves ssh exigidas e as implementa (como requerido) em
+            todos os nós especificados.</para>
+          </listitem>
+
+          <listitem>
+            <para>Opcionalmente, se você especificar a opção -p ele força as
+            chaves ssh existentes para todos os nós especificados. Você pode
+            usar uma das opções -k e -p, porém não as duas.</para>
+          </listitem>
+
+          <listitem>
+            <para>Opcionalmente, se você especificar a opção -n &lt;value&gt;,
+            ele gera várias execuções simultâneas. O padrão é 5.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><?hard-pagebreak ?><emphasis
+        role="bold">Exemplos:</emphasis></para>
+
+        <para>Este exemplo instala os pacotes da plataforma do HPCC nos nós
+        remanescentes e força o arquivo ativo environment.xml para esses
+        nós:</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> 
+</programlisting></para>
+
+        <para>(onde <emphasis>n.n.nnnn</emphasis> é o número da
+        compilação)</para>
+
+        <para>Este exemplo instala os pacotes da plataforma do HPCC em todos
+        os nós e força o arquivo ativo environment.xml para esses nós: Ele
+        também gera chaves ssh e as força para todos os nós.</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh -k hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> 
+</programlisting></para>
+
+        <para>(onde <emphasis> n.n.nnnn</emphasis> o número de
+        compilação)</para>
+
+        <para>Este exemplo instala os pacotes da plataforma do HPCC e força o
+        arquivo ativo environment.xml para 8 nós simultâneos:</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh -n 8 hpccsystems-platform-xxxx-n.n.nnnn<emphasis>n.n.nnnn</emphasis> 
+</programlisting></para>
+
+        <para>(onde <emphasis> n.n.nnnn</emphasis> o número de
+        compilação)</para>
+      </sect2>
+
+      <sect2 id="ExampleScripts_deploy-java-files.sh" role="brk">
+        <title>deploy-java-files.sh</title>
+
+        <para><emphasis
+        role="bold">deploy-java-files.sh</emphasis><emphasis><emphasis> [-c]
+        [-e] [-H &lt;value&gt;] [-n &lt;value&gt;] [-r] [-s &lt;value&gt;] [-t
+        &lt;value&gt;] [-u &lt;value&gt;] [-x] </emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="100.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>-c</entry>
+
+                  <entry>Quando especificada, essa opção adiciona o diretório
+                  de destino ou o caminho de arquivo jar para classpath no
+                  environment.conf.</entry>
+                </row>
+
+                <row>
+                  <entry>-e</entry>
+
+                  <entry>Quando especificado, isso denota que o destino deve
+                  ser removido do classpath.</entry>
+                </row>
+
+                <row>
+                  <entry>-H</entry>
+
+                  <entry>Lista IP do Host Quando especificada, segmentará
+                  endereços IP especificados, um endereço IP por linha. Se
+                  esta opção não for usada, executará na lista IP gerada no
+                  environment.xml</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>Quando especificado, denota o número de linhas de
+                  execução (threads) simultâneas. O padrão é 5. É preciso ter
+                  phyton instalado, caso contrário essa opção será ignorada e
+                  a ação será executada sequencialmente em cada host.</entry>
+                </row>
+
+                <row>
+                  <entry>-r</entry>
+
+                  <entry>Redefine o classpath. Quando especificado, redefinirá
+                  o classpath para &lt;install_directory&gt;/classes. Se usado
+                  juntamente com -t, adiciona as novas entradas ao classpath
+                  após a redefinição.</entry>
+                </row>
+
+                <row>
+                  <entry>-s</entry>
+
+                  <entry>Arquivo ou diretório fonte.</entry>
+                </row>
+
+                <row>
+                  <entry>-t</entry>
+
+                  <entry>Diretório de destino O padrão é
+                  &lt;install_directory&gt;/classes. Se for apenas para
+                  adicionar ao classpath, o valor pode corresponder ao caminho
+                  completo do arquivo java jar.</entry>
+                </row>
+
+                <row>
+                  <entry>-u</entry>
+
+                  <entry>O nome do usuário a ser usado para o acesso do ssh ao
+                  sistema remoto. Forneça esta opção quando o usuário
+                  especificado não usa uma senha para executar o ssh/scp. Se
+                  essa opção não for especificada, você terá que fornecer um
+                  nome de usuário e senha. Recomendamos não usar &lt;hpcc
+                  user&gt; para evitar problemas de segurança.</entry>
+                </row>
+
+                <row>
+                  <entry>-x</entry>
+
+                  <entry>Quando especificada, essa opção exclui a execução no
+                  host atual.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>O <emphasis role="bold">script deploy-java-files.sh</emphasis> é
+        usado para implementar arquivos java (fonte) nos hosts do cluster HPCC
+        e atualizar a variável classpath no environment.conf.</para>
+
+        <para>Esse script executa um comando em todos os endereços IP ou nomes
+        de host no arquivo ativo environment.xml. Os endereços IP são
+        definidos no momento da edição do ambiente no Gerenciador de
+        Configurações.</para>
+
+        <para>Este script grava em um arquivo de log:</para>
+
+        <para><emphasis
+        role="bold">/var/log/HPCCSystems/cluster/se_&lt;action&gt;_&lt;commnd&gt;_&lt;pid&gt;_yyyymmdd_HHMMSS.log</emphasis></para>
+
+        <para><emphasis role="bold">Exemplos:</emphasis></para>
+
+        <para>Para implementar arquivos java do /home/hpcc/development/java/
+        no sistema local para /home/hpcc/java/ em todos os hosts no cluster e
+        atualizar o classpath com 10 execuções simultâneas:</para>
+
+        <para><programlisting>./deploy-java-files.sh -s /home/hpcc/development/java/* -t /home/hpcc/java/ -c -n 10
+</programlisting></para>
+
+        <para>Para implementar arquivos java do /home/hpcc/java/ no sistema
+        local para /home/hpcc/java em todos os hosts no cluster, exceto no
+        sistema local:</para>
+
+        <para><programlisting>./deploy-java-files.sh -s /home/hpcc/java/* -t /home/hpcc/java -x
+</programlisting>Para atualizar o classpath de um cluster:</para>
+
+        <para><programlisting>./deploy-java-files.sh -c -t /home/hpcc/develop/java:/home/hpcc/test/java/ 
+</programlisting></para>
+
+        <para>Para implementar arquivos java em uma lista de hosts:</para>
+
+        <para><programlisting>./deploy-java-files.sh -H /home/hpcc/hosts.txt -s /home/hpcc/java/* -t /home/hpcc/java/ </programlisting></para>
+      </sect2>
+
+      <sect2 id="ExampleScripts_hpcc-push.sh" role="brk">
+        <title>hpcc-push.sh</title>
+
+        <para><emphasis
+        role="bold">hpcc-push.sh</emphasis><emphasis><emphasis> [-s
+        &lt;source&gt;] [-t &lt;target&gt;] [-n &lt;concurrent&gt;] [-x]
+        </emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="150pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>-s</entry>
+
+                  <entry>Arquivo ou diretório fonte.</entry>
+                </row>
+
+                <row>
+                  <entry>-t</entry>
+
+                  <entry>Arquivo ou diretório de destino.</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --concurrent</entry>
+
+                  <entry>Quando especificado, denota o número de execuções
+                  simultâneas. O padrão é 5. Opcional.</entry>
+                </row>
+
+                <row>
+                  <entry>-x</entry>
+
+                  <entry>Quando especificada, essa opção exclui a execução no
+                  host atual.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para><emphasis role="bold">Esse script "envia" arquivos do nome do
+        arquivo e do caminho de origem para o nome do arquivo e caminho de
+        destino de todos os endereços IP no ambiente.xml ativo.
+        </emphasis></para>
+
+        <para>Para usar esse script, as chaves ssh precisam estar configuradas
+        de maneira adequada em todos os nós, sendo também necessário usar
+        sudo.</para>
+
+        <para>Os endereços IP foram definidos no momento da edição do ambiente
+        no Gerenciador de Configurações.</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;
+</programlisting>Por exemplo:</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -x \
+     -s /etc/HPCCSystems/environment.xml -t /etc/HPCCSystems/environment.xml</programlisting></para>
+      </sect2>
+
+      <sect2 id="ExampleScripts_hpcc-run.sh" role="brk">
+        <title>hpcc-run.sh</title>
+
+        <para><emphasis role="bold">hpcc-run.sh
+        </emphasis><emphasis><emphasis>[-c component] [-a
+        {hpcc-init|dafilesrv}] [-n &lt;value&gt;] [-s] [-S]
+        {start|stop|restart|status|setup}</emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="100.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>-a</entry>
+
+                  <entry>Nome de serviço do HPCC. Pode ser hpcc-init (padrão)
+                  ou dafilesrv.</entry>
+                </row>
+
+                <row>
+                  <entry>-c</entry>
+
+                  <entry>Componente do HPCC. Por exemplo, mydali, myroxie,
+                  mythor, etc.</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --concurrent</entry>
+
+                  <entry>Quando especificado, denota o número de instâncias
+                  simultâneas a serem executadas. O padrão é 5.
+                  Opcional.</entry>
+                </row>
+
+                <row>
+                  <entry>-S</entry>
+
+                  <entry>Quando especificado, o comando é executado de maneira
+                  sequencial, um host por vez.</entry>
+                </row>
+
+                <row>
+                  <entry>-s</entry>
+
+                  <entry>Quando especificado, salva o resultado em um arquivo
+                  denominado &lt;ip address&gt;.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Para usar esse script, as chaves ssh precisam estar configuradas
+        de maneira adequada em todos os nós, sendo também necessário usar sudo
+        como usuário do hpcc.</para>
+
+        <para><emphasis role="bold">Esse script executa um comando em todos os
+        endereços IP no arquivo ativo environment.xml. </emphasis></para>
+
+        <para>Os endereços IP foram definidos no momento da edição do ambiente
+        no Gerenciador de Configurações. Esse script suporta todos os
+        parâmetros do hpcc-init e do dafilesrv.</para>
+
+        <para><emphasis role="bold">Exemplos:</emphasis></para>
+
+        <para>Este exemplo inicia todos os componentes nos nós</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
+</programlisting></para>
+
+        <para>Este exemplo inicia todos os componentes em todos os nós usando
+        8 execuções simultâneas</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start -n 8
+</programlisting>Este exemplo inicia todos os componentes do esp type nos
+        nós</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c esp -a hpcc-init start 
+</programlisting>Este exemplo inicia todos os componentes com um nome de
+        componente myesp nos nós</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c myesp -a hpcc-init start 
+</programlisting>Este exemplo inicia a aplicação auxiliar dafilesrv</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a dafilesrv start
+</programlisting></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Uninstalling-the-HPCC">
+      <title>Desinstalando a plataforma HPCC</title>
+
+      <para>Para desinstalar a plataforma do HPCC, preencha os comandos
+      apropriados para o seu sistema. Se necessário, faça esse procedimento em
+      cada nó em que a plataforma esteja instalada.</para>
+
+      <para><emphasis role="bold">Centos/Red Hat</emphasis></para>
+
+      <programlisting>sudo yum remove hpccsystems-platform </programlisting>
+
+      <para>Em contrapartida, ainda é possível usar</para>
+
+      <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+
+      <programlisting>sudo dpkg -r hpccsystems-platform</programlisting>
+    </sect1>
+
+    <sect1 id="Helper-Applications">
+      <title>Consulte a seção Aplicações Auxiliares</title>
+
+      <para>Talvez seja necessário parar ou iniciar manualmente as aplicações
+      auxiliares executadas em todos os nós.</para>
+
+      <para>Normalmente esse processo é iniciado automaticamente na primeira
+      vez que o serviço hpcc-init é executado.</para>
+
+      <para>Digite os comandos a seguir para parar ou iniciar a aplicação
+      auxiliar:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>dafilesrv</para>
+
+          <para><programlisting>sudo /sbin/service dafilesrv stop sudo /sbin/service dafilesrv start</programlisting><property><!--*** not for publication
+cd /var/lib/HPCCSystems/mythor
+...
+init_stop_thor
+init_start_thor--></property></para>
+        </listitem>
+      </itemizedlist>
+
+      <para><?hard-pagebreak ?></para>
+    </sect1>
+
+    <sect1 id="hpcc-init">
+      <title>hpcc-init</title>
+
+      <para><emphasis role="bold"> service hpcc-init
+      </emphasis><emphasis><emphasis>[</emphasis>option<emphasis>]</emphasis>
+      command</emphasis></para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="80.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>option</entry>
+
+                <entry><itemizedlist>
+                    <listitem>
+                      <para>-c <emphasis>componentname</emphasis>,
+                      --component=<emphasis>componentname</emphasis></para>
+
+                      <para>Especifica o componente sobre o qual o comando
+                      será executado. Se omitido, o padrão é: <emphasis
+                      role="bold">todos</emphasis> os componentes da
+                      máquina.</para>
+
+                      <para>-c <emphasis>componenttype</emphasis>,
+                      --component=<emphasis>componenttype</emphasis></para>
+
+                      <para>Especifica o tipo de componente sobre o qual o
+                      comando será executado. Caso seja configurado mais de um
+                      tipo, o comando será executado sobre todos eles. Se
+                      omitido, o padrão é: <emphasis
+                      role="bold">todos</emphasis> todos os componentes da
+                      máquina.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>--componentlist</para>
+
+                      <para>Fornece uma lista de todos os nomes de componentes
+                      no nó atual, como especificado no arquivo do
+                      ambiente.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>--typelist</para>
+
+                      <para>Fornece uma lista de todos os tipos de componentes
+                      no nó atual, como especificado no arquivo do
+                      ambiente.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>-h, --help</para>
+
+                      <para>Exibe uma página de ajuda</para>
+                    </listitem>
+                  </itemizedlist></entry>
+              </row>
+
+              <row>
+                <entry>command</entry>
+
+                <entry><itemizedlist>
+                    <listitem>
+                      <para>start:</para>
+
+                      <para>Inicia o(s) componente(s)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>stop</para>
+
+                      <para>Para o(s) componente(s)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>status</para>
+
+                      <para>Exibe o status do(s) componente(s)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>restart</para>
+
+                      <para>Reinicia o(s) componente(s)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>setup</para>
+
+                      <para>Inicializa os arquivos de configuração do
+                      componente, mas não inicia o(s) componente(s).</para>
+                    </listitem>
+                  </itemizedlist></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>A função <emphasis role="bold">hpcc-init </emphasis> é
+      usada para iniciar, parar, reiniciar, configurar ou verificar o status
+      de todos os componentes do HPCC.</para>
+
+      <?hard-pagebreak ?>
+
+      <para><emphasis role="bold">Exemplos:</emphasis></para>
+
+      <programlisting>sudo /etc/init.d/hpcc-init start 
+sudo /etc/init.d/hpcc-init stop 
+
+sudo /etc/init.d/hpcc-init -c myeclserver start 
+sudo /etc/init.d/hpcc-init --component=myeclserver start 
+
+sudo /etc/init.d/hpcc-init -c esp start
+</programlisting>
+
+      <sect2 id="HPCC_systemd_svc">
+        <title>Serviços HPCC systemd</title>
+
+        <para>Há dois serviços Systemd do HPCC : hpcc-init e dafilesrv Embora
+        alguns serviços Systemd do hpcc-init ainda estejam em desenvolvimento,
+        os usuários podem usar <emphasis>diretamente </emphasis>
+        /etc/init.d/hpcc-init <emphasis>e</emphasis> /etc/init.d/dafilesrv.
+        Invocar esses serviços dessa forma tem o mesmo efeito que fazê-lo da
+        maneira que um comando de serviço faz para outros processos do
+        HPCC.</para>
+
+        <para>O serviço do sistema hpcc-init suportará apenas as opções
+        "start", "stop" e "restart". Outras opções como "status", "-c" não são
+        suportadas.</para>
+
+        <para>Há dois conjuntos de scripts de serviço Systemd do HPCC:
+        <emphasis>hpcc-init.service/dafilesrv.service</emphasis> e
+        <emphasis>hpcc-init@.service/dafilesrv@.service</emphasis> instalados
+        em /lib/systemd/system.</para>
+
+        <para>O primeiro conjunto não tem nenhum resultado para
+        STDOUT/STDERROR, em vez disso ele registra em /var/log/syslog. Para
+        ver o resultado:</para>
+
+        <programlisting>journalctl -u &lt;service&gt; -f  </programlisting>
+
+        <para>O segundo conjunto apresenta o mesmo resultado para
+        STDOUT/STDERROR que a invocação direta de
+        /etc/init.d/&lt;hpcc-init|dafilesrv&gt;</para>
+
+        <para>Use:</para>
+
+        <programlisting>sudo service &lt;service&gt; &lt;start|stop|restart&gt;</programlisting>
+
+        <para>ou</para>
+
+        <programlisting>sudo systemctl &lt;start|stop|restart&gt; &lt;full_service_name&gt; </programlisting>
+
+        <para>O Systemd exibirá o estado do serviço em seu próprio
+        formato.</para>
+
+        <programlisting>sudo service &lt;service&gt; status </programlisting>
+
+        <para>ou</para>
+
+        <programlisting>sudo systemctl status &lt;full_service_name&gt; </programlisting>
+
+        <para>Estes são diferentes dos resultados de</para>
+
+        <programlisting>/etc/init.d/hpcc-init status</programlisting>
+
+        <para>Os serviços do HPCC iniciados pelo Systemd serão listados como
+        ativos no Systemd. Eles podem ser listados como "sudo systemctl
+        list-units [PATTERN...]". Para remover da lista de serviço ativa do
+        Systemd, é preciso executar “stop service” (parar serviço) dos
+        comandos "service" ou "systemctl” (como mostrado acima) mesmo que ele
+        já tenha parado pelo acionamento direto de
+        /etc/init.d/&lt;hpcc-init|dafilesrv&gt; stop.</para>
+
+        <para>Desinstalar o HPCC removerá automaticamente os serviços do HPCC
+        da lista ativa e do diretório /etc/systemd/system/ directory.</para>
+
+        <sect3 id="hpcc-init_sysd_svc_usage">
+          <title id="hpcc_systemd_usage">Uso do serviço do systemd no
+          hpcc-init</title>
+
+          <para>Para iniciar ou parar o HPCC com hpcc-init sem o resultado
+          STDOUT/STDERR : <orderedlist>
+              <listitem>
+                <para>Inciar</para>
+
+                <programlisting>sudo service hpcc-init start </programlisting>
+
+                <para>ou</para>
+
+                <programlisting>sudo systemctl start hpcc-init.service</programlisting>
+              </listitem>
+
+              <listitem>
+                <para>Verificar</para>
+
+                <programlisting>sudo journalctl -u hpcc-init -f</programlisting>
+              </listitem>
+
+              <listitem>
+                <para>Parar</para>
+
+                <programlisting>sudo service hpcc-init stop </programlisting>
+
+                <para>ou</para>
+
+                <programlisting>sudo systemctl stop hpcc-init.service</programlisting>
+              </listitem>
+            </orderedlist></para>
+
+          <para>Para start/stop HPCC com hpcc-init com resultado STD/STD.
+          Obtenha o tty atual executando o “tty”. Por Por exemplo, tty -&gt;
+          /dev/pts/1"pts/1" será usado nos seguintes comandos. <orderedlist>
+              <listitem>
+                <para>Iniciar</para>
+
+                <programlisting>sudo service hpcc-init@pts/1 start</programlisting>
+
+                <para>ou</para>
+
+                <programlisting>sudo systemctl start hpcc-init@pts/1.service</programlisting>
+              </listitem>
+
+              <listitem>
+                <para>Verificar</para>
+
+                <programlisting>sudo journalctl -u hpcc-init -f</programlisting>
+              </listitem>
+
+              <listitem>
+                <para>Parar</para>
+
+                <programlisting>sudo service hpcc-init@pts/1 stop</programlisting>
+
+                <para>ou</para>
+
+                <programlisting>sudo systemctl stop hpcc-init@pts/1.service</programlisting>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UnityLauncher.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <sect1 id="Running-HPCC-Tools-Under-WINE">
+      <title>Executando o ECL IDE pela primeira vez</title>
+
+      <para>Siga essas etapas para executar o ECL IDE sob WINE no
+      Linux.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Instale o wine1.2 (correspondente à versão 1.1.31 do Wine) e
+          suas dependências.</para>
+        </listitem>
+
+        <listitem>
+          <para>Faça o download do msxml3.msi da Microsoft (Pacote de Serviço
+          7 ou mais recente).</para>
+
+          <para><emphasis role="underline"><ulink
+          url="http://www.microsoft.com/en-us/download/details.aspx?id=3988">http://www.microsoft.com/en-us/download/details.aspx?id=3988</ulink></emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Instale o msxml3.msi no Wine (clique duas vezes no arquivo msi
+          e o Wine fará a instalação).</para>
+        </listitem>
+
+        <listitem>
+          <para>Abra “Configurar Wine” (Configure Wine)
+          (Applications/Wine/Configure Wine):</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione a aba Libraries.</para>
+        </listitem>
+
+        <listitem>
+          <para>Em “New override”, localizado na lista suspensa da biblioteca,
+          selecione <emphasis>msxml3</emphasis>, então pressione o botão
+          Add.</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione <emphasis> msxml3</emphasis> na lista de
+          Substituições existentes e pressione Edit.</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione a opção <emphasis>Native (Windows)</emphasis> e
+          pressione o botão OK .</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão OK para fechar a janela de configurações do
+          Wine.</para>
+        </listitem>
+
+        <listitem>
+          <para>Instale o HPCC ECL IDE (clique duas vezes no arquivo setup.msi
+          e o Wine fará a instalação).</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1 id="ExternLang_Support">
+      <title>Suporte a Linguagem Externa</title>
+
+      <para>Esta seção abrange as etapas para adicionar o suporte à uma
+      linguagem externa na plataforma do HPCC . O HPCC oferece suporte à
+      várias linguagens de programação, porém algumas delas possuem
+      dependências adicionais que precisam ser instaladas. O suporte à
+      linguagem externa está incluído no pacote de instalação da plataforma,
+      porém existem pacotes de instalação da plataforma do HPCC baseados em
+      RPM que são explicitamente representados com <emphasis
+      role="bold">plugins</emphasis>.</para>
+
+      <para><emphasis role="bold">Sistemas baseados em RPM:</emphasis></para>
+
+      <para>Caso tenha interesse em usar linguagens externas em sistemas
+      baseados em RPM (CentOS/Red Hat), será preciso baixar e instalar a
+      distribuição de instalação da plataforma apropriada <emphasis
+      role="bold">com a opção plugins</emphasis> no site de download.</para>
+
+      <para>Para sistemas baseados em RPM, há dois pacotes de instalação
+      diferentes disponíveis. Um pacote inclui os plugins opcionais que
+      suportam códigos incorporados de outras linguagens. Caso queira obter
+      suporte para outras linguagens, selecione o pacote para sua distro que
+      começa com:</para>
+
+      <programlisting>hpccsystems-platform_community-with-plugins- </programlisting>
+
+      <para><emphasis role="bold">Sistemas baseados em
+      Debian:</emphasis></para>
+
+      <para>O download de plugins opcionais NOT (NÃO) é necessário para os
+      pacotes de instalação de sistemas baseados em Debian (Ubuntu), uma vez
+      que os plugins já estão incluídos em todos os pacotes de instalação
+      Debian.</para>
+
+      <para>As linguagens externas atualmente suportadas incluem:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>C++ (suporte completo já está embutido)</para>
+        </listitem>
+
+        <listitem>
+          <para>Java</para>
+        </listitem>
+
+        <listitem>
+          <para>JavaScript</para>
+        </listitem>
+
+        <listitem>
+          <para>Python</para>
+        </listitem>
+
+        <listitem>
+          <para>R</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>As seções a seguir especificam o que é necessário para utilizar
+      essas linguagens em sua plataforma do HPCC .</para>
+
+      <para>Além destas linguagens, você pode adicionar suporte para outras
+      linguagens criando seu próprio plugin. Isso não é muito difícil de
+      fazer. Por exemplo, o plugin JavaScript possui 500 linhas de código C++.
+      Você pode usar isso como um modelo para criar o seu próprio plugin e, se
+      desejar, poderá contribuir com a iniciativa de código aberto.</para>
+
+      <sect2 id="Add_On_Java" role="brk">
+        <title>Java</title>
+
+        <para>É possível executar código Java externo na plataforma do HPCC .
+        O Java compilado pode ser usado como .class (ou .jar) e ser acionado
+        pelo ECL como qualquer função ECL .</para>
+
+        <para>Para extrair as assinaturas JNI :</para>
+
+        <programlisting>javap -s</programlisting>
+
+        <para>Para configurar o Java para ser integrado à plataforma do HPCC
+        :</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Instale um pacote de desenvolvimento do Java, como OpenJDK
+            ou Oracle Java SE Development Kit (JDK), no servidor.</para>
+          </listitem>
+
+          <listitem>
+            <para>Defina o Java CLASSPATH</para>
+
+            <para>O classpath pode ser definido de várias formas:<itemizedlist>
+                <listitem>
+                  <para>Em seu perfil.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Em seu ambiente.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Em seu perfil.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Usando o valor do classpath no environment.conf</para>
+
+                  <para>O arquivo de configuração padrão da plataforma do HPCC
+                  é <emphasis role="bold">/etc/HPCCSystems/environment.conf
+                  </emphasis> e você terá que editar esse arquivo para
+                  direcioná-lo para seu diretório de compilação Java.</para>
+
+                  <para>Por exemplo (em um sistema Linux):</para>
+
+                  <programlisting> classpath=/opt/HPCCSystems/classes:/home/username/workspace/StreamAPI/bin </programlisting>
+
+                  <para>O classpath deve direcionar para seu diretório de
+                  compilação Java .</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+
+          <listitem>
+            <para>Inicie a plataforma do HPCC
+            System<superscript>®</superscript> (caso já esteja em execução,
+            reinicie) para que a nova configuração possa ser lida.</para>
+
+            <para>Por exemplo:</para>
+
+            <programlisting> sudo service hpcc-init start </programlisting>
+
+            <para>ou</para>
+
+            <programlisting>sudo service hpcc-init restart </programlisting>
+
+            <para>Para obter mais informações, consulte <link
+            linkend="Starting-and-stopping">a seção Iniciar e parar </link> o
+            HPCC System no documento <emphasis>Como instalar e executar a
+            plataforma do HPCC</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Testar a integração do Java .</para>
+
+            <para>A plataforma do HPCC Systems<superscript>®</superscript> vem
+            com uma classe de exemplo Java . Alguns códigos Java podem ser
+            executados no ECL IDE ou no ECL Playground.</para>
+
+            <para>Por exemplo:</para>
+
+            <para><programlisting>IMPORT java; integer add1(integer val) := IMPORT(java, 'JavaCat.add1:(I)I'); add1(10);
+</programlisting>Se o comando for executado com sucesso, significa que o Java
+            foi configurado corretamente para funcionar na plataforma do HPCC
+            .</para>
+
+            <para>Se você receber uma mensagem de erro "unable to load
+            libjvm.so (não foi possível carregar libjvm.so)", reinstale ou
+            tente instalar outro pacote Java .</para>
+          </listitem>
+        </orderedlist>
+
+        <para>Você pode acionar o Java do ECL assim como qualquer outra função
+        do ECL . As funções estáticas Java podem ser facilmente prototipadas
+        usando os tipos do ECL.</para>
+
+        <para>Outros exemplos de código HPCC podem ser encontrados em:</para>
+
+        <para><ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
+      </sect2>
+
+      <sect2 id="Add_On_Javascript" role="brk">
+        <title>JavaScript</title>
+
+        <para>Para habilitar o suporte ao JavaScript na plataforma do HPCC
+        Systems<superscript>®</superscript> :</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Instale as dependências apropriadas à sua plataforma.</para>
+
+            <para><emphasis role="bold">Sistemas baseados em
+            RPM:</emphasis></para>
+
+            <para>O suporte ao JavaScript está disponível para CentOS 6.x ou
+            mais recente (está indisponível para CentOS 5.x).</para>
+
+            <para>Em um sistema baseado em RPM (CentOS/Red Hat), instale o
+            <emphasis role="bold">v8embed.</emphasis></para>
+
+            <para><emphasis role="bold">Sistemas baseados em
+            Debian:</emphasis></para>
+
+            <para>Para sistemas baseados em Debian (Ubuntu), instale o pacote
+            <emphasis role="bold">libv8-dev</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Teste a integração do JavaScript .</para>
+
+            <para>O JavaScript realiza multitarefa e, como resultado, essa
+            pode ser a mais rápida de todas as linguagens incorporadas
+            atualmente suportadas.</para>
+
+            <para>Agora alguns códigos JavaScript podem ser executados no
+            ECLIDE ou no ECL Playground.</para>
+
+            <para>Por exemplo:</para>
+
+            <para><programlisting format="linespecific">//nothor
+
+IMPORT javascript;
+
+javascript.Language.syntaxcheck('1+2');
+
+integer add1(integer val) := EMBED(javascript) val+1; ENDEMBED;
+
+data testData(data val) := EMBED(javascript) val[0] = val[0] + 1; val; ENDEMBED;
+set of integer testSet(set of integer val) := EMBED(javascript)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+add1(10);
+</programlisting>Se o comando for executado com sucesso, significa que o
+            JavaScript foi configurado corretamente para funcionar na
+            plataforma do HPCC</para>
+
+            <para>Outros exemplos de código HPCC podem ser encontrados
+            em:</para>
+
+            <para><ulink
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Add_Python_support" role="brk">
+        <title>Python</title>
+
+        <para>Por padrão, o HPCC suporta o Python2. A plataforma do HPCC
+        inclui plugins para Python2 e Python3, mas apenas um deles deve ser
+        habilitado com segurança por vez, já que as bibliotecas Python
+        exportam os mesmos símbolos para as duas versões. A habilitação das
+        duas versões pode gerar resultados imprevisíveis, incluindo falhas de
+        segmentação ou erros de símbolo indefinidos.</para>
+
+        <para>Por padrão, o plugin Python3 estará presente – porém
+        desabilitado – e o plugin Python2 estará presente e habilitado. Se
+        desejar usar o Python3, modifique seu arquivo environment.conf de
+        acordo com o exemplo no arquivo.</para>
+
+        <para>Para habilitar o suporte ao Python na plataforma do HPCC
+        Systems<superscript>®</superscript> :</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Instale o Python, caso ainda não o tenha feito. Várias
+            distribuições já têm o Python instalado.</para>
+
+            <para>Python 2.6, 2.7, ou Python3, dependendo da versão padrão da
+            sua distribuição e para coordenar com a entrada habilitada no
+            environment.conf.</para>
+          </listitem>
+
+          <listitem>
+            <para>Você pode incorporar o Python nativamente dentro do ECL
+            Program, muito parecido com BEGINC++</para>
+          </listitem>
+
+          <listitem>
+            <para>Chamada Python oriundas ECL como qualquer outra função
+            ECL.</para>
+
+            <para>Python não desempenha multitarefa de forma eficiente (Global
+            Interpreter Lock). Efetivamente, o phyton pode conter apenas uma
+            linha de execução (thread) por vez. Os scripts são compilados toda
+            vez que são acionados (porém com o cache mais recente, por linha
+            de execução). O caso IMPORT evitará a recompilação.</para>
+          </listitem>
+
+          <listitem>
+            <para>Teste a integração do Python.</para>
+
+            <para>Agora alguns códigos Python podem ser executados no ECLIDE
+            ou no ECL Playground.</para>
+
+            <para>Por exemplo:</para>
+
+            <para><programlisting>IMPORT Python;
+
+SET OF STRING split_words(STRING val) := EMBED(Python)
+  return val.split()
+ENDEMBED;
+
+split_words('Once upon a time');
+
+</programlisting>Se o comando for executado com sucesso, significa que o
+            Python foi configurado corretamente para funcionar na plataforma
+            do HPCC . Agora você pode incorporar o Python em qualquer lugar
+            onde usaria o ECL em seu HPCC System.</para>
+
+            <para>Outros exemplos de código HPCC podem ser encontrados
+            em:</para>
+
+            <para><ulink
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/</ulink></para>
+          </listitem>
+        </orderedlist>
+
+        <sect3>
+          <title>Opções de Escopo Python</title>
+
+          <para><emphasis role="bold">GLOBALSCOPE</emphasis> - Esta opção
+          permite que atributos EMBED independentes compartilhem globais entre
+          si caso especifiquem o mesmo nome para o parâmetro
+          GLOBALSCOPE.</para>
+
+          <para><emphasis role="bold">PERSIST</emphasis> - Esta opção controla
+          por quanto tempo um escopo global compartilhado persistirá e,
+          exatamente, por quanto tempo ele será compartilhado.</para>
+
+          <para>O valor especificado para GLOBALSCOPE pode ser qualquer string
+          desejada, permitindo compartilhar globais entre as seções EMBED
+          relacionadas, mantendo-as distintas das não relacionadas.</para>
+
+          <para>PERSIST pode adotar um dos seguintes valores:</para>
+
+          <para><emphasis role="bold">global</emphasis> - Os valores persistem
+          indefinidamente (até o processo terminar) e são compartilhados com
+          quaisquer outras incorporações que usam o mesmo valor GLOBALSCOPE,
+          até mesmo em outras tarefas.</para>
+
+          <para><emphasis role="bold">query</emphasis> - Os valores persistem
+          até que a consulta seja descarregada e compartilhada com outras
+          instâncias da consulta que possam estar sendo executadas ao mesmo
+          tempo no Roxie, porém não com outras consultas.</para>
+
+          <para><emphasis role="bold">workunit</emphasis> - Os valores
+          persistem até o final da tarefa atual ou da instância atual de uma
+          consulta implementada por Roxie, e não são compartilhados com outras
+          instâncias.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="R" role="brk">
+        <title>R</title>
+
+        <para>A plataforma do HPCC suporta código R incorporado. Para
+        habilitar o suporte ao R na plataforma do HPCC
+        Systems<superscript>®</superscript> :</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Faça o download do plugin <emphasis role="bold">R
+            Embed</emphasis> disponível no portal do HPCC Systems.</para>
+
+            <para><ulink
+            url="https://hpccsystems.com/download/hpcc-platform">https://hpccsystems.com/download/hpcc-platform</ulink></para>
+
+            <para>Selecione o plugin adequado para sua distribuição.</para>
+          </listitem>
+
+          <listitem>
+            <para>Instale o plugin.</para>
+
+            <para><emphasis role="bold">Sistemas baseados em RPM:
+            </emphasis>Instalar o usando <emphasis>yum
+            install</emphasis>.</para>
+
+            <para><emphasis role="bold">Sistemas baseados em Debian:
+            </emphasis>Instalar o utilizando <emphasis>dkpg -i</emphasis>
+            depois <emphasis>apt-get</emphasis> <emphasis>install
+            -f</emphasis></para>
+
+            <para>Se você usa esses métodos para instalar plugins, todas as
+            bibliotecas e dependências obrigatórias também serão
+            instaladas.</para>
+          </listitem>
+        </orderedlist>
+
+        <orderedlist continuation="continues">
+          <listitem>
+            <para>Teste a integração do R</para>
+
+            <para>R não tem ciência de multitarefa, assim o plugin precisa
+            agrupar todos os acionamentos do R para as seções críticas. Os
+            scripts são compilados com cada acionamento do R. Este ambiente
+            pode persistir entre os acionamentos incorporados do R em um mesmo
+            ambiente.</para>
+
+            <para>Agora alguns códigos Python podem ser executados no ECLIDE
+            ou no ECL Playground.</para>
+
+            <para>Por exemplo:</para>
+
+            <para><programlisting>IMPORT R;
+
+integer add1(integer val) := EMBED(R)
+val+1
+ENDEMBED;
+
+string cat(varstring what, string who) := EMBED(R)
+paste(what,who)
+ENDEMBED;
+
+data testData(data val) := EMBED(R)
+val[1] = val[2];
+val;
+ENDEMBED;
+
+set of integer testSet(set of integer val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of unsigned2 testSet0(set of unsigned2 val) := EMBED(R)
+sort(val);
+ENDEMBED;
+
+set of string testSet2(set of string val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of string testSet3(set of string8 val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of varstring testSet4(set of varstring val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of varstring8 testSet5(set of varstring8 val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of boolean testSet6(set of boolean val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of real4 testSet7(set of real4 val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of real8 testSet8(set of real8 val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of integer2 testSet9(set of integer2 val) := EMBED(R)
+sort(val);
+ENDEMBED;
+
+add1(10);
+cat('Hello', 'World');
+testData(D'ab');
+testSet([1,2,3]);
+testSet0([30000,40000,50000]);
+testSet2(['one','two','three']);
+testSet3(['uno','dos','tre']);
+testSet4(['un','deux','trois']);
+testSet5(['ein','zwei','drei']);
+testSet6([false,true,false,true]);
+testSet7([1.1,2.2,3.3]);
+testSet8([1.2,2.3,3.4]);
+testSet9([-111,0,113]);
+
+s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
+s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
+SUM(NOFOLD(s1 + s2), a);
+
+s1b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := COUNTER+1));
+s2b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := (COUNTER/2)+1));
+SUM(NOFOLD(s1b + s2b), a); 
+</programlisting>Se o comando for executado com sucesso, significa que o R foi
+            configurado corretamente para funcionar na plataforma do HPCC
+            .</para>
+
+            <para>Outros exemplos de código HPCC podem ser encontrados
+            em:</para>
+
+            <para><ulink
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/regress/embedR.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/embedR.ecl</ulink></para>
+          </listitem>
+        </orderedlist>
+
+        <para/>
+
+        <sect3 id="R_DataTypes">
+          <title>Mapeando Datatypes</title>
+
+          <para>Algumas considerações adicionais para o mapeamento dos tipos
+          de dados no R.</para>
+
+          <para>No HPCC, o ECL <emphasis role="bold">RECORD</emphasis> é
+          mapeado para um R <emphasis>list </emphasis></para>
+
+          <para><emphasis role="bold">Um DATASET</emphasis> incluindo um
+          dataset aninhado, é mapeado para um R
+          <emphasis>dataframe</emphasis>.</para>
+
+          <para>Um ECL <emphasis role="bold">SET</emphasis> é mapeado para um
+          R <emphasis>vecto</emphasis>r.</para>
+
+          <para>Esses princípios aplicam-se à transmissão de dados do HPCC
+          para o R ou do retorno de dados do R para o HPCC Os exemplos de uso
+          desses conceitos estão disponíveis em:</para>
+
+          <para><ulink
+          url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/regress/embedR2.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/embedR2.ecl</ulink></para>
+
+          <para/>
+        </sect3>
+
+        <sect3>
+          <title>Opções de Escopo R</title>
+
+          <para><emphasis role="bold">GLOBALSCOPE</emphasis> - Esta opção
+          permite que atributos EMBED independentes compartilhem globais entre
+          si caso especifiquem o mesmo nome para o parâmetro GLOBALSCOPE
+          .</para>
+
+          <para><emphasis role="bold">PERSIST</emphasis> - Esta opção controla
+          por quanto tempo um escopo global compartilhado persistirá e,
+          exatamente, por quanto tempo ele será compartilhado.</para>
+
+          <para>O valor especificado para GLOBALSCOPE pode ser qualquer string
+          desejada, permitindo compartilhar globais entre as seções EMBED
+          relacionadas, mantendo-as distintas das não relacionadas</para>
+
+          <para>PERSIST pode adotar um dos seguintes valores:</para>
+
+          <para><emphasis role="bold">Global</emphasis> - Os valores persistem
+          indefinidamente (até o processo terminar) e são compartilhados com
+          quaisquer outras incorporações que usam o mesmo valor GLOBALSCOPE,
+          até mesmo em outras tarefas.</para>
+
+          <para><emphasis role="bold">Query:</emphasis> - Os valores persistem
+          até que a consulta seja descarregada e compartilhada com outras
+          instâncias da consulta que possam estar sendo executadas ao mesmo
+          tempo no Roxie, porém não com outras consultas.</para>
+
+          <para><emphasis role="bold">Workunit</emphasis> - Os valores
+          persistem até o final da workunit, ou da instância atual de uma
+          consulta implementada pelo Roxie, e não são compartilhados com
+          outras instâncias.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

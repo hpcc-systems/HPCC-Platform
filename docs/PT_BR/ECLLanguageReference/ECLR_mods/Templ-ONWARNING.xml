@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_ONWARNING">
+  <title>#ONWARNING</title>
+
+  <para><emphasis role="bold">#ONWARNING<indexterm>
+      <primary>#ONWARNING</primary>
+    </indexterm>(</emphasis><emphasis>code, action</emphasis><emphasis
+  role="bold">); </emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="74.65pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>code</emphasis></entry>
+
+            <entry>O número exibido na coluna “Code" da caixa de ferramentas
+            de erros de sintaxe do ECL IDE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>action</emphasis></entry>
+
+            <entry>Uma destas ações: ignorar, erro ou aviso.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A declaração <emphasis role="bold">#ONWARNING </emphasis> permite
+  especificar globalmente como processar avisos específicos. Você pode tratar
+  a declaração como aviso, promovê-la a um erro ou ignorá-la. Avisos úteis
+  podem ficar perdidos em um grande número de outros menos úteis. Esse recurso
+  permite limpar a "confusão".</para>
+
+  <para>O serviço de fluxo de trabalho de ONWARNING substitui todos os
+  tratamentos globais de avisos especificados por #ONWARNING.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  #ONWARNING(1041, error);
+       //globally promote "Record doesn't have an explicit
+       // maximum record size" warnings to errors
+  rec := { STRING x } : ONWARNING(1041, ignore);
+       //ignore "Record doesn't have an explicit maximum
+       // record size" warning on this attribute, only
+</programlisting>
+
+  <para>Ver também: <link linkend="ONWARNING">ONWARNING</link></para>
+</sect1>

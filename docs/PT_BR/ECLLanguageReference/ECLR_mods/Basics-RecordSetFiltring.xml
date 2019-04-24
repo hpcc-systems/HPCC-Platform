@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Recordset_Filtering">
+  <title>Recordset Filtering</title>
+
+  <para>Filters<indexterm>
+      <primary>Filtros</primary>
+    </indexterm> são expressões condicionais contidas entre parênteses após o
+  nome do Dataset ou Conjunto de registros <indexterm>
+      <primary>Record Set</primary>
+    </indexterm> . Várias condições de filtro podem ser especificadas
+  separando cada expressão de filtro com uma vírgula (,). Todas as condições
+  de filtro separadas por vírgulas devem ser TRUE para que um registro seja
+  incluído, o que faz da vírgula um operador AND implícito (veja <emphasis
+  role="bold">Operadores lógicos</emphasis>), apenas neste contexto.</para>
+
+  <programlisting>MyRecordSet := Person(per_last_name &gt;= 'T', per_last_name &lt; 'U');
+     // MyRecordSet contains people whose last name begins with "T"
+     // the comma is an implicit AND while also functioning as
+     // an expression separator (implicit parentheses)
+
+
+MyRecordSet := Person(per_last_name &gt;= 'T' AND per_last_name &lt; 'U');
+// exactly the same logical expression as above
+
+RateGE7trds := Trades(trd_rate &gt;= '7');
+
+ValidTrades := Trades(NOT rmsTrade.Mortgage AND
+                      NOT rmsTrade.HasNarrative(rmsTrade.snClosed));</programlisting>
+
+  <para>BOOLEAN <indexterm>
+      <primary>Definição BOOLEAN</primary>
+    </indexterm> As sefinições booleanas devem ser usadas como filtros de
+  conjunto de registros para maximizar a flexibilidade, a legibilidade e a
+  reutilização, em vez de codificá-las diretamente em uma definição de
+  Conjunto de registros. Por exemplo, use:</para>
+
+  <programlisting>IsRevolv := trades.trd_type = 'R'
+                OR (~ValidType(trades.trd_type)
+                   AND trades.trd_acct[1] IN ['4','5','6']);
+       
+isBank := trades.trd_ind_code IN SetBankIndCodes;
+
+IsBankCard := IsBank AND IsRevolv;
+
+WithinDate(INTEGER1 months) := ValidDate(trades.trd_drpt) AND
+                               trades.trd_drpt_mos &lt;= months;
+
+BankCardTrades := trades(isBankCard AND WithinDate(6));</programlisting>
+
+  <para>em vez de:</para>
+
+  <programlisting>BankCardTrades := trades(trades.trd_ind_code IN SetBankIndCodes,
+                                         (trades.trd_type = 'R' OR
+                                         (~ValidType(trades.trd_type) AND
+                                         trades.trd_acct[1] IN ['4', '5', '6'])),
+                                         ValidDate(trades.trd_drpt),
+                                         trades.trd_drpt_mos &lt;= 6);</programlisting>
+
+  <para>As vírgulas usadas para separar condições de filtro em uma definição
+  de filtro de conjunto de registros atuam como uma operação <emphasis
+  role="underline">AND</emphasis> implícita e um conjunto de parênteses em
+  volta dos filtros individuais sendo separados. O resultado é uma ligação
+  mais estreita que o uso do AND em vez de uma vírgula sem parênteses. Por
+  exemplo, a expressão de filtro nesta definição:</para>
+
+  <programlisting>BankMortTrades := trades(isBankCard OR isMortgage, isOpen);</programlisting>
+
+  <para>é avaliada como foi escrita:</para>
+
+  <programlisting>(isBankCard OR isMortgage) AND isOpen</programlisting>
+
+  <para>e não como:</para>
+
+  <programlisting>isBankCard OR isMortgage AND isOpen</programlisting>
+</sect1>

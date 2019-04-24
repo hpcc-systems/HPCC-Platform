@@ -1,0 +1,290 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>Manipulação de Dados do HPCC</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito bem-vindos e podem ser enviados por e-mail para <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre documentação</emphasis> na linha de assunto e indique o nome do documento, o número das páginas e número da versão atual no corpo da mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript>  é uma marca registrada da LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo utilizados neste manual são fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="Data_Handling">
+    <title><emphasis>Manipulação de Dados do HPCC</emphasis></title>
+
+    <sect1 id="Introduction" role="nobrk">
+      <title>Introdução</title>
+
+      <para>Há diferentes formas pelas quais os dados podem ser transferidos de, para ou dentro de um HPCC system. Para cada uma dessas transferências de dados, há alguns parâmetros-chave que precisam ser conhecidos.</para>
+
+      <sect2 id="Prerequisites-for-most-file-movements">
+        <title><emphasis role="bold">Pré-requisitos para a maior parte das manipulações dos arquivos:</emphasis></title>
+
+        <itemizedlist>
+          <listitem>
+            <para>Nome do arquivo lógico</para>
+          </listitem>
+
+          <listitem>
+            <para>Nome do arquivo físico</para>
+          </listitem>
+
+          <listitem>
+            <para>Tamanho do registro (fixo)</para>
+          </listitem>
+
+          <listitem>
+            <para>Diretório de origem</para>
+          </listitem>
+
+          <listitem>
+            <para>Diretório de destino</para>
+          </listitem>
+
+          <listitem>
+            <para>Endereço IP do Dali (origem e/ou destino)</para>
+          </listitem>
+
+          <listitem>
+            <para>Zona de entrada de arquivos</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Os parâmetros acima são usados para esses principais métodos de manuseio de dados:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Importar - Fazer o spray dos dados da Zona de entrada de arquivos para o Thor</para>
+          </listitem>
+
+          <listitem>
+            <para>Exportar - Fazer o despray dos dados do Thor para a Zona de entrada de arquivos</para>
+          </listitem>
+
+          <listitem>
+            <para>Copiar - Replicar os dados do Thor para o Thor (em um mesmo sistema de arquivos Dali)</para>
+          </listitem>
+
+          <listitem>
+            <para>Copiar dados do Thor para o Thor (entre sistemas de arquivo Dali diferentes)</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+    </sect1>
+
+    <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                xpointer="xpointer(//*[@id='Data_Handling_Terms'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                xpointer="xpointer(//*[@id='Working_with_a_data_file'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                xpointer="xpointer(//*[@id='Data_Handling_Methods'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                xpointer="xpointer(//*[@id='Data_Handling_Using_ECL-Watch'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </chapter>
+
+  <chapter id="HPCC_DataBackups">
+    <title><emphasis>Backup de Dados do HPCC</emphasis></title>
+
+    <sect1 id="Introduction2DataBackup" role="nobrk">
+      <title>Introdução</title>
+
+      <para>Esta seção abrange os dados críticos do sistema que requeiram procedimentos regulares de backup para impedir a perda de dados.</para>
+
+      <para>São eles:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>O armazenamento de dados do sistema (dados Dali)</para>
+        </listitem>
+
+        <listitem>
+          <para>Arquivos de configuração do ambiente</para>
+        </listitem>
+
+        <listitem>
+          <para>Arquivos de dados da refinaria de dados (Thor)</para>
+        </listitem>
+
+        <listitem>
+          <para>Arquivos de dados do motor de entrega rápida de dados (Roxie)</para>
+        </listitem>
+
+        <listitem>
+          <para>Repositórios de atributos</para>
+        </listitem>
+
+        <listitem>
+          <para>Arquivos da Zona de entrada de arquivos</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+
+    <sect1 id="DaliData">
+      <title>Dados do Dali</title>
+
+      <para>Os arquivos do servidor Dali são normalmente espelhados em seu nó de backup. Essa localização está especificada no arquivo de configuração do ambiente através do Gerenciador de Configurações.</para>
+
+      <para>Uma vez que os dados são gravados simultaneamente em ambos os nós, não há necessidade de um procedimento de backup manual.</para>
+    </sect1>
+
+    <sect1 id="EnvironmentConfigurationFiles">
+      <title>Arquivos de Configuração do Ambiente</title>
+
+      <para>Existe apenas um arquivo de ambiente ativo, porém pode haver várias configurações alternativas.</para>
+
+      <para>O Gerenciador de Configurações funciona apenas em arquivos na pasta /etc/HPCCSystems/source. Para ativar a configuração, ela é copiada para /etc/HPCCSystems/environment.xml em todos os nós.</para>
+
+      <para>O Gerenciador de Configurações cria cópias de backup automaticamente na pasta /etc/HPCCSystems/source/backup/.</para>
+    </sect1>
+
+    <sect1 id="DH_ThorDataFiles">
+      <title>Arquivos de Dados Thor</title>
+
+      <para>Os clusters Thor são normalmente configurados para replicar dados automaticamente para um segundo local, conhecido como localização espelhada. Normalmente, a localização espelhada está localizada na unidade secundária do nó subsequente.</para>
+
+      <para>Se os dados não forem encontrados no local principal (por exemplo, devido a uma falha de unidade ou porque um nó foi desativado), ele usará o diretório espelhado para ler os dados. Qualquer gravação vai para o local primário e depois para o espelhado. Isso oferece redundância contínua e um meio rápido de restaurar um sistema após a desativação de um nó.</para>
+
+      <para>O backup de dados do Thor deve ser realizado regularmente e sob demanda após a desativação de um nó.</para>
+
+      <sect2 id="Thor_ManualBackup">
+        <title>Backup Manual</title>
+
+        <para>Siga essas etapas para executar um backup manual:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Faça o login no nó mestre do Thor.</para>
+
+            <para>Se não souber qual nó é considerado o nó mestre do Thor, pesquise usando o ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <para>Execute o comando:</para>
+
+            <programlisting>sudo su hpcc /opt/HPCCSystems/bin/start_backupnode &lt;thor_cluster_name&gt; </programlisting>
+
+            <para>Isso iniciará o processo de backup.</para>
+
+            <para></para>
+
+            <graphic fileref="images/backupnode.jpg" />
+
+            <para>Aguarde até a conclusão. Você verá a mensagem "backupnode finished” (backup do nó concluído) como mostrado acima.</para>
+          </listitem>
+
+          <listitem>
+            <para>Execute o utilitário XREF no ECL Watch para ter certeza de que não há arquivos órfãos ou perdidos.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Thor_ScheduledBackup" role="brk">
+        <title>Backup programado</title>
+
+        <para>A forma mais fácil de agendar um processo de backup é criar um job cron. Cron é um daemon que serve como um agendador de tarefas.</para>
+
+        <para>Cron tab (abreviação de CRON TABle) é um arquivo de texto que contém a lista de tarefas. Para editar com o editor padrão, use o comando:</para>
+
+        <programlisting>sudo crontab -e</programlisting>
+
+        <para>Aqui está um exemplo de entrada cron tab:</para>
+
+        <para><programlisting>30 23 * * * /opt/HPCCSystems/bin/start_backupnode mythor 
+</programlisting>30 representa os minutos de hora.</para>
+
+        <para>23 representa a hora do dia</para>
+
+        <para>O asterisco (*) representa todos os dias, meses ou dias da semana.</para>
+
+        <para>mythor é o nome do cluster.</para>
+
+        <para>Para listar as tarefas agendadas, use o comando:</para>
+
+        <programlisting>sudo crontab -l</programlisting>
+
+        <para></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Roxie-Data-Backup">
+      <title>Arquivos de dados Roxie</title>
+
+      <para>Os dados do Roxie são protegidos por três formas de redundância:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Retenção de arquivo de dados de fonte original: Quando uma consulta é implementada, os dados são normalmente copiados dos discos rígidos de um cluster Thor. Dessa forma, os dados do Thor podem servir como backup, contanto que não sejam removidos nem alterados no Thor. Os dados do Thor normalmente são retidos por um período suficiente para servir como uma cópia de backup.</para>
+        </listitem>
+
+        <listitem>
+          <para>Redundância de nó par: Cada nó secundário normalmente tem um ou mais nós pares em seu cluster. Cada par armazena uma cópia dos arquivos de dados que serão lidos.</para>
+        </listitem>
+
+        <listitem>
+          <para>Redundância de cluster irmão: Embora não seja necessário, as implementações do Roxie podem ser executadas em múltiplos clusters Roxie configurados de modo idêntico. Quando dois clusters são implementados para produção, cada nó tem um gêmeo idêntico relacionado aos dados e/ou consultas armazenadas no nó no outro cluster.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Isso fornece múltiplas cópias redundantes dos arquivos de dados.</para>
+    </sect1>
+
+    <sect1 id="DHan_AttributeRepositories">
+      <title>Repositórios de atributos</title>
+
+      <para>Os repositórios de atributo são armazenados nos discos rígidos locais do desenvolvedor do ECL. Eles podem conter um número significativo de horas de trabalho; consequentemente, o backup deve ser feito regularmente. Além disso, sugerimos usar algumas formas de controle de versão de origem.</para>
+    </sect1>
+
+    <sect1 id="DHan_LandingZoneFiles">
+      <title>Arquivos da Zona de entrada de arquivos</title>
+
+      <para>A Zona de entrada de arquivos contém os dados brutos de entrada. Também pode conter arquivos de saída (ou de resultados). Dependendo do tamanho ou complexidade desses arquivos, pode ser necessário manter cópias para redundância.</para>
+    </sect1>
+  </chapter>
+</book>

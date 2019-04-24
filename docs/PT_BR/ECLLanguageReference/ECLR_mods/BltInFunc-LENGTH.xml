@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LENGTH">
+  <title>LENGTH</title>
+
+  <para><emphasis role="bold">LENGTH<indexterm>
+      <primary>LENGTH</primary>
+    </indexterm><indexterm>
+      <primary>LENGTH function</primary>
+    </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec colwidth="308.30pt"/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>expression</emphasis></entry>
+
+          <entry>Uma expressão sting.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>LENGTH retorna um único valor inteiro.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">LENGTH </emphasis> retorna o
+  comprimento da string resultante da <emphasis>expressão</emphasis> ao tratar
+  a <emphasis>expressão </emphasis> como uma STRING temporária.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>INTEGER MyLength := LENGTH('XYZ' + 'ABC');
+      //MyLength is 6</programlisting>
+
+  <para>Ver também: <link linkend="String_Operators">Operadores String</link>,
+  <link linkend="STRING">STRING</link></para>
+</sect1>

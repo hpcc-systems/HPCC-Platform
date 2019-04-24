@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="configure-and-deploy-security-manager-plugin">
+  <title role="nbrk">Configurar e implementar o Security Manager Plugin</title>
+
+  <para>As seções a seguir detalham o processo de configuração de seu HPCC para usar o Security Manager Plugin.</para>
+
+  <sect1 id="how-to-configure-an-existing-security-manager-plugin">
+    <title>Como Configurar um Security Manager Plugin</title>
+
+    <para>Após ter sido instalado, o plugin pode ser configurado na plataforma HPCC através do Configuration Manager.</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Pare a execução de todos os componentes do HPCC.</para>
+
+          <para>Verifique se eles não estão mais sendo executados. É possível usar um comando único, como: <programlisting>  sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Conecte seu navegador de Internet à interface da Web do Gerenciador de Configurações (Configuration Manager).</para>
+
+          <para>Use o URL http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015</para>
+
+          <para>onde  <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> é o endereço IP do nó que está executando o Gerenciador de Configurações.  </para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione o botão de opção  <emphasis role="strong">Advanced View</emphasis>
+          .</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione o arquivo de configuração em XML adequado.</para>
+
+          <para><emphasis role="strong">Observação:</emphasis> O Gerenciador de Configurações nunca funciona no arquivo de configurações ativo. Após terminar a edição, será necessário copiar o arquivo environment.xml para o local ativo e forçá-lo a todos os nós.</para>
+        </listitem>
+
+        <listitem>
+          <para>Marque a caixa de seleção Write Access.</para>
+        </listitem>
+
+        <listitem>
+          <para>Crie uma instância do Security Manager Plugin:
+          <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Clique com o botão direito no Painel de navegação ao lado esquerdo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione <emphasis role="bold">New Components</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione o componente adequado &lt;name_of_Security_Manager_plugin&gt;</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Configure o Security Manager Plugin: (Exemplo mostrado usando o plugin Htpasswd*)<figure>
+              <title>Página “Security Mgr Configuration” (Configuração do Security Manager)</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/SECM_001.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <orderedlist numeration="loweralpha">
+            <listitem>
+              <para>Forneça um nome para a instância</para>
+            </listitem>
+
+            <listitem>
+              <para>Forneça um nome da biblioteca (totalmente qualificado)</para>
+            </listitem>
+
+            <listitem>
+              <para>O InstanceFactoryName será definido para "createInstance" se a biblioteca especificada na etapa anterior fornecer um método de fábrica alternativo.</para>
+            </listitem>
+
+            <listitem>
+              <para>Forneça quaisquer entradas customizadas exigidas. No exemplo mostrado, 
+              <emphasis>htpasswdFile</emphasis>  é uma entrada customizada.</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Associe o Security Manager Plugin às ligações do ESP
+          <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Clique no Esp de destino no painel do navegador ao lado esquerdo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione a aba <emphasis role="bold"> ESP</emphasis>
+                 (Process) <emphasis role="bold">Service Bindings</emphasis>
+                </para>
+              </listitem>
+
+              <listitem>
+                <para>Nas ligações de destino, selecione a instância securityMgrPlugin adequada a partir da lista suspensa.<figure>
+                    <title>Ligação ao ESP</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="../../images/SECM_004.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Ativar o uso do Security Manager Plugin – Selecione a aba 
+          <emphasis role="bold">Authentication</emphasis>  (Autenticação) e na entrada do método selecione <emphasis role="bold"> secmgrPlugin</emphasis> <figure>
+              <title>Página “Security Mgr Configuration” (Configuração do Security Manager)</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/SECM_002.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Salve o arquivo do ambiente</para>
+        </listitem>
+
+        <listitem>
+          <para>Distribua o arquivo do ambiente para todos os nós em seu cluster</para>
+        </listitem>
+
+        <listitem>
+          <para>Reinicialize seu ambiente.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <sect2 id="even-more-info">
+      <title>Tutorial em Vídeo</title>
+
+      <para>Precisa de informações adicionais? Assista ao vídeo do tutorial em que demonstramos como configurar um security plugin (plugin de segurança).</para>
+
+      <para><ulink
+      url="https://www.youtube.com/watch?v=lNVwEOFkKgY&amp;feature=youtu.be">https://www.youtube.com/watch?v=lNVwEOFkKgY&amp;feature=youtu.be</ulink></para>
+
+      <para>Clique no link acima para assistir ao vídeo.</para>
+    </sect2>
+  </sect1>
+</chapter>

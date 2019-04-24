@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MERGE">
+  <title>MERGE</title>
+
+  <para><emphasis role="bold">MERGE<indexterm>
+      <primary>MERGE</primary>
+    </indexterm><indexterm>
+      <primary>MERGE function</primary>
+    </indexterm>(</emphasis><emphasis>recordsetlist </emphasis><emphasis
+  role="bold"> </emphasis><emphasis>,</emphasis><emphasis role="bold">
+  </emphasis><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED</primary>
+    </indexterm>( </emphasis><emphasis>fieldlist</emphasis><emphasis
+  role="bold"> ) [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">DEDUP<indexterm>
+      <primary>DEDUP</primary>
+    </indexterm> ] [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><emphasis role="bold"/><emphasis
+  role="bold">MERGE(</emphasis><emphasis>recordsetset ,
+  fieldlist</emphasis><emphasis role="bold">
+  </emphasis><emphasis>,</emphasis><emphasis role="bold"> </emphasis><emphasis
+  role="bold">SORTED( </emphasis><emphasis>fieldlist</emphasis><emphasis
+  role="bold"> ) [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">DEDUP ] [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">LOCAL ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="82.20pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>recordsetlist</emphasis></entry>
+
+          <entry>Uma lista delimitada por vírgula dos datasets e índices a
+          serem fundidos, os quais todos devem estar exatamente no mesmo
+          formato e ordem de classificação.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SORTED</emphasis></entry>
+
+          <entry>Especifica a ordem de classificação do
+          <emphasis>recordsetlist</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fieldlist</emphasis></entry>
+
+          <entry>Uma lista delimitada por vírgula dos campos que definem a
+          ordem de classificação.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DEDUP</emphasis></entry>
+
+          <entry>Opcional. Especifica que os resultados contêm apenas
+          registros com valores únicos nos campos que especificam a
+          <emphasis>fieldlist</emphasis> da ordem de classificação.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+          <entry>Opcional. Especifica que a operação é realizada em cada nó de
+          supercomputador de forma independente, sem exigir interação com
+          todos os outros nós para obter dados; a operação mantém a
+          distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>recordsetset</emphasis></entry>
+
+          <entry>Um CONJUNTO ( [ds1,ds2,ds3] ) de datasets ou índices a ser
+          fundido, o qual deve estar exatamente no mesmo formato.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de resultado não
+          é importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+          <entry>Especifica a importância da ordem do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>bool</emphasis></entry>
+
+          <entry>Quando for “False” (Falso), especifica que a ordem do
+          registro de resultado não é importante. Quando for “True’
+          (Verdadeiro), especifica a ordem padrão do registro de
+          resultado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+          <entry>Opcional. Especifica que a ordem do registro de entrada não é
+          importante.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>numthreads</emphasis></entry>
+
+          <entry>Opcional. Tenta avaliar essa atividade usando os
+          <emphasis>numthreads</emphasis> threads</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+          <entry>Opcional. Substitui o algoritmo usado para essa
+          atividade.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>name</emphasis></entry>
+
+          <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+          parte da lista de algoritmos compatíveis com as opções STABLE e
+          UNSTABLE da função SORT.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>MERGE retorna um conjunto de registros.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">MERGE </emphasis> retorna um único
+  dataset ou índice contendo todos os registros dos datasets ou índices
+  nomeados no <emphasis>recordsetlist </emphasis> ou
+  <emphasis>recordsetset</emphasis>. Isso é especialmente útil para
+  atualizações gradativas de dados, uma vez que permite a fusão de um conjunto
+  menor de novos registros em um dataset ou índice grande existente sem a
+  necessidade de reprecessar todos os dados de origem. A forma <emphasis>
+  recordsetset</emphasis> possibilita a fusão de vários números de datasets
+  quando usada dentro da função GRAPH.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>ds1 := SORTED(DATASET([{1,'A'},{1,'B'},{1,'C'},{1,'D'},{1,'E'},
+                       {1,'F'},{1,'G'},{1,'H'},{1,'I'},{1,'J'}],
+                      {INTEGER1 number,STRING1 Letter}),
+              letter,number);
+ds2 := SORTED(DATASET([{2,'A'},{2,'B'},{2,'C'},{2,'D'},{2,'E'},
+                       {2,'F'},{2,'G'},{2,'H'},{2,'I'},{2,'J'}],
+                      {INTEGER1 number,STRING1 Letter}),
+              letter,number);
+    
+ds3 := MERGE(ds1,ds2,SORTED(letter,number));
+SetDS := [ds1,ds2];
+ds4 := MERGE(SetDS,letter,number);
+</programlisting>
+</sect1>

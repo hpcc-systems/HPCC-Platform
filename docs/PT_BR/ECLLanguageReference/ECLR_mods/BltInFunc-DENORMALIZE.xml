@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DENORMALIZE">
+  <title>DENORMALIZE<indexterm>
+      <primary>DENORMALIZE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DENORMALIZE<indexterm>
+      <primary>DENORMALIZE function</primary>
+    </indexterm>(</emphasis><emphasis>parentrecset, childrecset, condition,
+  transform </emphasis><emphasis role="bold"> [,LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] [,NOSORT<indexterm>
+      <primary>NOSORT</primary>
+    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><emphasis role="bold">DENORMALIZE(</emphasis><emphasis>parentrecset,
+  childrecset, condition, </emphasis><emphasis
+  role="bold">GROUP</emphasis><emphasis><indexterm>
+      <primary>GROUP</primary>
+    </indexterm>, transform </emphasis><emphasis role="bold"> [,LOCAL]
+  [,NOSORT] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82.25pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>parentrecset</emphasis></entry>
+
+            <entry>O conjunto de registros primários a ser processado, já no
+            formato que conterá os registros primários e secundários
+            desnormalizados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>childrecset</emphasis></entry>
+
+            <entry>O conjunto de registros secundários a ser
+            processado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>Uma expressão que especifica como corresponder registros
+            entre o <emphasis>parentrecset</emphasis> e
+            <emphasis>childrecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>A função TRANSFORM a ser acionada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOSORT</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é desempenhada sem
+            classificar <emphasis>parentrecset</emphasis> ou
+            <emphasis>childrecset</emphasis> – ambos já devem ter sido
+            classificados para que os registros de correspondência de ambos
+            esteja em ordem. Isso permite que o programador controle a ordem
+            dos registros secundários.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">GROUP</emphasis></entry>
+
+            <entry>Especifica o agrupamento de registros
+            <emphasis>childrecset</emphasis> com base na condição JOIN para
+            que todos os registros secundários relacionados sejam
+            especificados para o TRANSFORM como um parâmetro de
+            dataset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DENORMALIZE retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">DENORMALIZE </emphasis> é usada para
+  formar um registro combinado a partir de um registro primário e de qualquer
+  número de registros secundários. Ela atua de forma bastante semelhante ao
+  JOIN, exceto onde JOIN com um registro primário e três secundários acionaria
+  <emphasis>transform</emphasis> três vezes e geraria três resultados, o
+  DENORMALIZE aciona <emphasis>transform</emphasis> três vezes, sendo que a
+  entrada para o primeiro <emphasis>transform</emphasis> consiste de um
+  registro primário e um secundário, a entrada para o segundo
+  <emphasis>transform</emphasis> consiste do resultado do primeiro
+  <emphasis>transform</emphasis> e outro registro secundário, e a entrada para
+  o terceiro <emphasis>transform</emphasis> constitui do resultado do segundo
+  <emphasis>transform</emphasis> e o registro secundário restante. Além disso,
+  assim como JOIN, a ordem na qual os registros
+  <emphasis>childrecset</emphasis> são enviados para
+  <emphasis>transform</emphasis> é indefinida.</para>
+
+  <para>Uma vez que DENORMALIZE é basicamente uma forma especializada de JOIN,
+  os diversos tipos de join (LEFT OUTER, RIGHT OUTER, FULL OUTER, LEFT ONLY,
+  RIGHTONLY, FULL ONLY) também podem ser usados no DENORMALIZE e atuam da
+  mesma forma que quando são usados no JOIN.</para>
+
+  <para>Todas as opções JOIN estão disponíveis para o DENORMALIZE Veja <link
+  linkend="JoinOptions">Opções de join</link> para obter mais
+  informações.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Denormalize">
+    <title>Requerimentos da Função DENORMALIZE TRANSFORM</title>
+
+    <para>Para a forma um, a função <emphasis>transform</emphasis> precisa
+    adotar pelo menos dois parâmetros: o registro LEFT <indexterm>
+        <primary>LEFT</primary>
+      </indexterm> de mesmo formato que a combinação de
+    <emphasis>parentrecset</emphasis> e <emphasis>childrecset</emphasis> (a
+    estrutura resultante do registro desnormalizado), e um registro RIGHT
+    <indexterm>
+        <primary>RIGHT</primary>
+      </indexterm> de mesmo formato que <emphasis>childrecset</emphasis>. Um
+    terceiro parâmetro opcional pode ser especificado: um COUNTER <indexterm>
+        <primary>COUNTER</primary>
+      </indexterm> inteiro especificando o número de vezes que
+    <emphasis>transform</emphasis> foi acionado para o conjunto atual de pares
+    primários/secundários (definido pelos valores da
+    <emphasis>condição</emphasis> ). O resultado da função
+    <emphasis>transform</emphasis> deve ser um record set de mesmo formato que
+    o registro LEFT.</para>
+
+    <para>Para o form dois, a função <emphasis>transform</emphasis> precisa
+    adotar pelo menos dois parâmetros: o registro LEFT de mesmo formato que a
+    combinação de <emphasis>parentrecset</emphasis> e
+    <emphasis>childrecset</emphasis> (a estrutura resultante do registro
+    desnormalizado), e um dataset ROWS(RIGHT) de mesmo formato que
+    <emphasis>childrecset</emphasis>. O resultado da função
+    <emphasis>transform</emphasis> deve ser um record set de mesmo formato que
+    o registro LEFT.</para>
+
+    <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+    <para>Exemplo do form 1:</para>
+
+    <programlisting>NormRec := RECORD
+  STRING20  thename;
+  STRING20  addr;
+END;
+NamesRec := RECORD
+  UNSIGNED1  numRows;
+  STRING20  thename; 
+  STRING20  addr1 := '';
+  STRING20  addr2 := '';
+  STRING20  addr3 := '';
+  STRING20  addr4 := '';
+END;
+NamesTable := DATASET([ {0,'Kevin'},{0,'Liz'},{0,'Mr Nobody'},
+                        {0,'Anywhere'}], NamesRec);
+NormAddrs := DATASET([{'Kevin','10 Malt Lane'},
+                      {'Liz','10 Malt Lane'},
+                      {'Liz','3 The cottages'},
+                      {'Anywhere','Here'},
+                      {'Anywhere','There'},
+                      {'Anywhere','Near'},
+                      {'Anywhere','Far'}],NormRec);
+NamesRec DeNormThem(NamesRec L, NormRec R, INTEGER C) := TRANSFORM
+    SELF.NumRows := C;
+    SELF.addr1 := IF (C=1, R.addr, L.addr1);
+    SELF.addr2 := IF (C=2, R.addr, L.addr2);
+    SELF.addr3 := IF (C=3, R.addr, L.addr3);
+    SELF.addr4 := IF (C=4, R.addr, L.addr4);
+    SELF := L;
+END;
+DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
+                            LEFT.thename = RIGHT.thename,
+                            DeNormThem(LEFT,RIGHT,COUNTER));
+OUTPUT(DeNormedRecs);
+</programlisting>
+
+    <para>Exemplo do form 2:</para>
+
+    <programlisting>NormRec := RECORD
+  STRING20  thename;
+  STRING20  addr;
+END;
+NamesRec := RECORD
+  UNSIGNED1  numRows;
+  STRING20  thename;
+  DATASET(NormRec) addresses;
+END;
+NamesTable := DATASET([ {0,'Kevin',[]},{0,'Liz',[]},
+                        {0,'Mr Nobody',[]},{0,'Anywhere',[]}],
+                      NamesRec);
+NormAddrs := DATASET([{'Kevin','10 Malt Lane'},
+                      {'Liz','10 Malt Lane'},
+                      {'Liz','3 The cottages'},
+                      {'Anywhere','Here'},
+                      {'Anywhere','There'},
+                      {'Anywhere','Near'},
+                      {'Anywhere','Far'}],NormRec);
+NamesRec DeNormThem(NamesRec L, DATASET(NormRec) R) := TRANSFORM
+    SELF.NumRows := COUNT(R);
+    SELF.addresses := R;
+    SELF := L;
+END;
+DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
+                           LEFT.thename = RIGHT.thename,
+                           GROUP,
+                           DeNormThem(LEFT,ROWS(RIGHT)));
+OUTPUT(DeNormedRecs);
+</programlisting>
+
+    <para>Exemplo NOSORT:</para>
+
+    <programlisting>
+  ParentFile.Value1;
+  ParentFile.Value2;
+  STRING1 CVal2_1 := '';
+  STRING1 CVal2_2 := '';
+END;
+P_Recs := TABLE(ParentFile, MyOutRec);
+MyOutRec DeNormThem(MyOutRec L, MyRec R, INTEGER C) := TRANSFORM
+ SELF.CVal2_1 := IF(C = 1, R.Value2, L.CVal2_1);
+ SELF.CVal2_2 := IF(C = 2, R.Value2, L.CVal2_2);
+ SELF := L;
+END;
+DeNormedRecs := DENORMALIZE(P_Recs, ChildFile,
+                            LEFT.Value1 = RIGHT.Value1,
+                            DeNormThem(LEFT,RIGHT,COUNTER),NOSORT);
+OUTPUT(DeNormedRecs);
+/* DeNormedRecs result set is:
+ Rec#  Value1 PVal2  CVal2_1  CVal2_2
+ 1       A      C      Z         T
+ 2       B      B      S         Y
+ 3       C      A      X         W
+ */
+</programlisting>
+
+    <para>Ver também: <link linkend="JOIN">JOIN</link>, <link
+    linkend="TRANSFORM_Structure">Estrutura TRANSFORM</link>, <link
+    linkend="RECORD_Structure">Estrutura RECORD</link>, <link
+    linkend="NORMALIZE">NORMALIZE</link></para>
+  </sect2>
+</sect1>

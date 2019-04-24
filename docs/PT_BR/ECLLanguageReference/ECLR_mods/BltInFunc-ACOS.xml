@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ACOS">
+  <title>ACOS</title>
+
+  <para><emphasis role="bold">ACOS<indexterm>
+      <primary>ACOS</primary>
+    </indexterm><indexterm>
+      <primary>ACOS function</primary>
+    </indexterm>(</emphasis><emphasis>cosine</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.35pt" />
+
+        <colspec colwidth="309.45pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>cosine</emphasis></entry>
+
+            <entry>O valor coseno REAL para o qual o arco coseno deve ser localizado.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ACOS retorna um único valor REAL.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função  <emphasis role="bold">ACOS </emphasis> retorna o arco coseno (inverso) do  <emphasis>coseno</emphasis>, em radianos.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>ArcCosine := ACOS(CosineAngle);
+</programlisting>
+
+  <para>Ver também: <link linkend="COS">COS</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="ASIN">ASIN</link>, <link linkend="ATAN">ATAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+</sect1>

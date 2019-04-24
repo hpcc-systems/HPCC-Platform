@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DaysBetween">
+  <title>DaysBetween</title>
+
+  <para><emphasis role="bold">STD.Date.DaysBetween<indexterm>
+      <primary>STD.Date.DaysBetween</primary>
+    </indexterm><indexterm>
+      <primary>DaysBetween</primary>
+    </indexterm>(</emphasis> <emphasis role="bold">fromDate,
+  toDate)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>fromDate</emphasis></entry>
+
+          <entry>O valor da primeira data, no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toDate</emphasis></entry>
+
+          <entry>O valor da última data, no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>DaysBetween retorna um valor INTEGER com o número de dias
+          entre duas datas.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">DaysBetween</emphasis> calcula o número
+  de dias completos entre duas datas.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+StartDate := 19631122;
+numDays := STD.Date.DaysBetween(startDate,STD.Date.Today());
+      // numDays contains the number of days between the startDate and today's date
+</programlisting>
+
+  <para/>
+</sect1>

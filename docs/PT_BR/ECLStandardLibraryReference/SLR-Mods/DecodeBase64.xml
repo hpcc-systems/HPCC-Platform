@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DecodeBase64">
+  <title>DecodeBase64</title>
+
+  <para><emphasis role="bold">STD.Str.DecodeBase64<indexterm>
+      <primary>STD.Str.DecodeBase64</primary>
+    </indexterm><indexterm>
+      <primary>Str.DecodeBase64</primary>
+    </indexterm><indexterm>
+      <primary>DecodeBase64</primary>
+    </indexterm>(</emphasis> <emphasis>value</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>Um valor de STRING que contem o dado ser
+          decodificado.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>DecodeBase64 retorna um valor DATA</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">DecodeBase64 </emphasis> retorna um
+  valor DATA que contém os dados binários decodificados.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+str:='AQIDBAU=';
+DecodedData:= STD.Str.DecodeBase64(str);
+DecodedData;</programlisting>
+
+  <para>Ver também: <link linkend="EncodeBase64">EncodeBase64</link></para>
+</sect1>

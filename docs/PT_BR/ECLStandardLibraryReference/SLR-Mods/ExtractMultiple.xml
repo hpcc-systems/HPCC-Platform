@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ExtractMultiple">
+  <title>ExtractMultiple</title>
+
+  <para><emphasis role="bold">STD.Str.ExtractMultiple<indexterm>
+      <primary>STD.Str.ExtractMultiple</primary>
+    </indexterm><indexterm>
+      <primary>Str.ExtractMultiple</primary>
+    </indexterm><indexterm>
+      <primary>ExtractMultiple</primary>
+    </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.ExtractMultiple<indexterm>
+      <primary>STD.Uni.ExtractMultiple</primary>
+    </indexterm><indexterm>
+      <primary>Uni.ExtractMultiple</primary>
+    </indexterm><indexterm>
+      <primary>ExtractMultiple</primary>
+    </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém uma lista delimitada por vírgulas com
+          dados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>mask </emphasis></entry>
+
+          <entry>Uma bitmask que especifica a posição ordinal do item de dados
+          dentro de <emphasis>source</emphasis> a ser retornado, onde bit 0 é
+          o item 1, bit 1 é o item 2 e assim por diante.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>ExtractMultiple retorna um valor STRING ou UNICODE, conforme
+          o caso.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">ExtractMultiple </emphasis> retorna os
+  dados nas posições do bitmask especificados por <emphasis>mask </emphasis>
+  dentro da string delimitada por vírgulas <emphasis>source</emphasis> string,
+  onde bit 0 é o item 1, bit 1 é o item 2 e assim por diante.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+MyTestString:= 'You, only, live, twice';
+STD.Str.ExtractMultiple(MyTestString, 0b10011 ); //returns 'You, only'
+</programlisting>
+</sect1>

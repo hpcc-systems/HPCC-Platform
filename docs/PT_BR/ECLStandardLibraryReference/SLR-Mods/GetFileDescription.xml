@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetFileDescription">
+  <title>GetFileDescription</title>
+
+  <para><emphasis role="bold">STD.File.GetFileDescription<indexterm>
+      <primary>STD.File.GetFileDescription</primary>
+    </indexterm><indexterm>
+      <primary>File.GetFileDescription</primary>
+    </indexterm><indexterm>
+      <primary>GetFileDescription</primary>
+    </indexterm>( </emphasis> <emphasis>filename </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetFileDescription returna um valor VARSTRING (terminado em nulo).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">GetFileDescription </emphasis> retorna uma string que contém as informações da descrição armazenadas pelo DFU sobre o  <emphasis>filename</emphasis> especificado. Essa descrição é definida usando o ECL Watch ou usando a função STD.File.SetFileDescription.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.File.GetFileDescription('Fred');</programlisting>
+</sect1>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ReplaceSuperFile">
+  <title>ReplaceSuperFile</title>
+
+  <para><emphasis role="bold">STD.File.ReplaceSuperFile<indexterm>
+      <primary>STD.File.ReplaceSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.ReplaceSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>ReplaceSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile, subfile1 , subfile2
+  </emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subfile1</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          subarquivo. Esse subarquivo pode ser outro superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subfile2</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          subarquivo. Esse subarquivo pode ser outro superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Nulo</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">ReplaceSuperFile </emphasis> remove o
+  <emphasis>subfile1</emphasis> da lista de arquivos que compõem o
+  <emphasis>superarquivo </emphasis>e substitui pelo
+  <emphasis>subarquivo2</emphasis>.</para>
+
+  <para>Essa função pode ser incluída em uma transação de superarquivo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">SEQUENTIAL(
+ STD.File.StartSuperFileTransaction(),
+ STD.File.ReplaceSuperFile('MySuperFile',
+      'MyOldSubFile',
+      'MyNewSubFile'),
+ STD.File.FinishSuperFileTransaction()
+);</programlisting>
+</sect1>

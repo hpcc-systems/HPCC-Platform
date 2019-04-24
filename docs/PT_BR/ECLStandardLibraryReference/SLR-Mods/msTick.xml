@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="msTick">
+  <title>msTick</title>
+
+  <para><emphasis role="bold">STD.System.Debug.msTick<indexterm>
+      <primary>STD.System.Debug.msTick</primary>
+    </indexterm> <indexterm>
+      <primary>System.Debug.msTick</primary>
+    </indexterm> <indexterm>
+      <primary>Debug.msTick</primary>
+    </indexterm> <indexterm>
+      <primary>msTick</primary>
+    </indexterm>(</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry>Return:</entry>
+
+          <entry>msTick retorna um valor inteiro sem sinal de 4 bytes.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">msTick </emphasis> retorna o tempo
+  decorrido desde o momento inicial, em milissegundos. O momento inicial é
+  indefinido, o que torna essa função útil apenas para determinar o tempo
+  decorrido entre chamadas à função, subtraindo o valor de retorno mais
+  recente do anterior. Quando o valor de retorno alcançar o valor máximo de um
+  inteiro sem sinal de 4 bytes (2 ^32 ou 4 Gb), recomeça em zero (0). Isso
+  ocorre aproximadamente a cada 49,71 dias.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+t1   := STD.System.Debug.msTick() : STORED('StartTime');    //get start time
+
+ds1 := DATASET([{0,0,0,0,0}],
+               {UNSIGNED4 RecID,
+                UNSIGNED4 Started, 
+                UNSIGNED4 ThisOne, 
+                UNSIGNED4 Elapsed, 
+                UNSIGNED4 RecsProcessed});
+
+RECORDOF(ds1) XF1(ds1 L, integer C) := TRANSFORM
+  SELF.RecID := C;
+  SELF := L;
+END;
+ds2 := NORMALIZE(ds1,100000,XF1(LEFT,COUNTER));
+
+RECORDOF(ds1) XF(ds1 L) := TRANSFORM
+  SELF.Started := T1;
+  SELF.ThisOne := STD.System.Debug.msTick();
+  SELF.Elapsed := SELF.ThisOne - SELF.Started; 
+  SELF := L;
+END;
+
+P := PROJECT(ds2,XF(LEFT)) : PERSIST('~RTTEST::TestTick');
+R := ROLLUP(P,
+            LEFT.Elapsed=RIGHT.Elapsed,
+            TRANSFORM(RECORDOF(ds1),
+                      SELF.RecsProcessed := RIGHT.RecID - LEFT.RecID, 
+                      SELF := LEFT));
+
+paws := STD.System.Debug.Sleep(1000); //pause for one second before continuing
+
+SEQUENTIAL(paws,OUTPUT(P, ALL),OUTPUT(R, ALL));
+</programlisting>
+</sect1>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TOPN">
+  <title>TOPN</title>
+
+  <para><emphasis role="bold">TOPN<indexterm>
+      <primary>TOPN</primary>
+    </indexterm><indexterm>
+      <primary>TOPN Function</primary>
+    </indexterm>(</emphasis><emphasis> recordset, count, sorts
+  </emphasis><emphasis role="bold">[, BEST<indexterm>
+      <primary>BEST</primary>
+    </indexterm>( </emphasis><emphasis>bestvalues</emphasis><emphasis
+  role="bold"> ) ] [</emphasis><emphasis>,</emphasis><emphasis
+  role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento. Pode ser o nome
+            de um dataset ou de um record set derivado de algumas condições de
+            filtro, ou qualquer expressão que resulte em um record set
+            derivado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>COUNT</emphasis></entry>
+
+            <entry>Uma expressão de valor inteiro que define o número de
+            registros a serem retornados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sorts</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula das expressões ou dos
+            campos principais no recordset em que ocorrerá a classificação,
+            sendo leftmost o critério de classificação mais significativo. Um
+            sinal de subtração a frente (-) indica uma classificação em ordem
+            decrescente daquele elemento. É possível usar as palavras-chave
+            RECORD para indicar uma classificação na ordem crescente em todos
+            os campos, e/ou usar a palavra-chave EXCEPT para listar os campos
+            que não serão classificados no recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">BEST</emphasis></entry>
+
+            <entry>Opcional. Permite terminar antecipadamente a operação se
+            houver número de contagem de registros e se os valores contidos no
+            último registro for correspondente aos
+            <emphasis>bestvalues</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bestvalues</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula correspondente a lista de
+            classificações dos valores máximos (ou mínimos se a classificação
+            correspondente for decrescente).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TOPN retorna um recordset.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">TOPN </emphasis> retorna o primeiro
+  número de <emphasis>contagem</emphasis> de registros na ordem das
+  <emphasis>classificações</emphasis> do <emphasis>recordset</emphasis>. Isto
+  é quase equivalente ao
+  CHOOSEN(SORT(<emphasis>recordset</emphasis>,<emphasis>sorts</emphasis>),<emphasis>count</emphasis>),
+  mas com uma sintaxe mais simples. Também retorna os primeiros números de
+  linhas em cada grupo de <emphasis>recordsets</emphasis> GROUPed e operações
+  locais.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>y := TOPN(Person,1000,state,sex);     //first 1000 recs in state, sex order
+z := TOPN(Person,1000,sex,BEST('F')); //first 1000 females</programlisting>
+
+  <para>Ver também: <link linkend="CHOOSEN">CHOOSEN</link>, <link
+  linkend="SORT">SORT</link>, <link
+  linkend="GROUP_function">GROUP</link></para>
+</sect1>

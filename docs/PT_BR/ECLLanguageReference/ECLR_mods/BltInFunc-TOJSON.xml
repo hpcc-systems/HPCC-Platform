@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TOJSON">
+  <title>TOJSON</title>
+
+  <para><emphasis role="bold">TOJSON<indexterm>
+      <primary>TOJSON</primary>
+    </indexterm><indexterm>
+      <primary>TOJSON function</primary>
+    </indexterm>(</emphasis><emphasis> record </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="77.95pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>record</emphasis></entry>
+
+            <entry>A linha (registro) de dados a ser convertida para o formato
+            JSON .</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TOJSON retorna uma string.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold"> TOJSON </emphasis> retorna uma única
+  string com os dados no <emphasis>registro</emphasis> formatados novamente
+  como JSON. Se a estrutura RECORD do <emphasis>registro</emphasis> tiver
+  XPATHs definidos, eles seriam então usados; caso contrário, os nomes de
+  campo em caixa baixa serão usados como nomes de tag JSON .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>namesRec1 := RECORD  
+ UNSIGNED2 EmployeeID{xpath('EmpID')};  
+ STRING10 Firstname{xpath('FName')};  
+ STRING10 Lastname{xpath('LName')}; 
+END; 
+str1 := TOJSON(ROW({42,'Fred','Flintstone'},namesRec1)); 
+OUTPUT(str1); 
+//returns this string: 
+//'"EmpID": 42, "FName": "Fred", "LName": "Flintstone"' 
+namesRec2 := RECORD  
+  UNSIGNED2 EmployeeID;  
+  STRING10 Firstname;  
+  STRING10 Lastname; 
+END; 
+str2 := TOJSON(ROW({42,'Fred','Flintstone'},namesRec2)); 
+OUTPUT(str2); 
+//returns this string: 
+//'"employeeid": 42, "firstname": "Fred", "lastname": "Flintstone"'
+</programlisting>
+
+  <para>Ver também: <link linkend="ROW">ROW</link>, <link
+  linkend="FROMJSON">FROMJSON</link></para>
+</sect1>

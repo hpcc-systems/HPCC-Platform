@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IsValidGregorianDate">
+  <title>IsValidGregorianDate</title>
+
+  <para><emphasis role="bold">STD.Date.IsValidGregorianDate<indexterm>
+      <primary>STD.Date.IsValidGregorianDate</primary>
+    </indexterm><indexterm>
+      <primary>Date.IsValidGregorianDate</primary>
+    </indexterm><indexterm>
+      <primary>IsValidGregorianDate</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>Um valor de data no formato Date_t. (um UNSIGNED4 que contém
+          um valor de data no formato YYYYMMDD).</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>IsValidGregorianDateYear retorna um valor BOOLEAN</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">IsValidGregorianDate</emphasis> retorna
+  TRUE se a data é válida no calendário gregoriano. O ano deve estar entre
+  1601 e 30827.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+d1 := 19991122;
+d2 := 15130230;  
+firstTest := STD.Date.IsValidGregorianDate(d1);  //  TRUE
+secondTest := STD.Date.IsValidGregorianDate(d2); //  FALSE
+</programlisting>
+
+  <para/>
+</sect1>

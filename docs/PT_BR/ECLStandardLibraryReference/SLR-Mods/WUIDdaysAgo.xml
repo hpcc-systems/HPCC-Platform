@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WUIDdaysAgo">
+  <title>WUIDdaysAgo</title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WUIDdaysAgo <indexterm>
+      <primary>STD.System.Workunit.WUIDdaysAgo</primary>
+    </indexterm> <indexterm>
+      <primary>System.Workunit.WUIDdaysAgo</primary>
+    </indexterm> <indexterm>
+      <primary>Workunit.WUIDdaysAgo</primary>
+    </indexterm> <indexterm>
+      <primary>WUIDdaysAgo</primary>
+    </indexterm> (</emphasis> <emphasis> daysago </emphasis> <emphasis
+  role="bold"> )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>daysago</emphasis></entry>
+
+          <entry>Um inteiro sem sinal que contém o número de dias a
+          retroceder.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WUIDdaysAgo retorna um valor VARSTRING.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">WUIDdaysAgo </emphasis> retorna um
+  identificador de tarefa válido de uma tarefa executada no número de dias
+  mais recentes especificado em <emphasis>daysago</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">daysago := STD.System.Workunit.WUIDdaysAgo(3);
+OUTPUT(STD.System.Workunit.WorkunitList(daysago));
+ //returns a list of workunits run in the last 72 hours</programlisting>
+</sect1>

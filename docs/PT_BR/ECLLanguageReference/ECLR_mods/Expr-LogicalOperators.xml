@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Logical_Operators">
+  <title>Operadores Lógicos</title>
+
+  <para><emphasis>Os seguintes </emphasis>operadores lógicos<indexterm>
+      <primary>logical operators</primary>
+    </indexterm> são suportados, listados aqui em sua precedência de
+  avaliação:</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup align="left" cols="2">
+      <colspec colwidth="94.80pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry>NOT</entry>
+
+          <entry>Operação Boolean NOT<indexterm>
+              <primary>Boolean NOT</primary>
+            </indexterm></entry>
+        </row>
+
+        <row>
+          <entry>~</entry>
+
+          <entry>Operação Boolean NOT<indexterm>
+              <primary>Boolean NOT</primary>
+            </indexterm></entry>
+        </row>
+
+        <row>
+          <entry>AND</entry>
+
+          <entry>Operação Boolean AND<indexterm>
+              <primary>Boolean AND</primary>
+            </indexterm></entry>
+        </row>
+
+        <row>
+          <entry>OR</entry>
+
+          <entry>Operação Boolean OR<indexterm>
+              <primary>Boolean OR</primary>
+            </indexterm></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para/>
+
+  <sect2 id="Logical_Expression_Grouping">
+    <title>Agrupando Expressões Lógicas</title>
+
+    <para>Quando uma expressão lógica complexa possui múltiplas condições OR,
+    é preciso agrupar as condições OR e ordená-las da menos complexa para a
+    mais complexa a fim de obter um processamento mais eficiente.</para>
+
+    <para>Se a probabilidade de ocorrência for conhecida, é preciso ordená-la
+    da mais provável para a menos provável, pois como qualquer parte de uma
+    condição OR composta é avaliada como TRUE, o resto da expressão pode ser
+    ignorado. No entanto, isso não é garantido. Isso também é verdade para a
+    ordem das condições da função MAP.</para>
+
+    <para>Sempre que as operações lógicas AND e OR são misturadas em uma mesma
+    expressão, é preciso usar parênteses para agrupar dentro da expressão,
+    garantindo uma avaliação correta e para esclarecer a intenção da
+    expressão. Por exemplo, considere o seguinte:</para>
+
+    <programlisting>isCurrentRevolv := trades.trd_type = 'R' AND
+                   trades.trd_rate = '0' OR
+                   trades.trd_rate = '1';</programlisting>
+
+    <para>não gera o resultado pretendido. O uso de parênteses garante a
+    avaliação correta, como mostrado abaixo:</para>
+
+    <programlisting>isCurrentRevolv := trades.trd_type = 'R' AND
+          (trades.trd_rate = '0' OR trades.trd_rate = '1');</programlisting>
+  </sect2>
+
+  <sect2 id="An_XOR_Operator">
+    <title>Operador XOR<indexterm>
+        <primary>XOR Operator</primary>
+      </indexterm></title>
+
+    <para>A função a seguir pode ser usada para realizar uma operação XOR em 2
+    valores booleanos:</para>
+
+    <programlisting>BOOLEAN XOR(BOOLEAN cond1, BOOLEAN cond2) :=
+          (cond1 OR cond2) AND NOT (cond1 AND cond2);</programlisting>
+  </sect2>
+</sect1>

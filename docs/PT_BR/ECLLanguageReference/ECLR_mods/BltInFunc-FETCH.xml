@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FETCH">
+  <title>FETCH</title>
+
+  <para><emphasis role="bold">FETCH<indexterm>
+      <primary>FETCH</primary>
+    </indexterm><indexterm>
+      <primary>FETCH function</primary>
+    </indexterm>(</emphasis><emphasis>basedataset, index, position
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, transform
+  </emphasis><emphasis role="bold">]</emphasis><emphasis> </emphasis><emphasis
+  role="bold">[, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>basedataset</emphasis></entry>
+
+            <entry>O atributo DATASET de base a ser processado. Não é
+            permitido filtro.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>index</emphasis></entry>
+
+            <entry>O atributo INDEX que oferece acesso com chave ao
+            <emphasis>basedataset</emphasis>. Normalmente terá uma expressão
+            de filtro.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>position</emphasis></entry>
+
+            <entry>Uma expressão que oferece meios de localizar o registro
+            correto no <emphasis>basedataset</emphasis> (geralmente o campo no
+            índice que contém o valor de fileposition).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>A função TRANSFORM a ser acionada para cada registro
+            buscado no <emphasis>basedataset</emphasis>. Se omitida, FETCH
+            retorna um conjunto contendo todos os campos de ambos
+            <emphasis>basedataset</emphasis> e index, com o segundo de
+            qualquer campo de nome em duplicidade removido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>FETCH retorna um record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">FETCH </emphasis> processa através de
+  todos os registros no <emphasis>index </emphasis>na ordem especificada pelo
+  <emphasis>index </emphasis>buscando cada registro relacionado do
+  <emphasis>basedataset</emphasis> e executando a função
+  <emphasis>transform</emphasis> .</para>
+
+  <para>O <emphasis>index</emphasis> normalmente terá uma expressão de filtro
+  para especificar o conjunto exato de registros a ser retornado do
+  <emphasis>basedataset</emphasis>. Se a expressão de filtro definir um único
+  registro no <emphasis>basedataset</emphasis>, FETCH retornará apenas esse
+  registro específico. Consulte KEYED/WILD para ler a discussão sobre a
+  filtragem de INDEX .</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Fetch">
+    <title>Requerimentos da Função FETCH TRANSFORM</title>
+
+    <para>A função <emphasis>transform</emphasis> <indexterm>
+        <primary>transform function</primary>
+      </indexterm> deve adotar pelo menos dois parâmetros: um registro LEFT
+    que deve estar no mesmo formato que o <emphasis>basedataset</emphasis>, e
+    um registro RIGHT opcional que deve estar no mesmo formato que o
+    <emphasis>index</emphasis>. O segundo parâmetro opcional é útil em
+    instâncias onde o índice contém informações que não estão presentes no
+    recordset.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>PtblRec := RECORD
+  STRING2  State := Person.per_st;
+  STRING20 City  := Person.per_full_city;
+  STRING25 Lname := Person.per_last_name;
+  STRING15 Fname := Person.per_first_name;
+END;
+
+PtblOut := OUTPUT(TABLE( Person,PtblRec),,'RTTEMP::TestFetch');
+Ptbl := DATASET('RTTEMP::TestFetch',
+      {PtblRec,UNSIGNED8 __fpos {virtual(fileposition)}},
+      FLAT);
+
+Bld := BUILD(Ptbl,
+   {state,city,lname,fname,__fpos},
+   'RTTEMPkey::TestFetch');
+
+AlphaInStateCity := INDEX(Ptbl,
+      {state,city,lname,fname,__fpos},
+      'RTTEMPkey::TestFetch');
+
+TYPEOF(Ptbl) copy(Ptbl l) := TRANSFORM
+ SELF := l;
+END;
+
+AlphaPeople := FETCH(Ptbl,
+      AlphaInStateCity(state='FL',
+        city ='BOCA RATON',
+        Lname='WIK',
+        Fname='PICHA'),
+      RIGHT.__fpos,
+      copy(LEFT));
+
+OutFile := OUTPUT(CHOOSEN(AlphaPeople,10));
+SEQUENTIAL(PtblOut,Bld,OutFile)
+
+//NOTE the use of a filter on the index file. This is an important
+// use of standard filtering technique in conjunction with indexing
+// to achieve optimal "random" access into the base record set
+</programlisting>
+
+    <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+    TRANSFORM</link>, <link linkend="RECORD_Structure">Estrutura
+    RECORD</link>, <link linkend="BUILD">BUILDINDEX</link>, <link
+    linkend="INDEX_record_structure">INDEX</link>, <link
+    linkend="KEYED-WILD">KEYED/WILD</link></para>
+  </sect2>
+</sect1>

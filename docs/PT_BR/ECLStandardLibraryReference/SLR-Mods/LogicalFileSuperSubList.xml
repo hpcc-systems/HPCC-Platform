@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LogicalFileSuperSubList">
+  <title>LogicalFileSuperSubList</title>
+
+  <para><emphasis role="bold">STD.File.LogicalFileSuperSubList<indexterm>
+      <primary>STD.File.LogicalFileSuperSubList</primary>
+    </indexterm><indexterm>
+      <primary>File.LogicalFileSuperSubList</primary>
+    </indexterm><indexterm>
+      <primary>LogicalFileSuperSubList</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para>Return:<emphasis> </emphasis>LogicalFileSuperSubList Retorna um
+  dataset no seguinte formato:</para>
+
+  <programlisting>EXPORT FsLogicalSuperSubRecord := RECORD 
+  STRING supername{MAXLENGTH(255)};  
+  STRING subname{MAXLENGTH(255)}; 
+END;</programlisting>
+
+  <para>A função <emphasis role="bold">LogicalFileSuperSubList </emphasis>
+  retorna uma lista dos nomes de arquivos lógicos de todos os superarquivos e
+  de seus subarquivos.</para>
+
+  <para>Essa função não é incluída em uma transação de superarquivo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.File.LogicalFileSuperSubList());
+  //returns all SuperFiles and their sub-files</programlisting>
+</sect1>

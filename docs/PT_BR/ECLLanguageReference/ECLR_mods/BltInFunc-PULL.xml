@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PULL">
+  <title>PULL</title>
+
+  <para><emphasis role="bold">PULL<indexterm>
+      <primary>PULL</primary>
+    </indexterm><indexterm>
+      <primary>PULL function</primary>
+    </indexterm>(</emphasis><emphasis>dataset</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.35pt"/>
+
+        <colspec colwidth="274.45pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>dataset</emphasis></entry>
+
+            <entry>O conjunto de registros que será completamente carregado na
+            Refinaria de Dados.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>PULL retorna um recordset.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">PULL </emphasis> é uma meta-operação
+  projetada apenas para sugerir que o <emphasis>dataset</emphasis> deve ser
+  totalmente carregado na Refinaria de Dados antes de continuar a operação na
+  Refinaria de Dados.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MySet := PULL(Person);
+     //load Person into Data Refinery before continuing</programlisting>
+
+  <para>Ver também:</para>
+</sect1>

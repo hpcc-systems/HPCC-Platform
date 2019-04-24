@@ -1,0 +1,1981 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <title>Utilizando o ECL Watch 4.x</title>
+
+  <bookinfo>
+    <title>Utilizando o ECL Watch 4.x</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email> Inclua a frase <emphasis
+      role="bold">Feedback sobre documentação</emphasis> na linha de assunto e
+      indique o nome do documento, o número das páginas e número da versão
+      atual no corpo da mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença. Os
+      demais produtos, logotipos e serviços podem ser marcas comerciais ou
+      registradas de suas respectivas empresas. Todos os nomes e dados de
+      exemplo usados neste manual são fictícios. Qualquer semelhança com
+      pessoas reais, vivas ou mortas, é mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="../../images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="NewECLWatchIntro">
+    <title>Introdução</title>
+
+    <para>Este documento apresenta detalhes sobre o ECL Watch, que passou por
+    uma renovação recentemente. O novo design é mais prático e oferece vários
+    novos recursos e funcionalidades. O novo ECL Watch vem com o software da
+    plataforma HPCC 4.x.</para>
+
+    <sect1 id="ECLWatch4x">
+      <title>ECL Watch 4.x</title>
+
+      <para>O ECL Watch oferece uma interface para o HPCC System e permite que
+      você veja informações e interrogue nós para confirmar se todos os
+      processos esperados estão funcionando. Isso proporciona uma visão
+      simples sobre o sistema e um meio para realizar manutenção em arquivos
+      de dados e tarefas.***</para>
+
+      <para>O uso do ECL Watch supõe que seu HPCC System esteja configurado e
+      em execução, sendo capaz de processar jobs e workunits. A interface do
+      ECL Watch é usada para verificar ambos status dos jobs e realizar
+      operações nos mesmos.***</para>
+    </sect1>
+
+    <sect1 id="ECLWorkunits" role="brk">
+      <title>Página Workunits ECL</title>
+
+      <para>A página Workunits do ECL contém uma lista de todas as workunits
+      do ECL em seu sistema. Ela oferece acesso a mais detalhes sobre as elas.
+      Também é possível realizar ações na workunit selecionada usando os
+      botões de Ação de workunit.</para>
+
+      <para>Para acessar a página de workunits, clique no ícone <emphasis
+      role="bold"> ECL </emphasis> e depois clique no link <emphasis
+      role="bold">Workunits</emphasis> no submenu de navegação. <figure>
+          <title>Arquivos ECL</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWa00a.jpg"
+                         vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>A página mostra as workunits de ECL em seu sistema. Selecione a
+      aba de navegação <emphasis role="bold"> Workunits</emphasis> para exibir
+      as workunits.</para>
+
+      <para><figure>
+          <title>Usar o ECL Watch para explorar workunits</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA401.jpg"
+                         vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Para examinar uma workunit de forma mais detalhada ou realizar
+      alguma ação, é necessário selecioná-la. É possível selecionar a workunit
+      marcando a caixa de seleção. Também é possível abrir uma workunit
+      clicando duas vezes sobre ela.<figure>
+          <title>Selecionar Workunit da ECL</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA403.jpg"
+                         vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Ao selecionar uma workunit, os botões de ação são ativados. Também
+      é possível usar o Menu contextual ao clicar com o botão direito em uma
+      workunit para realizar uma ação.</para>
+
+      <para>É possível selecionar múltiplas workunits marcando a caixa de
+      seleção ao lado da cada uma. Também é possível clicar e arrastar sobre
+      as caixas de seleção da workunit para selecionar múltiplas workunits. Ao
+      selecionar múltiplas workunits, cada uma abrirá sua própria aba.</para>
+
+      <para>Os botões de Ação permitem que você realize ações nas workunits
+      selecionadas.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold"> Open (Abrir)
+          </emphasis>para abrir a(s) workunit(s) selecionada(s).</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Delete (Remover)
+          </emphasis> para remover as workunits selecionadas.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Set to Failed (Indicar
+          como falhado)</emphasis> para definir o estado das workunits
+          selecionadas como falha.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold"> Abort (Cancelar)
+          </emphasis> para interromper uma workunit selecionada em execução e
+          cancelar o trabalho.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Protect (Proteger)
+          </emphasis> para bloquear as workunits selecionadas. Isso impede seu
+          arquivamento pelo servidor Sasha.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Unprotect
+          (Desproteger)</emphasis> para desbloquear as workunits
+          selecionadas.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Reschedule
+          (Reagendar)</emphasis> para reagendar as workunits selecionadas cujo
+          agendamento foi cancelado.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Deschedule (Cancelar
+          agendamento)</emphasis> para impedir que a workunit agendada seja
+          executada.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Filter
+          (Filtrar)</emphasis> para exibir opções de filtro adicionais. Essas
+          opções filtram a lista de workunits exibidas.</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2 id="ECLWatchFilterOptions" role="brk">
+        <title>Opções de Filtro</title>
+
+        <para>É possível filtrar as workunits exibidas na aba Workunits
+        clicando no botão de <emphasis role="bold"> Filter</emphasis> . O
+        submenu Filter será então exibido. Preencha os valores para
+        especificar os critérios de filtro e depois pressione o <emphasis
+        role="bold">Apply</emphasis> .</para>
+
+        <para><figure>
+            <title>O submenu Filter</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA406.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>As opções de filtro de workunit permitem a filtragem de
+        workunits usando os critérios especificados. As workunits podem ser
+        filtradas por:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Archived Only (Apenas
+            arquivadas)</emphasis> – ao marcar essa opção, o filtro vai
+            procurar apenas por workunits arquivadas.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">WUID</emphasis> - filtrar workunits
+            para um ID (wuid) de workunit específico.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Owner (Proprietário)</emphasis> –
+            filtra workunits para proprietários específicos. Compatível com
+            elementos curingas.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Job Name (Nome do job)</emphasis> –
+            filtra jobs pelo nome. Compatível com elementos curingas.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Cluster</emphasis> – filtra workunits
+            por cluster. Selecione o cluster na lista suspensa.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">State (Estado)</emphasis> – filtra
+            workunits por estado. Selecione o estado na lista suspensa.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">ECL </emphasis> – filtrar workunits
+            por ECL específica. Por exemplo, <emphasis> :=dataset.
+            </emphasis>Compatível com elementos curingas.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Logical File (Arquivo
+            lógico)</emphasis> – filtra workunits por nome de arquivo lógico
+            ou parte dele. Compatível com elementos curingas.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Logical File Type (Tipo de arquivo
+            lógico)</emphasis> – filtra workunits por tipo de arquivo lógico.
+            Selecione o tipo de arquivo lógico na lista suspensa.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">From date (Data inicial)</emphasis> –
+            filtra workunits a partir de uma data e/ou hora específica.
+            Selecione a data e a hora na lista suspensa.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">To date (Data final)</emphasis> –
+            filtra workunits até uma data e/ou hora específica. Selecione a
+            data e a hora na lista suspensa. Selecione a data e a hora na
+            lista suspensa.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Last </emphasis>
+            <emphasis>N</emphasis> <emphasis role="bold"> Days (Últimos N
+            dias)</emphasis> – filtra workunits por um determinado número (N)
+            de dias. Insira um número neste campo.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Alguns campos de filtro são compatíveis com a filtragem por
+        elemento coringa. Os elementos coringas podem substituir um ou mais
+        caracteres ao filtrar dados no filtro. Os caracteres do elemento
+        coringa são * e ?. Onde * pode ser substituído por todos os possíveis
+        caracteres e ? pode ser substituído por qualquer caractere
+        único.</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>Observação:</term>
+
+            <listitem>
+              <para>Os critérios de filtro não fazem distinção entre
+              maiúsculas e minúsculas.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para>Ao especificar quaisquer opções de filtro, o botão de ação
+        Filter exibe <emphasis role="bold">Filter Set</emphasis>. <figure>
+            <title>Conjunto de filtros</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA416.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <sect3 id="ECLWatch_SortingColumns">
+          <title>Classificar por Colunas</title>
+
+          <para>É possível classificar uma coluna clicando em seu título.
+          Clique uma vez para classificar em ordem crescente e clique
+          novamente para mudar para a ordem decrescente. A direção da seta
+          indica a ordem da classificação. <figure>
+              <title>Classificar por coluna</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA407.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="ECLWatchContextMenu" role="brk">
+        <title>Menu Context</title>
+
+        <para>É possível clicar em uma workunit com o botão direito para
+        acessar o menu contextual de ações, incluindo opções de filtro. Esse é
+        o mesmo conjunto de ações que pode ser realizado pelos botões de
+        ação.</para>
+
+        <para><figure>
+            <title>Menu Context</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA405.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </sect2>
+
+      <sect2 id="ECLWatch_Workunit_Details" role="brk">
+        <title role="brk">Detalhes da Workunit</title>
+
+        <para>Os botões de ação de Detalhes da workunit permitem que você
+        realize ações na workunit selecionada. É possível ver informações mais
+        específicas sobre a tarefa selecionada ao selecionar as diversas guias
+        de Detalhes da tarefa.</para>
+
+        <para><figure>
+            <title>Detalhes da Workunit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA04022.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Os botões Workunit Details permitem que você realize ações na
+        workunit selecionada. Pressione o botão de ação correspondente para
+        realizar as seguintes ações:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Refresh </emphasis>Atualizar – Exibir
+            novamente os detalhes da workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Save (Salvar) – </emphasis>Salvar
+            quaisquer alterações à workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Delete (Remover)</emphasis> – Remover
+            a workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Restore (Restaurar)</emphasis> –
+            Restaurar uma workunit arquivada. (Workunits são arquivadas pelo
+            Sasha.)</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Reschedule (Reagendar)</emphasis> –
+            Reagendar uma workunit cujo agendamento tenha sido
+            cancelado.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Deschedule (Cancelar
+            agendamento)</emphasis> - Interromper a execução da workunit
+            agendada.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Set To Failed (Indicar como falho)
+            </emphasis> – Alterar o estado da workunit para falhado.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Abort (Cancelar) </emphasis> –
+            Interromper uma workunit em execução e cancela o trabalho.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Recover (Recuperar)</emphasis> –
+            Reenviar a workunit sem redefinir o fluxo de trabalho. Isso retoma
+            o processamento a partir do mesmo ponto no processo de onde tinha
+            parado anteriormente.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Resubmit (Reenviar) </emphasis> –
+            Reenviar a workunit. Isso redefine o fluxo de trabalho e começa
+            novamente desde o início.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Clone (Clonar) </emphasis> – Criar uma
+            nova cópia da workunit. A nova workunit agora é de propriedade do
+            usuário que a clonou.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Publish (Publicar)</emphasis> –
+            Publicar a workunit como uma consulta publicada</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Z.A.P.</emphasis> – Empacota
+            informações de sistema e da workunit em um arquivo Zip que pode
+            ser compartilhado. Isso é útil na hora de informar bugs e
+            solucionar problemas.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Slave Logs (Logs escravos) </emphasis>
+            – Baixar os logs para o cluster Thor especificado. Isso é útil na
+            hora de solucionar problemas com o Thor.</para>
+          </listitem>
+        </itemizedlist>
+
+        <!-- added WU Details stuff here -->
+
+        <sect3 id="ECLWatch_PublishActionButton" role="brk">
+          <title>Botão Publish</title>
+
+          <para>Clique no botão de ação Publish para publicar uma consulta.
+          <figure>
+              <title>Menu Publish</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWaPubl01.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Preencha os campos Job Name, o Remote Dali, Source Process,
+          Priority (opcional); além disso, é possível adicionar um comentário.
+          Após preencher os campos necessários, pressione o botão <emphasis
+          role="bold">Submit </emphasis> para enviar sua consulta.</para>
+
+          <para>Opções para publicação na ECL</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Job Name (Nome da
+              workunit):</emphasis> O nome da workunit a ser publicada. O nome
+              é preenchido automaticamente se você optar por publicar através
+              da página de detalhes da workunit.</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Remote Dali (Dali
+              remoto):</emphasis> O IP ou nome de host do DALI a ser usado
+              para solucionar arquivos remotos. (opcional)</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Source Process (Fonte de
+              processamento):</emphasis> Cluster de processamento no qual os
+              arquivos serão copiados. (opcional)</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Comment (Comentário): </emphasis>Se
+              quiser, adicione um comentário. O comentário é exibido na página
+              de detalhes das consultas publicadas.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Priority (Prioridade):</emphasis>
+              Define a prioridade da consulta. Os valores podem ser LOW
+              (Baixo), HIGH (Alto), SLA (Segundo acordo de nível de serviço)
+              ou NONE (Nenhum). A opção NONE apagará a configuração
+              atual.</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Allow Foreign Files (Permitir
+              arquivos remotos):</emphasis> Marque a caixa para permitir o uso
+              de arquivos remotos em uma consulta Roxie Se uma consulta Roxie
+              fizer referência a arquivos remotos e essa permissão não for
+              ativada, a publicação falhará.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Update Super Files (Atualizar
+              superarquivos):</emphasis> Use quando uma consulta estiver
+              usando superarquivos ou um Dali remoto. Quando tal consulta é
+              publicada, os superarquivos são copiados do Dali remoto. Se os
+              superarquivos já existirem localmente, então a definição atual é
+              substituída apenas quando essa caixa for marcada. Caso não seja
+              marcada, a definição atual não mudará.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 id="ZAP" role="brk">
+          <title>Utilitário Z.A.P.</title>
+
+          <para>O botão Pacote de análise Zipped (Z.A.P) é um utilitário que
+          coleta informações do sistema e as encapsula em um pacote
+          compartilhável. É uma ferramenta útil para relatar erros,
+          inconsistências ou outros comportamentos inesperados. Quando houver
+          tal ocorrência, esse utilitário empacota as informações para enviar
+          para uma análise mais aprofundada.</para>
+
+          <figure>
+            <title>Botão Z.A.P</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWAZ00.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>Para usar o utilitário Z.A.P, pressione o botão Z.A.P na
+          página de detalhes da workunit a partir da workunit adequada. O
+          botão abre a caixa de diálogo do Zipped Analysis Package (Pacote de
+          análise Zipped).</para>
+
+          <figure>
+            <title>Caixa de diálogo do Zipped Analysis Package (Pacote de
+            análise Zipped).</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWAZ01.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>Preencha os valores correspondentes de Description, History e
+          Timings na caixa de diálogo Z.A.P. Opcionalmente, é possível
+          proteger o pacote ZAP por senha e optar pela inclusão de logs
+          escravos. Pressione o botão <emphasis role="bold">Apply </emphasis>
+          ao terminar. O utilitário Z.A.P gera um arquivo zip com todas as
+          informações adequadas para solução de problemas.</para>
+
+          <para>É possível localizar o arquivo zip gerado no diretório de
+          downloads designado do seu navegador. Agora é possível enviar esse
+          arquivo para o profissional que cuida da solicitação de suporte ou
+          carregá-lo para o sistema de rastreamento de problemas. Antes de
+          distribuir o arquivo, verifique se ele não contém dados sensíveis,
+          como informações de identificação pessoal (PII).</para>
+        </sect3>
+
+        <sect3 id="ECLWatchSlaveLogDialog">
+          <title>Registros Escravos</title>
+
+          <figure>
+            <title>Caixa Slave Logs</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWASL01.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>O botão <emphasis role="bold">Slave Logs</emphasis> abre uma
+          caixa de diálogo na qual é possível optar por baixar os logs para um
+          cluster Thor especificado. É possível selecionar o cluster, um
+          número de escravo específico e o formato do arquivo de log (simples
+          ou compactado). Isso é útil na hora de solucionar problemas com o
+          Thor.</para>
+        </sect3>
+
+        <sect3 id="ECLWatch_ECLWorkunitsOutputsTab" role="brk">
+          <title>Aba Outputs</title>
+
+          <para>Clique na aba Outputs para ver todos os resultados.<figure>
+              <title>Outputs</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Clique no link <emphasis role="bold">Result #</emphasis> para
+          abrir uma aba e exibir os resultados.</para>
+
+          <para><figure>
+              <title>Aba Resultados</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWaD000.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>É possível filtrar o conjunto de resultados. Pressione o
+          botão de ação <emphasis role="bold">Filter</emphasis> para detalhar
+          ainda mais os resultados.</para>
+
+          <para>Pressione os botões de <emphasis
+          role="bold">Downloads</emphasis> para fazer o download dos arquivos
+          de resultado. Os arquivos de resultado estão disponíveis em 3
+          formatos.</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">GZIP</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">ZIP </emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">XLS:</emphasis> Fazer o download do
+              resultado no formato de planilha Excel.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 id="ECLWatch_ECLWorkunitsVisualizations" role="brk">
+          <title>Visualizações</title>
+
+          <para>É possível ver as representações visuais das workunits
+          selecionadas. Visualizations (Visualizações) estão disponíveis na
+          aba <emphasis role="bold">Output</emphasis> da workunit. A aba
+          Visualize oferece diversos tipos de gráficos que podem ser gerados
+          se você incluiu recursos adicionais em seu código ECL através do
+          mecanismo de manifesto aprimorado (como uma página da Web de
+          índice). <figure>
+              <title>Visualização</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA478.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Para acessar as Visualizations (Visualizações), clique na aba
+          Outputs da página de detalhe das workunits e selecione a aba
+          <emphasis role="bold">Visualize</emphasis> . É possível acessar
+          diferentes tipos de visualização clicando na lista suspensa na aba
+          Visualize. Clique no menu suspenso <emphasis
+          role="bold">Mappings</emphasis> para alterar os parâmetros.</para>
+        </sect3>
+
+        <sect3 id="ECLWatch_ECLWorkunitsInputsTab" role="brk">
+          <title>Aba Inputs</title>
+
+          <para>Clique na aba <emphasis role="bold">Inputs</emphasis> para ver
+          os arquivos de entrada da workunit. Os arquivos de entrada são os
+          arquivos de fonte que compõem a workunit. <figure>
+              <title>Inputs</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Os arquivos de entrada são exibidos como um link É possível
+          clicar duas vezes no link para abrir uma aba para cada arquivo de
+          entrada. É possível selecionar mais de um arquivo de entrada e
+          pressionar o botão Open.</para>
+
+          <para>O cabeçalho <emphasis role="bold">Usage</emphasis> indica
+          quantas vezes um arquivo foi usado na workunit.</para>
+        </sect3>
+
+        <sect3 id="ECLWatch_ECLWorkunitsTimersTab" role="brk">
+          <title id="ECLWatch_ECLWorkUnits_TimersTab">Aba Timers</title>
+
+          <para>Clique na aba <emphasis role="bold">Timers (Controladores de
+          tempo)</emphasis> para ver as medidas de tempo da workunit. <figure>
+              <title>Controladores de tempo</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Os controladores de tempo representam tudo o que aconteceu com
+          a workunit e por quanto tempo. Os controladores de tempo incluem
+          gráficos que também fornecem mais informações sobre o processamento
+          da workunit. O mapa gráfico de calor indica, através de uma cor mais
+          escura, onde levou mais tempo, enquanto as cores mais leves indicam
+          a parte que levou menos tempo.</para>
+        </sect3>
+
+        <sect3 id="ECLWatch_ECLWorkunitsGraphsTab">
+          <title>Aba Gráficos</title>
+
+          <para>Clique na aba <emphasis role="bold">Graphs
+          (Gráficos)</emphasis> para ver os gráficos produzidos pela workunit.
+          <figure>
+              <title>GRÁFICOS</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>A aba Graphs exibe uma lista de cada gráfico e o mapa de
+          calor. Clique duas vezes no mapa de calor para acessar a parte
+          correspondente do gráfico.</para>
+        </sect3>
+
+        <sect3 id="ECLWatchECLWorkunitsTimersTab" role="brk">
+          <title>Aba Timers</title>
+
+          <para>Clique na aba <emphasis role="bold">Timers (Controladores de
+          tempo)</emphasis> para ver as medidas de tempo da workunit <figure>
+              <title>Controladores de tempo</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Os controladores de tempo representam tudo o que aconteceu com
+          a workunit e por quanto tempo. Os controladores de tempo incluem
+          gráficos que também oferecem mais informações sobre o processamento.
+          O mapa de calor indica, através de uma cor mais escura, onde levou
+          mais tempo, enquanto as cores mais leves indicam a parte que levou
+          menos tempo.</para>
+
+          <para><emphasis role="bold">Usage:</emphasis> quantas vezes um
+          arquivo foi usado na workunit.</para>
+
+          <sect4 id="ECLWatch_ECLWorkunitsStatsTab">
+            <title>Stats (Estatísticas)</title>
+
+            <para>Na aba Timers da workunit, há outra aba denominada Stats
+            (Estatísticas) A aba Stats é uma representação visual de todas as
+            medidas de tempo de workunit.</para>
+
+            <figure>
+              <title>Stats</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWa201.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+
+            <para>Selecione os valores dos controladores de tempo na lista
+            suspensa da aba Stats para ver os diversos gráficos e
+            tabelas.</para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="ECLWatch_ECLWorkunitsWorkflowsTab">
+          <title>Aba Workflows</title>
+
+          <para>A aba fluxos de trabalho só existe se você tiver um atributo
+          agendado. Há vários fluxos de trabalho quando seu código contém mais
+          de uma declaração WHEN.</para>
+
+          <para><emphasis role="bold">Counts (Contagens):</emphasis> Quantos
+          "eventos" estão agendados.</para>
+
+          <para><emphasis role="bold">Remains (Restantes):</emphasis> Quantos
+          "eventos" ainda faltam acontecer.</para>
+        </sect3>
+
+        <sect3 id="ECLWatch_ECLWorkunitsQueriesTab">
+          <title>Aba Queries</title>
+
+          <para>Consultas ECL só aparecerá nos detalhes de workunit se a
+          workunit for uma QUERY (CONSULTA ECL) publicada. Exibe quais
+          consultas foram publicada dessa tarefa. Idêntico à aba de consultas:
+          Suspend (Suspender), Unsuspend (Reativar), Activate (Ativar) ou
+          Desactivate (Desativar).</para>
+
+          <para/>
+        </sect3>
+
+        <sect3 id="ECLWatch_ECLWorkunitsHelpersTab">
+          <title>Aba Helpers</title>
+
+          <para>A aba Helpers exibe vários elementos úteis. Os quais mostram o
+          ECL. O XML da workunit. Consulta arquivada, a DLL. S.O.., log do
+          Thor, log do agente ECL e log escravo do Thor. Os arquivos de log
+          relevantes. Se um log Roxy registrar apenas as seções relevantes
+          para a workunit selecionada.</para>
+
+          <para>Ao analisar o log em uma workunit, ele mostra apenas a parte
+          que é relativa a essa workunit.</para>
+        </sect3>
+
+        <sect3 id="WUDetails_ECL__TAB">
+          <title>Aba ECL</title>
+
+          <para>Mostra o código ECL para essa workunit. É idêntico ao link ECL
+          dos Helpers.</para>
+        </sect3>
+
+        <sect3 id="ECLWatch_ECLWorkunitsXMLTab">
+          <title>Aba XML</title>
+
+          <para>O registro em XML das workunits conforme armazenado no
+          Dali.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="DFUWorkunits" role="brk">
+      <title>Página Workunits DFU</title>
+
+      <para>A página Workunits de DFU contém uma lista de todas as workunits
+      do DFU em seu sistema. Ela oferece acesso a mais detalhes sobre as
+      workunits. Também é possível realizar ações na workunit selecionada
+      usando os botões da workunit. <figure>
+          <title>Link Arquivos</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA00D.jpg"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Para acessar a página de workunits DFU, clique no link <emphasis
+      role="bold"> Files (Arquivos) </emphasis> e depois clique no link
+      <emphasis role="bold">Workunits</emphasis> no submenu de navegação. Essa
+      ação abre a página Workunits DFU A página mostra as workunits DFU em seu
+      sistema.</para>
+
+      <para><figure>
+          <title>Navegar por Workunits DFU</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA410.jpg"
+                         vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure>Para examinar uma workunit de forma mais detalhada ou
+      realizar alguma ação, é necessário selecioná-la. É possível selecionar a
+      workunit marcando a caixa de seleção. Também é possível clicar duas
+      vezes na workunit para selecionar e abri-la em uma nova aba.<figure>
+          <title>Selecionar workunit DFU</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA411.jpg"
+                         vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>É possível selecionar múltiplas workunits marcando a caixa de
+      seleção ao lado da cada uma. Também é possível clicar e arrastar sobre
+      um grupo de caixas de seleção de workunit para selecionar múltiplas
+      workunits.</para>
+
+      <para>Os botões de Ação ativados agora permitem que você realize algumas
+      ações nas workunits selecionadas. <itemizedlist>
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold"> Refresh </emphasis>
+            para atualizar a lista.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão<emphasis role="bold"> Open </emphasis>para
+            abrir a aba de detalhes da workunit(s).</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Delete </emphasis>
+            para remover a(s) workunit(s) selecionada(s).</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Set to
+            Failed</emphasis> para definir o estado da(s) workunit(s) como
+            falha.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Protect
+            </emphasis>para bloquear a(s) workunit(s). Isso impede seu
+            arquivamento pelo servidor Sasha.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Unprotect</emphasis>
+            para desbloquear a(s) workunit(s) bloqueada(s).</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Filter</emphasis>
+            para exibir opções de filtro/busca adicionais.</para>
+
+            <para><variablelist>
+                <varlistentry>
+                  <term>Observação:</term>
+
+                  <listitem>
+                    <para>Os critérios de filtro não fazem distinção entre
+                    maiúsculas e minúsculas.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>Ao selecionar uma workunit, é possível então pressionar o botão
+      <emphasis role="bold">Open</emphasis> para ver os detalhes. Também é
+      possível clicar duas vezes em uma determinada workunit para abrir a aba
+      de detalhes.</para>
+
+      <para>Ao selecionar e depois abrir múltiplas unidades, cada uma delas
+      será aberta em sua própria aba.</para>
+
+      <sect2 id="DFU_WU_Filter_Options" role="brk">
+        <title>Opções de Filtro da Workunit DFU</title>
+
+        <para>É possível filtrar as workunits exibidas na aba Workunits
+        clicando no botão <emphasis role="bold"> Filter</emphasis> . O submenu
+        Filter será então exibido. Preencha os valores para especificar os
+        critérios de filtro e depois pressione o botão <emphasis
+        role="bold">Apply</emphasis> .</para>
+
+        <para><figure>
+            <title>O filtro da workunit DFU</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA412.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>As opções de filtro da workunit DFU permitem que você filtre
+        workunits usando os critérios especifícos As workunits podem ser
+        filtradas por:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Archived Only (Apenas
+            arquivadas)</emphasis> – ao marcar essa opção, o filtro vai
+            procurar apenas por workunits arquivadas.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Onwer (Proprietário)</emphasis> –
+            filtra workunits para proprietários específicos. Compatível com
+            elementos curingas.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Job Name (Nome do Job) </emphasis> –
+            filtra workunits pelo nome. Compatível com elementos
+            curingas.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Cluster</emphasis> – filtra workunits
+            por cluster. Selecione o cluster na lista suspensa.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">State (Estado)</emphasis> – filtra
+            workunits por estado. Selecione o estado na lista suspensa.</para>
+          </listitem>
+        </itemizedlist>
+
+        <variablelist>
+          <varlistentry>
+            <term>Observação:</term>
+
+            <listitem>
+              <para>Os critérios de filtro não fazem distinção entre
+              maiúsculas e minúsculas.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para>Ao especificar quaisquer opções de filtro, o botão Filter exibe
+        as <emphasis>disponíveis</emphasis>. <figure>
+            <title>Conjunto de filtro DFU</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA414.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <sect3 id="DFU_Column_Sorting">
+          <title>Classificando Colunas</title>
+
+          <para>É possível classificar uma coluna clicando em seu título.
+          Clique uma vez para classificar em ordem crescente e clique
+          novamente para mudar para a ordem decrescente. A direção da seta
+          indica a ordem da classificação. <figure>
+              <title>Classificar workunits DFU por coluna</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA413.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="DFU_WorunitDetails" role="brk">
+        <title>Página de Detalhes da DFU Workunit</title>
+
+        <para>Ao abrir as workunits selecionadas, você verá os detalhes das
+        workunits. A aba Workunit Details fornece informações sobre uma
+        workunit. É possível ver mais informações sobre a workunit
+        selecionando as diversas abas de Workunit Details. Também é possível
+        realizar ações nas workunits selecionadas usando os botões de ação da
+        Workunit.</para>
+
+        <para><figure>
+            <title>Detalhes da Workunit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA404.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Os detalhes adicionais das workunits estão situados na seção
+        Workunit Details da página. São exibidos aqui o nome da workunit, a
+        fila, o comando, o tempo, e a porcentagem de conclusão juntamente com
+        as mensagens do processo.</para>
+
+        <para>É possível usar os botões de ação da workunit na aba Active
+        Workunit para realizar ações na workunit selecionada. Pressione o
+        botão de ação adequado da workunit para realizar as ações a seguir.
+        <itemizedlist>
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold"> Refresh
+              (Atualizar) </emphasis> para atualizar os detalhes de
+              workunit.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Save
+              (Salvar)</emphasis> para salvar a workunit.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Delete
+              (Remover)</emphasis> para remover a workunit.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Abort
+              (Cancelar)</emphasis> para cancelar uma workunit em
+              execução.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Resubmit
+              (Reenviar)</emphasis> para reenviar a workunit (ainda não
+              implementada).</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold"> Modify
+              (Modificar)</emphasis> para modificar a workunit (ainda não
+              implementada).</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <sect3 id="ECLWatch_DFUWorkunits_XMLTab">
+          <title>Aba XML</title>
+
+          <para>A aba XML na página de detalhes da workunit permite que você
+          veja a representação em XML . <figure>
+              <title>Aba Detalhes da workunit em XML</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA475.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+
+        <sect3 id="ECLWatch_DFUWorkunits_SourceTab">
+          <title>Aba Source</title>
+
+          <para>A aba Source na página de detalhes da workunit permite que
+          você veja os arquivos de fonte da workunit DFU. <figure>
+              <title>Aba Source em Detalhes da workunit</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA476.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+
+        <sect3 id="ECLWatch_DFUWorkunits_TargetTab">
+          <title>Aba Target</title>
+
+          <para>A aba Target na página de detalhes da workunit permite que
+          você veja o destino da workunit DFU.<figure>
+              <title>Aba Target de Detalhes da Workunit</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA477.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="ECLWatchLogicalFiles" role="brk">
+      <title>Arquivos</title>
+
+      <para>A página <emphasis role="bold">Files (Arquivos)</emphasis> contém
+      recursos relacionados ao processo de obtenção de dados em seu cluster,
+      recursos de gerenciamento desses arquivos e também das workunits
+      associadas a eles. Clique no ícone <emphasis role="bold">
+      Files</emphasis> para acessar os recursos do Files. Também é possível
+      realizar ações nos arquivos e superarquivos selecionados usando os
+      botões de ação da Workunit.</para>
+
+      <sect2 id="Logical_Files_Page" role="nobrk">
+        <title>Página Arquivos Lógicos</title>
+
+        <para>Para acessar a página Files, clique no ícone <emphasis
+        role="bold">Files </emphasis> e depois clique no link <emphasis
+        role="bold">Logical Files (Arquivos lógicos)</emphasis> no submenu de
+        navegação.</para>
+
+        <para><figure>
+            <title>Arquivos lógicos</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA430.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>É possível navegar ou procurar por arquivos lógicos nesta página
+        usando o menu suspenso "Filter". <variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>Os critérios de filtro não fazem distinção entre
+                maiúsculas e minúsculas.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png"/></entry>
+
+                  <entry>Na presença de mais de 100.000 arquivos lógicos, você
+                  verá uma mensagem de advertência.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para><figure>
+            <title>Página "Logical Files"</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA420.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Para ver detalhes de um determinado arquivo ou realizar alguma
+        ação, é necessário selecioná-lo. É possível selecionar um ou mais
+        arquivos marcando a caixa de seleção. Também é possível clicar e
+        arrastar o cursor sobre um grupo de caixas de seleção para selecionar
+        múltiplos arquivos. <figure>
+            <title>Selecionar arquivos</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA421.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Há três colunas com ícones que indicam alguns atributos do
+        arquivo. Há também um ícone que aparece ao lado do "Logical Name",
+        indicando o tipo de arquivo.</para>
+
+        <para><informaltable colsep="1" frame="all">
+            <tgroup cols="2">
+              <colspec colwidth="46pt"/>
+
+              <colspec colwidth="110pt"/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-Locked.jpg"/></entry>
+
+                  <entry>Arquivo bloqueado</entry>
+                </row>
+
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-compressed.jpg"/></entry>
+
+                  <entry>Arquivo comprimido</entry>
+                </row>
+
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-index0.jpg"/></entry>
+
+                  <entry>Arquivo chave (índice)</entry>
+                </row>
+
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-Logical.jpg"/></entry>
+
+                  <entry>Arquivo lógico</entry>
+                </row>
+
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-SuperFile.jpg"/></entry>
+
+                  <entry>Superarquivo</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>Além disso, é possível classificar uma coluna
+        clicando em seu título. Clique uma vez para classificar em ordem
+        crescente e clique novamente para mudar para a ordem decrescente. A
+        seta exibe a ordem de classificação.</para>
+
+        <para>Depois que um ou mais arquivos foram selecionados, os botões de
+        ação são ativados. É possível realizar ações nos arquivos
+        selecionados.</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold"> Open
+              (Abrir)</emphasis> para abrir as páginas de detalhes dos
+              arquivos lógicos.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Delete
+              (Remover)</emphasis> para remover os arquivos.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Remote Copy (Cópia
+              remota)</emphasis> para abrir uma caixa de diálogo onde é
+              possível copiar arquivos de uma plataforma HPCC remota. Será
+              necessário obter permissão para acessar o servidor Dali
+              remoto.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold"> Copy (Copiar)
+              </emphasis> para copiar um arquivo. É possível modificar algumas
+              das opções de cópia no menu suspenso.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold"> Rename
+              (Renomear)</emphasis> para renomear um arquivo lógico. É
+              possível modificar algumas opções de renomeação de arquivo no
+              menu suspenso.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Add To Superfile
+              (Adicionar ao superarquivo)</emphasis> para criar e adicionar
+              arquivos a um superarquivo.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Despray</emphasis>
+              para realizar o despray do arquivo. É possível modificar algumas
+              opções de despray no menu suspenso.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Filter
+              (Filtrar)</emphasis> para exibir opções de filtro adicionais.
+              Use essas opções para filtrar a lista.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de imagem de árvore (à direita do botão
+              Filter) para visualizar arquivos por escopo em forma de
+              árvore.</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <para>É possível pressionar o botão <emphasis role="bold">Open
+        (Abrir)</emphasis> para abrir uma aba com detalhes de cada arquivo
+        selecionado.</para>
+
+        <sect3 id="ECLWatch_Files_RemoteCopy">
+          <title>Cópia Remota</title>
+
+          <para>Pressione o botão <emphasis role="bold">Remote Copy</emphasis>
+          para abrir uma caixa de diálogo onde é possível copiar arquivos de
+          ou para uma plataforma Dali remoto. <figure>
+              <title>Caixa de diálogo Remote Copy</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA425.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Preencha os campos do arquivo de origem e o destino, marque as
+          opções necessárias e depois pressione o botão <emphasis
+          role="bold">Submit</emphasis> .</para>
+        </sect3>
+
+        <sect3 id="CopyLogicalFile">
+          <title>Copiar Arquivo</title>
+
+          <para>Pressione o botão <emphasis role="bold">Copy</emphasis> para
+          exibir o menu suspenso de cópia, que contém opções adicionais de
+          cópia de arquivo.</para>
+        </sect3>
+
+        <sect3 id="LogicalFile_Sorting">
+          <title>Classificando Colunas</title>
+
+          <para>É possível classificar uma coluna clicando em seu título.
+          Clique uma vez para classificar em ordem crescente e clique
+          novamente para mudar para a ordem decrescente. A direção da seta
+          indica a ordem da classificação. <figure>
+              <title>Classificar Arquivo lógico por coluna</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA424.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+
+        <sect3 id="LogicalFileFilterOptions" role="brk">
+          <title>Opções de Filtro de Arquivos Lógicos</title>
+
+          <para>É possível filtrar os arquivos lógicos exibidos na aba Logical
+          Files (Arquivos lógicos) clicando no botão de ação <emphasis
+          role="bold"> Filter</emphasis> . O submenu Filter será então
+          exibido. Preencha os valores para especificar os critérios de filtro
+          e depois pressione o botão <emphasis role="bold">Apply</emphasis>
+          .</para>
+
+          <para><figure>
+              <title>Submenu “Filter" de arquivos lógicos</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA423.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>As opções de filtro de arquivos lógicos permitem que você
+          filtre arquivos usando os critérios especificados. Os arquivos
+          lógicos podem ser filtrados por:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Name (Nome)</emphasis> – filtra
+              arquivos por nome. Compatível com elementos curingas.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Description (Descrição)</emphasis> –
+              filtra arquivos por descrição. Compatível com elementos
+              curingas.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Owner (Proprietário)</emphasis> –
+              filtrar arquivos por proprietário. Compatível com elementos
+              curingas.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Index (Índice)</emphasis> – inclui
+              apenas arquivos de índice, se marcado.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Cluster</emphasis> Cluster – filtra
+              arquivos por cluster. Selecione o cluster na lista
+              suspensa.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">From Sizes (Tamanho
+              mínimo)</emphasis> – filtra arquivos com um tamanho mínimo
+              específico.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">To Sizes (Tamanho máximo)</emphasis>
+              – filtra arquivos com um tamanho máximo específico.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">File Type (Tipo de
+              arquivo)</emphasis> – filtra arquivos por tipo.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">From Date (Data inicial)</emphasis>
+              – filtrar arquivo a partir de uma data e/ou hora específica.
+              Selecione a data e a hora na lista suspensa.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">To Date (Data final) </emphasis> –
+              filtra arquivos até uma data e/ou hora específica. Selecione a
+              data e a hora na lista suspensa.</para>
+            </listitem>
+          </itemizedlist>
+
+          <variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>Os critérios de filtro não fazem distinção entre
+                maiúsculas e minúsculas.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+
+          <para>Ao especificar quaisquer opções de filtro, o botão Filter
+          exibe as opções <emphasis>disponíveis</emphasis>. <figure>
+              <title>Filter Set</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA426.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="LogicalFilesDetailsPage" role="brk">
+        <title>Detalhes do Arquivos Lógicos (Logical Files Details)</title>
+
+        <para>A página Logical Files Detail (Detalhes dos Arquivos lógicos)
+        mostra detalhes específicos para o arquivo selecionado. Selecione o
+        arquivo para visualização clicando na aba adequada nas abas de
+        navegação localizadas no topo da página.</para>
+
+        <para><figure>
+            <title>Página "Logical Files Details"</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA422.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>O resumo dos detalhes dos Arquivos lógicos aparece em File
+        Details, na parte principal da página de arquivos. É possível ver
+        outros detalhes do arquivo usando as <emphasis role="bold">abas File
+        Details</emphasis> na parte superior da página.</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold">Summary
+              (Resumo)</emphasis> para ver um resumo dos detalhes do
+              arquivo.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold">Contents
+              (Conteúdo)</emphasis> para visualizar o conteúdo do
+              arquivo.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold"> ECL</emphasis> para
+              ver o código ECL.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold">DEF</emphasis> para
+              ver as definições de ECL.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold">XML</emphasis> para
+              ver a representação em XML do arquivo lógico.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold"> Superfiles
+              (Superarquivos)</emphasis> , quando ativado, para exibir as
+              informações de superarquivo.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold"> File Parts (Partes
+              do arquivo)</emphasis> para ver informações sobre as várias
+              partes do arquivo.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold">Queries
+              (Consultas)</emphasis> para ver quais consultas usam quais
+              arquivos lógicos.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold">Graphs (Gráficos,
+              quando ativada)</emphasis> para exibir os gráficos associados ao
+              arquivo.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bold">WorkunitList </emphasis>
+              para ver os detalhes da workunit correspondente. Observe que a
+              aba de workunit mostra as mesmas informações que você veria se
+              tivesse selecionado através do link da workunit.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold">Histórico</emphasis>
+              para exibir uma lista de ações de DFU realizadas, tais como
+              cópia, cópia remota, spray e afins para o arquivo.</para>
+            </listitem>
+          </itemizedlist>Na aba “File Details Summary", é possível realizar
+        algumas ações no arquivo selecionado.</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold"> Refresh
+            (Atualizar)</emphasis> para atualizar os detalhes de
+            arquivo.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Save
+            (Salvar)</emphasis> para salvar alterações nos detalhes de
+            arquivo.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Delete
+            (Remover)</emphasis> para remover o arquivo.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Copy
+            (Copiar)</emphasis> para copiar um arquivo. Também é possível
+            modificar alguns atributos do arquivo no menu suspenso.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Rename
+            (Renomear)</emphasis> para informar um nome e renomear o
+            arquivo.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold"> Despray </emphasis>
+            para realizar o despray do arquivo. Também é possível modificar
+            algumas opções de despray no menu suspenso.</para>
+          </listitem>
+        </itemizedlist>
+
+        <sect3 id="ECLWatch_LogicalFiles_SuperFiles" role="brk">
+          <title>Superarquivo</title>
+
+          <para>Um superarquivo consiste de uma lista gerenciada de
+          subarquivos (Arquivos lógicos) tratados como uma entidade de lógica
+          única. Quando um arquivo é considerado um superarquivo, a aba
+          <emphasis role="bold">Summary</emphasis> exibe os detalhes do
+          superarquivo, como por exemplo cada subarquivo. Selecione um
+          superarquivo na lista Logical Files (Arquivos lógicos) e depois
+          pressione o botão de ação Open. Isso exibe a página "Detalhes do
+          superarquivo".<figure>
+              <title>Página Detalhes do Superarquivo</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWaS00a.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Na página "Detalhes do superarquivo", é possível:</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para>Ver a lista de subarquivos no superarquivo. Clicar em
+                qualquer hiperlink de subarquivo para ver os detalhes do
+                subarquivo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Ver os detalhes dos subarquivos.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Save</emphasis>
+                para salvar as alterações feitas no superarquivo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Delete
+                Superfiles</emphasis> para remover todo o superarquivo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Remove
+                subfile(s)</emphasis> para remover qualquer subarquivo
+                selecionado do superarquivo.</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Landing_Zones" vendor="eclwatchSS">
+      <title>Zona de entrada de arquivos</title>
+
+      <para>Para acessar a página "Zona de entrada de arquivos", clique no
+      ícone <emphasis role="bold">Files</emphasis> e depois clique no link
+      <emphasis role="bold">Landing Zones (Zona de entrada de
+      arquivos)</emphasis> no submenu de navegação. O link "Zona de entrada de
+      arquivos" exibe a página de zona de entrada de arquivos. A página mostra
+      cada zona de entrada de arquivos configurada para o cluster e seu
+      conteúdo. <figure>
+          <title>Página Zona de entrada de arquivos</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA440.jpg"
+                         vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Clique na seta ao lado de um contêiner de zona de entrada de
+      arquivos, servidor ou pasta para expandir. Os arquivos na zona de
+      entrada de arquivos são exibidos. É possível carregar, baixar ou remover
+      arquivos na zona de entrada de arquivos usando os botões de ação de zona
+      de entrada de arquivos Também é possível realizar o spray de arquivos
+      para um cluster usando esta página.</para>
+
+      <sect2 id="Upload_Files">
+        <title>Enviar Arquivos</title>
+
+        <para>É possível carregar arquivos para a zona de entrada de arquivos
+        na página "Zona de entrada de arquivos".</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Pressione o botão de ação <emphasis
+            role="bold">Upload</emphasis> .<informaltable colsep="1"
+                frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="../../images/tip.jpg"/></entry>
+
+                      <entry>O utilitário de envio no ECL Watch é limitado
+                      pelo tamanho máximo do arquivo do navegador. Normalmente
+                      o tamanho é de 4 GB. Para sistemas de produção,
+                      recomendamos o utilitário de protocolo de cópia de
+                      segurança (scp).</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Escolha o arquivo na janela exibida.</para>
+          </listitem>
+
+          <listitem>
+            <para>Verifique se as informações de arquivo, pasta e zona de
+            entrada de arquivos estão corretas quando a caixa de diálogo
+            <emphasis role="bold">File Uploader</emphasis> é exibida. <figure>
+                <title>Informações</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="../../images/ECLWA440b.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Start</emphasis>
+            para começar a carregar.</para>
+
+            <para>O indicador de progresso do arquivo é exibido como o upload
+            de arquivos. Quando o upload é concluído, a janela é
+            fechada.</para>
+          </listitem>
+        </orderedlist>
+
+        <para/>
+      </sect2>
+
+      <sect2 id="Download_Files">
+        <title>Download dos Arquivos</title>
+
+        <para>É possível fazer o download dos arquivos da sua zona de entrada
+        de arquivos para o computador. <orderedlist>
+            <listitem>
+              <para>Na página Zona de entrada de arquivos, selecione um ou
+              mais arquivos para fazer o download marcando a caixa ao lado
+              deles</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Download
+              </emphasis> para obter o arquivo.</para>
+            </listitem>
+          </orderedlist>O arquivo será baixado para o diretório de download do
+        navegador especificado nas configurações do navegador.</para>
+      </sect2>
+
+      <sect2 id="Delete_Files">
+        <title>Arquivos Excluídos</title>
+
+        <para>É possível remover arquivos da sua zona de entrada de arquivos.
+        <orderedlist>
+            <listitem>
+              <para>Na página Landing Zone (Zona de entrada de arquivos),
+              selecione um ou mais arquivos para remover marcando a caixa ao
+              lado deles.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de ação <emphasis
+              role="bold">Delete</emphasis> para remover o arquivo de sua zona
+              de entrada de arquivos.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="HexPreview" role="brk">
+        <title>Prévia em hexadecimal</title>
+
+        <para>A Hex Preview (Prévia em Hexadecimal) mostra o conteúdo de um
+        arquivo na zona de entrada de arquivos em um formato hexadecimal. Se o
+        arquivo for grande, apenas os primeiros 32k são exibidos. A prévia em
+        hexadecimal foi projetada para arquivos de comprimento fixo, podendo
+        também funcionar para arquivos delimitados com possíveis
+        limitações.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Selecione um arquivo marcando a caixa ao lado dele.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão<emphasis role="bold"> Hex
+              Preview</emphasis> para exibir os arquivos selecionados em
+              formato hexadecimal.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para><figure>
+            <title>Prévia em hexadecimal</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA440h.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>É possível ajustar a largura da visualização na página Hex
+        Preview usando os controles de spinbox na caixa <emphasis
+        role="bold">Width</emphasis> .</para>
+
+        <para>Se você tem um arquivo EBCDIC, marque a caixa ao lado de
+        <emphasis role="bold">EBCDIC:</emphasis> para que ele seja exibido
+        corretamente.</para>
+      </sect2>
+
+      <!-- ***Moved SPRAY Files Section over to DH-Mod1.xml: to avoid duplicate data*** -->
+    </sect1>
+
+    <sect1 id="Pub_Query">
+      <title>Consultas Publicadas</title>
+
+      <para>A página Queries (Consultas) oferece acesso às Queries publicadas
+      em todos os clusters de um ambiente. Para acessar a página Queries
+      (Consultas), clique no link Published Queries (Consultas publicadas) no
+      painel de navegação no ECL Watch.</para>
+
+      <sect2 id="ECLWatch_Queries">
+        <title>Consultas</title>
+
+        <para>Clique em qualquer link na página <emphasis
+        role="bold">Targets</emphasis> para exibir essa página de destino. A
+        página de destino tem duas abas, uma para todas as consultas de
+        destino e outra apenas para as consultas ativas. Nesta página é
+        possível obter mais informações sobre as consultas publicadas
+        específicas.</para>
+
+        <para><figure>
+            <title>Consultas de destino</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLW006.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure>Selecione as consultas clicando nelas ou segurando a tecla
+        Shift ao clicar e selecionar múltiplas consultas. Pressione os botões
+        para realizar a atividade desejada.</para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>Delete</term>
+
+              <listitem>
+                <para>Remove a(s) consulta(s) selecionada(s).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Toggle Suspend</term>
+
+              <listitem>
+                <para>Alterna entre suspender ou reativar a(s) consulta(s)
+                selecionada(s).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Activate</term>
+
+              <listitem>
+                <para>Ativa a(s) consulta(s) selecionada(s).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Queries Details</term>
+
+              <listitem>
+                <para>Direciona para uma página com os detalhes da consulta
+                selecionada.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Operations">
+      <title>Operações</title>
+
+      <para>A página Operations (Operações) oferece acesso a várias workunits
+      de administrador de sistema que você pode realizar no HPCC System. Para
+      acessar a página Operations, clique no link Operations no painel de
+      navegação no ECL Watch.</para>
+
+      <para>Mais em breve...</para>
+    </sect1>
+  </chapter>
+</book>

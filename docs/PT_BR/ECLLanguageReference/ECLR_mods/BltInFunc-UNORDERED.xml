@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="UNORDERED">
+  <title>UNORDERED</title>
+
+  <para><emphasis role="bold">UNORDERED<indexterm>
+      <primary>UNORDERED</primary>
+    </indexterm><indexterm>
+      <primary>UNORDERED function</primary>
+    </indexterm>(</emphasis><emphasis> dataset </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82.95pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>dataset</emphasis></entry>
+
+            <entry>O nome do DATASET desordenado.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">UNICODEORDER </emphasis> é utilizada
+  para indicar a ordem do <emphasis>Dataset</emphasis> não é importra. Isso
+  permitirá que o gerador de código aplique otimizações adicionais em futuras
+  versões.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>Def1 := UNORDERED(MyDataset);
+//the order of MyDataset is not significant, 
+//so the code generator can perform optimizations based on that
+</programlisting>
+</sect1>

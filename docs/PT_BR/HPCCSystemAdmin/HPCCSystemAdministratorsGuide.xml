@@ -1,0 +1,2111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <title>Guia do Administrador do HPCC System</title>
+
+  <bookinfo>
+    <title>Guia do Administrador do HPCC System</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="HPCC_Systems_Administration">
+    <title>Introdução a Administração do HPCC
+    Systems<superscript>®</superscript></title>
+
+    <sect1 id="HPCC_SysAdminIntro" role="nobrk">
+      <title>Introdução</title>
+
+      <para>O HPCC (High Performance Computing Cluste) é uma plataforma de
+      computação e de processamento paralelo massivo que soluciona problemas
+      de big data.</para>
+
+      <para>O HPCC armazena e processa grandes quantidades de dados,
+      processando bilhões de registros por segundo usando tecnologia de
+      processamento paralelo massivo. Grandes quantidades de dados entre
+      diferentes fontes de informações podem ser acessadas, analisadas e
+      processadas em questão de segundos. O HPCC funciona como um ambiente de
+      processamento e de armazenamento de dados distribuído capaz de analisar
+      terabytes de informações.</para>
+    </sect1>
+
+    <sect1 id="HPCC_Architectural_Overview">
+      <title>Visão Geral da Arquitetura</title>
+
+      <para>A plataforma HPCC Systems<superscript>®</superscript> é composta
+      pelos seguintes componentes: Thor, Roxie, ESP Server, Dali, Sasha, DFU
+      Server e ECLCC Server. A segurança em LDAP está disponível como
+      opcional.</para>
+
+      <para><figure>
+          <title>Diagrama de arquitetura do HPCC</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/SA004.jpg"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <?hard-pagebreak ?>
+
+      <para>O carregamento de dados é controlado através do servidor de
+      utilitário de arquivos distribuídos (DFU).</para>
+
+      <para>Os dados normalmente chegam na zona de entrada de arquivo (por
+      exemplo, por FTP). A transferência de arquivos (entre componentes) é
+      iniciada pelo DFU. Os dados são copiados da zona de entrada de arquivo e
+      distribuídos (repassados aos nós) até a Refinaria de Dados (Thor) pelo
+      código ECL. Os dados podem ser ainda processados mais a fundo por ETL
+      (processo de extração, transformação e de carregamento) na
+      refinaria.</para>
+
+      <para>Um único arquivo físico é distribuído em diversos arquivos físicos
+      entre os nós de um cluster. O agregado dos arquivos físicos cria um
+      arquivo lógico que é endereçado pelo código ECL.</para>
+
+      <para><figure>
+          <title>Processamento de dados</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/SA002.jpg"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>O processo de recuperação de dados (chamado de despraying, ou
+      consolidação de dados dos nós) retorna o arquivo para a zona de entrada
+      de arquivo.</para>
+
+      <sect2 id="HPCC_Clusters" role="brk">
+        <title>Clusters</title>
+
+        <para>O ambiente do HPCC contém clusters que você define e usa de
+        acordo com as suas necessidades. Os tipos de clusters usados no HPCC
+        são:</para>
+
+        <sect3 id="SysAdm_Thor_Cluster">
+          <title>Thor</title>
+
+          <para>Refinaria de Dados (Thor) -- Usado para processar cada um dos
+          bilhões de registros a fim de criar bilhões de registros
+          "aprimorados". O ECL Agent (hThor) também é usado para processar
+          tarefas simples que usariam o cluster Thor de forma
+          ineficiente.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_Roxie_Cluster">
+          <title>Roxie</title>
+
+          <para>Motor de entrega rápida de dados (Roxie) -- Usado para
+          pesquisas rápidas por um determinado registro ou conjunto de
+          registros.</para>
+
+          <para>As consultas são normalmente compiladas e publicadas no ECL
+          Watch. Os dados são transferidos em paralelo dos nós Thor até os nós
+          de recebimento Roxie. A utilização da largura de banda paralela
+          melhora a velocidade com que se coloca novos dados para
+          operar.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_Clusters_ECLAgent">
+          <title>ECL Agent</title>
+
+          <para>A principal função do ECL Agent é enviar o job para execução
+          no cluster adequado. O ECL Agent pode atuar como um cluster de nó
+          único. Isso é denominado surgimento de um cluster hThor. O hThor é
+          usado para processar tarefas simples que usariam o Thor de forma
+          ineficiente. Para tarefas simples, o ECL Agent determina e realiza a
+          execução sozinho, agindo como um cluster hThor. <figure>
+              <title>Clusters</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/SA003.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="SysAdm_SystemServers" role="brk">
+        <title>Servidores do Sistema</title>
+
+        <para>Os servidores do sistema são componentes essenciais de
+        middleware de um sistema HPCC. Eles são usados para controlar a
+        comunicação entre componentes e o fluxo de trabalho.</para>
+
+        <sect3 id="SysAdm_Dali">
+          <title>Dali</title>
+
+          <para>Dali também é conhecido como o armazenamento de dados do
+          sistema. Ele gerencia registros de tarefas, diretório de arquivo
+          lógico e serviços de objetos compartilhados. Ele mantém as filas de
+          mensagens que cuidam da execução e do agendamento de tarefas.</para>
+
+          <para>Dali também realiza a gestão de sessões Ele rastreia todas as
+          sessões ativas de clientes do Dali registradas no ambiente para que
+          seja possível listar todos os clientes e suas funções.
+          <emphasis>(consulte dalidiag -clients</emphasis>)</para>
+
+          <para>Outra tarefa que o Dali realiza é agir como o gerenciador de
+          bloqueio. O HPCC usa o gerenciador de bloqueio do Dali para
+          controlar bloqueios exclusivos e compartilhados com
+          metadados.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_Sahsa">
+          <title>Sasha</title>
+
+          <para>O servidor Sasha é um servidor de "organização" complementar
+          ao servidor Dali. O Sasha opera de forma independente, ainda que em
+          conjunto com o Dali. A função principal do Sasha é reduzir a carga
+          no servidor Dali. Sempre que possível, o Sasha reduz a utilização de
+          recursos no Dali. Um aspecto muito importante do Sasha é a
+          coalescência ao salvar o armazenamento em memória para uma nova
+          edição de armazenamento.</para>
+
+          <para>O Sasha arquiva workunits tarefas (incluindo DFU workunits)
+          que são então armazenadas em pastas em um disco.</para>
+
+          <para>Sasha também realiza organização de rotina, como a remoção de
+          workunits em cache e arquivos de recuperação do DFU.</para>
+
+          <para>Sasha também pode executar o XREF para cruzar referências de
+          arquivos físicos com metadados lógicos a fim de determinar se há
+          arquivos perdidos/encontrados/órfãos. Ele então apresenta opções
+          (pelo EclWatch) para sua recuperação ou exclusão.</para>
+
+          <para>Sasha é o componente responsável pela remoção de arquivos
+          expirados quando os critérios são atendidos. A opção EXPIRE no
+          OUTPUT do ECL ou PERSIST define essa condição.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_DFU">
+          <title>Servidor DFU</title>
+
+          <para>O servidor DFU controla as operações de distribuição de dados
+          aos nós (spraying) e de consolidação de dados aos nós (despraying)
+          usadas para transferir dados para dentro e fora do Thor.</para>
+
+          <para>Os serviços DFU estão disponíveis a partir de: <itemizedlist>
+              <listitem>
+                <para>Bibliotecas padrão no código ECL.</para>
+              </listitem>
+
+              <listitem>
+                <para>Interfaces do Client Eclipse, ECL Playground, ECL IDE, e
+                a interface de linha de comando ECL.</para>
+              </listitem>
+
+              <listitem>
+                <para>Interface de linha de comando DFU Plus.</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
+
+        <sect3 id="SysAdm_ECLCCSvr">
+          <title>ECLCC Server</title>
+
+          <para>ECLCC Server é o compilador que converte o código ECL. Ao
+          enviar o código ECL, o ECLCC Server gera o C++ otimizado, que é
+          então compilado e executado. O ECLCC Server controla todo o processo
+          de compilação.</para>
+
+          <para>Ao enviar workunit para execução no Thor, elas são
+          primeiramente convertidas em um código executável pelo ECLCC
+          Server.</para>
+
+          <para>Ao enviar uma workunit para o Roxie, o código é compilado e
+          posteriormente publicado no cluster Roxie, onde está disponível para
+          ser executado várias vezes.</para>
+
+          <para>O ECLCC Server também é usado quando o ECL IDE solicita uma
+          verificação de sintaxe.</para>
+
+          <para>O ECLCC Server também usa uma fila para converter uma workunit
+          de cada vez; no entanto, é possível implementar os servidores ECLCC
+          no sistema para aumentar a produtividade e eles balancearão a carga
+          automaticamente conforme necessário.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_ECLAgent">
+          <title>ECL Agent</title>
+
+          <para>O ECL Agent (hThor) é um processo de nó único para execução de
+          Consultas ECL simples.</para>
+
+          <para>O ECL Agent é um mecanismo de execução que processa tarefas ao
+          enviá-las para o cluster adequado. Os processos do ECL Agent são
+          gerados sob demanda quando uma tarefa é enviada.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_ESPServer">
+          <title>ESP Server</title>
+
+          <para>O ESP (Enterprise Service Platform) Server é o servidor de
+          comunicação de intercomponentes. O ESP Server é um framework que
+          permite que múltiplos serviços sejam "plugados" para oferecer vários
+          tipos de funcionalidades às aplicações dos clientes por meio de
+          diversos protocolos.</para>
+
+          <para>Entre os exemplos de serviços que são plugados no ESP,
+          estão:<itemizedlist>
+              <listitem>
+                <para><emphasis role="bold">WsECL:</emphasis> Interface para
+                consultas de ECL publicadas em um cluster Roxie, Thor ou
+                hThor.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">ECL Watch</emphasis> Uma interface
+                de gestão de arquivos, monitoramento e execução de consultas
+                baseada na Web. Ela pode ser acessada através do ECL IDE ou de
+                um navegador de Internet. Consulte <emphasis>Como usar o ECL
+                Watch</emphasis>.</para>
+              </listitem>
+            </itemizedlist></para>
+
+          <para>O servidor ESP suporta formatos XML e JSON.</para>
+
+          <!--formerly : protocols - HTTP, HTTPS, SOAP, and JSON - -->
+        </sect3>
+
+        <sect3 id="SysAdm_LDAP">
+          <title>LDAP</title>
+
+          <para>É possível incorporar um servidor de Lightweight Directory
+          Access Protocol (protocolo de acesso aos diretórios leves) LDAP para
+          operar junto ao Dali a fim de reforçar as restrições de segurança
+          para escopo de arquivos, escopos de workunit e acesso a
+          recursos.</para>
+
+          <para>Quando o LDAP é configurado, é necessário se autenticar ao
+          acessar o ECL Watch, WsECL, ECL IDE ou quaisquer outras ferramentas
+          de clientes. As credenciais são então usadas para autenticar
+          quaisquer solicitações dessas ferramentas.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="SysAdm_ClienInterfaces">
+        <title>Interfaces do Client</title>
+
+        <para>As seguintes interfaces do client estão disponíveis para
+        interação com a plataforma HPCC.</para>
+
+        <sect3 id="SysAdm_Eclipse">
+          <title>Eclipse</title>
+
+          <para>Com o plugin ECL para Eclipse, é possível usar o IDE Eclipse
+          para criar e executar consultas em seus dados em uma plataforma HPCC
+          usando Enterprise Control Language (ECL). O Eclipse é uma solução de
+          código público e multiplataforma que pode ser usada para servir como
+          interface com seus dados e workunits no HPCC. O pluginECL para
+          Eclipse também é open-source</para>
+        </sect3>
+
+        <sect3 id="SysAdm_ECLIDE">
+          <title>ECL IDE</title>
+
+          <para>ECL IDE é uma GUI completa, com todos os recursos, que oferece
+          acesso ao seu código ECL para desenvolvimento de ECL. O IDE ECL usa
+          diversos serviços de ESP através do SOAP.</para>
+
+          <para>O ECL IDE oferece acesso a definições de ECL para desenvolver
+          suas consultas. Essas definições são criadas ao programar uma
+          expressão que define como certos cálculos ou derivações de conjunto
+          de registros devem ser feitos. Depois de definida, elas podem ser
+          usadas nas próximas definições de ECL.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_Int_ECLWatch">
+          <title>ECL Watch</title>
+
+          <para>ECL Watch é uma interface de gestão de arquivos, monitoramento
+          e execução de consultas baseada na Web. Ela pode ser acessada
+          através do IDE ECL, Eclipse ou de um navegador de Internet. O ECL
+          Watch permite que você veja informações e processe tarefas. Ele
+          também permite que você monitore a atividade de cluster e realize
+          outras tarefas administrativas.</para>
+
+          <para>Usando o ECL Watch, é possível:<itemizedlist>
+              <listitem>
+                <para>Navegar por workunits enviadas anteriormente (WU). Ver
+                uma representação visual (gráficos) completa do fluxo de dados
+                no WU, com estatísticas que são atualizadas a medida em que o
+                trabalho progride.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pesquisar por arquivos e ver informações que incluem
+                número de registros e layouts ou registros de amostra.</para>
+              </listitem>
+
+              <listitem>
+                <para>Visualizar o status de todos os servidores do
+                sistema.</para>
+              </listitem>
+
+              <listitem>
+                <para>Visualizar arquivos de log.</para>
+              </listitem>
+
+              <listitem>
+                <para>Adicionar usuários ou grupos e modificar
+                permissões.</para>
+              </listitem>
+            </itemizedlist></para>
+
+          <para>Consulte o manual <emphasis>Utilizando ECL Watch </emphasis>
+          para obter mais detalhes.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_ComLine">
+          <title><emphasis role="bold">Ferramentas de linha de
+          comando:</emphasis></title>
+
+          <para>Ferramentas de linha de comando: <emphasis role="bold">ECL,
+          DFU Plus</emphasis> e <emphasis role="bold">ECL Plus</emphasis>
+          oferecem acesso de linha de comando às funcionalidades fornecidas
+          pelas páginas da Web do ECL Watch. Eles funcionam pela comunicação
+          com o serviço ESP correspondente através do SOAP.</para>
+
+          <para>Consulte o manual <emphasis>Ferramentas de cliente </emphasis>
+          para obter mais detalhes.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <!--Inclusion-from-ClientTool-As-Sect1: REMOVED-->
+  </chapter>
+
+  <chapter id="SysAdm_HW_and_SW-Req">
+    <title>Requerimento de Hardware e Software</title>
+
+    <para>Este capítulo descreve alguns dos requisitos de hardware e software
+    para executar o HPCC System. O HPCC foi projetado para ser executado em
+    hardware padrão, tornando o desenvolvimento e a manutenção de clusters de
+    grande escala (petabytes) economicamente viáveis. Ao planejar o hardware
+    do seu cluster, é necessário colocar na balança diversas considerações
+    específicas às suas necessidades.</para>
+
+    <para>Esta seção oferece alguns insights sobre o hardware e a
+    infraestrutura nos quais o HPCC opera de maneira adequada Este não é um
+    conjunto amplo e completo de instruções, nem uma obrigação sobre qual
+    hardware você precisa usar. Considere este como um guia para usar quando
+    for implementar ou dimensionar seu HPCC System. As sugestões devem ser
+    levadas em conta de acordo com as suas necessidades empresariais
+    específicas.</para>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
+                xpointer="xpointer(//*[@id='HW-Switch'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
+                xpointer="xpointer(//*[@id='HW-LoadBalancer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="xpointer(//*[@id='System_sizings'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
+                xpointer="xpointer(//*[@id='Nodes-Software'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="SysAdm_HWSizing">
+    <title>Hardware e Componentes</title>
+
+    <para>Esta seção oferece alguns insights sobre que tipo de hardware e
+    infraestrutura nos quais o HPCC opera da melhor maneira. Este não é um
+    conjunto amplo e completo de instruções, nem uma obrigação sobre qual
+    hardware você precisa usar. Considere este como um guia para usar quando
+    for implementar ou dimensionar seu HPCC System. As sugestões devem ser
+    levadas em conta de acordo com as suas necessidades empresariais
+    específicas.</para>
+
+    <para>O HPCC foi projetado para ser executado em hardware padrão, tornando
+    o desenvolvimento e a manutenção de clusters de grande escala (petabytes)
+    economicamente viáveis. Ao planejar o hardware do seu cluster, é
+    necessário colocar na balança diversas considerações, incluindo domínios
+    de fail-over e possíveis problemas de desempenho. O planejamento de
+    hardware deve incluir a distribuição do HPCC entre múltiplos hosts
+    físicos, como um cluster. Geralmente, é uma boa prática executar processos
+    HPCC de um determinado tipo (por exemplo, Thor, Roxie ou Dali) em um host
+    configurado especificamente para aquele tipo de processo.</para>
+
+    <sect1 id="SysAdm_ThorHW">
+      <title>Hardware Thor</title>
+
+      <para>Nós escravos Thor exigem um equilíbrio adequado de CPU, memória
+      RAM, rede e E/S de disco para operar da maneira mais eficiente. Um único
+      nó escravo do Thor funciona de maneira ideal quando alocado em 4 núcleos
+      de CPU, 8GB de memória RAM, E/S de rede de 1Gb/segundo e
+      leitura/gravação de disco sequencial de 200MB/segundo.</para>
+
+      <para>A arquitetura de hardware pode oferecer valor superior dentro de
+      um único servidor físico. Em tais casos, é possível usar múltiplos
+      escravos para configurar seus servidores físicos maiores de modo a
+      executar múltiplos nós de escravos Thor por servidor físico.</para>
+
+      <para>É importante observar que HPCC, por natureza, é um sistema de
+      processamento paralelo e que todos os nós de escravos Thor serão
+      executados precisamente ao mesmo tempo Desta forma, ao alocar mais de um
+      escravo HPCC Thor por máquina física, verifique se cada escravo atende
+      aos requisitos recomendados.</para>
+
+      <para>Por exemplo, em sua eficiência ideal, 1 servidor físico com 48
+      núcleos, 96GB de memória RAM, E/S de rede de 10Gb/segundo e sequencial
+      de 2GB/segundo seria capaz de executar dez (10) escravos HPCC Thor . A
+      ordem para otimização do uso de recursos em um nó escravo Thor é E/S de
+      disco de 60%, rede de 30% e CPU de 10%. Qualquer aumento na E/S
+      sequencial terá o maior impacto sobre a velocidade, seguido por
+      melhorias na rede e, depois, por melhorias na CPU.</para>
+
+      <para>A arquitetura de rede também é algo importante a ser considerado.
+      Os nós HPCC Thor funcionam idealmente em uma arquitetura de rede
+      dinamizada entre todos os processos escravos Thor.</para>
+
+      <para>RAID é recomendado e todos os níveis de RAID adequados para
+      operações de leitura/gravação sequencial e alta disponibilidade são
+      aceitáveis. Por exemplo, RAID1, RAID10, RAID5 (preferido) e
+      RAID6.</para>
+    </sect1>
+
+    <sect1 id="SysAdm_RoxieHW">
+      <title>Configurações de Hardware do Roxie</title>
+
+      <para>Para garantir operações eficientes, os processos Roxie do HPCC
+      exigem um equilíbrio adequado, embora diferente (do Thor), de CPU,
+      memória RAM, rede e de E/S de disco. Um único nó HPCC Roxie funciona de
+      maneira ideal quando alocado a 6 ou mais núcleos de CPU, 24GB de memória
+      RAM, backbone de rede de 1Gb/segundo e IOPS de leitura aleatória 4K de
+      400/segundo. </para>
+
+      <para>Cada nó HPCC Roxie conta com dois discos rígidos, sendo que cada
+      um é capaz de atingir um IOPS de busca aleatória 4K de 200/segundo. As
+      recomendações de disco rígido para a eficiência do Roxie são SAS de 15K
+      ou SSD. Uma boa regra prática é que, quanto maior for o IOPS de leitura
+      aleatória, melhor e mais rápido será o desempenho do seu Roxie .</para>
+
+      <para>A execução de múltiplos nós HPCC Roxie em um único servidor físico
+      não é recomendada, exceto em casos de virtualização ou
+      contêineres.</para>
+
+      <para>Configure seu sistema para equilibrar o tamanho de seus clusters
+      Thor e Roxie. O número de nós Roxie nunca deve ultrapassar o número de
+      nós Thor. Além disso, o número de nós Thor deve ser uniformemente
+      divisível pelo número de nós Roxie. Isso garante uma distribuição
+      eficiente de partes de arquivo do Thor ao Roxie.</para>
+    </sect1>
+
+    <sect1 id="SysAdm_Dali_Sasha">
+      <title>Configurações de Hardware do Dali e Sasha</title>
+
+      <para>O Dali do HPCC processa metadados de armazenamento de cluster na
+      memória RAM. Para a melhor eficiência, garanta no mínimo 48GB de memória
+      RAM, 6 ou mais núcleos de CPU, interface de rede de 1Gb/segundo e disco
+      de alta disponibilidade para um único Dali do HPCC. Os processos em Dali
+      do HPCC são um dos poucos componentes nativos ativos/passivos.
+      Recomenda-se usar um clustering de “swinging disk" para uma configuração
+      de alta disponibilidade. Para um único processo em Dali do HPCC , pode
+      ser usado qualquer nível RAID de alta disponibilidade (HA) .</para>
+
+      <para>Sasha só armazena dados em discos disponíveis localmente, lendo
+      dados do Dali e, depois, processando-os ao arquivar workunits (WUs) em
+      disco. Recomenda-se configurar o Sasha para uma quantidade maior de
+      arquivamento para que o Dali não mantenha um número excessivo de
+      workunit na memória. Isso exige maior espaço em disco.</para>
+
+      <para>A alocação de maior espaço em disco para o Sasha é uma prática
+      consagrada, já que configurar o Sasha para mais arquivamento traz
+      melhores benefícios ao Dali. Uma vez que o Sasha auxilia o Dali ao
+      realizar a organização, ele funciona melhor quando está em seu próprio
+      nó. O ideal é evitar colocar o Sasha e o Dali no mesmo nó, uma vez que o
+      nó que executa esses componentes é extremamente importante,
+      especialmente quando se fala em recuperação em caso de perdas. Por isso,
+      ele deve ser o mais sólido possível: unidades RAID, tolerantes a falhas,
+      etc.</para>
+
+      <sect2>
+        <title>Interações Sasha/Dali</title>
+
+        <para>Uma função essencial do Sasha é a coalescência. Quando o Dali é
+        desligado, ele salva seu armazenamento em memória para uma nova edição
+        de armazenamento ao criar um novo
+        <emphasis>dalisdsXXXX.xml</emphasis>,onde XXXX é incrementado de
+        acordo com a nova edição. A edição atual é gravada pelo armazenamento
+        de nome de arquivo.XXXX</para>
+
+        <para>Uma solicitação explícita para salvar usando o
+        <emphasis>dalidiag</emphasis>:</para>
+
+        <programlisting> dalidiag . -save </programlisting>
+
+        <para>As novas edições, conforme o exemplo acima, são criadas da mesma
+        maneira. Durante uma operação "salvar" explícita, todas as alterações
+        no SDS são bloqueadas. Consequentemente, todos os clientes serão
+        bloqueados se tentarem fazer qualquer alteração até que a operação
+        "salvar" esteja concluída.</para>
+
+        <para>Há certas opções (embora não comumente usadas) capazes de
+        configurar o Dali para detectar tempo ocioso/em descanso e forçar uma
+        operação de salvar exatamente da mesma maneira que uma solicitação de
+        salvar explícita opera, o que significa que haverá o bloqueio de
+        quaisquer transações de gravação durante o processo.</para>
+
+        <para>Todas as alterações de SDS no Dali são gravadas em um log de
+        transações delta (no formato XML) com uma convenção de nomenclatura de
+        <emphasis>daliincXXXX.xml</emphasis>, onde XXXX corresponde a edição
+        de armazenamento atual. Elas também são opcionalmente espelhadas para
+        um local de backup. Esse log de transação cresce indefinidamente até o
+        armazenamento ser salvo.</para>
+
+        <para>Na configuração recomendada/normal, o Sasha é principal criador
+        de novas edições de armazenamento de SDS. Ele faz isso de acordo com
+        um cronograma e outras opções de configuração (por exemplo, é possível
+        configurar para um tamanho mínimo de log de transação delta). O Sasha
+        lê o último armazenamento salvo e o log de transação atual, e reproduz
+        o log de transação sobre o último armazenamento salvo para formar uma
+        nova versão em memória e depois o salva. Diferente do processo de
+        salvar do Dali, isso não bloqueia nem interfere no Dali No caso de um
+        encerramento repentino do processo do Dali (abortado ou em caso de
+        falta de energia), o Dali usa o mesmo log de transações delta na
+        reinicialização para reproduzir o último salvamento e alterações para
+        retornar ao estado operacional mais recente.</para>
+
+        <para/>
+
+        <!-- *** COMMENTING OUT WHOLE Of MONITORING SECTION
+       <sect3>
+          <title>HPCC Reporting</title>
+
+          <para>HPCC leverages the use of Ganglia reporting and monitoring
+          components to monitor several aspects of the HPCC System.</para>
+
+          <para>See <emphasis>HPCC Monitoring and Reporting</emphasis> for
+          more information on how to add monitoring and reporting to your HPCC
+          System.</para>
+
+          <para>More to come***</para>          
+        </sect3>
+        END COMMENT ***-->
+      </sect2>
+    </sect1>
+
+    <sect1 id="SysAdm_OtherHPCCcomponents">
+      <title>Outros Componentes HPCC</title>
+
+      <para>ECL Agent, ECLCC Server, DFU Server, o Thor Master e o ECL Watch
+      são processos administrativos usados para auxiliar os componentes dos
+      clusters principais.</para>
+
+      <para>Para máxima eficiência, é necessário 24GB de memória RAM, 6 ou
+      mais núcleos de CPU, velocidade de rede de 1Gb/segundo e discos de alta
+      disponibilidade. Esses componentes podem ser altamente disponibilizados
+      no modo ativo/ativo.</para>
+    </sect1>
+  </chapter>
+
+  <chapter id="Routine_Maintenance">
+    <title>Manutenção da Rotina</title>
+
+    <para>Para garantir que seu HPCC System continue operando perfeitamente,
+    são necessários alguns cuidados e manutenção. As próximas seções tratam
+    das tarefas de manutenção rotineira para seu HPCC System.</para>
+
+    <!--***SYSTEM HEALTH CHECK UP***TO COME***-->
+
+    <sect1 id="SysAdmin_DataHandling">
+      <title>Manipulação dos Dados</title>
+
+      <para>Ao começar a trabalhar com o HPCC System, recomenda-se ter alguns
+      dados no sistema para processamento. Os dados são transferidos para o
+      HPCC System através de um processo denominado spray (distribuição aos
+      nós). Da mesma forma, os dados são retirados do HPCC System através de
+      um processo denominado despray (consolidação aos nós).</para>
+
+      <para>Uma vez que o HPCC é um cluster de computador, os dados são
+      implementados sobre os nós que compõem o cluster. Um
+      <emphasis>spray</emphasis> , ou importação, é a transferência de um
+      arquivo de dados de um local (como uma zona de entrada de arquivo) para
+      um cluster. O termo spray foi adotado devido à natureza da transferência
+      dos arquivos – o arquivo é particionado entre todos os nós em um
+      cluster.</para>
+
+      <para>Um <emphasis>despray</emphasis> , ou exportação, é a transferência
+      de um arquivo de dados de um cluster de Refinaria de Dados para um único
+      local do computador (como uma zona de entrada de arquivo). O termo
+      despray foi adotado em função da natureza da transferência dos arquivos
+      – o arquivo é então remontado a partir de suas peças em todos os nós no
+      cluster e colocado em um único arquivo no destino.</para>
+
+      <para>Uma <emphasis>Zona de entrada de arquivos</emphasis> (ou zona de
+      chegada) é um local de armazenamento físico definido no ambiente do seu
+      sistema. É possível definir um ou mais desses locais. Um daemon
+      (dafilesrv) precisa estar em execução no servidor para possibilitar
+      sprays e desprays do arquivo. É possível realizar o spray ou despray de
+      alguns arquivos para sua zona de entrada de arquivo através do ECL
+      Watch. Para enviar arquivos grandes, é necessária uma ferramenta
+      compatível com o protocolo de cópia de segurança – algo como um
+      WinSCP.</para>
+
+      <para>Para obter mais informações sobre o processamento de dados do
+      HPCC, consulte os documentos <emphasis>Manipulação dos Dados do
+      HPCC</emphasis> e <emphasis>Tutorial de dados do HPCC</emphasis>
+      .</para>
+
+      <!--***CAN TIE THIS ALL TOGETHER - as part of routine maint. clean up some data files... archive data... etc. ***TO COME***-->
+    </sect1>
+
+    <sect1 id="SysAdm_BackUpData" role="nobrk">
+      <title>Backup dos Dados</title>
+
+      <para>O backup de dados essenciais é parte integrante da manutenção de
+      rotina. Elabore uma estratégia de backup para atender às necessidades de
+      sua organização. Esta seção não visa substituir sua estratégia de backup
+      atual – em vez disso, ela a complementa ao destacar as considerações
+      especiais para HPCC Systems.<superscript>®</superscript></para>
+
+      <sect2 id="SysAdm_BackUpConsider">
+        <title>Considerações sobre Backup</title>
+
+        <para>Você provavelmente já conta com alguma estratégia de backup em
+        vigor; ao adicionar o HPCC Systems<superscript>®</superscript> em seu
+        ambiente de operação, há certas considerações adicionais sobre as
+        quais você deve estar ciente. As seções a seguir discutem as
+        considerações de backup para os componentes individuais do HPCC
+        System.</para>
+
+        <sect3 id="SysAdm_BkU_Dali">
+          <title>Dali</title>
+
+          <para>Dali pode ser configurado para criar seu próprio backup. É
+          altamente recomendado que o backup seja mantido em um servidor ou nó
+          diferente para fins de recuperação de desastres. É possível
+          especificar o local da pasta de backup do Dali usando o
+          Configuration Manager. Recomenda-se manter múltiplas gerações de
+          backups a fim de conseguir realizar a restauração para um
+          determinado período no tempo. Por exemplo, você pode querer salvar
+          instantâneos diariamente ou semanalmente.</para>
+
+          <para>Recomenda-se manter cópias de backup no nível de sistema
+          usando métodos tradicionais. Qualquer que seja o método ou esquema,
+          é altamente recomendado manter um backup do Dali.</para>
+
+          <para>Deve-se tentar evitar colocar o Dali, Sasha e até mesmo o Thor
+          Master no mesmo nó. O ideal é que cada um desses componentes esteja
+          em nós separados não apenas para reduzir a carga no hardware de
+          sistema (permitindo que ele funcione melhor), como também para que
+          você possa recuperar todo o ambiente, arquivos e tarefas em caso de
+          perda. Isso também influenciaria todos os outros clusters Thor/Roxie
+          no mesmo ambiente se você perder esse nó.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_Sasha">
+          <title>Sasha</title>
+
+          <para>Sasha é o componente que cuida da coalescência da SDS. É
+          normalmente o único componente que cria novas edições de
+          armazenamento. Também é o componente que cria os metadados XREF
+          utilizados pelo ECLWatch. Observe que o Sasha pode criar uma grande
+          quantidade de dados de arquivo. Depois de arquivadas, as tarefas não
+          ficam mais disponíveis no armazenamento de dados do Dali. Os
+          arquivos ainda podem ser acessados pelo ECL Watch ao serem
+          restaurados para o Dali.</para>
+
+          <para>Se você precisa de alta disponibilidade para tarefas
+          arquivadas, é necessário fazer um backup destas tarefas no nível de
+          sistema usando métodos tradicionais de backup.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_DFUSvr">
+          <title>Servidor DFU</title>
+
+          <para>O DFU Server não possui dados. As tarefas DFU são armazenadas
+          no Dali até serem arquivadas pelo Sasha.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_ECLCCSvr">
+          <title>ECLCC Server</title>
+
+          <para>O ECLCC Server não armazena dados. As tarefas ECL são
+          armazenadas no Dali e são arquivadas pelo Sasha.</para>
+
+          <!--***COMMENT:<para><emphasis role="bold">Note:</emphasis> No compiler is shipped
+          with the HPCC System. The ECLCC Server compiles ECL code into C++,
+          however you must have a C++ compiler to use on your system. </para> -->
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_ECLAgent">
+          <title>ECL Agent</title>
+
+          <para>O ECL Agent não armazena dados.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_ECLSched">
+          <title>ECL Scheduler</title>
+
+          <para>O ECL Scheduler não armazena dados. As workunits do ECL são
+          armazenadas no Dali.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_ESPsvr">
+          <title>ESP Server</title>
+
+          <para>O ECLCC Server não armazena dados. Se estiver usando
+          certificados SSL, o backup de chaves públicas e privadas deve ser
+          feito por métodos tradicionais.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_Thor">
+          <title>Thor</title>
+
+          <para>Thor, a refinaria de dados, como um dos componentes críticos
+          dos HPCC Systems,<superscript>®</superscript> precisa ser salvo em
+          backup. Faça um backup do Thor ao configurar a replicação e definir
+          uma tarefa de backup noturno do cron. Se não houver um RAID
+          configurado, crie um backup do Thor sob demanda antes e/ou depois de
+          qualquer troca de nó ou troca de unidade.</para>
+
+          <para>Uma parte muito importante da administração do Thor é
+          verificar os logs para garantir que os backups anteriores foram
+          concluídos com sucesso.</para>
+
+          <para><emphasis role="bold">Backupnode</emphasis></para>
+
+          <para>O Backupnode é uma ferramenta que acompanha o HPCC. Ela
+          permite que você crie backups de nós do Thor sob demanda ou por
+          script. Também é possível usar o Backupnode regularmente em um
+          crontab ou adicionar ao seu ambiente um componente do Backupnode com
+          o Gerenciador de Configurações. Sempre é necessário executá-lo no
+          Thor Master do cluster.</para>
+
+          <para>O exemplo a seguir é uma maneira sugerida de acionar o
+          Backupnode manualmente.</para>
+
+          <programlisting>  /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor" &amp; </programlisting>
+
+          <para>O parâmetro de linha de comando deve corresponder ao nome do
+          seu cluster Thor. Em seu ambiente de produção, é provável que você
+          forneça nomes descritivos para seus clusters Thor.</para>
+
+          <para>Por exemplo, se o cluster do Thor for denominado thor400_7s,
+          você o chamaria de start_backupnode thor400_7s.</para>
+
+          <programlisting>  /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor400_7s" &amp; </programlisting>
+
+          <para><emphasis role="bold">O Backupnode é executado
+          regularmente</emphasis></para>
+
+          <para>É possível usar o cron para executar o Backupnode
+          regularmente. Por exemplo, você pode definir uma entrada crontab
+          (para backup do thor400_7s) para ser executada à 1 da manhã
+          diariamente:</para>
+
+          <programlisting>  0 1 * * * /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor400_7s" &amp; </programlisting>
+
+          <para>O Backupnode grava sua atividade em um arquivo de log. Esse
+          log pode ser encontrado em:</para>
+
+          <para>/var/log/HPCCSystems/backupnode/MM_DD_YYYY_HH_MM_SS.log</para>
+
+          <para>O (MM) Mês, (DD) Dia, (AAAA) Ano com 4 dígitos, (HH) Hora,
+          (MM) Minutos e (SS) Segundos do backup que inclui o nome do arquivo
+          de log.</para>
+
+          <para>O arquivo de log principal existe no nó mestre do Thor. Ele
+          mostra em que nós é executado e se foi concluído. É possível
+          encontrar outros logs do Backupnode em cada um dos nós do Thor
+          mostrando quais arquivos, se aplicável, ele precisou
+          restaurar.</para>
+
+          <para>É importante verificar os logs para garantir que os backups
+          anteriores foram concluídos com sucesso. A entrada a seguir é do log
+          do Backupnode mostrando que o backup foi concluído com
+          sucesso:</para>
+
+          <programlisting>00000028 2014-02-19 12:01:08 26457 26457 "Completed in 0m 0s with 0 errors" 
+00000029 2014-02-19 12:01:08 26457 26457 "backupnode finished" </programlisting>
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_Roxie">
+          <title>Roxie</title>
+
+          <para>Os dados do Roxie são protegidos por três formas de
+          redundância:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Retenção de arquivo de dados de
+              fonte original:</emphasis> Quando uma consulta é publicada, os
+              dados são normalmente copiados de um local remoto, seja de um
+              Thor ou de um Roxie. Dessa forma, os dados do Thor podem servir
+              como backup, contanto que não sejam removidos nem alterados no
+              Thor. Os dados do Thor normalmente são retidos por um período
+              suficiente para servir como uma cópia de backup.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Redundância de nó-par:</emphasis>
+              Cada nó escravo normalmente tem um ou mais nós pares em seu
+              cluster. Cada par armazena uma cópia dos arquivos de dados que
+              serão lidos.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Redundância de cluster
+              irmão:</emphasis> Embora não seja necessário, as implementações
+              do Roxie podem ser executadas em múltiplos clusters Roxie
+              configurados de modo idêntico. Quando dois clusters são
+              implementados para produção, cada nó possui um gêmeo idêntico em
+              termos de consultas e/ou dados armazenados no nó no outro
+              cluster. Essa configuração oferece múltiplas cópias redundantes
+              de arquivos de dados. Com três clusters Roxie que possuem
+              redundância de nó par, há sempre seis cópias de cada parte do
+              arquivo a qualquer momento. Isso elimina a necessidade de usar
+              procedimentos tradicionais de backup para arquivos de dados
+              Roxie.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_LandZone">
+          <title>Zona de entrada de arquivos</title>
+
+          <para>A zona de entrada de arquivos é usada para hospedar arquivos
+          de entrada e saída. Isso deve ser tratado da mesma maneira que em um
+          servidor FTP. Use backups tradicionais no nível de sistema.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_BkUp_Misc">
+          <title>Miscelânia</title>
+
+          <para>O backup de quaisquer complementos de componentes extras, seus
+          arquivos de ambiente (environment.xml) ou outras configurações
+          personalizadas deve ser feito de acordo com os métodos tradicionais
+          de backup.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="SysAdm_Log_Files">
+      <title>Arquivo de Log</title>
+
+      <para>É possível conferir as mensagens de sistema e ver quaisquer
+      mensagens de erro no momento em que são reportadas e registradas em
+      arquivos de log. Os arquivos de log podem ajudá-lo a entender o que está
+      ocorrendo no sistema e são úteis na hora de solucionar problemas.</para>
+
+      <sect2 id="SysAdm_Component_Logs">
+        <title>Logs de Componente</title>
+
+        <para>Há arquivos de log para cada componente nos diretórios abaixo
+        <emphasis role="bold"> /var/log/HPCCSystems</emphasis> (local padrão).
+        Opcionalmente, é possível configurar o sistema para gravar os logs em
+        um diretório diferente. Você deve saber a localização dos arquivos de
+        log e consultá-los primeiramente ao solucionar quaisquer
+        problemas.</para>
+
+        <para>Há arquivos de log que registram a atividade entre vários
+        componentes. É possível encontrar os arquivos de log em subdiretórios
+        nomeados de forma correspondente aos componentes que eles rastreiam.
+        Por exemplo, os logs do Thor são encontrados em um diretório chamado
+        mythor; o log do Sasha deve estar no diretório mysasha, enquanto o log
+        do ESP deve estar no diretório myesp.</para>
+
+        <para>Cada um dos subdiretórios de componente contém vários arquivos
+        de log. A maioria dos arquivos de log usa uma convenção de
+        nomenclatura que inclui o nome do componente, a data e a hora no nome
+        do arquivo de log. Normalmente há também um link para o componente com
+        um nome simples, como esp.log, que é um atalho para o arquivo de log
+        atual mais recente daquele componente.</para>
+
+        <para>Entender os arquivos de log, e o que normalmente é reportado
+        neles, ajuda a solucionar problemas no HPCC System.</para>
+
+        <para>Como parte da manutenção de rotina, recomenda-se fazer um
+        backup, arquivar e remover os arquivos de log mais antigos.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_AccessLogFiles">
+        <title>Acessando os Arquivos de Log</title>
+
+        <para>É possível acessar e ver arquivos de log diretamente através do
+        diretório de log de componentes de um prompt de comando ou de uma
+        aplicação do terminal. Também é possível ver os arquivos de log de
+        componente através do ECL Watch.</para>
+
+        <para>Para ver os logs no ECL Watch, clique no ícone <emphasis
+        role="bold">Operations</emphasis> e depois no link <emphasis
+        role="bold">System Servers</emphasis> . Isso abre a página System
+        Servers no ECL Watch. Essa página lista vários componentes do HPCC
+        System. Na coluna <emphasis role="bold">Diretory</emphasis> para cada
+        componente, há um ícone de unidade de computador. Clique no ícone na
+        linha do log de componente que deseja acessar. <figure>
+            <title>Logs no ECL Watch</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/SA005.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Também é possível acessar arquivos de log de outros links no
+        ícone Operations no ECL Watch. <orderedlist>
+            <listitem>
+              <para>Clique no link <emphasis role="bold">Target
+              Clusters</emphasis> para abrir a guia com links para os clusters
+              do seu sistema.</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no ícone de unidade de computador (circulado em
+              vermelho na figura acima) na linha do cluster e nó do log de
+              componente que você deseja ver.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>Para ver os logs de processos de cluster: <orderedlist>
+            <listitem>
+              <para>Clique no link <emphasis role="bold">Cluster
+              Process</emphasis> para abrir a guia com links para os processos
+              de clusters do seu sistema.</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no processo de cluster sobre o qual você deseja ver
+              mais informações.</para>
+
+              <para>Por exemplo, clique no link <emphasis
+              role="bold">myroxie</emphasis> . Você vai ver uma página com
+              todos os nós de componentes. Você vai ver o ícone de unidade de
+              computador na linha de cada nó. Clique nesse ícone para ver os
+              logs do processo de cluster para esse nó.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <sect3 id="Workunit_Logs">
+          <title>Arquivos de log em ECL Workunits</title>
+
+          <para>Você também pode acessar os arquivos de log do Thor ou do ECL
+          Agent pelas tarefas de ECL. (não disponível para tarefas Roxie) No
+          ECL Watch, ao examinar os detalhes de tarefa, você verá uma aba
+          chamada <emphasis role="bold">Helpers</emphasis> . Clique na aba
+          Helpers para exibir os arquivos de log relevantes para a determinada
+          workunit. <figure>
+              <title>Logs nas workunits do ECL Watch</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/SA006.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
+              xpointer="xpointer(//*[@id='Cert_Prelight'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <chapter id="OnDemand_Maintenance">
+    <title>Configuração e Gerenciamento do Sistema</title>
+
+    <para>O HPCC System requer configuração A ferramenta Configuration Manager
+    (Gerenciador de Configurações-configmgr) inclusa no software do sistema é
+    um item valioso para configurar seu HPCC System. O Gerenciador de
+    Configurações é uma ferramenta gráfica fornecida para configurar o seu
+    sistema. Ele possui um assistente que pode ser executado para gerar
+    facilmente um arquivo de ambiente que o ajudará a configurar, ajustar e
+    operar o sistema com rapidez. O Gerenciador de Configurações também possui
+    uma opção avançada que permite uma configuração mais específica enquanto
+    ainda usa a interface gráfica. Se quiser, é possível editar os arquivos de
+    ambiente usando qualquer editor de texto ou xml, porém a estrutura do
+    arquivo precisa permanecer válida.</para>
+
+    <para><figure>
+        <title>Configuração de amostra de produção</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/SA008.jpg"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <!--/*Including special SysAdmin Config Module -paras- */-->
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="xpointer(//*[@id='cfgmgr_introP0'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="xpointer(//*[@id='cfgmgr_introP1'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="xpointer(//*[@id='cfgmgr_p1b'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="xpointer(//*[@id='cfgmgr_introP2'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="xpointer(//*[@id='cfgmgr_introP3'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <!--/*Including special SysAdmin Config Module -Sect1- */-->
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="xpointer(//*[@id='configuring-a-multi-node-system'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <sect1 id="SysAdm_Env.conf">
+      <title>Environment.conf</title>
+
+      <para>Outro componente da configuração do HPCC System é o arquivo
+      enviroment.conf. O environment.conf contém algumas definições globais
+      que o gerenciador de configuração usa para configurar o HPCC System. Na
+      maioria dos casos, os padrões são suficientes.</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/caution.png"/></entry>
+
+                <entry><emphasis role="bold">ATENÇÃO</emphasis>: Essas
+                configurações são fundamentais para que o sistema possa operar
+                de forma adequada. Apenas os administradores do HPCC com nível
+                de especialista devem tentar alterar qualquer aspecto deste
+                arquivo.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>Por padrão, o arquivo environment.conf está localizado
+      em:</para>
+
+      <programlisting>/etc/HPCCSystems</programlisting>
+
+      <para>O environment.conf é obrigatório na inicialização do HPCC. É onde
+      o arquivo de ambiente do HPCC é definido.</para>
+
+      <programlisting>/opt/HPCCSystems/environment.xml</programlisting>
+
+      <para>Esse é também onde o caminho de trabalho é definido.</para>
+
+      <programlisting>path=/opt/HPCCSystems</programlisting>
+
+      <para>O caminho de trabalho é usado por vários recursos da aplicação e
+      sua modificação pode causar complicações desnecessárias. Por padrão, a
+      aplicação é instalada aqui e define vários recursos para este
+      caminho.</para>
+
+      <para>O envrionment.conf padrão:</para>
+
+      <para><programlisting>## HPCC Systems default environment configuration file 
+
+[DEFAULT SETTINGS]
+configs=/etc/HPCCSystems
+path=/opt/HPCCSystems
+classpath=/opt/HPCCSystems/classes
+runtime=/var/lib/HPCCSystems
+lock=/var/lock/HPCCSystems
+# Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,
+#                           COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX
+pid=/var/run/HPCCSystems
+log=/var/log/HPCCSystems
+user=hpcc
+group=hpcc
+home=/Users
+environment=environment.xml
+sourcedir=/etc/HPCCSystems/source
+blockname=HPCCSystems
+interface=*
+# enable epoll method for notification events (true/false)
+use_epoll=true
+</programlisting></para>
+
+      <sect2 id="SysAdm_Paths">
+        <title>Considerações sobre caminhos</title>
+
+        <para>A maioria dos diretórios é definida como caminhos
+        absolutos:</para>
+
+        <programlisting>configs=/etc/HPCCSystems
+path=/opt/HPCCSystems
+classpath=/opt/HPCCSystems/classes
+runtime=/var/lib/HPCCSystems
+lock=/var/lock/HPCCSystems</programlisting>
+
+        <para>O HPCC não executará corretamente sem os caminhos adequados e,
+        em alguns casos, é necessário ser o caminho absoluto. Se um processo
+        ou componente não conseguir localizar um caminho, será exibida uma
+        mensagem de erro como esta:</para>
+
+        <programlisting>“There are no components configured to run on the node…” </programlisting>
+
+        <para>Se o caminho mudar do HPCCSystems, ele NÃO será alterado no
+        arquivo environment.xml. Quaisquer alterações precisarão ser
+        realizadas manualmente no arquivo environment.xml.</para>
+
+        <para>O arquivo de log, <emphasis>hpcc-init.log</emphasis> é gravado
+        no caminho do HPCCSystems.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_OtherEnv.conf">
+        <title>Outros items do Environment.conf</title>
+
+        <para>Alguns outros itens usados ou indicados no
+        environment.conf<variablelist>
+            <varlistentry>
+              <term>Use_epoll</term>
+
+              <listitem>
+                <para>É um mecanismo de eventos para obter melhor desempenho
+                em aplicações mais exigentes cujo número de descritores de
+                arquivo assistidos é alto.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Logfields</term>
+
+              <listitem>
+                <para>Categorias disponíveis para registro. Compostas por hora
+                (TIM), data (DAT), ID de processo (PID), ID de linhas de
+                execução ou "thread" (TID) e afins.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Interface</term>
+
+              <listitem>
+                <para>No environment.conf padrão, há um valor para interface.
+                O valor padrão para isso é:</para>
+
+                <programlisting>interface=*</programlisting>
+
+                <para>O valor padrão de* atribui à interface um endereço IP
+                aberto em qualquer ordem. A especificação da interface, como
+                Eth0, atribuirá o nó especificado como primário.<!--***Add More info... WHY DOES THIS MATTER?--></para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect2>
+
+      <sect2 id="ConfiguringRemoteAccessOverTLS">
+        <title>Acesso Remoto sobre TLS</title>
+
+        <para>A configuração do sistema para acesso remoto de arquivos por
+        Transport Layer Security (TLS) exige a modificação das configurações
+        do <emphasis role="bold">dafilesrv</emphasis> no arquivo
+        <emphasis>environment.conf</emphasis> .</para>
+
+        <para>Para fazer isso, retire o comentário (se já estiver inserido) ou
+        adicione as seguintes linhas ao arquivo
+        <emphasis>environment.conf</emphasis> . Em seguida, defina os valores
+        adequados para o seu sistema.</para>
+
+        <para><programlisting>#enable SSL for dafilesrv remote file access
+dfsUseSSL=true
+dfsSSLCertFile=/certfilepath/certfile
+dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
+        role="blue">dfsUseSSL=true</emphasis> e o valor dos caminhos para
+        indicar os caminhos do arquivo de certificado e do arquivo chave em
+        seu sistema. Em seguida, implemente o arquivo
+        <emphasis>environment.conf</emphasis> (e os arquivos de
+        certificado/chave) em todos os nós conforme apropriado.</para>
+
+        <para>Quando o dafilesrv for ativado para TLS (porta 7600), ele ainda
+        pode se conectar por uma conexão sem TLS (porta 7100) para permitir
+        que clientes de legado funcionem.</para>
+      </sect2>
+    </sect1>
+
+    <!--Inclusions-As-Sect1-->
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
+                xpointer="xpointer(//*[@id='User_Security_Maint'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <sect1 id="SysAdm_WUs_ActiveDir">
+      <title>Workunits e Active Directory</title>
+
+      <para>O desempenho do seu sistema pode variar dependendo da forma de
+      interação de alguns componentes. Uma área que poderia influenciar o
+      desempenho é a relação com usuários, grupos e o Active Directory. Se
+      possível, pode ser uma boa política contar com um Active Directory
+      individual e específico para o HPCC. Pode haver alguns casos onde apenas
+      um Active Directory que atende aos vários aplicativos diversos não
+      ofereça um desempenho ideal.</para>
+
+      <para>O HPCC torna a configuração da OU do Active Directory
+      relativamente fácil. Quando iniciado, o ESP cria todas as UOs para você
+      com base nas configurações definidas no Configuration Manager. É
+      possível iniciar o Dali/ESP e usar o ECLWatch para adicionar ou
+      modificar usuários ou grupos.</para>
+
+      <para>É possível atribuir permissões para cada usuário individualmente,
+      mas é mais gerenciável atribuir essas permissões a grupos e depois
+      adicionar usuários a esses grupos, conforme apropriado. Crie um grupo
+      para desenvolvedores e usuários avançados (pessoas com acesso completo
+      de leitura/gravação/exclusão), outro grupo para usuários que terão
+      apenas acesso de leitura, e talvez outro para aqueles com acesso de
+      leitura e gravação. Adicione quaisquer outros grupos em seu ambiente
+      conforme apropriado. Agora é possível atribuir usuários aos seus grupos
+      adequados.</para>
+
+      <sect2 id="SysAdm_AD_and_LDAP">
+        <title>Active Directory e semelhança com LDAP</title>
+
+        <para>Há componentes que são comuns para o Active Directory e para o
+        LDAP. Há certos termos relevantes que podem ainda precisar de uma
+        explicação mais detalhada. <variablelist>
+            <varlistentry>
+              <term>filesBasedn</term>
+
+              <listitem>
+                <para>Trata da restrição de acesso aos arquivos. Também é
+                citado como "escopo de arquivo".</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>groupsBasedn</term>
+
+              <listitem>
+                <para>Controla os grupos associados com o ambiente. Por
+                exemplo: administradores, desenvolvedores, apenas ws_ecl e
+                afins.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>modulesBasedn</term>
+
+              <listitem>
+                <para>Específico para sistemas que usam um repositório central
+                de legado e controla o acesso a módulos específicos. Qualquer
+                módulo criado na aplicação criará uma entrada em
+                Eclwatch&gt;&gt;User/Permissions&gt;&gt;Repository
+                Modules</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>sudoersBasedn</term>
+
+              <listitem>
+                <para>Obsoleto.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>workunitsBasedn</term>
+
+              <listitem>
+                <para>Controla o acesso às workunits.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect2>
+    </sect1>
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/CassandraWUServer.xml"
+                xpointer="xpointer(//*[@id='CassandraWUStorage'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <sect1 id="Redefining_Thor_Nodes">
+      <title>Redefinindo nós em um Cluster Thor</title>
+
+      <para>Para configurar um cluster Thor onde você substitui os nós atuais
+      (com novos IPs) ou adiciona ou remove nós, é necessário adotar uma etapa
+      adicional para reestruturar o grupo. O Dali não reestruturará
+      automaticamente um grupo existente.</para>
+
+      <para>Isso porque os arquivos publicados atuais referem-se ao estado de
+      grupo de cluster anterior pelo nome e, por isso, alterar sua estrutura
+      invalidaria esses arquivos e tornaria os arquivos físicos
+      inacessíveis.</para>
+
+      <para>Há algumas situações nas quais você optaria por redefinir seu
+      cluster Thor.</para>
+
+      <sect2 id="Replace_Faulty_Node" role="nobrk">
+        <title>Substituindo nó(s) defeituoso(s)</title>
+
+        <para>Se os arquivos de dados forem replicados, pode ser útil
+        substituir um nó e forçar o uso do novo grupo pelos arquivos
+        existentes. Nesta situação, a leitura de um arquivo existente
+        provocará um failover para encontrar uma parte no nó replicado ao
+        tentar localizar um arquivo físico no novo nó de reposição.</para>
+
+        <para>Para forçar o uso do novo grupo, utilize o seguinte
+        comando:</para>
+
+        <para><programlisting>updtdalienv &lt;environment_file&gt; -f</programlisting>
+        Em casos onde não há replicação, a perda de dados pode ser inevitável
+        e forçar o novo grupo ainda pode ser a melhor opção.</para>
+      </sect2>
+
+      <sect2 id="SysAdmin_Resizing_The_Cluster" role="nobrk">
+        <title>Redimensionando o cluster</title>
+
+        <para>No caso da adição ou remoção de nós de cluster Thor, mas
+        <emphasis> todos os nós anterior continuam no ambiente e
+        acessíveis</emphasis>, é necessário <emphasis role="bold">
+        renomear</emphasis> o grupo associado ao cluster Thor (ou nome do
+        cluster se não houver nome do grupo).</para>
+
+        <para>Isso garantirá que todos os arquivos anteriores continuem a usar
+        a estrutura de grupo antiga, enquanto novos arquivos usam a nova
+        estrutura de grupo.</para>
+
+        <para>Em resumo, se o cluster Thor mudar, ele precisa ser atualizado
+        no Dali.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="Best_Practices_Chapter">
+    <title>Melhores práticas:</title>
+
+    <para>Este capítulo descreve as diversas formas das boas práticas traçadas
+    por usuários e administradores de longa data do HPCC que executam o HPCC
+    em um ambiente de produção exigente e de alta disponibilidade. No entanto,
+    não é necessário executar seu ambiente dessa forma, uma vez que seus
+    requisitos específicos podem variar. Esta seção oferece algumas
+    recomendações de boas práticas traçadas após vários anos de execução do
+    HPCC em um ambiente de produção intenso e exigente.</para>
+
+    <sect1 id="BP_Cluster_Redundancy" role="nobrk">
+      <title>Redundância de Cluster</title>
+
+      <para>Há vários aspectos de redundância de cluster que devem ser
+      considerados ao configurar seu HPCC System.</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/tip.jpg"/></entry>
+
+                <entry><para>Lembre-se de alocar recursos amplos para seus
+                principais componentes. Dali exige bastante memória RAM. ECL
+                Agent e ECL Server dependem do processador. Thor deve ter pelo
+                menos 4GB de memória RAM por nó.</para> <para/></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <sect2 id="SysAdm_BestPrac_Dali">
+        <title>Dali</title>
+
+        <para>Dali deve ser executado em uma configuração ativa/passiva. Os
+        termos ativo/passivo significam que há dois Dalis em execução: um
+        primário, ou ativo, e outro passivo. Nesta situação, todas as ações
+        são executadas no Dali ativo, mas duplicadas no passivo. Se o Dali
+        ativa falhar, é possível realizar o fail over para a passiva.<!--NOTE: Add steps for how to configure an Active/Passive Dali--></para>
+
+        <para>Outra boa prática sugerida é usar o cluster padrão com um quórum
+        e um VIP de tomada de controle (um tipo de balanceador de carga). Se o
+        Dali primário falhar, transfere-se o VIP e o diretório de dados para o
+        nó passivo e reinicia o serviço Dali.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_DFUsvr">
+        <title>Servidor DFU</title>
+
+        <para>É possível executar múltiplas instâncias do DFU Server. É
+        possível executar todas as instâncias como ativas, ao contrário de uma
+        configuração ativa/passiva. Não há necessidade de um balanceador de
+        cargas ou VIP. Cada instância consulta rotineiramente o Dali por
+        workunits. Caso uma falhe, as outras continuarão extraindo novas
+        workunits.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_ECLCCSvr_">
+        <title>ECLCC Server</title>
+
+        <para>É possível executar múltiplas instâncias ativas do ECLCC Server
+        para redundância. Também não há necessidade de um balanceador de
+        cargas ou VIP para isso. Cada instância verificará tarefas
+        rotineiramente. Caso uma falhe, as outras continuarão realizando a
+        compilação.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_ESP_ECLWatch_WSECL">
+        <title>ESP/ECL Watch/WsECL</title>
+
+        <para>Para garantir a redundância, coloque os ESP Servers em um VIP.
+        Para um design ativo/ativo, é necessário usar um balanceador de
+        cargas. Para o ativo/passivo, é possível usar um precursor/contador
+        (pacemaker/heartbeat). Se você executar na configuração ativa/ativa, é
+        necessário manter uma única conexão de cliente com apenas um servidor
+        durante a sessão do ECL Watch (porta 8010). Outros serviços, como o
+        WsECL (porta 8002) não exigem uma conexão persistente com um único
+        servidor.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_ECLAgent">
+        <title>ECL Agent</title>
+
+        <para>É possível executar múltiplas instâncias ativas do ECL Agent.
+        Não é necessário um balanceador de cargas ou VIP. Cada instância
+        consulta tarefas rotineiramente. Caso uma falhe, as outras continuarão
+        extraindo novas workunits.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_Sasha">
+        <title>Sasha</title>
+
+        <para>Dali deve ser executado em uma configuração ativa/passiva. Os
+        termos ativo/passivo significam que há dois Sashas configurados, um
+        primário (ativo) e outro em espera.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_ECLSched">
+        <title>ECL Scheduler</title>
+
+        <para>Não é necessário um balanceador de carga na execução do design
+        ativo/ativo. Cada instância consulta workunits rotineiramente. Caso
+        uma falhe, as outras continuarão agendando as workunits.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_ThorMaster">
+        <title>Thormaster</title>
+
+        <para>Defina o Thor em uma configuração ativa/passiva. Os termos
+        ativo/passivo significam que há duas instâncias em execução, uma
+        primária (ativa) e outra passiva. Nenhum balanceador de cargas é
+        necessário. Se a instância ativa falhar, é possível realizar o fail
+        over para a passiva. O fail over então usa o VIP (um tipo de
+        balanceador de cargas) para distribuir quaisquer solicitações
+        recebidas.<!--NOTE: Add steps for how to configure the Active/Passive Thor--></para>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_DropZone">
+        <title>Dropzone</title>
+
+        <para>Esse é apenas um servidor de arquivos que executa o processo
+        dafilesrv. Configure da mesma maneira como qualquer servidor de
+        arquivos ativo/passivo. Um primário, ou ativo, e outro passivo. Nenhum
+        balanceador de cargas é necessário. Se a instância ativa falhar, é
+        possível realizar o fail over para a passiva.</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="BP_High_Availability">
+      <title>Alto Disponibilidade</title>
+
+      <para>Se precisar de alta disponibilidade para seu HPCC System, há
+      algumas considerações adicionais que devem ser analisadas. Esta não é
+      uma lista completa e não visa fornecer instruções passo a passo para
+      configuração de recuperação de desastres. Em vez disso, a seção apenas
+      oferece algumas informações adicionais que devem ser levadas conta ao
+      incorporar o HPCC em seu plano de recuperação de desastres.</para>
+
+      <sect2 id="Thor_HA">
+        <title>Thor</title>
+
+        <para>Ao projetar um cluster Thor para alta disponibilidade, considere
+        como ele de fato funciona – um cluster Thor aceita tarefas a partir de
+        uma fila de tarefas. Se houver dois clusters Thor atendendo a fila de
+        tarefas, um deles continuará aceitando tarefas se o outro
+        falhar.</para>
+
+        <para>Com a replicação ativada, o Thor que ainda funciona poderá ler
+        os dados do local de backup do Thor que falhou. Outros componentes
+        (como ECL Server ou ESP) também podem ter múltiplas instâncias. Os
+        componentes restantes, como Dali ou DFU Server, funcionam em um modelo
+        tradicional de fail over de alta disponibilidade de armazenamento
+        compartilhado.</para>
+
+        <para>Outra consideração importante é manter o ESP e o Dali em nós
+        separados do Thor Master. Desta forma, se o mestre Thor falhar, você
+        pode substituí-lo, mantendo a substituição com o mesmo IP (endereço).
+        Uma vez que o Thor não armazena dados de workunit, o DALI e o ESP
+        podem providenciar os metadados de arquivo para recuperar suas
+        tarefas.</para>
+
+        <sect3 id="Thor_HA_Downside">
+          <title>A Desvantagem</title>
+
+          <para>Os custos iniciais são até duas vezes maiores, uma vez que
+          será necessário adquirir basicamente tudo em dobro.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_HA_ThorUpside">
+          <title>A Vantagem</title>
+
+          <para>É possível utilizar a capacidade de processamento adicional em
+          quase 100% do tempo. É possível executar mais jobs, ter mais espaço
+          e afins.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_HA_ThorDR">
+          <title>Observações sobre Disaster Recovery (Recuperação de
+          Desastres)</title>
+
+          <para>O fator importante a ser considerado para a recuperação de
+          desastres (DR) é a largura de banda necessária para replicar os
+          dados. Seu administrador de rede deve avaliar esse aspecto com
+          atenção.</para>
+
+          <para>Se possui dezenas de gigabytes de deltas todos os dias, então
+          uma replicação do tipo rsync ou algum tipo de modelo híbrido deve
+          ser suficiente. Se você possui centenas de gigabytes ou petabytes de
+          deltas, o limite real é o seu orçamento.</para>
+
+          <para>Recomenda-se encontrar onde os dados são menores (na ingestão,
+          após a normalização, no Roxie), replicá-los deste ponto e reexecutar
+          o processamento em ambos os locais.</para>
+
+          <para>O segredo para realizar a recuperação de desastres
+          corretamente é conhecer o seu fluxo de dados. Por exemplo, se
+          estiver ingerindo 20TB de dados brutos diariamente e realizar sua
+          implementação, classificação e indexação e afins. Seria melhor
+          replicar um conjunto de dados intermediário (que chamamos de
+          arquivos de base) em vez de replicar a ingestão elevada. Se a
+          situação for contrária (pequena ingestão diária e depois o aumento
+          do tamanho dos dados), seria melhor ingerir na entrada e depois
+          reexecutá-los.</para>
+
+          <para>Thor tem a capacidade de realizar uma "cópia Thor", que copia
+          dados de um cluster para outro. Também é possível fazer isso através
+          de um código ECL. Além disso, pode-se optar por não ter, ou precisar
+          de ter um DR Thor "moderno". Neste caso, as falhas leves mais comuns
+          causariam apenas um desastre relativamente pequeno e inferior a 1
+          dia. Uma vez que o Thor é responsável por criar atualizações de
+          dados, ele pode levar um ou alguns dias para recuperar. Os dados
+          apenas não são tão novos, mas continuarão fluindo contanto que os
+          Roxies ainda sejam replicados. No caso de um desastre grave, como um
+          grande terremoto, uma onda gigantesca, perda de energia total
+          prolongada, múltiplos cortes de fibra ótica, onde os sistemas
+          ficarão fora do ar por um dia ou mais. A probabilidade disso ocorrer
+          não justifica os custos da prevenção.</para>
+        </sect3>
+
+        <sect3 id="SysAdm_HA_ThorConclusion">
+          <title>Conclusão</title>
+
+          <para>A recuperação de desastres é uma equação. O custo de falha
+          multiplicado pela probabilidade de o evento acontecer anualmente ser
+          menor ou maior do que o custo para evitá-lo. Levar tudo isso em
+          consideração pode ajudar a colocar um plano de DR razoável em
+          ação.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="HA_Roxie">
+        <title>Roxie</title>
+
+        <para>No caso do Roxie, recomenda-se contar com múltiplos clusters
+        Roxie e usar um proxy para manter o equilíbrio. Para manter os dados
+        sincronizados, a abordagem de extração é a mais recomendada. O Roxie
+        extrai automaticamente os dados de que precisa da "fonte" listada no
+        arquivo do pacote. Os dados também podem ser extraídos de outro Roxie
+        ou de um Thor. Na maioria dos casos, seu DR Roxie seria extraído do
+        Roxie primário do balanceador de carga, mas ele também pode ser
+        extraído de um Thor no local primário.</para>
+      </sect2>
+
+      <sect2 id="HA_Middlewear">
+        <title>Middleware</title>
+
+        <para>A replicação de alguns componentes (ECL Agent, ESP/Eclwatch, DFU
+        Server, etc.) é bastante simples, uma vez esses componentes não
+        possuem nada para replicar. O Dali é o principal elemento quando se
+        fala em replicação. No caso do Dali, tem-se o Sasha como o backup
+        local. Os arquivos Dali podem ser replicados usando o rsync. Uma
+        melhor abordagem seria usar um dispositivo de sincronização
+        (sincronização de WAN de cluster, replicação de bloco de SAN, etc.) e
+        simplesmente colocar os armazenamentos Dali nele e permitir que a
+        replicação seja feita conforme projetado.</para>
+
+        <para>'Não há uma abordagem universal. Para garantir uma estratégia
+        efetiva de DR que não realize uma "sincronização excessiva" entre
+        conexões WAN lentas, mas que ainda lhe ofereça um nível aceitável de
+        redundância para suas necessidades de negócios, é necessário ter
+        cuidado, design e planejamento especiais.</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="SysAdm_BestPrac">
+      <title>Considerações sobre Melhores Práticas:</title>
+
+      <para>Há vários outros aspectos para as considerações de boas práticas,
+      e esses aspectos mudarão de acordo com os requisitos do seu sistema. As
+      seções a seguir englobam algumas considerações de boas práticas para
+      determinados aspectos do HPCC System. Tenha em mente que as boas
+      práticas sugeridas são apenas recomendações e podem não ser adequadas às
+      suas necessidades. Uma análise minuciosa das considerações destacadas
+      nesta seção pode ser útil se as suas necessidades se alinharem às
+      considerações informadas.</para>
+
+      <!--/*Further elaboration of both User permissions, and permission settings... also some hardware set up best practices. Suggested***/-->
+
+      <sect2 id="SysAdm_BestPrac_MultiThor">
+        <title>Múltiplos Thor</title>
+
+        <para>É possível executar múltiplos Thors em um mesmo hardware físico.
+        Os múltiplos Thors em um mesmo hardware são independentes e não sabem
+        da existência do outro. Os Thors executam jobs à medida em que os
+        recebem, independentemente do que os outros estejam fazendo. A
+        velocidade de uma única tarefa nunca será superior com múltiplos
+        Thors, porém a produtividade poderá ser maior. É possível executar
+        duas tarefas de coleta de Thors a partir de duas filas diferentes ou
+        em uma mesma fila.</para>
+
+        <para>A desvantagem de executar múltiplos Thors no mesmo hardware é
+        que a memória física nos nós precisa ser compartilhada entre cada um
+        dos Thors. Isso precisa ser configurado segundo a definição de cluster
+        Thor.</para>
+
+        <para>Não é possível colocar múltiplos Thors em um hardware que não
+        possua núcleos de CPU suficientes para suportá-los. Você não deve ter
+        uma quantidade maior de Thors em relação ao número de núcleos. Uma boa
+        regra é usar uma fórmula na qual o número de núcleos divido por dois
+        equivale ao número máximo de clusters Thor a ser usado.</para>
+
+        <sect3>
+          <title>Múltiplos nós</title>
+
+          <para>Se possível, tente manter os recursos em execução nos seus
+          próprios nós para um ou múltiplos clusters Thor. Se estiver
+          executando algum tipo de alta disponibilidade ativa/passiva, não
+          mantenha seu Master ativo e passivo no mesmo nó. Tente manter o Dali
+          e o ESP em nós separados. Mesmo que você não possa se dar ao luxo de
+          ter diversos nós, recomenda-se que o Thor Master e o Dali (no
+          mínimo) estejam em nós separados. A boa prática é manter o máximo de
+          componentes possível em seus próprios nós.</para>
+
+          <para>Outra consideração para um sistema de múltiplos nós é evitar
+          colocar qualquer um dos componentes em nós com escravos. Essa não é
+          uma boa prática por acarretar em um cluster desequilibrado,
+          resultando em escravos com menos memória/CPU que são mais lentos do
+          que os demais e, consequentemente, reduzindo o desempenho de todo o
+          cluster.</para>
+        </sect3>
+
+        <sect3 id="Thor_TimesOut">
+          <title>Tempo-limite do Thor</title>
+
+          <para>Há um caso no qual uma política ou prática de sistema poderia
+          causar um problema com os nós Thor. Se um cluster Thor travar na
+          inicialização e o tempo-limite acabar expirando. Depois, se o seu
+          log Thormaster mostrar que o Master não apresenta problemas, mas
+          indica que está aguardando se conectar aos escravos. Você pode então
+          ter problemas com a configuração do daemon SSH.</para>
+
+          <para>Há um recurso de segurança chamado
+          <emphasis>"AllowUsers"</emphasis> que cria uma lista branca no sshd
+          (o processo de servidor OpenSSH) que vai bloquear conexões de
+          qualquer um que não estiver presente na lista. Esse não é um padrão
+          para sshd, mas uma opção que precisa ser ativada. Se essa opção for
+          ativada, isso pode fazer com que os nós Thor travem na maneira
+          descrita. Se essa opção for ativada, é necessário desativá-la ou
+          adicionar o usuário hpcc à lista de AllowUsers.</para>
+
+          <para/>
+        </sect3>
+      </sect2>
+
+      <sect2>
+        <title>Múltiplos Clusters Roxie</title>
+
+        <para>É possível configurar múltiplos clusters Roxie. Quando se tem
+        múltiplos clusters Roxie, é melhor usar um balanceador de cargas com
+        eles. Para configurar múltiplos clusters Roxie, comece adicionando seu
+        Roxie na guia VIPS no Configuration Manager. <figure>
+            <title>Configurar o VIP</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/SA011.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Abra o Configuration Manager do HPCC e prossiga para a opção
+        Advanced View. Para obter mais informações sobre o uso do ConfigMgr,
+        consulte "Como usar o Configuration Manager". <orderedlist>
+            <listitem>
+              <para>Selecione seu ESP Service (o padrão é o <emphasis
+              role="bold">myws_ecl</emphasis>) no painel Navegador ao lado
+              esquerdo da tela.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a guia <emphasis role="bold">VIPS</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique com o botão direito sobre a tabela e selecione
+              <emphasis>Add</emphasis>. (veja a imagem acima)</para>
+            </listitem>
+
+            <listitem>
+              <para>Defina o valor <emphasis role="bold">Send Target
+              To</emphasis> para <emphasis>False</emphasis>.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>Essa configuração (a opção
+        <emphasis>includeTargetInURL</emphasis> &gt;) precisa ser falsa se
+        você executar múltiplos clusters Roxie.</para>
+      </sect2>
+
+      <sect2 id="virtual-thor-slaves">
+        <title><emphasis role="strong">Virtual Thor
+        escravos</emphasis></title>
+
+        <para><indexterm>
+            <primary>Virtual Thor escravos</primary>
+          </indexterm>A partir da versão 6.0.0, os clusters Thor podem ser
+        configurados de forma a obter todos os benefícios oferecidos pelos
+        recursos disponíveis por nó ao usar os escravos Thor virtuais.</para>
+
+        <para>Nas versões do HPCC anteriores à 6.0.0, as configurações de
+        cluster eram normalmente definidas para um número N de <emphasis
+        role="bold">slavesPerNode</emphasis><indexterm>
+            <primary>slavesPerNode</primary>
+          </indexterm> <emphasis/> , onde N é igual ou próximo ao número de
+        núcleos por máquina.</para>
+
+        <para>Isso resultou em N processos de escravo independentes por nó,
+        como visto abaixo:</para>
+
+        <para/>
+
+        <para><graphic fileref="images//SA009.jpg"/></para>
+
+        <para>A prática apresentou diversas desvantagens
+        significativas:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Cada processo de escravo nessa configuração tem uma mesma
+            divisão fixa da memória física disponível ao nó.</para>
+          </listitem>
+
+          <listitem>
+            <para>Os escravos não compartilham memória RAM ou outros
+            recursos.</para>
+          </listitem>
+
+          <listitem>
+            <para>Os escravos transmitem mensagens através da interface de
+            loopback para se comunicarem.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Atualmente emprega-se uma nova abordagem, na qual os escravos
+        virtuais são criados com um único processo de escravo, como mostrado
+        abaixo:</para>
+
+        <para><graphic fileref="images//SA010.jpg"/></para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Nesta configuração, cada nó físico possui um único processo
+            de escravo Thor.</para>
+          </listitem>
+
+          <listitem>
+            <para>Cada processo de escravo possui N escravos virtuais. Isso é
+            configurado através da opção de configuração do Thor denominada
+            <emphasis role="bold">channelsPerSlave</emphasis><indexterm>
+                <primary>channelsPerSlave</primary>
+              </indexterm> <emphasis> <emphasis role="strong"/> </emphasis>.
+            Nessa arquitetura, escravos no mesmo processo podem se comunicar
+            diretamente entre si e compartilhar recursos.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Observação: A configuração <emphasis> <emphasis
+        role="bold">slavesPerNode</emphasis> </emphasis> ainda existe e ambas
+        podem ser usadas de forma combinada, se necessário.</para>
+
+        <para><emphasis role="strong">Principais vantagens:</emphasis></para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Cada escravo virtual compartilha recursos em cache, como
+            chaves de páginas de indexação, etc.</para>
+          </listitem>
+
+          <listitem>
+            <para>Os escravos podem solicitar e compartilhar toda a memória
+            RAM disponível.</para>
+          </listitem>
+
+          <listitem>
+            <para>A inicialização e o gerenciamento do cluster são mais
+            rápidos e simples.</para>
+          </listitem>
+
+          <listitem>
+            <para>Permitem futuras melhorias para melhor
+            coordenação/gerenciamento de núcleos de CPU.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>O fato de se ter acesso a toda a memória disponível é de suma
+        importância para determinadas atividades. O exemplo mais claro é um
+        SMART ou LOOKUP JOIN.</para>
+
+        <sect3 id="smartlookup-join-example">
+          <title>Exemplo de SMART/LOOKUP JOIN</title>
+
+          <para>Um LOOKUP JOIN funciona aproximadamente da seguinte
+          maneira:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Transmite um dataset de RHS escravo local para todos os
+              outros escravos.</para>
+            </listitem>
+
+            <listitem>
+              <para>Todos os escravos reúnem o RHS global em uma única
+              tabela.</para>
+            </listitem>
+
+            <listitem>
+              <para>Uma tabela hash (ou tabela de dispersão) baseada nos
+              campos de correspondência de tecla física é criada.</para>
+            </listitem>
+
+            <listitem>
+              <para>Depois que todos os escravos estão prontos, o LHS é
+              transmitido e combinado em relação à tabela hash para produzir
+              os resultados unidos.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>Observação: A tabela de RHS completa e a tabela hash precisam
+          caber na memória; caso contrário, a união falhará através de um erro
+          de falta de memória.</para>
+
+          <para>SMART JOIN é uma evolução do LOOKUP JOIN. Se ele não puder
+          encaixar o RHS global na memória, ele fará o HASH PARTITION, o RHS e
+          o HASH DISTRIBUTE, o LHS e executará um LOCAL LOOKUP JOIN.</para>
+
+          <para>Se ele não adaptar o conjunto de RHS local na memória em um
+          determinado nó, então irá reunir e classificar ambos os datasets
+          locais e realizar uma JOIN padrão.</para>
+
+          <para>A principal vantagem da LOOKUP JOIN é a velocidade. Se o RHS
+          couber na memória, ele pode realizar com rapidez uma operação de
+          coleta e JOIN transmitida de um grande conjunto LHS sem a
+          necessidade de coletar e classificar nada.</para>
+
+          <para>As vantagens de uma configuração do Thor com escravo virtual
+          para o código ECL usando o LOOKUP/SMART JOIN são que, na prática,
+          ele terá N vezes mais memória antes de falhar ou aplicar o fail over
+          no caso do SMART JOIN.</para>
+
+          <para>Ele também é mais rápido: em vez de transmitir o RHS local
+          para o processo de N escravos por nó, ele precisa realizar esta
+          comunicação para apenas um. Esse único escravo pode compartilhar
+          diretamente a mesma tabela e o mesmo HT com os outros escravos
+          virtuais.</para>
+
+          <para><emphasis role="strong"> <emphasis>As principais vantagens de
+          um LOOKUP/SMART JOIN em uma configuração do Thor com escravo
+          virtual:</emphasis> </emphasis></para>
+
+          <itemizedlist>
+            <listitem>
+              <para>N vezes mais memória disponível para o RHS. Em outras
+              palavras, o RHS pode ser N vezes maior antes de falhar ou
+              acionar o fail over no caso do SMART JOIN. (No exemplo ilustrado
+              acima, o JOIN teria 4 vezes mais memória disponível)</para>
+            </listitem>
+
+            <listitem>
+              <para>Comunicação significativamente menor de dados de linha – o
+              que resulta em um processamento mais rápido para conjuntos de
+              RHS maiores.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_HugePages">
+        <title>Huge Pages</title>
+
+        <para>O Linux usa páginas como suas unidades básicas de memória. Seu
+        sistema pode operar de forma mais rápida e se beneficiar do suporte
+        para huge pages. Huge pages de tipo e tamanho adequados precisam ser
+        alocadas a partir do sistema operacional. Quase todos os sistemas
+        Linux são configurados com Transparent Huge Pages (THP) disponíveis
+        por padrão.</para>
+
+        <para>Thor, Roxie e clusters ECL Agent possuem opções na configuração
+        para possibilitar suporte para huge pages. As huge pages transparentes
+        são habilitadas para clusters Thor, Roxie e ECL Agent no ambiente
+        padrão do HPCC. Os clusters Thor podem se beneficiar mais das huge
+        pages do que o Roxie.</para>
+
+        <para>Consulte o arquivo /sys/kernel/mm/transparent_hugepage/enabled
+        para verificar qual é a sua configuração de OS (SO). Com THP, não é
+        necessário definir um tamanho de forma explícita. Se seu sistema não
+        estiver configurado para usar o THP, você pode implementar huge
+        pages.</para>
+
+        <sect3 id="SysAdm_BestPrac_SetUpHuge_Pgs">
+          <title>Configurando Huge Pages</title>
+
+          <para>Para configurar o suporte a huge pages, consulte a
+          documentação do seu OS (SO) e determine como ativar o suporte. Por
+          exemplo, o administrador pode alocar huge pages persistentes (para o
+          OS (SO) adequado) na linha de comando de inicialização de kernel
+          especificando o parâmetro "hugepages=N" na inicialização Com huge
+          pages, também é necessário alocar o tamanho de forma
+          explícita.</para>
+
+          <para>No Configuration Manager do HPCC, há três locais de definição
+          dos atributos para uso de huge pages.</para>
+
+          <para>Há atributos em cada componente, nos atributos do ECL Agent,
+          nos atributos do Roxie e nos atributos do Thor. Há dois valores em
+          cada componente:</para>
+
+          <programlisting>heapUseHugePages heapUseTransparentHugePages</programlisting>
+
+          <para>Ative Huge Pages em seu sistema operacional e depois configure
+          o HPCC para os componentes desejados.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
+                xpointer="xpointer(//*[@id='Capacity_Planning'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="xpointer(//*[@id='Sample_Sizings'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Resources">
+    <title>Recursos do Sistema</title>
+
+    <para>Há recursos adicionais disponíveis para o HPCC System.</para>
+
+    <sect1 id="HPCC_Resources" role="nobrk">
+      <title>Recursos do HPCC</title>
+
+      <para>O link de recursos está disponível abaixo do link do ícone
+      Operations. O link de recursos no ECL Watch oferece um link para o
+      portal da Web do HPCC Systems<superscript>®</superscript> . Visite o
+      portal da Web do HPCC Systems<superscript>®</superscript> em <ulink
+      url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> para
+      acessar atualizações de software, plugins, suporte, documentação e muito
+      mais. Lá você encontrará recursos úteis para execução e manutenção do
+      HPCC no portal da Web.</para>
+
+      <para>O ECL Watch oferece um link para a página de download do portal do
+      HPCC: <ulink
+      url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.
+      Essa é uma página onde é possível baixar pacotes de instalação, imagens
+      virtuais, código fonte, documentação e tutoriais.</para>
+    </sect1>
+
+    <sect1 id="SysAdm_Addl_Resources">
+      <title>Recursos Adicionais</title>
+
+      <para>Outras opções de ajuda com o HPCC e de aprendizado para o ECL
+      também estão disponíveis. Há cursos on-line disponíveis. Acesse:</para>
+
+      <para><ulink
+      url="https://learn.lexisnexis.com/hpcc">https://learn.lexisnexis.com/hpcc</ulink></para>
+
+      <para>Pode ser necessário se registrar no site. Há vários vídeos de
+      treinamento e outras informações bastante úteis.</para>
+    </sect1>
+  </chapter>
+</book>

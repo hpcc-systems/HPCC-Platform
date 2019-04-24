@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PARSE_Pattern_Value_Types">
+  <title>PARSE Pattern Value Types</title>
+
+  <para><emphasis>Há três tipos de valores especificamente projetados e
+  necessários para definir os atributos do padrão de
+  análise:</emphasis></para>
+
+  <para><emphasis role="bold">PATTERN </emphasis><indexterm>
+      <primary>PATTERN</primary>
+    </indexterm><emphasis>patternid </emphasis><emphasis role="bold">:=
+  </emphasis><emphasis>parsepattern</emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>patternid</emphasis></entry>
+
+          <entry>O nome do atributo do padrão.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parsepattern</emphasis></entry>
+
+          <entry>O padrão, bastante semelhante às expressões regulares. Pode
+          conter outros atributos PATTERN previamente definidos. Consulte
+          <emphasis role="bold"> Definições ParsePattern
+          abaixo.</emphasis></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>O tipo de valor <emphasis role="bold">PATTERN </emphasis> define uma
+  expressão de análise bastante semelhante aos padrões de uma <indexterm>
+      <primary>regular expression</primary>
+    </indexterm> .</para>
+
+  <para><emphasis role="bold">TOKEN </emphasis><indexterm>
+      <primary>TOKEN</primary>
+    </indexterm><emphasis>tokenid </emphasis><emphasis role="bold">:=
+  </emphasis><emphasis>parsepattern</emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>tokenid</emphasis></entry>
+
+          <entry>O nome do atributo do token.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parsepattern</emphasis></entry>
+
+          <entry>O padrão do token, bastante semelhante às expressões
+          regulares. Isso pode conter atributos PATTERN, mas nenhum atributo
+          TOKEN ou RULE. Consulte <emphasis role="bold"> Definições
+          ParsePattern abaixo.</emphasis></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>O tipo de valor <emphasis role="bold">TOKEN </emphasis> define uma
+  expressão de análise bastante semelhante a um PATTERN, mas uma vez
+  combinado, o analisador não recua para encontrar correspondências
+  alternativas como faria com PATTERN.</para>
+
+  <para><emphasis role="bold">RULE </emphasis><indexterm>
+      <primary>RULE</primary>
+    </indexterm><emphasis> </emphasis><emphasis role="bold">[
+  (</emphasis><emphasis> recstruct </emphasis><emphasis role="bold">)
+  ]</emphasis><emphasis> ruleid </emphasis><emphasis role="bold">:=
+  </emphasis><emphasis>rulePattern</emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>recstruct</emphasis></entry>
+
+          <entry>Opcional. O nome do atributo de uma estrutura RECORD (válido
+          apenas quando a opção PARSE é usada na função PARSE ).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>ruleid</emphasis></entry>
+
+          <entry>O nome do atributo da regra.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>rulePattern</emphasis></entry>
+
+          <entry>O padrão da regra, bastante semelhante às expressões
+          regulares. Isso pode conter atributos PATTERN, mas nenhum atributo
+          TOKEN ou RULE. Consulte <emphasis role="bold"> Definições
+          ParsePattern abaixo.</emphasis></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>O tipo de valor <emphasis role="bold">RULE </emphasis> define uma
+  expressão de análise que contém combinações de TOKENs. Se uma definição RULE
+  contiver um PATTERN será implicitamente convertido em um TOKEN. Assim como
+  PATTERN, uma vez combinado, o analisador recua para buscar correspondências
+  alternativas RULE.</para>
+
+  <para>Se a opção PARSE estiver presenta na função PARSE (implementando
+  análise tomita para a operação), cada rulePattern alternativa RULE
+  <emphasis>rulePattern</emphasis> deve apresentar uma função TRANSFORM
+  associada. Os diferentes padrões de entrada podem ser referidos usando $1,
+  $2, etc. Se o padrão possui um <emphasis>recstruct</emphasis> associado, $1
+  será uma linha; caso contrário, será uma string. As funções TRANSFORM padrão
+  são criadas em duas circunstâncias:</para>
+
+  <blockquote>
+    <para>1. Se não houver padrão, a transform padrão limpará a linha. Por
+    exemplo:</para>
+
+    <programlisting>RULE(myRecord) := ; //empty expression = cleared row</programlisting>
+
+    <para>2. Se houver apenas um único padrão com um registro associado, e
+    esse registro corresponder com o tipo de regra que está sendo definido.
+    Por exemplo:</para>
+
+    <programlisting>RULE(myRecord) e0 := '(' USE(myRecord, 'expression') ')';</programlisting>
+  </blockquote>
+
+  <sect2 id="ParsePattern_Definitions">
+    <title>Definições de ParsePattern</title>
+
+    <para>Um <emphasis> parsepattern </emphasis>pode conter qualquer
+    combinação dos seguintes elementos:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="125.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>pattern-name</emphasis></entry>
+
+            <entry>O nome de qualquer atributo PATTERN previamente
+            definido.</entry>
+          </row>
+
+          <row>
+            <entry>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Parênteses podem ser usados para agrupamento.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1 pattern2</emphasis></entry>
+
+            <entry><emphasis>Padrão 1</emphasis> acompanhamento por
+            <emphasis>padrão 2</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>'<emphasis>string</emphasis>'</entry>
+
+            <entry>Uma <emphasis>string </emphasis> de texto fixo que pode
+            conter caracteres de controle de escape da string octal (por
+            exemplo, CtrlZ é '\032').</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FIRST</emphasis></entry>
+
+            <entry>Corresponde com o início da string a ser buscada. Isto é
+            semelhante a expressão regular ^ token, que <emphasis
+            role="underline">não </emphasis> é suportada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LAST</emphasis></entry>
+
+            <entry>Corresponde com o final da string a ser buscada. Isto é
+            semelhante a expressão regular $ token, que <emphasis
+            role="underline">não</emphasis> é suportada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ANY</emphasis></entry>
+
+            <entry>Corresponde com qualquer caractere.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Repete o <emphasis>padrão</emphasis> em qualquer número de
+            vezes. O <emphasis>padrão</emphasis>* de sintaxe da expressão
+            regular é suportado como um atalho para
+            REPEAT(<emphasis>padrão</emphasis>).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>,<emphasis>
+            expression</emphasis>)</entry>
+
+            <entry>Repita o número de vezes da <emphasis>expressão do
+            padrão</emphasis> .O <emphasis>padrão</emphasis>tempo* de sintaxe
+            da <emphasis>expressão regular</emphasis> &lt;count&gt; é
+            suportado como um atalho para <emphasis>REPEAT</emphasis>, mas a
+            <emphasis>expressão</emphasis> regular <emphasis>delimitada que
+            repete o </emphasis>padrão de sintaxe {expressão} <emphasis
+            role="underline">Não é.</emphasis></entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>,<emphasis>
+            low</emphasis>, ANY [,MIN])</entry>
+
+            <entry>Repita o número de vezes do <emphasis>padrão</emphasis>
+            <emphasis> para </emphasis> baixo ou mais vezes (com a opção MIN
+            tornando-o uma correspondência mínima) O padrão + de sintaxe da
+            expressão <emphasis>regular</emphasis> é suportado como um atalho
+            para REPEAT( padrão<emphasis>, </emphasis>baixo<emphasis>, ANY),
+            mas a expressão regular delimitada que repete o </emphasis>padrão
+            <emphasis> de sintaxe</emphasis> {expressão<emphasis>}
+            </emphasis>não <emphasis role="underline"> é</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>,<emphasis>
+            low</emphasis>,<emphasis> high</emphasis>)</entry>
+
+            <entry>Repita o número de vezes do <emphasis>padrão</emphasis> de
+            <emphasis>baixo </emphasis> para <emphasis>alto </emphasis> Repita
+            o número de vezes do padrão {
+            <emphasis>low</emphasis>,<emphasis>high</emphasis>}. A expressão
+            regular delimitada que repete o padrão{<emphasis>low</emphasis>,
+            <emphasis role="underline">high</emphasis> } de sintaxe não é
+            suportada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">OPT</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Um <emphasis>padrão</emphasis> opcional. O
+            <emphasis>padrão</emphasis>? de sintaxe da expressão regular é
+            suportado como um atalho para OPT
+            (<emphasis>pattern</emphasis>).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1</emphasis> <emphasis
+            role="bold">OR</emphasis> <emphasis>pattern2</emphasis></entry>
+
+            <entry>Tanto <emphasis>pattern1</emphasis> quanto
+            <emphasis>pattern2</emphasis>. O <emphasis>padrão1</emphasis> |
+            <emphasis>padrão2</emphasis> de sintaxe da expressão regular é
+            suportado como um atalho para OR.</entry>
+          </row>
+
+          <row>
+            <entry>[<emphasis>list-of-patterns</emphasis>]</entry>
+
+            <entry>Uma lista delimitada por vírgula dos
+            <emphasis>padrões</emphasis> alternativos úteis para os conjuntos
+            de string. Este é o mesmo que OR.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
+            IN</emphasis> <emphasis>pattern2</emphasis></entry>
+
+            <entry>O texto correspondente ao <emphasis>padrão1 </emphasis>
+            também corresponde com o <emphasis>padrão2</emphasis>?
+            <emphasis>Pattern1</emphasis> [NOT] =
+            <emphasis>pattern2</emphasis> and <emphasis>pattern1</emphasis> !=
+            <emphasis>pattern2 </emphasis> são iguais ao IN, porém seu uso faz
+            mais sentido em algumas situações.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
+            BEFORE</emphasis> <emphasis>pattern2</emphasis></entry>
+
+            <entry>Verifique se o <emphasis>padrão2</emphasis> especificado
+            [não] precede o <emphasis> padrão1</emphasis>. <emphasis>O
+            padrão2</emphasis> não é consumido a partir da entrada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
+            AFTER</emphasis> <emphasis>pattern2</emphasis></entry>
+
+            <entry>Verifique se o <emphasis>padrão2</emphasis> especificado
+            [não] precede o <emphasis>padrão1</emphasis>. <emphasis>O
+            Padrão2</emphasis> não consome nenhuma entrada. Também deve ser de
+            comprimento fixo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern</emphasis> <emphasis
+            role="bold">LENGTH</emphasis>(<emphasis>range</emphasis>)</entry>
+
+            <entry>Verifique se o comprimento do <emphasis>padrão</emphasis>
+            está dentro do <emphasis>intervalo</emphasis>. <emphasis>O
+            intervalo </emphasis> pode ter a forma
+            &lt;value&gt;,&lt;min&gt;..&lt;max&gt;,&lt;min&gt;.. ou
+            ..&lt;max&gt; Assim, "digit*3 NOT BEFORE digit" poderia ser
+            representado como "digit* LENGTH(3)." Isto é mais eficiente, e
+            digit* pode ser definido como um token. "digit* LENGTH(4..6)"
+            corresponde com as sequências de dígito 4,5 e 6.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">VALIDATE</emphasis>(<emphasis>pattern</emphasis>,
+            <emphasis>isValidExpression</emphasis>)</entry>
+
+            <entry>Avalie <emphasis>isValidExpression </emphasis> para
+            verificar se o <emphasis>padrão</emphasis> é ou não é válido.
+            <emphasis>isValidExpression </emphasis> deve usar MATCHTEXT ou
+            MATCHUNICODE para se referir ao texto correspondente ao
+            <emphasis>padrão</emphasis>. Por exemplo, VALIDATE(alpha*,
+            MATCHTEXT[4]='Q') é equivalente a alpha* = ANY*3 'Q' ANY* ou de
+            forna mais útil :
+            VALIDATE(alpha*,isSurnameService(MATCHTEXT));</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">VALIDATE</emphasis>(<emphasis>pattern</emphasis>,
+            <emphasis>isValidAsciiExpression</emphasis>,
+            <emphasis>isValidUnicodeExpression</emphasis>)</entry>
+
+            <entry>Uma variante de dois parâmetros. Use o primeiro
+            <emphasis>isValidAsciiExpression</emphasis> se a string que
+            estiver sendo pesquisada for ASCII; use o segundo se a string for
+            Unicode.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">NOCASE</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Corresponde com o <emphasis>padrão</emphasis> sem distinção
+            entre maiúsculas e minúsculas, substituindo a opção CASE na função
+            PARSE . Isto pode ser aninhado dentro de um padrão da opção
+            CASE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">CASE</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Correspondências <emphasis>pattern</emphasis> corresponde
+            com o padrão com distinção entre maiúsculas e minúsculas,
+            substituindo a opção NOCASE na função PARSE . Isto pode ser
+            aninhado dentro de um padrão da opção NOCASE .</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern</emphasis> <emphasis
+            role="bold">PENALTY</emphasis>(<emphasis>cost</emphasis>)</entry>
+
+            <entry>Associe um <emphasis>custo </emphasis> de penalidade à essa
+            correspondência do <emphasis>padrão</emphasis>. Isto pode ser
+            usado para recuperar de gramáticas com palavras desconhecidas.
+            Isto requer o uso da opção BEST na operação PARSE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">TOKEN</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Trate o <emphasis>padrão </emphasis> como um token.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PATTERN</emphasis>('<emphasis>regular
+            expression</emphasis></entry>
+
+            <entry><programlisting role="tab">Define um padrão usando a <emphasis>expressão regular </emphasis>constituída a partir
+dos seguintes elementos de sintaxe suportados:
+ (x)                Agrupamento (não deve ser usado para correpondência)
+ x|y                Alterativos x ou y xy
+ xy                 Concatenação de x e y.
+ x* x*?             Zero ou mais. Greedy e versões mínimas.
+ x+ x+?             Um ou mais. Greedy e versões mínimas.
+ x? x??             Zero ou um. Greedy e versões mínimas
+ x{m} x{m,} x{m,n}  Repetições delimitadas, também versões mínimas
+ [0-9abcdef]        Um conjunto de caracteres
+                        (pode usar ^ para a lista de exclusão)
+ (?=...) (?!...)     Declaração look-ahead
+ (?&lt;=...) (?&lt;!...)   Declaração look-behind
+
+Sequências Escape de declaração look-behind podem ser 
+usadas para definir intervalos de caracteres UNICODE.
+A codificação é Big Endian UTF-16.  
+Por exemplo:
+PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
+</programlisting><!--*** Note this and the following row entries have been monospace optimized for PDF/HTML*** --></entry>
+          </row>
+
+          <row>
+            <entry/>
+
+            <entry><programlisting role="tab">As seguintes expressões de classes de caractere são suportadas
+(dentro dos conjuntos): 
+[:alnum:] [:cntrl:] [:lower:] [:upper:] [:space:] 
+[:alpha:] [:digit:] [:print:] [:blank:] [:graph:] 
+[:punct:] [:xdigit:]</programlisting></entry>
+          </row>
+
+          <row>
+            <entry/>
+
+            <entry><programlisting role="tab"><emphasis>Expressões regulares</emphasis> não suportam
+     ^ $ para marcar o início/fim dos símbolos
+     de agrupamento da string [.ch.]
+     Equivalence<indexterm>
+                  <primary>Equivalence</primary>
+                </indexterm> class [=e=]</programlisting></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">USE</emphasis>(<emphasis>
+            </emphasis><emphasis role="bold">[</emphasis><emphasis> recstruct
+            , </emphasis><emphasis role="bold">]
+            </emphasis>'<emphasis>symbolname</emphasis>' )</entry>
+
+            <entry>Especifica o uso de um padrão definido posteriormente com a
+            função DEFINE('symbolname') .<emphasis role="bold">
+            </emphasis>'<emphasis>symbolname</emphasis>function, Isso cria uma
+            <indexterm>
+                <primary>referência futura</primary>
+              </indexterm>, prática apenas nos padrões RULE para análise
+            tomita (a opção PARSE está presente na função PARSE ).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SELF </emphasis></entry>
+
+            <entry>Referencia o padrão que está sendo definido (recursivo).
+            Isto é prático apenas nos padrões RULE para análise tomita (a
+            opção PARSE está presente na função PARSE ).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Exemplos:</para>
+
+    <programlisting>rs := RECORD
+STRING100 line;
+END;
+ds := DATASET([{'the fox; and the hen'}], rs);
+
+
+PATTERN ws := PATTERN('[ \t\r\n]');
+PATTERN Alpha := PATTERN('[A-Za-z]');
+PATTERN Word := Alpha+;
+PATTERN Article := ['the', 'A'];
+PATTERN JustAWord := Word PENALTY(1);
+PATTERN notHen := VALIDATE(Word, MATCHTEXT != 'hen');
+PATTERN NoHenWord := notHen PENALTY(1);
+RULE NounPhraseComponent1 := JustAWord | Article ws Word;
+RULE NounPhraseComponent2 := NoHenWord | Article ws Word;
+ps1 := RECORD
+          out1 := MATCHTEXT(NounPhraseComponent1);
+END;
+
+ps2 := RECORD
+          out2 := MATCHTEXT(NounPhraseComponent2);
+END;
+
+p1 := PARSE(ds, line, NounPhraseComponent1, ps1, BEST, MANY, NOCASE);
+p2 := PARSE(ds, line, NounPhraseComponent2, ps2, BEST, MANY, NOCASE);
+OUTPUT(p1);
+OUTPUT(p2);</programlisting>
+
+    <para>Ver também: <link linkend="PARSE">PARSE</link>, <link
+    linkend="RECORD_Structure">Estrutura RECORD</link>, <link
+    linkend="TRANSFORM_Structure">Estrutura TRANSFORM</link>, <link
+    linkend="DATASET">DATASET</link></para>
+  </sect2>
+</sect1>

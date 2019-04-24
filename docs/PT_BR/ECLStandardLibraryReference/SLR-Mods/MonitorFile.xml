@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MonitorFile">
+  <title>MonitorFile</title>
+
+  <para><emphasis role="bold">STD.File.MonitorFile<indexterm>
+      <primary>STD.File.MonitorFile</primary>
+    </indexterm><indexterm>
+      <primary>File.MonitorFile</primary>
+    </indexterm><indexterm>
+      <primary>MonitorFile</primary>
+    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> ip </emphasis> <emphasis role="bold">] ,
+  </emphasis> <emphasis>filename, </emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>,subdirs</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,shotcount</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,espserverIPport</emphasis> <emphasis role="bold">]
+  )</emphasis> <emphasis/></para>
+
+  <para><emphasis>dfuwuid </emphasis> <emphasis role="bold">:=
+  STD.File.fMonitorFile<indexterm>
+      <primary>STD.File.fMonitorFile</primary>
+    </indexterm><indexterm>
+      <primary>File.fMonitorFile</primary>
+    </indexterm><indexterm>
+      <primary>fMonitorFile</primary>
+    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> ip </emphasis> <emphasis role="bold">] ,
+  </emphasis> <emphasis>filename, </emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>,subdirs</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,shotcount</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,espserverIPport</emphasis> <emphasis role="bold">]
+  );</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>event</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome definido pelo
+          usuário do evento a ser acionado quando
+          <emphasis>filename</emphasis> aparecer. O valor é usado como o
+          primeiro parâmetro da função EVENT.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>ip</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o endereço
+          IP do arquivo a ser monitorado. Normalmente, é uma zona de entrada
+          de arquivos. Pode ser omitido apenas se o parâmetro
+          <emphasis>filename</emphasis> contém uma URL completa.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o caminho completo
+          do arquivo a monitorar. Pode conter caracteres curinga (* e
+          ?).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subdirs</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano que indica se devem ser incluídos
+          os arquivos em subdiretórios que correspondem à máscara de curingas,
+          quando <emphasis>filename</emphasis> contém curingas. Se omitido, o
+          padrão é falso.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>shotcount</emphasis></entry>
+
+          <entry>Opcional. Um valor inteiro que indica o número de vezes que o
+          evento deve ser gerado antes da conclusão do job de monitoramento.
+          Um valor de um negativo (-1) indica que o job de monitoramento
+          continuará até ser abortada manualmente. Se omitido, o padrão é
+          1.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>espserverIPport</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o
+          protocolo, o IP, a porta e o diretório ou DNS equivalente do
+          programa do servidor' ESP. Normalmente são os mesmos IP e porta do
+          ECL Watch, com "/FileSpray" anexado. Se omitida, o padrão é o valor
+          contido no atributo lib_system.ws_fs_server.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuwuid</emphasis></entry>
+
+          <entry>O nome do atributo que receberá a string terminada por nulo
+          que contém o ID da workunit DFU (DFUWUID) gerado para o job de
+          monitoramento.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>fMonitorFile retorna uma string terminada por nulo que contém
+          o ID da workunit DFU (DFUWUID).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">MonitorFile </emphasis> cria uma
+  workunit de monitoramento de arquivos no servidor do DFU. Após ser recebida,
+  a tarefa entra no modo de monitoramento (que pode ser vista na tela da
+  workunit DFU do ECL Watch), que sonda em intervalos fixos. Esse intervalo é
+  especificado na configuração <emphasis
+  role="bold">monitorinterval</emphasis> do servidor do DFU O intervalo padrão
+  é 900 segundos (15 minutos). Se um arquivo com nome adequado chegar nesse
+  intervalo, será acionado um <emphasis>evento</emphasis> com o nome do objeto
+  acionador como subtipo do evento (consulte a função EVENT).</para>
+
+  <para>Esse processo continua até que:</para>
+
+  <para>1) O número do eventos <emphasis>shotcount</emphasis> tenham sido
+  gerados</para>
+
+  <para>2) O usuário aborte a workunit DFU.</para>
+
+  <para>As funções STD.File.AbortDfuWorkunit e STD.File.WaitDfuWorkunit podem
+  ser usadas para abortar ou aguardar o job DFU passando por elas e retornando
+  ao <emphasis>dfuwuid</emphasis>.</para>
+
+  <para><emphasis role="bold">Observe as seguintes advertências e
+  restrições:</emphasis></para>
+
+  <para>1) Os eventos são gerados apenas no início do job de monitoração ou
+  posteriormente, de acordo com o intervalo de sondagem.</para>
+
+  <para>2) Observe que <emphasis>evento</emphasis> é gerado se o arquivo
+  físico tiver sido criado desde o último intervalo de sondagem.
+  Consequentemente, o <emphasis>evento</emphasis> poderá ocorrer antes de o
+  arquivo ser fechado e os dados serem todos gravados. Para garantir que o
+  arquivo não seja lido posteriormente antes de ser concluído, você deve usar
+  uma técnica que elimine essa possibilidade. Por exemplo, use um arquivo
+  separado de "indicador" em vez do próprio arquivo, ou renomeie o arquivo
+  depois de criado e totalmente gravado.</para>
+
+  <para>3) Ao monitorar arquivos físicos, o parâmetro de subtipo da função
+  EVENT (seu segundo parâmetro) corresponde ao URL completo do arquivo com um
+  IP absoluto em vez do nome DNS/netbios do arquivo. Esse parâmetro não pode
+  ser recuperado, mas pode ser usado apenas para corresponder um valor
+  específico.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">EventName := 'MyFileEvent';
+FileName  := 'c:\\test\\myfile';
+LZ := '10.150.50.14';
+STD.File.MonitorFile(EventName,LZ,FileName);
+OUTPUT('File Found') : WHEN(EVENT(EventName,'*'),COUNT(1));
+</programlisting>
+</sect1>

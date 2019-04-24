@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ToHexPairs">
+  <title>ToHexPairs</title>
+
+  <para><emphasis role="bold">STD.Str.ToHexPairs<indexterm>
+      <primary>STD.Str.ToHexPairs</primary>
+    </indexterm><indexterm>
+      <primary>Str.ToHexPairs</primary>
+    </indexterm><indexterm>
+      <primary>ToHexPairs</primary>
+    </indexterm>(</emphasis> <emphasis>Source</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>Source</emphasis></entry>
+
+          <entry>O valor de dados que deve ser expandido como uma sequência de pares hexadecimais.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:<emphasis> </emphasis></entry>
+
+          <entry>ToHexPairs retorna uma string que contém uma sequência de pares hexadecimais.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">ToHexPairs </emphasis> converte o valor de dados em uma sequência de pares hexadecimais.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.Str.ToHexPairs(D'\000\001\377\200');</programlisting>
+</sect1>

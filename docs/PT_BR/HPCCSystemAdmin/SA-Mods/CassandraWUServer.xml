@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CassandraWUStorage">
+  <title>Utilizando o Cassandra para armazenamento de Workunit.</title>
+
+  <para>A partir da versão 6.0.0, é possível configurar seu sistema para usar
+  o banco de dados <trademark>Cassandra</trademark> da Apache para
+  armazenamento de workunits. O Cassandra NoSQL data store da Apache é um
+  framework de software com licença gratuita que suporta aplicações de
+  distribuição intensa de dados.</para>
+
+  <para>A configuração padrão do HPCC continua idêntica – as Workunits são
+  armazenadas no data store do Dali e o Sasha é normalmente configurado para
+  arquivar Workunits em disco a fim de economizar o uso de memória.</para>
+
+  <para>Alternar para o armazenamento de Workunits no Cassandra elimina a
+  necessidade de arquivá-las e permite que você gerencie seus dados de forma
+  independente.</para>
+
+  <para>Esta seção detalha as etapas para configurar a plataforma HPCC a usar
+  Cassandra como um servidor de Workunits.</para>
+
+  <sect2 id="CassandraWorkunitServer">
+    <title>Cassandra como um servidor Workunit</title>
+
+    <para><emphasis role="bold">Prós e contras</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec/>
+
+          <colspec/>
+
+          <thead>
+            <row>
+              <entry align="left">Dali</entry>
+
+              <entry align="left">Cassandra</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>Armazenamento no Dali não requer trabalho ou instalação
+              adicional de software</entry>
+
+              <entry>Exige a instalação e a configuração de um servidor
+              Cassandra</entry>
+            </row>
+
+            <row>
+              <entry>Sasha fornece serviço de limpeza simples</entry>
+
+              <entry>Exige sua própria organização e manutenção</entry>
+            </row>
+
+            <row>
+              <entry>Limitado pela memória do Dali</entry>
+
+              <entry>Ilimitado (escalabilidade elástica)</entry>
+            </row>
+
+            <row>
+              <entry>Workunits arquivadas são difíceis de acessar, devem ser
+              restauradas antes que o resultado seja visto</entry>
+
+              <entry>Não é necessário arquivar, de forma que todas as workunit
+              permanecer "em tempo real"</entry>
+            </row>
+
+            <row>
+              <entry>Localização única</entry>
+
+              <entry>Distribuído, escalonável e altamente disponível.</entry>
+            </row>
+
+            <row>
+              <entry>Backup único de dados suportados. Fail over
+              manual</entry>
+
+              <entry>Tolerância a falhas inerente com replicação de dados,
+              projetada para alta disponibilidade.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="CassandraInstallationandconfigOverview" role="brk">
+    <title>Instalação e Visão Geral da Configuração</title>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Instale o Cassandra e configure-o como desejar. Os únicos
+          requisitos para trabalhar com uma plataforma HPCC são:</para>
+
+          <para><orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Crie um keyspace para usar para o armazenamento das
+                workunits no Cassandra. O padrão é hpcc.</para>
+              </listitem>
+
+              <listitem>
+                <para>Se quiser segurança, é necessário configurar a
+                autenticação do Cassandra e criar um superusuário para o HPCC
+                usar. Essas credenciais precisam então ser inseridas na
+                configuração do DaliPlugin no Gerenciador de
+                Configurações.</para>
+              </listitem>
+
+              <listitem>
+                <para>Verifique se é possível acessar o servidor Cassandra
+                pelos nós do HPCC .</para>
+              </listitem>
+
+              <listitem>
+                <para>Conheça as configurações do Cassandra (IP, porta,
+                keyspace, credenciais de usuário etc.)</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Use o Gerenciador de Configurações para definir a plataforma
+          HPCC para usar o Cassandra para armazenamento das Workunits.</para>
+        </listitem>
+
+        <listitem>
+          <para>Certifique-se de que o Cassandra esteja sendo
+          executado.</para>
+
+          <para>Depois de ter configurado o HPCC para usar o Cassandra para
+          armazenamento das workunits, é necessário garantir que o Cassandra
+          esteja em execução antes de iniciar o sistema.</para>
+        </listitem>
+
+        <listitem>
+          <para>Force o arquivo environment.xml e reinicie a plataforma
+          HPCC.</para>
+        </listitem>
+
+        <listitem>
+          <para>Se possuir Workunits existentes, exporte-as do Dali e
+          importe-as no Cassandra usando a wutool.</para>
+        </listitem>
+
+        <listitem>
+          <para>Se possuir Workunits arquivadas e quiser ativá-las, importe-as
+          para o Cassandra.</para>
+
+          <para><orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Depois que as Workunits forem armazenadas no armazém de
+                Workunits do Cassandra, o Sasha não vai mais arquivar
+                Workunits (independentemente das configurações que possa
+                ter)</para>
+              </listitem>
+
+              <listitem>
+                <para>Quaisquer Workunits previamente arquivadas permanecerão
+                armazenadas no servidor Sasha e continuarão disponíveis da
+                mesma forma que antes.</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+      </orderedlist></para>
+  </sect2>
+
+  <sect2 id="cfgCassandraWuStorage" role="brk">
+    <title>Configure sua plataforma para utilizar o Cassandra para o
+    armazenamento de Workunit</title>
+
+    <para>Essa opção é configurada ao adicionar um componente DaliPlugin ao
+    seu sistema.</para>
+
+    <sect3 id="cassandra_ConnectToConfigMgr">
+      <title>Conectar-se ao Gerenciador de Configurações (Configuration
+      Manager)</title>
+
+      <para>Para alterar a configuração para os componentes do HPCC ,
+      conecte-se ao Configuration Manager.</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Pare todos os componentes do HPCC se estiverem em
+          execução.</para>
+        </listitem>
+
+        <listitem>
+          <para>Verifique se eles não estão mais sendo executados. É possível
+          usar um único comando, como: <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Inicie o Gerenciador de Configurações.</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Conecte seu navegador de Internet à interface da Web do
+          Gerenciador de Configurações.</para>
+
+          <para>(usando o URL
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, onde
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> , é o endereço IP
+          do nó que está executando o Gerenciador de Configuração)</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione o <emphasis role="bold">botão Advanced
+          View</emphasis> .</para>
+        </listitem>
+
+        <listitem>
+          <para>Use a lista suspensa para selecionar o arquivo de configuração
+          XML adequado. <variablelist>
+              <varlistentry>
+                <term>Observação:</term>
+
+                <listitem>
+                  <para>Gerenciador de Configurações. <emphasis
+                  role="bold">nunca</emphasis> funciona no arquivo de
+                  configurações ativo. Após terminar a edição, será necessário
+                  copiar o arquivo environment.xml para o local ativo e
+                  forçá-lo a todos os nós.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </listitem>
+
+        <listitem>
+          <para>Marque a caixa de seleção <emphasis role="bold">Write
+          Access</emphasis> .</para>
+
+          <para>O acesso padrão é somente leitura. Muitas opções estão
+          disponíveis apenas quando o acesso à gravação estiver
+          ativado.</para>
+
+          <para/>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3 id="addDaliPlugin_component" role="brk">
+      <title>Adicionando o componente DaliServerPlugin</title>
+
+      <para>O DaliServerPlugin controla suas opções de armazenamento de
+      workunits no Cassandra.</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Clique com o botão direito no Painel de <emphasis
+          role="bold">Navigator</emphasis> e selecione <emphasis
+          role="bold">New Components</emphasis> no menu pop-up; em seguida,
+          selecione <emphasis role="bold"> DaliServerPlugin</emphasis> no menu
+          pop-up. <graphic fileref="../../images/Cass1.jpg"
+          vendor="configmgrSS"/></para>
+
+          <para/>
+        </listitem>
+      </orderedlist>
+
+      <orderedlist continuation="continues" numeration="arabic">
+        <listitem>
+          <para>Insira as propriedades do <emphasis
+          role="bold">DaliServerPlugin </emphasis>:</para>
+
+          <para><orderedlist numeration="loweralpha">
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Preencha a aba <emphasis
+                role="bold">Attributes</emphasis> com as configurações
+                adequadas de seu Cassandra Server existente. <graphic
+                fileref="../../images/Cass2.jpg" vendor="configmgrSS"/></para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Adicione opções na aba Options.<graphic
+                fileref="../../images/Cass3.jpg" vendor="configmgrSS"/></para>
+
+                <para><variablelist>
+                    <varlistentry>
+                      <term>Observação:</term>
+
+                      <listitem>
+                        <para>O nome de usuário e senha são necessários apenas
+                        caso seu servidor Cassandra esteja configurado para
+                        exigir credenciais.</para>
+                      </listitem>
+                    </varlistentry>
+                  </variablelist></para>
+              </listitem>
+
+              <listitem>
+                <para>Clique no ícone de disco para salvar.</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Copie o novo arquivo xml do diretório de origem para
+          /etc/HPCCSystems e renomeie o arquivo para environment.xml</para>
+
+          <programlisting># for example sudo cp /etc/HPCCSystems/source/NewEnvironment.xml 
+                      /etc/HPCCSystems/environment.xml</programlisting>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic contentwidth="29"
+                    fileref="../../images/caution.png"/></entry>
+
+                    <entry>Certifique-se de que você possua direitos
+                    suficientes para gravar arquivos no diretório de destino
+                    antes de copiar. Se solicitado a substituir o arquivo de
+                    destino, responda <emphasis
+                    role="bold">yes</emphasis>.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Copie o arquivo <emphasis
+          role="bold">/etc/HPCCSystems/environment.xml</emphasis> para
+          <emphasis role="bold">/etc/HPCCSystems/</emphasis> em <emphasis
+          role="bold">cada</emphasis> nó.</para>
+
+          <para>É possível criar um script para forçar o arquivo XML para
+          todos os nós. Um script de amostra é fornecido com o HPCC. Os
+          comandos a seguir copiam os arquivos XML para todos os nós como
+          exigido:</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Reinicie o HPCC System em <emphasis
+          role="bold">todos</emphasis> os nós.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+  </sect2>
+
+  <sect2 id="wutool" role="brk">
+    <title><emphasis role="bold">Utilizando o wutool </emphasis></title>
+
+    <para><emphasis role="bold">wutool <indexterm>
+        <primary>wutool</primary>
+      </indexterm></emphasis><emphasis>action </emphasis><emphasis
+    role="bold">[WUID=nnn </emphasis><emphasis role="bold">] [ DALISERVER=ip |
+    CASSANDRASERVER=ip] [option=value]</emphasis></para>
+
+    <para>A wutool é um utilitário de linha de comando usado para manter seu
+    armazenamento das workunits. Ela pode ser encontrada em
+    /opt/HPCCSystems/bin/ em qualquer servidor onde a plataforma tenha sido
+    instalada. É possível usar esse utilitário para exportar suas Workunits de
+    um servidor Dali e depois importar para um data storage do Cassandra
+    Também é possível usá-la para importar workunits arquivadas em um servidor
+    Sasha.</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="125.55pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">Ações</emphasis></entry>
+
+            <entry/>
+          </row>
+
+          <row>
+            <entry>list &lt;workunits&gt;</entry>
+
+            <entry>Listar Workunits</entry>
+          </row>
+
+          <row>
+            <entry>dump &lt;workunits&gt;</entry>
+
+            <entry>Descarregar o xml para Workunits especificadas.</entry>
+          </row>
+
+          <row>
+            <entry>delete &lt;workunits&gt;</entry>
+
+            <entry>Remover Workunits.</entry>
+          </row>
+
+          <row>
+            <entry>results &lt;workunits&gt;</entry>
+
+            <entry>Descarregar resultados para as workunits
+            especificadas.</entry>
+          </row>
+
+          <row>
+            <entry>archive &lt;workunits&gt;</entry>
+
+            <entry>Arquivar Workunits especificadas em arquivos xml. Há
+            suporte para as seguintes opções: <para>[TO=&lt;directory&gt;]
+            </para><para>[DEL=1] </para><para>[DELETERESULTS=1]
+            </para><para>[INCLUDEFILES=1]</para></entry>
+          </row>
+
+          <row>
+            <entry>restore &lt;filenames&gt;</entry>
+
+            <entry>Restaurar a partir de arquivos xml.
+            [INCLUDEFILES=1]</entry>
+          </row>
+
+          <row>
+            <entry>orphans</entry>
+
+            <entry>Remover informações órfãs do armazenamento</entry>
+          </row>
+
+          <row>
+            <entry>cleanup [days=NN]</entry>
+
+            <entry>Remover Workunits com mais de NN dias</entry>
+          </row>
+
+          <row>
+            <entry>validate</entry>
+
+            <entry>Verificar se há erros no conteúdo do repositório de
+            Workunits. [FIX=1] tentará reparar quaisquer problemas
+            encontrados.</entry>
+          </row>
+
+          <row>
+            <entry>clear</entry>
+
+            <entry>Remover todo o repositório da workunit (exige entire=1
+            repository=1)</entry>
+          </row>
+
+          <row>
+            <entry>initialize</entry>
+
+            <entry>Inicializar o novo repositório de workunit</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>&lt;workunits&gt; pode ser especificado na linha de comando ou
+    usando um filter owner=XXXX. Se omitido, todas as workunits são
+    selecionadas.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec align="left" colwidth="300pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">Opções </emphasis><para>(Essas
+              opções são válidas se o CASSANDRASERVER estiver
+              especificado)</para></entry>
+
+              <entry/>
+            </row>
+
+            <row>
+              <entry>CASSANDRA_KEYSPACE<para/></entry>
+
+              <entry>Keyspace do Cassandra, o padrão é HPCC.</entry>
+            </row>
+
+            <row>
+              <entry>CASSANDRA_USER</entry>
+
+              <entry>Nome de usuário do Cassandra a ser usado (se
+              necessário).</entry>
+            </row>
+
+            <row>
+              <entry>CASSANDRA_PASSWORD</entry>
+
+              <entry>Senha do Cassandra a ser usada (se necessário).</entry>
+            </row>
+
+            <row>
+              <entry>TRACELEVEL</entry>
+
+              <entry>Trace level (1-10)</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>Exemplos:</para>
+
+    <para><programlisting>/opt/HPCCSystems/bin/wutool archive DALISERVER=. del=1
+
+/opt/HPCCSystems/bin/wutool restore *.xml 
+CASSANDRASERVER=192.168.56.120 CASSANDRA_KEYSPACE=hpcc2 </programlisting></para>
+  </sect2>
+</sect1>

@@ -1,0 +1,838 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ldap_config">
+  <title>Configurando HPCC para Autenticação</title>
+
+  <para>Esta seção detalha as etapas para configurar a plataforma HPCC a usar
+  autenticação. Atualmente existem algumas formas de usar a autenticação em
+  seu HPCC System: autenticação simples htpasswd, LDAP, ou outro método de
+  segurança de plugin.</para>
+
+  <para>O método de autenticação htpasswd constitui na autenticação simples da
+  senha Ele concede ou nega acesso a um usuário apenas com base na
+  autenticação de senhas criptografadas por MD5.</para>
+
+  <para>Autenticação LDAP oferece mais recursos e opções LDAP é capaz de
+  autenticar usuários e de adicionar granularidade à autenticação. LDAP
+  permite controlar acessos agrupados a recursos, funções e arquivos.</para>
+
+  <para>Você deve levar em conta as necessidades do seu sistema na hora de
+  decidir qual desses métodos é o mais adequado para seu ambiente.</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <?dbfo keep-together="always"?>
+
+    <tgroup cols="2">
+      <colspec colwidth="49.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><inlinegraphic fileref="../../images/caution.png"/></entry>
+
+          <entry>Ao implementar qualquer forma de autenticação, recomendamos
+          ativar seu servidor ESP a usar HTTPS (SSL) e a configurar ALL
+          (TODAS) as ligações do serviço a usarem apenas HTTPS. Isso garante
+          que as credenciais sejam transmitidas pela rede usando a
+          criptografia SSL <emphasis role="bold">Veja Como configurar o ESP
+          Server para usar HTTPS (SSL)</emphasis> para obter mais informações.
+          <para>Não se deve tentar isso até que o ambiente a ser usado já
+          tenha sido implementado, configurado e certificado. </para></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <sect2 id="Using_htpasswd_Authentication">
+    <title>Utilizando autenticação htpasswd</title>
+
+    <para>O modelo htpasswd oferece a autenticação simples de senhas para todo
+    o sistema. Esta seção contém informações de instalação e de implementação
+    do modelo de autenticação htpasswd.</para>
+
+    <sect3 id="htpasswd_ConnectToConfigMgr">
+      <title>Conectar ao Configuration Manager</title>
+
+      <para>Para alterar a configuração para os componentes do HPCC,
+      conecte-se ao Configuration Manager.</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Pare todos os componentes do HPCC se estiverem em
+          execução.</para>
+        </listitem>
+
+        <listitem>
+          <para>Verifique se eles não estão mais sendo executados. É possível
+          usar um comando único, como: <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Inicie o Gerenciador de Configurações.</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Conecte seu navegador de Internet à interface da Web do
+          Gerenciador de Configurações.</para>
+
+          <para>(usando o URL
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, onde
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> é o endereço IP do
+          nó que está executando o Configuration Manager)</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione o botão de opção <emphasis role="bold">Advanced
+          View</emphasis> .</para>
+        </listitem>
+
+        <listitem>
+          <para>Use a lista suspensa para selecionar o arquivo de configuração
+          XML adequado. <variablelist>
+              <varlistentry>
+                <term>Observação:</term>
+
+                <listitem>
+                  <para>O Configuration Manager <emphasis
+                  role="bold">nunca</emphasis> funciona no arquivo de
+                  configurações ativo. Após terminar a edição, será necessário
+                  copiar o arquivo environment.xml para o local ativo e
+                  forçá-lo a todos os nós.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </listitem>
+
+        <listitem>
+          <para>Marque a caixa de seleção <emphasis role="bold">Write
+          Acesss</emphasis> .</para>
+
+          <para>O acesso padrão é somente leitura. Muitas opções estão
+          disponíveis apenas quando o acesso à gravação estiver
+          ativado.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3 id="Enabling_htpasswd_AUthentication">
+      <title>Habilitando a autenticação htpasswd no HPCC</title>
+
+      <orderedlist continuation="continues">
+        <listitem>
+          <para>Crie uma instância do <emphasis role="bold">Security Manager
+          </emphasis> Plugin: <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Clique com o botão direito no Painel de navegação ao
+                lado esquerdo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione <emphasis role="bold">New
+                Components.</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione o componente <emphasis
+                role="bold">htpasswdsecmgr</emphasis> .</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Configure o plugin do htpasswd<figure>
+              <title>Página “Security Mgr Configuration” (Configuração do
+              Security Manager)</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/SECM_001.jpg"
+                             vendor="configmgrSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <orderedlist numeration="loweralpha">
+            <listitem>
+              <para>Digite a localização do arquivo Htpasswd que contém o nome
+              do usuário e a senha no sistema de arquivos Linux para <emphasis
+              role="bold">htpasswdFile</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">InstanceFactoryName</emphasis> é o
+              nome da função de fábrica do gerenciador de segurança
+              implementado na biblioteca de segurança. O padrão é
+              "createInstance". Use o padrão na implementação do método
+              Htpasswd.</para>
+            </listitem>
+
+            <listitem>
+              <para>Forneça um nome da biblioteca para <emphasis
+              role="bold">libName</emphasis>. Para Htpasswd, use <emphasis
+              role="blue">libhtpasswdSecurity.so</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Forneça um nome da instância para o valor <emphasis
+              role="bold">nome</emphasis> . Por exemplo, <emphasis
+              role="blue">htpasswdsecmgr</emphasis>.</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+
+        <listitem>
+          <para>Selecione <emphasis role="bold">Esp - myesp</emphasis> no
+          painel do navegador ao lado esquerdo.</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>Se tiver mais de um ESP Server, use apenas um deles para
+                autenticação.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Associe o Security Manager Plugin às ligações do ESP.
+          <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Clique no <emphasis role="bold">Esp</emphasis> de
+                destino no painel do navegador ao lado esquerdo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione a <emphasis role="bold"> aba de </emphasis>
+                <emphasis role="bold">ligações do ESP</emphasis>
+                Service</para>
+              </listitem>
+
+              <listitem>
+                <para>Nas ligações de destino, selecione a instância
+                securityMgrPlugin adequada a partir da lista suspensa.
+                <graphic fileref="../../images/SECM_004.jpg"
+                vendor="configmgrSS"/></para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione um plugin de segurança para cada serviço que exija
+          um gerenciador de segurança.</para>
+
+          <para>Por exemplo, na imagem acima selecione <emphasis
+          role="blue">htpasswdsecmgr</emphasis> para o serviço smc. Em
+          seguida, selecione para ws_ecl e para qualquer outro serviço que
+          deseja usar a segurança htpasswd.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Selecione a aba <emphasis
+          role="bold">Authentication</emphasis> .<graphic
+          fileref="../../images/gs-ht01.jpg" vendor="configmgrSS"/></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Clique na lista suspensa da coluna para exibir as opções do
+          <emphasis role="bold">method</emphasis>. <graphic
+          fileref="../../images/gs-ht02.jpg" vendor="configmgrSS"/></para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione <emphasis role="bluebold">secmgrPlugin</emphasis> na
+          lista suspensa.</para>
+        </listitem>
+
+        <listitem>
+          <para>Clique no ícone de disco para salvar.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3 id="htpasswd_UserAdminWhtpasswd">
+      <title>Usuário administrador com htpasswd</title>
+
+      <para>Usuários e senhas são mantidos no arquivo htpasswd. O arquivo
+      htpasswd deve existir no nó do ESP onde a autenticação está habilitada.
+      HPCC apenas recognizes MD5 criptografado senha.</para>
+
+      <para>Os padrão localização é: <emphasis
+      role="bold">/etc/HPCCSystems/.htpasswd</emphasis> no nó do ESP
+      configurado para autenticação, porém pode também ser configurado no
+      Gerenciador de segurança do Htpasswd como destacado acima (etapa
+      9).</para>
+
+      <para>Você pode usar o utilitário do htpasswd para criar um arquivo de
+      extensão .htpasswd para usuários administradores.</para>
+
+      <para>Pode ser que o utilitário do htpasswd já esteja instalado em seu
+      sistema, uma vez que ele faz parte de alguns sistemas Linux. Verifique
+      seu sistema Linux para ver se o utilitário já está instalado. Se não
+      tiver, baixe o utilitário para seu sistema no The Apache Software
+      Foundation.</para>
+
+      <para>Para obter mais informações sobre como usar o htpasswd acesse:
+      <ulink
+      url="http://httpd.apache.org/docs/2.2/programs/htpasswd.html">http://httpd.apache.org/docs/2.2/programs/htpasswd.html</ulink>.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="Using_LDAP_Authentication" role="brk">
+    <title>Utilizando Autenticação LDAP</title>
+
+    <para>Esta seção contém informações de instalação e de implementação da
+    autenticação baseada em LDAP. A autenticação LDAP oferece o maior número
+    de opções para proteger o seu sistema ou partes de seu sistema. Além
+    dessas definições de configuração, você precisa executar o utilitário
+    <emphasis role="bold">initldap</emphasis> para criar o usuário padrão
+    Admin do HPCC requerido em seu servidor LDAP.</para>
+
+    <para>Se optar por usar a autenticação LDAP , você precisa habilitar o
+    LDAP security em sua configuração do HPCC System. Com a função LDAP
+    security habilitada em seu sistema, você pode optar por ativar a segurança
+    do escopo de arquivos. Há a opção de usar a autenticação LDAP sem
+    habilitar a segurança do escopo de arquivos. As seções a seguir descrevem
+    como habilitar a autenticação LDAP e a segurança do escopo de arquivos em
+    seu HPCC System.</para>
+
+    <!--***Note: (9/2014) Adding Documentation for initLdap.*** -->
+
+    <sect3 id="UsingLDAP_ConnectToConfigMgr">
+      <title>Conectar-se ao Configuration Manager</title>
+
+      <para>Para alterar a configuração para os componentes do HPCC,
+      conecte-se ao Configuration Manager.</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Pare todos os componentes do HPCC se estiverem em
+          execução.</para>
+        </listitem>
+
+        <listitem>
+          <para>Verifique se eles não estão mais sendo executados. É possível
+          usar um comando único, como: <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Inicie o Gerenciador de Configurações.</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Conecte à interface Web do Configuration Manager.</para>
+
+          <para>(usando o URL
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> é o endereço IP do
+          nó que está executando o Configuration Manager)</para>
+        </listitem>
+
+        <listitem>
+          <para>Selecione o botão de opção <emphasis role="bold">Advanced
+          View</emphasis> .</para>
+        </listitem>
+
+        <listitem>
+          <para>Use a lista suspensa para selecionar o arquivo de configuração
+          XML adequado.</para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Observação:</emphasis> O Configuration
+      Manager <emphasis role="bold">nunca</emphasis> funciona no arquivo de
+      configurações ativo. Após terminar a edição, será necessário copiar o
+      arquivo environment.xml para o local ativo e forçá-lo a todos os
+      nós.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="UsingLDAP_ModifyingConfiguration">
+    <title>Modificando a Configuração</title>
+
+    <para>Siga as etapas abaixo para modificar sua configuração.</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Marque a caixa de seleção <emphasis role="bold">Write
+        Access.</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>No painel do <emphasis role="bold">Navigator</emphasis> ,
+        selecione <emphasis role="bold">Hardware</emphasis>.</para>
+      </listitem>
+
+      <listitem>
+        <para>Selecione a aba <emphasis role="bold">Computers</emphasis> no
+        painel à direita.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Clique com o botão direito na tabela abaixo de computers e
+        selecione a opção <emphasis role="bold">New </emphasis>no menu
+        pop-up.</para>
+
+        <para><graphic fileref="../../images/LDAP_001.jpg"
+        vendor="configmgrSS"/></para>
+
+        <para>A caixa de diálogo <emphasis role="bold">Add New
+        Computers</emphasis> será exibida.</para>
+      </listitem>
+
+      <listitem>
+        <para>Preencha a área de <emphasis role="bold">Computer
+        Attributes</emphasis></para>
+
+        <para><graphic fileref="../../images/LDAP_002.jpg"
+        vendor="configmgrSS"/></para>
+      </listitem>
+    </orderedlist>
+
+    <orderedlist numeration="loweralpha">
+      <listitem>
+        <para>Forneça um <emphasis role="bold">Name Prefix</emphasis>, como
+        por exemplo: <emphasis role="blue">ldap</emphasis>.</para>
+
+        <para>Isso ajudará a identificá-lo na lista de computadores.</para>
+      </listitem>
+
+      <listitem>
+        <para>Preencha as informações de <emphasis
+        role="bold">Domain</emphasis> e <emphasis role="bold"> Type</emphasis>
+        com o nome do seu domínio e os tipos de máquinas que você está
+        usando.</para>
+
+        <para>No exemplo acima, o <emphasis role="bold">Domain</emphasis> é
+        <emphasis role="blue">localdomain</emphasis>, e o <emphasis
+        role="bold">Type</emphasis> é <emphasis
+        role="blue">linuxmachine</emphasis>. Estes devem corresponder ao seu
+        domínio e tipo.</para>
+
+        <para>Se for preciso adicionar um novo domínio ou tipo de máquina ao
+        seu sistema para poder definir um servidor LDAP existente,
+        primeiramente é necessário configurar isso nas outras duas abas na
+        seção Hardware.</para>
+      </listitem>
+
+      <listitem>
+        <para>Adicione o endereço IP como apropriado para o servidor
+        LDAP.</para>
+      </listitem>
+
+      <listitem>
+        <para>Pressione o botão <emphasis role="bold">Ok</emphasis> .</para>
+      </listitem>
+
+      <listitem>
+        <para>Clique no ícone de disco para salvar.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+
+  <sect2 id="UsingLDAP_Adding_ldapServer_component">
+    <title>Adicionando Componente ldapServer</title>
+
+    <para>Após o nó do LDAP Server ter sido adicionado às configurações de
+    Hardware, configure a definição de Software do servidor LDAP.</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Clique com o botão direito no painel <emphasis
+        role="bold">Navigator</emphasis> e selecione <emphasis role="bold">New
+        Components</emphasis> no menu pop-up; em seguida, selecione <emphasis
+        role="bold">ldapServer</emphasis> no menu pop-up. <graphic
+        fileref="../../images/LDAP_003.jpg" vendor="configmgrSS"/></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png"/></entry>
+
+                  <entry><emphasis role="bold">Observação</emphasis>: O
+                  componente ldapServer é meramente uma definição que
+                  especifica um servidor LDAP existente. Ele não instala um
+                  servidor.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </listitem>
+    </orderedlist>
+
+    <?hard-pagebreak ?>
+
+    <orderedlist continuation="continues" numeration="arabic">
+      <listitem>
+        <para>Preencha as <emphasis role="bold">propriedades do </emphasis>
+        LDAP Server Process:</para>
+
+        <para><orderedlist numeration="loweralpha">
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Na aba <emphasis role="bold">Instances</emphasis> , clique
+              com o botão direito na tabela à direita e selecione <emphasis
+              role="bold">Add Instances...</emphasis></para>
+
+              <para><graphic fileref="../../images/LDAP_008.jpg"
+              vendor="configmgrSS"/></para>
+
+              <para>A caixa de diálogo <emphasis role="bold">Select
+              Computers</emphasis> aparecerá.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Selecione o computador a ser usado clicando na caixa ao
+              lado dele. <graphic fileref="../../images/LDAP_009.jpg"
+              vendor="configmgrSS"/></para>
+
+              <para>Este é o computador que foi adicionado anteriormente na
+              parte <emphasis role="bold">Hardware</emphasis> / <emphasis
+              role="bold">Add New Computer</emphasis> .</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">OK</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Preencha a aba <emphasis role="bold">Attributes</emphasis>
+              com as configurações adequadas de seu LDAP Server existente.
+              <graphic fileref="../../images/LDAP_010.jpg"
+              vendor="configmgrSS"/></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Selecione tipo de servidor LDAP no atributo serverType da
+              caixa suspensa. <graphic fileref="../../images/LDAP_004.jpg"
+              vendor="configmgrSS"/></para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>OBSERVAÇÃO:</term>
+
+                    <listitem>
+                      <para>O suporte para OpenLDAP foi descontinuado. Esta
+                      opção foi incluída apenas para fins de legado.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no ícone de disco para salvar.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para><emphasis role="bold">Observação</emphasis>: O valor do
+        <emphasis role="bold">cacheTimeout </emphasis> corresponde ao número
+        de minutos em que as permissões estão armazenadas em cache no ESP. Ao
+        alterar qualquer permissão no LDAP, as novas configurações não estarão
+        em vigor até que o ESP e o Dali atualizem as permissões. Isso pode
+        demorar a mesma quantidade de tempo do cacheTimeout. A definição disso
+        para 0 significa sem cache, porém gera sobrecarga de desempenho. Por
+        isso, não deve ser usado na produção.</para>
+      </listitem>
+    </orderedlist>
+
+    <orderedlist continuation="continues" inheritnum="inherit"
+                 numeration="arabic">
+      <listitem override="3">
+        <para>No painel do navegador, clique em <emphasis role="bold">ESP --
+        myesp</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Na página <emphasis role="bold">EspProcess </emphasis> ao lado
+        direito, selecione a aba <emphasis
+        role="bold">Authentication</emphasis> .</para>
+
+        <para><graphic fileref="../../images/LDAP_005.jpg"
+        vendor="configmgrSS"/></para>
+
+        <para>Preencha as informações adequadas:</para>
+
+        <para><orderedlist numeration="loweralpha">
+            <listitem>
+              <para>Altere o <emphasis role="bold">ldapAuthMethod</emphasis>
+              para <emphasis role="blue">kerberos.</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Altere o <emphasis role="bold">ldapConnections</emphasis>
+              para o número adequado ao seu sistema (o número 10 é apenas um
+              exemplo, pode não vir a ser adequado para seu ambiente).</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione o componente <emphasis
+              role="bold">ldapServer</emphasis> adicionado anteriormente da
+              lista suspensa, por exemplo: <emphasis role="blue">ldapserver.
+              </emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Altere a informação do <emphasis
+              role="bold">método</emphasis> para <emphasis
+              role="blue">ldap.</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a aba ESP Service Bindings. Certifique-se de que
+              as configurações do LDAP apareçam em <emphasis
+              role="bold">resourcesBasedn</emphasis> e <emphasis
+              role="bold">workunitsBasedn</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no ícone de disco para salvar.</para>
+            </listitem>
+          </orderedlist></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Para habilitar as permissões do escopo de arquivos, configure a
+        segurança do escopo de arquivos do servidor Dali.</para>
+
+        <para>No painel do navegador, clique em <emphasis role="bold">Dali
+        Server -- mydali </emphasis><graphic
+        fileref="../../images/LDAP_006.jpg" vendor="configmgrSS"/></para>
+
+        <para>Preencha com as informações apropriadas:</para>
+
+        <para><orderedlist continuation="restarts" numeration="loweralpha">
+            <listitem>
+              <para>Selecione a aba <emphasis role="bold">LDAP</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <para>Altere o <emphasis role="bold">authMethod</emphasis> para
+              <emphasis role="blue">simple (simples)</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Defina o <emphasis role="bold">checkScopeScans</emphasis>
+              para <emphasis>true (verdadeiro)</emphasis>.</para>
+
+              <para>Defina esse campo para “true” apenas quando quiser
+              habilitar a segurança do escopo de arquivos. As configurações de
+              segurança podem ter três estados.</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Nenhum, sem autenticação e sem segurança do escopo de
+                  arquivos.</para>
+                </listitem>
+
+                <listitem>
+                  <para>LDAP segurança apenas para autenticação, sem habilitar
+                  a segurança do escopo de arquivos.</para>
+                </listitem>
+
+                <listitem>
+                  <para>LDAP autenticação e segurança do escopo de arquivos
+                  habilitados.</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+
+            <listitem>
+              <para>Altere as informações do LDAP como apropriado para que
+              correspondam às configurações do componente de seu servidor LDAP
+              no Configuration Manager.</para>
+
+              <para>Por exemplo, altere o <emphasis
+              role="bold">ldapServer</emphasis> para o mesmo valor dado ao seu
+              LDAP Server. Em nosso exemplo, esse valor é:
+              <emphasis>ldapserver.</emphasis></para>
+
+              <para>Confirme a alteração quando solicitado.</para>
+
+              <para>O <emphasis role="bold">filesDefaultUser</emphasis> é uma
+              conta do LDAP usada para acessar arquivos quando nenhuma
+              credencial de usuário tiver sido fornecida. Esta conta é
+              semelhante a uma conta do tipo “convidado”, por isso deve ter
+              acesso <emphasis role="bold">bastante</emphasis> limitado caso
+              seja utilizada. Para desabilitar o acesso sem credenciais, deixe
+              o <emphasis role="bold">filesDefaultUser</emphasis> em
+              branco.</para>
+
+              <para>O <emphasis role="bold">filesDefaultPassword</emphasis>
+              corresponde a senha dessa conta.</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no ícone de disco para salvar.</para>
+            </listitem>
+          </orderedlist></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>No painel do navegador, clique em <emphasis role="bold">Roxie
+        Cluster -- myroxie </emphasis><graphic
+        fileref="../../images/LDAP_007.jpg" vendor="configmgrSS"/></para>
+
+        <para><orderedlist continuation="restarts" numeration="loweralpha">
+            <listitem>
+              <para>Na página <emphasis role="bold">RoxieCluster</emphasis> ao
+              lado direito, selecione a aba <emphasis
+              role="bold">LDAP</emphasis> .</para>
+            </listitem>
+
+            <listitem>
+              <para>Localize o campo <emphasis role="bold">ldapUser</emphasis>
+              e verifique se há um usuário válido do HPCC que seja membro do
+              grupo de Usuários autenticados em seu servidor LDAP. Por
+              exemplo, o usuário "<emphasis>roxie</emphasis>" assume que
+              usuário "<emphasis>roxie</emphasis>" é um usuário autenticado
+              válido do HPCC .</para>
+            </listitem>
+
+            <listitem>
+              <para>Adicione a segurança de senha para Roxie, adicionando-a ao
+              campo <emphasis role="bold">ldapPassword</emphasis> na mesma
+              guia.</para>
+            </listitem>
+          </orderedlist></para>
+      </listitem>
+    </orderedlist>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic
+              fileref="../../images/caution.png"/></entry>
+
+              <entry><para>Para executar consultas no Roxie através da
+              segurança do escopo de arquivos, verifique se um usuário do
+              Roxie foi criado na lista de usuários autenticados.</para>Na
+              seção seguinte, <link linkend="Adding_Users"><emphasis>Adicionar
+              e editar usuários</emphasis></link>, adicione o usuário
+              <emphasis>roxie</emphasis> e verifique se a senha é a mesma que
+              foi inserida no Configuration Manager.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="UsingLDAP_Installing_Default_AdminUser">
+    <title>Instalando o usuário de Admin padrão</title>
+
+    <para>Após habilitar suas configurações do LDAP Security, é preciso copiar
+    seu arquivo de ambiente para o diretório /etc/HPCCSystems. Ver a seção
+    <link linkend="configuring-a-multi-node-system"><emphasis>Como configurar
+    um sistema de múltiplos nós</emphasis></link> para obter mais informações
+    sobre como configurar seu sistema. Com o arquivo environment.xml correto
+    em vigor, é preciso executar o utilitário <emphasis
+    role="bold">initldap</emphasis> para inicializar os componentes de
+    segurança e os usuários padrão.</para>
+
+    <sect3 id="UsingLDAP_theInitldapUtility">
+      <title>O utilitário initldap</title>
+
+      <para>O utilitário initldap cria a conta de usuário de Administrador do
+      HPCC e as OUs do HPCC para um servidor LDAP recém-definido. O utilitário
+      initldap extrai essas configurações dos componentes do LDAP Server no
+      environment.xml ligado aos ESPs configurados.</para>
+
+      <para>Você pode executar o utilitário <emphasis
+      role="bold">initldap</emphasis> após ter concluído a configuração com
+      componentes do LDAP ativados e depois de ter distribuído o arquivo
+      environment.xml para todos os nós.</para>
+
+      <programlisting>sudo /opt/HPCCSystems/bin/initldap</programlisting>
+
+      <para>O utilitário <emphasis role="bold">initldap</emphasis> solicitará
+      as credenciais de administrador do LDAP. Insira os valores apropriados
+      quando solicitado.</para>
+
+      <para>Segue abaixo um exemplo de initldap na implementação do
+      389DirectoryServer.</para>
+
+      <para><programlisting>Enter the '389DirectoryServer' LDAP Admin User name on '10.123.456.78'...Directory Manager        
+Enter the LDAP Admin user 'Directory Manager' password...********
+
+Ready to initialize HPCC LDAP Environment, using the following settings
+       LDAP Server     : 10.123.456.78
+       LDAP Type       : 389DirectoryServer
+       HPCC Admin User : HPCCAdmin389
+Proceed?  y/n 
+</programlisting></para>
+    </sect3>
+
+    <sect3 id="UsingLDAP_Using_addScopesTool">
+      <title>Utilizando a ferramenta addScopes</title>
+
+      <para>Quando uma nova conta de usuário do ESP é criada, um escopo de
+      arquivo privado "hpccinternal::&lt;user&gt;” também é criado concedendo
+      aos novos usuários o acesso total àquele escopo e acesso restrito aos
+      outros usuários. Este escopo de arquivo é usado para armazenar
+      temporariamente arquivos do HPCC como os arquivos de despejo e
+      temporário.</para>
+
+      <para>Se você estiver habilitando a segurança do escopo de arquivos do
+      LDAP e já tiver contas de usuários, execute o programa de utilitário
+      addScopes para criar um escopo hpccinternal::&lt;user&gt; para esses
+      usuários existentes.</para>
+
+      <para>Usuários quais já tem este escopo defined são ignored e so it
+      podem ser usadas on both new e legacy ESP usuário contas safely.</para>
+
+      <para>A ferramenta está localizada na pasta <emphasis
+      role="bold">/opt/HPCCSystems/bin/</emphasis> e, para executá-la, é
+      preciso especificar a localização do <emphasis
+      role="bold">daliconf.xml</emphasis>, por exemplo:</para>
+
+      <para><programlisting>/opt/HPCCSystems/bin/addScopes /var/lib/HPCCSystems/mydali/daliconf.xml</programlisting></para>
+    </sect3>
+  </sect2>
+</sect1>

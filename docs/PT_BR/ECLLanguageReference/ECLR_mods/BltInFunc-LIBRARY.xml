@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LIBRARY">
+  <title>LIBRARY</title>
+
+  <para><emphasis role="bold">LIBRARY<indexterm>
+      <primary>LIBRARY</primary>
+    </indexterm><indexterm>
+      <primary>LIBRARY function</primary>
+    </indexterm>(</emphasis><emphasis> </emphasis><emphasis
+  role="bold">INTERNAL<indexterm>
+      <primary>INTERNAL</primary>
+    </indexterm>( </emphasis><emphasis>module </emphasis><emphasis
+  role="bold">)</emphasis><emphasis>, interface </emphasis><emphasis
+  role="bold">[</emphasis><emphasis> (</emphasis><emphasis role="bold">
+  </emphasis><emphasis>parameters) </emphasis><emphasis role="bold">]
+  )</emphasis><emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">LIBRARY(</emphasis><emphasis> module , interface
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>
+  (</emphasis><emphasis role="bold"> </emphasis><emphasis>parameters)
+  </emphasis><emphasis role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="86.10pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis role="bold">INTERNAL</emphasis></entry>
+
+          <entry>Opcional. Especifica que o módulo é um atributo, não uma
+          biblioteca externa (criado pela ação BUILD).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>module</emphasis></entry>
+
+          <entry>O nome da biblioteca de consulta. Quando for INTERNAL, este é
+          o nome do atributo MODULE que implementa a biblioteca de consulta.
+          Se não for INTERNAL, é uma expressão da string que contém o nome da
+          tarefa que compilou a biblioteca de consulta (normalmente definido
+          com #WORKUNIT).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>interface</emphasis></entry>
+
+          <entry>O nome da estrutura INTERFACE que define a biblioteca de
+          consulta.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameters</emphasis></entry>
+
+          <entry>Opcional. Os valores a serem especificados para a INTERFACE,
+          se configurada para receber parâmetros.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>LIBRARY resulta em um MODULE que pode ser usado para
+          referenciar os atributos exportadosde um módulo específico.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">LIBRARY </emphasis> define uma
+  instância de uma biblioteca de consulta – a <emphasis>interface</emphasis>
+  implementada pelo <emphasis>module</emphasis> após ter passado pelos
+  parâmetros <emphasis> especificados. </emphasis><emphasis role="bold">As
+  bibliotecas de consulta são usadas apenas pelo hthor e
+  Roxie.</emphasis></para>
+
+  <para>As bibliotecas INTERNAS são normalmente usadas no desenvolvimento de
+  consultas, ao passo que as bibliotecas externas são melhores para gerar
+  consultas. Uma biblioteca interna gera o código de biblioteca como uma
+  unidade separada, mas depois inclui essa unidade na tarefa de consulta. Ela
+  não possui a vantagem de redução do tempo de compilação ou do uso de memória
+  no Roxie (vantagens da biblioteca externa), mas retém a estrutura da
+  biblioteca, o que significa que as alterações no código não podem afetar
+  mais ninguém que esteja usando o sistema.</para>
+
+  <para>As bibliotecas externas são criadas pela ação BUILD e usam uma forma
+  de “nome” #WORKUNIT para especificar o nome externo da biblioteca. Uma
+  biblioteca externa é previamente compilada e, por isso, reduz o tempo de
+  compilação das consultas que a utilizam. A biblioteca também diminui o uso
+  da memória no Roxie.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>NamesRec := RECORD
+    INTEGER1  NameID;
+    STRING20  FName;
+    STRING20  LName;
+END;
+NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                      {4,'Anywhere','but here'}],
+       NamesRec);
+FilterLibIface1(DATASET(namesRec) ds, STRING search) := INTERFACE
+ EXPORT DATASET(namesRec) matches;
+ EXPORT DATASET(namesRec) others;
+END;
+FilterDsLib1(DATASET(namesRec) ds, STRING search) :=
+      MODULE,LIBRARY(FilterLibIface1)
+ EXPORT matches := ds(Lname = search);
+ EXPORT others := ds(Lname != search);
+END;
+
+// Run this to create the 'Ppass.FilterDsLib' external library
+// #WORKUNIT('name','Ppass.FilterDsLib')
+// BUILD(FilterDsLib1);
+lib1 := LIBRARY(INTERNAL(FilterDsLib1),
+      FilterLibIface1(NamesTable, 'Holliday'));
+lib2 := LIBRARY('Ppass.FilterDsLib',
+      FilterLibIface1(NamesTable, 'Holliday'));
+IFilterArgs := INTERFACE
+  EXPORT DATASET(namesRec) ds;
+  EXPORT STRING search;
+END;
+FilterLibIface2(IFilterArgs args) := INTERFACE
+ EXPORT DATASET(namesRec) matches;
+ EXPORT DATASET(namesRec) others;
+END;
+    
+FilterDsLib2(IFilterArgs args) := MODULE,LIBRARY(FilterLibIface2)
+ EXPORT matches := args.ds(Lname = args.search);
+ EXPORT others := args.ds(Lname != args.search);
+END;
+// Run this to create the 'Ipass.FilterDsLib' external library
+// #WORKUNIT('name','Ipass.FilterDsLib')
+// BUILD(FilterDsLib2);
+SearchArgs := MODULE(IFilterArgs)
+  EXPORT DATASET(namesRec) ds := NamesTable;
+  EXPORT STRING search := 'Holliday';
+END;    
+lib3 := LIBRARY(INTERNAL(FilterDsLib2),
+      FilterLibIface2(SearchArgs));
+lib4 := LIBRARY('Ipass.FilterDsLib',
+      FilterLibIface2(SearchArgs));
+    
+OUTPUT(lib1.matches,NAMED('INTERNAL_matches_straight_parms'));
+OUTPUT(lib1.others, NAMED('INTERNAL_nonmatches_straight_parms'));
+OUTPUT(lib2.matches,NAMED('EXTERNAL_matches_straight_parms'));
+OUTPUT(lib2.others, NAMED('EXTERNAL_nonmatches_straight_parms'));
+OUTPUT(lib3.matches,NAMED('INTERNAL_matches_interface_parms'));
+OUTPUT(lib3.others, NAMED('INTERNAL_nonmatches_interface_parms'));
+OUTPUT(lib4.matches,NAMED('EXTERNAL_matches_interface_parms'));
+OUTPUT(lib4.others, NAMED('EXTERNAL_nonmatches_interface_parms'));
+</programlisting>
+</sect1>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CRON">
+  <title>CRON</title>
+
+  <informalexample id="SchCRON">
+    <para><emphasis role="bold">CRON<indexterm>
+        <primary>CRON</primary>
+      </indexterm><indexterm>
+        <primary>CRON function</primary>
+      </indexterm>(</emphasis><emphasis> time </emphasis><emphasis
+    role="bold">)</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="79.25pt"/>
+
+          <colspec colwidth="309.55pt"/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>time</emphasis></entry>
+
+              <entry>Uma expressão da string de caracteres contendo um tempo
+              cron padrão unix.</entry>
+            </row>
+
+            <row>
+              <entry>Return:</entry>
+
+              <entry>CRON define um único evento de controladores de
+              tempo.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>A função <emphasis role="bold">CRON</emphasis> determina um evento
+    de controladores de tempo a serem usados no <indexterm>
+        <primary>serviço do fluxo de trabalho WHEN</primary>
+      </indexterm> ou função WAIT. Essa função é um sinônimo de EVENT('CRON',
+    <emphasis>time</emphasis>).</para>
+
+    <para>The <emphasis>time </emphasis>o parâmetro time constitui de empo
+    cron padrão unix, expressado em UTC (também conhecido como Tempo Médio de
+    Greenwich) como uma string que contém os seguintes componentes de espaço
+    delimitado:</para>
+
+    <para><emphasis>minute hour dom month dow</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="77.85pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>minute</emphasis></entry>
+
+              <entry>Um valor inteiro que significa o minuto da hora. Valores
+              válidos de 0 a 59.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>hour</emphasis></entry>
+
+              <entry>Um valor inteiro que constitui a hora. Valores válidos de
+              0 a 23 (usando o relógio de 24 horas).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>dom</emphasis></entry>
+
+              <entry>Um valor inteiro que representa o dia do mês. Valores
+              válidos de 1 a 31.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>month</emphasis></entry>
+
+              <entry>Um valor inteiro que representa o mês. Valores válidos de
+              1 a 12.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>dow</emphasis></entry>
+
+              <entry>Um valor inteiro que representa o dia da semana. Valores
+              válidos de 0 a 6 (onde 0 representa o domingo).</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Qualquer componente de <emphasis> tempo</emphasis> que você optar
+    por não especificar, será substituído por um asterisco (*). Os intervalos
+    de tempo devem ser definidos por um traço (-), as listas por uma vírgula
+    (,), e “uma vez a cada n” usando a barra (/). Por exemplo, 6-18/3 no campo
+    de hora acionará o controlador de tempo a cada três horas entre 6 da manhã
+    e 6 da tarde, e 18-21/3,0-6/3 acionará o controlador de tempo a cada três
+    horas entre 6 da tarde e 6 da manhã.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>EXPORT events := MODULE
+  EXPORT dailyAtMidnight := CRON('0 0 * * *');
+  EXPORT dailyAt( INTEGER hour,
+   INTEGER minute=0) :=
+  EVENT('CRON',
+   (STRING)minute + ' ' + (STRING)hour + ' * * *');
+  EXPORT dailyAtMidday := dailyAt(12, 0);
+  EXPORT EveryThreeHours :=  CRON('0 0-23/3 * * *');
+END;
+
+BUILD(teenagers) : WHEN(events.dailyAtMidnight);
+BUILD(oldies)    : WHEN(events.dailyAt(6));
+BUILD(NewStuff)    : WHEN(events.EveryThreeHours);
+</programlisting>
+  </informalexample>
+
+  <para>Ver também: <link linkend="EVENT">EVENT</link>, <link
+  linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link
+  linkend="NOTIFY">NOTIFY</link></para>
+</sect1>
