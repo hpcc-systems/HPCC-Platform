@@ -79,8 +79,26 @@ void cleanupDaFsSocket(ISocket *sock)
 ///////////////////////////
 
 
-static unsigned maxConnectTime = 0;
-static unsigned maxReceiveTime = 0;
+static const unsigned defaultDafsConnectTimeoutSeconds=100;
+static const unsigned defaultDafsConnectRetries=2;
+static const unsigned defaultDafsMaxRecieveTimeSeconds=0;
+static const unsigned defaultDafsConnectFailRetrySeconds=10;
+
+static unsigned dafsConnectTimeoutMs = defaultDafsConnectTimeoutSeconds * 1000;
+static unsigned dafsConnectRetries = defaultDafsConnectRetries;
+static unsigned dafsMaxReceiveTimeMs = defaultDafsMaxRecieveTimeSeconds * 1000;
+static unsigned dafsConnectFailRetryTimeMs = defaultDafsConnectFailRetrySeconds * 1000;
+
+MODULE_INIT(INIT_PRIORITY_DAFSCLIENT)
+{
+    const IProperties &confProps = queryEnvironmentConf();
+    dafsConnectTimeoutMs = confProps.getPropInt("dafsConnectTimeoutSeconds", defaultDafsConnectTimeoutSeconds) * 1000;
+    dafsConnectRetries = confProps.getPropInt("dafsConnectRetries", defaultDafsConnectRetries);
+    dafsMaxReceiveTimeMs = confProps.getPropInt("dafsMaxReceiveTimeSeconds", defaultDafsMaxRecieveTimeSeconds);
+    dafsConnectFailRetryTimeMs = confProps.getPropInt("daFsConnectFailRetrySeconds", defaultDafsConnectFailRetrySeconds) * 1000;
+    return true;
+}
+
 
 //Security and default port attributes
 static class _securitySettings
@@ -135,8 +153,8 @@ static ISecureSocket *createSecureSocket(ISocket *sock, SecureSocketType type)
 
 void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime)
 {
-    maxConnectTime = maxconnecttime;
-    maxReceiveTime = maxreadtime;
+    dafsConnectTimeoutMs = maxconnecttime;
+    dafsMaxReceiveTimeMs = maxreadtime;
 }
 
 
@@ -169,7 +187,6 @@ bool enableDafsAuthentication(bool on)
 #define CLIENT_INACTIVEWARNING_TIMEOUT (1000*60*60*12) // time between logging inactive clients
 #define SERVER_TIMEOUT      (1000*60*5)         // timeout when waiting for dafilesrv to reply after command
                                                 // (increased when waiting for large block)
-#define DAFS_CONNECT_FAIL_RETRY_TIME (1000*60*15)
 #ifdef SIMULATE_PACKETLOSS
 #define NORMAL_RETRIES      (1)
 #define LENGTHY_RETRIES     (1)
@@ -401,7 +418,7 @@ void flushDaFsSocket(ISocket *socket)
 void receiveDaFsBuffer(ISocket * socket, MemoryBuffer & tgt, unsigned numtries, size32_t maxsz)
     // maxsz is a guess at a resonable upper max to catch where protocol error
 {
-    sRFTM tm(maxReceiveTime);
+    sRFTM tm(dafsMaxReceiveTimeMs);
     size32_t gotLength = receiveDaFsBufferSize(socket, numtries,tm.timemon);
     if (gotLength) {
         size32_t origlen = tgt.length();
@@ -623,38 +640,30 @@ void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket)
 
 //---------------------------------------------------------------------------
 
-void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned localConnectTime, unsigned localRetries)
+void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, unsigned connectRetries)
 {
-    unsigned retries = 3;
+    if (!connectTimeoutMs)
+        connectTimeoutMs = dafsConnectTimeoutMs;
 
-    if (localConnectTime)
-    {
-        if (localRetries)
-            retries = localRetries;
-        if (localConnectTime > maxConnectTime)
-            localConnectTime = maxConnectTime;
-    }
-    else
-        localConnectTime = maxConnectTime;
+    unsigned connectAttempts = ((INFINITE == connectRetries) ? dafsConnectRetries : connectRetries) + 1;
+
+    sRFTM tm(connectTimeoutMs);
 
     {
         CriticalBlock block(lastFailEpCrit);
         if (ep.equals(lastfailep))
         {
-            if (msTick()-lastfailtime<DAFS_CONNECT_FAIL_RETRY_TIME)
+            if (msTick()-lastfailtime<dafsConnectFailRetryTimeMs)
             {
                 StringBuffer msg("Failed to connect (host marked down) to dafilesrv/daliservix on ");
                 ep.getUrlStr(msg);
                 throw createDafsException(DAFSERR_connection_failed,msg.str());
             }
             lastfailep.set(NULL);
-            retries = 1;    // on probation
+            connectAttempts = 1;    // on probation
         }
     }
-
-    sRFTM tm(localConnectTime);
-
-    while(retries--)
+    while (connectAttempts--)
     {
         StringBuffer eps;
         if (TF_TRACE_CLIENT_CONN)
@@ -709,7 +718,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned localConnectTime, u
         catch (IJSOCK_Exception *e)
         {
             ok = false;
-            if (!retries||(tm.timemon&&tm.timemon->timedout()))
+            if (!connectAttempts||(tm.timemon&&tm.timemon->timedout()))
             {
                 if (e->errorCode()==JSOCKERR_connection_failed)
                 {
@@ -745,7 +754,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned localConnectTime, u
                     StringBuffer err;
                     WARNLOG("Remote file authenticate %s for %s ",e->errorMessage(err).str(),ep.getUrlStr(eps.clear()).str());
                     e->Release();
-                    if (!retries)
+                    if (!connectAttempts)
                         break; // MCK - is this a warning or an error ? If an error, should we close and throw here ?
                 }
             }
@@ -867,7 +876,7 @@ void CRemoteBase::sendRemoteCommand(MemoryBuffer & src, MemoryBuffer & reply, bo
                 // then mark port down for a delay (like 15 min above) to avoid having to try every time ...
                 try
                 {
-                    connectSocket(tep, 5000, 1);
+                    connectSocket(tep, 5000, 0);
                     doConnect = false;
                 }
                 catch (IDAFS_Exception *e)

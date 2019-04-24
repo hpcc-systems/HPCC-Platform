@@ -2097,7 +2097,7 @@ extern DAFSCLIENT_API void removeFileHooks()
     }
 }
 
-MODULE_INIT(INIT_PRIORITY_DAFSCLIENT_RMTFILE)
+MODULE_INIT(INIT_PRIORITY_DAFSCLIENT)
 {
     if(!DaliServixIntercept)
     {

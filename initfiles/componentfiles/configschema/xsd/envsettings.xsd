@@ -46,6 +46,10 @@
         <xs:element name="use_epoll" hpcc:displayName="Use EPoll" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
         <xs:element name="useDropZoneRestriction" hpcc:displayName="Use Drop Zone Restriction" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
         <xs:element name="user" hpcc:displayName="User" type="xs:string" hpcc:forcedConfigValue="${RUNTIME_USER}" hpcc:class="setting"/>
+        <xs:element name="dafsConnectTimeoutSeconds" hpcc:displayName="Dafilesrv Connect Timeout Seconds" type="xs:unsignedInt" hpcc:forcedConfigValue="100" hpcc:class="setting"/>
+        <xs:element name="dafsConnectRetries" hpcc:displayName="Dafilesrv Connect Retries" type="xs:unsignedInt" hpcc:forcedConfigValue="2" hpcc:class="setting"/>
+        <xs:element name="dafsMaxReceiveTimeSeconds" hpcc:displayName="Dafilesrv Max Receive Time Seconds" type="xs:unsignedInt" hpcc:forcedConfigValue="0" hpcc:class="setting"/>
+        <xs:element name="dafsConnectFailRetrySeconds" hpcc:displayName="Dafilesrv Fail Retry Seconds" type="xs:unsignedInt" hpcc:forcedConfigValue="10" hpcc:class="setting"/>
         <xs:element name="Keys" hpcc:displayName="Keys" type="xs:string" minOccurs="0" hpcc:class="component">
             <xs:complexType>
                 <xs:sequence>
