@@ -1860,33 +1860,44 @@ void OsDiskInfo::initMajorMinor()
     Owned<IPipeProcess> pipe = createPipeProcess();
     if (pipe->run("list disks", cmd, nullptr, false, true, true, 8192))
     {
+        bool timedout = false;
+        // handle when lsblk runs too long
+        unsigned exitcode = pipe->wait(2000, timedout);
+        if ( (!timedout) && (exitcode == 0) )
+        {
+            StringBuffer output;
+            Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+            readSimpleStream(output, *pipeReader);
+            if (output.length() > 0)
+            {
+                StringArray lines;
+                lines.appendList(output, "\n");
+                ForEachItemIn(idx, lines)
+                {
+                    // line: TYPE="disk" MAJ:MIN="259:0"
+                    unsigned majnum, minnum;
+                    if (2 == sscanf(lines.item(idx), "TYPE=\"disk\" MAJ:MIN=\"%u:%u\"", &majnum, &minnum))
+                    {
+                        unsigned mm = (majnum<<16)+minnum;
+                        diskMajorMinor.appendUniq(mm);
+                    }
+                }
+                return;
+            }
+        }
+        if (timedout)
+            pipe->abort();
+        // log unexpected output, if any
         StringBuffer output;
         Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
         readSimpleStream(output, *pipeReader);
-        unsigned exitcode = pipe->wait();
-        if ( (exitcode == 0) && (output.length() > 0) )
-        {
-            StringArray lines;
-            lines.appendList(output, "\n");
-            ForEachItemIn(idx, lines)
-            {
-                // line: TYPE="disk" MAJ:MIN="259:0"
-                unsigned majnum, minnum;
-                if (2 == sscanf(lines.item(idx), "TYPE=\"disk\" MAJ:MIN=\"%u:%u\"", &majnum, &minnum))
-                {
-                    unsigned mm = (majnum<<16)+minnum;
-                    diskMajorMinor.appendUniq(mm);
-                }
-            }
-        }
-        else
-        {
-            StringBuffer outputErr;
-            Owned<ISimpleReadStream> pipeReaderErr = pipe->getErrorStream();
-            readSimpleStream(outputErr, *pipeReaderErr);
-            if (outputErr.length() > 0)
-                WARNLOG("WARNING: Pipe: output: %s", outputErr.str());
-        }
+        if (output.length() > 0)
+            WARNLOG("Pipe: output: %s", output.str());
+        StringBuffer outputErr;
+        Owned<ISimpleReadStream> pipeReaderErr = pipe->getErrorStream();
+        readSimpleStream(outputErr, *pipeReaderErr);
+        if (outputErr.length() > 0)
+            WARNLOG("Pipe: Err output: %s", outputErr.str());
     }
 #endif // __linux__
 }
