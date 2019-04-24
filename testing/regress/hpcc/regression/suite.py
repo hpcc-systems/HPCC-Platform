@@ -115,6 +115,11 @@ class Suite:
                             exclusionReason=' ECL excluded'
 
                         if not exclude:
+                            if file in args.excludeFileSet:
+                                exclude = True
+                                exclusionReason=' ECL excluded by --excludeFile parameter'
+
+                        if not exclude:
                             self.addFileToSuite(eclfile)
                         else:
                             self.exclude.append(format(file, "30")+exclusionReason)
