@@ -6427,7 +6427,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         const char *clusterName = fileIdItems.item(1);
         const char *tempFileName = fileIdItems.item(2);
         bool compressed = false;
-        if (fileIdItems.ordinality()>=3)
+        if (fileIdItems.ordinality()>3)
             compressed = strToBool(fileIdItems.item(3));
         if (isEmptyString(groupName))
              throw makeStringException(ECLWATCH_INVALID_INPUT, "DFUFilePublish: Invalid FileId: empty groupName.");
@@ -6511,6 +6511,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         {
             userDesc.setown(createUserDescriptor());
             userDesc->set(userId.str(), context.queryPassword(), context.querySignature());
+            fileDesc->queryProperties().setProp("@owner", userId);
         }
         Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(newFileName, userDesc, false, false, true);
         if (df)
