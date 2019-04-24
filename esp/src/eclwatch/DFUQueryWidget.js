@@ -424,7 +424,6 @@ define([
                     Groups: true,
                     includeBlank: true
                 });
-                var context = this;
                 this.importTargetSelect.init({
                     Groups: true
                 });
@@ -450,6 +449,7 @@ define([
                 ESPUtil.MonitorVisibility(this.workunitsTab, function (visibility) {
                     if (visibility) {
                         context.checkIfWarning();
+                        context.refreshGrid();
                     }
                 });
 
@@ -669,7 +669,7 @@ define([
                             label: this.i18n.Size, width: 100,
                             formatter: function (intsize, row) {
                                 if (intsize === null) {
-                                    return "0 Bytes";
+                                    return 0;
                                 } else {
                                     return Utility.convertedSize(intsize);
                                 }

@@ -294,7 +294,12 @@ define([
                     all(dataPromise).then(function (logicalFiles) {
                         context.subfilesStore.setData(data);
                         context.subfilesGrid.refresh();
-                    })
+                    });
+                }  else if (name === "hasSubFiles") {
+                    if (newValue === false) {
+                        this.subfilesStore.setData([]);
+                        this.subfilesGrid.refresh();
+                    }
                 } else if (name === "StateID") {
                     this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
                     domClass.remove(this.id + "StateIdImage");

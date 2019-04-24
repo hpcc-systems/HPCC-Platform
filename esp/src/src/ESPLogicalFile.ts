@@ -312,6 +312,9 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             }
         }).then(function (response) {
             if (lang.exists("DFUInfoResponse.FileDetail", response)) {
+                lang.mixin(response.DFUInfoResponse.FileDetail, {
+                    hasSubFiles: "subfiles" in response.DFUInfoResponse.FileDetail
+                });
                 context.updateData(response.DFUInfoResponse.FileDetail);
                 if (args && args.onAfterSend) {
                     args.onAfterSend(response.DFUInfoResponse.FileDetail);
