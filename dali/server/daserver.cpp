@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
             fileMsgHandler = lf->beginLogging();
         }
 
-        DBGLOG("Build %s", BUILD_TAG);
+        PROGLOG("Build %s", BUILD_TAG);
 
         if (serverConfig)
         {
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
                 RemoteFilename rfn;
                 rfn.setRemotePath(dataPath);
                 if (!rfn.isLocal()) {
-                    ERRLOG("if a dataPath is specified, it must be on local machine");
+                    OERRLOG("if a dataPath is specified, it must be on local machine");
                     return 0;
                 }
                 addPathSepChar(dataPath);
@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
                                 rfn.setPath(ep,mirrorPath.str());
                             }
                             else {
-                                WARNLOG("Local path used for backup url: %s", mirrorPath.str());
+                                OWARNLOG("Local path used for backup url: %s", mirrorPath.str());
                                 rfn.setLocalPath(mirrorPath.str());
                             }
                             rfn.getRemotePath(backupURL);
@@ -342,7 +342,7 @@ int main(int argc, char* argv[])
             PROGLOG("Checking for existing daserver instances");
             if (!globalNamedMutex.lockWait(0))
             {
-                PrintLog("Another DASERVER process is currently running");
+                OWARNLOG("Another DASERVER process is currently running");
                 return 0;
             }
         }
@@ -432,7 +432,7 @@ int main(int argc, char* argv[])
             stopPerformanceMonitor();
             throw;
         }
-        PrintLog("DASERVER[%d] starting - listening to port %d",myrank,queryMyNode()->endpoint().port);
+        PROGLOG("DASERVER[%d] starting - listening to port %d",myrank,queryMyNode()->endpoint().port);
         startMPServer(myport,false);
         bool ok = true;
         ForEachItemIn(i2,servers)

@@ -177,7 +177,7 @@ public:
         else if (cmd->getAction()==SCA_XREF) 
             processXRefRequest(cmd);
         else if (!processArchiverCommand(cmd)) 
-            WARNLOG("Command %d not handled",cmd->getAction());
+            OWARNLOG("Command %d not handled",cmd->getAction());
         if (cmd->getAction()==SCA_WORKUNIT_SERVICES_GET)
             cmd->WUSreply();
         else
@@ -406,7 +406,7 @@ int main(int argc, const char* argv[])
         e->Release();
     }
     catch (const char *s) {
-        WARNLOG("Sasha: %s",s);
+        OWARNLOG("Sasha: %s",s);
     }
 
     if (!stop)

@@ -1124,7 +1124,7 @@ public:
                 if (grp)
                     n = grp->ordinality();
                 else {
-                    ERRLOG("DFUWU: Logical group %s not found",s.str());
+                    OERRLOG("DFUWU: Logical group %s not found",s.str());
                     return 0;
                 }
                 ClusterPartDiskMapSpec mspec;
@@ -2908,7 +2908,7 @@ class CDFUWorkUnitFactory : implements IDFUWorkUnitFactory, implements ISDSSubsc
             if (ok)
                 break;
             if (i%10==9)
-                WARNLOG("CDFUWorkUnitFactory: Subscription(%d,%" I64F "d) busy %s",i,(__int64)atid,xpath?xpath:"");
+                DBGLOG("CDFUWorkUnitFactory: Subscription(%d,%" I64F "d) busy %s",i,(__int64)atid,xpath?xpath:"");
             CriticalUnblock unblock(proxylock);
             Sleep(i*10);
             if (i==99)
@@ -3162,7 +3162,7 @@ dfuwu_decl unsigned queuedJobs(const char *queuename,StringAttrArray &wulist)
     catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
-        ERRLOG("DFUWU runningJobs(%s) %s",queuename,msg.str());
+        IERRLOG("DFUWU runningJobs(%s) %s",queuename,msg.str());
         e->Release();
     }
     try{
@@ -3182,7 +3182,7 @@ dfuwu_decl unsigned queuedJobs(const char *queuename,StringAttrArray &wulist)
     catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
-        ERRLOG("DFUWU queuedJobs(%s) %s",queuename,msg.str());
+        IERRLOG("DFUWU queuedJobs(%s) %s",queuename,msg.str());
         e->Release();
     }
     return ret;

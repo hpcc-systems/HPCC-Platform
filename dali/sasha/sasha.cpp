@@ -25,7 +25,7 @@ bool restoreWU(const char * sashaserver,const char *wuid)
     SocketEndpoint ep(sashaserver);
     Owned<INode> node = createINode(ep);
     if (!cmd->send(node,1*60*1000)) {
-        ERRLOG("Could not connect to Sasha server at %s",sashaserver);
+        OERRLOG("Could not connect to Sasha server at %s",sashaserver);
         return false;
     }
     if (cmd->numIds()==0) {
@@ -50,7 +50,7 @@ bool listWUs(const char * sashaserver,const char *wuid)
     SocketEndpoint ep(sashaserver);
     Owned<INode> node = createINode(ep);
     if (!cmd->send(node,1*60*1000)) {
-        ERRLOG("Could not connect to Sasha server at %s",sashaserver);
+        OERRLOG("Could not connect to Sasha server at %s",sashaserver);
         return false;
     }
     unsigned n = cmd->numIds();
@@ -239,7 +239,7 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
                 if (isdigit(arg[0])) 
                     ep.set(arg,DEFAULT_SASHA_PORT);             
                 if (ep.isNull()) {
-                    ERRLOG("parameter '%s' not recognized",arg);
+                    OERRLOG("parameter '%s' not recognized",arg);
                     return NULL;
                 }
                 serverep = ep;
@@ -284,7 +284,7 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
                 return cmd.getClear();
             }
             else {
-                ERRLOG("action '%s' not recognized",tail);
+                OERRLOG("action '%s' not recognized",tail);
                 return NULL;
             }
         }
@@ -298,7 +298,7 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
         else if (stricmp(head.str(),"server")==0) {
             SocketEndpoint ep(tail,DEFAULT_SASHA_PORT);             
             if (ep.isNull()) {
-                ERRLOG("server '%s' not resolved",tail);
+                OERRLOG("server '%s' not resolved",tail);
                 return NULL;
             }
             serverep = ep;
@@ -352,7 +352,7 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
             else if (stricmp(head.str(),"output")==0)
                 cmd->setOutputFormat(tail);
             else {
-                ERRLOG("attribute '%s' not recognized",head.str());
+                OERRLOG("attribute '%s' not recognized",head.str());
                 return NULL;
             }
         }
@@ -364,11 +364,11 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
     if (iswild&&needloadwu&&!confirm("This command may take some time - ok to continue? (Y/N)"))
         return NULL;
     if (serverep.isNull()) {
-        ERRLOG("no server specified");
+        OERRLOG("no server specified");
         return NULL;
     }
     if (cmd->getAction()==SCA_null) {
-        ERRLOG("no action specified");
+        OERRLOG("no action specified");
         return NULL;
     }
     return cmd.getClear();
@@ -381,7 +381,7 @@ bool getVersion(INode *node)
     StringBuffer ips;
     node->endpoint().getIpText(ips);
     if (!cmd->send(node,1*60*1000)) {
-        ERRLOG("Could not connect to Sasha server on %s",ips.str());
+        OERRLOG("Could not connect to Sasha server on %s",ips.str());
         return false;
     }
     StringBuffer id;
@@ -389,7 +389,7 @@ bool getVersion(INode *node)
         PROGLOG("Sasha server[%s]: Version %s",ips.str(),id.str());
         return true;
     }
-    ERRLOG("Sasha server[%s]: Protocol error",ips.str());
+    IERRLOG("Sasha server[%s]: Protocol error",ips.str());
     return false;
 }
 

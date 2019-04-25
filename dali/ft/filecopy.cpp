@@ -232,7 +232,7 @@ void FileTransferThread::logIfRunning(StringBuffer &list)
     {
         StringBuffer url;
         ep.getUrlStr(url);
-        LOG(MCwarning, unknownJob, "Still waiting for slave %s", url.str());
+        DBGLOG("Still waiting for slave %s", url.str());
         if (list.length())
             list.append(',');
         list.append(url);
@@ -485,7 +485,7 @@ bool FileSizeThread::wait(unsigned timems)
         }
         if (!rfn.isEmpty())
         {
-            WARNLOG("Waiting for file: %s",rfn.str());
+            OWARNLOG("Waiting for file: %s",rfn.str());
             return false;
         }
     }
@@ -1021,7 +1021,7 @@ public:
             catch (IException *e) {
                 StringBuffer path;
                 StringBuffer err;
-                WARNLOG("dafilesrv ExtractBlobElements(%s) failed with: %s",
+                OWARNLOG("dafilesrv ExtractBlobElements(%s) failed with: %s",
                         sprayer.sources.item(i).filename.getPath(path).str(),
                         e->errorMessage(err).str());
                 PROGLOG("Trying direct access (this may be slow)");

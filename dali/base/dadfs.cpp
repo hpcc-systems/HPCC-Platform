@@ -177,7 +177,7 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partm
     if (!name||!*name) {
         if (!partmask||!*partmask) {
             partmask = "!ERROR!._$P$_of_$N$"; // could use logical tail name if I had it
-            ERRLOG("No partmask for constructPartFilename");
+            IERRLOG("No partmask for constructPartFilename");
         }
         name = expandMask(tmp,partmask,partno,partmax).str();
     }
@@ -307,7 +307,7 @@ public:
                     unsigned tt = msTick()-start;
                     if (timeout!=INFINITE)
                         throw;
-                    WARNLOG("CConnectLock on %s waiting for %ds",name,tt/1000);
+                    IWARNLOG("CConnectLock on %s waiting for %ds",name,tt/1000);
                     if (first)
                     {
                         PrintStackReport();
@@ -442,7 +442,7 @@ protected:
             {
                 if (SDSExcpt_LockTimeout != e->errorCode() || tm.timedout())
                     throw;
-                WARNLOG("CFileAttrLockBase(%s) blocked for %ds", msg, tm.elapsed()/1000);
+                IWARNLOG("CFileAttrLockBase(%s) blocked for %ds", msg, tm.elapsed()/1000);
                 e->Release();
             }
         }
@@ -925,7 +925,7 @@ public:
             const char *cls = clustlist.item(ci);
             Owned<IGroup> grp = queryNamedGroupStore().lookup(cls);
             if (!grp) {
-                ERRLOG("IDistributedFile::setPreferred - cannot find cluster %s",cls);
+                IERRLOG("IDistributedFile::setPreferred - cannot find cluster %s",cls);
                 return;
             }
             if (!firstgrp.get())
@@ -1236,7 +1236,7 @@ static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *us
             user->getUserName(sb);
         if (sb.length()==0)
         {
-            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp setUserDescriptor() %d",__LINE__);
+            IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp setUserDescriptor() %d",__LINE__);
             //following debug code to be removed
             PrintStackReport();
         }
@@ -1254,7 +1254,7 @@ static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor 
         if (!user)
         {
 #ifdef NULL_DALIUSER_STACKTRACE
-            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getScopePermissions() line %d",__LINE__);
+            IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp getScopePermissions() line %d",__LINE__);
             //following debug code to be removed
             PrintStackReport();
 #endif
@@ -1292,7 +1292,7 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
 #ifdef NULL_DALIUSER_STACKTRACE
     if (!user)
     {
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp checkLogicalScope() line %d",__LINE__);
+        IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp checkLogicalScope() line %d",__LINE__);
         PrintStackReport();
     }
 #endif
@@ -2603,7 +2603,7 @@ public:
 inline void dfCheckRoot(const char *trc,Owned<IPropertyTree> &root,IRemoteConnection *conn)
 {
     if (root.get()!=conn->queryRoot()) {
-        WARNLOG("%s - root changed",trc);
+        DBGLOG("%s - root changed",trc);
 #ifdef _DEBUG
         PrintStackReport();
 #endif
@@ -3000,7 +3000,7 @@ public:
                 dfCheckRoot("setProtect.1",root,conn);
             }
             else
-                ERRLOG("setProtect - cannot protect %s (no connection in file)",owner?owner:"");
+                IERRLOG("setProtect - cannot protect %s (no connection in file)",owner?owner:"");
         }
     }
 
@@ -3108,7 +3108,7 @@ public:
                 t.setown(addNamedPropTree(root,"SuperOwner","@name",superfile));
         }
         else
-            ERRLOG("linkSuperOwner - cannot link to %s (no connection in file)",superfile);
+            IERRLOG("linkSuperOwner - cannot link to %s (no connection in file)",superfile);
     }
 
     void setAccessed()
@@ -3532,13 +3532,13 @@ public:
 #endif
 
                 if (!cluster.queryGroup(&queryNamedGroupStore())) {
-                    ERRLOG("IDistributedFileDescriptor cannot set cluster for %s",logicalName.get());
+                    IERRLOG("IDistributedFileDescriptor cannot set cluster for %s",logicalName.get());
                 }
                 clusters.append(cluster);
             }
         }
         else
-            ERRLOG("No cluster specified for %s",logicalName.get());
+            IERRLOG("No cluster specified for %s",logicalName.get());
     }
 
     virtual unsigned numClusters() override
@@ -3605,7 +3605,7 @@ public:
                     }
                 }
                 else
-                    WARNLOG("CFileClusterOwner::saveClusters - empty cluster");
+                    DBGLOG("CFileClusterOwner::saveClusters - empty cluster");
             }
             if (grplist.length())
                 t->setProp("@group",grplist.str());
@@ -4233,7 +4233,7 @@ public:
                 else {
                     StringBuffer s;
                     oldrfn.getRemotePath(s);
-                    WARNLOG("renamePhysicalPartFiles: %s doesn't exist",s.str());
+                    DBGLOG("renamePhysicalPartFiles: %s doesn't exist",s.str());
                     return true;
                 }
                 Owned<IFile> dest = createIFile(newrfn);
@@ -4719,7 +4719,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 }
                 if (!transaction->isSubFile(parent, subfile, true))
                 {
-                    WARNLOG("removeSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
+                    IWARNLOG("removeSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
                     parent.clear();
                     sub.clear();
                     return true; // NB: sub was not a member of super, issue warning and continue without locking
@@ -5057,7 +5057,7 @@ protected:
                     cdfsl.set(subname);
                     if (cdfsl.isForeign())
                     {
-                        WARNLOG("CDistributedSuperFile: SuperFile %s's sub-file file '%s' is foreign, but missing", logicalName.get(), subname.str());
+                        IWARNLOG("CDistributedSuperFile: SuperFile %s's sub-file file '%s' is foreign, but missing", logicalName.get(), subname.str());
                         // Create a dummy empty superfile as a placeholder for the missing foreign file
                         Owned<IPropertyTree> dummySuperRoot = createPTree();
                         dummySuperRoot->setPropInt("@interleaved", 0);
@@ -5078,7 +5078,7 @@ protected:
             // This is *only* due to foreign files
             if (subfiles.ordinality() != n)
             {
-                WARNLOG("CDistributedSuperFile: SuperFile %s's number of sub-files updated to %d", logicalName.get(), subfiles.ordinality());
+                IWARNLOG("CDistributedSuperFile: SuperFile %s's number of sub-files updated to %d", logicalName.get(), subfiles.ordinality());
                 root->setPropInt("@numsubfiles", subfiles.ordinality());
             }
         }
@@ -5416,7 +5416,7 @@ public:
         // need common attributes
         Owned<ISuperFileDescriptor> fdesc=createSuperFileDescriptor(at.getClear());
         if (interleaved&&(interleaved!=2))
-            WARNLOG("getFileDescriptor: Unsupported interleave value (1)");
+            IWARNLOG("getFileDescriptor: Unsupported interleave value (1)");
         fdesc->setSubMapping(subcounts,interleaved!=0);
         fdesc->setTraceName(logicalName.get());
         Owned<IDistributedFilePartIterator> iter = getIterator(NULL);
@@ -6522,12 +6522,12 @@ CDistributedFilePart::CDistributedFilePart(CDistributedFile &_parent,unsigned _p
     dirty = false;
     if (pd) {
         if (pd->isMulti())
-            ERRLOG("Multi filenames not supported in Dali DFS Part %d of %s",_part+1,_parent.queryLogicalName());
+            IERRLOG("Multi filenames not supported in Dali DFS Part %d of %s",_part+1,_parent.queryLogicalName());
         overridename.set(pd->queryOverrideName());
         setAttr(*pd->getProperties());
     }
     else
-        ERRLOG("CDistributedFilePart::CDistributedFilePart no IPartDescriptor for part");
+        IERRLOG("CDistributedFilePart::CDistributedFilePart no IPartDescriptor for part");
 }
 
 void CDistributedFilePart::Link(void) const
@@ -6592,7 +6592,7 @@ StringBuffer & CDistributedFilePart::getPartName(StringBuffer &partname)
     const char *mask=parent.queryPartMask();
     if (!mask||!*mask) {
         const char *err ="CDistributedFilePart::getPartName cannot determine part name (no mask)";
-        ERRLOG("%s", err);
+        IERRLOG("%s", err);
         throw MakeStringExceptionDirect(-1, err);
     }
     expandMask(partname,mask,partIndex,parent.numParts());
@@ -6654,7 +6654,7 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
             dir.append(defdir);
     }
     if (dir.length()==0)
-        ERRLOG("IDistributedFilePart::getPartDirectory unable to determine part directory");
+        IERRLOG("IDistributedFilePart::getPartDirectory unable to determine part directory");
     else {
         parent.adjustClusterDir(partIndex,copy,dir);
         ret.append(dir);
@@ -6688,7 +6688,7 @@ IPropertyTree &CDistributedFilePart::queryAttributes()
     CriticalBlock block (sect);     // avoid nested blocks
     if (attr)
         return *attr;
-    WARNLOG("CDistributedFilePart::queryAttributes missing part attributes");
+    DBGLOG("CDistributedFilePart::queryAttributes missing part attributes");
     attr.setown(getEmptyAttr());
     return *attr;
 }
@@ -8149,7 +8149,7 @@ bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *u
         StringBuffer msg(logicalname.get());
         msg.append(" - cause: ");
         e->errorMessage(msg);
-        ERRLOG("%s", msg.str());
+        IERRLOG("%s", msg.str());
         if (throwException)
             throw new CDFS_Exception(DFSERR_FailedToDeleteFile, msg.str());
         e->Release();
@@ -9274,7 +9274,7 @@ class CInitGroups
                 CMachineEntryPtr *m = machinemap.getValue(computer);
                 if (!m)
                 {
-                    ERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
+                    OERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
                     return NULL;
                 }
                 ep.set((*m)->ep);
@@ -9285,7 +9285,7 @@ class CInitGroups
             }
             else
             {
-                ERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
+                OERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
                 return NULL;
             }
             switch (groupType)
@@ -9332,7 +9332,7 @@ class CInitGroups
         //GH->JCS This can't be changed to use getEnvironmentFactory() unless that moved inside dalibase;
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Hardware", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (!conn) {
-            WARNLOG("Cannot connect to /Environment/Hardware");
+            IWARNLOG("Cannot connect to /Environment/Hardware");
             return false;
         }
         IPropertyTree* root = conn->queryRoot();
@@ -9446,14 +9446,14 @@ class CInitGroups
             if (force)
             {
                 VStringBuffer msg("Forcing new group layout for %s [ matched active = false, matched old environment = %s ]", gname.str(), matchOldEnv?"true":"false");
-                WARNLOG("%s", msg.str());
+                UWARNLOG("%s", msg.str());
                 messages.append(msg).newline();
                 matchOldEnv = false;
             }
             else
             {
                 VStringBuffer msg("Active cluster '%s' group layout does not match environment [matched old environment=%s]", gname.str(), matchOldEnv?"true":"false");
-                LOG(MCoperatorWarning, unknownJob, "%s", msg.str());                                                                        \
+                UWARNLOG("%s", msg.str());                                                                        \
                 messages.append(msg).newline();
                 if (existingClusterGroup)
                 {
@@ -9465,7 +9465,7 @@ class CInitGroups
         if ((!existingClusterGroup && (grp_thorspares != groupType)) || (!matchExisting && !matchOldEnv))
         {
             VStringBuffer msg("New cluster layout for cluster %s", gname.str());
-            WARNLOG("%s", msg.str());
+            UWARNLOG("%s", msg.str());
             messages.append(msg).newline();
             addClusterGroup(gname.str(), newClusterGroup.getClear(), realCluster);
             return true;
@@ -9528,7 +9528,7 @@ public:
             clusters.setown(root->getElements(xpath.str()));
             if (!clusters || !clusters->first()) {
                 VStringBuffer errMsg("Could not find type %s, %s cluster", type, clusterName.get());
-                WARNLOG("%s", errMsg.str());
+                UWARNLOG("%s", errMsg.str());
                 messages.append(errMsg).newline();
                 ret = false;
             }
@@ -9565,7 +9565,7 @@ public:
                                 if (eps->zap(ep)) {
                                     StringBuffer epStr;
                                     VStringBuffer errMsg("addSpares: not adding: %s, already in spares", ep.getUrlStr(epStr).str());
-                                    WARNLOG("%s", errMsg.str());
+                                    UWARNLOG("%s", errMsg.str());
                                     messages.append(errMsg).newline();
                                     while (eps->zap(ep)); // delete any other duplicates
                                 }
@@ -9603,7 +9603,7 @@ public:
                                 VStringBuffer xpath("Node[@ip=\"%s\"]", ipStr.str());
                                 if (!existing->removeProp(xpath.str())) {
                                     VStringBuffer errMsg("removeSpares: %s not found in spares", ipStr.str());
-                                    WARNLOG("%s", errMsg.str());
+                                    UWARNLOG("%s", errMsg.str());
                                     messages.append(errMsg).newline();
                                     while (eps->zap(ep)); // delete any other duplicates
                                 }
@@ -9616,7 +9616,7 @@ public:
                 }
                 if (clusters->next()) {
                     VStringBuffer errMsg("resetThorGroup: more than one cluster named: %s", clusterName.get());
-                    WARNLOG("%s", errMsg.str());
+                    UWARNLOG("%s", errMsg.str());
                     messages.append(errMsg).newline();
                     ret = false;
                 }
@@ -10843,10 +10843,10 @@ bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsigned short port,C
                         PROGLOG("Removed '%s'",partfile->queryFilename());
                         unsigned t = msTick()-start;
                         if (t>5*1000)
-                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            DBGLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
                     }
                     else
-                        LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                        IWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
 #else
                     if (partfile->exists())
                         PROGLOG("Would remove '%s'",partfile->queryFilename());
@@ -11381,7 +11381,7 @@ class CLightWeightSuperFileConn: implements ISimpleSuperFileEnquiry, public CInt
                     if (SDSExcpt_LockTimeout != e->errorCode())
                         throw;
                     e->Release();
-                    WARNLOG("migrateSuperOwnersAttr: Could not lock parent %s",query.str());
+                    IWARNLOG("migrateSuperOwnersAttr: Could not lock parent %s",query.str());
                     conn.setown(querySDS().connect(query.str(),myProcessSession(),0,defaultTimeout));
                 }
                 if (conn) {
@@ -11389,7 +11389,7 @@ class CLightWeightSuperFileConn: implements ISimpleSuperFileEnquiry, public CInt
                     migrateSuperOwnersAttr(conn->queryRoot());
                 }
                 else
-                    WARNLOG("migrateSuperOwnersAttr could not connect to parent superfile %s",lfn.get());
+                    IWARNLOG("migrateSuperOwnersAttr could not connect to parent superfile %s",lfn.get());
             }
         }
     }

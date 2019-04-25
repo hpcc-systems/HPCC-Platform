@@ -300,7 +300,7 @@ bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp
     else
         ret = false;
     if (response.length())
-        WARNLOG("%s", response.str());
+        UWARNLOG("%s", response.str());
 
     closedownClientProcess();
     return ret;
