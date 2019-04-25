@@ -12379,14 +12379,17 @@ IHqlExpression * PseudoPatternScope::lookupSymbol(IIdAtom * name, unsigned looku
 
 
 //---------------------------------------------------------------------------------------------------------------------
-
 extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, IProperties * macroParams, bool loadImplicit, bool isRoot)
 {
+    static CriticalSection parseQueryCrit; // Temporary - see HPCC-21986
+
     assertex(scope);
     try
     {
         if (isRoot)
             ctx.noteBeginQuery(scope, contents);
+
+        CriticalBlock b(parseQueryCrit); // Temporary - see HPCC-21986
 
         HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
         if (isRoot)
@@ -12396,6 +12399,7 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);
         parser.getLexer()->setMacroParams(macroParams);
+
         OwnedHqlExpr ret = parser.yyParse(false, true);
         if (isRoot)
             ctx.noteEndQuery(true);
