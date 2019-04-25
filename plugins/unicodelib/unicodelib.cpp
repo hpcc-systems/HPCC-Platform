@@ -41,7 +41,9 @@ using icu::RuleBasedCollator;
 using icu::CollationElementIterator;
 using icu::StringCharacterIterator;
 using icu::RuleBasedBreakIterator;
+#if U_ICU_VERSION_MAJOR_NUM >= 44
 using icu::Normalizer2;
+#endif
 using icu::CharacterIterator;
 
 #define UNICODELIB_VERSION "UNICODELIB 1.1.06"
