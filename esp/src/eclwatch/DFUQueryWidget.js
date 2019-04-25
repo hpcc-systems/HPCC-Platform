@@ -666,8 +666,8 @@ define([
                         IntSize: {
                             label: this.i18n.Size, width: 100,
                             formatter: function (intsize, row) {
-                                if (intsize === null) {
-                                    return "0 Bytes";
+                                if (intsize === null || intsize === undefined) {
+                                    return 0;
                                 } else {
                                     return Utility.convertedSize(intsize);
                                 }
