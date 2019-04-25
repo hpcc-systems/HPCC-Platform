@@ -509,7 +509,7 @@ void ResourceManager::flushAsText(const char *filename)
     FILE* f = fopen(name.str(), "wb");
     if (f==NULL)
     {
-        PrintLog("Create resource text file %s failed", name.str());
+        IERRLOG("Create resource text file %s failed", name.str());
         return; // error is ignorable.
     }
 

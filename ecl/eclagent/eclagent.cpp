@@ -216,7 +216,7 @@ public:
                 ++port;
             else
             {
-                DBGLOG("No DEBUG ports currently available in range %d - %d",HTHOR_DEBUG_BASE_PORT, HTHOR_DEBUG_BASE_PORT + HTHOR_DEBUG_PORT_RANGE); // MORE - or has terminated?
+                OWARNLOG("No DEBUG ports currently available in range %d - %d",HTHOR_DEBUG_BASE_PORT, HTHOR_DEBUG_BASE_PORT + HTHOR_DEBUG_PORT_RANGE); // MORE - or has terminated?
                 MilliSleep(5000);
                 port = HTHOR_DEBUG_BASE_PORT;
             }
@@ -350,7 +350,7 @@ public:
                 if (traceLevel > 8)
                 {
                     StringBuffer b;
-                    DBGLOG("No data reading query from socket");
+                    IWARNLOG("No data reading query from socket");
                 }
                 client.clear();
                 return;
@@ -362,7 +362,7 @@ public:
             if (traceLevel > 0)
             {
                 StringBuffer b;
-                DBGLOG("Error reading query from socket: %s", E->errorMessage(b).str());
+                IERRLOG("Error reading query from socket: %s", E->errorMessage(b).str());
             }
             E->Release();
             client.clear();
@@ -388,7 +388,7 @@ public:
             catch (IException *E)
             {
                 StringBuffer s;
-                DBGLOG("ERROR: Invalid XML received from %s:%s", E->errorMessage(s).str(), rawText.str());
+                IERRLOG("ERROR: Invalid XML received from %s:%s", E->errorMessage(s).str(), rawText.str());
                 throw;
             }
             bool isRequest = false;
@@ -423,7 +423,7 @@ public:
 
     virtual bool stop() override
     {
-        ERRLOG("CHThorDebugSocketWorker stopped with queries active");
+        IERRLOG("CHThorDebugSocketWorker stopped with queries active");
         return true; 
     }
 
@@ -671,7 +671,7 @@ void EclAgent::unlockWorkUnit()
     {
         IWorkUnit *w = wuWrite.getClear();
         if (!w->Release()) 
-            ERRLOG("EclAgent::unlockWorkUnit workunit not released");
+            IERRLOG("EclAgent::unlockWorkUnit workunit not released");
     }
 }
 
@@ -1647,7 +1647,7 @@ IHThorGraphResults * EclAgent::createGraphLoopResults()
 
 void addException(IWorkUnit *w, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError)
 {
-    PrintLog("%s", text);
+    UERRLOG("%s", text);
     if ((severity == SeverityError) && (w->getState()!=WUStateAborting) && failOnError)
         w->setState(WUStateFailed);
     addExceptionToWorkunit(w, severity, source, code, text, filename, lineno, column, 0);
@@ -1819,7 +1819,7 @@ void EclAgent::setRetcode(int code)
 void EclAgent::doProcess()
 {
 #ifdef _DEBUG
-    PrintLog ("Entering doProcess ()");
+    DBGLOG("Entering doProcess ()");
 #endif
     bool failed = true;
     CCycleTimer elapsedTimer;
@@ -1869,7 +1869,7 @@ void EclAgent::doProcess()
             if (checkVersion && (process->getActivityVersion() != eclccCodeVersion))
                 failv(0, "Inconsistent interface versions.  Workunit was created using eclcc for version %u, but the c++ compiler used version %u", eclccCodeVersion, process->getActivityVersion());
 
-            PrintLog("Starting process");
+            DBGLOG("Starting process");
             runProcess(process);
             failed = false;
         }
@@ -1905,7 +1905,7 @@ void EclAgent::doProcess()
         logException((IException *) NULL);
     }
 
-    PrintLog("Process complete");
+    DBGLOG("Process complete");
     // Add some timing stats
     bool deleteJobTemps = true;
     try
@@ -1966,7 +1966,7 @@ void EclAgent::doProcess()
                     e->errorMessage(msg);
                     logException(SeverityWarning, code, msg.str(), false);
                     e->Release();
-                    WARNLOG("%s (%d)", msg.str(), code);
+                    UWARNLOG("%s (%d)", msg.str(), code);
                 }
             }
 
@@ -1995,7 +1995,7 @@ void EclAgent::doProcess()
                 e->Release();
             }
             if (rmMsg.length())
-                WARNLOG(errCode, "%s", rmMsg.str());
+                UWARNLOG(errCode, "%s", rmMsg.str());
         }
 
         if (globals->getPropBool("DUMPFINALWU", false))
@@ -2046,7 +2046,7 @@ void EclAgent::doProcess()
         }
         e->Release();
     }
-    PrintLog("Workunit written complete");
+    DBGLOG("Workunit written complete");
 }
 
 void EclAgent::runProcess(IEclProcess *process)
@@ -2418,7 +2418,7 @@ void EclAgent::logException(ErrorSeverity severity, unsigned code, const char * 
 {
     addException(severity, "eclagent", code, text, NULL, 0, 0, true, isAbort);
     if (severity == SeverityError)
-        ERRLOG(code, "%s", text);
+        UERRLOG(code, "%s", text);
 }
 
 void EclAgent::addException(ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort)
@@ -2447,20 +2447,20 @@ void EclAgent::addException(ErrorSeverity severity, const char * source, unsigne
     {
         StringBuffer m;
         E->errorMessage(m);
-        PrintLog("Unable to record exception in workunit: %s", m.str());
+        IERRLOG("Unable to record exception in workunit: %s", m.str());
         E->Release();
     }
     catch (std::bad_alloc &)
     {
-        PrintLog("Unable to record exception in workunit: out of memory (std::bad_alloc)");
+        IERRLOG("Unable to record exception in workunit: out of memory (std::bad_alloc)");
     }
     catch (std::exception & e)
     {
-        PrintLog("Unable to record exception in workunit: standard library exception (std::exception %s)", e.what());
+        IERRLOG("Unable to record exception in workunit: standard library exception (std::exception %s)", e.what());
     }
     catch (...)
     {
-        PrintLog("Unable to record exception in workunit: unknown exception");
+        IERRLOG("Unable to record exception in workunit: unknown exception");
     }
 }
 
@@ -2531,13 +2531,13 @@ static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __i
     CDateTime dt;
     file->getModificationTime(dt);
     unsigned __int64 modifiedTime = dt.getSimple();
-    PrintLog("getDatasetHash adding crc %" I64F "u for file %s", modifiedTime, filename);
+    IERRLOG("getDatasetHash adding crc %" I64F "u for file %s", modifiedTime, filename);
     return rtlHash64Data(sizeof(modifiedTime), &modifiedTime, crc);
 }
 
 unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __int64 crc)
 {
-    PrintLog("getDatasetHash initial crc %" I64F "x", crc);
+    IERRLOG("getDatasetHash initial crc %" I64F "x", crc);
 
     StringBuffer fullname;
     expandLogicalName(fullname, logicalName);
@@ -2575,9 +2575,9 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
             crc = crcLogicalFileTime(file, crc, fullname.str());
     }
     else
-        PrintLog("getDatasetHash did not find file %s", fullname.str());
+        IERRLOG("getDatasetHash did not find file %s", fullname.str());
 
-    PrintLog("getDatasetHash final crc %" I64F "x", crc);
+    IERRLOG("getDatasetHash final crc %" I64F "x", crc);
     return crc;
 }
 
@@ -3100,7 +3100,7 @@ void EclAgent::reportProgress(const char *progress, unsigned flags)
     if (progress)
     {
         // MORE - think about how to best do this
-        PrintLog("%s", progress);
+        LOG(MCdebugProgress, unknownJob,"%s", progress);
 //      WorkunitUpdate wu = updateWorkUnit();
 //      wu->reportProgress(progress, flags);
     }
@@ -3179,7 +3179,7 @@ void EclAgent::abortMonitor()
             while (abortmonitor->sem.wait(ABORT_DEADMAN_INTERVAL*1000))
                 if (abortmonitor->stopping)
                     return; // stopped in time
-            ERRLOG("EclAgent failed to abort within %ds - killing process",ABORT_DEADMAN_INTERVAL);
+            IERRLOG("EclAgent failed to abort within %ds - killing process",ABORT_DEADMAN_INTERVAL);
             break;
         }
     }
@@ -3239,7 +3239,7 @@ IGroup *EclAgent::getHThorGroup(StringBuffer &out)
         mygroupname.append('_').append(ins);
     }
     // this shouldn't happen but..
-    WARNLOG("Adding group %s",mygroupname.str());
+    DBGLOG("Adding group %s",mygroupname.str());
     queryNamedGroupStore().add(mygroupname.str(),mygrp,true);
     out.append(mygroupname);
     return queryNamedGroupStore().lookup(mygroupname.str());
@@ -3256,7 +3256,7 @@ void printStart(int argc, const char *argv[])
             cmd.append(' ');
         cmd.append('"').append(argv[argno]).append('"');
     }
-    PrintLog("Starting %s", cmd.str());
+    LOG(MCoperatorInfo,"Starting %s", cmd.str());
 }
 
 //--------------------------------------------------------------
@@ -3465,7 +3465,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 MTIME_SECTION(queryActiveTimer(), "Environment_Initialize");
                 setPasswordsFromSDS();
             }
-            PrintLog("ECLAGENT build %s", BUILD_TAG);
+            LOG(MCoperatorInfo, "ECLAGENT build %s", BUILD_TAG);
             startLogMsgParentReceiver();    
             connectLogMsgManagerToDali();
 
@@ -3600,7 +3600,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                     msg.append("Failed to deschedule unknown workunit ").append(wuid.str()).append(": ");
                     e->errorMessage(msg);
                     e->Release();
-                    WARNLOG("%s (%d)", msg.str(), code);
+                    IWARNLOG("%s (%d)", msg.str(), code);
                 }
                 retcode = 255;
             }
@@ -3626,7 +3626,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     roxiemem::releaseRoxieHeap();
     ::closedownClientProcess(); // dali client closedown
     if (traceLevel)
-        PrintLog("exiting");
+        DBGLOG("exiting");
 
     return retcode;
 }

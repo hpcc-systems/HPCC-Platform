@@ -161,7 +161,7 @@ static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char cons
                 msg.append(" (in super").append(isIndex ? "index" : "file").append(" ").append(super).append(")");
             if(fail)
                 throw MakeStringException(0, "%s", msg.str());
-            WARNLOG("%s", msg.str());
+            UWARNLOG("%s", msg.str());
             //MORE: Should we add a warning, similar to the following:
             //agent.addWuException(msg.str(), WRN_UseLayoutTranslation, SeverityWarning, "hthor");
             return false;

@@ -107,7 +107,7 @@ int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
         castParam.setown(paramValue->castTo(argType));
         if(!castParam)
         {
-            PrintLog("Failed to cast paramValue to argType in FuncCallStack::push");
+            IERRLOG("Failed to cast paramValue to argType in FuncCallStack::push");
             return -1;
         }
     }
@@ -159,7 +159,7 @@ int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
     case type_real:
 #ifdef MAXFPREGS
         if (numFpRegs==MAXFPREGS) {
-            PrintLog("Too many floating point registers needed in FuncCallStack::push");
+            IERRLOG("Too many floating point registers needed in FuncCallStack::push");
             return -1;
         }
         char tempbuf[sizeof(double)];

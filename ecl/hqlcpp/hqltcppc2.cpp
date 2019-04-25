@@ -41,7 +41,7 @@
 #include "hqlattr.hpp"
 #include "hqlusage.hpp"
 
-//#define TraceExprPrintLog(x, expr)                PrintLog(x ": %s", expr->toString(StringBuffer()).str());
+//#define TraceExprPrintLog(x, expr)                DBGLOG(x ": %s", expr->toString(StringBuffer()).str());
 
 //---------------------------------------------------------------------------
 CChildSetColumnInfo::CChildSetColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column) : CColumnInfo(_container, _prior, _column)

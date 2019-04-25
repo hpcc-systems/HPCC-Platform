@@ -1472,8 +1472,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
             {
                 StringBuffer s;
                 errs.toString(s);
-                PrintLog("Parsing system scope: ");
-                PrintLog(s.str());
+                DBGLOG("Parsing system scope: %s", s.str());
             }
     #endif
         }
@@ -6212,7 +6211,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
 
         if (arg >= maxArg)
         {
-            PrintLog("Too many parameters passed to function '%s'", str(expr->queryName()));
+            IERRLOG("Too many parameters passed to function '%s'", str(expr->queryName()));
             throwError1(HQLERR_TooManyParameters, str(expr->queryName()));
         }
 
@@ -6349,7 +6348,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     if (arg < maxArg)
     {
         //MORE: Process default parameters...
-        PrintLog("Not enough parameters passed to function '%s'", str(expr->queryName()));
+        IERRLOG("Not enough parameters passed to function '%s'", str(expr->queryName()));
         throwError1(HQLERR_TooFewParameters, str(expr->queryName()));
     }
 
@@ -6522,7 +6521,7 @@ void HqlCppTranslator::doBuildAssignCast(BuildCtx & ctx, const CHqlBoundTarget &
     left->queryType()->getECLType(s);
     target.queryType()->getECLType(s.append(" target="));
     expr->queryType()->getECLType(s.append(" expr="));
-    PrintLog(s.str());
+    DBGLOG("%s",s.str());
 #endif
 
     ITypeInfo * targetType = target.queryType();
