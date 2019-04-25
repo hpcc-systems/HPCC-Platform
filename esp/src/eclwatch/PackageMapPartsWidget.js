@@ -108,16 +108,16 @@ define([
                 this.addPartsDropDown.placeAt(this.openButton.domNode, "after");
                 this.addPartsDropDown.filterForm.set("style", "width:600px;");
                 this.addPartsDropDown.filterDropDown.set("label", context.i18n.Add);
-                this.addPartsPartName = this.createLabelAndElement("PartName", this.i18n.PartName, "ValidationTextBox", this.i18n.PartName);
-                this.addPartsContent = this.createLabelAndElement("Content", this.i18n.Content, "Textarea", this.i18n.Content);
-                this.addPartsDaliIp = this.createLabelAndElement("DaliIp", this.i18n.DaliIP, "TextBox", this.i18n.DaliIP);
-                this.addPartsSourceProcess = this.createLabelAndElement("SourceProcess", this.i18n.SourceProcess, "TextBox", this.i18n.SourceProcess);
-                this.addPartsDeletePrevious = this.createLabelAndElement("DeletePrevious", this.i18n.DeletePrevious, "CheckBox", this.i18n.DeletePrevious);
-                this.addPartsAllowForeign = this.createLabelAndElement("AllowForeignFiles", this.i18n.AllowForeignFiles, "CheckBox", this.i18n.AllowForeignFiles);
-                this.addPartsPreloadAllPackages = this.createLabelAndElement("PreloadAllPackages", this.i18n.PreloadAllPackages, "CheckBox", this.i18n.PreloadAllPackages);
-                this.addPartsUpdateSuperFiles = this.createLabelAndElement("UpdateSuperFiles", this.i18n.UpdateSuperFiles, "CheckBox", this.i18n.UpdateSuperFiles);
-                this.addPartsUpdateCloneFrom = this.createLabelAndElement("UpdateCloneFrom", this.i18n.UpdateCloneFrom, "CheckBox", this.i18n.UpdateCloneFrom);
-                this.addPartsAppendCluster = this.createLabelAndElement("AppendCluster", this.i18n.AppendCluster, "CheckBox", this.i18n.AppendCluster);
+                this.addPartsPartName = this.createLabelAndElement(this.id + "PartName", this.i18n.PartName, "ValidationTextBox", this.i18n.PartName);
+                this.addPartsContent = this.createLabelAndElement(this.id + "Content", this.i18n.Content, "Textarea", this.i18n.Content);
+                this.addPartsDaliIp = this.createLabelAndElement(this.id + "DaliIp", this.i18n.DaliIP, "TextBox", this.i18n.DaliIP);
+                this.addPartsSourceProcess = this.createLabelAndElement(this.id + "SourceProcess", this.i18n.SourceProcess, "TextBox", this.i18n.SourceProcess);
+                this.addPartsDeletePrevious = this.createLabelAndElement(this.id + "DeletePrevious", this.i18n.DeletePrevious, "CheckBox", this.i18n.DeletePrevious);
+                this.addPartsAllowForeign = this.createLabelAndElement(this.id + "AllowForeignFiles", this.i18n.AllowForeignFiles, "CheckBox", this.i18n.AllowForeignFiles);
+                this.addPartsPreloadAllPackages = this.createLabelAndElement(this.id + "PreloadAllPackages", this.i18n.PreloadAllPackages, "CheckBox", this.i18n.PreloadAllPackages);
+                this.addPartsUpdateSuperFiles = this.createLabelAndElement(this.id + "UpdateSuperFiles", this.i18n.UpdateSuperFiles, "CheckBox", this.i18n.UpdateSuperFiles);
+                this.addPartsUpdateCloneFrom = this.createLabelAndElement(this.id + "UpdateCloneFrom", this.i18n.UpdateCloneFrom, "CheckBox", this.i18n.UpdateCloneFrom);
+                this.addPartsAppendCluster = this.createLabelAndElement(this.id + "AppendCluster", this.i18n.AppendCluster, "CheckBox", this.i18n.AppendCluster);
 
                 this.removeParts = new Button({
                     id: this.id + "RemoveParts",

@@ -92,10 +92,16 @@ define([
                 } else if (params.DFUSprayQueues === true) {
                     this.loadSprayQueues();
                 } else if (params.GetPackageMapTargets === true) {
+                    this.defaultValue = "*";
+                    this.set("value", "*");
                     this.loadGetPackageMapTargets();
                 } else if (params.GetPackageMapProcesses === true) {
+                    this.defaultValue = "*";
+                    this.set("value", "*");
                     this.loadGetPackageMapProcesses();
                 } else if (params.GetPackageMapProcessFilter === true) {
+                    this.defaultValue = "*";
+                    this.set("value", "*");
                     this.loadGetPackageMapProcessFilter();
                 } else if (params.DropZoneMachines === true) {
                     this.defaultValue = "";

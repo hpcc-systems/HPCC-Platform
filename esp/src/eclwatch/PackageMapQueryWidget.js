@@ -38,6 +38,7 @@ define([
     "dijit/form/Button",
     "dijit/form/DropDownButton",
     "dijit/form/Select",
+    "dijit/form/Textarea",
     "dijit/Toolbar",
     "dijit/TooltipDialog"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
@@ -71,10 +72,20 @@ define([
                 this.targetSelect = registry.byId(this.id + "TargetSelect");
                 this.processSelect = registry.byId(this.id + "ProcessSelect");
                 this.processSelectFilter = registry.byId(this.id + "ProcessFilterSelect");
+                this.addPackageMapForm = registry.byId(this.id + "AddProcessMapForm");
+                this.addProcessMapId = registry.byId(this.id + "AddProcessMapId");
+                this.addPackageMapContent = registry.byId(this.id + "AddPackagemapContent");
                 this.addPackageTargetSelect = registry.byId(this.id + "AddProcessMapTargetSelect");
                 this.addPackageProcessSelect = registry.byId(this.id + "AddProcessMapProcessSelect");
                 this.addPackageProcessFilter = registry.byId(this.id + "AddProcessMapProcessFilter");
                 this.addPackageMapDialog = registry.byId(this.id + "AddProcessMapDialog");
+                this.addPackageMapContent = dom.byId("AddPackagemapContent");
+                this.addPackageMapSubmit = registry.byId(this.id + "AddProcessMapDialogSubmit");
+                this.addPackageMapCloseButton = registry.byId(this.id + "AddProcessMapDialogClose");
+                this.addPackageMapUploader = registry.byId(this.id + "AddProcessMapFileUploader");
+                this.addProcessMapDaliIp = registry.byId(this.id + "AddProcessMapDaliIP");
+                this.addProcessMapActivate = registry.byId(this.id + "AddProcessMapActivate");
+                this.addProcessMapOverWrite = registry.byId(this.id + "AddProcessMapOverWrite");
                 this.filter = registry.byId(this.id + "Filter");
             },
 
@@ -111,82 +122,41 @@ define([
                 }
             },
 
+            _onCancel: function (event) {
+                this.addPackageMapDialog.hide();
+                this.addPackageMapContent.value = "";
+            },
+
             _onAdd: function (event) {
                 this.addPackageMapDialog.show();
-
-                var context = this;
-                var addPackageMapUploader = registry.byId(this.id + "AddProcessMapFileUploader");
-                dojo.connect(addPackageMapUploader, "onComplete", this, function (e) {
-                    registry.byId(this.id + "AddProcessMapDialogSubmit").set('disabled', false);
-                    return context.addPackageMapCallback();
-                });
-                dojo.connect(addPackageMapUploader, "onBegin", this, function (e) {
-                    registry.byId(this.id + "AddProcessMapDialogSubmit").set('disabled', true);
-                    return;
-                });
-                var addPackageMapSubmitButton = registry.byId(this.id + "AddProcessMapDialogSubmit");
-                dojo.connect(addPackageMapSubmitButton, "onClick", this, function (e) {
-                    return context._onAddPackageMapSubmit();
-                });
-                var addPackageMapCloseButton = registry.byId(this.id + "AddProcessMapDialogClose");
-                dojo.connect(addPackageMapCloseButton, "onClick", this, function (e) {
-                    this.addPackageMapDialog.onCancel();
-                });
-            },
-
-            _onAddProcessMapIdKeyUp: function () {
-                this._onCheckAddProcessMapInput();
-            },
-
-            _onCheckAddProcessMapInput: function () {
-                var id = registry.byId(this.id + "AddProcessMapId").get('value');
-                var files = registry.byId(this.id + "AddProcessMapFileUploader").getFileList();
-                if (files.length > 1) {
-                    alert(this.i18n.Only1PackageFileAllowed);
-                    return;
-                }
-                var fileName = '';
-                if (files.length > 0)
-                    fileName = files[0].name;
-                if ((fileName !== '') && (id === '')) {
-                    registry.byId(this.id + "AddProcessMapId").set('value', fileName);
-                    registry.byId(this.id + "AddProcessMapDialogSubmit").set('disabled', false);
-                } else if ((id === '') || (files.length < 1))
-                    registry.byId(this.id + "AddProcessMapDialogSubmit").set('disabled', true);
-                else
-                    registry.byId(this.id + "AddProcessMapDialogSubmit").set('disabled', false);
             },
 
             _onAddPackageMapSubmit: function () {
-                var target = this.addPackageMapTargetSelect.getValue();
-                var id = registry.byId(this.id + "AddProcessMapId").get('value');
-                var process = this.addPackageMapProcessSelect.getValue();
-                var daliIp = registry.byId(this.id + "AddProcessMapDaliIP").get('value');
-                var activate = registry.byId(this.id + "AddProcessMapActivate").get('checked');
-                var overwrite = registry.byId(this.id + "AddProcessMapOverWrite").get('checked');
-                if ((id === '') || (target === ''))
-                    return false;
-                if ((process === '') || (process === this.i18n.ANY))
-                    process = '*';
+                var context = this;
 
-                var action = "/WsPackageProcess/AddPackage?upload_&PackageMap=" + id + "&Target=" + target;
-                if (process !== '')
-                    action += "&Process=" + process;
-                if (daliIp !== '')
-                    action += "&DaliIp=" + daliIp;
-                if (activate)
-                    action += "&Activate=1";
-                else
-                    action += "&Activate=0";
-                if (overwrite)
-                    action += "&OverWrite=1";
-                else
-                    action += "&OverWrite=0";
-                var theForm = registry.byId(this.id + "AddProcessMapForm");
-                if (theForm === undefined)
-                    return false;
-                theForm.set('action', action);
-                return true;
+                if (this.addPackageMapForm.validate()) {
+                    WsPackageMaps.AddPackage({
+                        request: {
+                            Info: this.addPackageMapContent.value,
+                            PackageMap: this.addProcessMapId.get('value'),
+                            Process: this.addPackageProcessSelect.get('value'),
+                            Target: this.addPackageTargetSelect.get('value'),
+                            Activate: this.addProcessMapActivate.get('checked'),
+                            Overwrite: this.addProcessMapOverWrite.get('checked'),
+                            DaliIp: this.addProcessMapDaliIp.get('value')
+                        }
+                    }).then(function(response){
+                        if (lang.exists("AddPackageResponse.status", response)) {
+                            if (response.AddPackageResponse.status.Code === 0) {
+                                context.refreshGrid();
+                                context._onCancel();
+                            }
+                        } else {
+                            this._onCancel();
+                            this.showErrors(response.Exceptions.Exception[0].Message);
+                        }
+                    });
+                }
             },
 
             _onDelete: function (event) {
@@ -206,6 +176,8 @@ define([
                                 if (response.DeletePackageResponse.status.Code === 0) {
                                     context.refreshGrid();
                                 }
+                            } else {
+                                context.showErrors(response.Exceptions.Exception[0].Message);
                             }
                         });
                     });
@@ -257,16 +229,6 @@ define([
                 });
             },
 
-            addProcessSelections: function (processSelect, processes, processData) {
-                for (var i = 0; i < processData.length; ++i) {
-                    var process = processData[i];
-                    if ((processes != null) && (processes.indexOf(process) !== -1))
-                        continue;
-                    processes.push(process);
-                    processSelect.options.push({ label: process, value: process });
-                }
-            },
-
             init: function (params) {
                 var context = this;
                 if (this.inherited(arguments))
@@ -277,14 +239,13 @@ define([
                 this.targetSelect.init({
                     GetPackageMapTargets: true
                 });
-                
                 this.processSelect.init({
                     GetPackageMapProcesses: true
                 });
 
                 this.processSelectFilter.init({
                     GetPackageMapProcessFilter: true
-                })
+                });
 
                 this.addPackageTargetSelect.init({
                     GetPackageMapTargets: true
@@ -293,8 +254,6 @@ define([
                 this.addPackageProcessSelect.init({
                     GetPackageMapProcesses: true
                 });
-
-                this.initPackagesGrid();
 
                 this.filter.on("clear", function (evt) {
                     context._onFilterType();
@@ -305,6 +264,7 @@ define([
                     context.refreshHRef();
                     context.refreshGrid();
                 });
+                this.initPackagesGrid();
             },
 
             initTab: function () {
@@ -411,11 +371,8 @@ define([
             },
 
             getFilter: function () {
-                return {
-                    Target: this.targetSelect.getValue(),
-                    Process: this.processSelect.getValue(),
-                    ProcessFilter: this.processSelectFilter.getValue()
-                };
+                var retVal = this.filter.toObject();
+                return retVal;
             },
 
             refreshGrid: function (clearSelection) {
@@ -432,23 +389,6 @@ define([
                 registry.byId(this.id + "Delete").set("disabled", !hasSelection);
                 registry.byId(this.id + "Activate").set("disabled", selection.length !== 1);
                 registry.byId(this.id + "Deactivate").set("disabled", selection.length !== 1);
-            },
-
-            packageMapDeleted: function (tabId) {
-                if (this.tabMap[tabId] == null)
-                    return;
-                this.tabContainer.removeChild(this.tabMap[tabId]);
-                this.tabMap[tabId].destroyRecursive();
-                delete this.tabMap[tabId];
-
-                this.tabContainer.selectChild(this.packagesTab);
-                this.packagesGrid.rowSelectCell.toggleAllSelection(false);
-                this.refreshGrid();
-            },
-
-            addPackageMapCallback: function (event) {
-                this.addPackageMapDialog.onCancel();
-                this.refreshGrid();
             },
 
             ensurePane: function (id, params) {
