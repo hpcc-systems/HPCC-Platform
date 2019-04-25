@@ -727,8 +727,8 @@ const char * cppSystemText[]  = {
     "   addAll() : method,entrypoint='addAll';",
     "   addRange(const data1 lo, const data1 hi) : method,entrypoint='addRange';",
     "   killRange(const data1 lo, const data1 hi) : method,entrypoint='killRange';",
-    "   addRawRange(const data1 lo, const data1 hi) : method,entrypoint='addRawRange';",
-    "   killRawRange(const data1 lo, const data1 hi) : method,entrypoint='killRawRange';",
+    "   addRawRange(const data1 lo, const data1 hi, unsigned4 subLength) : method,entrypoint='addRawRangeEx';",
+    "   killRawRange(const data1 lo, const data1 hi, unsigned4 subLength) : method,entrypoint='killRawRangeEx';",
 
     "   boolean columnGetBool(const varstring name) : method,pure,entrypoint='getBool';",
     "   columnGetData(noconst data result, const varstring name) : method,pure,entrypoint='getData';",

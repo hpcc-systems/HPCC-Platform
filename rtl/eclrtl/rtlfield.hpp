@@ -66,7 +66,11 @@ struct ECLRTL_API RtlTypeInfoBase : public RtlTypeInfo
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
     virtual void readAhead(IRowPrefetcherSource & in) const override;
     virtual void doCleanup() const override {}
+    virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
+    virtual void setLowBound(void * buffer, const byte * value, size32_t subLength, bool inclusive) const override;
+    virtual void setHighBound(void * buffer, const byte * value, size32_t subLength, bool inclusive) const override;
 protected:
+    virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const;
     size32_t buildUtf8ViaString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const;
     void getUtf8ViaString(size32_t & resultLen, char * & result, const void * ptr) const;
 };
@@ -112,6 +116,7 @@ struct ECLRTL_API RtlRealTypeInfo : public RtlTypeInfoBase
     virtual bool isNumeric() const override { return true; }
     virtual int compare(const byte * left, const byte * right) const override;
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
+    virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const override;
 
 private:
     inline double value(const void * self) const;
@@ -271,6 +276,7 @@ struct ECLRTL_API RtlStringTypeInfo : public RtlTypeInfoBase
     virtual int compare(const byte * left, const byte * right) const override;
     virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte * self, unsigned inhash) const override;
+    virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlDataTypeInfo : public RtlTypeInfoBase
@@ -295,6 +301,7 @@ struct ECLRTL_API RtlDataTypeInfo : public RtlTypeInfoBase
     virtual int compare(const byte * left, const byte * right) const override;
     virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
+    virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlVarStringTypeInfo : public RtlTypeInfoBase
@@ -317,6 +324,8 @@ struct ECLRTL_API RtlVarStringTypeInfo : public RtlTypeInfoBase
     virtual bool canExtend(char &fillChar) const override;
     virtual int compare(const byte * left, const byte * right) const override;
     virtual unsigned hash(const byte * self, unsigned inhash) const override;
+    virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
+    virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const override;
 };
 
 struct ECLRTL_API RtlQStringTypeInfo : public RtlTypeInfoBase
@@ -340,6 +349,8 @@ struct ECLRTL_API RtlQStringTypeInfo : public RtlTypeInfoBase
     virtual int compare(const byte * left, const byte * right) const override;
     virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte * self, unsigned inhash) const override;
+    virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
+    virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const override;
 };
 
 struct ECLRTL_API RtlDecimalTypeInfo : public RtlTypeInfoBase
@@ -404,6 +415,8 @@ public:
     virtual __int64 getInt(const void * ptr) const override;
     virtual int compare(const byte * left, const byte * right) const override;
     virtual unsigned hash(const byte * self, unsigned inhash) const override;
+    virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
+    virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const override;
 
     virtual const char * queryLocale() const override { return locale; }
 
@@ -432,6 +445,8 @@ public:
     virtual __int64 getInt(const void * ptr) const override;
     virtual int compare(const byte * left, const byte * right) const override;
     virtual unsigned hash(const byte * _self, unsigned inhash) const override;
+    virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
+    virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const override;
 
     virtual const char * queryLocale() const override { return locale; }
 
@@ -459,6 +474,8 @@ public:
     virtual __int64 getInt(const void * ptr) const override;
     virtual int compare(const byte * left, const byte * right) const override;
     virtual unsigned hash(const byte * self, unsigned inhash) const override;
+    virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
+    virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const override;
 
     virtual const char * queryLocale() const override { return locale; }
 

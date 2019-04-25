@@ -1395,8 +1395,11 @@ public:
     LegacySetCreator(IStringSet & _set, size32_t _minRecordSize, const RtlTypeInfo * _fieldType)
     : set(_set), minRecordSize(_minRecordSize), fieldType(_fieldType) {}
 
-    virtual void addRange(TransitionMask lowerMask, const StringBuffer & lowerString, TransitionMask upperMask, const StringBuffer & upperString) override
+    virtual void addRange(TransitionMask lowerMask, const StringBuffer & lowerString, TransitionMask upperMask, const StringBuffer & upperString, size32_t lowerSubLength, size32_t upperSubLength) override
     {
+        //MORE: This could be extended if we need legacy segment monitors to support the new subrange capabilities
+        assertex(lowerSubLength == MatchFullString && upperSubLength == MatchFullString);
+
         MemoryBufferBuilder lobuilder(lobuffer.clear(), minRecordSize);
         fieldType->buildUtf8(lobuilder, 0, nullptr, lowerString.length(), lowerString.str());
 

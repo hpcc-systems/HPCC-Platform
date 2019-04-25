@@ -1060,7 +1060,7 @@ IHqlExpression * FilterExtractor::createRangeCompare(IHqlExpression * selector, 
     {
         OwnedHqlExpr rangeExpr = createValue(no_rangeto, makeNullType(), LINK(lengthExpr));
         OwnedHqlExpr substr = createValue(no_substring, getStretchedType(UNKNOWN_LENGTH, selector->queryType()), LINK(selector), rangeExpr.getClear());
-        return createValue(compareEqual ? no_eq : no_ne, makeBoolType(), LINK(selector), foldedValue.getClear());
+        return createValue(compareEqual ? no_eq : no_ne, makeBoolType(), LINK(substr), foldedValue.getClear());
     }
 
     ITypeInfo * fieldType = selector->queryType();
@@ -1308,12 +1308,14 @@ bool FilterExtractor::extractOrFilter(KeyConditionInfo & matches, IHqlExpression
                 multipleConditions = true;
                 if (i1 == 0)
                 {
+                    //Check for ((i.x = 3) AND (i.y = 4))
+                    //Which can only create a keyed filter if it is ORd with an invariant expression
                     if (firstBranch->selector != cur.selector)
                         multipleSelectors = true;
                 }
                 else
                 {
-                    if ((firstBranch->selector != cur.selector) || multipleSelectors || (createValueSets && (firstBranch->subrange != cur.subrange)))
+                    if ((firstBranch->selector != cur.selector) || multipleSelectors)
                         validOrFilter = false;
                 }
             }
@@ -1355,7 +1357,7 @@ bool FilterExtractor::extractOrFilter(KeyConditionInfo & matches, IHqlExpression
                 extendOrCondition(combinedCondition, conjunction);
             }
 
-            matches.conditions.append(*new KeyCondition(firstBranch->selector, combinedCondition, keyedKind, firstBranch->subrange));
+            matches.conditions.append(*new KeyCondition(firstBranch->selector, combinedCondition, keyedKind, nullptr));
         }
         return true;
     }
@@ -1902,40 +1904,42 @@ IValueSet * FilterExtractor::createValueSetCompareExpr(IHqlExpression * selector
     if (!createConstantField(compareValue, selector, normalized))
         throwTooComplex(expr);
 
+    //TBD: Support substring matches
+    size32_t subLength = MatchFullString;
     node_operator op = expr->getOperator();
     const char * compareRaw = compareValue.toByteArray();
     switch (op)
     {
     case no_eq:
         if (!truncated)
-            values->addRawRange(compareRaw, compareRaw);
+            values->addRawRangeEx(compareRaw, compareRaw, subLength);
         break;
     case no_ne:
         values->addAll();
         if (!truncated)
-            values->killRawRange(compareRaw, compareRaw);
+            values->killRawRangeEx(compareRaw, compareRaw, subLength);
         break;
     case no_le:
     {
-        Owned<IValueTransition> upper = values->createRawTransition(CMPle, compareRaw);
+        Owned<IValueTransition> upper = values->createRawTransitionEx(CMPle, compareRaw, subLength);
         values->addRange(nullptr, upper);
         break;
     }
     case no_lt:
     {
-        Owned<IValueTransition> upper = values->createRawTransition(truncated ? CMPle: CMPlt, compareRaw);
+        Owned<IValueTransition> upper = values->createRawTransitionEx(truncated ? CMPle: CMPlt, compareRaw, subLength);
         values->addRange(nullptr, upper);
         break;
     }
     case no_ge:
     {
-        Owned<IValueTransition> lower = values->createRawTransition(truncated ? CMPgt : CMPge, compareRaw);
+        Owned<IValueTransition> lower = values->createRawTransitionEx(truncated ? CMPgt : CMPge, compareRaw, subLength);
         values->addRange(lower, nullptr);
         break;
     }
     case no_gt:
     {
-        Owned<IValueTransition> lower = values->createRawTransition(CMPgt, compareRaw);
+        Owned<IValueTransition> lower = values->createRawTransitionEx(CMPgt, compareRaw, subLength);
         values->addRange(lower, nullptr);
         break;
     }

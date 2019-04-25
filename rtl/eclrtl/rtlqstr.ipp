@@ -19,5 +19,13 @@
 #define rtlqstr_ipp
 
 void copyQStrRange(unsigned tlen, char * tgt, const char * src, unsigned from, unsigned to);
+//The following function works if matching a substring of a qstring, currently the default function does not
+int rtlSafeCompareQStrQStr(size32_t llen, const void * left, size32_t rlen, const void * right);
+bool incrementQString(byte *buf, size32_t size);
+bool decrementQString(byte *buf, size32_t size);
+
+//Utility functions for getting and setting an individual character within a qstring.
+byte getQChar(const byte * buffer, size32_t index);
+void setQChar(byte * buffer, size32_t index, byte value);
 
 #endif

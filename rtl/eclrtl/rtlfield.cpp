@@ -19,6 +19,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <atomic>
+#include <algorithm>
+
 #include "jmisc.hpp"
 #include "jlib.hpp"
 #include "eclhelper.hpp"
@@ -28,6 +30,7 @@
 #include "rtlrecord.hpp"
 #include "rtlkey.hpp"
 #include "nbcd.hpp"
+#include "rtlqstr.ipp"
 
 static const char * queryXPath(const RtlFieldInfo * field)
 {
@@ -66,6 +69,32 @@ static void queryNestedOuterXPath(StringAttr & ret, const RtlFieldInfo * field)
 }
 
 inline const char * queryName(const RtlFieldInfo * field) { return field ? field->name : nullptr; }
+
+//-------------------------------------------------------------------------------------------------------------------
+
+static bool incrementBuffer(byte *buf, size32_t size)
+{
+    int i = size;
+    while (i--)
+    {
+        buf[i]++;
+        if (buf[i]!=0)
+            return true;
+    }
+    return false;
+}
+
+static bool decrementBuffer(byte *buf, size32_t size)
+{
+    int i = size;
+    while (i--)
+    {
+        buf[i]--;
+        if (buf[i]!=0xff)
+            return true;
+    }
+    return false;
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -291,6 +320,71 @@ void RtlTypeInfoBase::getUtf8ViaString(size32_t & resultLen, char * & result, co
     rtlStrToUtf8X(resultLen, result, newLen, temp.getstr());
 }
 
+int RtlTypeInfoBase::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
+{
+    throwUnexpected();
+}
+
+void RtlTypeInfoBase::setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const
+{
+    byte *dst = (byte *) buffer;
+    size32_t minSize = getMinSize();
+    if (value)
+    {
+        assertex(isFixedSize() || (inclusive && (subLength == MatchFullString)));
+        size32_t copySize;
+        if (subLength != MatchFullString)
+        {
+            if (isFixedSize())
+            {
+                //For a substring comparison, clear the bytes after subLength - eventually they should never be compared
+                //but currently the index code uses memcmp() so they need to be initialised
+                unsigned copyLen = std::min(length, subLength);
+                copySize = copyLen;
+                memcpy(dst, value, copySize);
+                memset(dst+copySize, fill, minSize-copySize);
+            }
+            else
+            {
+                assertex(inclusive);
+                size32_t copyLen = std::min(rtlReadSize32t(value), subLength);
+                copySize = copyLen;
+                *(size32_t *)buffer = copyLen;
+                memcpy(dst + sizeof(size32_t), value + sizeof(size32_t), copySize);
+            }
+        }
+        else
+        {
+            copySize = size(value, nullptr);
+            memcpy(dst, value, copySize);
+        }
+        if (!inclusive)
+        {
+            if (fill == 0)
+                incrementBuffer(dst, copySize);
+            else
+                decrementBuffer(dst, copySize);
+        }
+    }
+    else
+    {
+        //Generally cannot work for variable length fields - since always possible to create a larger value
+        //Default does not work for real types, or variable length signed integers
+        assertex((fill == 0) || isFixedSize());
+        memset(dst, fill, minSize);
+    }
+}
+
+void RtlTypeInfoBase::setLowBound(void * buffer, const byte * value, size32_t subLength, bool inclusive) const
+{
+    setBound(buffer, value, subLength, 0, inclusive);
+}
+
+void RtlTypeInfoBase::setHighBound(void * buffer, const byte * value, size32_t subLength, bool inclusive) const
+{
+    setBound(buffer, value, subLength, 0xff, inclusive);
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlBoolTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -453,6 +547,31 @@ unsigned RtlRealTypeInfo::hash(const byte *self, unsigned inhash) const
 {
     double val = getReal(self);
     return rtlHash32Data8(&val, inhash);
+}
+
+void RtlRealTypeInfo::setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const
+{
+    assertex(subLength == MatchFullString);
+    double dvalue;
+    float fvalue;
+    if (value)
+    {
+        assertex(inclusive);
+    }
+    else
+    {
+        dvalue = rtlCreateRealInf();
+        if (fill == 0)
+            dvalue = -dvalue;
+        if (length == 4)
+        {
+            fvalue = dvalue;
+            value = reinterpret_cast<const byte *>(&fvalue);
+        }
+        else
+            value = reinterpret_cast<const byte *>(&dvalue);
+    }
+    memcpy(buffer, value, length);
 }
 
 
@@ -1287,6 +1406,29 @@ int RtlStringTypeInfo::compare(const byte * left, const byte * right) const
     }
 }
 
+int RtlStringTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
+{
+    if (isFixedSize())
+    {
+        lenLeft = std::min(lenLeft, length);
+        lenRight = std::min(lenRight, length);
+        if (isEbcdic())
+            return rtlCompareEStrEStr(lenLeft, (const char *)left, lenRight, (const char *)right);
+        else
+            return rtlCompareStrStr(lenLeft, (const char *)left, lenRight, (const char *)right);
+    }
+    else
+    {
+        size32_t maxLeft = rtlReadSize32t(left);
+        size32_t maxRight = rtlReadSize32t(right);
+
+        if (isEbcdic())
+            return rtlCompareEStrEStr(std::min(lenLeft, maxLeft), (const char *)left + sizeof(size32_t), std::min(lenRight, maxRight), (const char *)right + sizeof(size32_t));
+        else
+            return rtlCompareStrStr(std::min(lenLeft, maxLeft), (const char *)left + sizeof(size32_t), std::min(lenRight, maxRight), (const char *)right + sizeof(size32_t));
+    }
+}
+
 bool RtlStringTypeInfo::canMemCmp() const
 {
     return isFixedSize();
@@ -1487,6 +1629,25 @@ int RtlDataTypeInfo::compare(const byte * left, const byte * right) const
     return rtlCompareDataData(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
 }
 
+int RtlDataTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
+{
+    if (isFixedSize())
+    {
+        lenLeft = std::min(lenLeft, length);
+        lenRight = std::min(lenRight, length);
+        return rtlCompareDataData(lenLeft, (const char *)left, lenRight, (const char *)right);
+    }
+    else
+    {
+        size32_t maxLeft = rtlReadSize32t(left);
+        size32_t maxRight = rtlReadSize32t(right);
+        lenLeft = std::min(lenLeft, maxLeft);
+        lenRight = std::min(lenRight, maxRight);
+
+        return rtlCompareDataData(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
+    }
+}
+
 bool RtlDataTypeInfo::canMemCmp() const
 {
     return isFixedSize();
@@ -1673,6 +1834,28 @@ int RtlVarStringTypeInfo::compare(const byte * left, const byte * right) const
     return rtlCompareVStrVStr((const char *)left, (const char *)right);
 }
 
+int RtlVarStringTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
+{
+    size32_t maxLeft = strlen((const char *)left);
+    size32_t maxRight = strlen((const char *)right);
+    lenLeft = std::min(lenLeft, maxLeft);
+    lenRight = std::min(lenRight, maxRight);
+
+    if (isEbcdic())
+        return rtlCompareEStrEStr(lenLeft, (const char *)left, lenRight, (const char *)right);
+    else
+        return rtlCompareStrStr(lenLeft, (const char *)left, lenRight, (const char *)right);
+}
+
+void RtlVarStringTypeInfo::setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const
+{
+    //Do not support substring matching or non-exclusive bounds.
+    //They could possibly be implemented by copying a varstring at maxlength padded with spaces.
+    if ((subLength != MatchFullString) || !inclusive)
+        UNIMPLEMENTED_X("RtlVarStringTypeInfo::setBound");
+    RtlTypeInfoBase::setBound(buffer, value, subLength, fill, inclusive);
+}
+
 unsigned RtlVarStringTypeInfo::hash(const byte * self, unsigned inhash) const
 {
     return rtlHash32VStr((const char *) self, inhash);
@@ -1856,6 +2039,70 @@ int RtlQStringTypeInfo::compare(const byte * left, const byte * right) const
     size32_t lenLeft = rtlReadSize32t(left);
     size32_t lenRight = rtlReadSize32t(right);
     return rtlCompareQStrQStr(lenLeft, left + sizeof(size32_t), lenRight, right + sizeof(size32_t));
+}
+
+int RtlQStringTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
+{
+    if (isFixedSize())
+    {
+        lenLeft = std::min(lenLeft, length);
+        lenRight = std::min(lenRight, length);
+        return rtlSafeCompareQStrQStr(lenLeft, (const char *)left, lenRight, (const char *)right);
+    }
+    else
+    {
+        size32_t maxLeft = rtlReadSize32t(left);
+        size32_t maxRight = rtlReadSize32t(right);
+        lenLeft = std::min(lenLeft, maxLeft);
+        lenRight = std::min(lenRight, maxRight);
+
+        return rtlSafeCompareQStrQStr(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
+    }
+}
+
+void RtlQStringTypeInfo::setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const
+{
+    byte *dst = (byte *) buffer;
+    size32_t minSize = getMinSize();
+    if (value)
+    {
+        //Eventually the comparison code should not ever use non inclusive, or compare characters after subLength
+        //Until then this code needs to fill the rest of the string with the correct fill character and
+        //increment the appropriate qcharacter
+        size32_t copyLen;
+        if (isFixedSize())
+        {
+            //For a substring comparison, the bytes after subLength will eventually never be compared - but index currently does
+            copyLen = std::min(length, subLength);
+            rtlQStrToQStr(length, (char *)buffer, copyLen, (const char *)value);
+            if (fill != 0)
+            {
+                for (unsigned i=copyLen; i < length; i++)
+                    setQChar(dst, i, 0x3F);
+            }
+            else if (copyLen != length)
+                setQChar(dst, copyLen, 0);    // work around a bug copying qstrings of the same size, but different lengths
+        }
+        else
+        {
+            copyLen = std::min(rtlReadSize32t(value), subLength);
+            size32_t copySize = size(value, nullptr);
+            memcpy(dst, value, copySize);
+        }
+
+        if (!inclusive)
+        {
+            if (fill == 0)
+                incrementQString(dst, copyLen);
+            else
+                decrementQString(dst, copyLen);
+        }
+    }
+    else
+    {
+        assertex((fill == 0) || isFixedSize());
+        memset(dst, fill, minSize);
+    }
 }
 
 bool RtlQStringTypeInfo::canMemCmp() const
@@ -2325,6 +2572,66 @@ int RtlUnicodeTypeInfo::compare(const byte * left, const byte * right) const
     return rtlCompareUnicodeUnicode(lenLeft, valueLeft, lenRight, valueRight, locale);
 }
 
+int RtlUnicodeTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
+{
+    if (isFixedSize())
+    {
+        lenLeft = std::min(lenLeft, length);
+        lenRight = std::min(lenRight, length);
+        return rtlCompareUnicodeUnicode(lenLeft, (const UChar *)left, lenRight, (const UChar *)right, locale);
+    }
+    else
+    {
+        size32_t maxLeft = rtlReadSize32t(left);
+        size32_t maxRight = rtlReadSize32t(right);
+        lenLeft = std::min(lenLeft, maxLeft);
+        lenRight = std::min(lenRight, maxRight);
+
+        return rtlCompareUnicodeUnicode(lenLeft, (const UChar *)(left + sizeof(size32_t)), lenRight, (const UChar *)(right + sizeof(size32_t)), locale);
+    }
+}
+
+void RtlUnicodeTypeInfo::setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const
+{
+    byte *dst = (byte *) buffer;
+    size32_t minSize = getMinSize();
+    if (value)
+    {
+        assertex(inclusive);
+        if (subLength != MatchFullString)
+        {
+            if (isFixedSize())
+            {
+                //Only support a lower bound for unicode substrings - filled with spaces
+                assertex(fill == 0);
+
+                //For a substring comparison, the bytes after subLength will eventually never be compared - but index currently does
+                size32_t copyLen = std::min(length, subLength);
+                rtlUnicodeToUnicode(length, (UChar *)buffer, copyLen, (const UChar *)value);
+            }
+            else
+            {
+                size32_t copyLen = std::min(rtlReadSize32t(value), subLength);
+                size32_t copySize = copyLen * sizeof(UChar);
+                *(size32_t *)buffer = copyLen;
+                memcpy(dst + sizeof(size32_t), value + sizeof(size32_t), copySize);
+            }
+        }
+        else
+        {
+            size32_t copySize = size(value, nullptr);
+            memcpy(dst, value, copySize);
+        }
+    }
+    else
+    {
+        //Generally cannot work for variable length fields - since always possible to create a larger value
+        //Default does not work for real types, or variable length signed integers
+        assertex(fill == 0);
+        memset(dst, fill, minSize);
+    }
+}
+
 unsigned RtlUnicodeTypeInfo::hash(const byte * self, unsigned inhash) const
 {
     size32_t len;
@@ -2511,6 +2818,42 @@ int RtlVarUnicodeTypeInfo::compare(const byte * left, const byte * right) const
     return rtlCompareUnicodeUnicode(lenLeft, valueLeft, lenRight, valueRight, locale);
 }
 
+int RtlVarUnicodeTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
+{
+    size32_t maxLeft = rtlUnicodeStrlen((const UChar *)left);
+    size32_t maxRight = rtlUnicodeStrlen((const UChar *)right);
+    lenLeft = std::min(lenLeft, maxLeft);
+    lenRight = std::min(lenRight, maxRight);
+
+    return rtlCompareUnicodeUnicode(lenLeft, (const UChar *)left, lenRight, (const UChar *)right, locale);
+}
+
+void RtlVarUnicodeTypeInfo::setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const
+{
+    byte *dst = (byte *) buffer;
+    size32_t minSize = getMinSize();
+    if (value)
+    {
+        assertex(inclusive);
+        if (subLength != MatchFullString)
+        {
+            UNIMPLEMENTED_X("VarUnicode::setBound(substring)");
+        }
+        else
+        {
+            size32_t copySize = size(value, nullptr);
+            memcpy(dst, value, copySize);
+        }
+    }
+    else
+    {
+        //Generally cannot work for variable length fields - since always possible to create a larger value
+        //Default does not work for real types, or variable length signed integers
+        assertex(fill == 0);
+        memset(dst, fill, minSize);
+    }
+}
+
 unsigned RtlVarUnicodeTypeInfo::hash(const byte * _self, unsigned inhash) const
 {
     const UChar * self = reinterpret_cast<const UChar *>(_self);
@@ -2649,6 +2992,46 @@ int RtlUtf8TypeInfo::compare(const byte * left, const byte * right) const
     const char * valueLeft = reinterpret_cast<const char *>(left) + sizeof(size32_t);
     const char * valueRight = reinterpret_cast<const char *>(right) + sizeof(size32_t);
     return rtlCompareUtf8Utf8(lenLeft, valueLeft, lenRight, valueRight, locale);
+}
+
+int RtlUtf8TypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
+{
+    size32_t maxLeft = rtlReadSize32t(left);
+    size32_t maxRight = rtlReadSize32t(right);
+    lenLeft = std::min(lenLeft, maxLeft);
+    lenRight = std::min(lenRight, maxRight);
+    return rtlCompareUtf8Utf8(lenLeft, (const char *)(left + sizeof(size32_t)), lenRight, (const char *)(right + sizeof(size32_t)), locale);
+}
+
+void RtlUtf8TypeInfo::setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const
+{
+    assertex(!isFixedSize());
+    byte *dst = (byte *) buffer;
+    size32_t minSize = getMinSize();
+    if (value)
+    {
+        assertex(inclusive);
+        if (subLength != MatchFullString)
+        {
+            //Note: Only variable length utf8 is supported by the system
+            size32_t copyLen = std::min(rtlReadSize32t(value), subLength);
+            size32_t copySize = rtlUtf8Size(copyLen, value + sizeof(size32_t));
+            *(size32_t *)buffer = copyLen;
+            memcpy(dst + sizeof(size32_t), value + sizeof(size32_t), copySize);
+        }
+        else
+        {
+            size32_t copySize = size(value, nullptr);
+            memcpy(dst, value, copySize);
+        }
+    }
+    else
+    {
+        //Generally cannot work for variable length fields - since always possible to create a larger value
+        //Default does not work for real types, or variable length signed integers
+        assertex(fill == 0);
+        memset(dst, fill, minSize);
+    }
 }
 
 unsigned RtlUtf8TypeInfo::hash(const byte * self, unsigned inhash) const
