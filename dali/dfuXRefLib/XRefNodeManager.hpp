@@ -94,7 +94,7 @@ private:
     bool m_bChanged;
     StringBuffer m_dataStr;
     StringBuffer m_ClusterName;
-    Mutex commitMutex;
+    CriticalSection commitCrit;
     StringAttr rootDir;
 
 private:

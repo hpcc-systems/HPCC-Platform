@@ -32,6 +32,18 @@
 #include "unicode/rbbi.h"
 #include "../stringlib/wildmatch.tpp"
 
+using icu::UnicodeString;
+using icu::StringSearch;
+using icu::Collator;
+using icu::BreakIterator;
+using icu::Locale;
+using icu::RuleBasedCollator;
+using icu::CollationElementIterator;
+using icu::StringCharacterIterator;
+using icu::RuleBasedBreakIterator;
+using icu::Normalizer2;
+using icu::CharacterIterator;
+
 #define UNICODELIB_VERSION "UNICODELIB 1.1.06"
 
 static UChar32 const u32comma = ',';

@@ -163,10 +163,10 @@ protected:
 
 
 
-static void addRange(IValueSet * set, const char * lower, const char * upper)
+static void addRange(IValueSet * set, const char * lower, const char * upper, size32_t subLength = MatchFullString)
 {
-    Owned<IValueTransition> lowerBound = lower ? set->createUtf8Transition(CMPge, rtlUtf8Length(strlen(lower), lower), lower) : nullptr;
-    Owned<IValueTransition> upperBound = upper ? set->createUtf8Transition(CMPle, rtlUtf8Length(strlen(upper), upper), upper) : nullptr;
+    Owned<IValueTransition> lowerBound = lower ? set->createUtf8Transition(CMPge, rtlUtf8Length(strlen(lower), lower), lower, subLength) : nullptr;
+    Owned<IValueTransition> upperBound = upper ? set->createUtf8Transition(CMPle, rtlUtf8Length(strlen(upper), upper), upper, subLength) : nullptr;
     set->addRange(lowerBound, upperBound);
 };
 
@@ -186,6 +186,8 @@ public:
 class ValueSetTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(ValueSetTest);
+        CPPUNIT_TEST(testBounds);
+        CPPUNIT_TEST(testSubStrings);
         CPPUNIT_TEST(testKeyed2);
         CPPUNIT_TEST(testRange);
         CPPUNIT_TEST(testSerialize);
@@ -207,7 +209,7 @@ protected:
             CPPUNIT_ASSERT_EQUAL(expected, temp.str());
     }
 
-    void testRange(RtlTypeInfo & type, const char * low, const char * high, const char * expected)
+    void testRange(const RtlTypeInfo & type, const char * low, const char * high, const char * expected)
     {
         Owned<IValueSet> set = createValueSet(type);
         addRange(set, low, high);
@@ -266,7 +268,7 @@ protected:
         testRangeUniX("a'b", "éèabc", "['a\\'b','éèabc']");
     }
 
-    void testSerialize(RtlTypeInfo & type, const char * filter, const char * expected = nullptr)
+    void testSerialize(const RtlTypeInfo & type, const char * filter, const char * expected = nullptr)
     {
         Owned<IValueSet> set = createValueSet(type);
         deserializeSet(*set, filter);
@@ -284,7 +286,7 @@ protected:
         deserializeSet(*newset2, s);
         CPPUNIT_ASSERT(set->equals(*newset2));
     }
-    void testUnion(RtlTypeInfo & type, const char * filter, const char * next, const char * expected)
+    void testUnion(const RtlTypeInfo & type, const char * filter, const char * next, const char * expected)
     {
         Owned<IValueSet> set = createValueSet(type);
         deserializeSet(*set, filter);
@@ -528,7 +530,7 @@ protected:
         testUnion(int2, "(4,7),(12,15)", "[17]", "(4,7),(12,15),[17]");
     }
 
-    void testExclude(RtlTypeInfo & type, const char * filter, const char * next, const char * expected)
+    void testExclude(const RtlTypeInfo & type, const char * filter, const char * next, const char * expected)
     {
         Owned<IValueSet> set = createValueSet(type);
         deserializeSet(*set, filter);
@@ -699,7 +701,7 @@ protected:
         testExclude(int2, "(4,7),(12,15)", "[15]", "(4,7),(12,15)");
     }
 
-    void testInverse(RtlTypeInfo & type, const char * filter, const char * expected)
+    void testInverse(const RtlTypeInfo & type, const char * filter, const char * expected)
     {
         Owned<IValueSet> set = createValueSet(type);
         deserializeSet(*set, filter);
@@ -722,7 +724,7 @@ protected:
         testInverse(int2, "[4,5],(8,9),[12,14)", "(,4),(5,8],[9,12),[14,)");
     }
 
-    void testIntersect(RtlTypeInfo & type, const char * filter, const char * next, const char * expected)
+    void testIntersect(const RtlTypeInfo & type, const char * filter, const char * next, const char * expected)
     {
         Owned<IValueSet> set = createValueSet(type);
         deserializeSet(*set, filter);
@@ -839,6 +841,55 @@ protected:
 
         testIntersect(int2, "(3,5),[7,10),[15,20),(30,32),[37]", "(4,7],(9,12),[13,31],(36,)", "(4,5),[7],(9,10),[15,20),(30,31],[37]");
     }
+    void testSubStrings()
+    {
+        RtlStringTypeInfo str3(type_string, 3);
+        RtlStringTypeInfo str8(type_string, 8);
+        RtlStringTypeInfo strx(type_string|RFTMunknownsize, 0);
+
+        testSerialize(str3, "['a':1],", "['a  ':1]");
+        testSerialize(str3, "['a':1,'b':1],", "['a  ':1,'b  ':1]");
+        testSerialize(str3, "['a':1,'bx':2),", "['a  ':1,'bx ':2)");
+        testSerialize(str3, "['aa':1],", "");
+        testSerialize(str3, "['aaa':3],", "['aaa']");
+        testSerialize(str3, "['aaa':4],", "['aaa']");
+        testSerialize(str3, "['aa':1,'bc':1],", "('a  ':1,'b  ':1]");
+
+        testUnion(str3, "['aaa']", "['aaa']", "['aaa']");
+        testUnion(str3, "['a':1]", "['aaa']", "['a  ':1]");
+        testUnion(str3, "['a':1]", "['aa':2]", "['a  ':1]");
+        testUnion(str3, "['a':1]", "['b':1]", "['a  ':1],['b  ':1]");   //subranges are not merged
+        testUnion(str3, "['a':1]", "['bb':2]", "['a  ':1],['bb ':2]");
+        testUnion(str3, "['abc':2,'abz':2]", "['bbx':2,'bdz':2]", "('bb ':2,'bd ':2]");
+
+        testIntersect(str3, "['a':1]", "['aaa']", "['aaa']");
+        testIntersect(str3, "['a':1]", "['aa':2]", "['aa ':2]");
+        testIntersect(str3, "['a':1]", "['b':1]", "");
+        testIntersect(str3, "['a':1]", "['bb':2]", "");
+        testIntersect(str3, "['ab':1,]", "[,'bb':2]", "('a  ':1,'bb ':2]");
+        testIntersect(str3, "['ax':1,]", "[,'bx':1]", "('a  ':1,'b  ':1]");
+
+        testExclude(str3, "['a':1]", "['aaa']", "['a  ':1,'aaa'),('aaa','a  ':1]");
+        testExclude(str3, "['a':1]", "['aa':2]", "['a  ':1,'aa ':2),('aa ':2,'a  ':1]");
+        testExclude(str3, "['a':1]", "['b':1]", "['a  ':1]");
+        testExclude(str3, "['a':1]", "['bb':2]", "['a  ':1]");
+        testExclude(str3, "['a':1,]", "[,'bb':2]", "('bb ':2,)");
+        testExclude(str3, "['a':1,]", "[,'bbx':2]", "('bb ':2,)");
+        testExclude(str3, "[,'ccx':2]", "['bbx':2,]", "(,'bb ':2]");
+        testExclude(str3, "['aax':2,'ddx':2]", "['bbx':2,'ccx':2]", "('aa ':2,'bb ':2],('cc ':2,'dd ':2]");
+        testExclude(str3, "[,]", "['bbx':2,'ccx':2]", "(,'bb ':2],('cc ':2,)");
+
+        testUnion(str3, "['ab':2],['bc':2],['gh':2]", "['e':1]", "['ab ':2],['bc ':2],['e  ':1],['gh ':2]");
+        testUnion(str8, "['KT19':4],['KT40':4],['KT3 ':4],['KT50':4]", "['KT2':3]","['KT19    ':4],['KT2     ':3],['KT3     ':4],['KT40    ':4],['KT50    ':4]");
+
+        verifyRawSet("['MA':2]", strx, "+", { "\002\000\000\000MA", "\002\000\000\000MA" }, { 2 });
+        verifyRawSet("['a  ':1],['b  ':1]", str3, "++", { "a  ", "a  ", "b  ", "b  " }, { 1, 1 });
+        verifyRawSet("['a  ':1],['bb ':2]", str3, "++", { "a  ", "a  ", "bb ", "bb " }, { 1, 2 });
+        verifyRawSet("('bb ':2,'bd ':2]", str3, "++", { "abc", "abz", "bbx", "bdz" }, { 2, 2 });
+        verifyRawSet("(,'bb ':2]", str3, "+-", { nullptr, "ccx", "bbx", nullptr }, { 2, 2} );
+        verifyRawSet("('aa ':2,'bb ':2],('cc ':2,'dd ':2]", str3, "+-", { "aax", "ddx", "bbx", "ccx"}, { 2, 2} );
+        verifyRawSet("(,'bb ':2],('cc ':2,)", str3, "+-", { nullptr, nullptr, "bbx", "ccx" }, { 2, 2} );
+    }
     void testStr2()
     {
         RtlStringTypeInfo str1(type_string, 1);
@@ -945,12 +996,9 @@ protected:
     }
 
     //testFilter("id=[1,3];name=(,GH)", { false, true, false, false, false });
-    void testFilter(const char * originalFilter, const std::initializer_list<bool> & expected)
+    void testFilter(RowFilter & cursor, const char * originalFilter, const std::initializer_list<bool> & expected)
     {
         const byte * * rows = reinterpret_cast<const byte * *>(testRows);
-        RowFilter cursor;
-        processFilter(cursor, originalFilter, record);
-
         RtlDynRow row(record, nullptr);
         assertex((expected.end() - expected.begin()) == (unsigned)_elements_in(testRows));
         const bool * curExpected = expected.begin();
@@ -959,11 +1007,68 @@ protected:
             row.setRow(rows[i]);
             if (cursor.matches(row) != curExpected[i])
             {
-                printf("Failure to match row %u filter '%s'\n", i, originalFilter);
+                StringBuffer actual;
+                for (unsigned i=0; i<cursor.numFilterFields(); i++)
+                    cursor.queryFilter(i).serialize(actual.append(","));
+                printf("Failure to match row %u filter '%s' (%s)\n", i, originalFilter, actual.str());
                 CPPUNIT_ASSERT_EQUAL(curExpected[i], cursor.matches(row));
             }
         }
     };
+
+    void testFilter(const char * originalFilter, const std::initializer_list<bool> & expected)
+    {
+        RowFilter cursor;
+        processFilter(cursor, originalFilter, record);
+
+        testFilter(cursor, originalFilter, expected);
+    }
+
+    IValueSet * createRawSet(const RtlTypeInfo * fieldType, const char * key, const std::initializer_list<const char *> & transitions, const std::initializer_list<unsigned> & lengths)
+    {
+        RowFilter cursor;
+        unsigned numTransitions = (transitions.end() - transitions.begin());
+        unsigned numLengths = (lengths.end() - lengths.begin());
+        assertex((numTransitions & 1) == 0);
+        assertex(strlen(key) == numTransitions/2);
+        assertex(numLengths == numTransitions/2);
+
+        Owned<IValueSet> set = createValueSet(*fieldType);
+        const unsigned * lens = lengths.begin();
+        for (unsigned i=0; i < numTransitions; i+= 2)
+        {
+            const char * low = transitions.begin()[i];
+            const char * high = transitions.begin()[i+1];
+
+            if (key[i/2] == '+')
+                set->addRawRangeEx(low, high, lens[i/2]);
+            else
+                set->killRawRangeEx(low, high, lens[i/2]);
+        }
+        return set.getClear();
+    }
+
+    void verifyRawSet(const char * expected, const RtlTypeInfo & fieldType, const char * key, const std::initializer_list<const char *> & transitions, const std::initializer_list<unsigned> & lengths)
+    {
+        Owned<IValueSet> set = createRawSet(&fieldType, key, transitions, lengths);
+        StringBuffer actual;
+        set->serialize(actual);
+        if (!streq(expected, actual))
+            CPPUNIT_ASSERT_EQUAL(expected, actual.str());
+    }
+
+    void testRawFilter(const char * fieldName, const char * key, const std::initializer_list<const char *> & transitions, const std::initializer_list<unsigned> & lengths, const std::initializer_list<bool> & expected)
+    {
+        unsigned fieldNum = record.getFieldNum(fieldName);
+        assertex(fieldNum != (unsigned) -1);
+        const RtlTypeInfo *fieldType = record.queryType(fieldNum);
+        Owned<IValueSet> set = createRawSet(fieldType, key, transitions, lengths);
+
+        IFieldFilter * filter = createFieldFilter(fieldNum, set);
+        RowFilter cursor;
+        cursor.addFilter(*filter);
+        testFilter(cursor, "<raw>", expected);
+    }
 
     void testFilter()
     {
@@ -985,8 +1090,28 @@ protected:
         //Check substring ranges are correctly truncated
         testFilter("extra:3=['MARK','MAST']", { false, false, false, false, true, true });
         testFilter("name:1=['AB','JA']", { true, false, true, false, true, true });
-    }
 
+        //New substring implementation
+        testFilter("extra=['MA':2]", { true, false, false, true, true, true });
+        testFilter("extra=['  ':2]", { false, true, false, false, false, false });
+        testFilter("extra=['XX':0]", { false, false, false, false, false, false });
+        testFilter("extra=['':0]", { true, true, true, true, true, true });
+        testFilter("name=['A':1]", { false, true, false, true, false, false });
+        //Check substring ranges are correctly truncated
+        testFilter("extra=['MARK':3,'MAST':3]", { false, false, false, false, true, true });
+        testFilter("name=['AB':1,'JA':1]", { true, false, true, false, true, true });
+        testFilter("extra=[' ':1],['MA':2]", { true, true, false, true, true, true });
+        testFilter("extra=['MARK':3,]", { false, false, false, false, true, true });
+        testFilter("extra=[,'MARK':3]", { true, true, true, true, false, false });
+        testFilter("extra=['FRA':2,]", { true, false, false, true, true, true });
+        testFilter("extra=['FRA':2,'MARK':3]", { true, false, false, true, false, false });
+        testFilter("extra=['FRA':2,],[,'MARK':3]", { true, true, true, true, true, true });
+        testFilter("extra=['FRZ':2,'MARK':3]", { true, false, false, true, false, false });
+        testFilter("extra=['MARK':3,],[,'FRZ':2]", { false, true, true, false, true, true });
+
+        testRawFilter("extra", "+", { "\002\000\000\000MA", "\002\000\000\000MA" }, { 2 }, { true, false, false, true, true, true });
+        testRawFilter("extra", "+", { "\004\000\000\000MARK", nullptr }, { 3 }, { false, false, false, false, true, true });
+    }
 
     void testKeyed(const char * originalFilter, const char * expected)
     {
@@ -1226,6 +1351,15 @@ protected:
             testKeyed(rows, record, "f3:2=['10']");
             testKeyed(rows, record, "f3:2=['123']");
             testKeyed(rows, record, "f3:2=['123','126']");
+
+            //new format substring
+            testKeyed(rows, record, "f1=['1':1]");
+            testKeyed(rows, record, "f1=['10':2]");
+            testKeyed(rows, record, "f1=['5':30]");
+            testKeyed(rows, record, "f3=['1':1]");
+            testKeyed(rows, record, "f3=['10':2]");
+            testKeyed(rows, record, "f3=['123':2]");
+            testKeyed(rows, record, "f3=['123','126':2]");
         }
 
         ForEachItemIn(i, rows)
@@ -1237,6 +1371,86 @@ protected:
         testKeyed2(testRecord, false);
         testKeyed2(testRecordB, true);
     }
+
+    void appendHex(StringBuffer & target, size_t len, const void * data, bool lower)
+    {
+        for (unsigned i=0; i < len; i++)
+            target.appendhex(((const byte *)data)[i], lower);
+    }
+    void testBound(const RtlTypeInfo & type, const char * original, unsigned subLength, bool lower, bool inclusive, size_t sizeExpected, const char * expected)
+    {
+        MemoryBuffer buff;
+        MemoryBufferBuilder builder(buff, 0);
+        type.buildUtf8(builder, 0, nullptr, rtlUtf8Length(strlen(original), original), original);
+        byte result[1000];
+        if (lower)
+            type.setLowBound(result, (const byte *)buff.toByteArray(), subLength, inclusive);
+        else
+            type.setHighBound(result, (const byte *)buff.toByteArray(), subLength, inclusive);
+
+        size_t size = type.size(result, nullptr);
+        if ((size != sizeExpected) || memcmp(result, expected, size) != 0)
+        {
+            StringBuffer left, right;
+            appendHex(left, sizeExpected, expected, true);
+            appendHex(right, size, result, true);
+            CPPUNIT_ASSERT_EQUAL(left.str(), right.str());
+        }
+    }
+
+    void testBoundQstr(const RtlTypeInfo & type, const char * original, unsigned subLength, bool lower, bool inclusive, size_t sizeExpected, const char * expected)
+    {
+        size32_t tempLen;
+        rtlDataAttr temp;
+        rtlStrToQStrX(tempLen, temp.refstr(), sizeExpected, expected);
+        testBound(type, original, subLength, lower, inclusive, rtlQStrSize(tempLen), temp.getstr());
+    }
+
+    void testBounds()
+    {
+        //Lower bounds
+        testBound(str4, "X", MatchFullString, true, true, 4, "X   ");
+        testBound(str4, "X", 4, true, true, 4, "X   ");
+        testBound(str4, "X", 3, true, true, 4, "X  \x00");
+        testBound(str4, "A", MatchFullString, true, false, 4, "A  !");
+        testBound(str4, "A", 4, true, false, 4, "A  !");
+        testBound(str4, "X", 3, true, false, 4, "X !\x00");
+        //Upper bounds
+        testBound(str4, "X", 4, false, true, 4, "X   ");
+        testBound(str4, "X", 3, false, true, 4, "X  \xFF");
+        testBound(str4, "A", 4, false, false, 4, "A  \x1F");
+        testBound(str4, "X", 3, false, false, 4, "X \x1F\xFF");
+
+        //Horrible cases
+        const RtlQStringTypeInfo qstr4(type_qstring, 4);
+        testBoundQstr(qstr4, "AAAA", MatchFullString, true, true, 4, "AAAA");
+        testBoundQstr(qstr4, "AAAA", MatchFullString, true, false, 4, "AAAB");
+        testBoundQstr(qstr4, "AAAA", 4, true, true, 4, "AAAA");
+        testBoundQstr(qstr4, "AAAA", 4, true, false, 4, "AAAB");
+        testBoundQstr(qstr4, "AAA ", 3, true, false, 4, "AAB ");
+        testBoundQstr(qstr4, "AAAA", 3, true, false, 4, "AAB ");
+        testBoundQstr(qstr4, "AA_ ", 3, true, false, 4, "AB  ");
+        testBoundQstr(qstr4, "A__ ", 3, true, false, 4, "B   ");
+        testBoundQstr(qstr4, "AA_", 3, true, false, 4, "AB  ");
+        testBoundQstr(qstr4, "A_X", 2, true, false, 4, "B   ");
+        testBoundQstr(qstr4, "A_  ", 2, true, false, 4, "B   ");
+
+        testBoundQstr(qstr4, "AAAA", MatchFullString, false, true, 4, "AAAA");
+        testBoundQstr(qstr4, "AAAA", MatchFullString, false, false, 4, "AAA@");
+        testBoundQstr(qstr4, "AAAA", 4, false, true, 4, "AAAA");
+        testBoundQstr(qstr4, "AAAA", 4, false, false, 4, "AAA@");
+        testBoundQstr(qstr4, "AAA ", 3, false, false, 4, "AA@_");
+        testBoundQstr(qstr4, "AAAA", 3, false, false, 4, "AA@_");
+        testBoundQstr(qstr4, "AA  ", 3, false, false, 4, "A@__");
+
+        testBoundQstr(qstr4, "A   ", 3, false, false, 4, "@___");
+        testBoundQstr(qstr4, "A X", 2, false, false, 4, "@___");
+        testBoundQstr(qstr4, "A   ", 2, false, false, 4, "@___");
+
+        testBoundQstr(qstr4, "A   ", 4, false, false, 4, "@___");
+        testBoundQstr(qstr4, "A X ", 4, false, false, 4, "A W_");
+    }
+
 
 };
 

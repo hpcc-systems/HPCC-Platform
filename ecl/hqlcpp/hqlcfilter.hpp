@@ -71,12 +71,13 @@ protected:
     void buildKeySegmentCompareExpr(BuildFilterState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * requiredSet, IHqlExpression & thisKey);
     void buildKeySegmentInExpr(BuildFilterState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * target, IHqlExpression & thisKey, MonitorFilterKind filterKind);
     bool buildSingleKeyMonitor(StringBuffer & createMonitorText, KeySelectorInfo & selectorInfo, BuildCtx & ctx, IHqlExpression & thisKey);
+    bool buildSubRange(BuildCtx & ctx, IHqlExpression * range, CHqlBoundExpr & bound);
     void callAddAll(BuildCtx & ctx, IHqlExpression * targetVar);
     void createStringSet(BuildCtx & ctx, const char * target, unsigned size, IHqlExpression * selector);
     KeyCondition * createTranslatedCondition(IHqlExpression * cond, KeyedKind keyedKind);
     IHqlExpression * getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * expandedSelector, IHqlExpression * value);
-    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector);
-    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector);
+    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & subrange, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector);
+    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & subrange, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector);
 
     virtual IHqlExpression * getRangeLimit(ITypeInfo * fieldType, IHqlExpression * lengthExpr, IHqlExpression * value, int whichBoundary) override;
 

@@ -240,7 +240,7 @@ bool HqlLex::isMacroActive(IHqlExpression *expr)
         return false;
 }
 
-bool HqlLex::assertNext(YYSTYPE & returnToken, int expected, unsigned code, const char * msg)
+bool HqlLex::assertNext(attribute & returnToken, int expected, unsigned code, const char * msg)
 {
     if (yyLex(returnToken, false,0) != expected)
     {
@@ -253,13 +253,13 @@ bool HqlLex::assertNext(YYSTYPE & returnToken, int expected, unsigned code, cons
 
 bool HqlLex::assertNextOpenBra()
 {
-    YYSTYPE tempToken;
+    attribute tempToken;
     return assertNext(tempToken, '(', ERR_EXPECTED_LEFTCURLY, "( expected");
 }
 
 bool HqlLex::assertNextComma()
 {
-    YYSTYPE tempToken;
+    attribute tempToken;
     return assertNext(tempToken, ',', ERR_EXPECTED_COMMA, ", expected");
 }
 
@@ -366,7 +366,7 @@ bool HqlLex::hasLegacyWhenSemantics() const
     return legacyWhenMode;
 }
 
-void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentId, unsigned& parmno,IProperties *macroParms)
+void HqlLex::setMacroParam(const attribute & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentId, unsigned& parmno,IProperties *macroParms)
 {
     IHqlExpression * formals = queryFunctionParameters(funcdef);
     IHqlExpression * defaults = queryFunctionDefaults(funcdef);
@@ -433,7 +433,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         child(2) = defaults for parameters
     */
 
-    YYSTYPE nextToken;
+    attribute nextToken;
     int tok = yyLex(nextToken, false, 0);
     if (tok != '(')
     {
@@ -623,7 +623,7 @@ void HqlLex::checkSignature(const attribute & dummyToken)
 /* Read encrypted syntax, and push the decrypted text as a macro. */
 void HqlLex::processEncrypted()
 {
-    YYSTYPE nextToken;
+    attribute nextToken;
     if (yyLex(nextToken, false,0) != '(')
     {
         reportError(nextToken, ERR_EXPECTED_LEFTCURLY, "( expected");
@@ -679,7 +679,7 @@ bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what, int* sta
 {
     unsigned parenDepth = 1;
     if (startLine) *startLine = -1;
-    YYSTYPE nextToken;
+    attribute nextToken;
     for (;;)
     {
         int tok = yyLex(nextToken, false, 0);
@@ -724,7 +724,7 @@ bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what, int* sta
     }
 }
 
-void HqlLex::doSkipUntilEnd(YYSTYPE & returnToken, const char * forwhat)
+void HqlLex::doSkipUntilEnd(attribute & returnToken, const char * forwhat)
 {
     while (skipNesting)
     {
@@ -741,7 +741,7 @@ void HqlLex::doSkipUntilEnd(YYSTYPE & returnToken, const char * forwhat)
     }
 }
 
-void HqlLex::doIf(YYSTYPE & returnToken, bool isElseIf)
+void HqlLex::doIf(attribute & returnToken, bool isElseIf)
 {
     StringBuffer forwhat;
     int line = returnToken.pos.lineno, col = returnToken.pos.column;
@@ -771,7 +771,7 @@ void HqlLex::doIf(YYSTYPE & returnToken, bool isElseIf)
         setHashEndFlags(HEFhadtrue);
 }
 
-int HqlLex::doElse(YYSTYPE & returnToken, bool lookup, const short * activeState, bool isElseIf)
+int HqlLex::doElse(attribute & returnToken, bool lookup, const short * activeState, bool isElseIf)
 {
     StringBuffer forwhat;
     forwhat.appendf("#%s(%d,%d)",isElseIf ? "ELSEIF" : "ELSE", returnToken.pos.lineno,returnToken.pos.column);
@@ -815,7 +815,7 @@ int HqlLex::doElse(YYSTYPE & returnToken, bool lookup, const short * activeState
     }
 }
 
-int HqlLex::doEnd(YYSTYPE & returnToken, bool lookup, const short * activeState)
+int HqlLex::doEnd(attribute & returnToken, bool lookup, const short * activeState)
 {
     if (hashendKinds.ordinality() != 0)
     {
@@ -832,7 +832,7 @@ int HqlLex::doEnd(YYSTYPE & returnToken, bool lookup, const short * activeState)
     return yyLex(returnToken, lookup, activeState);
 }
 
-void HqlLex::doDeclare(YYSTYPE & returnToken)
+void HqlLex::doDeclare(attribute & returnToken)
 {
     StringBuffer forwhat;
     forwhat.appendf("#DECLARE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
@@ -887,7 +887,7 @@ void HqlLex::doDeclare(YYSTYPE & returnToken)
     }
 }
 
-void HqlLex::doExpand(YYSTYPE & returnToken)
+void HqlLex::doExpand(attribute & returnToken)
 {
     StringBuffer forwhat;
     forwhat.appendf("#DECLARE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
@@ -919,7 +919,7 @@ void HqlLex::doExpand(YYSTYPE & returnToken)
     }
 }
 
-void HqlLex::doSet(YYSTYPE & returnToken, bool append)
+void HqlLex::doSet(attribute & returnToken, bool append)
 {
     StringBuffer forwhat;
     forwhat.appendf("%s(%d,%d)",append?"#APPEND":"#SET",returnToken.pos.lineno,returnToken.pos.column);
@@ -964,7 +964,7 @@ void HqlLex::doSet(YYSTYPE & returnToken, bool append)
     }
 }
 
-void HqlLex::doLine(YYSTYPE & returnToken)
+void HqlLex::doLine(attribute & returnToken)
 {
     StringBuffer forwhat;
     int line = returnToken.pos.lineno, col = returnToken.pos.column;
@@ -1015,7 +1015,7 @@ void HqlLex::doLine(YYSTYPE & returnToken)
 }
 
 
-bool HqlLex::readCheckNextToken(YYSTYPE & returnToken, int expected, unsigned errCode, const char * msg)
+bool HqlLex::readCheckNextToken(attribute & returnToken, int expected, unsigned errCode, const char * msg)
 {
     if (yyLex(returnToken, false, 0) == expected)
         return true;
@@ -1025,7 +1025,7 @@ bool HqlLex::readCheckNextToken(YYSTYPE & returnToken, int expected, unsigned er
     return false;
 }
 
-void HqlLex::doSlashSlashHash(YYSTYPE const & returnToken, const char * command)
+void HqlLex::doSlashSlashHash(attribute const & returnToken, const char * command)
 {
     if (inmacro)
     {
@@ -1087,7 +1087,7 @@ void HqlLex::doSlashSlashHash(YYSTYPE const & returnToken, const char * command)
     //Ignore any unrecognised commands
 }
 
-void HqlLex::doError(YYSTYPE & returnToken, bool isError)
+void HqlLex::doError(attribute & returnToken, bool isError)
 {
     StringBuffer forwhat;
     forwhat.appendf("%s(%d,%d)",isError?"#ERROR":"#WARNING",returnToken.pos.lineno,returnToken.pos.column);
@@ -1123,7 +1123,7 @@ void HqlLex::doError(YYSTYPE & returnToken, bool isError)
         reportWarning(CategoryUnusual, returnToken, WRN_HASHWARNING, "#WARNING: %s", buf.str());
 }
 
-void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
+void HqlLex::doExport(attribute & returnToken, bool toXml)
 {
     StringBuffer forwhat;
     forwhat.appendf("#EXPORT(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
@@ -1193,7 +1193,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
     data->Release();
 }
 
-void HqlLex::doTrace(YYSTYPE & returnToken)
+void HqlLex::doTrace(attribute & returnToken)
 {
     StringBuffer forwhat;
     forwhat.appendf("#TRACE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
@@ -1230,7 +1230,7 @@ void HqlLex::doTrace(YYSTYPE & returnToken)
     }
 }
 
-void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
+void HqlLex::doFor(attribute & returnToken, bool doAll)
 {
     //MTIME_SECTION(timer, "HqlLex::doFor")
 
@@ -1309,7 +1309,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
         checkNextLoop(returnToken, true, startLine, startCol);
 }
 
-void HqlLex::doLoop(YYSTYPE & returnToken)
+void HqlLex::doLoop(attribute & returnToken)
 {
     int startLine = -1, startCol = 0;
     StringBuffer forwhat;
@@ -1357,7 +1357,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
         checkNextLoop(returnToken, true,startLine,startCol);
 }
 
-void HqlLex::doGetDataType(YYSTYPE & returnToken)
+void HqlLex::doGetDataType(attribute & returnToken)
 {
     int tok = yyLex(returnToken, false,0);
     if (tok != '(')
@@ -1392,7 +1392,7 @@ StringBuffer& HqlLex::doGetDataType(StringBuffer & type, const char * text, int 
     return type;
 }
 
-int HqlLex::doHashText(YYSTYPE & returnToken)
+int HqlLex::doHashText(attribute & returnToken)
 {
     StringBuffer forwhat;
     forwhat.appendf("#TEXT(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
@@ -1425,7 +1425,7 @@ int HqlLex::doHashText(YYSTYPE & returnToken)
 }
 
 
-void HqlLex::doInModule(YYSTYPE & returnToken)
+void HqlLex::doInModule(attribute & returnToken)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::doInModule");
@@ -1493,7 +1493,7 @@ static bool isInModule(HqlLookupContext & ctx, const char* moduleName, const cha
     return false;
 }
 
-void HqlLex::doUniqueName(YYSTYPE & returnToken)
+void HqlLex::doUniqueName(attribute & returnToken)
 {
     int tok = yyLex(returnToken, false,0);
     if (tok != '(')
@@ -1570,7 +1570,7 @@ void HqlLex::declareUniqueName(const char *name, const char * pattern)
     top->setValue(name,uniqueName.str());
 }
 
-void HqlLex::doIsValid(YYSTYPE & returnToken)
+void HqlLex::doIsValid(attribute & returnToken)
 {
     int tok = yyLex(returnToken, false,0);
     if (tok != '(')
@@ -1615,7 +1615,7 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
 }
 
 
-void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, int startCol)
+void HqlLex::checkNextLoop(const attribute & errpos, bool first, int startLine, int startCol)
 {
     if (yyParser->checkAborting())
         return;
@@ -1653,7 +1653,7 @@ void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, in
 }
 
 
-void HqlLex::doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int extra)
+void HqlLex::doPreprocessorLookup(const attribute & errpos, bool stringify, int extra)
 {
     StringBuffer out;
 
@@ -1718,7 +1718,7 @@ void HqlLex::doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int ex
 
 
 //Read the text of a parameter, but also have a good guess at whether it is defined.
-bool HqlLex::getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, const char* for_what, SharedHqlExpr & resolved)
+bool HqlLex::getDefinedParameter(StringBuffer &curParam, attribute & returnToken, const char* for_what, SharedHqlExpr & resolved)
 {
     enum { StateStart, StateDot, StateSelectId, StateFailed } state = StateStart;
     unsigned parenDepth = 1;
@@ -1810,7 +1810,7 @@ bool HqlLex::getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, 
     }
 }
 
-bool HqlLex::doIsDefined(YYSTYPE & returnToken)
+bool HqlLex::doIsDefined(attribute & returnToken)
 {
     StringBuffer forwhat;
     forwhat.appendf("#ISDEFINED(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
@@ -1827,7 +1827,7 @@ bool HqlLex::doIsDefined(YYSTYPE & returnToken)
 }
 
 
-void HqlLex::doDefined(YYSTYPE & returnToken)
+void HqlLex::doDefined(attribute & returnToken)
 {
     StringBuffer forwhat;
     forwhat.appendf("#DEFINED(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
@@ -1873,7 +1873,7 @@ IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int sta
 }
 
 
-IValue *HqlLex::foldConstExpression(const YYSTYPE & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol)
+IValue *HqlLex::foldConstExpression(const attribute & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol)
 {
     OwnedIValue value;
     if (expr)
@@ -1911,7 +1911,7 @@ IValue *HqlLex::foldConstExpression(const YYSTYPE & errpos, IHqlExpression * exp
     return value.getClear();
 }
 
-IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol)
+IValue *HqlLex::parseConstExpression(const attribute & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
@@ -1920,7 +1920,7 @@ IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curPa
     return foldConstExpression(errpos, expr, xmlScope, startLine, startCol);
 }
 
-IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, IFileContents * text, IXmlScope *xmlScope, int startLine, int startCol)
+IValue *HqlLex::parseConstExpression(const attribute & errpos, IFileContents * text, IXmlScope *xmlScope, int startLine, int startCol)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
@@ -1939,7 +1939,7 @@ int hexchar(char c)
         return c - '0';
 }
 
-void HqlLex::doApply(YYSTYPE & returnToken)
+void HqlLex::doApply(attribute & returnToken)
 {
     int tok = yyLex(returnToken, false,0);
     int line = returnToken.pos.lineno, col = returnToken.pos.column;
@@ -1964,7 +1964,7 @@ void HqlLex::doApply(YYSTYPE & returnToken)
         reportError(returnToken, ERR_EXPECTED_CONST, "Constant expression expected");
 }
 
-void HqlLex::doMangle(YYSTYPE & returnToken, bool de)
+void HqlLex::doMangle(attribute & returnToken, bool de)
 {
     int tok = yyLex(returnToken, false,0);
     int line = returnToken.pos.lineno, col = returnToken.pos.column;
@@ -2038,7 +2038,7 @@ static StringBuffer& mangle(IErrorReceiver* errReceiver,const char* src, StringB
     return mangled;
 }
 
-int HqlLex::processStringLiteral(YYSTYPE & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition)
+int HqlLex::processStringLiteral(attribute & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition)
 {
     MemoryAttr tempBuff;
     char *b = (char *)tempBuff.allocate(CUR_TOKEN_LENGTH); // Escape sequence can only make is shorter...
@@ -2244,7 +2244,7 @@ bool HqlLex::checkAborting()
     return yyParser->checkAborting();
 }
 
-void HqlLex::reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...)
+void HqlLex::reportError(const attribute & returnToken, int errNo, const char *format, ...)
 {
     if (yyParser)
     {
@@ -2255,7 +2255,7 @@ void HqlLex::reportError(const YYSTYPE & returnToken, int errNo, const char *for
     }
 }
 
-void HqlLex::reportWarning(WarnErrorCategory category, const YYSTYPE & returnToken, int warnNo, const char *format, ...)
+void HqlLex::reportWarning(WarnErrorCategory category, const attribute & returnToken, int warnNo, const char *format, ...)
 {
     if (yyParser)
     {
@@ -2290,7 +2290,7 @@ IXmlScope *HqlLex::ensureTopXmlScope()
     return top;
 }
 
- bool HqlLex::lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &ret)
+ bool HqlLex::lookupXmlSymbol(const attribute & errpos, const char *name, StringBuffer &ret)
 {
     if (*name==0)
         name=NULL;
@@ -2311,7 +2311,7 @@ IXmlScope *HqlLex::ensureTopXmlScope()
     return idFound;
 }
 
-void HqlLex::setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *value, bool append)
+void HqlLex::setXmlSymbol(const attribute & errpos, const char *name, const char *value, bool append)
 {
     IXmlScope *top = ensureTopXmlScope();
     bool ok;
@@ -2328,7 +2328,7 @@ void HqlLex::setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *
     }
 }
 
-void HqlLex::declareXmlSymbol(const YYSTYPE & errpos, const char *name)
+void HqlLex::declareXmlSymbol(const attribute & errpos, const char *name)
 {
     IXmlScope *top = ensureTopXmlScope();
     if (!top->declareValue(name))
@@ -2339,13 +2339,13 @@ void HqlLex::declareXmlSymbol(const YYSTYPE & errpos, const char *name)
     }
 }
 
-IIterator *HqlLex::getSubScopes(const YYSTYPE & errpos, const char *name, bool doAll)
+IIterator *HqlLex::getSubScopes(const attribute & errpos, const char *name, bool doAll)
 {
     IXmlScope *top = ensureTopXmlScope();
     return top->getScopes(name, doAll);
 }
 
-void HqlLex::loadXML(const YYSTYPE & errpos, const char *name, const char * child)
+void HqlLex::loadXML(const attribute & errpos, const char *name, const char * child)
 {
     if (xmlScope && child)
     {
@@ -2419,7 +2419,7 @@ void HqlLex::enterEmbeddedMode()
     }
 }
 
-int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
+int HqlLex::yyLex(attribute & returnToken, bool lookup, const short * activeState)
 {
     for (;;)
     {

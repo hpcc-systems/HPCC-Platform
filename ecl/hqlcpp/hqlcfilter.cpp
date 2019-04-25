@@ -210,8 +210,11 @@ void CppFilterExtractor::buildKeySegmentInExpr(BuildFilterState & buildState, Ke
 
             OwnedHqlExpr test = createBoolExpr(no_eq, LINK(lhs), LINK(curValue));
             OwnedHqlExpr promoted = getExplicitlyPromotedCompare(test);
-            OwnedHqlExpr compare, normalized;
-            extractCompareInformation(subctx, promoted, compare, normalized, expandedSelector);
+            OwnedHqlExpr subrange, compare, normalized;
+            extractCompareInformation(subctx, promoted, subrange, compare, normalized, expandedSelector);
+            CHqlBoundExpr boundSubLength;
+            buildSubRange(ctx, subrange, boundSubLength);
+
             if (compare)
                 translator.buildFilter(subctx, compare);
 
@@ -236,19 +239,25 @@ void CppFilterExtractor::buildKeySegmentInExpr(BuildFilterState & buildState, Ke
                 args.append(*LINK(address));
                 args.append(*LINK(address));
             }
+            if (boundSubLength.expr)
+                args.append(*LINK(boundSubLength.expr));
             translator.callProcedure(subctx, func, args);
         }
     }
     else
     {
+        CHqlBoundExpr boundSubLength;
         ForEachChild(idx2, values)
         {
             BuildCtx subctx(ctx);
             IHqlExpression * cur = values->queryChild(idx2);
             OwnedHqlExpr test = createBoolExpr(no_eq, LINK(lhs), LINK(cur));
             OwnedHqlExpr promoted = getExplicitlyPromotedCompare(test);
-            OwnedHqlExpr compare, normalized;
-            extractCompareInformation(subctx, promoted, compare, normalized, expandedSelector);
+            OwnedHqlExpr subrange, compare, normalized;
+            extractCompareInformation(subctx, promoted, subrange, compare, normalized, expandedSelector);
+            //This never changes (it is a function of the lhs), so only evaluate it first time around this loop
+            if (!boundSubLength.expr)
+                buildSubRange(ctx, subrange, boundSubLength);
             if (compare)
                 translator.buildFilter(subctx, compare);
 
@@ -257,7 +266,8 @@ void CppFilterExtractor::buildKeySegmentInExpr(BuildFilterState & buildState, Ke
             args.append(*LINK(targetVar));
             args.append(*LINK(address));
             args.append(*LINK(address));
-
+            if (boundSubLength.expr)
+                args.append(*LINK(boundSubLength.expr));
             translator.callProcedure(subctx, func, args);
         }
     }
@@ -271,17 +281,21 @@ static IHqlExpression * createCompareRecast(node_operator op, IHqlExpression * v
 }
 
 
-void CppFilterExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector)
+void CppFilterExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & subrange, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector)
 {
-    extractCompareInformation(ctx, expr->queryChild(0), expr->queryChild(1), compare, normalized, expandedSelector);
+    extractCompareInformation(ctx, expr->queryChild(0), expr->queryChild(1), subrange, compare, normalized, expandedSelector);
 }
 
 
-void CppFilterExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector)
+void CppFilterExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & subrange, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector)
 {
     //For substring matching the set of values should match the type of the underlying field.
-    if (createValueSets && (lhs->getOperator() == no_substring))
-        lhs = lhs->queryChild(0);
+    if (createValueSets)
+    {
+        IHqlExpression * base = queryStripCasts(lhs);
+        if (base->getOperator() == no_substring)
+            subrange.set(base->queryChild(1));
+    }
 
     LinkedHqlExpr compareValue = value->queryBody();
     OwnedHqlExpr recastValue;
@@ -328,6 +342,36 @@ void CppFilterExtractor::createStringSet(BuildCtx & ctx, const char * target, un
     }
 }
 
+bool CppFilterExtractor::buildSubRange(BuildCtx & ctx, IHqlExpression * range, CHqlBoundExpr & bound)
+{
+    if (!createValueSets)
+        return false;
+
+    if (!range)
+        return false;
+
+    IHqlExpression * limit;
+    switch (range->getOperator())
+    {
+    case no_rangeto:
+        limit = range->queryChild(0);
+        break;
+    case no_range:
+        assertex(matchesConstValue(range->queryChild(0), 1));
+        limit = range->queryChild(1);
+        break;
+    case no_constant:
+        limit = range;
+        assertex(matchesConstValue(range, 1));
+        break;
+    default:
+        throwUnexpected();
+    }
+    translator.buildExpr(ctx, limit, bound);
+    return true;
+}
+
+
 void CppFilterExtractor::buildKeySegmentCompareExpr(BuildFilterState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * targetSet, IHqlExpression & thisKey)
 {
     OwnedHqlExpr targetVar = createVariable(targetSet, makeVoidType());
@@ -341,14 +385,18 @@ void CppFilterExtractor::buildKeySegmentCompareExpr(BuildFilterState & buildStat
         return;
     }
 
+    OwnedHqlExpr subrange;
     OwnedHqlExpr compare;
     OwnedHqlExpr normalized;
     BuildCtx subctx(ctx);
-    extractCompareInformation(subctx, &thisKey, compare, normalized, selectorInfo.expandedSelector);
+    extractCompareInformation(subctx, &thisKey, subrange, compare, normalized, selectorInfo.expandedSelector);
     OwnedHqlExpr address = getMonitorValueAddress(subctx, selectorInfo.expandedSelector, normalized);
 
     HqlExprArray args;
     args.append(*LINK(targetVar));
+
+    CHqlBoundExpr boundSubLength;
+    buildSubRange(ctx, subrange, boundSubLength);
 
     node_operator op = thisKey.getOperator();
     switch (op)
@@ -358,6 +406,8 @@ void CppFilterExtractor::buildKeySegmentCompareExpr(BuildFilterState & buildStat
             translator.buildFilter(subctx, compare);
         args.append(*LINK(address));
         args.append(*LINK(address));
+        if (boundSubLength.expr)
+            args.append(*LINK(boundSubLength.expr));
         translator.callProcedure(subctx, addRangeFunc, args);
         break;
     case no_ne:
@@ -366,11 +416,15 @@ void CppFilterExtractor::buildKeySegmentCompareExpr(BuildFilterState & buildStat
             translator.buildFilter(subctx, compare);
         args.append(*LINK(address));
         args.append(*LINK(address));
+        if (boundSubLength.expr)
+            args.append(*LINK(boundSubLength.expr));
         translator.callProcedure(subctx, killRangeFunc, args);
         break;
     case no_le:
         args.append(*createValue(no_nullptr, makeVoidType()));
         args.append(*LINK(address));
+        if (boundSubLength.expr)
+            args.append(*LINK(boundSubLength.expr));
         translator.callProcedure(subctx, addRangeFunc, args);
         break;
     case no_lt:
@@ -382,6 +436,8 @@ void CppFilterExtractor::buildKeySegmentCompareExpr(BuildFilterState & buildStat
             //common this up...
             args.append(*createValue(no_nullptr, makeVoidType()));
             args.append(*LINK(address));
+            if (boundSubLength.expr)
+                args.append(*LINK(boundSubLength.expr));
             translator.callProcedure(subctx, addRangeFunc, args);
             subctx.selectElse(cond);
             args.append(*LINK(targetVar));
@@ -389,6 +445,8 @@ void CppFilterExtractor::buildKeySegmentCompareExpr(BuildFilterState & buildStat
         subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
         args.append(*LINK(address));
         args.append(*createValue(no_nullptr, makeVoidType()));
+        if (boundSubLength.expr)
+            args.append(*LINK(boundSubLength.expr));
         translator.callProcedure(subctx, killRangeFunc, args);
         break;
     case no_ge:
@@ -401,18 +459,24 @@ void CppFilterExtractor::buildKeySegmentCompareExpr(BuildFilterState & buildStat
             subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
             args.append(*createValue(no_nullptr, makeVoidType()));
             args.append(*LINK(address));
+            if (boundSubLength.expr)
+                args.append(*LINK(boundSubLength.expr));
             translator.callProcedure(subctx, killRangeFunc, args);
             subctx.selectElse(cond);
             args.append(*LINK(targetVar));
         }
         args.append(*LINK(address));
         args.append(*createValue(no_nullptr, makeVoidType()));
+        if (boundSubLength.expr)
+            args.append(*LINK(boundSubLength.expr));
         translator.callProcedure(subctx, addRangeFunc, args);
         break;
     case no_gt:
         subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
         args.append(*createValue(no_nullptr, makeVoidType()));
         args.append(*LINK(address));
+        if (boundSubLength.expr)
+            args.append(*LINK(boundSubLength.expr));
         translator.callProcedure(subctx, killRangeFunc, args);
         break;
     case no_between:
@@ -433,10 +497,16 @@ void CppFilterExtractor::buildKeySegmentCompareExpr(BuildFilterState & buildStat
             translator.ensureHasAddress(subctx, rhs2);
             args.append(*getPointer(rhs2.expr));
             if (op == no_between)
+            {
+                if (boundSubLength.expr)
+                    args.append(*LINK(boundSubLength.expr));
                 translator.callProcedure(subctx, addRangeFunc, args);
+            }
             else
             {
                 subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
+                if (boundSubLength.expr)
+                    args.append(*LINK(boundSubLength.expr));
                 translator.callProcedure(subctx, killRangeFunc, args);
             }
             break;
@@ -588,38 +658,7 @@ void CppFilterExtractor::buildKeySegmentExpr(BuildFilterState & buildState, KeyS
     if (targetSet && !requiredSet)
     {
         if (createValueSets)
-        {
-            IHqlExpression * lhs = thisKey.queryChild(0);
-            if (selectorInfo.subrange)
-            {
-                IHqlExpression * range = selectorInfo.subrange;
-                IHqlExpression * limit;
-                switch (range->getOperator())
-                {
-                case no_rangeto:
-                    limit = range->queryChild(0);
-                    break;
-                case no_range:
-                    assertex(matchesConstValue(range->queryChild(0), 1));
-                    limit = range->queryChild(1);
-                    break;
-                case no_constant:
-                    limit = range;
-                    assertex(matchesConstValue(range, 1));
-                    break;
-                default:
-                    throwUnexpected();
-                }
-                CHqlBoundExpr boundLimit;
-                translator.buildExpr(ctx, limit, boundLimit);
-                StringBuffer limitText;
-                translator.generateExprCpp(limitText, boundLimit.expr);
-
-                createMonitorText.appendf("createSubStringFieldFilter(%u, %s, %s)", selectorInfo.fieldIdx, limitText.str(), targetSet);
-            }
-            else
-                createMonitorText.appendf("createFieldFilter(%u, %s)", selectorInfo.fieldIdx, targetSet);
-        }
+            createMonitorText.appendf("createFieldFilter(%u, %s)", selectorInfo.fieldIdx, targetSet);
         else
             createMonitorText.appendf("createKeySegmentMonitor(%s, %s.getClear(), %u, %u, %u)",
                                       boolToText(selectorInfo.keyedKind != KeyedYes), targetSet, selectorInfo.fieldIdx, selectorInfo.offset, selectorInfo.size);
@@ -700,11 +739,11 @@ bool CppFilterExtractor::buildSingleKeyMonitor(StringBuffer & createMonitorText,
         return false;
 
     BuildCtx subctx(ctx);
-    OwnedHqlExpr compare, normalized;
+    OwnedHqlExpr subrange, compare, normalized;
 
     StringBuffer funcName;
-    extractCompareInformation(subctx, &thisKey, compare, normalized, selectorInfo.expandedSelector);
-    if (compare)
+    extractCompareInformation(subctx, &thisKey, subrange, compare, normalized, selectorInfo.expandedSelector);
+    if (compare || subrange)
         return false;
 
     if (createValueSets)
@@ -795,7 +834,6 @@ void CppFilterExtractor::buildKeySegment(BuildFilterState & buildState, BuildCtx
     bool isImplicit = true;
     bool prevWildWasKeyed = buildState.wildWasKeyed;
     buildState.wildWasKeyed = false;
-    IHqlExpression * subrange = nullptr;
     ForEachItemIn(cond, keyed.conditions)
     {
         KeyCondition & cur = keyed.conditions.item(cond);
@@ -815,17 +853,6 @@ void CppFilterExtractor::buildKeySegment(BuildFilterState & buildState, BuildCtx
             }
             else
             {
-                if (createValueSets)
-                {
-                    if (matches.empty())
-                        subrange = cur.subrange;
-                    else if (subrange != cur.subrange)
-                    {
-                        StringBuffer s, keyname;
-                        translator.throwError2(HQLERR_IncompatibleKeyedSubString, getExprECL(field, s).str(), queryKeyName(keyname));
-                    }
-                }
-
                 matches.append(OLINK(cur));
                 if (buildState.implicitWildField && !ignoreUnkeyed)
                 {
@@ -851,7 +878,7 @@ void CppFilterExtractor::buildKeySegment(BuildFilterState & buildState, BuildCtx
     KeyedKind keyedKind = getKeyedKind(translator, matches);
     if (whichField >= firstOffsetField)
         translator.throwError1(HQLERR_KeyedNotKeyed, getExprECL(field, s).str());
-    KeySelectorInfo selectorInfo(keyedKind, selector, subrange, expandedSelector, buildState.curFieldIdx, buildState.curOffset, curSize);
+    KeySelectorInfo selectorInfo(keyedKind, selector, nullptr, expandedSelector, buildState.curFieldIdx, buildState.curOffset, curSize);
 
     bool ignoreKeyedExtend = false;
     if ((keyedKind == KeyedExtend) && buildState.wildPending() && !ignoreUnkeyed)

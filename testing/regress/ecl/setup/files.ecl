@@ -81,6 +81,7 @@ EXPORT DG_FetchTransIndexName  := indexPrefix + 'DG_FetchTransIndex';
 EXPORT DG_FetchIndexDiffName   := indexPrefix + 'DG_FetchIndexDiff';
 EXPORT DG_KeyDiffIndex1Name    := indexPrefix + 'DG_KeyDiffIndex1';
 EXPORT DG_KeyDiffIndex2Name    := indexPrefix + 'DG_KeyDiffIndex2';
+EXPORT DG_QFetchIndexName     := indexPrefix + 'DG_QFetchIndex1';
 
 EXPORT DG_DsFilename        := filePrefix + 'SerialLibraryDs';
 EXPORT DG_DictFilename      := filePrefix + 'SerialLibraryDict';
@@ -104,6 +105,7 @@ EXPORT DG_FetchFilePreloadIndexed := PRELOAD(DATASET(DG_FetchFilePreloadIndexedN
 
 
 EXPORT DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield {blob}:= fname, __filepos},DG_FetchIndex1Name);
+EXPORT DG_QFetchIndex := INDEX(DG_FetchFile,{qstring25 Lname := Lname, qstring15 Fname := FName},{},DG_QFetchIndexName);
 
 //These versions of the index are only used for KEYDIFF
 EXPORT DG_KeyDiffIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield := fname, __filepos},DG_KeyDiffIndex1Name);

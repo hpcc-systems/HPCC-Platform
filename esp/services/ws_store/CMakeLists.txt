@@ -40,6 +40,8 @@ HPCC_ADD_SUBDIRECTORY (espstorelib)
         ${CMAKE_BINARY_DIR}
         ##added for build-config.h
         ${CMAKE_BINARY_DIR}/oss
+        ##necessary for windows build
+        ${HPCC_SOURCE_DIR}/esp/clients
         ${HPCC_SOURCE_DIR}/esp/bindings
         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib

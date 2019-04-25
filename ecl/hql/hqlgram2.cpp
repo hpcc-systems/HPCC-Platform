@@ -2943,7 +2943,7 @@ void HqlGram::leaveCompoundObject()
     lastpos = savedLastpos.popGet();
 }
 
-void HqlGram::leaveType(const YYSTYPE & errpos)
+void HqlGram::leaveType(const attribute & errpos)
 {
     leaveCompoundObject();
     leaveScope(errpos);
@@ -3030,7 +3030,7 @@ void HqlGram::clearSideEffects()
     parseResults.popn(parseResults.ordinality() - first);
 }
 
-void HqlGram::leaveScope(const YYSTYPE & errpos)
+void HqlGram::leaveScope(const attribute & errpos)
 {
     if (sideEffectsPending())
     {
@@ -3042,7 +3042,7 @@ void HqlGram::leaveScope(const YYSTYPE & errpos)
 }
 
 
-IHqlScope * HqlGram::closeLeaveScope(const YYSTYPE & errpos)
+IHqlScope * HqlGram::closeLeaveScope(const attribute & errpos)
 {
     IHqlScope * scope = defineScopes.tos().localScope;
     if (!scope)
@@ -3120,7 +3120,7 @@ void HqlGram::enterPatternScope(IHqlExpression * pattern)
 }
 
 
-void HqlGram::leavePatternScope(const YYSTYPE & errpos)
+void HqlGram::leavePatternScope(const attribute & errpos)
 {
     leaveScope(errpos);
 }
@@ -3181,7 +3181,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
     ECLlocation start;
     lexObject->getPosition(start);
     int prev = 0;
-    YYSTYPE nextToken;
+    attribute nextToken;
     for (;;)
     {
         int next = lexObject->yyLex(nextToken, false, NULL);
@@ -12379,14 +12379,17 @@ IHqlExpression * PseudoPatternScope::lookupSymbol(IIdAtom * name, unsigned looku
 
 
 //---------------------------------------------------------------------------------------------------------------------
-
 extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, IProperties * macroParams, bool loadImplicit, bool isRoot)
 {
+    static CriticalSection parseQueryCrit; // Temporary - see HPCC-21986
+
     assertex(scope);
     try
     {
         if (isRoot)
             ctx.noteBeginQuery(scope, contents);
+
+        CriticalBlock b(parseQueryCrit); // Temporary - see HPCC-21986
 
         HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
         if (isRoot)
@@ -12396,6 +12399,7 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);
         parser.getLexer()->setMacroParams(macroParams);
+
         OwnedHqlExpr ret = parser.yyParse(false, true);
         if (isRoot)
             ctx.noteEndQuery(true);

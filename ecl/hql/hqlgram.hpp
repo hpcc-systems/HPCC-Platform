@@ -294,7 +294,11 @@ public:
     }
 };
 
+#if !defined(BISON_MAJOR_VER) || BISON_MAJOR_VER == 2
 #define YYSTYPE attribute
+#else
+#define ECLYYSTYPE attribute
+#endif
 
 class HqlLex;
 
@@ -677,9 +681,9 @@ public:
     void enterVirtualScope();
     void leaveScope(const attribute & errpos);
     IHqlExpression * leaveLamdaExpression(attribute * modifierattr, attribute & exprattr);
-    IHqlScope * closeLeaveScope(const YYSTYPE & errpos);
+    IHqlScope * closeLeaveScope(const attribute & errpos);
     void enterPatternScope(IHqlExpression * pattern);
-    void leavePatternScope(const YYSTYPE & errpos);
+    void leavePatternScope(const attribute & errpos);
     bool insideNestedScope() const;
 
     void beginTransform(ITypeInfo * recordType, IHqlExpression * unadornedRecord);
@@ -718,7 +722,7 @@ public:
     IHqlExpression* processAbstractDataset(IHqlExpression* _expr, IHqlExpression* formal, IHqlExpression* actual, IHqlExpression * mapping, const attribute& errpos, bool errorIfNotFound, bool & hadError);
 
     void enterType(const attribute &errpos, bool isParameteried);
-    void leaveType(const YYSTYPE & errpos);
+    void leaveType(const attribute & errpos);
     void checkRecordTypesMatch(IHqlExpression *ds1, IHqlExpression *ds2, const attribute & errpos);
     int checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right, const ECLlocation & errPos, unsigned maxFields = (unsigned)-1);
     bool checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, const ECLlocation & errPos);
@@ -1091,12 +1095,12 @@ class HqlLex
         ~HqlLex();   
 
         void enterEmbeddedMode();
-        static int doyyFlex(YYSTYPE & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState);
-        static int lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText);
+        static int doyyFlex(attribute & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState);
+        static int lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText);
 
-        int yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState);    /* lexical analyzer */
+        int yyLex(attribute & returnToken, bool lookup, const short * activeState);    /* lexical analyzer */
 
-        bool assertNext(YYSTYPE & returnToken, int expected, unsigned code, const char * msg);
+        bool assertNext(attribute & returnToken, int expected, unsigned code, const char * msg);
         bool assertNextOpenBra();
         bool assertNextComma();
 
@@ -1121,9 +1125,9 @@ class HqlLex
         void setParentLex(HqlLex* pLex) { parentLex = pLex; }
         const char* getMacroName() { return (macroExpr) ? str(macroExpr->queryName()) : "<param>"; }
         IPropertyTree * getClearJavadoc();
-        void doSlashSlashHash(YYSTYPE const & returnToken, const char * command);
+        void doSlashSlashHash(attribute const & returnToken, const char * command);
 
-        void loadXML(const YYSTYPE & errpos, const char * value, const char * child = NULL);
+        void loadXML(const attribute & errpos, const char * value, const char * child = NULL);
 
         void getPosition(ECLlocation & pos)
         {
@@ -1148,7 +1152,7 @@ class HqlLex
         }
 
         inline void setMacroParams(IProperties * _macroParams) { macroParms.set(_macroParams); }
-        inline void setTokenPosition(YYSTYPE & returnToken)
+        inline void setTokenPosition(attribute & returnToken)
         {
             returnToken.setPosition(yyLineNo, yyColumn, yyPosition, sourcePath);
         }
@@ -1183,16 +1187,16 @@ class HqlLex
 
     private:
         static void doEnterEmbeddedMode(yyscan_t yyscanner);
-        void declareXmlSymbol(const YYSTYPE & errpos, const char *name);
-        bool lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &value);
-        void setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *value, bool append);
-        IIterator *getSubScopes(const YYSTYPE & errpos, const char *name, bool doAll);
+        void declareXmlSymbol(const attribute & errpos, const char *name);
+        bool lookupXmlSymbol(const attribute & errpos, const char *name, StringBuffer &value);
+        void setXmlSymbol(const attribute & errpos, const char *name, const char *value, bool append);
+        IIterator *getSubScopes(const attribute & errpos, const char *name, bool doAll);
         IXmlScope *queryTopXmlScope();
         IXmlScope *ensureTopXmlScope();
 
         IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
-        void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
-        void reportWarning(WarnErrorCategory category, const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 5, 6)));
+        void reportError(const attribute & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
+        void reportWarning(WarnErrorCategory category, const attribute & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 5, 6)));
 
         void beginNestedHash(unsigned kind) { hashendKinds.append(kind); hashendFlags.append(0); }
         void endNestedHash() { hashendKinds.pop(); hashendFlags.pop(); }
@@ -1217,50 +1221,50 @@ class HqlLex
         void pushText(IFileContents * text, int startLineNo, int startColumn);
         void pushText(const char *s, int startLineNo, int startColumn);
         bool getParameter(StringBuffer &curParam, const char* for_what, int* startLine=NULL, int* startCol=NULL);
-        IValue *foldConstExpression(const YYSTYPE & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol);
-        IValue *parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int line, int col);
-        IValue *parseConstExpression(const YYSTYPE & errpos, IFileContents * contents, IXmlScope *xmlScope, int line, int col);
+        IValue *foldConstExpression(const attribute & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol);
+        IValue *parseConstExpression(const attribute & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int line, int col);
+        IValue *parseConstExpression(const attribute & errpos, IFileContents * contents, IXmlScope *xmlScope, int line, int col);
         IHqlExpression * parseECL(IFileContents * contents, IXmlScope *xmlScope, int startLine, int startCol);
         IHqlExpression * parseECL(const char * curParam, IXmlScope *xmlScope, int startLine, int startCol);
-        void setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentName, unsigned& parmno,IProperties *macroParms);
+        void setMacroParam(const attribute & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentName, unsigned& parmno,IProperties *macroParms);
         unsigned getTypeSize(unsigned lengthTypeName);
         static IHqlExpression * createIntegerConstant(__int64 value, bool isSigned);
 
-        void doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int extra);
-        void doApply(YYSTYPE & returnToken);
-        int doElse(YYSTYPE & returnToken, bool lookup, const short * activeState, bool isElseIf);
-        int doEnd(YYSTYPE & returnToken, bool lookup, const short * activeState);
-        void doExpand(YYSTYPE & returnToken);
-        void doTrace(YYSTYPE & returnToken);
-        void doError(YYSTYPE & returnToken, bool isError);
-        void doExport(YYSTYPE & returnToken, bool toXml);
-        void doFor(YYSTYPE & returnToken, bool doAll);
-        int doHashText(YYSTYPE & returnToken);
-        void doLoop(YYSTYPE & returnToken);
-        void doIf(YYSTYPE & returnToken, bool isElseIf);
-        void doSet(YYSTYPE & returnToken, bool _append);
-        void doLine(YYSTYPE & returnToken);
-        void doDeclare(YYSTYPE & returnToken);
-        void doDefined(YYSTYPE & returnToken);
-        void doGetDataType(YYSTYPE & returnToken);
-        bool doIsDefined(YYSTYPE & returnToken);
-        void doIsValid(YYSTYPE & returnToken);
-        void doInModule(YYSTYPE & returnToken);
-        void doMangle(YYSTYPE & returnToken, bool de);
-        void doUniqueName(YYSTYPE & returnToken);
-        void doSkipUntilEnd(YYSTYPE & returnToken, const char * forwhat);
+        void doPreprocessorLookup(const attribute & errpos, bool stringify, int extra);
+        void doApply(attribute & returnToken);
+        int doElse(attribute & returnToken, bool lookup, const short * activeState, bool isElseIf);
+        int doEnd(attribute & returnToken, bool lookup, const short * activeState);
+        void doExpand(attribute & returnToken);
+        void doTrace(attribute & returnToken);
+        void doError(attribute & returnToken, bool isError);
+        void doExport(attribute & returnToken, bool toXml);
+        void doFor(attribute & returnToken, bool doAll);
+        int doHashText(attribute & returnToken);
+        void doLoop(attribute & returnToken);
+        void doIf(attribute & returnToken, bool isElseIf);
+        void doSet(attribute & returnToken, bool _append);
+        void doLine(attribute & returnToken);
+        void doDeclare(attribute & returnToken);
+        void doDefined(attribute & returnToken);
+        void doGetDataType(attribute & returnToken);
+        bool doIsDefined(attribute & returnToken);
+        void doIsValid(attribute & returnToken);
+        void doInModule(attribute & returnToken);
+        void doMangle(attribute & returnToken, bool de);
+        void doUniqueName(attribute & returnToken);
+        void doSkipUntilEnd(attribute & returnToken, const char * forwhat);
 
         void processEncrypted();
         void checkSignature(const attribute & dummyToken);
 
         void declareUniqueName(const char* name, const char * pattern);
-        void checkNextLoop(const YYSTYPE & errpos, bool first,int startLine,int startCol);
+        void checkNextLoop(const attribute & errpos, bool first,int startLine,int startCol);
 
-        bool getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, const char* for_what, SharedHqlExpr & resolved);
+        bool getDefinedParameter(StringBuffer &curParam, attribute & returnToken, const char* for_what, SharedHqlExpr & resolved);
 
-        int processStringLiteral(YYSTYPE & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition);
+        int processStringLiteral(attribute & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition);
 
-        bool readCheckNextToken(YYSTYPE & returnToken, int expected, unsigned errCode, const char * msg);
+        bool readCheckNextToken(attribute & returnToken, int expected, unsigned errCode, const char * msg);
 
 private:
         HqlGram *yyParser;

@@ -46,6 +46,10 @@ export function AddPartToPackageMap(params) {
     return ESPRequest.send("WsPackageProcess", "AddPartToPackageMap", params);
 }
 
+export function AddPackage(params) {
+    return ESPRequest.send("WsPackageProcess", "AddPackage", params);
+}
+
 export function GetPartFromPackageMap(params) {
     return ESPRequest.send("WsPackageProcess", "GetPartFromPackageMap", params);
 }

@@ -31,7 +31,12 @@
 
 #include "hqlgram.h"
 
+#if !defined(BISON_MAJOR_VER) || BISON_MAJOR_VER == 2
 #define YY_DECL int HqlLex::doyyFlex(YYSTYPE & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState)
+#else
+#define YY_DECL int HqlLex::doyyFlex(ECLYYSTYPE & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState)
+#endif
+
 #define register
 
 //#define DEBUG_TOKEN 

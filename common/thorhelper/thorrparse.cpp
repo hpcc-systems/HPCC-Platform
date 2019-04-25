@@ -31,6 +31,8 @@
 #include "unicode/schriter.h"
 #include "unicode/coll.h"
 #include "unicode/ustring.h"
+
+using icu::UnicodeString;
 #endif
 
 #ifdef TRACE_REGEX

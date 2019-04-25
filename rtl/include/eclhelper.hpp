@@ -409,6 +409,9 @@ interface RtlITypeInfo
     virtual void readAhead(IRowPrefetcherSource & in) const = 0;
     virtual int compare(const byte * left, const byte * right) const = 0;
     virtual unsigned hash(const byte * left, unsigned inHash) const = 0;
+    virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const = 0;    // do not overload compare name - can affect vmt order.  NOT sure this is a great name
+    virtual void setLowBound(void * buffer, const byte * value, size32_t subLength, bool inclusive) const = 0;
+    virtual void setHighBound(void * buffer, const byte * value, size32_t subLength, bool inclusive) const = 0;
 protected:
     ~RtlITypeInfo() = default;  // we can't use a virtual destructor as we want constexpr constructors.
 };
