@@ -12,10 +12,10 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
- 
+
 
 http://hpccsystems.com
-``` 
+```
 
 To build for Linux:
 -------------------
@@ -48,7 +48,7 @@ sudo apt-get install automake
 
 ```
    git submodule update --init --recursive
-```   
+```
 * Create a build directory - either as a child of hpcc or elsewhere
 * cd to the build directory
 * To create makefiles to build native release version for local machine, run
@@ -73,9 +73,9 @@ sudo apt-get install automake
    make package
 ```
 
-* To install from the built binaries, you will need node.js installed. 
+* To install from the built binaries, you will need node.js installed.
 (Be sure to run both of the lines below!  See: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager)
-``` 
+```
    curl -sL https://deb.nodesource.com/setup | sudo bash -
    sudo apt-get install -y nodejs
 ```
@@ -85,7 +85,7 @@ sudo apt-get install automake
    sudo make install
 ```
 
- 
+
 To build for Windows:
 ---------------------
 
@@ -108,15 +108,15 @@ To build client tools for Macintosh OSX:
 
 ```
    git submodule update --init --recursive
-```   
+```
 * You many need to install some 3rd-party dev packages using macports or brew. (brew installs shown below)
 
 ```
    brew install icu4c
    brew install boost
    brew install libarchive
-   brew install bison27 
-   brew install openldap 
+   brew install bison
+   brew install openldap
 ```
 
 ** Also make sure that bison is ahead of the system bison on your path.
@@ -124,14 +124,14 @@ To build client tools for Macintosh OSX:
 (The result should be > 2.4.1 )
 
 ** OS X has LDAP installed, but when compiling against it (/System/Library/Frameworks/LDAP.framework/Headers/ldap.h) you will get a `#include nested too deeply`, which is why you should install openldap.
-   
+
 * Create a build directory - either as a child of hpcc or elsewhere
 * cd to the build directory
 * Use clang to build the clienttools (gcc4.2 cores when compiling some of the sources):
 
 ```
-   export CC=/usr/bin/clang 
-   export CXX=/usr/bin/clang++ 
+   export CC=/usr/bin/clang
+   export CXX=/usr/bin/clang++
    cmake ../ -DICU_LIBRARIES=/usr/local/opt/icu4c/lib/libicuuc.dylib -DICU_INCLUDE_DIR=/usr/local/opt/icu4c/include -DLIBARCHIVE_INCLUDE_DIR=/usr/local/opt/libarchive/include -DLIBARCHIVE_LIBRARIES=/usr/local/opt/libarchive/lib/libarchive.dylib -DBOOST_REGEX_LIBRARIES=/usr/local/opt/boost/lib -DBOOST_REGEX_INCLUDE_DIR=/usr/local/opt/boost/include -DCLIENTTOOLS_ONLY=true -DUSE_OPENLDAP=true -DOPENLDAP_INCLUDE_DIR=/usr/local/opt/openldap/include -DOPENLDAP_LIBRARIES=/usr/local/opt/openldap/lib/libldap_r.dylib
 ```
 
@@ -140,5 +140,5 @@ To build client tools for Macintosh OSX:
 * Executables will be created in ./&lt;releasemode&gt;/bin and ./&lt;releasemode&gt;/libs
 * To create a .dmg to install, run
    make package
- 
- 
+
+

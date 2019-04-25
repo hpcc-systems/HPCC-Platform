@@ -684,11 +684,21 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         MESSAGE(FATAL_ERROR "You need bison version 2.4.1 or later to build this project (version ${BISON_VERSION} detected)")
       ENDIF()
 
+      message(STATUS "Found Bison v${BISON_VERSION}")
+
       IF ("${BISON_VERSION}" VERSION_LESS "2.7.0")
         #Ignore all warnings - not recommend to develope on this version!
         SET(bisonopt "-Wnone")
       ELSE()
         SET(bisonopt -Werror -Wno-other)
+      ENDIF()
+
+      IF ("${BISON_VERSION}" VERSION_LESS "3.0.0")
+        SET(bisonopt ${bisonopt} --name-prefix=eclyy)
+        SET(ENV{BISON_MAJOR_VER} "2")
+      ELSE()
+        SET(bisonopt ${bisonopt} -Dapi.prefix={eclyy})
+        SET(ENV{BISON_MAJOR_VER} "3")
       ENDIF()
 
       IF ("${FLEX_VERSION}" VERSION_LESS "2.5.35")

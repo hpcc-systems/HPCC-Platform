@@ -22,7 +22,7 @@
 %lex-param {HqlGram* parser}
 %lex-param {int * yyssp}
 %parse-param {HqlGram* parser}
-%name-prefix "eclyy"
+//%name-prefix "eclyy" or %define api.prefix={eclyy} (depending on Bison version) is set via a Bison invocation argument
 //
 %destructor {$$.release();} <>
 //Could override destructors for all tokens e.g.,
