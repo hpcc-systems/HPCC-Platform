@@ -167,6 +167,10 @@ bool rtlGetNormalizedUnicodeLocaleName(unsigned len, char const * in, char * out
 }
 
 #ifdef _USE_ICU
+using icu::UnicodeString;
+using icu::UCharCharacterIterator;
+
+
 static bool stripIgnorableCharacters(size32_t & lenResult, UChar * & result, size32_t length, const UChar * in)
 {
     unsigned numStripped = 0;
@@ -210,7 +214,7 @@ static bool stripIgnorableCharacters(size32_t & lenResult, UChar * & result, siz
 
 void escapeUnicode(unsigned inlen, UChar const * in, StringBuffer & out)
 {
-    UCharCharacterIterator iter(in, inlen);
+    icu::UCharCharacterIterator iter(in, inlen);
     for(iter.first32(); iter.hasNext(); iter.next32())
     {
         UChar32 c = iter.current32();
@@ -454,7 +458,7 @@ void unicodeNormalizedCopy(UChar * out, UChar * in, unsigned len)
 void normalizeUnicodeString(UnicodeString const & in, UnicodeString & out)
 {
     UErrorCode err = U_ZERO_ERROR;
-    Normalizer::compose(in, false, 0, out, err);
+    icu::Normalizer::compose(in, false, 0, out, err);
     assertex(U_SUCCESS(err));
 }
 #endif

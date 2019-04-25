@@ -263,6 +263,10 @@ ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findI
 // RegEx Compiler for unicode strings
 
 #ifdef _USE_ICU
+using icu::RegexMatcher;
+using icu::RegexPattern;
+using icu::UnicodeString;
+
 class CUStrRegExprFindInstance : implements IUStrRegExprFindInstance
 {
 private:
