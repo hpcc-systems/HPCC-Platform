@@ -54,11 +54,22 @@ if [ "$GIT_IGNORE_FETCH_ERRORS" == 0 2> /dev/null ] ; then unset GIT_IGNORE_FETC
 function fetch_repo {
     repo=$1
     prefix="$(echo $repo | tr '[a-z]' '[A-Z]')"
+    eval wu_git_url=\${WU_${prefix}_URL}
     eval git_url=\${${prefix}_URL}
+    eval git_url_locked=\${${prefix}_URL_LOCKED}
     eval wu_git_branch=\${WU_${prefix}_BRANCH}
     eval git_branch=\${${prefix}_BRANCH}
     eval git_branch_locked=\${${prefix}_BRANCH_LOCKED}
     eval git_directory=\${${prefix}_DIRECTORY}
+
+    if [ -n "$wu_git_url" ]; then
+        if [ -z "$git_url_locked" -o "$git_url_locked" == "0" ]; then
+            git_url=$wu_git_url
+        else
+            report_error "GIT: Overriding url is not allowed"
+            exit 2
+        fi
+    fi
 
     if [ -z "$git_url" ]; then
         report_error "Need to set ${prefix}_URL"
