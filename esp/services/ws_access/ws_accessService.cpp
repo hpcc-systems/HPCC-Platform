@@ -70,7 +70,7 @@ void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *ser
     IPropertyTree* servicecfg = cfg->getPropTree(xpath.str());
     if(servicecfg == NULL)
     {
-        WARNLOG(-1, "config not found for service %s/%s",process, service);
+        OWARNLOG("Config not found for service %s/%s",process, service);
         return;
     }
     m_servicecfg.setown(servicecfg);
@@ -699,7 +699,7 @@ bool Cws_accessEx::onUserGroupEdit(IEspContext &context, IEspUserGroupEditReques
         {
             StringBuffer errmsg;
             e->errorMessage(errmsg);
-            DBGLOG("error changing user's group membership: %s", errmsg.str());
+            OERRLOG("error changing user's group membership: %s", errmsg.str());
             resp.setRetcode(e->errorCode());
             resp.setRetmsg(errmsg.str());
             return false;
@@ -1540,7 +1540,7 @@ bool Cws_accessEx::onGroupMemberEdit(IEspContext &context, IEspGroupMemberEditRe
         {
             StringBuffer errmsg;
             e->errorMessage(errmsg);
-            DBGLOG("error changing user's group membership: %s", errmsg.str());
+            OERRLOG("error changing user's group membership: %s", errmsg.str());
             resp.setRetcode(e->errorCode());
             resp.setRetmsg(errmsg.str());
             return false;
@@ -2854,7 +2854,7 @@ int Cws_accessEx::enableDisableScopeScans(IEspContext &context, bool doEnable, S
     int retCode;
     bool rc = querySessionManager().enableScopeScans(userdesc, doEnable, &retCode, retMsg);
     if (!rc || retCode != 0)
-        DBGLOG("Error %d enabling Scope Scans : %s", retCode, retMsg.str());
+        IERRLOG("Error %d enabling Scope Scans : %s", retCode, retMsg.str());
     return retCode;
 }
 

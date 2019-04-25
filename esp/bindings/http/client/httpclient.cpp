@@ -258,7 +258,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         if (!ep.set(m_host.get(), m_port))
         {
             errmsg.appendf("Bad host name/ip: %s", m_host.get());
-            ERRLOG("%s", errmsg.str());
+            UERRLOG("%s", errmsg.str());
             return -1;
         }
         //TODO: should it be 443 for HTTPS??
@@ -270,7 +270,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         if (!ep.set(m_proxy.str()))
         {
             errmsg.appendf("Bad proxy name/ip: %s", m_proxy.str());
-            ERRLOG("%s", errmsg.str());
+            UERRLOG("%s", errmsg.str());
             return -1;
         }
         //TODO: should it be 443 for HTTPS??
@@ -315,7 +315,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         catch(IException *e)
         {
             StringBuffer url;
-            ERRLOG("Error connecting to %s", ep.getUrlStr(url).str());
+            UERRLOG("Error connecting to %s", ep.getUrlStr(url).str());
             DBGLOG(e);
             e->Release();
             m_socket = nullptr;
@@ -324,7 +324,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         catch(...)
         {
             StringBuffer url;
-            ERRLOG("Unknown exception connecting to %s", ep.getUrlStr(url).str());
+            UERRLOG("Unknown exception connecting to %s", ep.getUrlStr(url).str());
             m_socket = nullptr;
             return -1;
         }

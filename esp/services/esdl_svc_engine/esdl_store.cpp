@@ -687,7 +687,7 @@ public:
                 if (!bindingcfg)
                 {
                     message.setf("Could not configure service '%s' because there's no template esp binding configured on port %s or port 0 for esp process '%s'", esdlServiceName, espPort, espProcName);
-                    DBGLOG("%s", message.str());
+                    OWARNLOG("%s", message.str());
                     return -1;
                 }
             }
@@ -1116,12 +1116,12 @@ public:
     {
         if (!mListener)
         {
-            DBGLOG("Can't handle subscription notification because the listener is NULL");
+            OWARNLOG("Can't handle subscription notification because the listener is NULL");
             return;
         }
         if (id != sub_id)
         {
-            DBGLOG("Dali subscription (%" I64F "d) received notification for unrecognized dali subscription id: (%" I64F "d)", (__int64) sub_id, (__int64) id);
+            OWARNLOG("Dali subscription (%" I64F "d) received notification for unrecognized dali subscription id: (%" I64F "d)", (__int64) sub_id, (__int64) id);
             return;
         }
 
@@ -1176,7 +1176,7 @@ public:
             }
             catch (IException *E)
             {
-                DBGLOG("ESDL failed to subscribe to DALI (%s)", ESDL_CHANGE_PATH);
+                OWARNLOG("ESDL failed to subscribe to DALI (%s)", ESDL_CHANGE_PATH);
                 E->Release();
             }
         }

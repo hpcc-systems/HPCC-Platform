@@ -714,7 +714,7 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
         gi->query().endpoint().getIpText(addressRead);
         if (addressRead.length() == 0)
         {
-            WARNLOG("Network address not found for a node in node group %s", groupName.str());
+            OWARNLOG("Network address not found for a node in node group %s", groupName.str());
             continue;
         }
 
@@ -734,14 +734,14 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
 
         if (netAddress.length() == 0)
         {
-            WARNLOG("Network address not found for a node in node group %s", groupName.str());
+            OWARNLOG("Network address not found for a node in node group %s", groupName.str());
             continue;
         }
 
         Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachineByAddress(addressRead.str());
         if (!pMachineInfo.get())
         {
-            WARNLOG("Machine not found at network address %s", addressRead.str());
+            OWARNLOG("Machine not found at network address %s", addressRead.str());
             continue;
         }
 
@@ -800,7 +800,7 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
             Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachine(name0);
             if (!pMachineInfo.get())
             {
-                WARNLOG("Machine %s not found in environment setting", name0);
+                OWARNLOG("Machine %s not found in environment setting", name0);
                 continue;
             }
 
@@ -810,7 +810,7 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
             const char* ip = ep.str();
             if (!ip)
             {
-                WARNLOG("Network address not found for machine %s", name0);
+                OWARNLOG("Network address not found for machine %s", name0);
                 continue;
             }
 

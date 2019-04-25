@@ -234,7 +234,7 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
     }
     else
     {
-        DBGLOG("SOAP Response type %s not supported", soap_response->get_content_type());
+        UWARNLOG("SOAP Response type %s not supported", soap_response->get_content_type());
         return SOAP_REQUEST_TYPE_ERROR;
     }
 

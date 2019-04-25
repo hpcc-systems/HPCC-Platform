@@ -121,7 +121,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
         const char* wuid = wuidStr.trim().str();
         if (isEmpty(wuid))
         {
-            WARNLOG("Empty Workunit ID");
+            UWARNLOG("Empty Workunit ID");
             continue;
         }
 
@@ -264,7 +264,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
             StringBuffer eMsg;
             StringBuffer failedMsg("Failed: ");
             setActionResult(wuid, action, failedMsg.append(e->errorMessage(eMsg)).str(), strAction, results);
-            WARNLOG("Failed to %s for workunit: %s, %s", strAction, wuid, eMsg.str());
+            OWARNLOG("Failed to %s for workunit: %s, %s", strAction, wuid, eMsg.str());
             AuditSystemAccess(context.queryUserId(), false, "Failed to %s %s", strAction, wuid);
             e->Release();
             continue;
@@ -275,7 +275,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
             StringBuffer failedMsg;
             failedMsg.appendf("Unknown exception");
             setActionResult(wuid, action, failedMsg.str(), strAction, results);
-            WARNLOG("Failed to %s for workunit: %s, %s", strAction, wuid, failedMsg.str());
+            IWARNLOG("Failed to %s for workunit: %s, %s", strAction, wuid, failedMsg.str());
             AuditSystemAccess(context.queryUserId(), false, "Failed to %s %s", strAction, wuid);
             continue;
         }
@@ -353,7 +353,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 {
     if (!daliClientActive())
     {
-        ERRLOG("No Dali Connection Active.");
+        OERRLOG("No Dali Connection Active.");
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
     setPasswordsFromSDS();
@@ -2451,7 +2451,7 @@ public:
             const char* wuid = wuDataArray.item(0);
             if (isEmpty(wuid))
             {
-                WARNLOG("Empty WUID in SCA_LIST response"); // JCS->KW - have u ever seen this happen?
+                IWARNLOG("Empty WUID in SCA_LIST response"); // JCS->KW - have u ever seen this happen?
                 continue;
             }
             const char* owner = wuDataArray.item(1);
@@ -5357,7 +5357,7 @@ bool CWsWorkunitsEx::onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefi
         {
             StringBuffer eclDefinitionName(eclDefinitions.item(i));
             if (eclDefinitionName.trim().isEmpty())
-                WARNLOG("Empty ECL Definition name in WUEclDefinitionAction request");
+                UWARNLOG("Empty ECL Definition name in WUEclDefinitionAction request");
             else if (action == CEclDefinitionActions_SyntaxCheck)
                 checkEclDefinitionSyntax(context, target.str(), eclDefinitionName.str(), msToWait, results);
             else if (action == CEclDefinitionActions_Deploy)

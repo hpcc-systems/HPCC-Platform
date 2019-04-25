@@ -49,11 +49,11 @@ void LogicFileWrapper::FindClusterName(const char* logicalName, StringBuffer& re
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception thrown within LogicFileWrapper::FindClusterName");
+        IWARNLOG("Unknown Exception thrown within LogicFileWrapper::FindClusterName");
     }
 }
 
@@ -117,11 +117,11 @@ bool LogicFileWrapper::doCompressFile(const char* name,StringBuffer& returnStr, 
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within doCompressFile");
+        IWARNLOG("Unknown Exception caught within doCompressFile");
     }
 
     return true; 

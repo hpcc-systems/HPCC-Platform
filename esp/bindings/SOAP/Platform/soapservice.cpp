@@ -79,7 +79,7 @@ int CSoapService::processHeader(CHeader* header, IEspContext* ctx)
                     }
                     if(user == NULL)
                     {
-                        WARNLOG("Couldn't create ISecUser object for %s", username.str());
+                        IWARNLOG("Couldn't create ISecUser object for %s", username.str());
                     }
                     user->setName(username.str());
                     user->credentials().setPassword(password.str());
@@ -243,7 +243,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
         } catch (...) {
             response.set_status(SOAP_CLIENT_ERROR);
             response.set_err("Unknown error when parsing soap body XML");
-            ERRLOG("SOAP request from %s@%s. Unknown error when parsing: %s",  (userId&&*userId)?userId:"unknown",
+            IERRLOG("SOAP request from %s@%s. Unknown error when parsing: %s",  (userId&&*userId)?userId:"unknown",
                 (peerStr.length()>0)?peerStr.str():"unknown", requeststr.str());
             return 0;
         }

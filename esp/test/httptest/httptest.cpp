@@ -527,19 +527,19 @@ int HttpClient::sendRequest(int times, HttpStat& stat, StringBuffer& req)
         catch(IException *excpt)
         {
             StringBuffer errMsg;
-            DBGLOG("Error connecting to %s:%d - %d:%s", m_host.str(), m_port, excpt->errorCode(), excpt->errorMessage(errMsg).str());
+            UERRLOG("Error connecting to %s:%d - %d:%s", m_host.str(), m_port, excpt->errorCode(), excpt->errorMessage(errMsg).str());
             continue;
         }
         catch(...)
         {
-            DBGLOG("can't connect to %s:%d", m_host.str(), m_port);
+            OERRLOG("Can't connect to %s:%d", m_host.str(), m_port);
             continue;
         }
 
         if(socket.get() == NULL)
         {
             StringBuffer urlstr;
-            DBGLOG(">>Can't connect to %s", ep.getUrlStr(urlstr).str());
+            OERRLOG("Can't connect to %s", ep.getUrlStr(urlstr).str());
             continue;
         }
 
@@ -679,10 +679,10 @@ int HttpServer::start()
             handleOneRequest(client);
         } catch (IException* e) {
             StringBuffer msg;
-            DBGLOG("Exception occured: %s", e->errorMessage(msg).str());
+            IERRLOG("Exception occured: %s", e->errorMessage(msg).str());
             e->Release();
         } catch (...) {
-            DBGLOG("Unknown exception occurred");
+            IERRLOG("Unknown exception occurred");
         }
     }
 
@@ -857,7 +857,7 @@ int COneServerHttpProxyThread::start()
         if(socket2.get() == NULL)
         {
             StringBuffer urlstr;
-            DBGLOG(">>Can't connect to %s", ep.getUrlStr(urlstr).str());
+            OERRLOG("Can't connect to %s", ep.getUrlStr(urlstr).str());
             return -1;
         }
 
@@ -894,12 +894,12 @@ int COneServerHttpProxyThread::start()
     catch(IException *excpt)
     {
         StringBuffer errMsg;
-        DBGLOG("%s", excpt->errorMessage(errMsg).str());
+        OERRLOG("%s", excpt->errorMessage(errMsg).str());
         return -1;
     }
     catch(...)
     {
-        DBGLOG("unknown exception");
+        OERRLOG("unknown exception");
         return -1;
     }
 
@@ -1101,12 +1101,12 @@ int CHttpProxyThread::run()
     catch(IException *excpt)
     {
         StringBuffer errMsg;
-        DBGLOG("%s", excpt->errorMessage(errMsg).str());
+        IERRLOG("%s", excpt->errorMessage(errMsg).str());
         ret = -1;
     }
     catch(...)
     {
-        DBGLOG("unknown exception");
+        IERRLOG("unknown exception");
         ret = -1;
     }
 
@@ -1156,14 +1156,14 @@ int CHttpProxyThread::readline(ISocket* socket, char* buf, int bufsize, bool& so
         StringBuffer estr;
         if(e->errorCode() != JSOCKERR_graceful_close)
         {
-            DBGLOG("socket(%d) : %s", socket->OShandle(), e->errorMessage(estr).str());
+            OERRLOG("socket(%d) : %s", socket->OShandle(), e->errorMessage(estr).str());
         }
         e->Release();
         socketclosed = true;
     }
     catch(...)
     {
-        DBGLOG("Unknown exception reading from socket(%d).", socket->OShandle());
+        OERRLOG("Unknown exception reading from socket(%d).", socket->OShandle());
         socketclosed = true;
     }
 
@@ -1222,11 +1222,11 @@ int HttpProxy::start()
         catch(IException *excpt)
         {
             StringBuffer errMsg;
-            DBGLOG("%s", excpt->errorMessage(errMsg).str());
+            OERRLOG("%s", excpt->errorMessage(errMsg).str());
         }
         catch(...)
         {
-            DBGLOG("unknown exception");
+            IERRLOG("unknown exception");
         }
     }
     return 0;

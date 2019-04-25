@@ -125,7 +125,7 @@ void HPCCSQLTreeWalker::fromTreeWalker(pANTLR3_BASE_TREE fromsqlAST)
 
                         const char * fullindexhintname = tmpHPCCFileCache->cacheHpccFileByName(tablealias);
                         if (!fullindexhintname || !*fullindexhintname)
-                            ERRLOG("Invalid index hint found: %s\n", tablealias);
+                            IERRLOG("Invalid index hint found: %s\n", tablealias);
                         else
                             temptable->setIndexhint(fullindexhintname);
                     }
@@ -136,11 +136,11 @@ void HPCCSQLTreeWalker::fromTreeWalker(pANTLR3_BASE_TREE fromsqlAST)
                     else if ( childType == TOKEN_TABLE_SCHEMA && tablechild->getChildCount(tablechild) == 1)
                     {
                         pANTLR3_BASE_TREE schema = (pANTLR3_BASE_TREE)tablechild->getChild(tablechild, 0);
-                        WARNLOG("Table schema detected but ignored: %s\n", (char *)schema->toString(schema)->chars);
+                        UWARNLOG("Table schema detected but ignored: %s\n", (char *)schema->toString(schema)->chars);
                     }
                     else
                     {
-                        ERRLOG("Invalid node found in table node: %s\n", (char *)tablechild->toString(tablechild)->chars);
+                        UERRLOG("Invalid node found in table node: %s\n", (char *)tablechild->toString(tablechild)->chars);
                     }
                 }
 

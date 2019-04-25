@@ -316,7 +316,7 @@ bool CwssqlEx::onGetDBSystemInfo(IEspContext &context, IEspGetDBSystemInfoReques
     }
     catch (...)
     {
-        ERRLOG("Error Parsing HPCC and/or WsSQL Version string.");
+        IERRLOG("Error Parsing HPCC and/or WsSQL Version string.");
     }
 
     return success;
@@ -638,7 +638,7 @@ printTree(sqlAST, 0);
         }
         catch (...)
         {
-            ERRLOG("!!! Unable to free HPCCSQL parser/lexer objects.");
+            IERRLOG("!!! Unable to free HPCCSQL parser/lexer objects.");
         }
 
         //All IExceptions get bubbled up
@@ -661,7 +661,7 @@ printTree(sqlAST, 0);
         }
         catch (...)
         {
-            ERRLOG("!!! Unable to free HPCCSQL parser/lexer objects.");
+            IERRLOG("!!! Unable to free HPCCSQL parser/lexer objects.");
         }
 
         //All other unexpected exceptions are reported as generic ecl generation error.

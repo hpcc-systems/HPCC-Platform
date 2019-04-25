@@ -125,7 +125,7 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
 {
     if (!daliClientActive())
     {
-        ERRLOG("No Dali Connection Active.");
+        OERRLOG("No Dali Connection Active.");
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
 
@@ -347,7 +347,7 @@ bool CActivityInfo::readJobQueue(const char* queueName, StringArray& wuids, Stri
     {
         state.set("Unknown");
         stateDetails.set("jobQueueSnapshot not found");
-        WARNLOG("CActivityInfo::readJobQueue: jobQueueSnapshot not found.");
+        IWARNLOG("CActivityInfo::readJobQueue: jobQueueSnapshot not found.");
         return false;
     }
 
@@ -357,7 +357,7 @@ bool CActivityInfo::readJobQueue(const char* queueName, StringArray& wuids, Stri
         jobQueue.setown(jobQueueSnapshot->getJobQueue(queueName));
         if (!jobQueue)
         {
-            WARNLOG("CActivityInfo::readJobQueue: failed to get info for job queue %s", queueName);
+            IWARNLOG("CActivityInfo::readJobQueue: failed to get info for job queue %s", queueName);
             return false;
         }
     }
@@ -561,7 +561,7 @@ CWsSMCTargetCluster* CActivityInfo::findWUClusterInfo(const char* wuid, bool isO
     catch (IException *e)
     {//Exception may be thrown when the openWorkUnit() is called inside the CWUWrapper
         StringBuffer msg;
-        WARNLOG("Failed to open workunit %s: %s", wuid, e->errorMessage(msg).str());
+        IWARNLOG("Failed to open workunit %s: %s", wuid, e->errorMessage(msg).str());
         e->Release();
         return NULL;
     }
@@ -754,7 +754,7 @@ unsigned CActivityInfo::readDFUWUIDs(IPropertyTree* serverStatusRoot, const char
 {
     if (!queueName || !*queueName)
     {
-        WARNLOG("CActivityInfo::readDFUWUIDs: queue name not specified");
+        IWARNLOG("CActivityInfo::readDFUWUIDs: queue name not specified");
         return 0;
     }
 
@@ -782,7 +782,7 @@ unsigned CActivityInfo::readDFUWUIDs(IPropertyTree* serverStatusRoot, const char
     Owned<IJobQueueConst> jobQueue = jobQueueSnapshot->getJobQueue(queueName);
     if (!jobQueue)
     {
-        WARNLOG("CActivityInfo::readDFUWUIDs: failed to get info for job queue %s.", queueName);
+        IWARNLOG("CActivityInfo::readDFUWUIDs: failed to get info for job queue %s.", queueName);
         return runningWUCount;
     }
 
@@ -891,7 +891,7 @@ void CActivityInfo::readServerJobQueueStatus(IEspContext &context, const char* q
 {
     if (!jobQueueSnapshot)
     {
-        WARNLOG("CActivityInfo::readServerJobQueueStatus: jobQueueSnapshot not found.");
+        IWARNLOG("CActivityInfo::readServerJobQueueStatus: jobQueueSnapshot not found.");
         return;
     }
 
@@ -1948,7 +1948,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
         const char* ossInstall = pEnvRoot->queryProp("EnvSettings/path");
         if (!ossInstall || !*ossInstall)
         {
-            WARNLOG("Failed to get EnvSettings/Path in environment settings.");
+            OWARNLOG("Failed to get EnvSettings/Path in environment settings.");
             return true;
         }
 
@@ -1957,14 +1957,14 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
         Owned<IFile> f = createIFile(path.str());
         if(!f->exists() || !f->isDirectory())
         {
-            WARNLOG("Invalid resource folder");
+            OWARNLOG("Invalid resource folder");
             return true;
         }
 
         Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
         if(di.get() == NULL)
         {
-            WARNLOG("Resource folder is empty.");
+            OWARNLOG("Resource folder is empty.");
             return true;
         }
 
@@ -1982,14 +1982,14 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
             Owned<IFile> f0 = createIFile(path0.str());
             if(!f0->exists())
             {
-                WARNLOG("Description file not found for %s", folder.str());
+                OWARNLOG("Description file not found for %s", folder.str());
                 continue;
             }
 
             OwnedIFileIO rIO = f0->openShared(IFOread,IFSHfull);
             if(!rIO)
             {
-                WARNLOG("Failed to open the description file for %s", folder.str());
+                OWARNLOG("Failed to open the description file for %s", folder.str());
                 continue;
             }
 
@@ -2000,21 +2000,21 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
             size32_t nRead = rIO->read(0, (size32_t) fileSize, (char*)tmpBuf.str());
             if (nRead != fileSize)
             {
-                WARNLOG("Failed to read the description file for %s", folder.str());
+                OWARNLOG("Failed to read the description file for %s", folder.str());
                 continue;
             }
 
             Owned<IPropertyTree> desc = createPTreeFromXMLString(tmpBuf.str());
             if (!desc)
             {
-                WARNLOG("Invalid description file for %s", folder.str());
+                OWARNLOG("Invalid description file for %s", folder.str());
                 continue;
             }
 
             Owned<IPropertyTreeIterator> fileIterator = desc->getElements("file");
             if (!fileIterator->first())
             {
-                WARNLOG("Invalid description file for %s", folder.str());
+                OWARNLOG("Invalid description file for %s", folder.str());
                 continue;
             }
 

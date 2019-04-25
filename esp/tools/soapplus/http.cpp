@@ -1756,19 +1756,19 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
     catch(IException *excpt)
     {
         StringBuffer errMsg;
-        DBGLOG("Error connecting to %s:%d - %d:%s", m_host.str(), m_port, excpt->errorCode(), excpt->errorMessage(errMsg).str());
+        OERRLOG("Error connecting to %s:%d - %d:%s", m_host.str(), m_port, excpt->errorCode(), excpt->errorMessage(errMsg).str());
         return -1;
     }
     catch(...)
     {
-        DBGLOG("can't connect to %s:%d", m_host.str(), m_port);
+        IERRLOG("can't connect to %s:%d", m_host.str(), m_port);
         return -1;
     }
 
     if(socket.get() == NULL)
     {
         StringBuffer urlstr;
-        DBGLOG(">>Can't connect to %s", ep.getUrlStr(urlstr).str());
+        OERRLOG("Can't connect to %s", ep.getUrlStr(urlstr).str());
         return -1;
     }
 

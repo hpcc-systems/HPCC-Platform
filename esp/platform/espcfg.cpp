@@ -157,12 +157,12 @@ int CSessionCleaner::run()
     catch(IException *e)
     {
         StringBuffer msg;
-        ERRLOG("CSessionCleaner::run() Exception %d:%s", e->errorCode(), e->errorMessage(msg).str());
+        IERRLOG("CSessionCleaner::run() Exception %d:%s", e->errorCode(), e->errorMessage(msg).str());
         e->Release();
     }
     catch(...)
     {
-        ERRLOG("Unknown CSessionCleaner::run() Exception");
+        IERRLOG("Unknown CSessionCleaner::run() Exception");
     }
     return 0;
 }
@@ -270,7 +270,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
 
     if (!m_cfg->getProp("@name", m_process))
     {
-        ERRLOG("EspProcess name not found");
+        OERRLOG("EspProcess name not found");
     }
     else
     {
@@ -320,7 +320,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         }
 
         if (isDetachedFromDali())
-            WARNLOG("ESP Process [%s] loading in DALI DETACHED state - Some ESP services do not load in detached state!",  m_process.str());
+            OWARNLOG("ESP Process [%s] loading in DALI DETACHED state - Some ESP services do not load in detached state!",  m_process.str());
 
         StringBuffer daliservers;
         if (m_cfg->getProp("@daliServers", daliservers))
@@ -575,7 +575,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
 
     if(sit == m_services.end())
     {
-        DBGLOG("Warning: Service %s not found for binding %s", xcfg.service_name.str(), xcfg.name.str());
+        OWARNLOG("Warning: Service %s not found for binding %s", xcfg.service_name.str(), xcfg.name.str());
     }
     else
     {
@@ -615,9 +615,9 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
             {
                 IEspRpcBinding* bind = xproc(xcfg.name.str(), xcfg.type.str(), m_envpt.get(), m_process.str());
                 if (bind)
-                    DBGLOG("Load binding %s (type: %s, process: %s) succeeded", xcfg.name.str(), xcfg.type.str(), m_process.str());
+                    LOG(MCoperatorInfo, unknownJob,"Load binding %s (type: %s, process: %s) succeeded", xcfg.name.str(), xcfg.type.str(), m_process.str());
                 else
-                    ERRLOG("Failed to load binding %s (type: %s, process: %s)", xcfg.name.str(), xcfg.type.str(), m_process.str());
+                    OERRLOG("Failed to load binding %s (type: %s, process: %s)", xcfg.name.str(), xcfg.type.str(), m_process.str());
                 xcfg.bind.setown(bind);
                 if (serverstatus)
                 {
@@ -853,7 +853,7 @@ public:
             // If current path not found, use root
             char dir[_MAX_PATH];
             if (!GetCurrentDirectory(sizeof(dir), dir)) {
-                ERRLOG("ESPxsltIncludeHandler::getInclude: Current directory path too big, setting local path to null");
+                IERRLOG("ESPxsltIncludeHandler::getInclude: Current directory path too big, setting local path to null");
                 dir[0] = 0;
             }
 #ifdef _WIN32
@@ -895,7 +895,7 @@ void CEspConfig::bindServer(IEspServer &server, IEspContainer &container)
         {
             map<string, protocol_cfg*>::iterator pit = m_protocols.find(pbfg->protocol_name.str());
             if(pit == m_protocols.end())
-                DBGLOG("Protocol %s not found for binding %s", pbfg->protocol_name.str(), pbfg->name.str());
+                OWARNLOG("Protocol %s not found for binding %s", pbfg->protocol_name.str(), pbfg->name.str());
             else
             {
                 Owned<IXslProcessor> xslp=getXslProcessor();
@@ -917,7 +917,7 @@ void CEspConfig::bindServer(IEspServer &server, IEspContainer &container)
         }
         else
         {
-            ERRLOG("Binding %s wasn't loaded correctly", pbfg->name.str());
+            OERRLOG("Binding %s wasn't loaded correctly", pbfg->name.str());
         }
 
         bit++;

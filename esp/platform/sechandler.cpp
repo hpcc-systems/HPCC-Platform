@@ -272,12 +272,12 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
     {
         StringBuffer errmsg;
         e->errorMessage(errmsg);
-        ERRLOG("Exception authorizing, error=%s\n", errmsg.str());
+        IERRLOG("Exception authorizing, error=%s\n", errmsg.str());
         return false;
     }
     catch(...)
     {
-        ERRLOG("Unknown exception authorizing\n");
+        IERRLOG("Unknown exception authorizing\n");
         return false;
     }
     if(auth_ok)
