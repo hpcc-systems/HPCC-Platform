@@ -1861,12 +1861,12 @@ void OsDiskInfo::initMajorMinor()
     if (pipe->run("list disks", cmd, nullptr, false, true, true, 8192))
     {
         bool timedout = false;
+        StringBuffer output;
+        Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
         // handle when lsblk runs too long
         unsigned exitcode = pipe->wait(2000, timedout);
         if ( (!timedout) && (exitcode == 0) )
         {
-            StringBuffer output;
-            Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
             readSimpleStream(output, *pipeReader);
             if (output.length() > 0)
             {
@@ -1882,22 +1882,20 @@ void OsDiskInfo::initMajorMinor()
                         diskMajorMinor.appendUniq(mm);
                     }
                 }
-                return;
             }
+            return;
         }
         if (timedout)
             pipe->abort();
         // log unexpected output, if any
-        StringBuffer output;
-        Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
         readSimpleStream(output, *pipeReader);
         if (output.length() > 0)
-            WARNLOG("Pipe: output: %s", output.str());
+            IWARNLOG("Pipe: output: %s", output.str());
         StringBuffer outputErr;
         Owned<ISimpleReadStream> pipeReaderErr = pipe->getErrorStream();
         readSimpleStream(outputErr, *pipeReaderErr);
         if (outputErr.length() > 0)
-            WARNLOG("Pipe: Err output: %s", outputErr.str());
+            IWARNLOG("Pipe: Err output: %s", outputErr.str());
     }
 #endif // __linux__
 }
