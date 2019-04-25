@@ -22,50 +22,29 @@
                 <div id="${id}PackageMapsGridCP" style="border:0px; padding: 0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}PackagesGrid"></div>
                 </div>
-                <div id="${id}AddProcessMapDialog" data-dojo-type="dijit.Dialog" data-dojo-id="${id}AddProcessMapDialog" title="${i18n.AddProcessMap}">
-                    <div data-dojo-type="dijit.form.Form" id="${id}AddProcessMapForm" data-dojo-id="${id}AddProcessMapForm" method="post" enctype="multipart/form-data" >
-                       <table id="${id}AddProcessMapTable" class="dijitDialogPaneContentArea">
-                            <tr>
-                                <td><input id="${id}AddProcessMapFileUploader" name="${id}AddProcessMapFileUploader" multiple="false" type="file" data-dojo-type="dojox.form.Uploader" data-dojo-attach-event="onChange:_onCheckAddProcessMapInput" label="${i18n.SelectPackageFile}"/></td>
-                            </tr>
-                            <tr>
-                                <td><div id="${id}AddProcessMapFileToUpload" data-dojo-type="dojox.form.uploader.FileList" data-dojo-props='uploaderId:"${id}AddProcessMapFileUploader"'>
-                                </div></td>
-                            </tr>
-                            <tr>
-                                <td><label for="${id}AddProcessMapId" style="width: 15em;">${i18n.ID}:</label></td>
-                                <td><input name="${id}AddProcessMapId" id="${id}AddProcessMapId" data-dojo-attach-event="onKeyUp:_onAddProcessMapIdKeyUp" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox"</td>
-                            </tr>
-                            <tr>
-                                <td><label for="${id}AddProcessMapTargetSelect">${i18n.Target}:</label></td>
-                                <td><div id="${id}AddProcessMapTargetSelect" name="${id}AddProcessMapTargetSelect" data-dojo-type="TargetSelectWidget">
-                                </div></td>
-                            </tr>
-                            <tr>
-                                <td><label for="${id}AddProcessMapProcessSelect">${i18n.ProcessFilter}:</label></td>
-                                <td>
-                                    <div id="${id}AddProcessMapProcessSelect" name="${id}AddProcessMapProcessSelect" data-dojo-type="TargetSelectWidget">
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><label for="${id}AddProcessMapDaliIP">${i18n.RemoteDaliIP}:</label></td>
-                                <td><input name="${id}AddProcessMapDaliIP" id="${id}AddProcessMapDaliIP" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox"></td>
-                            </tr>
-                            <tr>
-                                <td><label for="${id}AddProcessMapActivate">${i18n.Activate}:</label></td>
-                                <td><input id="${id}AddProcessMapActivate" name="${id}AddProcessMapActivate" data-dojo-type="dijit.form.CheckBox" value="" checked/></td>
-                            </tr>
-                            <tr>
-                                <td><label for="${id}AddProcessMapOverWrite">${i18n.Overwrite}:</label></td>
-                                <td><input id="${id}AddProcessMapOverWrite" name="${id}AddProcessMapOverWrite" data-dojo-type="dijit.form.CheckBox" value=""/></td>
-                            </tr>
-                            <tr>
-                                <td/>
-                                <td><input id="${id}AddProcessMapDialogSubmit" type="submit" label="${i18n.Submit}" data-dojo-type="dijit.form.Button"/>
-                                <input id="${id}AddProcessMapDialogClose" type="button" label="${i18n.Close}" data-dojo-type="dijit.form.Button"/></td>
-                            </tr>
-                        </table>
+                <div id="${id}AddProcessMapDialog" data-dojo-type="dijit.Dialog" title="${i18n.AddProcessMap}" style="width:700px; overflow-y: auto;">
+                    <div id="${id}AddProcessMapForm" data-dojo-type="dijit.form.Form" style="width:675px">
+                        <legend>Add Package Contents</legend>
+                        <div data-dojo-type="dijit.Fieldset">
+                            <div data-dojo-props="cols:1" data-dojo-type="hpcc.TableContainer">
+                                <textarea id="AddPackagemapContent" name="Info" rows="30" cols="50" style="width: 98%;"></textarea>
+                            </div>
+                        </div>
+                        <div data-dojo-type="dijit.Fieldset">
+                            <legend>Package Details</legend>
+                            <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                <input id="${id}AddProcessMapId" name="PackageMap" title="${i18n.ID}:" colspan="2"  required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                <input id="${id}AddProcessMapTargetSelect" name="Target"  title="${i18n.Target}:" colspan="2" data-dojo-type="TargetSelectWidget" />
+                                <input id="${id}AddProcessMapProcessSelect" name="Process" title="${i18n.ProcessFilter}:" colspan="2" data-dojo-type="TargetSelectWidget" />
+                                <input id="${id}AddProcessMapDaliIP" name="DaliIp" title="${i18n.RemoteDaliIP}:" data-dojo-props="trim: true" colspan="2" data-dojo-type="dijit.form.TextBox" />
+                                <input id="${id}AddProcessMapActivate" name="Activate" title="${i18n.Activate}:" colspan="2" data-dojo-type="dijit.form.CheckBox" checked/>
+                                <input id="${id}AddProcessMapOverWrite" name="OverWrite" title="${i18n.Overwrite}:" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                            </div>
+                        </div>
+                        <div class="dijitDialogPaneActionBar">
+                            <button id="${id}AddProcessMapDialogClose" class="bottomFormButtons" data-dojo-attach-event="onClick:_onCancel" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
+                            <button id="${id}AddProcessMapDialogSubmit" class="bottomFormButtons" data-dojo-attach-event="onClick:_onAddPackageMapSubmit" data-dojo-type="dijit.form.Button">${i18n.Submit}</button>
+                        </div>
                     </div>
                 </div>
             </div>
