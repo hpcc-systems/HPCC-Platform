@@ -48,7 +48,6 @@ class nbcd_decl Decimal
 {
 public:
     constexpr Decimal() = default;
-    Decimal(const Decimal & other);
 
     Decimal & abs();
     Decimal & add(const Decimal & other);

@@ -296,10 +296,9 @@ void DecRoundTo(unsigned places)
 
 void DecSwap()
 {
-    char temp[sizeof(Decimal)];
-    memcpy(&temp, &stack[curStack-1], sizeof(Decimal));
-    memcpy(&stack[curStack-1], &stack[curStack-2], sizeof(Decimal));
-    memcpy(&stack[curStack-2], &temp, sizeof(Decimal));
+    Decimal temp = stack[curStack-1];
+    stack[curStack-1] = stack[curStack-2];
+    stack[curStack-2] = temp;
 }
 
 
