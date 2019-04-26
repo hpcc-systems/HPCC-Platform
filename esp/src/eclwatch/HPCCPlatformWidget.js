@@ -167,8 +167,11 @@ define([
                     request: {}
                 }).then(function (response) {
                     if (lang.exists("GetComponentStatusResponse.ComponentStatus", response)) {
+                        dojoConfig.monitoringEnabled = true;
                         var status = response.GetComponentStatusResponse.ComponentStatus
                         context.checkMonitoring(status);
+                    } else {
+                        dojoConfig.monitoringEnabled = false;
                     }
                 });
 

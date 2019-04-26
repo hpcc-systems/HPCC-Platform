@@ -31,6 +31,7 @@ define([
             postCreate: function (args) {
                 this.inherited(arguments);
                 registry.byId(this.id + "_Permissions").set("disabled", true);
+                registry.byId(this.id + "_Monitoring").set("disabled", !dojoConfig.monitoringEnabled);
             },
 
             startup: function (args) {
