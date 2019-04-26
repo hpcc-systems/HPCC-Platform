@@ -130,7 +130,14 @@ def queryWuid(jobname,  taskId):
                     state = val
     return {'wuid':wuid, 'state':state,  'result':result}
 
-def abortWorkunit(wuid):
+def abortWorkunit(wuid, generateStackTrace = False,  engine = None):
+    if generateStackTrace and (engine !=  None):
+        # determine the binary from the enige
+        binPath = ""
+        # Determine the PID, but how if multiple workunits are running?
+        binPid = ""
+        cmd ='gdb --batch --quiet -ex "set interactive-mode off" -ex "thread apply all bt" -ex "quit" ' + binPath + " " + binPid
+        pass
     shell = Shell()
     cmd = 'ecl'
     defaults=[]
