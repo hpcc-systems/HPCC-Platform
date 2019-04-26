@@ -106,9 +106,15 @@ class Suite:
                             excluded = eclfile.testInClass(classExcluded)
                         exclude = (not included )  or excluded
                         exclusionReason=' class member excluded'
+
                     if not exclude:
                         exclude = eclfile.testExclusion(self.targetName)
                         exclusionReason=' ECL excluded'
+
+                    if not exclude:
+                        if file in args.excludeFileSet:
+                            exclude = True
+                            exclusionReason=' ECL excluded by --excludeFile parameter'
 
                     if not exclude:
                         self.addFileToSuite(eclfile)
