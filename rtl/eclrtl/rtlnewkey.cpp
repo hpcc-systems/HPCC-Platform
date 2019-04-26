@@ -14,6 +14,8 @@
 ############################################################################## */
 
 #include <initializer_list>
+#include <algorithm>
+
 #include "jlib.hpp"
 #include "jdebug.hpp"
 #include "jsort.hpp"

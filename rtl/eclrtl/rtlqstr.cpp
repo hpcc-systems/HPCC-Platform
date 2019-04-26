@@ -19,6 +19,8 @@
 #include "platform.h"
 #include <math.h>
 #include <stdio.h>
+#include <algorithm>
+
 #include "jexcept.hpp"
 #include "jmisc.hpp"
 #include "jutil.hpp"
