@@ -85,27 +85,7 @@ class RegressMain:
             self.parser_query.print_help()
             exit()
         eclfiles=[]   # List for ECL filenames to be executed
-        for ecl in self.args.query:
-            if  ('*' in ecl) or ('?' in ecl):
-                # If there is any wildcard in ECL file name, resolve it
-                eclwild = os.path.join(self.regress.dir_ec, ecl)
-                eclfiles.extend( glob.glob(eclwild))
-            else:
-                # We have simple ECL file in parameter list, put it on the eclfile list
-                eclPath = os.path.join(self.regress.dir_ec, ecl)
-                if os.path.isfile(eclPath):
-                    eclfiles.append(eclPath)
-                else:
-                    logging.error("%s. ECL file '%s' doesn't exist!" % (1,  eclPath))
-                    raise Error("4001")
-
-        if len(eclfiles) > 1:
-            # Remove duplicates
-            tempList = list(set(eclfiles))
-            eclfiles = tempList
-
-            # Sort ECL filenames to ensure correct execution order
-            eclfiles.sort()
+        eclfiles = self.processEclList(self.args.query)
 
         # Go through the cluster list
         for engine in self.targetEngines:
@@ -152,6 +132,31 @@ class RegressMain:
             else:
                 self.regress.runSuiteP(engine, cluster, self.regress.suites[engine])
 
+    def processEclList(self, eclItems):
+        eclFiles = []
+        for ecl in eclItems:
+            if  ('*' in ecl) or ('?' in ecl):
+                # If there is any wildcard in ECL file name, resolve it
+                eclwild = os.path.join(self.regress.dir_ec, ecl)
+                eclFiles.extend( glob.glob(eclwild))
+            else:
+                # We have simple ECL file in parameter list, put it on the eclfile list
+                eclPath = os.path.join(self.regress.dir_ec, ecl)
+                if os.path.isfile(eclPath):
+                    eclFiles.append(eclPath)
+                else:
+                    logging.error("%s. ECL file '%s' doesn't exist!" % (1,  eclPath))
+                    raise Error("4001")
+
+        if len(eclFiles) > 1:
+            # Remove duplicates
+            tempList = list(set(eclFiles))
+            eclFiles = tempList
+
+            # Sort ECL filenames
+            eclFiles.sort()
+
+        return eclFiles
 
     def main(self):
         prog = "ecl-test"
@@ -217,6 +222,8 @@ class RegressMain:
                                 type=checkPqParam,  default = 1,   metavar="flushDiskCachePolicy")
         executionParser.add_argument('--runcount', help="Execute individual test case(s) in given times. Default value is 1",
                                 type=checkPqParam,  default = 1,   metavar="runcount")
+        executionParser.add_argument('--excludeFile', '--ef', help="Exclude files of suite. Wildcard is enabled. Default value is 'none'",
+                                nargs=1,  default = ['none'],   metavar="filespec[,filespec,...]")
 
 
         parser = argparse.ArgumentParser(prog=prog, description=description,  parents=[helperParser, commonParser,  executionParser])
@@ -383,6 +390,18 @@ class RegressMain:
 
             self.regress = Regression(self.args)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
+
+            # process file exclusion
+            if self.args.excludeFile[0] != 'none':
+                excludeFiles = []
+                excludeItems = self.args.excludeFile[0].split(',')
+                excludeFiles = self.processEclList(excludeItems)
+
+                self.args.excludeFileSet = set(excludeFiles)
+                pass
+            else:
+                self.args.excludeFileSet = set()
+
 
             if self.args.func == 'list':
                 self.listClusters()
