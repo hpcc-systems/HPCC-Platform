@@ -4776,7 +4776,11 @@ int setDaliServerTrace(byte flags)
 #include "unittests.hpp"
 #include "rmtfile.hpp"
 
-static unsigned serverPort = DAFILESRV_PORT+1; // do not use standard port, which if in a URL will be converted to local parth if IP is local
+/* MP_START_PORT -> MP_END_PORT is the MP reserved dynamic port range, and is used here for convenience.
+ * MP_START_PORT is used as starting point to find an available port for the temporary dafilesrv service in these unittests.
+ * All (MP) components using this range always check and find an unused port.
+ */
+static unsigned serverPort = MP_START_PORT;
 static StringBuffer basePath;
 static Owned<CSimpleInterface> serverThread;
 

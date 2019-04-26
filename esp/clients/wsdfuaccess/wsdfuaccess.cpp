@@ -566,12 +566,12 @@ class DFUAccessTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testDaFsStreamingGrouped);
         CPPUNIT_TEST(testDaFsStreamingCompressedAndGrouped);
         CPPUNIT_TEST(testFinish);
-   CPPUNIT_TEST_SUITE_END();
+    CPPUNIT_TEST_SUITE_END();
 
-   unsigned serverPort = DAFILESRV_PORT+1; // do not use standard port, which if in a URL will be converted to local path if IP is local
-   StringBuffer basePath;
-   Owned<CSimpleInterface> serverThread;
-   Owned<IFileDescriptor> fileDesc;
+    static unsigned serverPort;
+    StringBuffer basePath;
+    Owned<CSimpleInterface> serverThread;
+    Owned<IFileDescriptor> fileDesc;
 protected:
     void testStartServer()
     {
@@ -771,9 +771,15 @@ protected:
     }
 };
 
+/* MP_START_PORT -> MP_END_PORT is the MP reserved dynamic port range, and is used here for convenience.
+ * MP_START_PORT is used as starting point to find an available port for the temporary dafilesrv service in these unittests.
+ * All (MP) components using this range always check and find an unused port.
+ */
+unsigned DFUAccessTests::serverPort = MP_START_PORT;
+
+
 CPPUNIT_TEST_SUITE_REGISTRATION( DFUAccessTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DFUAccessTests, "DFUAccessTests" );
 
 
 #endif // _USE_CPPUNIT
-
