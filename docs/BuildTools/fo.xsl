@@ -1,4 +1,4 @@
-﻿<?xml version='1.0'?>
+<?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:fo="http://www.w3.org/1999/XSL/Format"
                 version='1.0'>
@@ -138,12 +138,13 @@
 
 <!--para-syntax-role-elim-hyph-17-->
 <xsl:template match="para[@role='syntax']">
-  <fo:block>
+  <fo:block space-after="6pt" space-before="12pt" space-before.precedence="1">
    <xsl:attribute name="hyphenate">false</xsl:attribute>
    <xsl:attribute name="text-align">left</xsl:attribute>
-    <xsl:apply-templates/>
+  <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
+
 
 
 

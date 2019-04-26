@@ -23,8 +23,8 @@
   </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-  :=<emphasis role="bold"> ]
+  <para role="syntax"><emphasis
+  role="bold">[</emphasis><emphasis>attr</emphasis> :=<emphasis role="bold"> ]
   OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">]</emphasis><emphasis> ,file
@@ -41,8 +41,8 @@
   role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-  :=<emphasis role="bold"> ]
+  <para role="syntax"><emphasis
+  role="bold">[</emphasis><emphasis>attr</emphasis> :=<emphasis role="bold"> ]
   OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">]</emphasis><emphasis> , file </emphasis><emphasis role="bold">
@@ -59,8 +59,8 @@
   role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-  :=<emphasis role="bold"> ]
+  <para role="syntax"><emphasis
+  role="bold">[</emphasis><emphasis>attr</emphasis> :=<emphasis role="bold"> ]
   OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">]</emphasis><emphasis> , file </emphasis><emphasis role="bold">
@@ -349,7 +349,7 @@
             <entry><emphasis role="bold">NAMED</emphasis></entry>
 
             <entry>Specifies the result name that appears in the workunit. Not
-            valid if the file parameter is present. </entry>
+            valid if the file parameter is present.</entry>
           </row>
 
           <row>
@@ -406,8 +406,8 @@
   <sect2 id="OUTPUT_Field_Names">
     <title>OUTPUT Field Names</title>
 
-    <para>Field names in an "on the fly" record format {...} must be unique or a
-    syntax error results. For example:</para>
+    <para>Field names in an "on the fly" record format {...} must be unique or
+    a syntax error results. For example:</para>
 
     <programlisting>          OUTPUT(person(), {module1.attr1, module2.attr1});</programlisting>
 
