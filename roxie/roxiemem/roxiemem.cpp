@@ -5006,8 +5006,7 @@ protected:
             CHeap & heap = fixedHeaps.item(i);
             if (heap.matches(chunkSize, activityId, flags))
             {
-                heap.Link();
-                if (heap.isAlive())
+                if (heap.isAliveAndLink())
                     return &heap;
             }
         }

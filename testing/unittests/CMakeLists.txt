@@ -34,6 +34,7 @@ set (    SRCS
          dalitests.cpp
          jlibtests.cpp
          cryptotests.cpp
+         hqltests.cpp
          configmgr/ConfigMgrUnitTests.cpp
          configmgr/ConfigMgrTemplateTests.cpp
          configmgr/ConfigMgrHPCCTests.cpp
@@ -52,6 +53,7 @@ include_directories (
          ./../../common/deftype
          ./../../system/security/cryptohelper
          ./../../configuration/configmgr/configmgrlib
+         ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss

@@ -12686,13 +12686,14 @@ bool verifySimplifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simpli
 
 int testHqlInternals()
 {
-    printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u) prop(%u)\n",
+    printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u) prop(%u) loc(%u)\n",
             (unsigned)sizeof(CHqlConstant),
             (unsigned)sizeof(CHqlExpressionWithType),
             (unsigned)sizeof(CHqlSelectExpression),
             (unsigned)sizeof(CHqlDataset),
             (unsigned)sizeof(CHqlAnnotation),
-            (unsigned)sizeof(CHqlDynamicProperty)
+            (unsigned)sizeof(CHqlDynamicProperty),
+            (unsigned)sizeof(CHqlLocationAnnotation)
             );
 
     //

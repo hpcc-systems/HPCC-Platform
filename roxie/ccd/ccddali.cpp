@@ -668,8 +668,7 @@ public:
     static IRoxieDaliHelper *connectToDali(unsigned waitToConnect)
     {
         CriticalBlock b(daliHelperCrit);
-        LINK(daliHelper);
-        if (!daliHelper || !daliHelper->isAlive())
+        if (!daliHelper || !daliHelper->isAliveAndLink())
             daliHelper = new CRoxieDaliHelper();
         if (waitToConnect && fileNameServiceDali.length() && (!topology || !topology->getPropBool("@lockDali", false)))
         {

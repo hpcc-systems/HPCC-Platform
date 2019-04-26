@@ -107,8 +107,8 @@ public:
     static const CQueryDll *getQueryDll(const char *dllName, bool isExe)
     {
         CriticalBlock b(dllCacheLock);
-        CQueryDll *dll = LINK(dllCache.getValue(dllName));
-        if (dll && dll->isAlive())
+        CQueryDll *dll = dllCache.getValue(dllName);
+        if (dll && dll->isAliveAndLink())
             return dll;
         else
         {
@@ -1117,8 +1117,8 @@ public:
     {
         hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
         SpinBlock b(queriesCrit);
-        CQueryFactory *factory = LINK(queryMap.getValue(hv));
-        if (factory && factory->isAlive())
+        CQueryFactory *factory = queryMap.getValue(hv);
+        if (factory && factory->isAliveAndLink())
             return factory;
         else
             return NULL;

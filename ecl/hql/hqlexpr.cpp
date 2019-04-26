@@ -3980,8 +3980,7 @@ IHqlExpression * CHqlExpression::commonUpExpression()
         if (match == this)
             return this;
 #endif
-        match->Link();
-        if (!static_cast<CHqlExpression *>(match)->isAlive())
+        if (!static_cast<CHqlExpression *>(match)->isAliveAndLink())
         {
             exprCache->replace(*this);
 #ifdef GATHER_COMMON_STATS
@@ -4973,7 +4972,6 @@ void CHqlRealExpression::setOperands(HqlExprArray & _ownedOperands)
 
 bool CHqlRealExpression::equals(const IHqlExpression & other) const
 {
-    if (!isAlive()) return false;
 #ifndef CONSISTENCY_CHECK
     if (this == &other)
         return true;
@@ -6191,7 +6189,6 @@ CHqlConstant *CHqlConstant::makeConstant(IValue *_val)
 
 bool CHqlConstant::equals(const IHqlExpression & other) const
 {
-    if (!isAlive()) return false;
     IValue * oval = other.queryValue();
     if (oval)
         if (val->queryType() == oval->queryType())
@@ -7089,7 +7086,6 @@ void CHqlAnnotation::sethash()
 
 bool CHqlAnnotation::equals(const IHqlExpression & other) const
 {
-    if (!isAlive()) return false;
     if (getAnnotationKind() != other.getAnnotationKind())
         return false;
 

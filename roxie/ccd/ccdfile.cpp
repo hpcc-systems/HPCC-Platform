@@ -390,7 +390,7 @@ public:
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { throwUnexpected(); return 0; }
 
     virtual const char *queryFilename() { return logical->queryFilename(); }
-    virtual bool isAlive() const { return CInterface::isAlive(); }
+    virtual bool isAliveAndLink() const { return CInterface::isAliveAndLink(); }
 
     virtual IMemoryMappedFile *getMappedFile() override
     {
@@ -998,9 +998,9 @@ public:
                     if (todo.ordinality())
                     {
                         ILazyFileIO *popped = &todo.popGet();
-                        if (popped->isAlive())
+                        if (popped->isAliveAndLink())
                         {
-                            next.set(popped);
+                            next.setown(popped);
                         }
                         numFilesToProcess--;    // must decrement counter for SNMP accuracy
                     }
@@ -1164,9 +1164,10 @@ public:
         try
         {
             CriticalBlock b(crit);
-            Linked<ILazyFileIO> f = files.getValue(localLocation);
-            if (f && f->isAlive())
+            ILazyFileIO * match = files.getValue(localLocation);
+            if (match && match->isAliveAndLink())
             {
+                Owned<ILazyFileIO> f = match;
                 if ((dfsSize != (offset_t) -1 && dfsSize != f->getSize()) ||
                     (!dfsDate.isNull() && !dfsDate.equals(*f->queryDateTime(), false)))
                 {
@@ -1274,29 +1275,35 @@ public:
             CriticalBlock b(cpcrit); // paranoid...
             closePending[remote] = false;
         }
-        CriticalBlock b(crit);
-        ICopyArrayOf<ILazyFileIO> goers;
-        HashIterator h(files);
-        ForEach(h)
+        IArrayOf<ILazyFileIO> goers;
         {
-            ILazyFileIO *f = files.mapToValue(&h.query());
-            if (f->isAlive() && f->isOpen() && f->isRemote()==remote && !f->isCopying())
+            CriticalBlock b(crit);
+            HashIterator h(files);
+            ForEach(h)
             {
-                unsigned age = msTick() - f->getLastAccessed();
-                if (age > maxFileAge[remote])
+                ILazyFileIO * match = files.mapToValue(&h.query());
+                if (match->isAliveAndLink())
                 {
-                    if (traceLevel > 5)
+                    Owned<ILazyFileIO> f = match;
+                    if (f->isOpen() && f->isRemote()==remote && !f->isCopying())
                     {
-                        // NOTE - querySource will cause the file to be opened if not already open
-                        // That's OK here, since we know the file is open and remote.
-                        // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
-                        const char *fname = remote ? f->querySource()->queryFilename() : f->queryFilename();
-                        DBGLOG("Closing inactive %s file %s (last accessed %u ms ago)", remote ? "remote" : "local",  fname, age);
+                        unsigned age = msTick() - f->getLastAccessed();
+                        if (age > maxFileAge[remote])
+                        {
+                            if (traceLevel > 5)
+                            {
+                                // NOTE - querySource will cause the file to be opened if not already open
+                                // That's OK here, since we know the file is open and remote.
+                                // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
+                                const char *fname = remote ? f->querySource()->queryFilename() : f->queryFilename();
+                                DBGLOG("Closing inactive %s file %s (last accessed %u ms ago)", remote ? "remote" : "local",  fname, age);
+                            }
+                            f->close();
+                        }
+                        else
+                            goers.append(*f.getClear());
                     }
-                    f->close();
                 }
-                else
-                    goers.append(*f);
             }
         }
         unsigned numFilesLeft = goers.ordinality(); 
@@ -2414,9 +2421,9 @@ public:
         cached = cache;
     }
 
-    virtual bool isAlive() const
+    virtual bool isAliveAndLink() const
     {
-        return CInterface::isAlive();
+        return CInterface::isAliveAndLink();
     }
     virtual const char *queryFileName() const
     {
