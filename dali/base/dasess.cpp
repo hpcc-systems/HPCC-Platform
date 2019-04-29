@@ -86,7 +86,7 @@ interface ISessionManagerServer: implements IConnectionMonitor
     virtual void stopSession(SessionId sessid,bool failed) = 0;
     virtual void setClientAuth(IDaliClientAuthConnection *authconn) = 0;
     virtual void setLDAPconnection(IDaliLdapConnection *_ldapconn) = 0;
-    virtual bool authorizeConnection(int role,bool revoke) = 0;
+    virtual bool authorizeConnection(INode *client, DaliClientRole role) = 0;
     virtual void start() = 0;
     virtual void ready() = 0;
     virtual void stop() = 0;
@@ -372,13 +372,7 @@ public:
     bool remove(const CProcessSessionState *state, ISessionManagerServer *manager)
     {
         CHECKEDCRITICALBLOCK(mapprocesssect,60000);
-        if (SuperHashTableOf<CProcessSessionState,INode>::removeExact((CProcessSessionState *)state))
-        {
-            if (manager)
-                manager->authorizeConnection(state->queryRole(), true);
-            return true;
-        }
-        return false;
+        return SuperHashTableOf<CProcessSessionState,INode>::removeExact((CProcessSessionState *)state);
     }
 
     unsigned count()
@@ -525,11 +519,18 @@ public:
                 int role=0;
                 if (mb.length()-mb.getPos()>=sizeof(role)) { // a capability block present
                     mb.read(role);
-                    if (!manager.authorizeConnection(role,false)) {
+                    if (!manager.authorizeConnection(node, (DaliClientRole) role))
+                    {
+                        MilliSleep(100+getRandom()%1000); // Causes client to 'work' for a short time.
                         SocketEndpoint sender = mb.getSender();
                         mb.clear();
+                        mb.append((SessionId) 0);
+                        INode *na = queryNullNode();
+                        Owned<IGroup> dummyCoven = createIGroup(1, &na);
+                        dummyCoven->serialize(mb);
+                        Owned<IException> e = makeStringException(666, "Access denied!");
+                        serializeException(e, mb);
                         coven.reply(mb);
-                        MilliSleep(100+getRandom()%1000); // Causes client to 'work' for a short time.
                         Owned<INode> node = createINode(sender);
                         coven.disconnect(node);
                         break;
@@ -1101,12 +1102,6 @@ public:
         assertex(!"setLdapFlags called on client");
     }
 
-    bool authorizeConnection(DaliClientRole,bool)
-    {
-        return true;
-    }
-
-
     SessionId startSession(SecurityToken tok, SessionId parentid)
     {
         CMessageBuffer mb;
@@ -1322,7 +1317,6 @@ public:
         workthreadsem.signal(10);
         stopping = false;
         ldapsig.signal();
-
     }
     ~CCovenSessionManager()
     {
@@ -1634,7 +1628,7 @@ public:
     }
 
 
-    bool authorizeConnection(int role,bool revoke)
+    bool authorizeConnection(INode *client, DaliClientRole role)
     {
         return true;
     }
@@ -2021,6 +2015,8 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
                 }
                 mb.read(mySessionId);
                 retcoven = deserializeIGroup(mb);
+                if (!mySessionId)
+                    throw deserializeException(mb);
                 return true;
             }
         }
