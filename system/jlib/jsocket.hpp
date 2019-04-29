@@ -95,6 +95,7 @@ public:
     bool isIp4() const;
     StringBuffer &getIpText(StringBuffer & out, bool getIP=false) const;
     StringBuffer &getHostText(StringBuffer & out) const;
+    void setHostText(const char *host);
     void ipserialize(MemoryBuffer & out) const;         
     void ipdeserialize(MemoryBuffer & in);          
     unsigned ipdistance(const IpAddress &ip,unsigned offset=0) const;       // network order distance (offset: 0-3 word (leat sig.), 0=Ipv4)
@@ -103,7 +104,7 @@ public:
                                             // returns number in range (use ipincrement to iterate through)
 
     size32_t getNetAddress(size32_t maxsz,void *dst) const;     // for internal use - returns 0 if address doesn't fit
-    void setNetAddress(size32_t sz,const void *src);            // for internal use
+    void setNetAddress(size32_t sz,const void *src, bool lookupHost=true); // for internal use
     void copyAddress(unsigned *other);                          // for internal use
     int addrcompare(const unsigned *other) const;               // for internal use
 

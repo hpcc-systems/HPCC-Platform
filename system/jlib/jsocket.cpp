@@ -2933,13 +2933,14 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
                 continue;
             char host[128];
             getnameinfo(&item->ifr_addr, sizeof(item->ifr_addr), host, sizeof(host), 0, 0, NI_NUMERICHOST);
+            // MCK - TODO handle h_name like below, without requiring a lookup ...
             IpAddress iptest(host);
 #else
             IpAddress iptest;
             if (((struct sockaddr *)&item->ifr_addr)->sa_family == AF_INET6)
-                iptest.setNetAddress(sizeof(in_addr6),&(((struct sockaddr_in6 *)&item->ifr_addr)->sin6_addr));
+                iptest.setNetAddress(sizeof(in_addr6),&(((struct sockaddr_in6 *)&item->ifr_addr)->sin6_addr), false);
             else
-                iptest.setNetAddress(sizeof(in_addr),&(((struct sockaddr_in *)&item->ifr_addr)->sin_addr));
+                iptest.setNetAddress(sizeof(in_addr),&(((struct sockaddr_in *)&item->ifr_addr)->sin_addr), false);
 #endif
             if (ioctl(fd, SIOCGIFFLAGS, item) < 0)
             {
@@ -2951,6 +2952,11 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
                 continue;
             }
             bool isLoopback = iptest.isLoopBack() || ((item->ifr_flags & IFF_LOOPBACK) != 0);
+            // MCK - if it is a loopback addr do we use localhost for h_name ?
+            if (isLoopback)
+                iptest.setHostText("localhost");
+            else
+                iptest.setHostText(GetCachedHostName());
             bool isUp = (item->ifr_flags & IFF_UP) != 0;
             if ((isLoopback==useLoopback) && isUp)
             {
@@ -3073,6 +3079,8 @@ bool getInterfaceName(StringBuffer &ifname)
 #else
     IpAddress myIp;
     GetHostIp(myIp);
+    StringBuffer myIpStr;
+    myIp.getIpText(myIpStr, true);
 
     int fd = socket(AF_INET, SOCK_DGRAM, 0);  // IPV6 TBD
     if (fd<0)
@@ -3095,8 +3103,9 @@ bool getInterfaceName(StringBuffer &ifname)
     for (unsigned i=0; i<n; i++)
     {
         struct ifreq *item = &ifr[i];
-        IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
-        if (iptest.ipequals(myIp))
+        // MCK - ok to compare raw IPs to find matching interface
+        char *ifIpStr = inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr);
+        if (streq(myIpStr.str(), ifIpStr))
         {
             ifname.set(item->ifr_name);
             close(fd);
@@ -3592,6 +3601,11 @@ StringBuffer & IpAddress::getHostText(StringBuffer & out) const
     return out.append(h_name);
 }
 
+void IpAddress::setHostText(const char *host)
+{
+    strcpy(h_name, host);
+}
+
 void IpAddress::ipserialize(MemoryBuffer & out) const
 {
     if (((netaddr[2]==0xffff0000)||(netaddr[2]==0))&&(netaddr[1]==0)&&(netaddr[0]==0)) {
@@ -3753,7 +3767,7 @@ size32_t IpAddress::getNetAddress(size32_t maxsz,void *dst) const
     return 0;
 }
 
-void IpAddress::setNetAddress(size32_t sz,const void *src)
+void IpAddress::setNetAddress(size32_t sz,const void *src, bool lookupHost)
 {
     if (sz==sizeof(unsigned)) { // IPv4
         netaddr[0] = 0;
@@ -3769,7 +3783,7 @@ void IpAddress::setNetAddress(size32_t sz,const void *src)
     else
         memset(&netaddr,0,sizeof(netaddr));
 
-    if (getResolveHN())
+    if (lookupHost && getResolveHN())
     {
         // check these cases first
         if (isLoopBack())
