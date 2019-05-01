@@ -127,15 +127,15 @@ class Regression:
     def setLogLevel(self, level):
         self.log.setLevel(level)
 
-    def bootstrap(self, cluster, args,   fileList=None):
+    def bootstrap(self, engine, cluster, args,   fileList=None):
         self.createDirectory(self.regressionDir)
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
         self.createDirectory(self.dir_zap)
 
-        self.suites[cluster] = Suite(cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, False, fileList)
-        self.maxtasks = len(self.suites[cluster].getSuite())
+        self.suites[engine] = Suite(engine, cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, False, fileList)
+        self.maxtasks = len(self.suites[engine].getSuite())
 
     def createDirectory(self, dir_n):
         if not os.path.isdir(dir_n):
@@ -149,7 +149,7 @@ class Regression:
         self.createDirectory(self.dir_zap)
         self.setupDir = ExpandCheck.dirExists(os.path.join(self.suiteDir, self.config.setupDir), True)
         logging.debug("Setup Dir      : %s", self.setupDir)
-        self.setupSuite = Suite(args.target, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, True)
+        self.setupSuite = Suite(args.engine,  args.cluster, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, True)
         self.maxtasks = len(self.setupSuite.getSuite())
         return self.setupSuite
 
@@ -195,11 +195,8 @@ class Regression:
     def displayReport(report,  elapsTime=0):
         report[0].display(report[1],  elapsTime)
 
-    def runSuiteP(self, name, suite):
-        if name == "setup":
-            cluster = 'hthor'
-        else:
-            cluster = name
+    def runSuiteP(self, name, cluster, suite):
+        engine = name
 
         logName = name
         if 'setup' in suite.getSuiteName():
@@ -252,7 +249,7 @@ class Regression:
                             self.taskParam[startThreadId]['jobName'] = query.getJobname()
                             self.taskParam[startThreadId]['retryCount'] = int(self.config.maxAttemptCount)
                             self.exitmutexes[startThreadId].acquire()
-                            thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  startThreadId))
+                            thread.start_new_thread(self.runQuery, (engine, cluster, query, report, cnt, suite.testPublish(query.ecl),  startThreadId))
                             started = True
                             break
 
@@ -395,7 +392,7 @@ class Regression:
         self.timeoutThread.cancel()
         time.sleep(2)
 
-    def runSuite(self, name, suite):
+    def runSuite(self, engine, name, suite):
         if name == "setup":
             cluster = 'hthor'
         else:
@@ -429,7 +426,7 @@ class Regression:
                 self.retryCount = int(self.config.maxAttemptCount)
                 query.setTimeout(self.timeouts[th])
                 self.exitmutexes[th].acquire()
-                thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  th))
+                thread.start_new_thread(self.runQuery, (engine, cluster, query, report, cnt, suite.testPublish(query.ecl),  th))
                 time.sleep(0.1)
                 self.CheckTimeout(cnt, th,  query)
                 cnt += 1
@@ -455,7 +452,7 @@ class Regression:
             suite.close()
             raise(e)
 
-    def runSuiteQ(self, clusterName, eclfile):
+    def runSuiteQ(self, engine, clusterName, eclfile):
         report = self.buildLogging(clusterName)
         logging.debug("runSuiteQ( clusterName:'%s', eclfile:'%s')",  clusterName,  eclfile.ecl,  extra={'taskId':0})
 
@@ -482,7 +479,7 @@ class Regression:
                 self.timeouts[threadId] = self.timeout
             self.retryCount = int(self.config.maxAttemptCount)
             self.exitmutexes[threadId].acquire()
-            thread.start_new_thread(self.runQuery, (cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
+            thread.start_new_thread(self.runQuery, (engine, cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
             time.sleep(0.1)
             self.CheckTimeout(cnt, threadId,  eclfile)
 
@@ -500,11 +497,11 @@ class Regression:
             eclfile.close()
             raise(e)
 
-    def runQuery(self, cluster, query, report, cnt=1, publish=False,  th = 0):
+    def runQuery(self, engine, cluster, query, report, cnt=1, publish=False,  th = 0):
         startTime = time.time()
         self.loggermutex.acquire()
 
-        logging.debug("runQuery(cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( cluster, query.ecl, cnt, publish,  th))
+        logging.debug("runQuery(engine: '%s', cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( engine, cluster, query.ecl, cnt, publish,  th))
         logging.warn("%3d. Test: %s" % (cnt, query.getBaseEclRealName()),  extra={'taskId':cnt})
 
         self.loggermutex.release()
@@ -530,13 +527,13 @@ class Regression:
                 eclCmd = ECLcmd()
                 try:
                     if publish:
-                        res = eclCmd.runCmd("publish", cluster, query, report[0],
+                        res = eclCmd.runCmd("publish", engine, cluster, query, report[0],
                                           server=self.config.espIp,
                                           username=self.config.username,
                                           password=self.config.password,
                                           retryCount=self.config.maxAttemptCount)
                     else:
-                        res = eclCmd.runCmd("run", cluster, query, report[0],
+                        res = eclCmd.runCmd("run", engine, cluster, query, report[0],
                                           server=self.config.espIp,
                                           username=self.config.username,
                                           password=self.config.password,

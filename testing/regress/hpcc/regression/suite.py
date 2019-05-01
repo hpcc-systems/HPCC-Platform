@@ -29,11 +29,11 @@ from ..common.error import Error
 from ..util.util import getConfig
 
 class Suite:
-    def __init__(self, clusterName, dir_ec, dir_a, dir_ex, dir_r, logDir, dir_inc, args, isSetup=False,  fileList = None):
+    def __init__(self, engine,  clusterName, dir_ec, dir_a, dir_ex, dir_r, logDir, dir_inc, args, isSetup=False,  fileList = None):
         self.clusterName = clusterName
-        self.targetName = clusterName
+        self.targetName = engine
         if isSetup:
-            self.targetName = 'setup_'+clusterName
+            self.targetName = 'setup_'+engine
 
         self.args=args
         self.suite = []
@@ -113,6 +113,11 @@ class Suite:
                         if not exclude:
                             exclude = eclfile.testExclusion(self.targetName)
                             exclusionReason=' ECL excluded'
+
+                        if not exclude:
+                            if ecl in args.excludeFileSet:
+                                exclude = True
+                                exclusionReason=' ECL excluded by --excludeFile parameter'
 
                         if not exclude:
                             self.addFileToSuite(eclfile)
