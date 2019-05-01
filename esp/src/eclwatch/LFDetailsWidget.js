@@ -462,6 +462,14 @@ define([
                 this.setDisabled(this.id + "_Workunit", this.logicalFile.isDeleted());
                 this.setDisabled(this.id + "_DFUWorkunit", this.logicalFile.isDeleted());
                 this.setDisabled(this.id + "ReplicateDropDown", !this.logicalFile.CanReplicateFlag || this.logicalFile.ReplicateFlag === false);
+
+                if (this.params.Name) {
+                    var nameParts = this.params.Name.split("::");
+                    if (nameParts.length) {
+                        var filename = nameParts[nameParts.length - 1];
+                        registry.byId(this.id + "DesprayTargetName").set("value", filename);
+                    }
+                }
             }
         });
     });
