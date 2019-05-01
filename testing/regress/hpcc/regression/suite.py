@@ -115,7 +115,7 @@ class Suite:
                             exclusionReason=' ECL excluded'
 
                         if not exclude:
-                            if file in args.excludeFileSet:
+                            if ecl in args.excludeFileSet:
                                 exclude = True
                                 exclusionReason=' ECL excluded by --excludeFile parameter'
 
