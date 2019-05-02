@@ -71,7 +71,7 @@ if(SPARK)
 
     if(NOT DFSCLIENT_JAR)    
         if(NOT DFSCLIENT_VERSION)
-            set(DFSCLIENT_VERSION "7.2.6")
+            set(DFSCLIENT_VERSION "7.2.8")
         endif()
         file(DOWNLOAD
             ${CENTRAL_REPO}/org/hpccsystems/dfsclient/${DFSCLIENT_VERSION}/dfsclient-${DFSCLIENT_VERSION}-jar-with-dependencies.jar
