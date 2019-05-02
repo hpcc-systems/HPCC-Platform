@@ -1,5 +1,5 @@
 ﻿################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC SystemsÂ®.
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,19 +13,5 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-
-#DOCBOOK_TO_PDF( ${FO_XSL} ECLWTechPrev.xml "ECLWatch" "ECLWa_mods")
-
-DOCBOOK_TO_PDF( ${FO_XSL} TheECLWatchMan.xml "The_ECL_Watch_Manual" "ECLWa_mods")
-
-IF(MAKE_DOCS)
-  SET(HELP_DEPENDENCIES)
-  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
-  FOREACH(T ${Current_Targets})
-    IF("${T}" MATCHES ".*The_ECL_Watch_Manual.*")
-      LIST(APPEND HELP_DEPENDENCIES  ${T})
-     ENDIF()
-  ENDFOREACH()
-
-  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/TheECLWatchMan.xml" ${PORTAL_HTML_DIR}/ECLWatchMan  "eclwatch_man_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
-ENDIF(MAKE_DOCS)
+get_filename_component(DOC_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../BuildTools/cmake_config/${DOC_DIR_NAME}.txt)
