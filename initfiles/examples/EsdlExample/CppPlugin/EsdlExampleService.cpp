@@ -7,13 +7,13 @@ CppEchoPersonInfoResponse* EsdlExampleService::CppEchoPersonInfo(EsdlContext* co
 {
     Owned<CppEchoPersonInfoResponse> resp = new CppEchoPersonInfoResponse();
     //Fill in logic
-    resp->count.setown(new Integer(0));
-    if(request->Name)
+    resp->m_count.setown(new Integer(0));
+    if (request->m_Name)
     {
-        resp->count.setown(new Integer(1));
-        resp->Name.set(request->Name.get());
+        resp->m_count.setown(new Integer(1));
+        resp->m_Name.set(request->m_Name.get());
     }
-    appendArray(resp->Addresses, request->Addresses);
+    appendArray(resp->m_Addresses, request->m_Addresses);
     return resp.getClear();
 }
 

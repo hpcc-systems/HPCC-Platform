@@ -205,7 +205,7 @@ protected:
             superSubIndex++;
             f = &iter->query();
             if (width != f->numParts()-1)
-                throw MakeActivityException(this, 0, "Super key %s, with mixture of sub key width are not supported.", f->queryLogicalName());
+                throw MakeActivityException(this, 0, "Unsupported: Super key '%s' contains subfiles with differing numbers of file parts.", f->queryLogicalName());
         }
     }
 

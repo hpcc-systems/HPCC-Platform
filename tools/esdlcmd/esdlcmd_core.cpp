@@ -1013,7 +1013,9 @@ public:
             DBGLOG("ATTENTION: File %s already exists, won't generate again", filefullpath.str());
         else
         {
-            cmdHelper.defHelper->loadTransform( xsltpath, NULL, EsdlXslToCppCMake);
+            Owned<IProperties> params = createProperties();
+            params->setProp("installdir", INSTALL_DIR);
+            cmdHelper.defHelper->loadTransform( xsltpath, params.get(), EsdlXslToCppCMake);
             cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppCMake, NULL, optFlags );
             saveAsFile(sourcedir.str(), "CMakeLists.txt", outputBuffer.str(), NULL);
         }
