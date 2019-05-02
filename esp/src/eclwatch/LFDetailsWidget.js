@@ -399,7 +399,7 @@ define([
                     var superOwner = [];
                     if (newValue.DFULogicalFile.length > 0) {
                         this.setDisabled(this.id + "_FileBelongs", false);
-                        for (var i = 0; newValue.DFULogicalFile.length; ++i) {
+                        for (var i = 0; i < newValue.DFULogicalFile.length; ++i) {
                             superOwner.push(newValue.DFULogicalFile[i].Name);
                             this.updateInput("SuperOwner", oldValue, superOwner);
                         }

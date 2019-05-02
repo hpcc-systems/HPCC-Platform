@@ -446,12 +446,6 @@ define([
                     this.checkIfWarning();
                 }
 
-                ESPUtil.MonitorVisibility(this.workunitsTab, function (visibility) {
-                    if (visibility) {
-                        context.checkIfWarning();
-                    }
-                });
-
                 this.filter.on("clear", function (evt) {
                     context.refreshHRef();
                     context.refreshGrid();
