@@ -658,11 +658,11 @@ define([
                                 return node;
                             }
                         }),
-                        Owner: { label: this.i18n.Owner, width: 72 },
+                        Owner: { label: this.i18n.Owner, width: 75 },
                         SuperOwners: { label: this.i18n.SuperOwner, width: 150 },
-                        Description: { label: this.i18n.Description, width: 153 },
+                        Description: { label: this.i18n.Description, width: 150 },
                         NodeGroup: { label: this.i18n.Cluster, width: 108 },
-                        RecordCount: { label: this.i18n.Records, width: 72 },
+                        RecordCount: { label: this.i18n.Records, width: 85 },
                         IntSize: {
                             label: this.i18n.Size, width: 100,
                             formatter: function (intsize, row) {
@@ -673,8 +673,8 @@ define([
                                 }
                             }
                         },
-                        Parts: { label: this.i18n.Parts, width: 45 },
-                        Modified: { label: this.i18n.ModifiedUTCGMT, width: 155 }
+                        Parts: { label: this.i18n.Parts, width: 60 },
+                        Modified: { label: this.i18n.ModifiedUTCGMT, width: 162 }
                     }
                 }, this.id + "WorkunitsGrid");
 
