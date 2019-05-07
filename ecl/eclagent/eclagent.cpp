@@ -1985,7 +1985,7 @@ void EclAgent::doProcess()
             unsigned errCode = 0;
             try
             {
-               if (!dir->remove())
+               if (dir->exists() && dir->isDirectory() && !dir->remove())
                     rmMsg.append("Failed to remove temporary directory: ").append(jobTempDir.str());
             }
             catch (IException *e)
