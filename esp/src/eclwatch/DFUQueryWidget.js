@@ -660,11 +660,7 @@ define([
                         IntSize: {
                             label: this.i18n.Size, width: 100,
                             formatter: function (intsize, row) {
-                                if (intsize === null || intsize === undefined) {
-                                    return 0;
-                                } else {
-                                    return Utility.convertedSize(intsize);
-                                }
+                                return Utility.convertedSize(intsize);
                             }
                         },
                         Parts: { label: this.i18n.Parts, width: 60 },
