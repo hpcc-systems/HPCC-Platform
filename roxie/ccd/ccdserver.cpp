@@ -12290,6 +12290,7 @@ public:
             duplicateKeyCount = builder->getDuplicateCount();
             cummulativeDuplicateKeyCount += duplicateKeyCount;
             builder->finish(metadata, &fileCrc);
+            clearKeyStoreCache(false);
         }
     }
 
