@@ -231,15 +231,21 @@ void applySubString(TransitionMask & mask, const RtlTypeInfo & type, MemoryBuffe
     MemoryBuffer resized;
     getStretchedValue(resized, truncType, type, value);
 
-    buff.clear();
-    getStretchedValue(buff, type, truncType, resized.bytes());
+    MemoryBuffer stretched;
+    getStretchedValue(stretched, type, truncType, resized.bytes());
 
-    // x >= 'ab' becomes x > 'a' => clear the equal item
-    // x < 'ab' becomes x <= 'a' => set the equal item
-    if (mask & CMPlt)
-        mask |= CMPeq;
-    else if (mask & CMPgt)
-        mask &= ~CMPeq;
+    //Work around for a problem comparing data values
+    if (type.compare((const byte *)stretched.toByteArray(), value) != 0)
+    {
+        // x >= 'ab' becomes x > 'a' => clear the equal item
+        // x < 'ab' becomes x <= 'a' => set the equal item
+        if (mask & CMPlt)
+            mask |= CMPeq;
+        else if (mask & CMPgt)
+            mask &= ~CMPeq;
+    }
+    //value may have come from buff, so only modify the output when the function is finished.
+    stretched.swapWith(buff);
 }
 
 void checkSubString(TransitionMask & mask, const RtlTypeInfo & type, MemoryBuffer & buff, size32_t subLength)

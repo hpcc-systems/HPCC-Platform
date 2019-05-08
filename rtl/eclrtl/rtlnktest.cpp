@@ -925,6 +925,7 @@ protected:
     const RtlStringTypeInfo str2 = RtlStringTypeInfo(type_string, 2);
     const RtlStringTypeInfo str4 = RtlStringTypeInfo(type_string, 4);
     const RtlStringTypeInfo strx = RtlStringTypeInfo(type_string|RFTMunknownsize, 0);
+    const RtlDataTypeInfo data4 = RtlDataTypeInfo(type_data, 4);
     const RtlFieldInfo id = RtlFieldInfo("id", nullptr, &int2);
     const RtlFieldInfo extra = RtlFieldInfo("extra", nullptr, &strx);
     const RtlFieldInfo padding = RtlFieldInfo("padding", nullptr, &str1);
@@ -1422,6 +1423,19 @@ protected:
         testBound(str4, "X", 3, false, true, 4, "X  \xFF");
         testBound(str4, "A", 4, false, false, 4, "A  \x1F");
         testBound(str4, "X", 3, false, false, 4, "X \x1F\xFF");
+
+        //Lower bounds
+        testBound(data4, "X", MatchFullString, true, true, 4, "X\x00\x00\x00");
+        testBound(data4, "X", 4, true, true, 4, "X\x00\x00\x00");
+        testBound(data4, "X", 3, true, true, 4, "X\x00\x00\x00");
+        testBound(data4, "A", MatchFullString, true, false, 4, "A\x00\x00\x01");
+        testBound(data4, "A", 4, true, false, 4, "A\x00\x00\x01");
+        testBound(data4, "X", 3, true, false, 4, "X\x00\x01\x00");
+        //Upper bounds
+        testBound(data4, "X", 4, false, true, 4, "X\x00\x00\x00");
+        testBound(data4, "X", 3, false, true, 4, "X\x00\x00\xFF");
+        testBound(data4, "A", 4, false, false, 4, "@\xFF\xFF\xFF");
+        testBound(data4, "X", 3, false, false, 4, "W\xFF\xFF\xFF");
 
         //Horrible cases
         const RtlQStringTypeInfo qstr4(type_qstring, 4);

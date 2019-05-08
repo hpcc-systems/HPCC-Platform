@@ -437,6 +437,14 @@ IHqlExpression * castToFieldAndBack(IHqlExpression * left, IHqlExpression * righ
             return ensureExprType(castToField, rightType);
         }
     case no_substring:
+    {
+        OwnedHqlExpr cast = castToFieldAndBack(left->queryChild(0), right);
+        //Theoretically needed for all types.  In practice this only makes a difference for data since strings
+        //ignore trailing spaces
+        if (left->queryType()->getTypeCode() == type_data)
+            return replaceChild(left, 0, cast.getClear());
+        return cast.getClear();
+    }
     case no_add:
     case no_sub:
         return castToFieldAndBack(left->queryChild(0), right);

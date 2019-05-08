@@ -21,12 +21,16 @@ prefix := setup.Files(false, false).QueryFilePrefix;
 #onwarning (4522, ignore);
 #onwarning (4523, ignore);
 
-//version multiPart=false
+//version multiPart=false,isKeyed=true
+//version multiPart=false,isKeyed=false
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, false);
+isKeyed := #IFDEFINED(root.isKeyed, true);
 
 //--- end of version configuration ---
+
+mkKeyed(boolean value) := IF(isKeyed, KEYED(value), value);
 
 postcodes := DATASET([{'KT19 1AA'}, {'KT19 1AB'}, {'KT19 1AC'}, {'KT19 1AD'},
                       {'KT20 1AE'}, {'KT20 1AF'}, {'KT20 1AG'}, {'KT20 1AH'},
@@ -58,12 +62,12 @@ SET OF STRING PartialPostcodeStored2:= ['KT19','KT40','KT3 ','KT20 1AEEE', 'KT50
 SET OF STRING8 PartialPostcodeStored8:= ['KT19','KT40','KT3 ','KT50']:stored('PartialPostcode8');
 SET OF STRING3 PartialPostcodeStoredX:= ['KT2']:stored('PartialPostcodeX');
 
-partialmatch1 := INDX_Postcode( KEYED(postcode[1..4] IN PartialPostcode) );
-partialmatch2 := INDX_Postcode( KEYED(postcode[1..4] IN PartialPostcodeStored) );
-partialmatch3 := INDX_Postcode( KEYED(postcode[..4] IN PartialPostcodeStored) );
-partialmatch4 := INDX_Postcode( KEYED(postcode[..4] IN PartialPostcodestored2) );
-fullmatch1 := INDX_Postcode( KEYED(postcode IN PartialPostcodeStored) );
-fullmatch2 := INDX_Postcode( KEYED(postcode IN PartialPostcodeStored2) );
+partialmatch1 := INDX_Postcode( mkKeyed(postcode[1..4] IN PartialPostcode) );
+partialmatch2 := INDX_Postcode( mkKeyed(postcode[1..4] IN PartialPostcodeStored) );
+partialmatch3 := INDX_Postcode( mkKeyed(postcode[..4] IN PartialPostcodeStored) );
+partialmatch4 := INDX_Postcode( mkKeyed(postcode[..4] IN PartialPostcodestored2) );
+fullmatch1 := INDX_Postcode( mkKeyed(postcode IN PartialPostcodeStored) );
+fullmatch2 := INDX_Postcode( mkKeyed(postcode IN PartialPostcodeStored2) );
 
 four := 4 : stored('four');
 
@@ -71,10 +75,10 @@ partialmatch5 := INDX_Postcode( postcode[1..four] IN PartialPostcode );
 partialmatch6 := INDX_Postcode( postcode[1..four] IN PartialPostcodeStored );
 partialmatch7 := INDX_Postcode( postcode[..four] IN PartialPostcodeStored );
 partialmatch8 := INDX_Postcode( postcode[..four] IN PartialPostcodestored2 );
-partialmatch9 := INDX_Postcode( KEYED(postcode[..4] IN PartialPostcodestored8) );
-partialmatch10 := INDX_Postcode( KEYED(IF(four=4, postcode[..four] IN PartialPostcodestored8,true)) );
-partialmatch11 := INDX_Postcode( KEYED(postcode[..four] IN IF(four=4, PartialPostcodestored8, all)) );
-partialmatch12 := INDX_Postcode( KEYED(postcode[..four] IN PartialPostcodestored8) OR (KEYED(postcode[..3] IN PartialPostcodestoredX)) );
+partialmatch9 := INDX_Postcode( mkKeyed(postcode[..4] IN PartialPostcodestored8) );
+partialmatch10 := INDX_Postcode( mkKeyed(IF(four=4, postcode[..four] IN PartialPostcodestored8,true)) );
+partialmatch11 := INDX_Postcode( mkKeyed(postcode[..four] IN IF(four=4, PartialPostcodestored8, all)) );
+partialmatch12 := INDX_Postcode( mkKeyed(postcode[..four] IN PartialPostcodestored8) OR (mkKeyed(postcode[..3] IN PartialPostcodestoredX)) );
 
 SEQUENTIAL(
   outputraw,
