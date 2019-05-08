@@ -4617,13 +4617,18 @@ class CSocketSelectHandler: implements ISocketSelectHandler, public CInterface
     CIArrayOf<CSocketSelectThread> threads;
     CriticalSection sect;
     bool started;
+    std::atomic<bool> stopped;
     StringAttr selecttrace;
 public:
     IMPLEMENT_IINTERFACE;
     CSocketSelectHandler(const char *trc)
-        : selecttrace(trc)
+        : started(false), stopped(false), selecttrace(trc)
     {
-        started = false;
+    }
+    ~CSocketSelectHandler()
+    {
+        stop(true);
+        threads.kill();
     }
     void start()
     {
@@ -4639,6 +4644,8 @@ public:
     void add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
         CriticalBlock block(sect);
+        if (stopped)
+            return;
         for (;;) {
             bool added=false;
             ForEachItemIn(i,threads) {
@@ -4667,6 +4674,7 @@ public:
     {
         IException *e=NULL;
         CriticalBlock block(sect);
+        stopped = true;
         unsigned i = 0;
         while (i<threads.ordinality()) {
             CSocketSelectThread &t=threads.item(i);
@@ -5195,12 +5203,13 @@ class CSocketEpollHandler: implements ISocketSelectHandler, public CInterface
     CIArrayOf<CSocketEpollThread> threads;
     CriticalSection sect;
     bool started;
+    std::atomic<bool> stopped;
     StringAttr epolltrace;
     unsigned hdlPerThrd;
 public:
     IMPLEMENT_IINTERFACE;
     CSocketEpollHandler(const char *trc, unsigned _hdlPerThrd)
-        : started(false), epolltrace(trc), hdlPerThrd(_hdlPerThrd)
+        : started(false), stopped(false), epolltrace(trc), hdlPerThrd(_hdlPerThrd)
     {
     }
 
@@ -5230,6 +5239,9 @@ public:
             throw MakeStringException(-1,"CSocketEpollHandler::add() invalid sock or nfy or mode");
 
         CriticalBlock block(sect);
+        if (stopped)
+            return;
+
         // Create new handler thread if current one has hdlPerThrd fds.
         // epoll() handles many fds faster than select so this would
         // seem not as important, but we are still serializing on
@@ -5273,6 +5285,7 @@ public:
     void stop(bool wait)
     {
         CriticalBlock block(sect);
+        stopped = true;
         ForEachItemIn(i,threads)
         {
             CSocketEpollThread &t=threads.item(i);
