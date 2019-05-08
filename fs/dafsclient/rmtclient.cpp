@@ -569,7 +569,7 @@ public:
         r->tick = msTick();
     }
 
-    void remove(SocketEndpoint &ep,ISocket *sock)
+    void remove(const SocketEndpoint &ep, ISocket *sock)
     {
         // always called from crit block
         CConnectionRec *r = SuperHashTableOf<CConnectionRec,SocketEndpoint>::find(&ep);
@@ -578,8 +578,6 @@ public:
                 numsockets--;
 
     }
-
-
 } *ConnectionTable = NULL;
 
 
@@ -598,6 +596,21 @@ void clientSetDaliServixSocketCaching(bool on)
     }
 }
 
+ISocket *getConnectionTableSocket(const SocketEndpoint &ep)
+{
+    CriticalBlock block(CConnectionTable::crit);
+    if (!ConnectionTable)
+        return nullptr;
+    return ConnectionTable->lookup(ep);
+}
+
+void removeConnectionTableSocket(const SocketEndpoint &ep, ISocket *socket)
+{
+    CriticalBlock block(CConnectionTable::crit);
+    if (ConnectionTable)
+        ConnectionTable->remove(ep, socket);
+}
+
 void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket)
 {
     CriticalBlock block(CConnectionTable::crit);
@@ -612,501 +625,511 @@ void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket)
 
 void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned localConnectTime, unsigned localRetries)
 {
-	unsigned retries = 3;
+    unsigned retries = 3;
 
-	if (localConnectTime)
-	{
-		if (localRetries)
-			retries = localRetries;
-		if (localConnectTime > maxConnectTime)
-			localConnectTime = maxConnectTime;
-	}
-	else
-		localConnectTime = maxConnectTime;
+    if (localConnectTime)
+    {
+        if (localRetries)
+            retries = localRetries;
+        if (localConnectTime > maxConnectTime)
+            localConnectTime = maxConnectTime;
+    }
+    else
+        localConnectTime = maxConnectTime;
 
-	sRFTM tm(localConnectTime);
+    {
+        CriticalBlock block(lastFailEpCrit);
+        if (ep.equals(lastfailep))
+        {
+            if (msTick()-lastfailtime<DAFS_CONNECT_FAIL_RETRY_TIME)
+            {
+                StringBuffer msg("Failed to connect (host marked down) to dafilesrv/daliservix on ");
+                ep.getUrlStr(msg);
+                throw createDafsException(DAFSERR_connection_failed,msg.str());
+            }
+            lastfailep.set(NULL);
+            retries = 1;    // on probation
+        }
+    }
 
-	// called in CConnectionTable::crit
+    sRFTM tm(localConnectTime);
 
-	if (ep.equals(lastfailep)) {
-		if (msTick()-lastfailtime<DAFS_CONNECT_FAIL_RETRY_TIME) {
-			StringBuffer msg("Failed to connect (host marked down) to dafilesrv/daliservix on ");
-			ep.getUrlStr(msg);
-			throw createDafsException(DAFSERR_connection_failed,msg.str());
-		}
-		lastfailep.set(NULL);
-		retries = 1;    // on probation
-	}
-	while(retries--) {
-		CriticalUnblock unblock(CConnectionTable::crit); // allow others to connect
-		StringBuffer eps;
-		if (TF_TRACE_CLIENT_CONN) {
-			ep.getUrlStr(eps);
-			if (ep.port == securitySettings.daFileSrvSSLPort)
-				PROGLOG("Connecting SECURE to %s", eps.str());
-			else
-				PROGLOG("Connecting to %s", eps.str());
-			//PrintStackReport();
-		}
-		bool ok = true;
-		try {
-			if (tm.timemon) {
-				unsigned remaining;
-				if (tm.timemon->timedout(&remaining))
-					throwJSocketException(JSOCKERR_connection_failed);
-				socket.setown(ISocket::connect_timeout(ep,remaining));
-			}
-			else
-				socket.setown(ISocket::connect(ep));
-			if (ep.port == securitySettings.daFileSrvSSLPort)
-			{
+    while(retries--)
+    {
+        StringBuffer eps;
+        if (TF_TRACE_CLIENT_CONN)
+        {
+            ep.getUrlStr(eps);
+            if (ep.port == securitySettings.daFileSrvSSLPort)
+                PROGLOG("Connecting SECURE to %s", eps.str());
+            else
+                PROGLOG("Connecting to %s", eps.str());
+            //PrintStackReport();
+        }
+        bool ok = true;
+        try
+        {
+            if (tm.timemon)
+            {
+                unsigned remaining;
+                if (tm.timemon->timedout(&remaining))
+                    throwJSocketException(JSOCKERR_connection_failed);
+                socket.setown(ISocket::connect_timeout(ep,remaining));
+            }
+            else
+                socket.setown(ISocket::connect(ep));
+            if (ep.port == securitySettings.daFileSrvSSLPort)
+            {
 #ifdef _USE_OPENSSL
-				Owned<ISecureSocket> ssock;
-				try
-				{
-					ssock.setown(createSecureSocket(socket.getClear(), ClientSocket));
-					int status = ssock->secure_connect();
-					if (status < 0)
-						throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection");
-					socket.setown(ssock.getLink());
-				}
-				catch (IException *e)
-				{
-					cleanupDaFsSocket(ssock);
-					ssock.clear();
-					cleanupDaFsSocket(socket);
-					socket.clear();
-					StringBuffer eMsg;
-					e->errorMessage(eMsg);
-					e->Release();
-					throw createDafsException(DAFSERR_connection_failed, eMsg.str());
-				}
+                Owned<ISecureSocket> ssock;
+                try
+                {
+                    ssock.setown(createSecureSocket(socket.getClear(), ClientSocket));
+                    int status = ssock->secure_connect();
+                    if (status < 0)
+                        throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection");
+                    socket.setown(ssock.getLink());
+                }
+                catch (IException *e)
+                {
+                    cleanupDaFsSocket(ssock);
+                    ssock.clear();
+                    cleanupDaFsSocket(socket);
+                    socket.clear();
+                    StringBuffer eMsg;
+                    e->errorMessage(eMsg);
+                    e->Release();
+                    throw createDafsException(DAFSERR_connection_failed, eMsg.str());
+                }
 #else
-				throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
+                throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
 #endif
-			}
-		}
-		catch (IJSOCK_Exception *e) {
-			ok = false;
-			if (!retries||(tm.timemon&&tm.timemon->timedout())) {
-				if (e->errorCode()==JSOCKERR_connection_failed) {
-					lastfailep.set(ep);
-					lastfailtime = msTick();
-					e->Release();
-					StringBuffer msg("Failed to connect (setting host down) to dafilesrv/daliservix on ");
-					ep.getUrlStr(msg);
-					throw createDafsException(DAFSERR_connection_failed,msg.str());
-				}
-				throw;
-			}
-			StringBuffer err;
-			WARNLOG("Remote file connect %s",e->errorMessage(err).str());
-			e->Release();
-		}
-		if (ok) {
-			if (TF_TRACE_CLIENT_CONN) {
-				PROGLOG("Connected to %s",eps.str());
-			}
-			if (AuthenticationEnabled) {
-				try {
-					sendAuthentication(ep); // this will log error
-					break;
-				}
-				catch (IJSOCK_Exception *e) {
-					StringBuffer err;
-					WARNLOG("Remote file authenticate %s for %s ",e->errorMessage(err).str(),ep.getUrlStr(eps.clear()).str());
-					e->Release();
-					if (!retries)
-						break; // MCK - is this a warning or an error ? If an error, should we close and throw here ?
-				}
-			}
-			else
-				break;
-		}
-		bool timeExpired = false;
-		unsigned sleeptime = getRandom()%3000+1000;
-		if (tm.timemon)
-		{
-			unsigned remaining;
-			if (tm.timemon->timedout(&remaining))
-				timeExpired = true;
-			else
-			{
-				if (remaining/2<sleeptime)
-					sleeptime = remaining/2;
-			}
-		}
-		if (!timeExpired)
-		{
-			Sleep(sleeptime);       // prevent multiple retries beating
-			if (ep.port == securitySettings.daFileSrvSSLPort)
-				PROGLOG("Retrying SECURE connect");
-			else
-				PROGLOG("Retrying connect");
-		}
-	}
-	if (ConnectionTable)
-		ConnectionTable->addLink(ep,socket);
+            }
+        }
+        catch (IJSOCK_Exception *e)
+        {
+            ok = false;
+            if (!retries||(tm.timemon&&tm.timemon->timedout()))
+            {
+                if (e->errorCode()==JSOCKERR_connection_failed)
+                {
+                    {
+                        CriticalBlock block(lastFailEpCrit);
+                        lastfailep.set(ep);
+                        lastfailtime = msTick();
+                    }
+                    e->Release();
+                    StringBuffer msg("Failed to connect (setting host down) to dafilesrv/daliservix on ");
+                    ep.getUrlStr(msg);
+                    throw createDafsException(DAFSERR_connection_failed,msg.str());
+                }
+                throw;
+            }
+            StringBuffer err;
+            WARNLOG("Remote file connect %s",e->errorMessage(err).str());
+            e->Release();
+        }
+        if (ok)
+        {
+            if (TF_TRACE_CLIENT_CONN)
+                PROGLOG("Connected to %s",eps.str());
+            if (AuthenticationEnabled)
+            {
+                try
+                {
+                    sendAuthentication(ep); // this will log error
+                    break;
+                }
+                catch (IJSOCK_Exception *e)
+                {
+                    StringBuffer err;
+                    WARNLOG("Remote file authenticate %s for %s ",e->errorMessage(err).str(),ep.getUrlStr(eps.clear()).str());
+                    e->Release();
+                    if (!retries)
+                        break; // MCK - is this a warning or an error ? If an error, should we close and throw here ?
+                }
+            }
+            else
+                break;
+        }
+        bool timeExpired = false;
+        unsigned sleeptime = getRandom()%3000+1000;
+        if (tm.timemon)
+        {
+            unsigned remaining;
+            if (tm.timemon->timedout(&remaining))
+                timeExpired = true;
+            else
+            {
+                if (remaining/2<sleeptime)
+                    sleeptime = remaining/2;
+            }
+        }
+        if (!timeExpired)
+        {
+            Sleep(sleeptime);       // prevent multiple retries beating
+            if (ep.port == securitySettings.daFileSrvSSLPort)
+                PROGLOG("Retrying SECURE connect");
+            else
+                PROGLOG("Retrying connect");
+        }
+    }
+
+    clientAddSocketToCache(ep, socket);
 }
 
 void CRemoteBase::killSocket(SocketEndpoint &tep)
 {
-	CriticalBlock block2(CConnectionTable::crit); // this is nested with crit
-	if (socket) {
-		try {
-			Owned<ISocket> s = socket.getClear();
-			if (ConnectionTable)
-				ConnectionTable->remove(tep,s);
-		}
-		catch (IJSOCK_Exception *e) {
-			e->Release();   // ignore errors closing
-		}
-		Sleep(getRandom()%1000*5+500);      // prevent multiple beating
-	}
+    // NB: always called with CRemoteBase::crit locked
+    try
+    {
+        Owned<ISocket> s = socket.getClear();
+        if (!s)
+            return;
+        removeConnectionTableSocket(tep, s);
+    }
+    catch (IJSOCK_Exception *e)
+    {
+        e->Release();   // ignore errors closing
+    }
+    Sleep(getRandom()%1000*5+500);      // prevent multiple beating
 }
 
 void CRemoteBase::sendRemoteCommand(MemoryBuffer & src, MemoryBuffer & reply, bool retry, bool lengthy, bool handleErrCode)
 {
-	CriticalBlock block(crit);  // serialize commands on same file
-	SocketEndpoint tep(ep);
-	setDafsEndpointPort(tep);
-	unsigned nretries = retry?3:0;
-	Owned<IJSOCK_Exception> firstexc;   // when retrying return first error if fails
-	for (;;)
-	{
-		try
-		{
-			if (socket)
-			{
-				sendDaFsBuffer(socket, src);
-				receiveDaFsBuffer(socket, reply, lengthy?LENGTHY_RETRIES:NORMAL_RETRIES);
-				break;
-			}
-		}
-		catch (IJSOCK_Exception *e)
-		{
-			if (!nretries--)
-			{
-				if (firstexc)
-				{
-					e->Release();
-					e = firstexc.getClear();
-				}
-				killSocket(tep);
-				throw e;
-			}
-			StringBuffer str;
-			e->errorMessage(str);
-			WARNLOG("Remote File: %s, retrying (%d)",str.str(),nretries);
-			if (firstexc)
-				e->Release();
-			else
-				firstexc.setown(e);
-			killSocket(tep);
-		}
-		CriticalBlock block2(CConnectionTable::crit); // this is nested with crit
-		if (ConnectionTable)
-		{
-			socket.setown(ConnectionTable->lookup(tep));
-			if (socket)
-			{
-				// validate existing socket by sending an 'exists' command with short time out
-				// (use exists for backward compatibility)
-				bool ok = false;
-				try
-				{
-					MemoryBuffer sendbuf;
-					initSendBuffer(sendbuf);
-					MemoryBuffer replybuf;
-					sendbuf.append((RemoteFileCommandType)RFCexists).append(filename);
-					sendDaFsBuffer(socket, sendbuf);
-					receiveDaFsBuffer(socket, replybuf, 0, 1024);
-					ok = true;
-				}
-				catch (IException *e) {
-					e->Release();
-				}
-				if (!ok)
-					killSocket(tep);
-			}
-		}
+    CriticalBlock block(crit);  // serialize commands on same file
+    SocketEndpoint tep(ep);
+    setDafsEndpointPort(tep);
+    unsigned nretries = retry?3:0;
+    Owned<IJSOCK_Exception> firstexc;   // when retrying return first error if fails
+    for (;;)
+    {
+        try
+        {
+            if (socket)
+            {
+                sendDaFsBuffer(socket, src);
+                receiveDaFsBuffer(socket, reply, lengthy?LENGTHY_RETRIES:NORMAL_RETRIES);
+                break;
+            }
+        }
+        catch (IJSOCK_Exception *e)
+        {
+            if (!nretries--)
+            {
+                if (firstexc)
+                {
+                    e->Release();
+                    e = firstexc.getClear();
+                }
+                killSocket(tep);
+                throw e;
+            }
+            StringBuffer str;
+            e->errorMessage(str);
+            WARNLOG("Remote File: %s, retrying (%d)",str.str(),nretries);
+            if (firstexc)
+                e->Release();
+            else
+                firstexc.setown(e);
+            killSocket(tep);
+        }
+        socket.setown(getConnectionTableSocket(tep));
+        if (socket)
+        {
+            // validate existing socket by sending an 'exists' command with short time out
+            // (use exists for backward compatibility)
+            bool ok = false;
+            try
+            {
+                MemoryBuffer sendbuf;
+                initSendBuffer(sendbuf);
+                MemoryBuffer replybuf;
+                sendbuf.append((RemoteFileCommandType)RFCexists).append(filename);
+                sendDaFsBuffer(socket, sendbuf);
+                receiveDaFsBuffer(socket, replybuf, 0, 1024);
+                ok = true;
+            }
+            catch (IException *e)
+            {
+                e->Release();
+            }
+            if (!ok)
+                killSocket(tep);
+        }
 
-		if (!socket)
-		{
-			bool doConnect = true;
-			if (connectMethod == SSLFirst || connectMethod == UnsecureFirst)
-			{
-				// MCK - could maintain a list of 100 or so previous endpoints and if connection failed
-				// then mark port down for a delay (like 15 min above) to avoid having to try every time ...
-				try
-				{
-					connectSocket(tep, 5000, 1);
-					doConnect = false;
-				}
-				catch (IDAFS_Exception *e)
-				{
-					if (e->errorCode() == DAFSERR_connection_failed)
-					{
-						unsigned prevPort = tep.port;
-						if (prevPort == securitySettings.daFileSrvSSLPort)
-							tep.port = securitySettings.daFileSrvPort;
-						else
-							tep.port = securitySettings.daFileSrvSSLPort;
-						WARNLOG("Connect failed on port %d, retrying on port %d", prevPort, tep.port);
-						doConnect = true;
-						e->Release();
-					}
-					else
-						throw e;
-				}
-			}
-			if (doConnect)
-				connectSocket(tep);
-		}
-	}
+        if (!socket)
+        {
+            bool doConnect = true;
+            if (connectMethod == SSLFirst || connectMethod == UnsecureFirst)
+            {
+                // MCK - could maintain a list of 100 or so previous endpoints and if connection failed
+                // then mark port down for a delay (like 15 min above) to avoid having to try every time ...
+                try
+                {
+                    connectSocket(tep, 5000, 1);
+                    doConnect = false;
+                }
+                catch (IDAFS_Exception *e)
+                {
+                    if (e->errorCode() == DAFSERR_connection_failed)
+                    {
+                        unsigned prevPort = tep.port;
+                        if (prevPort == securitySettings.daFileSrvSSLPort)
+                            tep.port = securitySettings.daFileSrvPort;
+                        else
+                            tep.port = securitySettings.daFileSrvSSLPort;
+                        WARNLOG("Connect failed on port %d, retrying on port %d", prevPort, tep.port);
+                        doConnect = true;
+                        e->Release();
+                    }
+                    else
+                        throw e;
+                }
+            }
+            if (doConnect)
+                connectSocket(tep);
+        }
+    }
 
-	if (!handleErrCode)
-		return;
-	unsigned errCode;
-	reply.read(errCode);
-	if (errCode)
-	{
-		// old Solaris daliservix.cpp error code conversion
-		if ( (errCode >= 8200) && (errCode <= 8210) )
-			errCode = mapDafilesrvixCodes(errCode);
-		StringBuffer msg;
-		if (filename.get())
-			msg.append(filename);
-		ep.getUrlStr(msg.append('[')).append("] ");
-		size32_t pos = reply.getPos();
-		if (pos<reply.length())
-		{
-			size32_t len = reply.length()-pos;
-			const byte *rest = reply.readDirect(len);
-			if (errCode==RFSERR_InvalidCommand)
-			{
-				const char *s = (const char *)rest;
-				const char *e = (const char *)rest+len;
-				while (*s&&(s!=e))
-					s++;
-				msg.append(s-(const char *)rest,(const char *)rest);
-			}
-			else if (len&&(rest[len-1]==0))
-				msg.append((const char *)rest);
-			else
-			{
-				msg.appendf("extra data[%d]",len);
-				for (unsigned i=0;(i<16)&&(i<len);i++)
-					msg.appendf(" %2x",(int)rest[i]);
-			}
-		}
-		// NB: could append getRFSERRText for all error codes
-		else if (errCode == RFSERR_GetDirFailed)
-			msg.append(RFSERR_GetDirFailed_Text);
-		else
-			msg.append("ERROR #").append(errCode);
+    if (!handleErrCode)
+        return;
+    unsigned errCode;
+    reply.read(errCode);
+    if (errCode)
+    {
+        // old Solaris daliservix.cpp error code conversion
+        if ( (errCode >= 8200) && (errCode <= 8210) )
+            errCode = mapDafilesrvixCodes(errCode);
+        StringBuffer msg;
+        if (filename.get())
+            msg.append(filename);
+        ep.getUrlStr(msg.append('[')).append("] ");
+        size32_t pos = reply.getPos();
+        if (pos<reply.length())
+        {
+            size32_t len = reply.length()-pos;
+            const byte *rest = reply.readDirect(len);
+            if (errCode==RFSERR_InvalidCommand)
+            {
+                const char *s = (const char *)rest;
+                const char *e = (const char *)rest+len;
+                while (*s&&(s!=e))
+                    s++;
+                msg.append(s-(const char *)rest,(const char *)rest);
+            }
+            else if (len&&(rest[len-1]==0))
+                msg.append((const char *)rest);
+            else
+            {
+                msg.appendf("extra data[%d]",len);
+                for (unsigned i=0;(i<16)&&(i<len);i++)
+                    msg.appendf(" %2x",(int)rest[i]);
+            }
+        }
+        // NB: could append getRFSERRText for all error codes
+        else if (errCode == RFSERR_GetDirFailed)
+            msg.append(RFSERR_GetDirFailed_Text);
+        else
+            msg.append("ERROR #").append(errCode);
 #ifdef _DEBUG
-		ERRLOG("%s",msg.str());
-		PrintStackReport();
+        ERRLOG("%s",msg.str());
+        PrintStackReport();
 #endif
-		throw createDafsException(errCode,msg.str());
-	}
+        throw createDafsException(errCode,msg.str());
+    }
 }
 
 void CRemoteBase::sendRemoteCommand(MemoryBuffer & src, bool retry)
 {
-	MemoryBuffer reply;
-	sendRemoteCommand(src, reply, retry);
+    MemoryBuffer reply;
+    sendRemoteCommand(src, reply, retry);
 }
 
 void CRemoteBase::throwUnauthenticated(const IpAddress &ip, const char *user,unsigned err)
 {
-	if (err==0)
-		err = RFSERR_AuthenticateFailed;
-	StringBuffer msg;
-	msg.appendf("Authentication for %s on ",user);
-	ip.getIpText(msg);
-	msg.append(" failed");
-	throw createDafsException(err, msg.str());
+    if (err==0)
+        err = RFSERR_AuthenticateFailed;
+    StringBuffer msg;
+    msg.appendf("Authentication for %s on ",user);
+    ip.getIpText(msg);
+    msg.append(" failed");
+    throw createDafsException(err, msg.str());
 }
 
 void CRemoteBase::sendAuthentication(const IpAddress &serverip)
 {
-	// send my sig
-	// first send my sig which if stream unencrypted will get returned as a bad command
-	OnceKey oncekey;
-	genOnce(oncekey);
-	MemoryBuffer sendbuf;
-	initSendBuffer(sendbuf);
-	MemoryBuffer replybuf;
-	MemoryBuffer encbuf; // because aesEncrypt clears input
-	sendbuf.append((RemoteFileCommandType)RFCunlock).append(sizeof(oncekey),&oncekey);
-	try
-	{
-		sendDaFsBuffer(socket, sendbuf);
-		receiveDaFsBuffer(socket, replybuf, NORMAL_RETRIES, 1024);
-	}
-	catch (IException *e)
-	{
-		EXCLOG(e,"Remote file - sendAuthentication(1)");
-		throw;
-	}
-	unsigned errCode;
-	replybuf.read(errCode);
-	if (errCode!=0)  // no authentication required
-		return;
-	SocketEndpoint ep;
-	ep.setLocalHost(0);
-	byte ipdata[16];
-	size32_t ipds = ep.getNetAddress(sizeof(ipdata),&ipdata);
-	mergeOnce(oncekey,ipds,&ipdata);
-	StringBuffer username;
-	StringBuffer password;
-	IPasswordProvider * pp = queryPasswordProvider();
-	if (pp)
-		pp->getPassword(serverip, username, password);
-	if (!username.length())
-		username.append("sds_system");      // default account (note if exists should have restricted access!)
-	if (!password.length())
-		password.append("sds_man");
-	if (replybuf.remaining()<=sizeof(size32_t))
-		throwUnauthenticated(serverip,username.str());
-	size32_t bs;
-	replybuf.read(bs);
-	if (replybuf.remaining()<bs)
-		throwUnauthenticated(serverip,username.str());
-	MemoryBuffer skeybuf;
-	aesDecrypt(&oncekey,sizeof(oncekey),replybuf.readDirect(bs),bs,skeybuf);
-	if (skeybuf.remaining()<sizeof(OnceKey))
-		throwUnauthenticated(serverip,username.str());
-	OnceKey sokey;
-	skeybuf.read(sizeof(OnceKey),&sokey);
-	// now we have the key to use to send user/password
-	MemoryBuffer tosend;
-	tosend.append((byte)2).append(username).append(password);
-	initSendBuffer(sendbuf.clear());
-	sendbuf.append((RemoteFileCommandType)RFCunlockreply);
-	aesEncrypt(&sokey, sizeof(oncekey), tosend.toByteArray(), tosend.length(), encbuf);
-	sendbuf.append(encbuf.length());
-	sendbuf.append(encbuf);
-	try
-	{
-		sendDaFsBuffer(socket, sendbuf);
-		receiveDaFsBuffer(socket, replybuf.clear(), NORMAL_RETRIES, 1024);
-	}
-	catch (IException *e)
-	{
-		EXCLOG(e,"Remote file - sendAuthentication(2)");
-		throw;
-	}
-	replybuf.read(errCode);
-	if (errCode==0)  // suceeded!
-		return;
-	throwUnauthenticated(serverip,username.str(),errCode);
+    // send my sig
+    // first send my sig which if stream unencrypted will get returned as a bad command
+    OnceKey oncekey;
+    genOnce(oncekey);
+    MemoryBuffer sendbuf;
+    initSendBuffer(sendbuf);
+    MemoryBuffer replybuf;
+    MemoryBuffer encbuf; // because aesEncrypt clears input
+    sendbuf.append((RemoteFileCommandType)RFCunlock).append(sizeof(oncekey),&oncekey);
+    try
+    {
+        sendDaFsBuffer(socket, sendbuf);
+        receiveDaFsBuffer(socket, replybuf, NORMAL_RETRIES, 1024);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e,"Remote file - sendAuthentication(1)");
+        throw;
+    }
+    unsigned errCode;
+    replybuf.read(errCode);
+    if (errCode!=0)  // no authentication required
+        return;
+    SocketEndpoint ep;
+    ep.setLocalHost(0);
+    byte ipdata[16];
+    size32_t ipds = ep.getNetAddress(sizeof(ipdata),&ipdata);
+    mergeOnce(oncekey,ipds,&ipdata);
+    StringBuffer username;
+    StringBuffer password;
+    IPasswordProvider * pp = queryPasswordProvider();
+    if (pp)
+        pp->getPassword(serverip, username, password);
+    if (!username.length())
+        username.append("sds_system");      // default account (note if exists should have restricted access!)
+    if (!password.length())
+        password.append("sds_man");
+    if (replybuf.remaining()<=sizeof(size32_t))
+        throwUnauthenticated(serverip,username.str());
+    size32_t bs;
+    replybuf.read(bs);
+    if (replybuf.remaining()<bs)
+        throwUnauthenticated(serverip,username.str());
+    MemoryBuffer skeybuf;
+    aesDecrypt(&oncekey,sizeof(oncekey),replybuf.readDirect(bs),bs,skeybuf);
+    if (skeybuf.remaining()<sizeof(OnceKey))
+        throwUnauthenticated(serverip,username.str());
+    OnceKey sokey;
+    skeybuf.read(sizeof(OnceKey),&sokey);
+    // now we have the key to use to send user/password
+    MemoryBuffer tosend;
+    tosend.append((byte)2).append(username).append(password);
+    initSendBuffer(sendbuf.clear());
+    sendbuf.append((RemoteFileCommandType)RFCunlockreply);
+    aesEncrypt(&sokey, sizeof(oncekey), tosend.toByteArray(), tosend.length(), encbuf);
+    sendbuf.append(encbuf.length());
+    sendbuf.append(encbuf);
+    try
+    {
+        sendDaFsBuffer(socket, sendbuf);
+        receiveDaFsBuffer(socket, replybuf.clear(), NORMAL_RETRIES, 1024);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e,"Remote file - sendAuthentication(2)");
+        throw;
+    }
+    replybuf.read(errCode);
+    if (errCode==0)  // suceeded!
+        return;
+    throwUnauthenticated(serverip,username.str(),errCode);
 }
 
 CRemoteBase::CRemoteBase(const SocketEndpoint &_ep, const char * _filename)
-	: filename(_filename)
+    : filename(_filename)
 {
-	ep = _ep;
-	connectMethod = securitySettings.connectMethod;
+    ep = _ep;
+    connectMethod = securitySettings.connectMethod;
 }
 
 CRemoteBase::CRemoteBase(const SocketEndpoint &_ep, DAFSConnectCfg _connectMethod, const char * _filename)
-	: filename(_filename)
+    : filename(_filename)
 {
-	ep = _ep;
-	connectMethod = _connectMethod;
+    ep = _ep;
+    connectMethod = _connectMethod;
 }
 
 void CRemoteBase::disconnect()
 {
-	CriticalBlock block(crit);
-	CriticalBlock block2(CConnectionTable::crit); // this shouldn't ever block
-	if (socket)
-	{
-		ISocket *s = socket.getClear();
-		if (ConnectionTable)
-		{
-			SocketEndpoint tep(ep);
-			setDafsEndpointPort(tep);
-			ConnectionTable->remove(tep,s);
-		}
-		::Release(s);
-	}
+    CriticalBlock block(crit);
+    Owned<ISocket> s = socket.getClear();
+    if (s)
+    {
+        SocketEndpoint tep(ep);
+        setDafsEndpointPort(tep);
+        removeConnectionTableSocket(tep, s);
+    }
 }
 
 // IDaFsConnection impl.
 void CRemoteBase::close(int handle)
 {
-	if (handle)
-	{
-		try
-		{
-			MemoryBuffer sendBuffer;
-			initSendBuffer(sendBuffer);
-			sendBuffer.append((RemoteFileCommandType)RFCcloseIO).append(handle);
-			sendRemoteCommand(sendBuffer,false);
-		}
-		catch (IDAFS_Exception *e)
-		{
-			if ((e->errorCode()!=RFSERR_InvalidFileIOHandle)&&(e->errorCode()!=RFSERR_NullFileIOHandle))
-				throw;
-			e->Release();
-		}
-	}
+    if (handle)
+    {
+        try
+        {
+            MemoryBuffer sendBuffer;
+            initSendBuffer(sendBuffer);
+            sendBuffer.append((RemoteFileCommandType)RFCcloseIO).append(handle);
+            sendRemoteCommand(sendBuffer,false);
+        }
+        catch (IDAFS_Exception *e)
+        {
+            if ((e->errorCode()!=RFSERR_InvalidFileIOHandle)&&(e->errorCode()!=RFSERR_NullFileIOHandle))
+                throw;
+            e->Release();
+        }
+    }
 }
 
 void CRemoteBase::send(MemoryBuffer &sendMb, MemoryBuffer &reply)
 {
-	sendRemoteCommand(sendMb, reply);
+    sendRemoteCommand(sendMb, reply);
 }
 
 unsigned CRemoteBase::getVersion(StringBuffer &ver)
 {
-	unsigned ret;
-	MemoryBuffer sendBuffer;
-	initSendBuffer(sendBuffer);
-	sendBuffer.append((RemoteFileCommandType)RFCgetver);
-	sendBuffer.append((unsigned)RFCgetver);
-	MemoryBuffer replyBuffer;
-	try
-	{
-		sendRemoteCommand(sendBuffer, replyBuffer, true, false, false);
-	}
-	catch (IException *e)
-	{
-		EXCLOG(e);
-		::Release(e);
-		return 0;
-	}
-	unsigned errCode;
-	replyBuffer.read(errCode);
-	if (errCode==RFSERR_InvalidCommand)
-	{
-		ver.append("DS V1.0");
-		return 10;
-	}
-	else if (errCode==0)
-		ret = 11;
-	else if (errCode<0x10000)
-		return 0;
-	else
-		ret = errCode-0x10000;
+    unsigned ret;
+    MemoryBuffer sendBuffer;
+    initSendBuffer(sendBuffer);
+    sendBuffer.append((RemoteFileCommandType)RFCgetver);
+    sendBuffer.append((unsigned)RFCgetver);
+    MemoryBuffer replyBuffer;
+    try
+    {
+        sendRemoteCommand(sendBuffer, replyBuffer, true, false, false);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        ::Release(e);
+        return 0;
+    }
+    unsigned errCode;
+    replyBuffer.read(errCode);
+    if (errCode==RFSERR_InvalidCommand)
+    {
+        ver.append("DS V1.0");
+        return 10;
+    }
+    else if (errCode==0)
+        ret = 11;
+    else if (errCode<0x10000)
+        return 0;
+    else
+        ret = errCode-0x10000;
 
-	StringAttr vers;
-	replyBuffer.read(vers);
-	ver.append(vers);
-	return ret;
+    StringAttr vers;
+    replyBuffer.read(vers);
+    ver.append(vers);
+    return ret;
 }
 
 const SocketEndpoint &CRemoteBase::queryEp() const
 {
-	return ep;
+    return ep;
 }
 
 SocketEndpoint CRemoteBase::lastfailep;
 unsigned CRemoteBase::lastfailtime;
+CriticalSection CRemoteBase::lastFailEpCrit;
 
 
 
