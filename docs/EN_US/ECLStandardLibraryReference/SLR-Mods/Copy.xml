@@ -200,6 +200,6 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.File.Copy('OUT::MyFile','400way','OUT::MyNewFile');
+  <programlisting format="linespecific">STD.File.Copy('OUT::MyFile',STD.System.Thorlib.Group(),'OUT::MyNewFile');
 </programlisting>
 </sect1>
