@@ -69,7 +69,7 @@ define([
             },
 
             //  Implementation  ---
-            reset:function() {
+            reset: function () {
                 for (var key in this.widget) {
                     this.widget[key].destroyRecursive();
                     delete this.widget[key];
@@ -79,6 +79,8 @@ define([
                 delete this.__hpcc_initalized;
                 delete this.childWidgetID;
                 this.containerNode.innerHTML = "";
+                delete this.__initPromise;
+                delete this.__ensurePromise;
             },
 
             init: function (params) {
@@ -109,7 +111,7 @@ define([
                 }
             },
             doRestoreFromHash: function (hash) {
-                if (this.widget[this.childWidgetID].restoreFromHash) {
+                if (this.widget && this.widget[this.childWidgetID] && this.widget[this.childWidgetID].restoreFromHash) {
                     this.widget[this.childWidgetID].restoreFromHash(hash);
                 }
             }

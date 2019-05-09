@@ -11,6 +11,7 @@ import * as ESPRequest from "./ESPRequest";
 import * as ESPUtil from "./ESPUtil";
 import * as ESPResult from "./ESPResult";
 import * as Utility from "./Utility";
+import { DPWorkunit } from "./DataPatterns/DPWorkunit";
 
 var _logicalFiles = {};
 
@@ -192,6 +193,8 @@ var TreeStore = declare(null, {
 });
 
 var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
+    _dpWU: DPWorkunit,
+
     _FileDetailSetter: function (FileDetail) {
         this.FileDetail = FileDetail;
         this.result = ESPResult.Get(FileDetail);
@@ -236,6 +239,7 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             declare.safeMixin(this, args);
         }
         this.logicalFile = this;
+        this._dpWU = new DPWorkunit(this.Cluster, this.Name);
     },
     save: function (request, args) {
         //WsDfu/DFUInfo?FileName=progguide%3A%3Aexampledata%3A%3Akeys%3A%3Apeople.lastname.firstname&UpdateDescription=true&FileDesc=%C2%A0123&Save+Description=Save+Description
@@ -407,6 +411,9 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
     },
     isDeleted: function () {
         return this.StateID === 999;
+    },
+    fetchDataPatternsWU() {
+        return this._dpWU.resolveWU();
     }
 });
 

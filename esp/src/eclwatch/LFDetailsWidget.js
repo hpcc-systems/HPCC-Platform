@@ -63,6 +63,7 @@ define([
             replicateForm: null,
             summaryWidget: null,
             contentWidget: null,
+            dataPatternsWidget: null,
             sourceWidget: null,
             defWidget: null,
             xmlWidget: null,
@@ -84,6 +85,7 @@ define([
                 this.replicateForm = registry.byId(this.id + "ReplicateForm");
                 this.summaryWidget = registry.byId(this.id + "_Summary");
                 this.contentWidget = registry.byId(this.id + "_Content");
+                this.dataPatternsWidget = registry.byId(this.id + "_DataPatterns");
                 this.sourceWidget = registry.byId(this.id + "_Source");
                 this.defWidget = registry.byId(this.id + "_DEF");
                 this.xmlWidget = registry.byId(this.id + "_XML");
@@ -263,7 +265,7 @@ define([
                 });
                 this.logicalFile.refresh();
 
-                this.isProtected.on("change", function(evt){
+                this.isProtected.on("change", function (evt) {
                     context._onSave();
                 });
             },
@@ -274,6 +276,11 @@ define([
                     if (currSel.id === this.summaryWidget.id) {
                     } else if (currSel.id === this.contentWidget.id) {
                         this.contentWidget.init({
+                            NodeGroup: this.logicalFile.NodeGroup,
+                            LogicalName: this.logicalFile.Name
+                        });
+                    } else if (currSel.id === this.dataPatternsWidget.id) {
+                        this.dataPatternsWidget.init({
                             NodeGroup: this.logicalFile.NodeGroup,
                             LogicalName: this.logicalFile.Name
                         });
@@ -451,7 +458,8 @@ define([
                 this.setDisabled(this.id + "CopyDropDown", this.logicalFile.isDeleted());
                 this.setDisabled(this.id + "RenameDropDown", this.logicalFile.isDeleted());
                 this.setDisabled(this.id + "DesprayDropDown", this.logicalFile.isDeleted());
-                this.setDisabled(this.id + "_Content", this.logicalFile.isDeleted()  || !this.logicalFile.Ecl);
+                this.setDisabled(this.id + "_Content", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
+                this.setDisabled(this.id + "_DataPatterns", this.logicalFile.isDeleted() || this.logicalFile.ContentType === "key");
                 this.setDisabled(this.id + "_Source", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
                 this.setDisabled(this.id + "_DEF", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
                 this.setDisabled(this.id + "_XML", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);

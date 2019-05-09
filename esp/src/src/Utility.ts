@@ -419,6 +419,9 @@ export function resolve(hpccWidget, callback) {
         case "viz/DojoD3NDChart":
             require(["hpcc/viz/DojoD3NDChart"], doLoad);
             break;
+        case "DataPatternsWidget":
+            require(["src/DataPatternsWidget"], doLoad);
+            break;
         case "DynamicESDLDefinitionDetailsWidget":
             require(["hpcc/DynamicESDLDefinitionDetailsWidget"], doLoad);
             break;
@@ -460,6 +463,9 @@ export function resolve(hpccWidget, callback) {
             break;
         case "FullResultWidget":
             require(["hpcc/FullResultWidget"], doLoad);
+            break;
+        case "GangliaWidget":
+            require(["ganglia/GangliaWidget"], doLoad);
             break;
         case "GetDFUWorkunitsWidget":
             require(["hpcc/GetDFUWorkunitsWidget"], doLoad);
@@ -707,9 +713,6 @@ export function resolve(hpccWidget, callback) {
             break;
         case "XrefQueryWidget":
             require(["hpcc/XrefQueryWidget"], doLoad);
-            break;
-        case "GangliaWidget":
-            require(["ganglia/GangliaWidget"], doLoad);
             break;
         default:
             console.log("case \"" + hpccWidget + "\":\n" +

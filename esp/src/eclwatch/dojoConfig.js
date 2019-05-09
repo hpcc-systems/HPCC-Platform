@@ -45,6 +45,7 @@ function getConfig(env) {
             "@hpcc-js/form": baseUrl + "/node_modules/@hpcc-js/form/dist/index" + hpccMin,
             "@hpcc-js/graph": baseUrl + "/node_modules/@hpcc-js/graph/dist/index" + hpccMin,
             "@hpcc-js/layout": baseUrl + "/node_modules/@hpcc-js/layout/dist/index" + hpccMin,
+            "@hpcc-js/html": baseUrl + "/node_modules/@hpcc-js/html/dist/index" + hpccMin,
             "@hpcc-js/map": baseUrl + "/node_modules/@hpcc-js/map/dist/index" + hpccMin,
             "@hpcc-js/other": baseUrl + "/node_modules/@hpcc-js/other/dist/index" + hpccMin,
             "@hpcc-js/timeline": baseUrl + "/node_modules/@hpcc-js/timeline/dist/index" + hpccMin,

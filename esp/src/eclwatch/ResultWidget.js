@@ -5,15 +5,12 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/io-query",
-    "dojo/dom",
 
     "dijit/registry",
     "dijit/form/TextBox",
 
     "dgrid/Grid",
     "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/CompoundColumns",
     "dgrid/extensions/DijitRegistry",
@@ -25,6 +22,8 @@ define([
     "src/ESPLogicalFile",
     "hpcc/FilterDropDownWidget",
     "hpcc/TableContainer",
+    "src/DataPatterns/DGridHeaderHook",
+    "@hpcc-js/common",
 
     "dojo/text!../templates/ResultWidget.html",
 
@@ -33,10 +32,10 @@ define([
     "dijit/Toolbar",
     "dijit/form/Button",
     "dijit/ToolbarSeparator"
-], function (declare, lang, arrayUtil, i18n, nlsHPCC, ioQuery, dom,
+], function (declare, lang, arrayUtil, i18n, nlsHPCC, ioQuery,
     registry, TextBox,
-    Grid, Keyboard, Selection, selector, ColumnResizer, CompoundColumns, DijitRegistry, PaginationModule,
-    _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, FilterDropDownWidget, TableContainer,
+    Grid, Keyboard, ColumnResizer, CompoundColumns, DijitRegistry, PaginationModule,
+    _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, FilterDropDownWidget, TableContainer, DGridHeaderHookMod, hpccCommon,
     template) {
         return declare("ResultWidget", [_Widget], {
             templateString: template,
@@ -48,6 +47,8 @@ define([
 
             loaded: false,
 
+            dataPatternsButton: null,
+
             buildRendering: function (args) {
                 this.inherited(arguments);
             },
@@ -57,6 +58,7 @@ define([
                 this.borderContainer = registry.byId(this.id + "BorderContainer");
                 this.filter = registry.byId(this.id + "Filter");
                 this.grid = registry.byId(this.id + "Grid");
+                this.dataPatternsButton = registry.byId(this.id + "DataPatterns");
             },
 
             startup: function (args) {
@@ -109,6 +111,18 @@ define([
                 alert("todo");
             },
 
+            _onDataPatterns: function (args) {
+                var context = this;
+                if (this._logicalFile) {
+                    var wuPromise = this.dataPatternsButton.get("checked") ? this._logicalFile.fetchDataPatternsWU() : Promise.resolve(null);
+                    wuPromise.then(function (wu) {
+                        return context.gridDPHook.render(wu);
+                    }).then(function () {
+                        context.grid.resize();
+                    });
+                }
+            },
+
             //  Implementation  ---
             onErrorClick: function (line, col) {
             },
@@ -133,29 +147,33 @@ define([
                         }
                     });
                 } else if (params.LogicalName) {
-                    var logicalFile = ESPLogicalFile.Get(params.NodeGroup, params.LogicalName);
-                    logicalFile.getInfo({
+                    this._logicalFile = ESPLogicalFile.Get(params.NodeGroup, params.LogicalName);
+                    this._logicalFile.getInfo({
                         onAfterSend: function (response) {
-                            context.initResult(logicalFile.result);
+                            context.initResult(context._logicalFile.result);
                         }
                     });
                 } else if (params.result && params.result.Name) {
-                    var logicalFile = ESPLogicalFile.Get(params.result.NodeGroup, params.result.Name);
-                    logicalFile.getInfo({
+                    this._logicalFile = ESPLogicalFile.Get(params.result.NodeGroup, params.result.Name);
+                    this._logicalFile.getInfo({
                         onAfterSend: function (response) {
-                            context.initResult(logicalFile.result);
+                            context.initResult(context.logicalFile.result);
                         }
                     });
                 } else {
                     this.initResult(null);
                 }
+                if (!this._logicalFile) {
+                    dojo.destroy(this.id + "DataPatterns");
+                    dojo.destroy(this.id + "DataPatternsSep");
+                }
+                this.refreshDataPatterns();
             },
 
             initResult: function (result) {
                 if (result) {
                     var context = this;
                     result.fetchStructure(function (structure) {
-                        var filterForm = registry.byId(context.filter.id + "FilterForm");
                         var origTableContainer = registry.byId(context.filter.id + "TableContainer");
                         var tableContainer = new TableContainer({
                         });
@@ -201,6 +219,13 @@ define([
                             }
                         }, context.id + "Grid");
                         context.grid.startup();
+                        context.gridDPHook = new DGridHeaderHookMod.DGridHeaderHook(context.grid, context.id + "Grid");
+                        context.grid.on("dgrid-columnresize", function (evt) {
+                            setTimeout(function () {
+                                context.gridDPHook.resize(evt.columnId);
+                            }, 20);
+                        });
+
                     });
                 } else {
                     this.grid = new declare([Grid, DijitRegistry])({
@@ -230,6 +255,33 @@ define([
                         FilterBy: this.getFilter(),
                         BypassCachedResult: bypassCachedResult
                     });
+                }
+                this.refreshDataPatterns();
+            },
+
+            _wu: null, //  Null needed for initial test  ---
+            refreshDataPatterns: function () {
+                if (this._logicalFile) {
+                    var context = this;
+                    this._logicalFile.fetchDataPatternsWU().then(function (wu) {
+                        if (context._wu !== wu) {
+                            context._wu = wu;
+                            if (context._wu) {
+                                context._wu.watchUntilComplete(function (changes) {
+                                    context.refreshActionState();
+                                });
+                            } else {
+                                context.refreshActionState();
+                            }
+                        }
+                    });
+                }
+            },
+
+            refreshActionState: function () {
+                if (this._logicalFile) {
+                    var isComplete = this._wu && this._wu.isComplete();
+                    this.setDisabled(this.id + "DataPatterns", !isComplete);
                 }
             }
         });

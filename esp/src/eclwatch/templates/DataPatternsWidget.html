@@ -1,0 +1,58 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-props="splitter: false" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props="title:'${i18n.Report}'" data-dojo-type="dijit.layout.BorderContainer">
+                <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}Analyze" data-dojo-attach-event="onClick:_onAnalyze" data-dojo-type="dijit.form.Button">${i18n.Analyze}</div>
+                    <label id="${id}TargetSelectLabel" for="Target">${i18n.Target}:</label>
+                    <div id="${id}TargetSelect" style="display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget"></div>
+                    <div id="${id}OptimizeDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.Optimize}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}OptimizeForm" style="width: 650px;" onsubmit="return false;" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Target}</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}OptimizeTargetSelect" title="${i18n.Target}:" name="target" style="width:100%;display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget" />
+                                        <input id="${id}OptimizeTarget" title="${i18n.Name}:" name="name"  style="width:100%;" data-dojo-type="dijit.form.TextBox" />
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Options}</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}OptimizeTargetOverwrite" title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onOptimizeOk" data-dojo-type="dijit.form.Button">${i18n.Optimize}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
+                </div>
+                <div id="${id}CenterContainer" style="overflow: hidden" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}WU">
+                        <div style="display:inline-block">
+                            <h2>
+                                <div id="${id}StateIdImage" class="iconWorkunit" ></div>&nbsp;<span id="${id}Wuid" class="bold"></span>
+                            </h2>
+                        </div>
+                        <div id="${id}WUStatus" style="position:absolute;top:0;right:0;width:512px;height:64px">
+                        </div>
+                    </div>                    
+                    <div id="${id}DPReport" style="overflow:scroll;">
+                    </div>
+                </div>
+            </div>
+            <div id="${id}_RawData" title="${i18n.RawData}" data-dojo-props="delayWidget: 'ResultWidget'" data-dojo-type="DelayLoadWidget">
+            </div>
+            <div id="${id}_Workunit" title="${i18n.Workunit}" data-dojo-props="delayWidget: 'WUDetailsWidget'" data-dojo-type="DelayLoadWidget">
+            </div>
+        </div>
+    </div>
+</div>

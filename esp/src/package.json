@@ -33,6 +33,7 @@
     "@hpcc-js/chart": "2.17.2",
     "@hpcc-js/comms": "2.7.0",
     "@hpcc-js/eclwatch": "2.5.8",
+    "@hpcc-js/html": "2.6.8",
     "@hpcc-js/map": "2.7.8",
     "@hpcc-js/other": "2.12.8",
     "@hpcc-js/tree": "2.7.8",
