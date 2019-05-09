@@ -8,8 +8,8 @@ import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
 export class WUStatus extends Graph {
 
-    protected _wu: Workunit;
-    protected _wuHandle: IObserverHandle;
+    protected _hpccWU: Workunit;
+    protected _hpccWatchHandle: IObserverHandle;
 
     protected _create: Vertex;
     protected _compile: Vertex;
@@ -36,13 +36,37 @@ export class WUStatus extends Graph {
         });
         if (this._prevHash !== hash) {
             this._prevHash = hash;
-            this._wu = Workunit.attach({ baseUrl: this.baseUrl() }, this.wuid());
-            if (this._wuHandle) {
-                this._wuHandle.release();
-            }
-            this._wuHandle = this._wu.watch(changes => {
-                this.lazyRender();
-            });
+            this._hpccWU = Workunit.attach({ baseUrl: this.baseUrl() }, this.wuid());
+            this.stopMonitor();
+            this.startMonitor();
+        }
+    }
+
+    isMonitoring(): boolean {
+        return !!this._hpccWatchHandle;
+    }
+
+    disableMonitor(disableMonitor: boolean) {
+        if (disableMonitor) {
+            this.stopMonitor();
+        } else {
+            this.startMonitor();
+        }
+        this.lazyRender();
+    }
+
+    startMonitor() {
+        if (this.isMonitoring())
+            return;
+        this._hpccWatchHandle = this._hpccWU.watch(changes => {
+            this.lazyRender();
+        }, true);
+    }
+
+    stopMonitor() {
+        if (this._hpccWatchHandle) {
+            this._hpccWatchHandle.release();
+            delete this._hpccWatchHandle;
         }
     }
 
@@ -68,11 +92,14 @@ export class WUStatus extends Graph {
     }
 
     updateVertexStatus(level: 0 | 1 | 2 | 3 | 4, active: boolean = false) {
-        const completeColor = this._wu.isFailed() ? "darkred" : "darkgreen";
+        const completeColor = this._hpccWU.isFailed() ? "darkred" : "darkgreen";
         this._create.text(nlsHPCC.Created);
         this._compile.text(nlsHPCC.Compiled);
         this._execute.text(nlsHPCC.Executed);
         this._complete.text(nlsHPCC.Completed);
+        if (!this._hpccWatchHandle && level < 4) {
+            level = 0;
+        }
         switch (level) {
             case 0:
                 this.updateVertex(this._create, "darkgray");
@@ -136,7 +163,7 @@ export class WUStatus extends Graph {
 
     update(domNode, element) {
         this.attachWorkunit();
-        switch (this._wu.StateID) {
+        switch (this._hpccWU.StateID) {
             case WUStateID.Blocked:
             case WUStateID.Wait:
             case WUStateID.Scheduled:
@@ -177,8 +204,8 @@ export class WUStatus extends Graph {
     }
 
     exit(domNode, element) {
-        if (this._wuHandle) {
-            this._wuHandle.release();
+        if (this._hpccWatchHandle) {
+            this._hpccWatchHandle.release();
         }
         super.exit(domNode, element);
     }
