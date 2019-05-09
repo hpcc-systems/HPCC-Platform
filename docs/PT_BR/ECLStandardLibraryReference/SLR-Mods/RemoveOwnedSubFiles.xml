@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RemoveOwnedSubFiles">
+  <title>RemoveOwnedSubFiles</title>
+
+  <para><emphasis role="bold">STD.File.RemoveOwnedSubFiles<indexterm>
+      <primary>STD.File.RemoveOwnedSubFiles</primary>
+    </indexterm><indexterm>
+      <primary>File.RemoveOwnedSubFiles</primary>
+    </indexterm><indexterm>
+      <primary>RemoveOwnedSubFiles</primary>
+    </indexterm>(</emphasis> <emphasis> superfile</emphasis><emphasis
+  role="bold"> [</emphasis> <emphasis>, delete</emphasis> <emphasis
+  role="bold">])</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superarquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>delete</emphasis></entry>
+
+          <entry>Um indicador booleano que especifica se os subarquivos serão
+          excluídos do disco ou apenas removidos da lista de arquivos do
+          <emphasis>superarquivo </emphasis>. Se omitido, o padrão é apenas
+          remover os subarquivos da lista de arquivos do
+          <emphasis>superarquivo </emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Nulo</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">RemoveOwnedSubFiles </emphasis> remove
+  do superarquivo especificado todos os subarquivos do proprietário. Os
+  arquivos serão removidos apenas se forem propriedade exclusiva do
+  superarquivo. Se a propriedade do subarquivo for dividida (ou seja, é membro
+  de outro superarquivo), a remoção será ignorada.</para>
+
+  <para>Essa função pode ser incluída em uma transação de superarquivo, a
+  menos que o indicador de exclusão seja TRUE.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">SEQUENTIAL(
+ STD.File.StartSuperFileTransaction(),
+ STD.File.RemoveOwnedSubFiles('MySuperFile'),
+ STD.File.FinishSuperFileTransaction()
+);</programlisting>
+</sect1>

@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="VizTwoD">
+  <title><emphasis>Métodos Bidimensionais</emphasis></title>
+
+  <para>Esta seção abrange os métodos de criação de visualizações
+  bidimensionais contidas no módulo TwoD (2D). Esses métodos são as formas de
+  representação dos dados em um ambiente bidimensional.</para>
+
+  <para/>
+
+  <sect1 id="VizBubble">
+    <title>Bolha</title>
+
+    <para><emphasis role="bold">Visualizer.TwoD.Bubble(<indexterm>
+        <primary>Visualizer.TwoD.Bubble</primary>
+      </indexterm><indexterm>
+        <primary>TwoD.Bubble</primary>
+      </indexterm><indexterm>
+        <primary>Bubble</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis><emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>filteredBy</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo lógico
+            da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Mapeia rótulos humanos &lt;--&gt; Ids de campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">método de visualização </emphasis>Bolha cria
+    um gráfico de bolhas a partir de dados bidimensionais. O gráfico de bolhas
+    é uma variação do gráfico de pizza, onde os pontos dos dados são mostrados
+    na forma de bolhas e o tamanho da bolha é representado pela segunda
+    dimensão dos dados.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+ds := DATASET([ {'English', 5},
+                {'History', 17},
+                {'Geography', 7},
+                {'Chemistry', 16},
+                {'Irish', 26},
+                {'Spanish', 67},
+                {'Bioligy', 66},
+                {'Physics', 46},
+                {'Math', 98}],
+                {STRING subject, INTEGER4 year});
+data_example := OUTPUT(ds, NAMED('Chart2D__test'));
+data_example;
+viz_bubble := Visualizer.TwoD.Bubble('bubble',, 'Chart2D__test');
+viz_bubble;
+</programlisting>
+  </sect1>
+
+  <sect1 id="VizPie">
+    <title>Pizza</title>
+
+    <para><emphasis role="bold">Visualizer.TwoD.Pizza(<indexterm>
+        <primary>Visualizer.TwoD.Pizza</primary>
+      </indexterm><indexterm>
+        <primary>TwoD.Pizza</primary>
+      </indexterm><indexterm>
+        <primary>Pizza</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis><emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>filteredBy</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo lógico
+            da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Mapeia rótulos humanos &lt;--&gt; Ids de campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">método de visualização </emphasis> Pizza
+    cria um gráfico de pizza a partir de dados bidimensionais. O gráfico de
+    pizza constitui em uma representação gráfica na forma de um círculo
+    dividido em seções que representam a parte de um todo.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+ds := DATASET([ {'English', 5},
+                {'History', 17},
+                {'Geography', 7},
+                {'Chemistry', 16},
+                {'Irish', 26},
+                {'Spanish', 67},
+                {'Bioligy', 66},
+                {'Physics', 46},
+                {'Math', 98}],
+                {STRING subject, INTEGER4 year});
+data_example := OUTPUT(ds, NAMED('Chart2D__test'));
+data_example;
+viz_pie := Visualizer.TwoD.Pie('pie',, 'Chart2D__test');
+viz_pie;
+</programlisting>
+  </sect1>
+
+  <sect1 id="VizSummary">
+    <title>Resumo</title>
+
+    <para><emphasis role="bold">Visualizer.TwoD.Resumo(<indexterm>
+        <primary>Visualizer.TwoD.Resumo</primary>
+      </indexterm><indexterm>
+        <primary>TwoD.Resumo</primary>
+      </indexterm><indexterm>
+        <primary>Resumo</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis><emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>filteredBy</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo lógico
+            da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Mapeia rótulos humanos &lt;--&gt; Ids de campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">método de visualização </emphasis>Resumo
+    cria um gráfico de resumo a partir dos dados bidimensionais. O gráfico de
+    resumo é padronizado para gráficos que mostram valores de dados de
+    rolagem.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+ds := DATASET([ {'English', 5},
+                {'History', 17},
+                {'Geography', 7},
+                {'Chemistry', 16},
+                {'Irish', 26},
+                {'Spanish', 67},
+                {'Bioligy', 66},
+                {'Physics', 46},
+                {'Math', 98}],
+                {STRING subject, INTEGER4 year});
+data_example := OUTPUT(ds, NAMED('Chart2D__test'));
+data_example;
+viz_Summary := Visualizer.TwoD.Summary('Summary',, 'Chart2D__test');
+viz_Summary;
+</programlisting>
+  </sect1>
+
+  <sect1 id="VizWordCloud">
+    <title>WordCloud</title>
+
+    <para><emphasis role="bold">Visualizer.TwoD.WordCloud(<indexterm>
+        <primary>Visualizer.TwoD.WordCloud</primary>
+      </indexterm><indexterm>
+        <primary>TwoD.WordCloud</primary>
+      </indexterm><indexterm>
+        <primary>WordCloud</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis><emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>filteredBy</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo lógico
+            da consulta Roxie), padrão para a WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Mapeia rótulos humanos &lt;--&gt; Ids de campo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades de Visualização Consulte <link
+            linkend="VizDermProp">Propriedades de Visualização</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">o método de visualização
+    </emphasis>WordCloud cria uma nuvem de palavras a partir de dados
+    bidimensionais. O WordCloud (Nuvem de palavras) constitui de uma lista de
+    palavras visualmente ponderadas. Trata-se de uma representação visual de
+    dados de texto normalmente usada para retratar o peso ou a importância das
+    palavras através do tamanho da fonte ou cor.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+ds := DATASET([ {'English', 5},
+                {'History', 17},
+                {'Geography', 7},
+                {'Chemistry', 16},
+                {'Irish', 26},
+                {'Spanish', 67},
+                {'Bioligy', 66},
+                {'Physics', 46},
+                {'Math', 98}],
+                {STRING subject, INTEGER4 year});
+data_example := OUTPUT(ds, NAMED('Chart2D__test'));
+data_example;
+viz_WordCloud := Visualizer.TwoD.WordCloud('WordCloud',, 'Chart2D__test');
+viz_WordCloud;
+</programlisting>
+  </sect1>
+</chapter>

@@ -1,0 +1,1508 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <bookinfo>
+    <title>Referência a Linguagem ECL</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      &lt;docfeedback@hpccsystems.com&gt;, estando sujeitos ao Acordo de
+      Sugestões do HPCC disponível em: hpccsystems.com/contribution. Inclua a
+      frase <emphasis role="bold">Feedback sobre documentação</emphasis>
+      inclua a frase Feedback sobre documentação na linha de assunto e indique
+      o nome do documento, o número das páginas e número da revisão atual no
+      corpo da mensagem.</para>
+
+      <para>A LexisNexis e os logotipos, designs, imagem comercial e marcas
+      registradas relacionados são de propriedade da Reed Elsevier Properties
+      Inc. e de suas afiliadas, são usados sob licença e não estão sujeitos à
+      licença Creative Commons. Outras marcas registradas são de propriedade
+      de suas respectivas empresas e não estão sujeitas à licença Creative
+      Commons.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para>ESTE TRABALHO É FORNECIDO DE ACORDO COM OS TERMOS DA LICENÇA
+      PÚBLICA CREATIVE COMMONS DESCRITOS EM <link linkend="appendixA">APÊNDICE
+      A</link> (VEJA).</para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <releaseinfo>© 2017 HPCC Systems<superscript>®</superscript>. Todos os
+    direitos reservados. Exceto onde indicado de outra forma, o conteúdo do
+    ECL Language Reference (Referência a Linguagem ECL) é licenciado sob
+    licença pública da Creative Commons.</releaseinfo>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="ECLR_Intro">
+    <title><emphasis role="bold">Introdução</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/DocumentStructure.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/DocumentConventions.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="ECL_Basics">
+    <title><emphasis role="bold">Básico ECL</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Overview.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Constants.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-AttributeDef.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-AttributeTypes.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-RecordSetFiltring.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-FunctionAttributes.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-AttributeVisibility.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-FieldandAttribute.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-ActionsandAttrib.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Expressions_and_Operators_Chapter">
+    <title><emphasis role="bold">Expressões e Operadores</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ExpressionsandOperatos.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-LogicalOperators.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-RecordSetOps.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-SetOper.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-StringOps.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-InOps.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-BetweenOps.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Value_Types_Chapter">
+    <title><emphasis role="bold">Tipos de valores</emphasis></title>
+
+    <para>Tipos de valores<indexterm>
+        <primary>Tipos de valores</primary>
+      </indexterm> tipos de valores declaram um tipo de atributo quando
+    colocados à esquerda do nome do atributo na definição. Eles também
+    declaram o tipo de parâmetro enviado quando colocados à esquerda do nome
+    do parâmetro na definição. Os Tipos de valores também são convertidos
+    explicitamente de um tipo para outro quando colocados entre parênteses à
+    esquerda da expressão que será convertida.</para>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Boolean.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Integer.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Real.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Decimal.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-String.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-QString.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Unicode.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-UTF8.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Data.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-VarString.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-VarUnicode.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-SetOf.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-TypeOf.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-RecordOf.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Enum.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-TypeCasting.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Record_Structures_and_Files">
+    <title><emphasis role="bold">Registrar estruturas e
+    arquivos</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/RecordStructure.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-DATASET.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-DICTIONARY.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-Index.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-ScopeNLogicalFilenames.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-ImplicitDatasetRel.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Alien_Data_Types">
+    <title><emphasis role="bold">Tipos de Dados Estrangeiro</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/AlienData-TypeStruct.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/AlienData-TypeStrucSpecial.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Parsing_Support_Chapter">
+    <title><emphasis role="bold">Suporte a Análise
+    (Parsing)</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt-PARSPattrn.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt-NLPRecrd.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt-XMLnTRANSF.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Reserved_Keywords">
+    <title><emphasis role="bold">Palavras-chave reservadas</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-ALL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-EXCEPT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-EXPORT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-GROUP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-IMPORT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-KEYED-WILD.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-LEFT-RIGHT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-LIKELY.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-ROWS--LEFT-RIGHT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-SELF.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-SHARED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-SKIP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-TrueFalse.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Special_Structures">
+    <title><emphasis role="bold">Estruturas Especiais</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-BeginC++.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-EMBED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-FuncTion.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-FuncTionMacro.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-Interface.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-Macro.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-Module.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-Transform.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Built-in_Functions_and_Actions">
+    <title><emphasis role="bold">Ações e Funções Built-in</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ABS.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ACOS.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-AGGREGATE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ALLNODES.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-APPLY.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASCII.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASIN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASSERT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASTRING.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ATAN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ATAN2.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-AVE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-BUILD.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CASE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CATCH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CHOOSE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CHOOSEN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CHOOSETS.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CLUSTERSIZE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COMBINE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CORRELATION.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COS.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COSH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COUNT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COVARIANCE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CRON.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DEDUP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DEFINE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DENORMALIZE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DISTRIBUTE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DISTRIBUTED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DISTRIBUTION.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EBCDIC.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ENTH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ERROR.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVALUATE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENTNAME.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENTEXTRA.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EXISTS.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EXP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FAIL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FAILCODE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FAILMESSAGE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FETCH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMJSON.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMUNICODE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMXML.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GETENV.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GLOBAL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GRAPH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GROUP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASH32.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASH64.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASHCRC.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASHMD5.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HAVING.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HTTPCALL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-IF.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-IFF.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-IMPORT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-INTFORMAT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ISVALID.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ITERATE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-JOIN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-KEYDIFF.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-KEYPATCH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-KEYUNICODE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LENGTH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LIBRARY.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LIMIT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LoadXML.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LOCAL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LOG.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LOOP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MAP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MAX.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MERGE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MERGEJOIN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MIN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOLOCAL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NONEMPTY.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NORMALIZE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOFOLD.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTHOR.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTIFY.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ORDERED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-OUTPUT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PARALLEL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PARSE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PIPE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-POWER.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PRELOAD.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PROCESS.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PROJECT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PULL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANDOM.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANGE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANK.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANKED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REALFORMAT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGEXFIND.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGEXFINDSET.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGEXREPLACE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGROUP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REJECTED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROLLUP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROUND.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROUNDUP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROW.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROWDIFF.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SAMPLE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SEQUENTIAL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SET.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SIN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SINH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SIZEOF.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SOAPCALL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SORT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SORTED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SQRT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-STEPPED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-STORED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SUM.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TABLE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TAN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TANH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-THISNODE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOJSON.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOPN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOUNICODE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOXML.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRACE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRANSFER.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRIM.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRUNCATE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNGROUP.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNICODEORDER.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNORDERED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-VARIANCE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WAIT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHEN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHICH.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WORKUNIT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-XMLDECODE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-XMLENCODE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Workflow_Services">
+    <title><emphasis role="bold">Serviços de Fluxo de
+    Trabalho</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-OverView.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-CheckPoint.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-DEPRICATED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-FAILURE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-GLOBAL.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-INDEPENDENT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-ONWARNING.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-PERSIST.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-PRIORITY.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-RECOVERY.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-STORED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-SUCCESS.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-WHEN.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="Templates">
+    <title><emphasis role="bold">Linguagem de Modelos</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-OVERVIEW.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-APPEND.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-CONSTANT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-DECLARE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-DEMANGLE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-ERROR.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-EXPAND.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-EXPORT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-EXPORTXML.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-FOR.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-GETDATATYPE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-IF.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-INMODULE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-LOOP-BREAK.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-MANGLE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-ONWARNING.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-OPTION.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-SET.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-STORED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-TEXT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-UNIQUENAME.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WARNING.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WEBSERVICE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WORKUNIT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <chapter id="External_Services">
+    <title><emphasis role="bold">Serviços Externos</emphasis></title>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ExtrSvcs-SERVICEStructure.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ExtrSvcs-CONST.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/ExtrSvcs-ExternalServicesImpl.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
+
+  <appendix id="appendixA">
+    <title>Licença Creative Commons</title>
+
+    <para>ESTE TRABALHO É FORNECIDO DE ACORDO COM OS TERMOS DA LICENÇA PÚBLICA
+    CREATIVE COMMONS DESCRITOS EM O TRABALHO É PROTEGIDO POR DIREITOS DE AUTOR
+    E / OU OUTRA LEI APLICÁVEL. QUALQUER USO DO TRABALHO QUE NÃO O AUTORIZADO
+    SOB ESTA LICENÇA OU DIREITO AUTORAL É PROIBIDO.</para>
+
+    <para>AO EXERCER QUAISQUER DIREITOS AO TRABALHO FORNECIDO AQUI, VOCÊ
+    ACEITA E CONCORDA EM CUMPRIR OS TERMOS DESTA LICENÇA. NA MEDIDA EM QUE
+    ESTA LICENÇA PODE SER CONSIDERADA COMO UM CONTRATO, O LICENCIANTE
+    CONCEDE-NOS OS DIREITOS AQUI CONTIDOS EM CONSIDERAÇÃO À SUA ACEITAÇÃO DE
+    TAIS TERMOS E CONDIÇÕES.</para>
+
+    <para><emphasis role="bold">1. Definições</emphasis></para>
+
+    <orderedlist numeration="loweralpha">
+      <listitem>
+        <para><emphasis role="bold">"Adaptação"</emphasis> significa um
+        trabalho baseado na Obra, ou na Obra e em outras obras pré-existentes,
+        tais como tradução, adaptação, trabalho derivado, arranjo de música ou
+        outras alterações de um trabalho literário ou artístico, ou fonograma
+        ou performance e inclui adaptações cinematográficas. ou qualquer outra
+        forma na qual a Obra possa ser reformulada, transformada ou adaptada,
+        incluindo de qualquer forma reconhecidamente derivada do original,
+        exceto que uma obra que constitua uma Coleção não será considerada uma
+        Adaptação para o propósito desta Licença. Para evitar dúvidas, onde a
+        Obra é uma obra musical, performance ou fonograma, a sincronização da
+        Obra em relação temporizada com uma imagem em movimento ("sincronia")
+        será considerada uma Adaptação para o propósito desta Licença.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">Coleções</emphasis> significa uma coleção
+        de obras literárias ou artísticas, tais como enciclopédias e
+        antologias, ou performances, fonogramas ou transmissões, ou outras
+        obras ou assuntos que não sejam obras listadas na Seção 1 (f) abaixo,
+        que, em razão da seleção e arranjo de seus conteúdos, constituem
+        criações intelectuais, nas quais a Obra é incluída em sua totalidade
+        de forma não modificada junto com uma ou mais contribuições, cada uma
+        constituindo em si mesmas obras independentes e independentes, que
+        juntas são reunidas em um todo coletivo. Um trabalho que constitua uma
+        Coleção não será considerado uma Adaptação (conforme definido acima)
+        para os propósitos desta Licença.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">DISTRIBUTE</emphasis> meios para
+        disponibilizar ao público o original e cópias da Obra através da venda
+        ou outra transferência de propriedade.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">"Licenciante"</emphasis> significa o
+        indivíduo, indivíduos, entidades ou entidades que oferecem o (s)
+        Trabalho sob os termos desta Licença.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">"Autor original"</emphasis> significa, no
+        caso de uma obra literária ou artística, o indivíduo, indivíduos,
+        entidade ou entidades que criaram a Obra ou, se nenhum indivíduo ou
+        entidade puder ser identificado, o editor; e além disso (i) no caso de
+        uma performance, os atores, cantores, músicos, dançarinos e outras
+        pessoas que atuam, cantam, transmitem, declamam, tocam, interpretam ou
+        executam obras literárias ou artísticas ou expressões de folclore;
+        (ii) no caso de um fonograma, o produtor sendo a pessoa ou entidade
+        legal que primeiro fixa os sons de uma performance ou outros sons; e,
+        (iii) no caso de transmissões, a organização que transmite a
+        transmissão.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">"Trabalhos"</emphasis> significa o
+        trabalho literário e / ou artístico oferecido sob os termos desta
+        Licença, incluindo, sem limitação, qualquer produção no domínio
+        literário, científico e artístico, qualquer que seja o modo ou forma
+        de sua expressão, incluindo a forma digital, como um livro, panfleto e
+        outra escrita; uma palestra, discurso, sermão ou outro trabalho da
+        mesma natureza; um trabalho dramático ou dramatico-musical; um
+        trabalho coreográfico ou entretenimento em show mudo; uma composição
+        musical com ou sem palavras; uma obra cinematográfica à qual são
+        assimilados trabalhos expressos por um processo análogo à
+        cinematografia; uma obra de desenho, pintura, arquitetura, escultura,
+        gravura ou litografia; um trabalho fotográfico ao qual são assimilados
+        trabalhos expressos por um processo análogo à fotografia; um trabalho
+        de arte aplicada; uma ilustração, mapa, plano, esboço ou trabalho
+        tridimensional relativo à geografia, topografia, arquitetura ou
+        ciência; uma performance; uma transmissão; um fonograma; uma
+        compilação de dados na medida em que é protegido como um trabalho com
+        direitos autorais; ou um trabalho realizado por uma variedade ou
+        artista de circo, na medida em que não é considerado um trabalho
+        literário ou artístico.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">VOCÊ</emphasis> significa uma pessoa
+        física ou jurídica que exerce direitos sob esta Licença e que não
+        tenha anteriormente violado os termos desta Licença em relação à Obra,
+        ou que tenha recebido permissão expressa da Licenciante para exercer
+        direitos sob esta Licença, apesar de uma violação anterior.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">“Execução pública"</emphasis> meios para
+        realizar recitações públicas da Obra e para comunicar ao público as
+        recitações públicas, por qualquer meio ou processo, incluindo por fio
+        ou meio sem fio ou apresentações digitais públicas; disponibilizar ao
+        público Obras de tal maneira que os membros do público possam acessar
+        estas Obras de um lugar e em um lugar escolhido individualmente por
+        eles; realizar a Obra ao público por qualquer meio ou processo e a
+        comunicação ao público das performances da Obra, inclusive por meio de
+        performance digital pública; para transmitir e retransmitir o trabalho
+        por qualquer meio, incluindo sinais, sons ou imagens.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">"Reproduzir"</emphasis> meios para fazer
+        cópias da Obra por qualquer meio, incluindo sem limitação por
+        gravações sonoras ou visuais e o direito de fixação e reprodução de
+        fixações da Obra, incluindo armazenamento de uma performance protegida
+        ou fonograma em formato digital ou outro meio eletrônico.</para>
+      </listitem>
+    </orderedlist>
+
+    <para><emphasis role="bold">2. Direitos de Negociação.</emphasis> Nada
+    nesta Licença destina-se a reduzir, limitar ou restringir quaisquer usos
+    livres de direitos autorais ou direitos decorrentes de limitações ou
+    exceções previstas em conexão com a proteção de direitos autorais sob a
+    lei de direitos autorais ou outras leis aplicáveis.</para>
+
+    <para><emphasis role="bold">3. Concessão de licença.</emphasis> Sujeito
+    aos termos e condições desta Licença, a Licenciante concede a você uma
+    licença mundial, livre de royalties, não exclusiva, perpétua (para a
+    duração dos direitos autorais aplicáveis) para exercer os direitos na
+    Obra, conforme estabelecido abaixo:</para>
+
+    <orderedlist numeration="loweralpha">
+      <listitem>
+        <para>reproduzir o trabalho, incorporar o trabalho em uma ou mais
+        coleções e reproduzir o trabalho incorporado às coleções; e,</para>
+      </listitem>
+
+      <listitem>
+        <para>para distribuir e executar publicamente o trabalho, inclusive
+        como incorporado em coleções.</para>
+      </listitem>
+
+      <listitem>
+        <para>Para evitar dúvidas:</para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para><emphasis role="bold">Esquemas obrigatórios de licença
+            não-renunciáveis</emphasis>. Nas jurisdições em que o direito de
+            cobrar royalties por meio de qualquer esquema de licenciamento
+            estatutário ou compulsório não puder ser renunciado, o Licenciante
+            reserva-se o direito exclusivo de cobrar tais royalties para
+            qualquer exercício por Você dos direitos concedidos sob esta
+            Licença;</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Esquemas obrigatórios de licença
+            não-renunciáveis</emphasis>. Nas jurisdições em que o direito de
+            cobrar royalties por meio de qualquer esquema de licenciamento
+            estatutário ou compulsório não puder ser renunciado, o Licenciante
+            reserva-se o direito exclusivo de cobrar tais royalties para
+            qualquer exercício por Você dos direitos concedidos sob esta
+            Licença;</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Esquemas de Licença
+            Voluntária</emphasis>. Nas jurisdições em que o direito de cobrar
+            royalties por meio de qualquer esquema de licenciamento
+            estatutário ou compulsório não puder ser renunciado, o Licenciante
+            reserva-se o direito exclusivo de cobrar tais royalties para
+            qualquer exercício por Você dos direitos concedidos sob esta
+            Licença;</para>
+          </listitem>
+        </orderedlist>
+      </listitem>
+    </orderedlist>
+
+    <para>Os direitos acima podem ser exercidos em todas as mídias e formatos,
+    agora conhecidos ou futuramente. Os direitos acima incluem o direito de
+    fazer as modificações que forem tecnicamente necessárias para exercer os
+    direitos em outras mídias e formatos, mas caso contrário você não terá
+    direitos para fazer Adaptações. Sujeito à Seção 8 (f), todos os direitos
+    não expressamente concedidos pelo Licenciante ficam aqui
+    reservados.</para>
+
+    <para><emphasis role="bold">4. Restrições</emphasis> A licença concedida
+    na Seção 3 acima está expressamente sujeita e limitada pelas seguintes
+    restrições:</para>
+
+    <orderedlist numeration="loweralpha">
+      <listitem>
+        <para>Você pode distribuir ou executar publicamente o trabalho somente
+        sob os termos desta licença. Você deve incluir uma cópia, ou o
+        Identificador Uniforme de Recursos (URI) para esta Licença, com cada
+        cópia do Trabalho que Você Distribuir ou Realizar publicamente. Você
+        não pode oferecer ou impor quaisquer termos na Obra que restrinjam os
+        termos desta Licença ou a capacidade do destinatário da Obra de
+        exercer os direitos concedidos a esse destinatário sob os termos da
+        Licença. Você não pode sublicenciar o Trabalho. Você deve incluir uma
+        cópia, ou o Identificador Uniforme de Recursos (URI) para esta
+        Licença, com cada cópia do Trabalho que Você Distribuir ou Realizar
+        publicamente. Você não pode oferecer ou impor quaisquer termos na Obra
+        que restrinjam os termos desta Licença ou a capacidade do destinatário
+        da Obra de exercer os direitos concedidos a esse destinatário sob os
+        termos da Licença. Esta Seção 4 (a) aplica-se à Obra como incorporada
+        em uma Coleção, mas isso não exige que a Coleção, além da Obra, fique
+        sujeita aos termos desta Licença. Se você criar uma coleção, mediante
+        notificação de qualquer licenciante, deverá, na medida do possível,
+        retirar da coleção qualquer crédito, conforme exigido pela Seção 4
+        (b), conforme solicitado.</para>
+      </listitem>
+
+      <listitem>
+        <para>Se Você Distribuir, ou Executar Publicamente o Trabalho ou
+        Coleções, Você deve, a menos que uma solicitação tenha sido feita
+        conforme a Seção 4 (a), manter intactos todos os avisos de direitos
+        autorais para o Trabalho e fornecer, razoável para o meio ou meio que
+        Você está utilizando: (i) o nome do Autor Original (ou pseudônimo, se
+        aplicável) se fornecido, e / ou se o Autor Original e / ou o
+        Licenciante designar outra parte ou partes (por exemplo, um instituto
+        patrocinador, entidade editorial, revista) para atribuição ( "Partes
+        de Atribuição") no aviso de direitos autorais do Licenciante, nos
+        termos de serviço ou por outros meios razoáveis, o nome de tal parte
+        ou partes; (ii) o título do Trabalho, se fornecido; (iii) na medida do
+        razoavelmente praticável, o URI, se houver, que o Licenciante
+        especificar como associado ao Trabalho, a menos que tal URI não se
+        refira ao aviso de direitos autorais ou informações de licenciamento
+        para o Trabalho. O crédito exigido por esta Seção 4 (b) pode ser
+        implementado de qualquer maneira razoável; desde que, no caso de uma
+        Cobrança, no mínimo tal crédito apareça, se um crédito para todos os
+        autores contribuintes da Coleção aparecer, então como parte desses
+        créditos e de uma forma pelo menos tão proeminente quanto os créditos
+        para os outros autores contribuintes. Para evitar dúvidas, Você só
+        pode usar o crédito exigido por esta Seção para fins de atribuição da
+        maneira descrita acima e, ao exercer Seus direitos sob esta Licença,
+        Você não pode implícita ou explicitamente afirmar ou sugerir qualquer
+        conexão com, patrocínio ou endosso pelo Autor Original, Licenciante e
+        / ou Partes da Afiliação, conforme o caso, de Você ou Seu uso do
+        Trabalho, sem a prévia autorização expressa por escrito do Autor
+        Original, Licenciante e / ou Partes de Atribuição.</para>
+      </listitem>
+
+      <listitem>
+        <para>Salvo acordo em contrário por escrito pelo Licenciador ou
+        conforme seja permitido pela lei aplicável, se Você Reproduzir,
+        Distribuir ou Executar Publicamente o Trabalho por si próprio ou como
+        parte de quaisquer Coleções, Você não deve distorcer, mutilar,
+        modificar ou tomar outro derrogatória em relação ao Trabalho que seria
+        prejudicial à honra ou reputação do Autor Original.</para>
+      </listitem>
+    </orderedlist>
+
+    <para><emphasis role="bold">5. Representações, Garantias e Isenção de
+    Responsabilidade</emphasis></para>
+
+    <para>A MENOS QUE, DE ACORDO COM AS PARTES, O LICENCIANTE DECLARA AS
+    TRABALHOS COMO ESTÁ E NÃO FAZ REPRESENTAÇÃO OU GARANTIA DE QUALQUER TIPO
+    RELATIVO AO TRABALHO, EXPRESSA, IMPLÍCITA, ESTATUTÁRIA OU OUTRA,
+    INCLUINDO, SEM LIMITAÇÃO, GARANTIAS DE TÍTULO, COMERCIABILIDADE, APTIDÃO
+    PARA UMA FINALIDADE ESPECÍFICA, NÃO-VIOLAÇÃO OU AUSÊNCIA DE DEFEITOS OU
+    PREJUÍZOS LATENTES OU OUTROS, EXATIDÃO OU PRESENÇA DE AUSÊNCIA DE ERROS,
+    SEJAM DESCOBERTOS. ALGUMAS JURISDIÇÕES NÃO PERMITEM A EXCLUSÃO DE
+    GARANTIAS IMPLÍCITAS, TAL EXCLUSÃO PODE NÃO SE APLICAR A VOCÊ.</para>
+
+    <para><emphasis role="bold">6. Limitação de Responsabilidade.</emphasis>
+    EXCETO NA MEDIDA EXIGIDA PELA LEGISLAÇÃO APLICÁVEL, EM NENHUM CASO, A
+    LICENCIANTE SERÁ RESPONSÁVEL POR QUALQUER TEORIA LEGAL POR QUAISQUER DANOS
+    ESPECIAIS, INCIDENTAIS, CONSEQÜENTES, PUNITIVOS OU EXEMPLARES DECORRENTES
+    DESTA LICENÇA OU O USO DA OBRA, MESMO QUE O LICENCIADOR TENHA SIDO AVISADO
+    DA POSSIBILIDADE DE TAIS DANOS.</para>
+
+    <para><emphasis role="bold">7. Encerramento</emphasis></para>
+
+    <orderedlist numeration="loweralpha">
+      <listitem>
+        <para>Esta Licença e os direitos aqui concedidos serão automaticamente
+        rescindidos mediante qualquer violação por Você dos termos desta
+        Licença. Indivíduos ou entidades que receberam Coleções sob esta
+        Licença, no entanto, não terão suas licenças terminadas, desde que
+        tais indivíduos ou entidades permaneçam em total conformidade com
+        essas licenças. As seções 1, 2, 5, 6, 7 e 8 sobreviverão a qualquer
+        término desta Licença.</para>
+      </listitem>
+
+      <listitem>
+        <para>Sujeito aos termos e condições acima, a licença concedida aqui é
+        perpétua (para a duração dos direitos autorais aplicáveis na Obra).
+        Não obstante o acima, o Licenciador se reserva o direito de liberar o
+        Trabalho sob diferentes termos de licença ou de parar de distribuir o
+        Trabalho a qualquer momento; desde que, no entanto, tal escolha não
+        sirva para retirar esta Licença (ou qualquer outra licença que tenha
+        sido ou deva ser concedida sob os termos desta Licença), e esta
+        Licença continuará em pleno vigor e efeito, a menos que seja
+        rescindida. como indicado acima.</para>
+      </listitem>
+    </orderedlist>
+
+    <para><emphasis role="bold">8. Miscelânia</emphasis></para>
+
+    <orderedlist numeration="loweralpha">
+      <listitem>
+        <para>Cada vez que você distribuir ou executar publicamente o trabalho
+        ou uma coleção, o licenciante oferece ao destinatário uma licença para
+        o trabalho nos mesmos termos e condições que a licença concedida a
+        você sob esta licença.</para>
+      </listitem>
+
+      <listitem>
+        <para>Se qualquer disposição desta Licença for inválida ou inexeqüível
+        sob a lei aplicável, ela não afetará a validade ou aplicabilidade do
+        restante dos termos desta Licença, e sem qualquer ação adicional por
+        parte das partes deste contrato, tal disposição será reformada para a
+        extensão mínima necessária para tornar tal provisão válida e
+        exeqüível.</para>
+      </listitem>
+
+      <listitem>
+        <para>Nenhum termo ou disposição desta Licença será considerado
+        renunciado e nenhuma violação será consentida, a menos que tal
+        renúncia ou consentimento seja feito por escrito e assinado pela parte
+        a ser acusada de tal renúncia ou consentimento.</para>
+      </listitem>
+
+      <listitem>
+        <para>Esta Licença constitui o acordo integral entre as partes com
+        relação ao Trabalho licenciado aqui. Não há entendimentos, acordos ou
+        representações com relação ao Trabalho não especificado aqui. O
+        Licenciante não será obrigado por quaisquer disposições adicionais que
+        possam aparecer em qualquer comunicação sua. Esta Licença não pode ser
+        modificada sem o acordo mútuo por escrito do Licenciador e
+        Você.</para>
+      </listitem>
+
+      <listitem>
+        <para>Os direitos concedidos sob, e a matéria mencionada, nesta
+        Licença foram redigidos utilizando a terminologia da Convenção de
+        Berna para a Proteção de Obras Literárias e Artísticas (como emendada
+        em 28 de setembro de 1979), a Convenção de Roma de 1961, a WIPO
+        Copyright Tratado de 1996, o Tratado da OMPI sobre Prestações e
+        Fonogramas de 1996 e a Convenção Universal dos Direitos de Autor
+        (revista em 24 de Julho de 1971). Esses direitos e objeto entram em
+        vigor na jurisdição relevante em que os termos da Licença são
+        solicitados, de acordo com as disposições correspondentes da
+        implementação dessas disposições do tratado na legislação nacional
+        aplicável. Se o conjunto padrão de direitos concedidos sob a lei de
+        direitos autorais aplicável incluir direitos adicionais não concedidos
+        sob esta Licença, esses direitos adicionais serão considerados
+        incluídos na Licença; esta Licença não tem a intenção de restringir a
+        licença de quaisquer direitos sob a lei aplicável.</para>
+      </listitem>
+    </orderedlist>
+  </appendix>
+
+  <index/>
+</book>

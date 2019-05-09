@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="BETWEEN_Operator">
+  <title>BETWEEN Operator<indexterm>
+      <primary>Between Operator</primary>
+    </indexterm></title>
+
+  <para><emphasis>SeekVal </emphasis><emphasis role="bold">BETWEEN<indexterm>
+      <primary>BETWEEN</primary>
+    </indexterm> </emphasis><emphasis>LoVal </emphasis><emphasis
+  role="bold">AND<indexterm>
+      <primary>AND</primary>
+    </indexterm> </emphasis><emphasis>HiVal </emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>SeekVal</emphasis></entry>
+
+          <entry>O valor a ser localizado no intervalo inclusivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>LoVal</emphasis></entry>
+
+          <entry>O valor baixo no intervalo inclusivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>HiVal</emphasis></entry>
+
+          <entry>O valor alto no intervalo inclusivo.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Um operador <emphasis role="bold">BETWEEN</emphasis> é um atalho para
+  a verificação de intervalo inclusivo usando operadores de comparação padrão
+  (SeekVal &gt;= LoVal AND SeekVal &lt;= HiVal).<emphasis>SeekVal
+  </emphasis>&gt;= <emphasis>LoVal </emphasis>AND <emphasis>SeekVal
+  </emphasis>&lt;= <emphasis>HiVal). </emphasis>Pode ser combinado com NOT
+  para inverter a lógica.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>X := 10;
+Y := 20;
+Z := 15;
+
+IsInRange := Z BETWEEN X AND Y;
+   //This code is directly equivalent to:
+   // IsInRange := Z &gt;= X AND Z &lt;= Y;
+
+IsNotInRange := Z NOT BETWEEN X AND Y;
+   //This code is directly equivalent to: 
+   // IsInNotRange := NOT (Z &gt;= X AND Z &lt;= Y);</programlisting>
+
+  <para>Ver também: <link linkend="Logical_Operators">Operadores
+  Lógicos</link>, <link linkend="Comparison_Operators">Operadores de
+  comparação</link></para>
+</sect1>

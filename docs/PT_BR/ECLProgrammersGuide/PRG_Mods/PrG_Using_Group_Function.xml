@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Using_the_GROUP_Function">
+  <title><emphasis role="bold">Utilizando a Função GROUP</emphasis></title>
+
+  <para>A função GROUP oferece funcionalidades importantes ao processar
+  datasets de tamanho significativo. O conceito básico é que a função GROUP
+  dividirá o dataset em um número de subconjuntos menores, mas o dataset que
+  passou pela função GROUPed ainda será tratado como uma entidade única no seu
+  código ECL.</para>
+
+  <para>As operações em um dataset GROUPed (AGRUPADOS) são realizadas
+  automaticamente e separadamente em cada subconjunto. Consequentemente, uma
+  operação em um dataset GROUPed (AGRUPADO) aparecerá no código ECL como uma
+  operação única, porém, a operação será realizada internamente pela execução
+  em série da mesma operação em relação a cada subconjunto por vez. A vantagem
+  dessa abordagem é que cada operação individual é muito menor e tem maior
+  probabilidade de ser realizada sem vazamento no disco, o que significa que o
+  tempo total para realizar todas as operações separadas normalmente será
+  inferior do que realizar a mesma operação em todo o dataset (às vezes a
+  diferença é bastante significativa).</para>
+
+  <sect2 id="GROUP_vs_SORT">
+    <title>GROUP vs. SORT</title>
+
+    <para>A função GROUP não classifica automaticamente os registros nos quais
+    está operando – ela realizará o GROUP com base na ordem dos registros
+    recebidos. Dessa forma, a classificação dos registros é normalmente
+    realizada primeiro pelos campos nos quais você deseja aplicar a função
+    GROUP (exceto em circunstâncias onde os campos GROUP são usados apenas
+    para dividir uma operação única maior em diversas operações
+    menores).</para>
+
+    <para>Para o conjunto de operações que usam as funções TRANSFORM (como
+    ITERATE, PROJECT, ROLLUP, etc), operar em um dataset GROUPed onde a
+    operação é realizada em cada fragmento (grupo) no grupo de registros, de
+    forma independente, implica que o teste das condições de limite será
+    diferente em comparação com um dataset que tenha passado pela função
+    SORTed. Por exemplo, o código a seguir (contido no arquivo GROUPfunc.ECL)
+    usa a função GROUP para classificar as contas pessoais com base na data de
+    abertura e saldo. A conta com a data de abertura mais recente tem a maior
+    classificação (se houver múltiplas contas abertas no mesmo dia, será usada
+    aquela com o maior saldo). Não há necessidade de verificação de limite na
+    função TRANSFORM porque ITERATE é novamente reiniciada com cada pessoa, de
+    forma que o valor do campo L.Ranking para cada novo grupo de pessoas seja
+    igual a zero (0).</para>
+
+    <programlisting>IMPORT $;
+
+accounts := $.DeclareData.Accounts;
+
+rec := RECORD
+  accounts.PersonID;
+  accounts.Account;
+  accounts.opendate;
+  accounts.balance;
+  UNSIGNED1 Ranking := 0;
+END;
+
+tbl := TABLE(accounts,rec);
+
+rec RankGrpAccts(rec L, rec R) := TRANSFORM
+  SELF.Ranking := L.Ranking + 1;
+  SELF := R;
+END;
+GrpRecs  := SORT(GROUP(SORT(tbl,PersonID),PersonID),-Opendate,-Balance);
+i1 := ITERATE(GrpRecs,RankGrpAccts(LEFT,RIGHT));
+OUTPUT(i1);
+</programlisting>
+
+    <para>O código a seguir usa apenas SORT para obter a mesma ordem de
+    registro do código anterior. Observe o código de verificação de limites na
+    função TRANSFORM. Isso é mandatório, uma vez que ITERATE realizará uma
+    operação única em todo o dataset:</para>
+
+    <programlisting>rec RankSrtAccts(rec L, rec R) := TRANSFORM
+  SELF.Ranking := IF(L.PersonID = R.PersonID,L.Ranking + 1, 1);
+  SELF := R;
+END;
+SortRecs := SORT(tbl,PersonID,-Opendate,-Balance);
+i2 := ITERATE(SortRecs,RankSrtAccts(LEFT,RIGHT));
+OUTPUT(i2);
+</programlisting>
+
+    <para>A verificação dos diferentes limites em cada é exigida pela
+    fragmentação criada pela função GROUP. ITERATE opera separadamente em cada
+    fragmento no primeiro exemplo, e opera em todo o recordset no
+    segundo.</para>
+  </sect2>
+
+  <sect2 id="PG_Performance_Considerations">
+    <title>Considerações sobre desempenho</title>
+
+    <para>Há também uma enorme vantagem em relação ao desempenho no uso da
+    função GROUP. Por exemplo, SORT é uma operação de <emphasis>n log
+    n</emphasis> exemplo, de forma que dividir os conjuntos grandes de
+    registros em conjuntos menores pode melhorar significativamente o tempo
+    necessário para realizar a operação de classificação.</para>
+
+    <para>Vamos supor que um dataset contenha 1 bilhão de registros de 1.000
+    bytes (1.000.000.000) e está sendo executado em um supercomputador de 100
+    nós. Supondo também que os dados estão igualmente distribuídos, temos
+    então 10 milhões de registros por nó ocupando 1 gigabyte de memória em
+    cada nó. Suponha que você precise classificar os dados por três campos:
+    personID (ID pessoal), opendate (data de abertura) e balance (saldo). Há
+    três maneiras possíveis de se fazer isso: SORT global, SORT local
+    distribuída, ou SORT local distribuída que passou pela função GROUPed
+    .</para>
+
+    <para>Aqui está um exemplo que demonstra todos os três métodos (contidos
+    no arquivo GROUPfunc.ECL):</para>
+
+    <programlisting>bf := NORMALIZE(accounts,
+                CLUSTERSIZE * 2,
+                TRANSFORM(RECORDOF(ProgGuide.Accounts),
+                          SELF := LEFT));
+ds0 := DISTRIBUTE(bf,RANDOM()) : PERSIST('~PROGGUIDE::PERSIST::TestGroupSort');
+ds1 := DISTRIBUTE(ds,HASH32(personid));
+
+// do a global sort
+s1 := SORT(ds0,personid,opendate,-balance);
+a  := OUTPUT(s1,,'~PROGGUIDE::EXAMPLEDATA::TestGroupSort1',OVERWRITE);
+
+// do a distributed local sort
+s3  := SORT(ds1,personid,opendate,-balance,LOCAL);
+b   := OUTPUT(s3,,'~PROGGUIDE::EXAMPLEDATA::TestGroupSort2',OVERWRITE);
+
+// do a grouped local sort
+s4 := SORT(ds1,personid,LOCAL);
+g2 := GROUP(s4,personid,LOCAL);
+s5 := SORT(g2,opendate,-balance);
+c  := OUTPUT(s5,,'~PROGGUIDE::EXAMPLEDATA::TestGroupSort3',OVERWRITE);
+SEQUENTIAL(a,b,c);
+</programlisting>
+
+    <para>Os conjuntos resultantes para todas essas operações SORT são
+    idênticos. No entanto, o tempo necessário para produzi-los não é. O
+    exemplo acima opera apenas em 10 milhões de registros de 46 bytes por nó,
+    não em 1 bilhão de registros de 1.000 bytes anteriormente mencionados, mas
+    certamente ilustra as técnicas.</para>
+
+    <para>Para o exemplo hipotético de um bilhão de registros, o desempenho da
+    função Sort global é calculado pela fórmula: 1 bilhão de vezes o log de 1
+    bilhão (9) resultando em uma métrica de desempenho de 9 bilhões. O
+    desempenho da função Sort local distribuída é calculado pela fórmula: 10
+    milhões de vezes o log de 10 milhões (7) resultando em uma métrica de
+    desempenho de 70 milhões. Supondo que a operação GROUP tenha criado 1.000
+    subgrupos em cada nó, o desempenho da função Sort local que passou pela
+    função GROUP é calculado pela fórmula: 1.000 vezes (10.000 vezes o log de
+    10.000 (4)) resultando em uma métrica de desempenho de 40 milhões.</para>
+
+    <para>Os próprios números de métricas de desempenho não são importantes,
+    mas suas proporções indicam a diferença esperada em relação ao desempenho
+    entre os métodos SORT. Isso significa que a função SORT local distribuída
+    será cerca de 128 vezes mais rápida do que a SORT global (9 bilhões / 70
+    milhões); a SORT que passou pela função GROUP será cerca de 225 vezes mais
+    rápida do que a SORT global (9 bilhões / 40 bilhões), e a SORT que passou
+    pela função GROUP será aproximadamente 1,75 vezes mais rápida que a SORT
+    local distribuída (70 milhões / 40 milhões).</para>
+  </sect2>
+</sect1>

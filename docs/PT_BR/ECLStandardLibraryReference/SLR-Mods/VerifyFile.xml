@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="VerifyFile">
+  <title>VerifyFile</title>
+
+  <para><emphasis role="bold">STD.File.VerifyFile<indexterm>
+      <primary>STD.File.VerifyFile</primary>
+    </indexterm><indexterm>
+      <primary>File.VerifyFile</primary>
+    </indexterm><indexterm>
+      <primary>VerifyFile</primary>
+    </indexterm>(</emphasis> <emphasis> file, usecrcs </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>file</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>usecrcs</emphasis></entry>
+
+          <entry>Um indicador booleano TRUE/FALSE que, quando TRUE, indica a comparação de CRCs físicos de todas as partes em disco. Essa comparação pode ser lenta em grandes arquivos.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>VerifyFile retorna um valor VARSTRING.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">VerifyFile </emphasis> verifica as informações do armazenamento de dados do sistema (Dali) do  <emphasis>arquivo</emphasis>
+   em relação às partes físicas no disco e retorna os seguintes valores:</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="160pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>OK</entry>
+
+          <entry>As partes dos arquivos correspondem às informações do armazenamento de dados</entry>
+        </row>
+
+        <row>
+          <entry>Não foi possível encontrar o arquivo: <emphasis>filename</emphasis></entry>
+
+          <entry>O  <emphasis>nome de arquivo</emphasis>  lógico não foi encontrado</entry>
+        </row>
+
+        <row>
+          <entry>Não foi possível encontrar o arquivo:
+          <emphasis>partname</emphasis></entry>
+
+          <entry>O  <emphasis>partname</emphasis>  não foi encontrado</entry>
+        </row>
+
+        <row>
+          <entry>O tempo modificado é diferente para:
+          <emphasis>partname</emphasis></entry>
+
+          <entry>O  <emphasis>partname</emphasis>  tem uma marcação de horário diferente</entry>
+        </row>
+
+        <row>
+          <entry>O tamanho do arquivo é diferente para: <emphasis>partname</emphasis></entry>
+
+          <entry>O  <emphasis>partname </emphasis> tem um tamanho de arquivo</entry>
+        </row>
+
+        <row>
+          <entry>Arquivo CRC difere para: <emphasis>partname</emphasis></entry>
+
+          <entry>O  <emphasis>partname </emphasis> tem um CRC diferente</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.File.VerifyFile('Fred1', TRUE);
+</programlisting>
+</sect1>

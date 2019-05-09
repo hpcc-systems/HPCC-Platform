@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetNthWord">
+  <title>GetNthWord</title>
+
+  <para><emphasis role="bold">STD.Str.GetNthWord<indexterm>
+      <primary>STD.Str.GetNthWord</primary>
+    </indexterm><indexterm>
+      <primary>Str.GetNthWord</primary>
+    </indexterm><indexterm>
+      <primary>GetNthWord</primary>
+    </indexterm>(</emphasis> <emphasis>source, instance </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.GetNthWord <indexterm>
+      <primary>STD.Uni.GetNthWord</primary>
+    </indexterm> <indexterm>
+      <primary>Uni.GetNthWord</primary>
+    </indexterm> (</emphasis> <emphasis>source, instance </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, locale</emphasis><emphasis role="bold">
+  ] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém as palavras delimitadas por
+          espaço.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>instance</emphasis></entry>
+
+          <entry>Um inteiro que especifica a palavra a ser retornada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o código de idioma e
+          país a ser usado para determinar a ordem correta de classificação e
+          outras operações.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>GetNthWord retorna um valor STRING.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">GetNthWord </emphasis> retorna a
+  palavra na posição <emphasis>instance</emphasis> na string
+  <emphasis>source</emphasis>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT Std;
+
+str1 := 'a word a day keeps the doctor away';
+
+STD.STr.GetNthWord(str1,2);    //returns "word"
+</programlisting>
+</sect1>

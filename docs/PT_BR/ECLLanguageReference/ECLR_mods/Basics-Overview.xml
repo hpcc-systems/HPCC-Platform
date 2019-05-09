@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Overview" role="nobrk">
+  <title>Visão geral</title>
+
+  <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+  role="bold">C</emphasis>ontrol <emphasis role="bold">L</emphasis>anguage
+  (ECL)<indexterm>
+      <primary><emphasis role="bold">ECL</emphasis></primary>
+    </indexterm> a Enterprise Control Language (ECL)ECL foi concebida
+  especificamente para grandes projetos de dados que usam o LexisNexis High
+  Performance Computer Cluster (HPCC)<indexterm>
+      <primary><emphasis role="bold">HPCC</emphasis></primary>
+    </indexterm>. A extrema escalabilidade da ECL decorre de uma concepção que
+  permite reutilizar todas as consultas criadas em consultas subsequentes,
+  conforme a necessidade. Para fazer isso, a ECL adota uma abordagem de
+  Dicionário na criação de consultas. Cada definição de ECL define uma
+  expressão. Cada Definição anterior pode ser usada em definições posteriores
+  da ECL – <emphasis>a linguagem estende a si mesma à medida que é
+  usada</emphasis>.</para>
+
+  <sect2 id="Attributes_versus_Actions">
+    <title>Definições versus Ações</title>
+
+    <para>Funcionalmente, há dois tipos de código de ECL: Definições (AKA
+    definições de atributo) e Ações executáveis. As Ações não podem ser usadas
+    em expressões porque não retornam valores. A maioria do código de ECL é
+    composta de definições.</para>
+
+    <para>As definições definem apenas <emphasis>o que</emphasis> deve ser
+    feito, mas não executam nada. Isso significa que o programador de ECL deve
+    pensar em termos de criar código que especifica <emphasis>o que</emphasis>
+    fazer em <emphasis>vez de como</emphasis> fazer. Esse é um conceito
+    importante na medida em que o programador diz ao supercomputador o
+    <emphasis>que</emphasis> precisa acontecer e não <emphasis>como
+    </emphasis>o resultado será conseguido. Assim, o supercomputador fica
+    livre para otimizar a execução real da forma necessária para gerar o
+    resultado desejado.</para>
+
+    <para>Uma segunda consideração é que a ordem em que as Definições aparecem
+    no código fonte não define a ordem de execução. A ECL é uma linguagem não
+    procedural<indexterm>
+        <primary>non-procedural language</primary>
+      </indexterm>. Quando uma Action (como OUTPUT) executa, todas as
+    Definitions que precisa usar (considerando até as Definitions de nível
+    mais baixo nas quais as outras são baseadas) são compiladas e otimizadas.
+    Ou seja, ao contrário de outras linguagens de programação, não há uma
+    ordem de execução inerente implícita na ordem em que as definições
+    aparecem no código fonte (embora exista uma ordem necessária para que não
+    corram erros de compilação; referências antecipada referência <indexterm>
+        <primary>forward reference</primary>
+      </indexterm>s não são permitidas). Esse conceito de "execução sem ordem"
+    exige uma atitude diferente da usada em linguagens de programação padrão,
+    dependentes de ordem, porque aparenta executar "tudo ao mesmo
+    tempo".</para>
+  </sect2>
+
+  <sect2 id="Syntax_Issues">
+    <title>Problemas de Sintaxe</title>
+
+    <para>A ECL não faz distinção entre maiúsculas e minúsculas. Os espaços em
+    branco são ignorados, o que permite a formatação necessária para melhor
+    legibilidade.</para>
+
+    <para>A ECL admite comentários no código. Os comentários em bloco devem
+    ser delimitados com /* e */.</para>
+
+    <programlisting>/* this is a block comment - the terminator can be on the same line
+or any succeeding line -- everything in between is ignored */</programlisting>
+
+    <para>Comentários de uma única linha devem começar com //.</para>
+
+    <programlisting>// this is a one-line comment</programlisting>
+
+    <para>A ECL usa a sintaxe <emphasis>object.property</emphasis> padrão
+    utilizada por várias outras linguagens de programação (no entanto, a ECL
+    não é uma linguagem orientada a objeto) para qualificar o escopo das
+    Definições e eliminar ambiguidades das referências de campos dentro de
+    tabelas:</para>
+
+    <programlisting>ModuleName.Definition //reference an definition from another module/folder</programlisting>
+
+    <programlisting>Dataset.Field //reference a field in a dataset or recordset</programlisting>
+  </sect2>
+</sect1>

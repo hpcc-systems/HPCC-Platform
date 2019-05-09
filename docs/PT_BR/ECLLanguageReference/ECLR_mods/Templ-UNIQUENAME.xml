@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_UNIQUENAME">
+  <title>#UNIQUENAME</title>
+
+  <para><emphasis role="bold">#UNIQUENAME<indexterm>
+      <primary>#UNIQUENAME</primary>
+    </indexterm>( </emphasis><emphasis>namevar</emphasis><emphasis
+  role="bold"> [ </emphasis><emphasis>,pattern</emphasis><emphasis
+  role="bold">]);</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="76.20pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>namevar</emphasis></entry>
+
+            <entry>O rótulo da variável do modelo (sem os sinais de
+            porcentagem) a ser usado em declarações subsequentes (com os
+            sinais de porcentagem) que precisam do nome único gerado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern</emphasis></entry>
+
+            <entry>Opcional. Um modelo para a criação de um nome único. O
+            modelo deve conter um sinal de dólar ($) para indicar a posição em
+            que um número único é gerado, e pode conter uma cerquilha (#) para
+            incluir namevar. Isso é útil para situações em que #UNIQUENAME é
+            usado para gerar nomes de arquivos e o resultado é destinado à
+            visualização no programa ECL IDE, pois #UNIQUENAME por padrão gera
+            identificadores que começam com dois caracteres de sublinhado (__)
+            e a ECL IDE os trata como campos ocultos. Se omitido, o formato
+            padrão é __#__$__.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A declaração <emphasis role="bold">#UNIQUENAME </emphasis> cria um
+  identificador de ECL válido e único dentro do contexto do limite do escopo
+  atual. Isso é particularmente útil em estruturas MACRO, pois permite que a
+  macro seja usada várias vezes no mesmo escopo sem criar erros de nome de
+  atributo duplicado nas definições do atributo dentro da macro. Essa
+  declaração pode ser usada fora de um escopo XML e não exige um LOADXML
+  anterior para instanciar um escopo XML.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  IMPORT Training_Compare;
+  EXPORT MAC_Compare_Result(module_name, attribute_name) := MACRO
+  
+  #UNIQUENAME(compare_file);
+  %compare_file% := Training_Compare.File_Compare_Master;
+  
+  #UNIQUENAME(layout_per_attr);
+  #UNIQUENAME(compare_attr, _MyField_$_);
+       //the compare_attr fieldname is generated like: _MyField_1_
+  %layout_per_attr% := RECORD
+       person.per_cid;
+       %compare_attr% := module_name.attribute_name;
+  END;
+  
+  #UNIQUENAME(person_attr_out);
+  %person_attr_out% := TABLE(person, %layout_per_attr%);
+  
+  #UNIQUENAME(person_attr_out_dist);
+  %person_attr_out_dist% := DISTRIBUTE(%person_attr_out%,HASH(per_cid));
+  
+  #UNIQUENAME(layout_match_out);
+  %layout_match_out% := RECORD
+       data9 per_cid;
+       boolean ValuesMatchFlag;
+       TYPEOF(module_name.attribute_name) MyValue;
+       TYPEOF(%compare_file%.attribute_name) CompareValue;
+  END;
+  
+  #UNIQUENAME(layout_compare);
+  %layout_compare% := RECORD
+       %compare_file%.per_cid;
+       %compare_file%.attribute_name;
+  END;
+  
+  #UNIQUENAME(compare_table);
+  %compare_table% := TABLE(%compare_file%, %layout_compare%);
+  #UNIQUENAME(compare_table_dist);
+  %compare_table_dist% := DISTRIBUTE(%compare_table%, HASH(per_cid));
+  #UNIQUENAME(compare_attr_to_field);
+  %layout_match_out% %compare_attr_to_field%(%person_attr_out% L,
+  %compare_table% R) := TRANSFORM
+       SELF.ValuesMatchFlag := (L.%compare_attr% = R.attribute_name);
+       SELF.MyValue := L.%compare_attr%;
+       SELF.CompareValue := R.attribute_name;
+       SELF := L;
+  END;
+  
+  #UNIQUENAME(compare_out);
+  %compare_out% := JOIN(%person_attr_out_dist%,
+            %compare_table_dist%,
+            LEFT.per_cid = RIGHT.per_cid,
+            %compare_attr_to_field%(LEFT, RIGHT),
+            LOCAL);
+  
+  #UNIQUENAME(match_out);
+  #UNIQUENAME(nomatch_out);
+  %match_out% := %compare_out%(ValuesMatchFlag);
+  %nomatch_out% := %compare_out%(~ValuesMatchFlag);
+  
+  COUNT(%match_out%);
+  OUTPUT(CHOOSEN(%match_out%, 50));
+  COUNT(%nomatch_out%);
+  OUTPUT(CHOOSEN(%nomatch_out%, 50));
+  
+  ENDMACRO;
+</programlisting>
+
+  <para>Ver também: <link linkend="MACRO_Structure">MACRO</link></para>
+</sect1>

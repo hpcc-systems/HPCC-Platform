@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ROW">
+  <title>ROW</title>
+
+  <para><emphasis role="bold">ROW<indexterm>
+      <primary>ROW</primary>
+    </indexterm><indexterm>
+      <primary>ROW function</primary>
+    </indexterm>(</emphasis><emphasis> </emphasis><emphasis role="bold">{
+  </emphasis><emphasis>fields </emphasis><emphasis role="bold">}
+  </emphasis><emphasis>, recstruct </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">ROW(</emphasis><emphasis> row </emphasis>,
+  <emphasis>resultrec </emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">ROW(</emphasis><emphasis> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis> row </emphasis>, <emphasis role="bold">]
+  </emphasis><emphasis>transform </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.15pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>fields</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula dos valores de dados para
+            cada campo no <emphasis>recstruct </emphasis>contidos em chaves (
+            {} ).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recstruct</emphasis></entry>
+
+            <entry>O nome da estrutura RECORD que define o layout do
+            campo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>row</emphasis></entry>
+
+            <entry>Uma linha única de dados. Pode ser um registro existente,
+            ou valores de dados formatados em linha como a descrição do
+            parâmetro dos campos acima, ou até mesmo um conjunto vazio ( [ ] )
+            para adicionar um registro limpo no formato do
+            <emphasis>resultrec</emphasis>. Se omitida, o registro será gerado
+            pela função TRANSFORM.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>resultrec</emphasis></entry>
+
+            <entry>Uma estrutura RECORD que define como criar uma linha de
+            dados, semelhante ao tipo usado pela função TABLE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>Uma função TRANSFORM que define como criar a linha de
+            dados.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ROW retorna um único registro.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">ROW </emphasis> cria um único registro
+  de dados e é válida para uso em qualquer expressão onde um único registro
+  seja válido.</para>
+
+  <sect2 id="ROW_Form_1">
+    <title>ROW Form 1</title>
+
+    <para>O primeiro form cria um registro a partir dos dados embutidos nos
+    <emphasis>campos</emphasis>, estruturada como definido por
+    <emphasis>recstruct</emphasis><indexterm>
+        <primary>recstruct</primary>
+      </indexterm>. É normalmente usada dentro de uma estrutura TRANSFORM
+    <indexterm>
+        <primary>TRANSFORM structure</primary>
+      </indexterm> como a expressão que define o resultado para um campo de
+    dataset secundário.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>AkaRec := {STRING20 forename,STRING20 surname};
+outputRec := RECORD
+  UNSIGNED id;
+  DATASET(AkaRec) kids;
+END;
+inputRec := {UNSIGNED id,STRING20 forename,STRING20 surname};
+inPeople := DATASET([{1,'Kevin','Halligan'},{1,'Kevin','Hall'},
+                     {2,'Eliza','Hall'},{2,'Beth','Took'}],inputRec);
+outputRec makeFatRecord(inputRec L) := TRANSFORM
+  SELF.id := l.id;
+  SELF.kids := DATASET([{ L.forename, L.surname }],AkaRec);
+END;
+fatIn := PROJECT(inPeople, makeFatRecord(LEFT));
+outputRec makeChildren(outputRec L, outputRec R) := TRANSFORM
+  SELF.id := L.id;
+  SELF.kids := L.kids + ROW({R.kids[1].forename,R.kids[1].surname},AkaRec);
+END;
+r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
+</programlisting>
+  </sect2>
+
+  <sect2 id="ROW_Form_2">
+    <title>ROW Form 2</title>
+
+    <para>A segunda form cria um registro a partir da <emphasis>row
+    </emphasis>especificada, usando <emphasis>resultrec<indexterm>
+        <primary>resultrec</primary>
+      </indexterm> </emphasis>da mesma maneira que a função TABLE opera. É
+    normalmente usada dentro de uma estrutura TRANSFORM como a expressão que
+    define o resultado para um campo de dataset secundário.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>AkaRec := {STRING20 forename,STRING20 surname};
+outputRec := RECORD
+UNSIGNED id;
+DATASET(AkaRec) children;
+END;
+inputRec := {UNSIGNED id,STRING20 forename,STRING20 surname};
+inPeople := DATASET([{1,'Kevin','Halligan'},{1,'Kevin','Hall'},
+                     {1,'Gawain',''},{2,'Liz','Hall'},
+                     {2,'Eliza','Hall'},{2,'Beth','Took'}],inputRec);
+outputRec makeFatRecord(inputRec L) := TRANSFORM
+  SELF.id := l.id;
+  SELF.children := ROW(L, AkaRec); //using Form 2 here
+END;
+fatIn := PROJECT(inPeople, makeFatRecord(LEFT));
+outputRec makeChildren(outputRec L, outputRec R) := TRANSFORM
+  SELF.id := L.id;
+  SELF.children := L.children + 
+                   ROW({R.children[1].forename,R.children[1].surname},AkaRec);
+
+END;
+r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
+</programlisting>
+  </sect2>
+
+  <sect2 id="ROW_Form_3">
+    <title>ROW Form 3</title>
+
+    <para>O terceiro form usa uma função TRANSFORM para gerar seu resultado de
+    registro único. A função <emphasis>transform</emphasis> deve adotar pelo
+    menos um parâmetro: um registro LEFT, o qual deve estar no mesmo formato
+    que o registro de entrada. O formato do registro resultante deve ser
+    distinto do de entrada.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>
+NameRec := RECORD
+  STRING5 title;
+  STRING20 fname;
+  STRING20 mname;
+  STRING20 lname;
+  STRING5 name_suffix;
+  STRING3 name_score;
+END;
+
+MyRecord := RECORD
+  UNSIGNED id;
+  STRING uncleanedName;
+  NameRec Name;
+END;
+
+x := DATASET('RTTEST::RowFunctionData', MyRecord,THOR);
+  
+
+STRING73 CleanPerson73(STRING inputName) := FUNCTION
+  suffix:=[ ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7',' 8',' 9',
+            ' J',' JR',' S',' SR'];
+  InWords := Std.Str.CleanSpaces(inputName);
+  HasSuffix := InWords[LENGTH(TRIM(InWords))-1 ..] IN suffix;
+  WordCount := LENGTH(TRIM(InWords,LEFT,RIGHT)) - LENGTH(TRIM(InWords,ALL))+1;
+  HasMiddle := WordCount = 5 OR (WordCount = 4 AND NOT HasSuffix) ;
+  Space1 := Std.Str.Find(InWords,' ',1);
+  Space2 := Std.Str.Find(InWords,' ',2);
+  Space3 := Std.Str.Find(InWords,' ',3);
+  Space4 := Std.Str.Find(InWords,' ',4);
+  STRING5 title := InWords[1..Space1-1];
+  STRING20 fname := InWords[Space1+1..Space2-1];
+  STRING20 mname := IF(HasMiddle,InWords[Space2+1..Space3-1],'');
+  STRING20 lname := MAP(HasMiddle AND NOT HasSuffix =&gt;
+                         InWords[Space3+1..],
+                        HasMiddle AND HasSuffix =&gt;
+                         InWords[Space3+1..Space4-1],
+                        NOT HasMiddle AND NOT HasSuffix =&gt;
+                         InWords[Space2+1..],
+                        NOT HasMiddle AND HasSuffix =&gt;
+                         InWords[Space2+1..Space3-1],
+                        '');
+  STRING5 name_suffix := IF(HasSuffix,InWords[LENGTH(TRIM(InWords))-1 ..],'');
+  STRING3 name_score := '';
+  RETURN title + fname + mname + lname + name_suffix + name_score;
+END;
+
+//Example 1 - a transform to create a row from an uncleaned name
+NameRec createRow(string inputName) := TRANSFORM
+  cleanedText := CleanPerson73(inputName);
+  SELF.title := cleanedText[1..5];
+  SELF.fname := cleanedText[6..25];
+  SELF.mname := cleanedText[26..45];
+  SELF.lname := cleanedText[46..65];
+  SELF.name_suffix := cleanedText[66..70];
+  SELF.name_score := cleanedText[71..73];
+END;
+
+myRecord t(myRecord L) := TRANSFORM
+  SELF.Name := ROW(createRow(L.uncleanedName));
+  SELF := L;
+END;
+y := PROJECT(x, t(LEFT));
+OUTPUT(y);
+
+//Example 2 - an attribute using that transform to generate the row.
+
+NameRec cleanedName(STRING inputName) := ROW(createRow(inputName));
+myRecord t2(myRecord L) := TRANSFORM
+  SELF.Name := cleanedName(L.uncleanedName);
+  SELF := L;
+END;
+y2 := PROJECT(x, t2(LEFT));
+OUTPUT(y2);
+
+//Example 3 = Encapsulate the transform inside the attribute by
+// defining a FUNCTION structure.
+NameRec cleanedName2(STRING inputName) := FUNCTION
+
+  NameRec createRow := TRANSFORM
+    cleanedText := CleanPerson73(inputName); 
+    SELF.title := cleanedText[1..5];
+    SELF.fname := cleanedText[6..25];
+    SELF.mname := cleanedText[26..45];
+    SELF.lname := cleanedText[46..65];
+    SELF.name_suffix := cleanedText[66..70];
+    SELF.name_score := cleanedText[71..73];
+  END;
+
+  RETURN ROW(createRow); //omitted row parameter
+END;
+
+myRecord t3(myRecord L) := TRANSFORM
+  SELF.Name := cleanedName2(L.uncleanedName);
+  SELF := L;
+END;
+
+y3 := PROJECT(x, t3(LEFT));
+
+OUTPUT(y3);
+</programlisting>
+
+    <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+    TRANSFORM</link>, <link linkend="DATASET">DATASET</link>, <link
+    linkend="RECORD_Structure">Estrutura RECORD</link>, <link
+    linkend="FUNCTION_Structure">Estrutura FUNCTION</link></para>
+  </sect2>
+</sect1>

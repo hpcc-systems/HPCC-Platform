@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="APPLY">
+  <title>APPLY</title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] APPLY<indexterm>
+      <primary>APPLY</primary>
+    </indexterm><indexterm>
+      <primary>APPLY function</primary>
+    </indexterm>(</emphasis><emphasis>dataset, actionlist </emphasis><emphasis
+  role="bold">[ , BEFORE<indexterm>
+      <primary>BEFORE</primary>
+    </indexterm>( </emphasis><emphasis>actionlist </emphasis><emphasis
+  role="bold">) ]</emphasis><emphasis role="bold"> [ , AFTER<indexterm>
+      <primary>AFTER</primary>
+    </indexterm>( </emphasis><emphasis>actionlist </emphasis><emphasis
+  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">)
+  ]</emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="81.65pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attrname</emphasis></entry>
+
+            <entry>Opcional. O nome da ação, que transforma a ação em
+            definição de atributo, consequentemente não é executado até que
+            <emphasis>attrname</emphasis> seja usado como uma ação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataset</emphasis></entry>
+
+            <entry>O conjunto de registros para o qual a ação será aplicada.
+            Pode ser o nome de um dataset físico ou um tipo compatível com
+            essa operação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>actionlist</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula das ações a serem
+            executadas simultaneamente. Normalmente, esse é um serviço externo
+            (consulte a estrutura SERVICE<indexterm>
+                <primary>SERVICE Structure</primary>
+              </indexterm>). Este pode não ser um OUTPUT ou qualquer função
+            que venha a acionar uma consulta secundária.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">BEFORE</emphasis></entry>
+
+            <entry>Especifica a execução do anexo
+            <emphasis>actionlist</emphasis> antes que a primeira linha do
+            dataset seja processada. Ainda não implementado no Thor; válido
+            apenas no hthor e no Roxie.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">AFTER</emphasis></entry>
+
+            <entry>Especifica a execução da <emphasis>actionlist</emphasis>
+            anexa após a última linha do dataset ter sido processada. Ainda
+            não implementado no Thor; válido apenas no hthor e no
+            Roxie.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A ação <emphasis role="bold">APPLY </emphasis> desempenha todas as
+  ações especificadas na <emphasis>actionlist</emphasis> em cada registro do
+  <emphasis>dataset </emphasis>nominado. As ações são executadas na ordem em
+  que aparecem na <emphasis>actionlist</emphasis>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>EXPORT x :=  SERVICE
+  echo(const string src):library='myfuncs',entrypoint='rtlEcho';
+END;
+APPLY(person,x.echo(last_name + ':' + first_name));
+ // concatenate each person's lastname and firstname and echo it
+</programlisting>
+
+  <para>See Also: <link linkend="SERVICE_Structure">Estrutura SERVICE</link>,
+  <link linkend="DATASET">DATASET</link></para>
+</sect1>

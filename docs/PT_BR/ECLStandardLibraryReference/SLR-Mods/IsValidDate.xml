@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IsValidDate">
+  <title>IsValidDate</title>
+
+  <para><emphasis role="bold">STD.Date.IsValidDate<indexterm>
+      <primary>STD.Date.IsValidDate</primary>
+    </indexterm><indexterm>
+      <primary>Date.IsValidDate</primary>
+    </indexterm><indexterm>
+      <primary>IsValidDate</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> ,
+  [<emphasis>yearLowerBound</emphasis>],[<emphasis>yearUpperBound</emphasis>]
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>Um valor de data no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>yearLowerBound</emphasis></entry>
+
+          <entry>O ano mínimo aceitável. Opcional. O padrão é 1800.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis><emphasis>yearUpperBound</emphasis></emphasis></entry>
+
+          <entry>O ano máximo aceitável. Opcional. O padrão é 2100.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>IsValidDateYear returna um valor BOOLEAN.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">sValidDate</emphasis> retorna TRUE se a
+  data é válida, verificando o se o ano está em um intervalo e validando cada
+  um dos outros componentes individuais.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+d1 := 19631122;
+d2 := 19990230;  
+firstTest := STD.Date.IsValidDate(d1);  //d1 is valid
+secondTest := STD.Date.IsValidDate(d2); //d2 is not valid
+</programlisting>
+
+  <para/>
+</sect1>

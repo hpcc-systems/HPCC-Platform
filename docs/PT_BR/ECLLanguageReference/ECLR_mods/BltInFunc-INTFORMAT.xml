@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="INTFORMAT">
+  <title>INTFORMAT</title>
+
+  <para><emphasis role="bold">INTFORMAT<indexterm>
+      <primary>INTFORMAT</primary>
+    </indexterm><indexterm>
+      <primary>INTFORMAT function</primary>
+    </indexterm>(</emphasis><emphasis>expression, width,
+  mode</emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.00pt"/>
+
+        <colspec colwidth="308.80pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A expressão que especifica o valor inteiro a ser
+            formatado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>width</emphasis></entry>
+
+            <entry>O tamanho da string na qual o valor será alinhado à
+            direita.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mode</emphasis></entry>
+
+            <entry>O formato tipo: 0 = preenchimento em branco, 1 =
+            preenchimento com zero.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>INTFORMAT retorna um único valor.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">INTFORMAT </emphasis> retorna o valor
+  da <emphasis>expressão</emphasis> formatada como string justificada à
+  direita dos caracteres de <emphasis>largura </emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>val := 123456789;
+OUTPUT(INTFORMAT(val,20,1));
+  //formats as '00000000000123456789'
+OUTPUT(INTFORMAT(val,20,0));
+  //formats as '          123456789'
+</programlisting>
+
+  <para>Ver também: <link linkend="REALFORMAT">REALFORMAT</link></para>
+</sect1>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AdjustDate">
+  <title>AdjustDate</title>
+
+  <para><emphasis role="bold">STD.Date.AdjustDate<indexterm>
+      <primary>STD.Date.AdjustDate</primary>
+    </indexterm><indexterm>
+      <primary>Date.AdjustDate</primary>
+    </indexterm><indexterm>
+      <primary>AdjustDate</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> ,
+  [<emphasis>year_delta</emphasis>],[<emphasis>month_delta</emphasis>]
+  ,[<emphasis>day_delta</emphasis>] <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>Um valor de data no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>year_delta</emphasis></entry>
+
+          <entry>O ano mínimo aceitável. Opcional, o valor padrão é
+          zero.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>month_delta</emphasis></entry>
+
+          <entry>O ano mínimo aceitável. Opcional, o valor padrão é
+          zero.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>day_delta</emphasis></entry>
+
+          <entry>O ano máximo aceitável. Opcional, o valor padrão é
+          zero.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>AdjustDate retorna date_t que representa a data
+          ajustada.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">AdjustDate</emphasis> ajusta uma data
+  incrementando ou decrementando valores de ano, mês e/ou dia. A data deve
+  estar no calendário gregoriano, após o ano 1600.</para>
+
+  <para>Se a nova data calculada for inválida, será normalizada de acordo com
+  as regras de mktime(). Por exemplo, 20140130 mais 1 mês resulta em
+  20140302.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT std;
+inDate :=19631123;
+Std.Date.AdjustDate(inDate,5,1,3);  //returns 19681226
+</programlisting>
+
+  <para>Ver também: <link
+  linkend="AdjustCalendar">AdjustCalendar</link></para>
+</sect1>

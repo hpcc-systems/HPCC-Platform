@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RANKED">
+  <title>RANKED</title>
+
+  <para><emphasis role="bold">RANKED<indexterm>
+      <primary>RANKED</primary>
+    </indexterm><indexterm>
+      <primary>RANKED function</primary>
+    </indexterm>(</emphasis><emphasis>position, set </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>,</emphasis><emphasis
+  role="bold">DESCEND<indexterm>
+      <primary>DESCEND</primary>
+    </indexterm> ])</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="84.45pt"/>
+
+        <colspec colwidth="268.35pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>position</emphasis></entry>
+
+            <entry>Um valor inteiro que indica o elemento a ser retornado do
+            conjunto não classificado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>set</emphasis></entry>
+
+            <entry>O conjunto de valores.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">DESCEND</emphasis></entry>
+
+            <entry>Opcional. Indica a classificação de ordem
+            decrescente.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>RANKED retorna um único valor.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">RANKED </emphasis> classifica o
+  <emphasis>conjunto</emphasis> em ordem ascendente (ou decrescente se DESCEND
+  estiver presente), e retorna a posição ordinal (o valor do índice) do
+  elemento de <emphasis>posição</emphasis> do conjunto classificado no
+  <emphasis>conjunto</emphasis> não classificado. Trata-se do oposto de
+  RANK.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>Ranking := RANKED(1,[20,30,10,40]);
+// returns 3 - 1st element (10) in sorted set [10,20,30,40]
+// was 3rd element in unsorted set
+
+Ranking := RANKED(1,[20,30,10,40],DESCEND);
+// returns 4 - 1st element (40) in sorted set [40,30,20,10]
+// was 4th element in unsorted set</programlisting>
+
+  <para>Ver também: <link linkend="RANK">RANK</link>, <link
+  linkend="SORT">SORT</link>, <link linkend="SORTED">SORTED</link>, <link
+  linkend="Recordset_Filtering">Conjuntos e Filtros</link></para>
+</sect1>

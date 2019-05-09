@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESP_Struct">
+  <title>ESP<emphasis role="bold">struct</emphasis></title>
+
+  <para>ESPstruct <indexterm>
+      <primary>ESPstruct</primary>
+    </indexterm>é um conjunto de elementos agrupados sob um único nome. Estes
+  elementos, conhecidos como <emphasis>members</emphasis>, podem ser de tipos
+  e comprimentos diferentes. As estruturas podem ser aninhadas e são
+  compatíveis com heranças.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>
+ESPstruct NameBlock
+
+{
+    string FirstName;
+    string MiddleName;
+    string LastName;
+    int Age;
+};
+   </programlisting>
+</sect1>

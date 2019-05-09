@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REAL">
+  <title>REAL<indexterm>
+      <primary>REAL</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">REAL<indexterm>
+      <primary>REAL data type</primary>
+    </indexterm>[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis></para>
+
+  <para>Um valor de ponto flutuante <emphasis>floating point</emphasis> IEEE
+  padrão de <indexterm>
+      <primary>n</primary>
+    </indexterm> bytes. Os valores válidos para <emphasis>n</emphasis> são: 4
+  (valores para 7 dígitos importantes) ou 8 (valores para 15 dígitos
+  importantes). Se <emphasis>n</emphasis> for omitido, REAL será um valor de
+  ponto flutuante de precisão dupla (8 bytes).</para>
+
+  <sect2 id="Real_Value_Ranges">
+    <title>Intervalor de Valores REAL</title>
+
+    <para><emphasis role="bold">Type</emphasis><emphasis role="bold">
+    </emphasis><emphasis role="bold">Dígitos Importantes Maior
+    Valor</emphasis><emphasis role="bold"> </emphasis><emphasis
+    role="bold">Smallest Value</emphasis></para>
+
+    <programlisting><emphasis role="bold">Type</emphasis><emphasis role="bold">    </emphasis><emphasis
+        role="bold">Significant Digits     Largest Value</emphasis><emphasis
+        role="bold"> </emphasis><emphasis role="bold">  Smallest Value
+</emphasis>REAL4    7 (9999999)           3.402823e+038   1.175494e-038
+REAL8   15 (999999999999999)   1.797693e+308   2.225074e-308
+</programlisting>
+
+    <para>Exemplo:</para>
+
+    <para><programlisting>REAL4 MyValue := MAP(MyString = '1.0' =&gt; MyString, '0');
+          // MyValue becomes either 1.0 or 0</programlisting></para>
+  </sect2>
+</sect1>

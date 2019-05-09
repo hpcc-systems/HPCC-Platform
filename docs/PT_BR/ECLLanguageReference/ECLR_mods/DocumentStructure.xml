@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Documentation_Structure" role="nobrk">
+  <title>Estrutura da Documentação</title>
+
+  <para>Este manual documenta o Enterprise Control Language (ECL). A ECL foi projetada especificamente para trabalhar com grandes conjuntos de dados. Este livro foi projetado para ser uma ferramenta de aprendizado e um trabalho de referência e está dividido nas seguintes seções:</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis role="bold">Básico ECL</emphasis></entry>
+
+          <entry>Aborda os conceitos fundamentais de ECL.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">Expressões e Operadores</emphasis></entry>
+
+          <entry>Define os operadores disponíveis e sua precedência de avaliação de expressão.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold">Tipos de valores</emphasis></emphasis></entry>
+
+          <entry>Introduz os tipos de dados e conversões de tipo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">Registrar estruturas e arquivos</emphasis></entry>
+
+          <entry>Introduz as estruturas RECORD, DATASET e INDEX</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold">Tipos de Dados Estrangeiro</emphasis></emphasis></entry>
+
+          <entry>Define a estrutura TYPE e as funções que ela possa vir a usar.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Suporte de análise de linguagem natural</emphasis></emphasis></emphasis></entry>
+
+          <entry>Define os padrões e as funções que a função PARSE possa vir a usar.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold">Palavras-chave reservadas</emphasis></emphasis></entry>
+
+          <entry>Define o uso especial de palavras-chave ECL que não foi definido em nenhum outro lugar.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Estruturas Especiais</emphasis></emphasis></emphasis></entry>
+
+          <entry>Define TRANSFORM, MACRO, e outras estruturas, assim como seu uso.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Ações e Funções Built-in</emphasis></emphasis></emphasis></entry>
+
+          <entry>Define as funções e ações disponíveis como parte da linguagem.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Workflow Services</emphasis></emphasis></emphasis></entry>
+
+          <entry>Define a execução do job/os aspectos de controle do processo ECL.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Templates</emphasis></emphasis></emphasis></entry>
+
+          <entry>Define os comandos do modelo ECL.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold">External Services</emphasis></emphasis></entry>
+
+          <entry>Define a estrutura SERVICE e o seu uso.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+</sect1>

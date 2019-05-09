@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SetColumnMapping">
+  <title>SetColumnMapping</title>
+
+  <para><emphasis role="bold">STD.File.SetColumnMapping<indexterm>
+      <primary>STD.File.SetColumnMapping</primary>
+    </indexterm><indexterm>
+      <primary>File.SetColumnMapping</primary>
+    </indexterm><indexterm>
+      <primary>SetColumnMapping</primary>
+    </indexterm>(</emphasis> <emphasis> file, mapping </emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>file</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do arquivo
+          lógico.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>mappings</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém uma lista delimitada
+          por vírgulas dos mapeamentos do campo.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">SetColumnMapping </emphasis> define
+  como os dados nos campos <emphasis>file</emphasis> devem ser transformados
+  entre o formato de armazenamento de dados real e o formato de entrada usado
+  para consultar esses dados.</para>
+
+  <para>O formato de cada campo na lista <emphasis>mapping</emphasis>
+  é:</para>
+
+  <para><emphasis role="bold">&lt;field&gt;{set(&lt;transform&gt;(
+  args),...),get(&lt;transform&gt;,...),displayname(&lt;name&gt;)}</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>&lt;field&gt;</emphasis></entry>
+
+          <entry>O nome do campo no arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">set</emphasis></entry>
+
+          <entry>Opcional. Especifica as transformações aplicadas aos valores
+          fornecidos pelo usuário para convertê-los em valores no
+          arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>&lt;transform&gt;</emphasis></entry>
+
+          <entry>Opcional. O nome da função a ser aplicada ao valor.
+          Normalmente, é o nome de uma função de plugin. O valor sendo
+          convertido é sempre fornecido como o primeiro parâmetro da função.
+          No entanto, parâmetros adicionais podem ser especificados em
+          colchetes após o nome da transformação (de forma semelhante à
+          higiene de SALT).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">get</emphasis></entry>
+
+          <entry>Opcional. Especifica as transformações aplicadas aos valores
+          no arquivo para convertê-los nos valores formatados como entendidos
+          pelo usuário.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">displayname</emphasis></entry>
+
+          <entry>Opcional. Permite a associação de um
+          <emphasis>nome</emphasis> diferente do campo entendido naturalmente
+          pelo usuário.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Você pode misturar funções Unicode e de strings, pois o sistema
+  converte automaticamente os parâmetros para os tipos adequados esperados
+  pelas funções.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">// A file where the firstname(string) and lastname(unicode) are
+//always upper-cased:
+// There is no need for a displayname since it isn't really a
+// different field as far as the user is concerned, and there is
+// obviously no get transformations.
+ firstname{set(stringlib.StringToUpperCase)},
+                surname{set(unicodelib.UnicodeToUpperCase)}
+// A name translated using a phonetic key
+// it is worth specifying a display name here, because it will make
+// more sense to the user, and the user may want to enter either the
+// translated or untranslated names.
+ dph_lname{set(metaphonelib.DMetaPhone1),
+      displayname(lname)}
+// A file where a name is converted to a token using the namelib
+// functions.  (I don't think we have an example of this)
+// (one of the few situations where a get() attribute is useful)
+ fnametoken{set(namelib.nameToToken),
+       get(namelib.tokenToName),
+       displayname(fname)}
+// upper case, and only include digits and alphabetic.
+ searchname{set(stringlib.StringToUpperCase,
+      stringlib.StringFilter(
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'))}
+// A file with a field that that needs to remove accents and then
+// uppercase:
+ lastname{set(unicodeLIb.CleanAccents,stringLib.StringToUpperCase)}
+</programlisting>
+</sect1>

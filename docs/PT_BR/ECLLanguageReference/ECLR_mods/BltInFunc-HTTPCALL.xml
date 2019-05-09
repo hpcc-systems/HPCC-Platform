@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="HTTPCALL">
+  <title>HTTPCALL<indexterm>
+      <primary>HTTPCALL</primary>
+    </indexterm></title>
+
+  <para><emphasis>result</emphasis><emphasis role="bold"> :=
+  HTTPCALL<indexterm>
+      <primary>HTTPCALL Function</primary>
+    </indexterm>( </emphasis><emphasis> url, httpmethod, responsemimetype,
+  outstructure</emphasis> <emphasis role="bold">[</emphasis><emphasis>,
+  options </emphasis><emphasis role="bold"> ] );</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="121.70pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>result</emphasis></entry>
+
+            <entry>Nome da definição do recordset resultante</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>url</emphasis></entry>
+
+            <entry>Uma string que contém a URL que hospeda o serviço a ser
+            chamado. Pode conter parâmetros para o serviço.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>httpmethod</emphasis></entry>
+
+            <entry>Uma string que contém o método HTTP a ser invocado. Os
+            métodos válidos são: "GET"</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>responsemimetype</emphasis></entry>
+
+            <entry>Uma string que contém o tipo de resposta MIME a ser usado.
+            Os tipos válidos são: "text/xml"</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outstructure</emphasis></entry>
+
+            <entry>Uma estrutura RECORD que contém as definições do campo de
+            resultado. Para um <emphasis>responsemimetype</emphasis> com base
+            em XML, deve ser usado XPATH para especificar o caminho exato dos
+            dados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula das especificações
+            opcionais da lista abaixo.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para><emphasis role="bold">HTTPCALL<indexterm>
+      <primary>Opções HTTPCALL</primary>
+    </indexterm> </emphasis> corresponde a uma função que aciona o serviço
+  REST.</para>
+
+  <para>Opções <emphasis>válidas</emphasis> são:</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="135.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">RETRY</emphasis><indexterm>
+                <primary>RETRY</primary>
+              </indexterm>(<emphasis>count</emphasis>)</entry>
+
+            <entry>Especifica quantas vezes houve uma nova tentativa de
+            acionamentos, se ocorrerem erros não fatais. Se omitida, o padrão
+            é três (3).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TIMEOUT</emphasis><indexterm>
+                <primary>TIMEOUT</primary>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
+
+            <entry>Especifica o número tentativas de leitura antes da falha. O
+            <emphasis>period</emphasis> (período) é um número real cuja parte
+            inteira especifica os segundos. Definir para zero (0) indica
+            espera permanente. Se omitido, o padrão é trezentos (300).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TIMELIMIT</emphasis><indexterm>
+                <primary>TIMELIMIT</primary>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
+
+            <entry>Especifica o tempo total permitido para o HTTPCALL. O
+            <emphasis>period</emphasis> (período) é um número real cuja parte
+            inteira especifica os segundos. Se omitido, o padrão é zero (0) –
+            indicando ausência de limite de tempo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">XPATH<indexterm>
+                <primary>XPATH</primary>
+              </indexterm></emphasis>(<emphasis>xpath</emphasis>)</entry>
+
+            <entry>Especifica o caminho usado para acessar as linhas no
+            resultado. Se omitido, o padrão é:
+            'serviceResponse/Results/Result/Dataset/Row'.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ONFAIL<indexterm>
+                <primary>ONFAIL</primary>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
+
+            <entry>Especifica acionar a função transform, se o serviço falhar
+            em relação a um registro específico, ou a palavra-chave SKIP. A
+            função TRANSFORM deve gerar o mesmo <emphasis>resultype</emphasis>
+            que <emphasis>outstructure</emphasis> e deve usar FAILCODE e/ou
+            FAILMESSAGE<indexterm>
+                <primary>FAILMESSAGE</primary>
+              </indexterm> para fornecer detalhes da falha.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TRIM<indexterm>
+                <primary>TRIM</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Especifica que todos os espaços à direita são removidos das
+            strings antes do resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">HTTPHEADER<indexterm>
+                <primary>HTTPHEADER</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Refere-se às informações de cabeçalho a serem especificadas
+            para o serviço.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>worldBankSource := RECORD
+  STRING name {XPATH('name')}
+END;
+
+OutRec1 := RECORD
+  DATASET(worldBankSource) Fred{XPATH('/source')};
+END;
+
+raw := HTTPCALL('http://api.worldbank.org/sources', 'GET', 'text/xml', OutRec1, );
+
+OUTPUT(raw);
+
+////Using HTTPHEADER to pass Authorization info
+raw2 := HTTPCALL('http://api.worldbank.org/sources', 'GET', 'text/xml', 
+                 OutRec1, HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ='));
+
+OUTPUT(raw2);
+
+</programlisting>
+</sect1>

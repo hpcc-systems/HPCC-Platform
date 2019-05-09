@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESPinclude">
+  <title><emphasis role="bold">ESPinclude</emphasis></title>
+
+  <para>ESPinclude <indexterm>
+      <primary>ESPinclude</primary>
+    </indexterm>permite incluir um arquivo ESDL externo. Este comando é semelhante a expressão #incluir.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>
+ ESPinclude(commonStructures);
+   </programlisting>
+</sect1>

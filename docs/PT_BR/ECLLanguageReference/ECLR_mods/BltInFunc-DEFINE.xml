@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DEFINE">
+  <title>DEFINE<indexterm>
+      <primary>DEFINE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DEFINE<indexterm>
+      <primary>DEFINE function</primary>
+    </indexterm>(</emphasis><emphasis> pattern, symbol </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.35pt"/>
+
+        <colspec colwidth="309.45pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>pattern</emphasis></entry>
+
+            <entry>O nome de um padrão de análise RULE .</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>symbol</emphasis></entry>
+
+            <entry>Uma constante da string que especifica o nome a ser usado
+            na opção USE em uma função PARSE ou a função USE em um padrão de
+            análise RULE .</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DEFINE cria um padrão RULE.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">DEFINE </emphasis> define um
+  <emphasis>símbolo</emphasis> para o <emphasis>padrão </emphasis>
+  especificado que pode ser encaminhado para referência em atributos de padrão
+  de análise previamente definidos. Esse é o único tipo de referência de
+  encaminhamento de <indexterm>
+      <primary>referência antecipada</primary>
+    </indexterm> permitido no ECL.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>RULE a := USE('symbol');
+ //uses the 'symbol'pattern defined later - b
+RULE b := 'pattern';
+ //defines a rule pattern
+RULE s := DEFINE(b,'symbol');
+ //associate the "b" rule with the
+ //'symbol' for forward reference by rule "a
+</programlisting>
+
+  <para>Ver também: <link linkend="PARSE">PARSE</link>, <link
+  linkend="PARSE_Pattern_Value_Types">PARSE Pattern Value Types</link></para>
+</sect1>

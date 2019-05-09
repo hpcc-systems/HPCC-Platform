@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="KEYUNICODE">
+  <title>KEYUNICODE</title>
+
+  <para><emphasis role="bold">KEYUNICODE<indexterm>
+      <primary>KEYUNICODE</primary>
+    </indexterm><indexterm>
+      <primary>KEYUNICODE function</primary>
+    </indexterm>(</emphasis><emphasis>string</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="78.25pt"/>
+
+      <colspec colwidth="310.55pt"/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>string</emphasis></entry>
+
+          <entry>Uma string UNICODE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>KEYUNICODE retorna um único valor de DATA.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">KEYUNICODE </emphasis> retorna um valor
+  de DADOS DATA derivado do parâmetro da <emphasis>string</emphasis> de modo
+  que uma comparação destes valores de dados é equivalente a uma comparação
+  sensível à localidade dos valores Unicode que os geraram – e, por ser um
+  simples memcmp(), é significativamente mais rápido. Os valores da
+  <emphasis>string</emphasis> que estão sendo gerados precisam ser da mesma
+  localidade ou os resultados serão imprevisíveis. Esta função é especialmente
+  útil se você estiver realizando várias comparações em um campo UNICODE de um
+  dataset grande – sugerimos gerar um campo de chave e realizar as comparações
+  neste campo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>//where you might do this:
+my_record := RECORD
+   UNICODE_en_US str;
+END;
+my_dataset := DATASET('filename', my_record, FLAT);
+my_sorted  := SORT(my_dataset, str);
+//you could instead do this:
+my_record := RECORD
+   UNICODE_en_US str;
+   DATA strkey := KEYUNICODE(SELF.str);
+END;
+my_dataset := DATASET('filename', my_record, FLAT);
+my_sorted  := SORT(my_dataset, strkey);
+</programlisting>
+
+  <para>Ver também: <link linkend="UNICODE">UNICODE</link>, <link
+  linkend="RECORD_Structure">LOCALE</link></para>
+</sect1>

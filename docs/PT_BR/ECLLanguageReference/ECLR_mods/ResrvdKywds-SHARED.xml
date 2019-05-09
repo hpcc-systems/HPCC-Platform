@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SHARED">
+  <title>SHARED</title>
+
+  <para><emphasis role="bold">SHARED<indexterm>
+      <primary>SHARED</primary>
+    </indexterm> </emphasis> <emphasis role="bold">[ VIRTUAL ]</emphasis>
+  <emphasis>definition</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.35pt"/>
+
+        <colspec colwidth="309.45pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">VIRTUAL</emphasis><indexterm>
+                <primary>VIRTUAL SHARED</primary>
+              </indexterm></entry>
+
+            <entry>Opcional. Especifica que a definição é
+            <emphasis>VIRTUAL</emphasis> Válido apenas dentro de uma estrutura
+            MODULE .</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>definition</emphasis></entry>
+
+            <entry>Uma definição válida</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A palavra-chave <emphasis role="bold">SHARED </emphasis> permite, de
+  forma explícita, que outras definições dentro de uma mesma pasta importem a
+  <emphasis>definição</emphasis> especificada para ser usada em todo o
+  múdulo/pasta/diretório (p.ex., escopo do módulo), mas não fora desse
+  escopo.</para>
+
+  <para>O código ECL é armazenado em arquivos de texto .ecl, que devem conter
+  apenas uma única definição EXPORT ou SHARED. Essa definição pode ser uma
+  estrutura que permite as definições EXPORT ou SHARED dentro de suas áreas de
+  acesso (tais como MODULE, INTERFACE, TYPE, etc.). O nome do arquivo .ecl que
+  contém o código deve ser exatamente o mesmo que a definução EXPORT (ou
+  SHARED) nele contida.</para>
+
+  <para>Definições sem as palavras-chave EXPORT ou SHARED são consideradas
+  locais em relação ao arquivo no qual residem (ver <link
+  linkend="Attribute_Visibility">Visibilidade das definições</link>). O escopo
+  de uma <emphasis>definição</emphasis> local está limitado à próxima
+  definição SHARED ou EXPORT; desta forma, ele deve preceder a definição
+  EXPORT ou SHARED desse arquivo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>//this code is contained in the GoodHouses.ecl file
+BadPeople := Person(EXISTS(trades(EXISTS(phr(phr_rate &gt; '4'))));
+        //local only to the GoodHouses definition
+SHARED GoodHouses := Household(~EXISTS(BadPeople));
+        //available all thru the module
+
+//and in AnotherDef.ecl we have this code:
+EXPORT AnotherDef := MODULE(x)
+  EXPORT INTEGER a := c * 3;
+  EXPORT INTEGER b := 2;
+  SHARED VIRTUAL INTEGER c := 3; //this def is VIRTUAL
+  EXPORT VIRTUAL INTEGER d := c + 3; //this def is VIRTUAL
+  EXPORT VIRTUAL INTEGER e := c + 3; //this def is VIRTUAL
+END;</programlisting>
+
+  <para>Ver também: <link linkend="IMPORT">IMPORT</link>, <link
+  linkend="EXPORT">EXPORT</link>, <link
+  linkend="Attribute_Visibility">Visibilidade das definições</link>, <link
+  linkend="MODULE_Structure">Estrutura MODULE</link></para>
+</sect1>

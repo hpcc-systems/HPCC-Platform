@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LEFT-RIGHT">
+  <title>LEFT<indexterm>
+      <primary>LEFT</primary>
+    </indexterm> e RIGHT<indexterm>
+      <primary>RIGHT</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">LEFT</emphasis></para>
+
+  <para><emphasis role="bold">RIGHT</emphasis></para>
+
+  <para>A <emphasis role="bold">LEFT</emphasis> e <emphasis
+  role="bold">RIGHT</emphasis> as palavras-chave LEFT e RIGHT indicam os
+  registros esquerdo e direito de um conjunto de registros. Elas podem ser
+  usadas para substituir na forma de parâmetros especificados às funções
+  TRANSFORM ou em expressões nas funções onde os registros esquerdo e direito
+  estejam implícitos, como por exemplo DEDUP e JOIN.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>dup_flags := JOIN(person,person,
+               LEFT.current_address_key=RIGHT.current_address_key
+               AND fuzzy_equal,req_output(LEFT,RIGHT));</programlisting>
+
+  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+  TRANSFORM</link>, <link linkend="DEDUP">DEDUP</link></para>
+</sect1>

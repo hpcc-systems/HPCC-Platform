@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SOAP-enabling_Queries">
+  <title><emphasis role="bold">Consultas SOAP-enabling</emphasis></title>
+
+  <para>As consultas destinadas ao uso no Roxie devem primeiramente ser
+  ativadas no SOAP. O código ECL necessário para se fazer isso é o serviço de
+  fluxo de trabalho STORED. As consultas Roxie devem estar contidas na
+  estrutura FUNCTION ou devem simplesmente ser executáveis.</para>
+
+  <sect2 id="The_ECL_Key_to_SOAP">
+    <title>Chave ECL para SOAP</title>
+
+    <para>O requisito do código ECL para os parâmetros de entrada ativados no
+    SOAP é o uso do serviço do fluxo de trabalho STORED. Cada nome do
+    parâmetro SOAP deve constituir no nome STORED para uma definição ECL. O
+    serviço de fluxo de trabalho STORED cria um espaço de armazenagem de dados
+    na tarefa que a interface do SOAP usa para preencher os dados
+    “especificados”. O código ECL simplesmente usa essas definições STORED
+    para determinar se os dados foram especificados a partir daquele
+    “parâmetro” e em que esses dados consistem. O tipo de dados do parâmetro
+    SOAP especificado está implícito pela definição do STORED.</para>
+
+    <para>Para o exemplo de código a seguir, você deve criar duas definições
+    com os nomes STORED duplicando o nome do parâmetro SOAP, desta
+    forma:</para>
+
+    <programlisting>STRING30 lname_value := '' : STORED('LastName');
+  
+STRING30 fname_value := '' : STORED('FirstName');
+</programlisting>
+
+    <para>Por padrão, estes ficarão em branco e o serviço do fluxo de trabalho
+    STORED abre um espaço na tarefa para armazenar o valor. O Enterprise
+    Service Platform (ESP) lida com as tarefas da interface SOAP adicionando
+    os valores adequados ao espaço de armazenamento criado pelo STORED. Diante
+    disso, o código ECL precisa apenas usar as definições (neste caso Lname e
+    Fname) para concluir a consulta. Isso simplifica bastante o lado ECL da
+    equação.</para>
+  </sect2>
+
+  <sect2 id="Putting_It_All_Together">
+    <title>Juntando Tudo</title>
+
+    <para>Após entender os requisitos, a consulta ativada no SOAP terá a
+    seguinte forma (contida no SOAPenabling.ECL):</para>
+
+    <programlisting>IMPORT ProgrammersGuide.DeclareData AS ProgGuide;
+     
+EXPORT SOAPenabling() := FUNCTION
+  STRING30 lname_value := '' : STORED('LastName');
+  STRING30 fname_value := '' : STORED('FirstName');
+  IDX  := ProgGuide.IDX__Person_LastName_FirstName;
+  Base := ProgGuide.Person.FilePlus;
+  Fetched := IF(fname_value = '',
+           FETCH(Base,IDX(LastName=lname_value),RIGHT.RecPos),
+                FETCH(Base,IDX(LastName=lname_value,
+      FirstName=fname_value),RIGHT.RecPos));
+  RETURN OUTPUT(CHOOSEN(Fetched,2000));
+END;</programlisting>
+
+    <para/>
+  </sect2>
+</sect1>

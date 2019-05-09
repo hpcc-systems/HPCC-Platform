@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Workflow_Overview">
+  <title>Visão Geral do Workflow</title>
+
+  <para>O controle do fluxo de trabalho no ECL é geralmente manuseado
+  automaticamente pelo sistema. Ele distingue quais processos podem ser
+  realizados em paralelo, quando a sincronização é exigida, e quando os
+  processos devem ser realizados em série. Estes serviços de fluxo de trabalho
+  permitem que o programador especifique as exceções ao fluxo normal de
+  execução para oferecer controle adicional (tal como a cláusula
+  FAILURE).</para>
+
+  <para>As operações de fluxo de trabalho são avaliadas de forma implícita em
+  um escopo global separado do código ao qual estão anexadas.
+  Consequentemente, qualquer valor do código ao qual estão anexadas (como por
+  exemplo os contadores loop) estará indisponível para o serviço de fluxo de
+  trabalho.</para>
+
+  <para>Também deve ser observado que quando uma operação de fluxo de trabalho
+  está presente dentro de múltiplas declarações SEQUENTIAL, apenas a primeira
+  instância será avaliada.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>
+Chesney := OUTPUT('"I am the one and only!" said Chesney')
+        : SUCCESS(OUTPUT('"Oh yeah, prove it?"'));
+
+SEQUENTIAL(
+              OUTPUT('"I am Spartacus" said one from the mob'),
+              Chesney
+          );
+
+SEQUENTIAL(
+              OUTPUT('"No, I am Spartacus" confessed another'),
+              Chesney,
+              OUTPUT('"Ok, so you are!"')
+          );
+    </programlisting>
+
+  <para>yields:</para>
+
+  <programlisting>
+"I am Spartacus" said one from the mob
+"I am the one and only!" said Chesney
+"Oh yeah, prove it?"
+"No, I am Spartacus" confessed another
+"Ok, so you are!"
+    </programlisting>
+
+  <para>Ver também: <link linkend="SEQUENTIAL">SEQUENTIAL</link></para>
+</sect1>

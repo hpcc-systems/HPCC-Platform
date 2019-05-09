@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Find">
+  <title>Find</title>
+
+  <para><emphasis role="bold">STD.Str.Find<indexterm>
+      <primary>STD.Str.Find</primary>
+    </indexterm><indexterm>
+      <primary>Str.Find</primary>
+    </indexterm><indexterm>
+      <primary>Find</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, instance</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">STD.Uni.Find<indexterm>
+      <primary>STD.Uni.Find</primary>
+    </indexterm><indexterm>
+      <primary>Uni.Find</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, instance</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">STD.Uni.LocaleFind<indexterm>
+      <primary>STD.Uni.LocaleFind</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleFind</primary>
+    </indexterm><indexterm>
+      <primary>LocaleFind</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, instance,
+  locale</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os dados a serem pesquisados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>target </emphasis></entry>
+
+          <entry>Uma string que contém a substring a ser pesquisada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>instance </emphasis></entry>
+
+          <entry>Um inteiro que especifica qual ocorrência de <emphasis>
+          target</emphasis> deve ser encontrada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o código de idioma e
+          país a ser usado para determinar a ordem correta de classificação e
+          outras operações.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Find retorna um valor INTEGER.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>As funções <emphasis role="bold">Find </emphasis> retornam a posição
+  inicial de índice dentro da string <emphasis>source</emphasis> da
+  <emphasis>instance</emphasis> especificada da string <emphasis>target
+  </emphasis>. Se <emphasis>target</emphasis> não for encontrado ou a
+  <emphasis>instance</emphasis> especificada for maior que o número de
+  ocorrências do <emphasis>target</emphasis> em <emphasis>source</emphasis>,
+  <emphasis role="bold">Find</emphasis> retornará zero (0).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := IF(STD.Str.Find('ABCDE', 'BC',1) = 2,
+   'Success',
+   'Failure - 1');  //success
+    
+B := IF(STD.Str.Find('ABCDEABCDE', 'BC', 2) = 7,
+   'Success',
+   'Failure - 2');  //success
+    
+C := IF(STD.Str.Find('ABCDEABCDE', '') = 0,
+   'Success',
+   'Failure - 3');  //syntax error, missing 3rd parameter
+    
+D := IF(STD.Str.Find('', 'BD', 1) = 0,
+   'Success',
+   'Failure - 4');  //success
+</programlisting>
+</sect1>

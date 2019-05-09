@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ASIN">
+  <title>ASIN</title>
+
+  <para><emphasis role="bold">ASIN<indexterm>
+      <primary>ASIN</primary>
+    </indexterm><indexterm>
+      <primary>ASIN function</primary>
+    </indexterm>(</emphasis><emphasis>sine</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.65pt" />
+
+        <colspec colwidth="309.15pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>sine</emphasis></entry>
+
+            <entry>O valor seno REAL para o qual o arco seno deve ser localizado.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ASIN retorna um valor REAL único.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função  <emphasis role="bold">ASIN </emphasis> retorna o acro seno (inverso) do  <emphasis>seno</emphasis>, em radianos.</para>
+
+  <para>Exemplo:</para>
+
+  <para><programlisting>ArcSine := ASIN(SineAngle);</programlisting></para>
+
+  <para>Ver também: <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="ATAN">ATAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+</sect1>

@@ -1,0 +1,1134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="JOIN">
+  <title>JOIN</title>
+
+  <para><emphasis role="bold">JOIN<indexterm>
+      <primary>JOIN</primary>
+    </indexterm><indexterm>
+      <primary>JOIN function</primary>
+    </indexterm>(</emphasis><emphasis>leftrecset, rightrecset, joincondition
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>,
+  transform</emphasis><emphasis role="bold">] [</emphasis><emphasis>,
+  jointype</emphasis><emphasis role="bold">] [</emphasis><emphasis>,
+  joinflags</emphasis><emphasis role="bold">] )</emphasis></para>
+
+  <para><emphasis role="bold">JOIN(</emphasis><emphasis>setofdatasets,
+  joincondition, transform</emphasis>,<emphasis role="bold"> SORTED<indexterm>
+      <primary>SORTED</primary>
+    </indexterm>( </emphasis><emphasis>fields</emphasis><emphasis
+  role="bold">) [</emphasis><emphasis>, jointype</emphasis><emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="82.00pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>leftrecset</emphasis></entry>
+
+          <entry>O conjunto esquerdo dos registros para processamento.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>rightrecset</emphasis></entry>
+
+          <entry>O conjunto direito dos registros para processamento. Esse
+          pode ser um INDEX.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>joincondition</emphasis></entry>
+
+          <entry>Uma expressão que especifica como combinar registros em
+          <emphasis>leftrecset </emphasis> e <emphasis>rightrecset</emphasis>
+          ou <emphasis>setofdatasets </emphasis> (consulte as discussões de
+          Lógica de combinação abaixo). Na expressão, a palavra-chave LEFT é o
+          qualificador de dataset para os campos no
+          <emphasis>leftrecset</emphasis> e a palavra-chave RIGHT é o
+          qualificador do dataset para os campos no
+          <emphasis>rightrecset</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transform</emphasis></entry>
+
+          <entry>Opcional. A função TRANSFORM para acionar cada par de
+          registros para processamento. Se omitida, JOIN retorna todos os
+          campos de ambos <emphasis>leftrecset</emphasis> e
+          <emphasis>rightrecset</emphasis> com o segundo de qualquer campo de
+          nome em duplicidade removido.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>jointype</emphasis></entry>
+
+          <entry>Opcional. Se omitida, uma operação de junção interna; caso
+          contrário, um dos tipos listados na seção Tipos de JOIN
+          abaixo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>joinflags</emphasis></entry>
+
+          <entry>Opcional. Qualquer opção (consulte a seção JOIN Options
+          [OPÇÕES DE JOIN] abaixo) para especificar exatamente como a operação
+          JOIN é executada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>setofdatasets</emphasis></entry>
+
+          <entry>O SET de conjuntos de registro para processamento
+          ([idx1,idx2,idx3]), normalmente INDEXes (ÍNDiCES), em que todos
+          precisam ter o mesmo formato.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SORTED</emphasis></entry>
+
+          <entry>Especifica a ordem de classificação de registros no
+          <emphasis>setofdatasets </emphasis> de entrada, além da ordem de
+          classificação de resultado no conjunto de resultados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fields</emphasis></entry>
+
+          <entry>Uma lista delimitada por vírgulas dos campos no
+          <emphasis>setofdatasets</emphasis>, que precisa ser um subconjunto
+          da ordem de classificação de entrada. Todos esses campos precisam
+          ser usados na <emphasis>joincondition</emphasis> , uma vez que
+          definem a ordem na qual os campos passam pela operação
+          STEPPED.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>JOIN retorna um conjunto de registros.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">JOIN </emphasis>produz um conjunto de
+  resultados baseado na interseção de dois ou mais datasets ou indíces
+  (conforme determinado por <emphasis>joincondition</emphasis>).</para>
+
+  <sect2 id="JOIN_Two_Datasets">
+    <title>JOIN em Dois Datasets</title>
+
+    <para><emphasis role="bold">JOIN(</emphasis><emphasis>leftrecset,
+    rightrecset, joincondition </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, transform</emphasis><emphasis
+    role="bold">] [</emphasis><emphasis>, jointype</emphasis><emphasis
+    role="bold">] [</emphasis><emphasis>, joinflags</emphasis><emphasis
+    role="bold">] )</emphasis></para>
+
+    <para><emphasis role="bold">A primeira forma de JOIN processa todos os
+    pares de registros em </emphasis><emphasis>leftrecset </emphasis>e
+    <emphasis>rightrecset</emphasis> e avalia a <emphasis>condition
+    </emphasis> para localizar registros correspondentes. Se a
+    <emphasis>condition</emphasis> e <emphasis>jointype</emphasis>
+    especificarem que o par de registros se qualifica para processamento, a
+    função <emphasis>transform</emphasis> é executada, gerando o
+    resultado.</para>
+
+    <para>JOIN classifica/distribui dinamicamente o
+    <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis>
+    conforme necessário para realizar sua operação com base na
+    <emphasis>condition</emphasis> especificada; assim sendo <emphasis
+    role="bold">, orecordset resultante não tem garantia de estar na mesma
+    ordem que os recordsets de entrada</emphasis>. Se JOIN realizar uma
+    classificação dinâmica de seus recordsets de entrada, essa nova ordem de
+    classificação não pode ser usada para além da execução de JOIN. Esse
+    princípio também se aplica a qualquer função GROUPing – os registros são
+    desagrupados automaticamente conforme necessário, exceto nas
+    circunstâncias a seguir:</para>
+
+    <para>* Para junções LOOKUP e ALL, o GROUPing e a ordem de classificação
+    de <emphasis>leftrecset</emphasis> são preservados</para>
+
+    <para>* Para junções KEYED, o GROUPing (mas não a ordem de classificação)
+    do <emphasis>leftrecset</emphasis> é preservado.</para>
+  </sect2>
+
+  <sect2 id="Matching_Logic">
+    <title>Lógica de Correspondência - JOIN</title>
+
+    <para>O registro que corresponde a <emphasis>joincondition</emphasis> é
+    processado internamente em duas partes:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry>"equality" (hard match)</entry>
+
+            <entry>Toda a lógica "LEFT.field = RIGHT.field" simples que define
+            os registros correspondentes. Para JOINs que usam chaves, todos
+            esses precisam ser campos na chave para se qualificarem para
+            inclusão nessa parte. Se não houver uma parte de "igualdade" na
+            lógica <emphasis>joincondition</emphasis> , um erro "JOIN too
+            complex" (operação JOIN muito complexa) será exibido.</entry>
+          </row>
+
+          <row>
+            <entry>"non-equality" (soft match)</entry>
+
+            <entry>Todos os outros critérios de correspondência na lógica
+            <emphasis>joincondition</emphasis> , como expressões "LEFT.field
+            &gt; RIGHT.field" ou qualquer lógica OR, que possam estar
+            envolvidos na determinação final de que qualquer registro
+            <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis>
+            realmente coincidem.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Essa divisão de lógica interna permite que o código JOIN seja
+    otimizado para máxima eficiência – primeiro a lógica de "igualdade" é
+    avaliada para proporcionar um resultado temporário que é então avaliado em
+    relação a qualquer "desigualdade" na <emphasis>joincondition <indexterm>
+        <primary>joincondition</primary>
+      </indexterm></emphasis> correspondente.</para>
+  </sect2>
+
+  <sect2 id="JoinOptions">
+    <title>Opções</title>
+
+    <para>As opções de <emphasis>joinflags</emphasis><indexterm>
+        <primary>joinflags</primary>
+      </indexterm> a seguir podem ser especificadas para determinar exatamente
+    como JOIN é executado.</para>
+
+    <para><emphasis role="bold">[</emphasis>,<emphasis role="bold"> PARTITION
+    LEFT<indexterm>
+        <primary>PARTITION LEFT</primary>
+      </indexterm> | PARTITION RIGHT<indexterm>
+        <primary>PARTITION RIGHT</primary>
+      </indexterm> | [MANY<indexterm>
+        <primary>MANY</primary>
+      </indexterm>] LOOKUP<indexterm>
+        <primary>LOOKUP</primary>
+      </indexterm> [ FEW<indexterm>
+        <primary>FEW</primary>
+      </indexterm>] ] | GROUPED<indexterm>
+        <primary>GROUPED</primary>
+      </indexterm> | ALL<indexterm>
+        <primary>ALL</primary>
+      </indexterm> |</emphasis><emphasis role="bold"> NOSORT<indexterm>
+        <primary>NOSORT</primary>
+      </indexterm> [ ( </emphasis><emphasis>which</emphasis><emphasis
+    role="bold"> ) ] | KEYED<indexterm>
+        <primary>KEYED</primary>
+      </indexterm> [ (</emphasis><emphasis>index</emphasis><emphasis
+    role="bold">) [, UNORDERED<indexterm>
+        <primary>UNORDERED</primary>
+      </indexterm> ] ] | LOCAL<indexterm>
+        <primary>LOCAL</primary>
+      </indexterm> | HASH<indexterm>
+        <primary>HASH</primary>
+      </indexterm> ]]</emphasis><emphasis role="bold"/><?linebreak ?><emphasis
+    role="bold">[</emphasis>,<emphasis role="bold"> KEEP<indexterm>
+        <primary>KEEP</primary>
+      </indexterm>(</emphasis><emphasis>n</emphasis><emphasis role="bold">) ]
+    [</emphasis><emphasis>, </emphasis><emphasis role="bold">ATMOST<indexterm>
+        <primary>ATMOST</primary>
+      </indexterm>(</emphasis><emphasis> </emphasis><emphasis
+    role="bold">[</emphasis><emphasis> condition, </emphasis><emphasis
+    role="bold">]</emphasis><emphasis> n </emphasis><emphasis role="bold">) ]
+    [</emphasis><emphasis>, </emphasis><emphasis role="bold">LIMIT<indexterm>
+        <primary>LIMIT</primary>
+      </indexterm>(</emphasis><emphasis> value </emphasis><emphasis
+    role="bold">[, SKIP<indexterm>
+        <primary>SKIP</primary>
+      </indexterm></emphasis> | <emphasis> transform </emphasis> | <emphasis
+    role="bold"> FAIL ]) ] </emphasis><emphasis
+    role="bold">[</emphasis>,<emphasis role="bold"> SKEW<indexterm>
+        <primary>SKEW</primary>
+      </indexterm>(</emphasis><emphasis>limit </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, target</emphasis><emphasis
+    role="bold">] ) [, THRESHOLD<indexterm>
+        <primary>THRESHOLD</primary>
+      </indexterm>( </emphasis><emphasis>size</emphasis><emphasis role="bold">
+    ) ] ] [, SMART<indexterm>
+        <primary>SMART</primary>
+      </indexterm> ]</emphasis> <emphasis role="bold">[, UNORDERED |
+    ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+    STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+    </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+    <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="92.05pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">PARTITION LEFT |
+            RIGHT</emphasis></entry>
+
+            <entry>Especifica qual recordset proporciona os pontos de partição
+            que determinam como os registros são classificados e distribuídos
+            entre os nós do supercomputador. PARTITION RIGHT especifica o
+            <emphasis>rightrecset</emphasis> , enquanto PARTITION LEFT
+            especifica o <emphasis>leftrecset</emphasis>. Se omitido,
+            PARTITION LEFT é o padrão.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">[MANY] LOOKUP</emphasis></entry>
+
+            <entry>Especifica o <emphasis>rightrecset</emphasis> , sendo um
+            arquivo relativamente pequeno de registros de consulta que podem
+            ser copiados completamente para cada nó. MANY não estiver
+            presente, os registros <emphasis>rightrecset</emphasis> têm uma
+            relação de muitos para 0/1 com os registros em
+            <emphasis>leftrecset</emphasis> (para cada registro em
+            <emphasis>leftrecset</emphasis> há no máximo 1 registro em
+            <emphasis>rightrecset</emphasis>. Se MANY estiver presente, os
+            registros <emphasis>rightrecset</emphasis> têm uma relação de
+            muitos para 0/muitos com os registros em
+            <emphasis>leftrecset</emphasis>. Essa opção permite que o
+            otimizador evite a classificação desnecessária do
+            <emphasis>leftrecset</emphasis>. Válido apenas para os
+            <emphasis>jointypes</emphasis> internos, LEFT OUTER ou LEFT ONLY.
+            As opções ATMOST, LIMIT e KEEP são suportadas em conjunto com
+            MANYLOOKUP.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SMART</emphasis></entry>
+
+            <entry>Especifica para usar uma consulta na memória quando
+            possível, mas usa uma operação de junção distribuída se o dataset
+            direito for muito grande.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Especifica que o LOOKUP <emphasis>rightrecset</emphasis>
+            possui poucos registros, de forma que pouca memória é utilizada,
+            permitindo que várias junções de consultas sejam incluídas no
+            mesmo subgráfico Thor.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">GROUPED</emphasis></entry>
+
+            <entry>Especifica a mesma ação de MANY LOOKUP, mas preserva o
+            agrupamento Usado principalmente no motor de entrega rápida de
+            dados. Válido apenas para os <emphasis>jointypes</emphasis>
+            internos, LEFT OUTER ou LEFT ONLY. As opções ATMOST, LIMIT e KEEP
+            são suportadas em conjunto com GROUPED.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Especifica que o <emphasis>rightrecset</emphasis> é um
+            arquivo pequeno que pode ser copiado completamente para cada nó, o
+            que permite que o compilador ignore a falta de qualquer parte de
+            "igualdade" em relação à condição; isso elimina o erro "JOIN too
+            complex" (“operação JOIN muito complexa”) que a condição
+            normalmente produziria. Se uma parte de "igualdade" estiver
+            presente, o JOIN é executado internamente como MANY LOOKUP. A
+            opção KEEP é suportada juntamente com essa opção.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOSORT</emphasis></entry>
+
+            <entry>Realiza o JOIN sem classificar dinamicamente as tabelas.
+            Isso implica que <emphasis>leftrecset</emphasis> e/ou
+            <emphasis>rightrecset</emphasis> precisam ter sido previamente
+            classificados e particionados com base nos campos especificados em
+            <emphasis>joincondition</emphasis> para que os registros possam
+            ser facilmente combinados.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>which</emphasis></entry>
+
+            <entry>Opcional. As palavras-chave LEFT ou RIGHT para indicar que
+            <emphasis>leftrecset</emphasis> ou
+            <emphasis>rightrecset</emphasis> foram previamente classificados.
+            Se omitidas, NOSORT assume que ambos
+            <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis>
+            foram classificados previamente.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+            <entry>Especifica o uso de acesso indexado em
+            <emphasis>rightrecset</emphasis> (consulte INDEX).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>index</emphasis></entry>
+
+            <entry>Opcional. O nome de um INDEX no
+            <emphasis>rightrecset</emphasis> para um JOIN full-keyed (consulte
+            abaixo). Se omitido, indica que o <emphasis>rightrecset</emphasis>
+            sempre será um INDEX (útil quando <emphasis>rightrecset</emphasis>
+            é especificado como um parâmetro para uma função).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação KEYED JOIN não preserva
+            a ordem de classificação do
+            <emphasis>leftrecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Especifica que a operação é realizada em cada nó de
+            supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">HASH</emphasis></entry>
+
+            <entry>Especifica um DISTRIBUTE implícito do
+            <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis>
+            entre os nós de supercomputador com base na
+            <emphasis>joincondition</emphasis> para que cada nó possa realizar
+            seu trabalho com os dados locais.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEEP(n)</emphasis></entry>
+
+            <entry>Especifica o número máximo de registros correspondentes (n)
+            a ser gerado no conjunto de resultados. Se omitido, todas as
+            correspondências são mantidas. Isso é útil nos casos em que possa
+            haver muitos pares correspondentes e caso você precise limitar o
+            número no conjunto de resultados. KEEP não é suportado para RIGHT
+            EXTER, RIGHT ONLY, LEFT ONLY ou FULL ONLY
+            <emphasis>jointypes</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ATMOST</emphasis></entry>
+
+            <entry>Especifica o número máximo de registros correspondentes
+            que, se excedido, elimina todas essas correspondências do conjunto
+            de resultados. Isso é útil para situações nas quais você elimina
+            pares de registros com "excesso de correspondências" do conjunto
+            de resultados. ATMOST não é suportado para RIGHT EXTER ONLY ou
+            FULL ONLY <emphasis>jointypes</emphasis>. Há duas formas:
+            ATMOST(condição, n) – o máximo é computado apenas para a condição.
+            ATMOST(n) – o máximo é computado para toda a
+            <emphasis>joincondition</emphasis>, exceto caso KEYED seja usado
+            na <emphasis>joincondition</emphasis> (caso no qual aspenas as
+            expressões KEYED são usadas).Quando ATMOST é especificado (e o
+            JOIN não é de chave completa ou meia-chave), a
+            <emphasis>joincondition</emphasis> e a condition podem incluir
+            comparações de campo da string que usam indexação de strings com
+            um asterisco como o limite máximo, como neste exemplo: J1 :=
+            JOIN(dsL,dsR, LEFT.name[1..*]=RIGHT.name[3..*] AND LEFT.val &lt;
+            RIGHT.val, T(LEFT,RIGHT),
+            ATMOST(LEFT.name[1..*]=RIGHT.name[3..*],3)); TO asterisco indica
+            correspondência do máximo de caracteres necessários para reduzir o
+            número de possíveis correspondências para abaixo do número ATMOST
+            (n).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>Uma parte da expressão <emphasis>joincondition</emphasis>
+            .</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>Especifica o número máximo de correspondências
+            permitidas.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LIMIT</emphasis></entry>
+
+            <entry>Especifica o número máximo de registros correspondentes
+            que, se excedido, ocasiona a falha da workunit ou elimina todas
+            essas correspondências do conjunto de resultados. Isso é útil para
+            situações nas quais você elimina pares de registros com "excesso
+            de correspondências" do conjunto de resultados. Normalmente usado
+            para JOINS KEYED e “Half-Keyed” (consulte abaixo), LIMIT se difere
+            de ATMOST principalmente por seu efeito em uma junção LEFT OUTER,
+            na qual um registro <emphasis>leftrecset</emphasis> com um número
+            excessivo de registros correspondentes seria tratado como não
+            correspondente pelo ATMOST (o registro
+            <emphasis>leftrecset</emphasis> estaria no resultado sem registros
+            <emphasis>rightrecset</emphasis> correspondentes), enquanto LIMIT
+            faria com que toda a workunit falhasse ou executaria o SKIP no
+            registro (eliminando o registro <emphasis>leftrecset</emphasis>
+            totalmente do resultado). Se omitido, o padrão é LIMIT(10000). O
+            LIMIT é aplicado ao record set que atende à parte de
+            correspondência rígida ("equality") da
+            <emphasis>joincondition</emphasis> , porém antes de a
+            correspondência suave ("desigualdade") da
+            <emphasis>joincondition</emphasis> ser avaliada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>O número máximo de correspondências permitido; LIMIT(0) é
+            ilimitado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SKIP</emphasis></entry>
+
+            <entry>Opcional. Especifica a eliminação de registros
+            correspondentes que ultrapassam o valor máximo do resultado LIMIT,
+            em vez da falha da workunit.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>Opcional. Especifica a emissão de um registro único
+            produzido por <emphasis>transform</emphasis> em vez da falha da
+            workunit (similar à opção ONFAIL da função LIMIT).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FAIL</emphasis></entry>
+
+            <entry>Opcional. Especifica o uso do FAIL ação para configurar a
+            mensagem de erro quando a workunit falha.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SKEW</emphasis></entry>
+
+            <entry>Indica que você sabe que os dados para essa junção não
+            serão espalhados uniformemente entre os nós (serão distorcidos
+            após ambos os arquivos terem sido distribuídos baseados na
+            <emphasis>condition</emphasis> da junção), e que você opta por
+            substituir o padrão especificando seu próprio valor limite para
+            permitir que a workunit continue apesar da distorção. Só é válido
+            em junções sem chave (a opção KEYED não está presente e o
+            <emphasis>rightrecset</emphasis> não é um INDEX).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>limit</emphasis></entry>
+
+            <entry>Um valor entre zero (0) e um (1,0 = 100%) indicando a
+            porcentagem máxima da distorção a ser permitida antes que a
+            workunit falhe (o padrão é 0,1 = 10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>target</emphasis></entry>
+
+            <entry>Opcional. Um valor entre zero (0) e um (1,0 = 100%)
+            indicando a porcentagem máxima desejada da distorção a ser
+            permitida (o padrão é 0,1 = 10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+
+            <entry>Indica o tamanho mínimo de uma parte única do
+            <emphasis>leftrecset</emphasis> ou
+            <emphasis>rightrecset</emphasis> antes que o limite de SKEW seja
+            determinado. Só é válido em junções sem chave (a opção KEYED não
+            está presente e o <emphasis>rightrecset</emphasis> não é um
+            INDEX).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>size</emphasis></entry>
+
+            <entry>Um valor inteiro indicando o número mínimo de bytes para
+            uma parte única.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for False, especifica que a ordem do registro de
+            resultado não é importante. Quando for True, especifica a ordem
+            padrão do registro de resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os threads
+            <emphasis>numthreads</emphasis> .</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>As opções a seguir são mutualmente exclusivas e só podem ser usadas
+    para a exclusão das outras nessa lista. PARTITION LEFT | PARTITION RIGHT |
+    [MANY] LOOKUP | GROUPED | ALL | NOSORT | HASH</para>
+
+    <para>Além dessa lista, as opções KEYED e LOCAL também são mutualmente
+    exclusivas com as opções acima listadas, mas não umas com as outras.
+    Quando ambas as opções KEYED e LOCAL são especificadas, apenas as partes
+    INDEX em cada nó são acessadas por esse nó.</para>
+
+    <para>Normalmente, o <emphasis>leftrecset</emphasis> deve ser maior que o
+    <emphasis>rightrecset</emphasis> para evitar problemas de distorção
+    (porque PARTITION LEFT é o comportamento padrão). Se as opções LOOKUP ou
+    ALL forem especificadas, o <emphasis>rightrecset</emphasis> <emphasis
+    role="underline"> precisa</emphasis> ser pequeno o bastante para ser
+    carregado na memória em cada nó e a operação é então implicitamente LOCAL.
+    A opção ALL não é prática se o <emphasis>rightrecset</emphasis> for maior
+    que alguns poucos milhares de registros (devido ao número de comparações
+    necessário). O tamanho do <emphasis>rightrecset</emphasis> é irrelevante
+    no caso de JOINs de "meia-chave" e de “chave completa" (consulte a
+    discussão sobre Join Chaveado).</para>
+
+    <para>Use o SMART quando o dataset do lado direito provavelmente for
+    pequeno o bastante para caber na memória, mas sem garantias de tal.</para>
+
+    <para>Se aparecer um erro similar a esse:</para>
+
+    <para><programlisting>“error: 1301: Pool memory exhausted:<indexterm>
+          <primary>memory exhausted</primary>
+        </indexterm><indexterm>
+          <primary>Pool memory exhausted</primary>
+        </indexterm>..."</programlisting></para>
+
+    <para>significa que o <emphasis>rightrecset</emphasis> é muito grande e
+    uma operação LOOKUP JOIN não deve ser usada. Uma operação SMART JOIN pode
+    ser uma boa opção neste caso.</para>
+  </sect2>
+
+  <sect2 id="Keyed_Joins">
+    <title>Join Chaveado<indexterm>
+        <primary>Keyed JOIN</primary>
+      </indexterm>s</title>
+
+    <para>Uma JOIN de chave completa usa a opção KEYED, e a
+    <emphasis>joincondition</emphasis> precisa ser baseada nos campos
+    <emphasis>index</emphasis>. Na verdade, a junção é feita entre o
+    <emphasis>leftrecset</emphasis> e o <emphasis>index </emphasis> no
+    <emphasis>rightrecset </emphasis>– o <emphasis>index </emphasis> precisa
+    do campo de ponteiro de registro do dataset (virtual(fileposition)) para
+    buscar corretamente os registros do <emphasis>rightrecset</emphasis>. A
+    operação join KEYED típica especifica apenas o <emphasis>rightrecset
+    </emphasis> para o TRANSFORM.</para>
+
+    <para>Se a <emphasis>rightrecset </emphasis> for um INDEX, a operação é
+    uma JOIN “half-keyed”. Normalmente, o INDEX em uma JOIN de “half-keyed”
+    contém campos de “payload", que frequentemente eliminam a necessidade de
+    leitura do dataset de base. Se esse for o caso, o INDEX de “payload" não
+    precisa do campo de ponteiro de registro (virtual(fileposition)) do
+    dataset declarado. Para uma JOIN de meia-chave, a
+    <emphasis>joincondition</emphasis> pode usar apenas as palavras-chave
+    KEYED e WILD que estão disponíveis para uso apenas nos filtros
+    INDEX.</para>
+
+    <para>Para ambos os tipos de junção KEYED (com chave), qualquer GROUPing
+    dos conjuntos de registro de base permanece inalterado. Consulte KEYED e
+    WILD para ler uma discussão sobre a filtragem de INDEX.</para>
+  </sect2>
+
+  <sect2 id="Join_Logic">
+    <title>Lógica do Join</title>
+
+    <para>A operação JOIN segue a seguinte lógica:</para>
+
+    <para><emphasis role="bold">1. Classificação/distribuição de registro para
+    obter possíveis correspondências nos mesmos nós.</emphasis></para>
+
+    <para>As opções PARTITION LEFT, PARTITION RIGHT, LOOKUP, ALL, NOSORT,
+    KEYED, HASH e LOCAL indicam como isso acontece. Essas opções são
+    mutualmente exclusivas; apenas uma pode ser especificada, sendo PARTITION
+    LEFT o padrão. SKEW e THRESHOLD podem modificar o comportamento
+    solicitado. LOOKUP também possui o efeito de deduplicação de
+    <emphasis>rightrecset</emphasis> pela
+    <emphasis>joincondition</emphasis>.</para>
+
+    <para><emphasis role="bold">2. Correspondência de
+    registros.</emphasis></para>
+
+    <para>A <emphasis>joincondition</emphasis>, LIMIT e ATMOST determinam como
+    isso é feito.</para>
+
+    <para><emphasis role="bold">3. Determina quais correspondências devem ser
+    especificadas para </emphasis><emphasis
+    role="bold">transform</emphasis><emphasis role="bold">.</emphasis></para>
+
+    <para>O <emphasis>jointype</emphasis> determina isso.</para>
+
+    <para><emphasis role="bold">4. Gera registros de resultados através da
+    função TRANSFORM.</emphasis></para>
+
+    <para>O parâmetro <emphasis>transform</emphasis> implícito ou explícito
+    determina isso.</para>
+
+    <para><emphasis role="bold">5. Filtrar registros de resultados com
+    SKIP.</emphasis></para>
+
+    <para>Se <emphasis>transform</emphasis> para um par de registros resultar
+    em SKIP, então o registro de resultado não é contado em nenhum total da
+    opção KEEP.</para>
+
+    <para><emphasis role="bold">6. Limitar registros de resultados com
+    KEEP.</emphasis></para>
+
+    <para>Quaisquer registros de resultados para um determinado registro
+    <emphasis>leftrecset</emphasis> acima e além do valor KEEP permitido são
+    descartados. Em uma junção FULLOUTER <indexterm>
+        <primary>JOINS FULL OUTER</primary>
+      </indexterm> , registros <emphasis>rightrecset</emphasis> que não
+    correspondem a nenhum registro são tratados como se todos fossem
+    correspondências de diferentes registros <emphasis>leftrecset</emphasis>
+    padrão (isto é, o contador KEEP é reiniciado para cada um).</para>
+  </sect2>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Join">
+    <title>Requerimentos da Função TRANSFORM - JOIN</title>
+
+    <para>A <emphasis>função </emphasis> transform<indexterm>
+        <primary>precisa usar no mínimo um ou dois parâmetros</primary>
+      </indexterm> : um registro LEFT formatado como
+    <emphasis>leftrecset</emphasis> e/ou um registro RIGHT formatado como o
+    <emphasis>rightrecset</emphasis> (que pode estar em diferentes formatos).
+    O formato do conjunto de registros resultante não precisa ser o mesmo que
+    nenhum conjunto de registros de entrada.</para>
+  </sect2>
+
+  <sect2 id="Join_Types">
+    <title>Tipos de Join: Dois DATASETS</title>
+
+    <para>Os <emphasis>jointypes</emphasis> a seguir produzem os seguintes
+    tipos de resultados com base na correspondência de registros produzida por
+    <emphasis>joincondition</emphasis>:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82.00pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry>inner (default)</entry>
+
+            <entry>Apenas os registros existentes em ambos
+            <emphasis>leftrecset</emphasis> e
+            <emphasis>rightrecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>LEFT OUTER<indexterm>
+                <primary>LEFT OUTER</primary>
+              </indexterm></entry>
+
+            <entry>No mínimo um registro para cada um no
+            <emphasis>leftrecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>RIGHT OUTER<indexterm>
+                <primary>RIGHT OUTER</primary>
+              </indexterm></entry>
+
+            <entry>No mínimo um registro para cada um no
+            <emphasis>rightrecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>FULL OUTER<indexterm>
+                <primary>FULL OUTER</primary>
+              </indexterm></entry>
+
+            <entry>No mínimo um registro para cada um no
+            <emphasis>leftrecset</emphasis> e
+            <emphasis>rightrecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>LEFT ONLY<indexterm>
+                <primary>LEFT ONLY</primary>
+              </indexterm></entry>
+
+            <entry>Um registro para cada registro
+            <emphasis>leftrecset</emphasis> sem correspondência no
+            <emphasis>rightrecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>RIGHT ONLY<indexterm>
+                <primary>RIGHT ONLY</primary>
+              </indexterm></entry>
+
+            <entry>Um registro para cada registro <emphasis>rightrecset
+            </emphasis>sem correspondência no
+            <emphasis>leftrecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>FULL ONLY<indexterm>
+                <primary>FULL ONLY</primary>
+              </indexterm></entry>
+
+            <entry>Um registro para cada registro
+            <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis>
+            sem correspondência no conjunto de registro oposto.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Exemplo:</para>
+
+    <programlisting>outrec := RECORD
+  people.id;
+  people.firstname;
+  people.lastname;
+END;
+
+RT_folk := JOIN(people(firstname[1] = 'R'),
+                people(lastname[1] = 'T'),
+                LEFT.id=RIGHT.id,
+                TRANSFORM(outrec,SELF := LEFT));
+OUTPUT(RT_folk);
+
+//*********************** Half KEYED JOIN example:
+peopleRecord := RECORD
+  INTEGER8 id;
+  STRING20 addr;
+END;
+peopleDataset := DATASET([{3000,'LONDON'},{3500,'SMITH'},
+                          {30,'TAYLOR'}], peopleRecord);
+PtblRec doHalfJoin(peopleRecord l) := TRANSFORM
+  SELF := l;
+END;
+FilledRecs3 := JOIN(peopleDataset, SequenceKey,
+                    LEFT.id=RIGHT.sequence,doHalfJoin(LEFT));
+FilledRecs4 := JOIN(peopleDataset, AlphaKey,
+                    LEFT.addr=RIGHT.Lname,doHalfJoin(LEFT));
+
+//******************* Full KEYED JOIN example:
+PtblRec := RECORD
+  INTEGER8 seq;
+  STRING2  State;
+  STRING20 City;
+  STRING25 Lname;
+  STRING15 Fname;
+END;
+PtblRec Xform(person L, INTEGER C) := TRANSFORM
+  SELF.seq      := C;
+  SELF.State    := L.per_st;
+  SELF.City     := L.per_full_city;
+  SELF.Lname    := L.per_last_name;
+  SELF.Fname    := L.per_first_name;
+END;
+Proj := PROJECT(Person(per_last_name[1]=per_first_name[1]),
+                Xform(LEFT,COUNTER<indexterm>
+        <primary>COUNTER</primary>
+      </indexterm>));
+PtblOut := OUTPUT(Proj,,'~RTTEMP::TestKeyedJoin',OVERWRITE);
+
+Ptbl := DATASET('RTTEMP::TestKeyedJoin',
+                {PtblRec,UNSIGNED8 __fpos {virtual(fileposition)}},
+                FLAT);
+AlphaKey := INDEX(Ptbl,{lname,fname,__fpos},
+                  '~RTTEMPkey::lname.fname');
+SeqKey := INDEX(Ptbl,{seq,__fpos},'~RTTEMPkey::sequence');
+
+Bld1 := BUILD(AlphaKey ,OVERWRITE);
+Bld2 := BUILD(SeqKey,OVERWRITE);
+peopleRecord := RECORD
+  INTEGER8 id;
+  STRING20 addr;
+END;
+peopleDataset := DATASET([{3000,'LONDON'},{3500,'SMITH'},
+                          {30,'TAYLOR'}], peopleRecord);
+joinedRecord := RECORD
+  PtblRec;
+  peopleRecord;
+END;
+joinedRecord doJoin(peopleRecord l, Ptbl r) := TRANSFORM
+ SELF := l;
+ SELF := r;
+END;
+
+FilledRecs1 := JOIN(peopleDataset, Ptbl,LEFT.id=RIGHT.seq,
+                    doJoin(LEFT,RIGHT), KEYED(SeqKey));
+FilledRecs2 := JOIN(peopleDataset, Ptbl,LEFT.addr=RIGHT.Lname,
+                    doJoin(LEFT,RIGHT), KEYED(AlphaKey));
+SEQUENTIAL(PtblOut,Bld1,Bld2,OUTPUT(FilledRecs1),OUTPUT(FilledRecs2))
+</programlisting>
+  </sect2>
+
+  <sect2 id="JOIN_Set_of_Datasets">
+    <title>JOIN com Set of Datasets</title>
+
+    <para><emphasis role="bold">JOIN<indexterm>
+        <primary>JOIN</primary>
+      </indexterm><indexterm>
+        <primary>JOIN Set</primary>
+      </indexterm>(</emphasis><emphasis>setofdatasets, joincondition,
+    transform</emphasis>,<emphasis role="bold"> SORTED<indexterm>
+        <primary>SORTED</primary>
+      </indexterm>( </emphasis><emphasis>fields</emphasis><emphasis
+    role="bold">) [</emphasis><emphasis>, jointype</emphasis><emphasis
+    role="bold">] </emphasis><emphasis role="bold">[, UNORDERED |
+    ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+    STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+    </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+    <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+    <para><emphasis role="bold"><emphasis>A segunda forma de JOIN é similar à
+    função MERGEJOIN <indexterm>
+        <primary>MERGEJOIN function</primary>
+      </indexterm><indexterm>
+        <primary>JOIN</primary>
+      </indexterm> no sentido de que usa um SET OF DATASETs como o seu
+    primeiro parâmetro. Isso oferece a possibilidade de unir mais de dois
+    datasets em uma única operação.</emphasis></emphasis></para>
+  </sect2>
+
+  <sect2 id="Matching_Logic_joincondition">
+    <title>Lógica de Correspondência de Registros</title>
+
+    <para>O registro correspondente a <emphasis>joincondition </emphasis> pode
+    conter duas partes: uma condição STEPPED que pode opcionalmente ser ANDed
+    com condições sem STEPPED. A expressão STEPPED contém as principais
+    expressões de igualdade dos <emphasis>campos</emphasis> da opção SORTED
+    (componentes à direita podem ser comparações de intervalo se os valores de
+    intervalo não dependem das linhas LEFT e RIGHT), juntamente com ANDed,
+    usando LEFT e RIGHT como qualificadores de dataset. Caso não esteja
+    presente, a condição STEPPED é deduzida dos <emphasis>campos </emphasis>
+    especificados pela opção SORTED.</para>
+
+    <para>A ordem dos datasets em <emphasis>setofdatasets</emphasis> pode ser
+    importante para a maneira pela qual <emphasis>joincondition</emphasis> é
+    avaliado. A <emphasis>joincondition</emphasis> é duplicada entre pares
+    adjacentes de datasets, o que significa que essa
+    <emphasis>joincondition</emphasis>:</para>
+
+    <programlisting>       LEFT.field = RIGHT.field</programlisting>
+
+    <para>quando aplicada em um <emphasis>setofdatasets </emphasis> de três
+    datasets, é logicamente equivalente a:</para>
+
+    <programlisting>       ds1.field = ds2.field AND ds2.field = ds3.field</programlisting>
+  </sect2>
+
+  <sect2 id="TRANSFORM_Function_Requirements_parameters">
+    <title>Requisitos de função do TRANSFORM - JOIN setofdatasets<indexterm>
+        <primary>JOIN setofdatasets</primary>
+      </indexterm></title>
+
+    <para>A função <emphasis>transform</emphasis> precisa usar no mínimo um
+    parâmetro que precisa ter uma das duas formas:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="87.10pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry>LEFT</entry>
+
+            <entry>Formatado como qualquer um dos
+            <emphasis>setofdatasets</emphasis>. Isso indica o primeiro dataset
+            no <emphasis>setofdatasets</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>ROWS(LEFT)</entry>
+
+            <entry>Formatado como qualquer um dos
+            <emphasis>setofdatasets</emphasis>. Isso indica um conjunto de
+            registro composto de todos os registros de qualquer dataset no
+            <emphasis>setofdatasets</emphasis> que corresponde ao
+            <emphasis>joincondition</emphasis> – isso não pode incluir todos
+            os datasets no <emphasis>setofdatasets</emphasis>, dependendo de
+            qual <emphasis>jointype</emphasis> for especificado.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O formato do conjunto final de registros de resultado precisa ser o
+    mesmo que os datasets de entrada.</para>
+  </sect2>
+
+  <sect2 id="Join_Types_joincondition">
+    <title>Tipos de Join: setofdatasets</title>
+
+    <para>Os <emphasis>jointypes</emphasis> a seguir produzem os seguintes
+    tipos de resultados com base na correspondência de registros produzida por
+    <emphasis>joincondition</emphasis>:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="94.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry>INNER</entry>
+
+            <entry>Esse é o padrão se nenhum <emphasis>jointype</emphasis> for
+            especificado. Apenas os registros presentes em todos os datasets
+            no <emphasis>setofdatasets</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>LEFT OUTER</entry>
+
+            <entry>No mínimo um registro para cada registro no primeiro
+            dataset no <emphasis>setofdatasets</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>LEFT ONLY</entry>
+
+            <entry>Um registro para cada um no primeiro dataset no
+            <emphasis>setofdatasets</emphasis> para o qual não há
+            correspondência em nenhum dos datasets subsequentes.</entry>
+          </row>
+
+          <row>
+            <entry>MOFN(min [,max])</entry>
+
+            <entry>Um registro para cada registro com registros
+            correspondentes no número mínimo de datasets adjacentes no
+            <emphasis>setofdatasets</emphasis>. Se o número máximo for
+            especificado, o registro não será incluído se o número máximo de
+            correspondências de datasets for excedido.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Exemplo:</para>
+
+    <programlisting>Rec := RECORD,MAXLENGTH(4096)
+  STRING1  Letter;
+  UNSIGNED1    DS;
+  UNSIGNED1    Matches   := 0;
+  UNSIGNED1    LastMatch := 0;
+  SET OF UNSIGNED1 MatchDSs  := [];
+END;
+
+ds1 := DATASET([{'A',1},{'B',1},{'C',1},{'D',1},{'E',1}],Rec);
+ds2 := DATASET([{'A',2},{'B',2},{'H',2},{'I',2},{'J',2}],Rec);
+ds3 := DATASET([{'B',3},{'C',3},{'M',3},{'N',3},{'O',3}],Rec);
+ds4 := DATASET([{'A',4},{'B',4},{'R',4},{'S',4},{'T',4}],Rec);
+ds5 := DATASET([{'B',5},{'V',5},{'W',5},{'X',5},{'Y',5}],Rec);
+SetDS := [ds1,ds2,ds3,ds4,ds5];
+
+Rec XF(Rec L,DATASET(Rec) Matches) := TRANSFORM
+  SELF.Matches   := COUNT(Matches);
+  SELF.LastMatch := MAX(Matches,DS);
+  SELF.MatchDSs  := SET(Matches,DS);
+  SELF := L;
+END;
+j1 := JOIN(SetDS,
+           STEPPED(LEFT.Letter=RIGHT.Letter),
+           XF(LEFT,ROWS(LEFT)),SORTED(Letter));
+j2 := JOIN(SetDS,
+           STEPPED(LEFT.Letter=RIGHT.Letter),
+           XF(LEFT,ROWS(LEFT)),SORTED(Letter),LEFT OUTER);
+j3 := JOIN(SetDS,
+           STEPPED(LEFT.Letter=RIGHT.Letter),  
+           XF(LEFT,ROWS(LEFT)),SORTED(Letter),LEFT ONLY);
+j4 := JOIN(SetDS,
+           STEPPED(LEFT.Letter=RIGHT.Letter),
+           XF(LEFT,ROWS(LEFT)),SORTED(Letter),MOFN(3));
+j5 := JOIN(SetDS,
+           STEPPED(LEFT.Letter=RIGHT.Letter),
+           XF(LEFT,ROWS(LEFT)),SORTED(Letter),MOFN(3,4));
+
+OUTPUT(j1);
+OUTPUT(j2);
+OUTPUT(j3);
+OUTPUT(j4);
+OUTPUT(j5);
+</programlisting>
+
+    <para>Ver também: Estrutura TRANSFORM,Estrutura RECORD,SKIP ,STEPPED,
+    KEYED/WILD, MERGEJOIN</para>
+  </sect2>
+</sect1>

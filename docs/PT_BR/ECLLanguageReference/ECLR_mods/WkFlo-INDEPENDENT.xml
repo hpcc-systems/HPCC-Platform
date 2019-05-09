@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="INDEPENDENT">
+  <title>INDEPENDENT</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: INDEPENDENT
+  [</emphasis><emphasis>(cluster)</emphasis><emphasis role="bold">]</emphasis>
+  <indexterm>
+      <primary>INDEPENDENT</primary>
+    </indexterm><indexterm>
+      <primary>INDEPENDENT workflow service</primary>
+    </indexterm>;</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.65pt"/>
+
+        <colspec colwidth="273.15pt"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>O nome do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A definição do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>cluster</emphasis></entry>
+
+            <entry>Opcional. Uma constante de string que especifica o nome do
+            cluster Thor em que o atributo será executado. Se omitida, o
+            <emphasis>atributo</emphasis> é executado no cluster atual em
+            execução.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>O serviço <emphasis role="bold">INDEPENDENT </emphasis> faz com que o
+  <emphasis>atributo</emphasis> seja avaliado em um escopo global e força a
+  avaliação do <emphasis>atributo</emphasis> em um iten de fluxo de trabalho
+  individual. O novo item de fluxo de trabalho é avaliado antes do primeiro
+  item de fluxo de trabalho que usa esse <emphasis>atributo</emphasis>. É
+  executado de forma independente dos outros itens do fluxo de trabalho, e sua
+  execução é realizada apenas uma vez (incluindo SEQUENTIAL onde deve ser
+  executado na primeira vez que for usado). Ele não compartilhará nenhum
+  código com nenhum outro item do fluxo de trabalho.</para>
+
+  <para>Uma forma de uso seria para fornecer um mecanismo de interface do
+  código compartilhado entre os diferentes argumentos de uma ação SEQUENTIAL –
+  eles são normalmente avaliados de forma totalmente independente.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  IMPORT STD;
+  File1 := 'names1.txt';
+  File2 := 'names2.txt';
+  
+  SrcIP := '10.239.219.2';
+  SrcPath := '/var/lib/HPCCSystems/mydropzone/';
+  DestPath := '~THOR::IN::';
+  ESPportIP := 'http://192.168.56.120:8010/FileSpray';
+  
+  DeleteOldFiles :=
+     PARALLEL(STD.File.DeleteLogicalFile(DestPath+File1),
+              STD.File.DeleteLogicalFile(DestPath+File2))
+                           : INDEPENDENT;
+  SprayNewFiles :=
+     PARALLEL(STD.File.SprayFixed(SrcIP,SrcPath+File1,11,
+                                      'mythor',DestPath+File1,
+                                      -1,ESPportIP),
+              STD.File.SprayFixed(SrcIP,SrcPath+File2,11,
+                                     'mythor',DestPath+File2,
+                                     -1,ESPportIP))
+                           : INDEPENDENT;
+    SEQUENTIAL(DeleteOldFiles,SprayNewFiles);
+</programlisting>
+
+  <para>Ver também: <link linkend="GLOBAL">GLOBAL</link></para>
+</sect1>

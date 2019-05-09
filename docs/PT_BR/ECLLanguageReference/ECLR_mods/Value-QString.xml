@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="QSTRING">
+  <title>QSTRING<indexterm>
+      <primary>QSTRING</primary>
+    </indexterm></title>
+
+  <para><emphasis
+  role="bold">QSTRING[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]<indexterm>
+      <primary>QSTRING value type</primary>
+    </indexterm></emphasis></para>
+
+  <para>Uma variação de dados compactados da STRING que usa apenas 6 bits por
+  caractere para diminuir os requisitos de armazenagem de strings maiores. O
+  conjunto de caracteres é limitado às letras A-Z, aos números 0-9, ao espaço
+  em branco, e ao seguinte conjunto de caracteres especiais:</para>
+
+  <programlisting>! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @ [ \ ] ^ _</programlisting>
+
+  <para>Se <emphasis>n</emphasis> for omitido, a QSTRING terá comprimento
+  variável para o tamanho necessário para conter o resultado de um parâmetro
+  de conversão ou especificado. Você pode usar indexação de conjunto de
+  qualquer string para extrair uma substring.</para>
+
+  <para>O limite de tamanho máximo para qualquer valor DATA é 4GB.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>QSTRING12 CompanyName := 'LEXISNEXIS';
+        // uses only 9 bytes of storage instead of 12</programlisting>
+
+  <para>Ver também: <link linkend="STRING">STRING</link>, <link
+  linkend="LENGTH">LENGTH</link>, <link linkend="TRIM">TRIM</link>, <link
+  linkend="Set_Ordering_and_Indexing">Classificação e indexação de
+  conjuntos</link>.</para>
+</sect1>

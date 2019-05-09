@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PRELOAD">
+  <title>PRELOAD</title>
+
+  <para><emphasis role="bold">PRELOAD<indexterm>
+      <primary>PRELOAD</primary>
+    </indexterm><indexterm>
+      <primary>PRELOAD function</primary>
+    </indexterm>(</emphasis><emphasis>file </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, nbr</emphasis><emphasis role="bold"> ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="77.90pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>file</emphasis></entry>
+
+            <entry>O nome de uma definição DATASET</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>nbr</emphasis></entry>
+
+            <entry>Opcional. Uma constante inteira especificando quantos
+            índices devem ser criados “instantaneamente” para acelerar o
+            acesso ao arquivo do DATASET especificado (apenas). Se for &gt;
+            1.000, especifica a quantidade de memória reservada para esses
+            índices.</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:</entry>
+
+            <entry>PRELOAD retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">PRELOAD </emphasis> deixa o
+  <emphasis>arquivo </emphasis> na memória após ser carregado (válido apenas
+  para uso do Motor de entrega rápida de dados). Isso é equivalente ao uso da
+  opção PRELOAD na definição DATASET.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyFile := DATASET('MyFile',{STRING20 F1, STRING20 F2},THOR);
+  COUNT(PRELOAD(MyFile))</programlisting>
+
+  <para>Ver também: <link linkend="DATASET">DATASET</link></para>
+</sect1>

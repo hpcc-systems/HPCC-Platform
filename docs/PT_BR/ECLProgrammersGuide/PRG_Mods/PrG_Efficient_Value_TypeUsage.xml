@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Efficient_Value_Type_Usage">
+  <title>Uso Eficiente do Tipo de Valor</title>
+
+  <para>A arquitetura das estruturas de dados é uma arte que pode fazer uma
+  grande diferença nos requisitos finais de desempenho e de armazenamento de
+  dados. Apesar dos amplos recursos disponíveis nos clusters, pode ser
+  importante economizar um byte aqui e alguns ali – mesmo em um sistema de
+  processamento paralelo massivo de big data, os recursos não são
+  infinitos.</para>
+
+  <sect2 id="Numeric_Data_Type_Selection">
+    <title>Seleção de tipo de dados numérico</title>
+
+    <para>A escolha do tipo correto a ser usado em dados numéricos depende se
+    os valores são números inteiros ou se eles contêm partes fracionárias
+    (dados de ponto flutuante).</para>
+
+    <sect3 id="EfficientValue_IntegerData">
+      <title><emphasis role="bold">Dados Integer</emphasis></title>
+
+      <para>Ao trabalhar com dados inteiros, você sempre deve especificar o
+      tamanho exato de INTEGERn ou UNSIGNEDn necessários para manter o maior
+      número possível para esse determinado campo. Isso melhorará o desempenho
+      de execução e a eficiência do compilador, uma vez que o tipo de dados
+      inteiro padrão é INTEGER8 (que também é o padrão para atributos com
+      expressões inteiras).</para>
+
+      <para>A tabela a seguir define os valores maiores para cada tipo
+      determinado:</para>
+
+      <programlisting><emphasis role="bold">Type       Signed                      Unsigned</emphasis> 
+INTEGER1   -128 to 127                 0 to 255
+INTEGER2   -32,768 to 32,767           0 to 65,535
+INTEGER3   -8,388,608 to 8,388,607     0 to 16,777,215
+INTEGER4   -2,147,483,648              0 to 4,294,967,295
+             to 2,147,483,647
+INTEGER5   -549,755,813,888            0 to 1,099,511,627,775
+             to 549,755,813,887
+INTEGER6   -140,737,488,355,328        0 to 281,474,976,710,655
+             to 140,737,488,355,327
+INTEGER7   36,028,797,018,963,968      0 to 72,057,594,037,927,935
+             to 36,028,797,018,963,967
+INTEGER8   -9,223,372,036,854,775,808  0 to 18,446,744,073,709,551,615
+             to 9,223,372,036,854,775,807
+</programlisting>
+
+      <para>Por exemplo, se você possui dados "externos" onde um campo inteiro
+      de 4 bytes contém valores que variam de zero (0) até noventa e nove
+      (99), então faz sentido transferir esses dados para um campo UNSIGNED1.
+      Isso economiza três bytes por segundo, algo que, se o dataset for muito
+      grande (por exemplo, com 10 bilhões de registros), é possível gerar uma
+      economia considerável nos requisitos de armazenamento de disco.</para>
+
+      <para>Uma vantagem que o ECL tem em relação à outras linguagens é a
+      riqueza de seus tipos de números inteiros Ao permitir que você selecione
+      o número exato de bytes (na faixa de um a oito), é possível adaptar seus
+      requisitos de armazenamento para a faixa exata dos valores que precisam
+      ser armazenados sem desperdiçar mais bytes.</para>
+
+      <para>Note que o uso dos formatos BIG_ENDIAN de todos os tipos inteiros
+      é limitado para definir dados conforme são recebidos e retornam para a
+      "fonte externa" de onde vieram – todos os dados inteiros usados
+      internamente precisam estar no formato LITTLE_ENDIAN. O formato
+      BIG_ENDIAN foi projetado especificamente para estabelecer a interface
+      apenas com fontes de dados externas.</para>
+    </sect3>
+
+    <sect3 id="EfficientValue_FloatingPoint">
+      <title><emphasis role="bold">Dados de Pontos
+      Flutuante</emphasis></title>
+
+      <para>Ao usar os tipos de pontos flutuante, é necessário sempre
+      especificar o tamanho exato do REALn necessário para manter o maior
+      (e/ou menor) número possível para esse determinado campo. Isso melhorará
+      o desempenho de execução e a eficiência do compilador, uma vez que o
+      REAL retorna para o padrão REAL8 (oito bytes), exceto se for de outra
+      forma especificado. Os valores REAL são armazenados internamente no
+      formato de ponto flutuante IEEE assinado; REAL4 é o formato de 32 bits e
+      REAL8 é o formato de 64 bits.</para>
+
+      <para>A tabela a seguir define o número de dígitos significativos de
+      precisão e os maiores e menores valores que podem ser representados como
+      valores REAL (ponto flutuante):</para>
+
+      <programlisting><emphasis role="bold">Type</emphasis><emphasis
+          role="bold">    </emphasis><emphasis role="bold">Significant Digits     Largest Value</emphasis><emphasis
+          role="bold"> </emphasis><emphasis role="bold">    Smallest Value
+</emphasis>REAL4      7 (9999999)         3.402823e+038      1.175494e-038
+REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
+
+      <para>Se precisar de mais de quinze dígitos significativos em seus
+      cálculos, então é necessário considerar o tipo DECIMAL. Se todos os
+      componentes de uma expressão forem do tipo DECIMAL, o resultado será
+      calculado usando bibliotecas de matemática BCD (realizando a matemática
+      de pontos flutuantes em base 10 em vez de base 2). Isso possibilita
+      alcançar uma precisão de até trinta e dois dígitos, caso seja
+      necessário. Ao usar a matemática em base 10, também é possível eliminar
+      problemas de arredondamento que são comuns à matemática de pontos
+      flutuantes.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="String_Data_Type_Selection">
+    <title>Seleção do Tipo Dado String</title>
+
+    <para>Decidir qual dos vários tipos de dados de string será usado pode ser
+    um processo complexo, já que há diversas escolhas: STRING, QSTRING,
+    VARSTRING, UNICODE, e VARUNICODE. As escolhas óbvias ficam entre os vários
+    tipos de STRING e UNICODE. Você precisa usar UNICODE e/ou VARUNICODE
+    apenas se estiver lidando de fato com dados Unicode. Se for este o caso, a
+    seleção é simples. No entanto, decidir exatamente que tipo de string usar
+    pode ser mais desafiador.</para>
+
+    <sect3 id="String_Data_String_vs_Varstring">
+      <title><emphasis role="bold">STRING vs. VARSTRING</emphasis></title>
+
+      <para>Dados que entram e saem das "fontes externas" podem conter strings
+      terminadas em nulos. Se for este o caso, é necessário usar VARSTRING
+      para definir esses campos no arquivo de dados de ingestão/saída. No
+      entanto, programadores com muita experiência em C/C++ são propensos a
+      usar VARSTRING para tudo, acreditando que essa opção será a mais
+      eficiente – mas essa crença é infundada.</para>
+
+      <para>Não há nenhuma vantagem inerente em usar VARSTRING em vez de
+      STRING no sistema. STRING é o tipo de dados interno da string, sendo,
+      portanto, o tipo mais eficiente a ser usado. O tipo VARSTRING foi
+      projetado especificamente para estabelecer a interface com fontes de
+      dados externas, embora também possa ser usado dentro do sistema.</para>
+
+      <para>Isso se aplica da mesma forma ao escolher entre usar UNICODE ou
+      VARUNICODE.</para>
+    </sect3>
+
+    <sect3 id="String_Data_String_vs_QString">
+      <title><emphasis role="bold">STRING vs. QSTRING</emphasis></title>
+
+      <para>Dependendo do uso que você fará dos dados, pode ou não ser
+      importante reter a caixa original dos caracteres. Consequentemente, a
+      diferenciação entre maiúsculas e minúsculas, a armazenagem dos dados de
+      string em caixa alta é perfeitamente adequada, e o tipo QSTRING é sua
+      escolha lógica em vez do STRING. No entanto, se você PRECISA manter os
+      dados com diferenciação entre maiúsculas e minúsculas, o tipo STRING é a
+      única escolha a ser feita.</para>
+
+      <para>A vantagem de QSTRING sobre STRING é uma taxa de compressão
+      "instantânea" de 25% dos dados, já que os caracteres dos dados QSTRING
+      são representados por seis bits cada em vez de oito. Isso é feito ao
+      armazenar os dados em caixa alta e permitindo apenas caracteres
+      alfanuméricos e um pequeno grupo de caracteres especiais (! " # $ %
+      &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @ [ \ ] ^ _ ).</para>
+
+      <para>Para strings menores que quatro bytes, não há vantagem em usar o
+      QSTRING sobre o STRING, já que os campos ainda precisam estar alinhados
+      em limites de bytes. Por isso, o menor QSTRING que deve ser usado é um
+      QSTRING4 (quatro caracteres armazenados em três bytes em vez de
+      quatro).</para>
+    </sect3>
+
+    <sect3 id="StringData_FixedLength_vs_VariableLength_">
+      <title><emphasis role="bold">Strings de Largura Fixa vs. Largura
+      Variável</emphasis></title>
+
+      <para>Um campo de string ou parâmetro pode ser definido em um
+      comprimento específico ao anexar o número de caracteres ao nome do tipo
+      (como STRING20 para uma string de 20 caracteres). Também pode ser
+      definido como comprimento variável quando o comprimento não foi definido
+      (como STRING para uma string de comprimento variável).</para>
+
+      <para>Os campos de string ou parâmetros conhecidos por sempre terem um
+      tamanho específico devem ser designados no tamanho exato necessário.
+      Isso melhorará a eficiência e o desempenho, permitindo que o compilador
+      seja otimizado para a string de tamanho específico e não sofra com a
+      sobrecarga de calcular dinamicamente o comprimento variável no tempo de
+      execução. O tipo de valor de comprimento variável (STRING, QSTRING, ou
+      UNICODE) só deve ser usado quando o comprimento da string for variável
+      ou desconhecido.</para>
+
+      <para>A função LENGTH pode ser usada para determinar o comprimento de
+      uma string de comprimento variável especificada como um parâmetro para
+      uma função. Uma string especificada para uma função na qual o parâmetro
+      foi declarado como uma STRING20 sempre terá um comprimento de 20,
+      independentemente de seu conteúdo. Por exemplo, uma STRING20 que contém
+      'ABC' terá um comprimento de 20, e não de 3 (exceto, é claro, se você
+      incluir a função TRIM na expressão). Uma string declarada como STRING de
+      comprimento variável e que contém 'ABC' terá um comprimento de 3.</para>
+
+      <programlisting>STRING20 CityName := 'Orlando';  // LENGTH(CityName) is 20
+STRING   CityName := 'Orlando';  // LENGTH(CityName) is 7</programlisting>
+    </sect3>
+  </sect2>
+
+  <sect2 id="User-Defined_Data_Types">
+    <title>Tipos de Dados User-Defined</title>
+
+    <para>Há várias maneiras de definir seus próprios tipos de dados no ECL.
+    As estruturas RECORD e TYPE são as mais comuns.</para>
+
+    <sect3 id="EfficientData_RecordStructure">
+      <title><emphasis role="bold">Estrutura RECORD</emphasis></title>
+
+      <para>A estrutura RECORD pode ser vinculada a uma
+      <emphasis>struct</emphasis> nas linguagens C/C++. Ela define um grupo de
+      campos relacionados que são os campos de um recordset, esteja esse
+      recordset em disco ou em uma TABLE temporária, ou seja, resultado de
+      qualquer operação usando uma função TRANSFORM.</para>
+
+      <para>A estrutura RECORD é um tipo de dado definido por usuário porque,
+      depois de definida como um atributo, é possível usar esse atributo
+      como:</para>
+
+      <blockquote>
+        <para>* o tipo de dados para parâmetros especificados para funções
+        TRANSFORM</para>
+
+        <para>* o tipo de dados para um "campo" em outra estrutura RECORD
+        (estruturas aninhadas)</para>
+
+        <para>* a estrutura de um campo DATASET secundário aninhado em outra
+        estrutura RECORD</para>
+      </blockquote>
+
+      <para>Aqui está um exemplo que mostra todos os três usos (contidos no
+      arquivo RecStruct.ECL):</para>
+
+      <programlisting>IMPORT ProgrammersGuide.DeclareData AS ProgGuide;
+
+Layout_Person := RECORD
+  UNSIGNED1 PersonID;
+  STRING15  FirstName;
+  STRING25  LastName;
+END;
+Person := DATASET([{1,'Fred','Smith'},
+                   {2,'Joe','Blow'},                                
+                   {3,'Jane','Smith'}],Layout_Person);
+
+Layout_Accounts := RECORD
+  STRING10  Account;
+  UNSIGNED4 Balance;
+END;
+Layout_Accounts_Link := RECORD
+  UNSIGNED1 PersonID;
+  Layout_Accounts;                //nested RECORD structure
+END;
+
+Accounts := DATASET([{1,'45621234',452},
+                     {1,'55621234',5000},                                
+                     {2,'45629876',4215},
+                     {3,'45628734',8525}],Layout_Accounts_Link);
+
+Layout_Combined := RECORD
+  Layout_Person;
+  DATASET(Layout_Accounts) Accounts;    //nested child DATASET 
+END;
+
+P_recs := PROJECT(Person, TRANSFORM(Layout_Combined,SELF := LEFT; SELF := []));
+
+Layout_Combined CombineRecs(Layout_Combined L,
+                            Layout_Accounts_Link R) := TRANSFORM
+  SELF.Accounts := L.Accounts + ROW({R.Account,R.Balance}, Layout_Accounts);
+  SELF := L;
+END;                             //input and output types
+
+NestedPeopleAccts := DENORMALIZE(P_recs,
+                                 Accounts,
+                                 LEFT.personid=RIGHT.personid,
+                                 CombineRecs(LEFT,RIGHT));
+
+OUTPUT(NestedPeopleAccts);
+</programlisting>
+
+      <para>O Layout_Accounts_Link contém Layout_Accounts. Nenhum nome de
+      campo foi definido, o que significa que ele simplesmente herda todos os
+      campos nessa estrutura, na medida em que são definidos, e esses campos
+      herdados são referenciados como se estivessem declarados de forma
+      explícita na estrutura RECORD Layout_Accounts_Link, como por
+      exemplo:</para>
+
+      <programlisting>x := Accounts.Balance;</programlisting>
+
+      <para>No entanto, se um nome tiver sido definido, então ele definiria
+      uma estrutura aninhada e os campos nessa estrutura aninhada precisariam
+      ser referenciados usando o nome da estrutura aninhada como parte do
+      qualificador, da seguinte maneira:</para>
+
+      <programlisting>//Assuming the definition was this:
+Layout_Accounts_Link := RECORD
+  UNSIGNED1          PersonID;
+  Layout_Accounts    AcctStruct;      //nested RECORD with name
+END;
+  //then the field reference would have to be this:
+x := Accounts.AcctStruct.Balance;
+</programlisting>
+
+      <para>O atributo da estrutura RECORD Layout_Accounts define a estrutura
+      do campo DATASET secundário no Layout_Combined. A estrutura RECORD
+      Layout_Combined é então usada como entrada e resultado LEFT para a
+      função TRANSFORM CombineRecs.</para>
+    </sect3>
+
+    <sect3 id="EfficientData_TYPE_Structure">
+      <title><emphasis role="bold">Estrutura TYPE</emphasis></title>
+
+      <para>A estrutura TYPE é obviamente um tipo definido por usuário, uma
+      vez que você define um tipo de dados que ainda não é compatível com a
+      linguagem ECL. Sua finalidade é permitir a importação de dados em
+      qualquer formato recebido, seu processamento em um dos formatos internos
+      seguido da regravação dos dados no formato original em disco.</para>
+
+      <para>Ela funciona pela definição de funções de retorno de chamada
+      específicas dentro da estrutura TYPE (LOAD, STORE, etc.) que o sistema
+      utilizará para ler e gravar dados do e para o disco. A função de retorno
+      LOAD lê os dados do disco e define seu tipo interno na medida em que
+      você trabalhar com eles na forma de tipo de dados de retorno da função
+      LOAD gravada.</para>
+
+      <programlisting>GetXLen(DATA x,UNSIGNED len) := TRANSFER(((DATA4)(x[1..len])),UNSIGNED4);
+xstring(UNSIGNED len) := TYPE
+  EXPORT INTEGER PHYSICALLENGTH(DATA x) := GetXLen(x,len) + len;
+  EXPORT STRING LOAD(DATA x) := (STRING)x[(len+1)..GetXLen(x,len) + len];
+  EXPORT DATA STORE(STRING x):= TRANSFER(LENGTH(x),DATA4)[1..len] + (DATA)x;
+END;
+
+pstr    := xstring(1);    // typedef for user defined type
+pppstr  := xstring(3);        
+nameStr := STRING20;     // typedef of a system type
+
+namesRecord := RECORD
+  pstr    surname; 
+  nameStr forename;
+  pppStr  addr;
+END;
+
+ds := DATASET([{'TAYLOR','RICHARD','123 MAIN'},
+               {'HALLIDAY','GAVIN','456 HIGH ST'}],
+               {nameStr sur,nameStr fore, nameStr addr});
+ 
+namesRecord  MoveData(ds L) := TRANSFORM
+  SELF.surname  := L.sur;
+  SELF.forename := L.fore;
+  SELF.addr     := L.addr;
+END;
+
+out := PROJECT(ds,MoveData(LEFT));
+OUTPUT(out);
+</programlisting>
+
+      <para>Esse exemplo define um tipo de dados de "string Pascal", com o
+      comprimento inicial armazenado como um a quatro bytes anexados aos
+      dados.</para>
+    </sect3>
+
+    <sect3 id="EfficientData_TypeDefAttributes">
+      <title><emphasis role="bold">Atributos TypeDef</emphasis></title>
+
+      <para>O atributo TypeDef é outro tipo óbvio definido por usuário, uma
+      vez que você define uma instância específica de um tipo de dados que já
+      é compatível na linguagem ECL como um novo nome, seja para fins de
+      conveniência de manutenção ou por motivos de legibilidade de código. O
+      exemplo acima também demonstra o uso de atributos TypeDef.</para>
+    </sect3>
+  </sect2>
+</sect1>

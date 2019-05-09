@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PARALLEL_function">
+  <title>PARALLEL<indexterm>
+      <primary>PARALLEL function</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>definitionname</emphasis>
+  :=<emphasis role="bold"> ] PARALLEL<indexterm>
+      <primary>PARALLEL</primary>
+    </indexterm>(</emphasis><emphasis> actionlist </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82.55pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>definitionname</emphasis></entry>
+
+            <entry>Opcional. O nome da ação, que transforma a ação em uma
+            definição, consequentemente não é executado até que
+            <emphasis>definitionname </emphasis> seja usado como uma
+            ação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>actionlist</emphasis></entry>
+
+            <entry>Uma lista delimitada por vírgula das ações a serem
+            executadas simultaneamente. Podem ser ações ECL ou ações
+            externas.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A ação <emphasis role="bold">PARALLEL</emphasis> permite que os itens
+  na actionlist sejam executados simultaneamente. Ela não força uma execução
+  paralela, apenas a permite – o compilador determina a ordem real de
+  execução. Este já é um modo de operação padrão, portanto PARALLEL só é útil
+  dentro da lista de ação de um conjunto de ações SEQUENTIAL .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>Act1 :=
+OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
+Act2 :=
+OUTPUT(Person,{Person.per_first_name,Person.per_last_name});
+
+Act2 := OUTPUT(Person,{Person.per_last_name});
+
+//by naming these actions, they become inactive definitions
+//that only execute when the definition names are called as actions
+
+SEQUENTIAL(Act1,PARALLEL(Act2,Act3));
+
+//executes Act1 alone, and only when it's finished, 
+// executes Act2 and Act3 together
+</programlisting>
+
+  <para>Ver também: <link linkend="ORDERED">ORDERED</link> , <link
+  linkend="SEQUENTIAL">SEQUENTIAL</link></para>
+</sect1>

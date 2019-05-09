@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="CT_Overview">
+  <title><emphasis role="bold">Visão geral</emphasis></title>
+
+  <para>Este manual contém informações para o conjunto de Ferramentas do
+  cliente a serem usadas no HPCC da LexisNexis. Essas ferramentas
+  incluem:</para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis role="bold">ECLPlus</emphasis></entry>
+
+          <entry>Ferramenta de execução ECL da linha de comando para facilitar
+          a automação da execução do código ECL.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECL</emphasis></entry>
+
+          <entry>Ferramenta ECL de linha de comando.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECL Compiler</emphasis></entry>
+
+          <entry>Compilador ECL de linha de comando.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DFUPlus</emphasis></entry>
+
+          <entry>Ferramenta de gerenciamento do Utilitário de Arquivo
+          Distribuído da linha de comando, facilita a automação do spray do
+          arquivo de dados, do despray e de outras tarefas comuns de manuseio
+          de arquivos.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ESDL</emphasis></entry>
+
+          <entry>Ferramenta de gerenciamento ESDL de linha de comando.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold"> </emphasis></para>
+
+  <sect1 id="Documentation_Conventions">
+    <title>Convenções de documentação</title>
+
+    <sect2 id="ECL_Language">
+      <title><emphasis>Linguagem ECL</emphasis></title>
+
+      <para>Embora o ECL não faça distinção entre maiúsculas e minúsculas, as
+      palavras-chave reservadas do ECL e as funções contidas neste documento
+      são sempre exibidas com todos os caracteres EM MAIÚSCULA ( ALL CAPS )
+      para dar destaque e facilitar a identificação.</para>
+
+      <sect3 id="CT_Conventions_ExampleCode">
+        <title>Exemplo:</title>
+
+        <para>Todos os códigos de exemplo neste documento aparecem com a
+        seguinte fonte:</para>
+
+        <programlisting>MyECLFileName := COUNT(Person);
+// MyECLFileName is a user-defined ECL file
+// COUNT is a built-in ECL function
+// Person is the name of a dataset</programlisting>
+
+        <para>Nomes de arquivos ECL e os nomes de conjunto de registros são
+        sempre mostrados no código de exemplo em caixa mista (maiúsculas e
+        minúsculas). Palavras em execução podem ser usadas para identificar
+        explicitamente a finalidade nos exemplos.</para>
+      </sect3>
+
+      <sect3 id="CT_Convetions_Actions">
+        <title>Ações</title>
+
+        <para>Nas seções passo a passo, haverá ações explícitas a serem
+        realizadas. Todas elas são mostradas com um marcador ou um número (da
+        etapa) para diferenciar as etapas de ação do texto explicativo, como
+        mostrado aqui:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>As ações do teclado e mouse são todas mostradas em caixa
+              alta, tais como: DOUBLE-CLICK (CLIQUE DUAS VEZES), ou pressione
+              a tecla ENTER .</para>
+            </listitem>
+
+            <listitem>
+              <para>Os itens na tela que devem ser selecionados são mostrados
+              em negrito, como por exemplo: pressione o botão <emphasis
+              role="bold">OK </emphasis>.</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="ClientTools_Installation" role="brk">
+      <title>Instalação</title>
+
+      <para>O programa de instalação instala todas as ferramentas do cliente,
+      incluindo ECLPlus, DFUPlus, e as ferramentas ECL de linha de
+      comando.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Na página de download do HPCC
+          Systems<superscript>®</superscript> , <ulink
+          url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
+
+          <para>Faça o download das Ferramentas do cliente apropriadas para
+          seu sistema operacional. (disponível para CentOS, Ubuntu, Mac OSX,
+          ou Windows)</para>
+        </listitem>
+
+        <listitem>
+          <para>Instale o software de ferramentas do cliente em sua
+          máquina.</para>
+
+          <para><emphasis role="bold">Windows: </emphasis></para>
+
+          <para>Execute o arquivo executável, p.ex.:
+          hpccsystems-clienttools_community-4.X.X-XWindows-i386.exe em sua
+          máquina. Siga os comandos para concluir a instalação.</para>
+
+          <para><emphasis role="bold">Sistemas baseados em RPM
+          (CentOS/RedHat): </emphasis></para>
+
+          <para>Será fornecido um pacote de instalação do RPM. Instale o RPM
+          com o comutador -Uvh, o “U” ou “atualização” fará uma atualização se
+          uma versão prévia já tiver sido instalada. <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting></para>
+
+          <para><emphasis role="bold">Sistemas baseados em Debian
+          (Ubuntu):</emphasis></para>
+
+          <para>Um pacote Debian é disponibilizado para instalações Ubuntu.
+          Para instalar o pacote, use:</para>
+
+          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+
+          <para><emphasis role="bold">Mac OSX:</emphasis></para>
+
+          <para>Abra o arquivo de imagem de disco da Apple (.dmg) e execute o
+          pacote de instalação (.pkg). Siga os comandos para concluir a
+          instalação.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="Other_Installs">
+      <title>Instalações de Múltiplas Versões</title>
+
+      <para>Você pode instalar várias versões das ferramentas do cliente se
+      precisar trabalhar com várias versões da plataforma.</para>
+
+      <para>Para instalar as ferramentas do cliente, você precisa ter o pacote
+      de instalação adequado para seu sistema operacional e a versão
+      compatível com seu servidor do HPCC Systems:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Baixe as Ferramentas do cliente apropriadas para seu sistema
+          operacional e versão.</para>
+
+          <para>As Ferramentas do cliente podem ser encontradas na página de
+          download do HPCC Systems<superscript>®</superscript> :</para>
+
+          <para><ulink
+          url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
+
+          <variablelist>
+            <varlistentry>
+              <term>OBSERVAÇÃO:</term>
+
+              <listitem>
+                <para>No final da lista, há um link "<emphasis
+                role="blue">view older downloads (ver downloads
+                antigos)</emphasis>" que permite baixar as versões
+                anteriores.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </listitem>
+
+        <listitem>
+          <para>Instale as Ferramentas do cliente em seu sistema. Observe as
+          seguintes considerações:</para>
+        </listitem>
+      </orderedlist>
+
+      <para>A partir da versão 4.2, os pacotes de Ferramentas do cliente foram
+      desenvolvidos de forma lógica para permitir mais de uma instalação. As
+      versões anteriores do pacote das Ferramentas do cliente apenas
+      substituem os componentes existentes. O comportamento padrão das
+      Ferramentas do cliente é o uso da última versão instalada, exceto se
+      você estiver trabalhando diretamente na plataforma. Se você estiver
+      trabalhando diretamente na plataforma, ela usará o pacote que foi
+      instalado na plataforma.</para>
+
+      <para>Se você instalar uma versão diferente do software Ferramentas do
+      cliente recebido, você terá uma pasta em /opt/HPCCSystems que
+      corresponde ao conjunto de Ferramentas do cliente. Então você poderia
+      ter as versões 4.0.x, 4.2.x, 4.4.x, etc. do software.</para>
+
+      <para>Para versões mais antigas, baixe o(s) pacote(s) e realize a
+      instalação. Instale por último aquele que você deseja usar. Após
+      instalar a versão antiga, e antes de instalar a versão mais nova, copie
+      para uma pasta diferente ou renomeie as Ferramentas do cliente
+      localizadas em /opt/HPCCSystems. Isso impede que a nova versão das
+      Ferramentas do cliente substitua a antiga.</para>
+
+      <para>Para usar os vários números de versão das Ferramentas do cliente,
+      acione explicitamente a Ferramenta do cliente que deseja usar ou
+      configure um alias para acionar a Ferramenta do cliente usando o caminho
+      ou nome adequado para a versão que você pretende usar. Isso dependerá da
+      forma pela qual você deseja salvar as versões antigas instaladas.</para>
+
+      <para><emphasis role="bold">Por exemplo:</emphasis>se quisesse executar
+      o eclplus:</para>
+
+      <programlisting>eclplus action=view wuid=W12345678</programlisting>
+
+      <para>Para executar o eclplus em uma versão antiga ou outra versão das
+      Ferramentas do cliente, por exemplo a versão 4.0.x:</para>
+
+      <para><programlisting>/opt/HPCCSystems/4.0.x/clienttools/bin/eclplus action=view wuid=W12345678</programlisting></para>
+
+      <para><emphasis role="bold">Windows</emphasis></para>
+
+      <para>O software Ferramentas do cliente para Windows é instalado em um
+      diretório como esse: C:\Program Files
+      (x86)\HPCCSystems\6.2.0\clienttools\bin onde o número (6.2.0, por
+      exemplo) corresponde à versão do software Ferramentas do cliente.</para>
+
+      <para>Se quiser acessar uma versão do software da linha de comando em
+      qualquer pasta, adicione a pasta \bin ao caminho no Windows (por
+      exemplo, <emphasis role="bold">C:\Program Files
+      (x86)\HPCCSystems\6.2.0\clienttools\bin</emphasis> )</para>
+
+      <para>O instalador do Windows perguntará se você deseja remover a versão
+      anterior durante a instalação. Se quiser manter as duas, recuse a oferta
+      de desinstalação e escolha um diretório de instalação diferente no
+      próximo comando.</para>
+    </sect2>
+  </sect1>
+</chapter>

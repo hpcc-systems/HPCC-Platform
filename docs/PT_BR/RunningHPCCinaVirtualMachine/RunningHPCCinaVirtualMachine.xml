@@ -1,0 +1,2111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book id="Running_HPCC_In_A_Virtual_Machine" lang="en_US" xml:base="../">
+  <title>Executando o HPCC em uma Virtual Machine</title>
+
+  <bookinfo>
+    <title>HPCC em uma Virtual Machine</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> no campo assunto e indique o nome do documento,
+      o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> HPCC Systems® é uma marca
+      registrada da LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="VM_Intro">
+    <title>Introdução</title>
+
+    <para>Estas instruções servem como orientação durante a instalação e
+    execução do HPCC.<footnote>
+        <para><emphasis role="bold">H</emphasis>igh <emphasis
+        role="bold">P</emphasis>erformance <emphasis
+        role="bold">C</emphasis>omputing <emphasis
+        role="bold">C</emphasis>luster (HPCC) é uma plataforma de computação
+        de processamento massivamente paralelo que soluciona problemas de big
+        data Consulte <ulink
+        url="http://hpccsystems.com/Why-HPCC/How-it-works">http://hpccsystems.com/Why-HPCC/How-it-works</ulink>
+        para obter mais detalhes.</para>
+      </footnote> System em um único nó na máquina virtual Linux executada em
+    um host Windows.</para>
+
+    <para>Desenvolvida para ser executada em uma máquina virtual, essa versão
+    oferece uma experiência prática com o HPCC System. É possível experimentar
+    e até mesmo criar aplicações analíticas de dados reais em seu PC ou
+    notebook.</para>
+
+    <para>Essa versão inclui as ferramentas e a funcionalidade do HPCC sem a
+    necessidade de um cluster físico de servidores. A versão contém todos os
+    recursos necessários para você avaliar o HPCC system e aprender a usar o
+    ECL<footnote>
+        <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+        role="bold">C</emphasis>ontrol <emphasis
+        role="bold">L</emphasis>anguage (ECL) é uma linguagem de programação
+        declarativa e centrada em dados usada para gerenciar todos os aspectos
+        da junção, classificação e compilação de dados massivos que realmente
+        diferenciam o HPCC das demais tecnologias na sua capacidade de
+        fornecer análise de dados flexíveis em escala massiva</para>
+      </footnote>. Você, obviamente, não terá acesso ao poder do processamento
+    paralelo com esta versão, mas poderá usá-la como uma ferramenta de
+    avaliação, aprendizagem e experimentação.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+              <entry>Faça a leitura completa deste documento antes de começar.
+              As etapas descritas neste documento podem levar de uma a duas
+              horas para serem concluídas, dependendo da velocidade do seu
+              download.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <sect1 id="VM_Requirements">
+      <title>Requisitos do Sistema</title>
+
+      <para>A execução do HPCC em uma máquina virtual requer (no
+      mínimo):</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Um computador com sistema operacional Windows XP, Vista,
+          Windows 7 (de 32 ou 64 bits) ou mais recente.</para>
+        </listitem>
+
+        <listitem>
+          <para>Memória RAM de, no mínimo, 2 GB com pelo menos 1.5 GB de
+          memória livre disponível. Recomendamos 4 GB de memória ou
+          mais.</para>
+        </listitem>
+
+        <listitem>
+          <para>Processador Intel Pentium D (ou mais potente) ou AMD
+          Athlon64/Opteron/Phenom</para>
+        </listitem>
+
+        <listitem>
+          <para>Espaço em disco disponível de, no mínimo 5 GB – recomendamos
+          20 GB</para>
+        </listitem>
+
+        <listitem>
+          <para>Oracle VM VirtualBox<superscript>®</superscript> (versão 4.0
+          ou posterior).</para>
+        </listitem>
+
+        <listitem>
+          <para>Internet Explorer<superscript>®</superscript> 11, Google
+          Chrome 10, ou Firefox 3.0 (ou mais recente)</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Os usuários precisam estar familiarizados com os procedimentos de
+      instalação e execução de aplicações no Windows.</para>
+
+      <para>Para executar o HPCC em uma máquina virtual, a virtualização deve
+      estar habilitada no BIOS do seu computador. Essa configuração pode se
+      chamar VT-x ou AMD-V.</para>
+    </sect1>
+  </chapter>
+
+  <chapter id="VM_GettingTheTools">
+    <title>Obtendo as Ferramentas e a imagem da VM</title>
+
+    <para>Para executar a versão da máquina virtual do HPCC System, você
+    precisará de um software de virtualização. Esses pacotes permitem executar
+    imagens virtuais dentro de um único host. Há vários fornecedores de
+    software de virtualização; embora qualquer um desses, ou todos, poderiam
+    funcionar, nós apoiamos o VM VirtualBox<superscript>®</superscript> da
+    Oracle</para>
+
+    <sect1 id="VM_VirtualBox">
+      <title>.</title>
+
+      <para>O software de virtualização da Oracle, VM VirtualBox, suporta a
+      execução da imagem da máquina virtual do HPCC.</para>
+
+      <para>Nas próximas seção(ões) você irá:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Fazer o download e instalar a VM VirtualBox</para>
+        </listitem>
+
+        <listitem>
+          <para>Fazer o download da imagem da máquina virtual do HPCC direto
+          do HPCC Systems.</para>
+        </listitem>
+
+        <listitem>
+          <para>Abrir e importar a imagem na VM VirtualBox</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2 id="Install_VM_VirtualBox">
+        <title>Fazer o Download e Instalar a VM VirtualBox</title>
+
+        <para>Se você já tiver instalado a VM VirtualBox, pule para a etapa
+        número 6 e verifique as definições da configuração de rede.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Acesse o site da VirtualBox: <ulink
+            url="https://www.virtualbox.org/wiki/Downloads">https://www.virtualbox.org/wiki/Downloads</ulink>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no link apropriado para seu sistema operacional. Por
+            exemplo: <emphasis>VirtualBox para hosts do
+            Windows.</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Faça o download do arquivo de instalação da VirtualBox.
+            Salve-o em uma pasta no seu computador.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique duas vezes no arquivo de instalação para instalar a
+            VirtualBox.</para>
+          </listitem>
+
+          <listitem>
+            <para>Siga as instruções na tela para concluir a instalação da
+            VirtualBox.</para>
+          </listitem>
+
+          <listitem>
+            <para>Inicie a aplicação VM VirtualBox.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="VM_ImportVirtualImage">
+        <title id="get_HPCC">Importar o arquivo de imagem virtual do
+        HPCC</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Baixe o arquivo mais recente da imagem da máquina virtual
+              do HPCC em:</para>
+
+              <para><ulink
+              url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>Observação:</term>
+
+                    <listitem>
+                      <para>Pode ser necessário se registrar para fazer o
+                      login.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+
+              <para>Selecione o arquivo de imagem da VM para VirtualBox. O
+              arquivo <emphasis>filename.ova</emphasis> é apropriado para a
+              VirtualBox.</para>
+            </listitem>
+
+            <listitem>
+              <para>Salve o arquivo em uma pasta no seu computador.</para>
+            </listitem>
+
+            <listitem>
+              <para>Abra a VM VirtualBox.</para>
+            </listitem>
+
+            <listitem>
+              <para>No menu <emphasis role="bold">File</emphasis> , selecione
+              <emphasis role="bold">Import Appliance... (Ctrl +
+              I)</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Open appliance...
+              </emphasis> na caixa de diálogo para selecionar o dispositivo a
+              ser importado.</para>
+            </listitem>
+
+            <listitem>
+              <para>Navegue para a pasta onde o arquivo foi salvo e
+              selecione-o.</para>
+
+              <para>Por exemplo (<emphasis
+              role="bluebold">HPCCSystemsVM-<emphasis>n.n.n.n</emphasis>.ova</emphasis>
+              , onde n.n.n.n é o número da versão).</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Open</emphasis>
+              para iniciar a importação. Siga os prompts durante o processo de
+              importação e pressione <emphasis role="bold">Next</emphasis>
+              como apropriado, e depois pressione <emphasis
+              role="bold">Import</emphasis>.</para>
+
+              <para>Aguarde até que a máquina virtual do HPCC tenha concluído
+              a importação. Esse procedimento pode levar alguns
+              minutos.</para>
+            </listitem>
+
+            <listitem>
+              <para>A máquina virtual recém-importada será listada na janela
+              principal.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione a nova máquina virtual.</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no ícone <emphasis role="bold">Settings</emphasis>
+              para abrir a caixa de diálogo de configurações. <figure
+                  id="VBoxSettingIcon">
+                  <title xreflabel="welc">Ícone configurações do
+                  VirtualBox</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg16.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>No menu, selecione a opção <emphasis
+              role="bold">Network</emphasis> . Na aba <emphasis>Adapter
+              1</emphasis> , marque a caixa <emphasis>Enable Network
+              Adapter</emphasis> e defina a <emphasis>opção </emphasis>
+              Attached to: para <emphasis role="bold">NAT</emphasis> <figure
+                  id="VBoxNet1">
+                  <title xreflabel="welc">VMVirtualBox Network Adapter
+                  1</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg17.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <variablelist>
+                <varlistentry>
+                  <term>Observação:</term>
+
+                  <listitem>
+                    <para>Por padrão, essas configurações já podem estar
+                    definidas. Se for este o caso, basta verificar se estão
+                    corretas.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Na mesma janela <emphasis>Network - Settings</emphasis> ,
+              selecione a guia <emphasis> Adapter 2</emphasis>. Marque a caixa
+              <emphasis>Enable Network Adapter</emphasis> e defina a
+              <emphasis>opção </emphasis> Attached to: para <emphasis
+              role="bold">Host-only Adapter</emphasis>. <figure id="VBoxNet2">
+                  <title xreflabel="welc">VM VirtualBox Network Adapter
+                  2</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg18.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">OK</emphasis>
+              .</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique duas vezes na máquina virtual para inicializá-la.
+              <variablelist>
+                  <varlistentry>
+                    <term>Dica:</term>
+
+                    <listitem>
+                      <para>Se aparecer qualquer mensagem de Erro de rede,
+                      revise as etapas <xref linkend="Install_VM_VirtualBox"/>
+                      e verifique se todas as configurações de rede foram
+                      definidas de maneira adequada.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Após a inicialização da VM ter sido concluída, aparecerá
+              uma janela semelhante a seguinte:</para>
+
+              <figure id="vbox_welcome">
+                <title xreflabel="welc">Tela de boas-vindas da
+                VirtualBox</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg01b.JPG"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt"/>
+
+                    <colspec/>
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png"/></entry>
+
+                        <entry>Seu endereço IP virtual poderá ser diferente
+                        dos endereços fornecidos nas imagens de exemplo. Use o
+                        endereço IP fornecido pela <emphasis
+                        role="bold">sua</emphasis> instalação.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+
+              <para>Não redimensione essa janela, pois você não irá interagir
+              com ela. Além disso, não há necessidade de fazer login.</para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>Dica:</term>
+
+                    <listitem>
+                      <para>Ao clicar na janela, ela captura seu
+                      teclado/mouse. Pressione a tecla <emphasis
+                      role="bold">Ctrl do lado direito</emphasis> para ter
+                      controle sobre seu mouse novamente.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+          </orderedlist></para>
+
+        <sect3 id="VM_GuestAdditions">
+          <title>Guest Additions</title>
+
+          <para>As imagens da VM do HPCC incluem o Guest Additions. Guest
+          Additions são drivers de dispositivo e aplicações de sistema que
+          otimizam o sistema operacional convidado (guest) para um melhor
+          desempenho e usabilidade. Se desejar usar o ponteiro do mouse e/ou
+          outras ferramentas da área de trabalho em sua máquina virtual,
+          inicie a exibição do Windows X depois de efetuar o login em sua
+          máquina virtual.</para>
+
+          <para>Faça o login com as credenciais fornecidas. (usuário:
+          hpccdemo, senha: hpccdemo) No prompt de comando, digite: <emphasis
+          role="bold">startx.</emphasis>.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="VM_RunningHPCC_VM">
+    <title>Executando a VM HPCC</title>
+
+    <para>Nesta seção, iremos acessar o HPCC através de uma interface Web: ECL
+    Watch<footnote>
+        <para>O ECL Watch é uma interface da Web para seu HPCC System. O ECL
+        Watch permite examinar e gerenciar os vários aspectos do HPCC e
+        permite ver informações sobre tarefas executadas, arquivos de dados e
+        métricas de sistema.</para>
+      </footnote>Do ECL Watch, vamos fazer o download do ECL IDE de vários
+    nós.<footnote>
+        <para>O ECL IDE (Ambiente de desenvolvimento integrado) é uma
+        ferramenta usada para criar consultas em seus dados e arquivos ECL com
+        os quais suas consultas serão compiladas. Essa é uma aplicação
+        Windows.</para>
+      </footnote>. Caso já tenha instalado o ECL IDE, pule esta seção e
+    continue em <emphasis>Executar o ECL IDE no HPCC quando uma versão já
+    tiver sido previamente instalada</emphasis>.</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Em seu navegador, acesse o URL do <emphasis role="bold">ECL
+          Watch</emphasis> (circulado em vermelho) na figura acima,
+          <emphasis>Tela de boas-vindas da VirtualBox</emphasis>. Por exemplo,
+          http://nnn.nnn.nnn.nnn:8010, onde nnn.nnn.nnn.nnn é o endereço IP da
+          sua máquina virtual.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png"/></entry>
+
+                    <entry>Seu endereço IP virtual poderá ser diferente dos
+                    endereços fornecidos nas imagens de exemplo. Use o
+                    endereço IP fornecido pela <emphasis
+                    role="bold">sua</emphasis> instalação.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>No menu Advanced do ECL Watch, selecione o link <emphasis
+          role="bold">Additional Resurces </emphasis>.</para>
+
+          <para><figure>
+              <title>Página Recursos do ECL Watch</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/GS_1311.jpg" vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Siga o link para a página do portal de download do HPCC
+          System.</para>
+        </listitem>
+
+        <listitem>
+          <para>Clique no link <emphasis role="bold">ECL IDE </emphasis>. (ao
+          lado direito da coluna Download, abaixo do título Free Community
+          Edition)</para>
+        </listitem>
+
+        <listitem>
+          <para>Siga as instruções na página da Internet para instalar o ECL
+          IDE.</para>
+        </listitem>
+
+        <listitem>
+          <para>Instale o ECL IDE, seguindo os prompts no programa de
+          instalação. Após o ECL IDE ter sido instalado com sucesso, você pode
+          prosseguir.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <sect1 id="VM_RunningTheIDE">
+      <title>Executando o ECL IDE pela primeira vez</title>
+
+      <para>Nesta seção vamos configurar o ECL IDE.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra o ECL IDE, no menu iniciar. (Start <emphasis
+          role="bold">&gt;&gt;</emphasis> All Programs <emphasis
+          role="bold">&gt;&gt;</emphasis> HPCCSystems <emphasis
+          role="bold">&gt;&gt;</emphasis> ECL IDE).</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+                  <entry>Você pode criar um atalho em sua área de trabalho
+                  para acessar rapidamente o ECL IDE.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+
+        <listitem>
+          <para>Insira o endereço IP para o servidor, exibido na <link
+          linkend="vbox_welcome">tela de boas-vindas da Virtual Box</link> ,
+          na caixa <emphasis role="bold">Server </emphasis> (como mostrado em
+          <xref linkend="Preferences"/>) e pressione o botão <emphasis
+          role="bold">OK</emphasis> .</para>
+
+          <para><figure id="Preferences">
+              <title>Preferências do ECL IDE</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg06.JPG"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Insira o <emphasis role="bold">Login ID</emphasis> e a Senha
+          <emphasis role="bold">(Password)</emphasis> fornecida na caixa de
+          Login.</para>
+
+          <informaltable colsep="1" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="80pt"/>
+
+              <colspec colwidth="100pt"/>
+
+              <tbody>
+                <row>
+                  <entry>Login ID</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+
+                <row>
+                  <entry>Senha</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <figure>
+            <title>Janela de Login</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/vmimg06a.JPG"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">OK</emphasis> .</para>
+
+          <para>Agora você está conectado e pronto para trabalhar com o
+          HPCC!</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1 id="VM_RunningtheIDE_wPreviousVersion">
+      <title>Executando o HPCC ECL IDE quando você já tem uma versão
+      previamente instalada</title>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra o ECL IDE em sua estação de trabalho Windows, a partir do
+          menu Iniciar. (Start: <emphasis role="bold">&gt;&gt;</emphasis> All
+          Programs <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems
+          <emphasis role="bold">&gt;&gt;</emphasis> ECL IDE <emphasis
+          role="bold">&gt;&gt;</emphasis> ECL IDE)</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">Pressione o botão
+          Preferences</emphasis> na caixa de Login que é exibida na
+          inicialização</para>
+
+          <para/>
+
+          <para><figure>
+              <title>Janela de Login</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg05.JPG"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Insira o endereço IP exibido na <link
+          linkend="vbox_welcome">tela de boas-vindas do Virtual Box</link>
+          para o servidor na <emphasis role="bold">caixa </emphasis> Server
+          (como mostrado em <xref linkend="Preferences2"/>) e pressione o
+          botão <emphasis role="bold">OK</emphasis> .</para>
+
+          <para><figure id="Preferences2">
+              <title>Preferências do ECL IDE</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg06.JPG"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Insira a <emphasis role="bold">Login Id</emphasis> e a
+          <emphasis role="bold">Senha (Password) </emphasis> fornecida na
+          caixa de Login.</para>
+
+          <informaltable colsep="1" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="80pt"/>
+
+              <colspec colwidth="100pt"/>
+
+              <tbody>
+                <row>
+                  <entry>Login ID</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+
+                <row>
+                  <entry>Senha</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <figure>
+            <title>Janela de Login</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/vmimg06a.JPG"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+        </listitem>
+
+        <listitem>
+          <para>Pressione o botão <emphasis role="bold">OK</emphasis> .</para>
+
+          <para>Agora você está conectado e pronto para trabalhar com o
+          HPCC!</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1 id="VM_WriteSomeECL">
+      <title>Escrever código ECL</title>
+
+      <para>Vamos gravar, compilar e executar um programa simples denominado
+      "Hello World” HPCC.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra o ECL IDE, no menu Iniciar. (Start <emphasis
+          role="bold">&gt;&gt;</emphasis> All Programs <emphasis role="bold">
+          &gt;&gt;</emphasis> HPCCSystems <emphasis role="bold">&gt;&gt;
+          </emphasis> ECL IDE , ou use o atalho na área de trabalho caso tenha
+          criado um.)</para>
+
+          <para>A janela de Login será exibida.</para>
+
+          <para><figure>
+              <title>Janela de Login</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg06a.JPG"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Informe suas credenciais (hpccdemo) e pressione o botão OK .
+          <emphasis role="bold">OK</emphasis> .</para>
+
+          <para/>
+        </listitem>
+
+        <listitem>
+          <para>Abra uma nova <emphasis role="bold">Janela do
+          compilador</emphasis> (CTRL+N) e escreva o seguinte
+          código:<programlisting>OUTPUT('Hello World');
+</programlisting></para>
+
+          <para>Isso também poderia ser escrito como:</para>
+
+          <para><programlisting>'Hello World';
+</programlisting>Na segunda listagem de programa, a palavra-chave OUTPUT é
+          ocultada. Isso ocorre possivelmente porque a linguagem é declarativa
+          e a ação OUTPUT é implícita.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Selecione <emphasis role="bold">thor</emphasis> como seu
+          cluster de destino.</para>
+
+          <para><emphasis role="bold">Thor</emphasis> é o componente da
+          Refinaria de dados do seu HPCC. Trata-se de um cluster de computador
+          massivamente paralelo, otimizado para classificar, manipular e
+          transformar uma quantidade massiva de dados. Esse processo também é
+          conhecido como ETL (Extrair, Transformar e Carregar)</para>
+
+          <para><figure>
+              <title>Selecionar destino</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg10.JPG"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Pressione o botão de verificação de sintaxe localizado na
+          barra de ferramentas principal (ou pressione F7).</para>
+
+          <para><figure>
+              <title>Verificação de sintaxe</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg09.JPG"/>
+                </imageobject>
+              </mediaobject>
+            </figure>Uma verificação se sintaxe bem-sucedida exibe a mensagem
+          “Nenhum erro encontrado (no Errors)”.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Pressione o botão <emphasis role="bold">Submit</emphasis> (ou
+          pressione as teclas CTRL+ENTER).</para>
+
+          <para><figure>
+              <title>Job Concluído</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg11.JPG"/>
+                </imageobject>
+              </mediaobject>
+            </figure>A marcação na cor verde indica uma conclusão
+          bem-sucedida.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Clique na guia do número da workunit e, em seguida, na guia
+          Result 1 para ver os resultados.</para>
+
+          <para><figure>
+              <title>Resultado do job concluído</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg12.JPG"/>
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1 id="VM_WorkingWithECL">
+      <title>Trabalhando com ECL</title>
+
+      <para>Agora que você enviou alguns códigos ECL , está na hora de tentar
+      realizar algumas operações mais complexas.</para>
+
+      <para>Fornecemos os exemplos a seguir para que você possa
+      começar.</para>
+
+      <sect2 id="VM_ECL_exampleAnagram1">
+        <title>Exemplo ECL: Anagram1</title>
+
+        <para>Este exemplo pega uma STRING e gera todos os anagramas possíveis
+        a partir dela. Este código serve de base para um segundo exemplo que
+        analisa quais destas são palavras reais usando um arquivo de dados da
+        lista de palavras.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Abra uma nova <emphasis role="bold">Janela do compilador
+              (CTRL+N)</emphasis> e escreva o seguinte código:<programlisting>STRING Word := 'FRED' :STORED('Word');
+R := RECORD
+        STRING SoFar {MAXLENGTH(200)};
+        STRING Rest {MAXLENGTH(200)};
+     END;
+Init := DATASET([{'',Word}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+                SELF.SoFar := le.SoFar + le.Rest[c];
+                SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..]; 
+// Boundary Conditions handled automatically
+  END;
+RETURN NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER));
+  END;
+L := LOOP(Init,LENGTH(TRIM(Word)),Pluck1(ROWS(LEFT)));
+OUTPUT(L);</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bold">thor</emphasis> como seu
+              cluster de destino.</para>
+
+              <para/>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de verificação de sintaxe localizado na
+              barra de ferramentas principal (ou pressione F7)</para>
+
+              <para/>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Pressione o botão <emphasis role="bold">Pressione o botão
+              Submit</emphasis> (ou as teclas ctrl+enter).</para>
+
+              <para><figure>
+                  <title>Job Concluído</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg11a.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure>A marcação na cor verde indica uma conclusão
+              bem-sucedida.</para>
+
+              <para/>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Clique na guia do número da workunit e, em seguida, na
+              guia Result 1 para ver os resultados.</para>
+
+              <para><figure>
+                  <title>Resultado do job concluído</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg11b.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+
+        <para/>
+      </sect2>
+
+      <?hard-pagebreak ?>
+
+      <sect2 id="VM_RoxieExampleAnagram2">
+        <title>Exemplo Roxie: Anagram2 Anagram2</title>
+
+        <para>Neste exemplo, vamos baixar um arquivo de dados de código aberto
+        com palavras do dicionário, fazer o spray (distribuir aos nós) desse
+        arquivo para nosso cluster Thor e validar nossos anagramas em relação
+        a esse arquivo para que possamos determinar quais palavras são
+        válidas. A etapa de validação usa um JOIN da lista de anagramas para o
+        arquivo do dicionário. O uso de um índice e de uma junção com chave
+        seria mais eficiente, mas isso serve apenas como um simples
+        exemplo.</para>
+
+        <sect3 id="VM_DownloadTheWordList">
+          <title>Fazer o download da lista de palavras</title>
+
+          <para>Vamos fazer o download da lista de palavras em <ulink
+          url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Faça o <emphasis>download do </emphasis>pacote Official
+                12 Dicts.</para>
+              </listitem>
+
+              <listitem>
+                <para>Extraia o arquivo <emphasis
+                role="bold">2of12.txt</emphasis> para uma pasta em sua máquina
+                local. Os arquivos estão disponíveis no formato tar.gz ou
+                ZIP.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+
+        <sect3 id="VM_Load_the_Incoming_Data">
+          <title>Carregar o arquivo de dicionário para sua Zona de Entrada de
+          Arquivo</title>
+
+          <para>Nesta etapa, você copiará os arquivos de dados para um local
+          onde eles possam ser distribuídos aos nós de seu cluster HPCC. Uma
+          zona de entrada de arquivos é um local de armazenagem anexado ao seu
+          HPCC. Ela possui um utilitário em execução para facilitar o spraying
+          (processo de distribuir dados aos nós) para um cluster.</para>
+
+          <para>Para arquivos de dados menores, com tamanho máximo de 2GB,
+          você pode usar o utilitário enviar/baixar arquivo no ECL Watch. Este
+          arquivo de dados possui apenas 400 kb (aproximadamente).</para>
+
+          <para>Em seguida, você distribuirá (ou fará o spray) o dataset para
+          todos os nós no cluster do HPCC . O poder do HPCC vem da sua
+          capacidade de atribuir vários processadores para trabalhar nas
+          diferentes partes do arquivo de dados em paralelo. Até mesmo na VM
+          Edition, que possui apenas um nó único, os dados precisam ser
+          distribuídos aos nós do cluster.</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Em seu navegador, acesse a URL do <emphasis
+              role="bold">ECL Watch</emphasis> Por exemplo,
+              http://nnn.nnn.nnn.nnn:8010, onde nnn.nnn.nnn.nnn é o endereço
+              IP do seu ESP Server.</para>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt"/>
+
+                    <colspec/>
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png"/></entry>
+
+                        <entry>Seu endereço IP poderá ser diferente dos
+                        endereços fornecidos nas imagens de exemplo. Use o
+                        endereço IP fornecido pela <emphasis
+                        role="bold">sua</emphasis> instalação.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>No ECL Watch, clique no ícone <emphasis
+              role="bold">Files</emphasis> e no link <emphasis
+              role="bold">Zona de entrada de arquivos (Landing
+              Zones)</emphasis> localizados no submenu de navegação</para>
+
+              <para>Pressione o botão de ação <emphasis role="bold">Upload
+              </emphasis>.</para>
+
+              <para><figure>
+                  <title>Enviar</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/LZimg03-1.jpg"
+                                 vendor="eclwatchSS"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Uma caixa de diálogo será aberta. <emphasis
+              role="bold">Navegue</emphasis> e selecione o arquivo a ser
+              enviado e pressione o botão <emphasis
+              role="bold">Open</emphasis> . <figure>
+                  <title>File Uploader</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/LZimg04a.jpg"
+                                 vendor="eclwatchSS"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <para>O arquivo selecionado deve aparecer no campo <emphasis
+              role="bold">File Name</emphasis> . O arquivo de dados possui o
+              seguinte nome: <emphasis
+              role="bold">2of12.txt</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Start</emphasis>
+              para concluir o envio do arquivo.</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+
+        <sect3 id="VM_Spray_the_Data_to_THOR">
+          <title>Spray do arquivo de dados para o sua <emphasis> Cluster da
+          Refinaria de Dados (Thor)</emphasis></title>
+
+          <para>Para usar o arquivo de dados em seu HPCC System, é preciso
+          fazer o "spray” (distribuir) desse arquivo para todos os nós. Um
+          <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> é a
+          transferência de um arquivo de dados de um local (como a zona de
+          entrada de arquivos) para diversas partes do arquivo ou nós em um
+          cluster.</para>
+
+          <para>O arquivo distribuído recebeu um
+          <emphasis>nome-de-arquivo-lógico</emphasis> como segue<emphasis
+          role="bold">: thor::word_list_csv </emphasis> O sistema mantém uma
+          lista de arquivos lógicos e as localizações dos arquivos físicos
+          correspondentes das partes do arquivo.</para>
+
+          <para/>
+
+          <orderedlist>
+            <listitem>
+              <para>Abra o ECL Watch usando a URL:</para>
+
+              <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
+              nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a
+              porta. A porta padrão é 8010)</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no ícone <emphasis role="bold">Files</emphasis> ,e
+              em seguida no link <emphasis role="bold">Landing Zones (Zona de
+              entrada de arquivos)</emphasis> no submenu de navegação.
+              Selecione a zona de entrada de arquivos apropriada (caso haja
+              mais de uma zona de entrada de arquivos). Clique na seta à
+              esquerda da sua zona de entrada de arquivos para
+              expandir.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione o arquivo na zona de entrada de arquivos
+              marcando a caixa ao lado dele.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Marque a caixa ao lado de 2of12.txt, e pressione o botão
+              <emphasis role="bold">Delimited</emphasis> .</para>
+
+              <para><figure>
+                  <title>Spray delimitado</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/GSSprayDict.jpg"
+                                 vendor="eclwatchSS"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <para>A página <emphasis role="bold">Spray delimitado do
+              DFU</emphasis> será exibida.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione "mythor" na lista suspensa do Target
+              Group.</para>
+            </listitem>
+
+            <listitem>
+              <para>Preencha o Targer Scope como <emphasis>
+              thor</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Preencha os demais parâmetros (caso ainda não tenham sido
+              preenchidos).</para>
+
+              <para><itemizedlist>
+                  <listitem>
+                    <para>Máximo tamanho do registro 8192</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Separador \,</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Terminador de linhas \n,\r\n</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Aspas: '</para>
+                  </listitem>
+                </itemizedlist></para>
+            </listitem>
+
+            <listitem>
+              <para>Preencha o Target Name usando o restante do nome do
+              arquivo lógico desejado: word_list_csv<emphasis role="bold">
+              </emphasis></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Não se esqueça de marcar a caixa <emphasis
+              role="bold">Overwrite</emphasis> (Substituir).</para>
+
+              <para>Se disponível, certifique-se de que a caixa <emphasis
+              role="bold">Replicate</emphasis> esteja marcada. (A opção
+              replicar está disponível apenas em sistemas em que a replicação
+              tenha sido ativada.)</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Pressione o botão <emphasis role="bold">Botão de ação
+              Spray</emphasis><emphasis role="bold"> </emphasis>.</para>
+
+              <para>A guia exibe a tarefa DFU onde é possível ver o progresso
+              do spray (distribuição aos nós).</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+
+        <sect3 id="VM_RunTheQueryOnThor">
+          <title>Executa a consulta no Thor<parameter/></title>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Abra uma nova <emphasis role="bold">Janela do
+                compilador</emphasis> (CTRL+N) e escreva o seguinte
+                código:<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione <emphasis role="bold">thor</emphasis> como seu
+                cluster de destino.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão de verificação de sintaxe localizado
+                na barra de ferramentas principal (ou pressione F7)</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão <emphasis
+                role="bold">Submit</emphasis><emphasis role="bold">
+                </emphasis>.</para>
+              </listitem>
+
+              <listitem>
+                <para>Quando o envio estiver concluído, selecione a aba
+                Workunit<emphasis role="bold"> </emphasis> e em seguida a guia
+                Results.</para>
+              </listitem>
+
+              <listitem>
+                <para>Examine o resultado.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+
+        <?hard-pagebreak ?>
+
+        <sect3 id="VM_Compile-Publish2Roxie">
+          <title>Compilar e Publicar a consulta para o
+          Roxie<parameter/></title>
+
+          <para><orderedlist>
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Clique com o botão direito na pasta <emphasis
+                role="bold">MyFiles</emphasis> na janela Repositório<emphasis
+                role="bold"/> , e selecione <emphasis role="bold"> a opção
+                Insert Folder</emphasis> no menu pop-up.</para>
+
+                <para><figure>
+                    <title>Inserir Pasta</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/DTimg04.jpg"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+
+                <para/>
+              </listitem>
+
+              <listitem>
+                <para>Insira <emphasis role="bold">Anagram</emphasis> para o
+                rótulo e depois pressione o botão OK.</para>
+
+                <para/>
+
+                <para><figure>
+                    <title>Inserir o título da pasta</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/VM1005.jpg"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+
+                <para/>
+              </listitem>
+
+              <listitem>
+                <para>Clique com o botão direito na pasta <emphasis
+                role="bold">Anagram </emphasis> e selecione <emphasis
+                role="bold">Insert File</emphasis> no menu pop-up.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Insira <emphasis role="bold">ValidateAnagrams</emphasis>
+                para o rótulo e depois pressione o botão OK.</para>
+
+                <para>Uma janela do compilador será aberta.</para>
+
+                <para><figure>
+                    <title>Janela do compilador</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/VM1006.jpg"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <para>Escreva o seguinte código (ele pode ser copiado de outra
+                janela do compilador):<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+              </listitem>
+
+              <listitem>
+                <para>Selecione <emphasis role="bold">Roxie</emphasis> como
+                seu cluster de destino.</para>
+              </listitem>
+
+              <listitem>
+                <para>Pressione o botão de verificação de sintaxe localizado
+                na barra de ferramentas principal (ou pressione F7)</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Na janela do compilador, no canto superior esquerdo, há
+                uma seta suspensa ao lado do botão <emphasis
+                role="bold">Submit</emphasis> . Selecione a seta para exibir a
+                opção <emphasis role="bold">Compile (Compilar)</emphasis>
+                .</para>
+
+                <figure>
+                  <title>Compilar</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/DTimg17.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure>
+              </listitem>
+
+              <listitem>
+                <para>Selecione <emphasis role="bold">Compile
+                (Compilar)</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Quando o envio estiver concluído, selecione a guia
+                Workunit<emphasis role="bold"> </emphasis> e em seguida a guia
+                Results.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Quando a tarefa for concluída, ela exibirá um círculo
+                verde indicando que foi compilada.</para>
+
+                <para><figure>
+                    <title>Compilada</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/VM1007.jpg"/>
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+
+        <sect3 id="VM_Deploy_the_Query_to_Roxie">
+          <title>Publicar a consulta Roxie</title>
+
+          <para>Agora vamos publicar s consulta em um cluster Roxie.</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Selecione a guia workunit para a ValidateAnagrams que você
+              acabou de compilar.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecionar a aba ECLWatch.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Pressione o botão <emphasis role="bold">
+              Publish</emphasis> , preencha a caixa de diálogo e pressione
+              <emphasis role="bold">Submit</emphasis>.</para>
+
+              <para><figure>
+                  <title>Publicar Consulta</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1008.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure>Uma mensagem de confirmação será exibida quando a
+              consulta for publicada com sucesso.</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+
+        <sect3 id="VM_Run_the_Roxie_Query">
+          <title>Executar a consulta Roxie no WsECL</title>
+
+          <para>Agora que a consulta foi implementada a um cluster Roxie,
+          podemos executá-la usando o serviço WsECL no URL a seguir:</para>
+
+          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
+          nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a porta.
+          A porta padrão é 8002)</emphasis></para>
+
+          <orderedlist>
+            <listitem>
+              <para>Clique no sinal + ao lado de <emphasis
+              role="bold">myroxie</emphasis> para expandir a árvore.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Clique no hyperlink <emphasis
+              role="bold">ValidateAnagrams.1</emphasis> .</para>
+
+              <para>O formulário do serviço será exibido.</para>
+
+              <para><figure>
+                  <title>RoxieECL</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1009.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione Tabelas de resultado na lista suspensa.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Forneça uma palavra para que seja feito o anagrama (p.ex.,
+              TEACHER) e pressione o botão Submit.</para>
+
+              <para>Os resultados serão exibidos.</para>
+
+              <para><figure>
+                  <title>RoxieResults</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1010.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="VM_Working_with_a_data_file">
+      <title>Trabalhando com arquivo de dados</title>
+
+      <para>Depois de começar a trabalhar com seu HPCC System, é recomendado
+      processar alguns dados reais; esta seção mostra como carregar dados no
+      HPCC System.</para>
+
+      <sect2 id="VM_Cautions_and_Warnings">
+        <title>Antes de iniciar</title>
+
+        <para>Um típico HPCC System de produção teria uma capacidade maior de
+        dados em comparação a um sistema virtual usado para realização de
+        testes. O tamanho dos arquivos com os quais você deseja trabalhar é
+        limitado pelo tamanho de sua máquina virtual.</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>A máquina virtual possui um limite de 20GB.</para>
+            </listitem>
+
+            <listitem>
+              <para>O tamanho do(s) arquivo(s) com os quais você deseja
+              trabalhar é limitado pelo tamanho de sua máquina virtual.
+              Certifique-se de ter espaço disponível adequado.</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/caution.png"/></entry>
+
+                <entry>Se os limites de tamanho forem excedidos, o estado da
+                sua VM não será salvo e você correrá o risco de perder seu
+                trabalho. Lembre-se de reservar bastante espaço, não apenas
+                para armazenar seus dados, mas também para que o “estado” da
+                sua máquina virtual possa salvar seu trabalho.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para/>
+      </sect2>
+
+      <?hard-pagebreak ?>
+
+      <sect2 id="VM_Uploading_a_file">
+        <title>Enviando um arquivo</title>
+
+        <para>Para arquivos de dados menores, com tamanho máximo de 2GB, você
+        pode usar o utilitário enviar/baixar arquivo no ECL Watch.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Em seu navegador, acesse a URL do <emphasis
+            role="bold">ECLWatch</emphasis> (circulado em vermelho) na figura
+            acima, <link linkend="vbox_welcome">tela de boas-vindas da Virtual
+            Box</link>. Por exemplo, http://nnn.nnn.nnn.nnn:8010, onde
+            nnn.nnn.nnn.nnn é o endereço IP da sua máquina virtual.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png"/></entry>
+
+                      <entry>Seu endereço IP virtual poderá ser diferente dos
+                      endereços fornecidos nas imagens de exemplo. Use o
+                      endereço IP fornecido pela <emphasis
+                      role="bold">sua</emphasis> instalação.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Na página do ECL Watch, clique no link <emphasis
+            role="bold">Upload/Download File </emphasis> localizado no menu ao
+            lado esquerdo.</para>
+
+            <para><figure>
+                <title>Upload/download</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para><phrase> </phrase>Após clicar no link Upload/Download File,
+            você será direcionado para a página de arquivos e da zona de
+            entrada de arquivos; lá você pode <emphasis
+            role="bold">Procurar</emphasis> em seu computador o arquivo a ser
+            enviado:</para>
+
+            <para><figure>
+                <title>Dropzones</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04.jpg" scale="90"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Browser</emphasis>
+            para navegar pelos arquivos em seu computador local, selecione o
+            arquivo a ser enviado e clique no botão <emphasis role="bold">Open
+            (Abrir)</emphasis> .</para>
+
+            <para>O arquivo selecionado deve aparecer no campo <emphasis
+            role="bold">Select a file to upload</emphasis> field.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Upload
+            Now</emphasis> para concluir o envio do arquivo.</para>
+          </listitem>
+
+          <listitem>
+            <para>Agora que o arquivo está em sua zona de entrada de arquivos,
+            é possível fazer o spray do arquivo para seu cluster e gravar o
+            código ECL para processá-lo.</para>
+          </listitem>
+        </orderedlist>
+
+        <para/>
+
+        <para/>
+      </sect2>
+
+      <sect2 id="VM_Uploading_files_w_secure_client">
+        <title>Enviando arquivos com uma Cópia de Segurança.</title>
+
+        <para>Para enviar um arquivo maior para processamento para sua máquina
+        virtual, será necessária uma ferramenta com suporte para o protocolo
+        de cópia de segurança. Nesta seção, abordaremos o uso do WinSCP. Há
+        outras ferramentas disponíveis, mas os passos são similares.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Abra a ferramenta WinSCP e faça login no endereço IP da
+              sua Máquina virtual usando o nome de usuário e senha
+              fornecidos.</para>
+
+              <para><informaltable colsep="1" rowsep="1">
+                  <tgroup cols="2">
+                    <colspec colwidth="80pt"/>
+
+                    <colspec colwidth="100pt"/>
+
+                    <tbody>
+                      <row>
+                        <entry>Login ID:</entry>
+
+                        <entry>hpccdemo</entry>
+                      </row>
+
+                      <row>
+                        <entry>Password:</entry>
+
+                        <entry>hpccdemo</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <para>Depois de fazer login, ele deve navegar automaticamente
+              até a pasta da zona de entrada de arquivo.
+              (/var/lib/HPCCSystems/mydropzone)</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Navegue onde seu arquivo local está na parte esquerda da
+              janela.</para>
+
+              <para><figure>
+                  <title>WinSCP</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/LZimg05.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione o arquivo de dados para envio e copie-o para a
+              zona de entrada de arquivos usando o recurso de arrastar e
+              soltar.</para>
+            </listitem>
+
+            <listitem>
+              <para>Agora que o arquivo está em sua zona de entrada de
+              arquivos, é possível fazer o spray do arquivo para seu cluster e
+              gravar o código ECL para processá-lo.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="VM_NextSteps">
+      <title>Próximos passos</title>
+
+      <para>O menu no ECL Watch disponibiliza vários documentos que fornecem
+      detalhes sobre os vários aspectos do HPCC.</para>
+
+      <figure>
+        <title>Página Recursos do ECL Watch</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/vmimg07a.jpg"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para/>
+
+      <para>Você pode acessar estes documentos a partir do menu Ajuda: Help
+      <emphasis role="bold">&gt;&gt;</emphasis> Download Resources.</para>
+
+      <para><figure>
+          <title>Menu Help</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/vmimg07.JPG"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Para se familiarizar com o que o seu sistema é capaz de fazer,
+      recomendamos:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>O <emphasis role="bold">Tutorial de dados do
+            HPCC</emphasis></para>
+
+            <para>Este é um tutorial simples, passo a passo, que mostra o
+            processo completo, desde o recebimento de um arquivo de dados
+            brutos até a publicação de uma consulta baseada na Web para
+            realizar a pesquisa de dados. Durante o tutorial, você aprenderá
+            como processar e indexar os dados, e depois como gravar e publicar
+            uma consulta para pesquisar dados. O tutorial auto-conduzido e os
+            dados que o acompanha estão disponíveis na página de Recursos do
+            ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <para>O <emphasis role="bold">Exemplo da teoria dos seis graus de
+            separação (de Kevin bacon).</emphasis></para>
+
+            <para>Este é um exemplo mais complexo (*também disponível na
+            página Recursos do ECL Watch) que usa uma base de dados para mover
+            os dados a fim de localizar o grau de separação entre os atores em
+            filmes.</para>
+          </listitem>
+
+          <listitem>
+            <para>O portal do HPCC Systems <superscript>®</superscript>
+            (<ulink
+            url="http://hpccsystems.com">http://hpccsystems.com</ulink>)
+            também é um recurso valioso para obter mais informações,
+            incluindo:</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Vídeo tutoriais</para>
+              </listitem>
+
+              <listitem>
+                <para>Exemplos adicionais</para>
+              </listitem>
+
+              <listitem>
+                <para>Informe técnico</para>
+              </listitem>
+
+              <listitem>
+                <para>Documentação</para>
+              </listitem>
+
+              <listitem>
+                <para>Fóruns de suporte</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist></para>
+    </sect1>
+  </chapter>
+
+  <chapter id="VM_FAQ_Chap">
+    <title>Perguntas Frequentes</title>
+
+    <para/>
+
+    <qandaset defaultlabel="number">
+      <qandadiv>
+        <qandaentry>
+          <question>
+            <para>Posso executar a VM enquanto estiver conectado à rede
+            através de uma Rede Privada Virtual (VPN)?</para>
+          </question>
+
+          <answer>
+            <para>Não. A maioria das Redes Privadas Virtuais (VPN) controlam o
+            seu dispositivo de rede e roteamento, não permitindo a divisão de
+            túneis</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Posso instalar essa máquina virtual em vários nós?</para>
+          </question>
+
+          <answer>
+            <para>Não. Se desejar avaliar um sistema de vários nós, utilize a
+            versão Community disponível no portal do HPCC
+            Systems<superscript>®</superscript> : <ulink
+            url="http://hpccsystems.com">http://hpccsystems.com</ulink>.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Quais são os limites desta versão?</para>
+          </question>
+
+          <answer>
+            <para>O HPCC VM Edition é executado em um nó único, tem um limite
+            de 20 GB em seu espaço de trabalho e não suporta configurações
+            customizadas.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Posso executar a VM em meu computador Linux?</para>
+          </question>
+
+          <answer>
+            <para>Você pode executar a VM do HPCC usando o Reprodutor de VM do
+            Linux. O ECL IDE do HPCC é uma aplicação do Windows, porém pode
+            ser executada no WINE. Consulte o manual Ferramentas de cliente
+            para obter mais detalhes</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Posso executar a VM em meu computador Linux?</para>
+          </question>
+
+          <answer>
+            <para>Por enquanto não. Por enquanto não. Ainda não há uma versão
+            do reprodutor da VM para Mac.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Posso executar a VM em meu Windows Server?</para>
+          </question>
+
+          <answer>
+            <para>Sim, ela pode ser executada no Windows Server 2003 ou 2008,
+            desde que você tenha acesso a ela através do Remote Desktop
+            Protocol (RDP).</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Eu preciso de um processador de 64 bits para executar a
+            VM?</para>
+          </question>
+
+          <answer>
+            <para>Não. O player da VMpode ser executado em ambientes de 32 ou
+            de 64 bits e não exige um processador de 64 bits.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Eu preciso de um processador de 64 bits para executar o
+            Community Edition?</para>
+          </question>
+
+          <answer>
+            <para>Sim. Os binários do Community Edition são executados
+            nativamente em servidores Linux de 64 bits. O HPCC pode ser
+            acessado de qualquer estação de trabalho Windows (32 ou 64 bits)
+            que seja capaz de executar o ECLIDE e um navegador
+            compatível.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>O que acontece com meu trabalho ao encerrar a máquina
+            virtual?</para>
+          </question>
+
+          <answer>
+            <para>O reprodutor da VM salva o status do seu sistema ao ser
+            encerrado. Todas as informações da workunit, arquivos de dados e
+            grupo de consultas publicadas são salvos, desde que haja espaço
+            disponível. O tamanho limite de uma sessão salva é de 20
+            GB.GB.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Por que a minha VM não permite que eu acesse a minha
+            interface de rede?</para>
+          </question>
+
+          <answer>
+            <para>Verifique suas configurações de firewall. Pode ser
+            necessário desabilitar o firewall da interface de rede da sua
+            VM.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Esta versão usará meu processador de vários núcleos?</para>
+          </question>
+
+          <answer>
+            <para>Esta VM foi projetada para usar um único núcleo.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>A VM não inicializa no Mac OSx após a atualização para o OSx
+            10.9 Mavericks. Como posso corrigir esse problema?</para>
+          </question>
+
+          <answer>
+            <para>Para corrigir o problema, execute o seguinte comando:
+            <programlisting>sudo launchctl load /Library/LaunchDaemons/org.virtualbox.startup.plist</programlisting></para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Onde posso buscar mais informações?</para>
+          </question>
+
+          <answer>
+            <para>Visite o portal da Web do HPCC
+            Systems<superscript>®</superscript> no portal, através do endereço
+            http://HPCCsystems.com.</para>
+          </answer>
+        </qandaentry>
+      </qandadiv>
+    </qandaset>
+  </chapter>
+</book>

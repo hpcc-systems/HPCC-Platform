@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SuperFile_Overview" role="nobrk">
+  <title>Visão Geral de Superarquivo</title>
+
+  <para>Primeiro, vamos definir alguns termos:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="81.35pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">Logical File</emphasis></entry>
+
+            <entry>Uma entidade lógica única cujas múltiplas partes físicas
+            (uma em cada nó do cluster) são gerenciadas internamente pelo
+            utilitário de arquivos distribuídos (DFU).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">Dataset</emphasis></entry>
+
+            <entry>Um arquivo lógico declarado como um DATASET.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SuperFile</emphasis></entry>
+
+            <entry>Uma lista gerenciada de subarquivos (arquivos lógicos)
+            tratados como uma entidade lógica única. Os subarquivos não
+            precisam de declarações DATASET (embora possam ter). Um
+            superarquivo precisa ser declarado como um DATASET para ser usado
+            no ECL, e é tratado no código ECL como qualquer outro dataset. As
+            complexidades de gerenciar múltiplos subarquivos são deixadas para
+            o DFU (exatamente como ele gerencia as partes físicas de cada
+            subarquivo).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para><emphasis role="bold">Cada subarquivo em um superarquivo precisa ter o
+  mesmo tipo de estrutura (THOR, CSV, ou XML) e o mesmo layout do
+  campo.</emphasis> O próprio subarquivo pode ser um superarquivo, permitindo
+  que você crie hierarquias multinível que possibilitam fácil manutenção.
+  Todas as funções que criam e mantêm os superarquivos estão na biblioteca
+  padrão de arquivos (consulte a <emphasis>Referência de biblioteca
+  padrão</emphasis>).</para>
+
+  <para>A principal vantagem de usar superarquivos é a fácil manutenção do
+  conjunto de subarquivos. Isso significa que atualizar os dados que uma
+  consulta de fato lê pode ser tão simples quanto adicionar um novo subarquivo
+  a um superarquivo existente.</para>
+
+  <sect2 id="SuperFile_Existence_Functions">
+    <title>Funções de Existência do Superarquivo</title>
+
+    <para>As funções a seguir tratam da criação, exclusão e detecção da
+    existência de superarquivos:</para>
+
+    <programlisting>CreateSuperFile() 
+DeleteSuperFile() 
+SuperFileExists()</programlisting>
+
+    <para>É necessário criar um superarquivo usando a função CreateSuperFile()
+    antes de poder realizar qualquer uma das outras operações de superarquivo
+    no arquivo. A função SuperFileExists() informa se existe um superarquivo
+    com o nome especificado, enquanto DeleteSuperFile() remove um superarquivo
+    do sistema.</para>
+  </sect2>
+
+  <sect2 id="SuperFile_Inquiry_Functions">
+    <title>Funções de Consulta do Superarquivo</title>
+
+    <para>As funções a seguir fornecem informações sobre um determinado
+    superarquivo:</para>
+
+    <programlisting>GetSuperFileSubCount() 
+GetSuperFileSubName() 
+FindSuperFileSubName() 
+SuperFileContents() 
+LogicalFileSuperOwners()      </programlisting>
+
+    <para>A função GetSuperFileSubCount() permite que você determine o número
+    de subarquivos em um determinado superarquivo. A função
+    GetSuperFileSubName() retorna o nome do subarquivo em uma determinada
+    posição na lista de subarquivos. A função FindSuperFileSubName() retorna a
+    posição ordinal de um determinado subarquivo na lista de subarquivos. A
+    função SuperFileContents() retorna um grupo de registros de nomes de
+    subarquivo lógicos contidos no superarquivo. A função
+    LogicalFileSuperOwners retorna uma lista de todos os superarquivos que
+    contêm um subarquivo especificado.</para>
+  </sect2>
+
+  <sect2 id="SuperFile_Maintenance_Functions">
+    <title>Funções de Manutenção do Superarquivo</title>
+
+    <para>As funções a seguir permitem que você mantenha a lista de
+    subarquivos que compõem um superarquivo.</para>
+
+    <programlisting>AddSuperFile() 
+RemoveSuperFile() 
+ClearSuperFile() 
+SwapSuperFile() 
+ReplaceSuperFile()</programlisting>
+
+    <para>A função AddSuperFile() adiciona um subarquivo ao superarquivo. A
+    função RemoveSuperFile() remove um subarquivo do superarquivo. A função
+    ClearSuperFile() apaga todos os subarquivos do superarquivo. A função
+    SwapSuperFile() alterna todos os subarquivos entre os dois superarquivos.
+    A função ReplaceSuperFile() substitui um subarquivo no superarquivo por
+    outro.</para>
+
+    <para>Todas essas funções precisam ser acionadas em um período de
+    transação a fim de garantir que não haja problemas com o uso de
+    superarquivo.</para>
+  </sect2>
+
+  <sect2 id="SuperFile_Transactions">
+    <title>Transações de Superarquivos</title>
+
+    <para>A funções de manutenção de superarquivo (apenas elas) precisam ser
+    acionadas em um determinado período de transação se houver a possibilidade
+    de que outro processo tente usar o superarquivo durante a manutenção do
+    subarquivo. O período de transação bloqueia todas as outras operações
+    durante a duração da transação. Dessa forma, o trabalho de manutenção pode
+    ser feito sem causar problemas com nenhuma consulta que possa usar o
+    superarquivo. Isso significa duas coisas:</para>
+
+    <para>1) A ação SEQUENTIAL (SEQUENCIAL) precisa ser usada a fim de
+    garantir a execução dos acionamentos de função dentro do período de
+    transação.</para>
+
+    <para>2) As funções StartSuperFileTransaction() e
+    FinishSuperFileTransaction() são usadas para "bloquear" o superarquivo
+    durante a manutenção e sempre envolvem os acionamentos de função de
+    manutenção de superarquivo na ação SEQUENTIAL.</para>
+
+    <para><emphasis role="bold">Qualquer função além das funções de manutenção
+    acima listadas que possa estar presente dentro de um período de transação
+    pode aparecer como parte da transação, mas não é.</emphasis> Isso pode
+    causar confusão se você, por exemplo, incluir um acionamento para
+    ClearSuperFile() (que é válido para uso no período de transação) e
+    segui-lo com um acionamento para DeleteSuperFile() (que <emphasis
+    role="underline">não</emphasis> é válido para uso no período de
+    transação); isso causará um erro, uma vez que a operação ocorrerá fora do
+    período de transação e antes que a função ClearSuperFile() tenha chance de
+    realizar seu trabalho.</para>
+  </sect2>
+
+  <sect2 id="Other_Useful_Functions">
+    <title>Outras Funções Úteis</title>
+
+    <para>As funções a seguir, embora não sejam especificamente projetadas
+    para uso em superarquivo, são normalmente úteis para criar e manter
+    superarquivos:</para>
+
+    <programlisting>RemoteDirectory() 
+ExternalLogicalFilename() 
+LogicalFileList() 
+LogicalFileSuperOwners()
+</programlisting>
+
+    <para>O uso dessas funções será descrito no próximo conjunto de artigos
+    sobre superarquivos.</para>
+  </sect2>
+</sect1>

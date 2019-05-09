@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="VizBundleChart2dMethods">
+  <title><emphasis>Métodos Bidimensionais</emphasis></title>
+
+  <para>Esta seção abrange os métodos de criação de visualizações
+  bidimensionais contidas no módulo TwoD.</para>
+
+  <para>***mais em breve**</para>
+
+  <sect1 id="Apply2Cells">
+    <title>Bubble</title>
+
+    <para><emphasis role="bold">Visualization.TwoD.Chart2D.Bubble(<indexterm>
+        <primary>Visualization.TwoD.Bubble</primary>
+      </indexterm><indexterm>
+        <primary>TwoD.Bubble</primary>
+      </indexterm><indexterm>
+        <primary>Bubble</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para/>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Identificador único da visualização.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Localização do conjunto de resultados (WUID, Arquivo
+            lógico, resultado da consulta Roxie), padrão para a WU atual
+            WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Nome do conjunto de resultados (ignorado para arquivos
+            lógicos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Nome da Coluna de Mapas &amp;lt;--&amp;gt; ID de campo
+            ID</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Condição de filtro (também usado para interações de
+            widgets)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Propriedades estéticas Ver Propriedades estéticas
+            ***todo***</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um resultado “meta” que descreve a visualização. Ver
+            Comum/Meta***todo***</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O método de visualização <emphasis role="bold">Bubble (Bolhas)
+    </emphasis> cria um gráfico de bolhas a partir de dados bidimensionais. O
+    gráfico de bolhas é uma variação do gráfico de dispersão onde os pontos
+    dos dados são substituídos por bolhas, e o tamanho da bolha é representado
+    pela dimensão dos dados.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT Visualization;
+ds := DATASET([ {'English', 5},
+                {'History', 17},
+                {'Geography', 7},
+                {'Chemistry', 16},
+                {'Irish', 26},
+                {'Spanish', 67},
+                {'Bioligy', 66},
+                {'Physics', 46},
+                {'Math', 98}],
+                {STRING subject, INTEGER4 year});
+data_example := OUTPUT(ds, NAMED('Chart2D__test'));
+data_example;
+viz_bubble := Visualization.TwoD.Bubble('bubble',, 'Chart2D__test');
+viz_bubble;
+</programlisting>
+  </sect1>
+</chapter>

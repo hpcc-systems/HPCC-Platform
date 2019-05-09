@@ -1,0 +1,564 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Creating_Example_Data">
+  <title><emphasis role="bold">Criando Dados de Exemplo</emphasis></title>
+
+  <sect2 id="Getting_Code_Files">
+    <title>Obtendo Arquivos de Código</title>
+
+    <para>Todo o código de exemplo do <emphasis>Guia do Programador</emphasis>
+    está disponível para download no site do HPCC Systems na mesma página do
+    PDF (<ulink url="http://hpccsystems.com/download/docs/learning-ecl">clique
+    aqui</ulink>) Para disponibilizar o código para uso no ECL IDE,
+    basta:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Faça o download do arquivo ECL_Code_Files.ZIP.</para>
+      </listitem>
+
+      <listitem>
+        <para>No ECL IDE, escolha a pasta “My Files", clique com o botão
+        direito e selecione “Insert Folder" no menu pop-up.</para>
+      </listitem>
+
+      <listitem>
+        <para>Nomeie a nova pasta "ProgrammersGuide" (observe que espaços NÃO
+        SÃO permitidos em nomes de pasta de repositório ECL).</para>
+      </listitem>
+
+      <listitem>
+        <para>No ECL IDE, escolha a pasta "ProgrammersGuide", clique com o
+        botão direito e selecione “Locate File in Explorer" no menu
+        pop-up.</para>
+      </listitem>
+
+      <listitem>
+        <para>Extraia todos os arquivos do arquivo ECL_Code_Files.ZIP para sua
+        nova pasta.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+
+  <sect2 id="Generating_Files">
+    <title>Gerando Arquivos</title>
+
+    <para>O código que gera os dados de exemplo usados por todos os artigos do
+    <emphasis>Guia do Programador</emphasis> está contido em um arquivo
+    denominado Gendata.ECL. Basta abrir esse arquivo no ECL IDE (selecione
+    <emphasis role="bold">File &gt; Open</emphasis> no menu, depois selecione
+    o arquivo Gendata.ECL e ele será aberto em uma janela do compilador); em
+    seguida, pressione o botão <emphasis role="bold">Submit</emphasis> para
+    gerar os arquivos de dados. O processo leva alguns minutos para ser
+    executado. Aqui está o código, totalmente explicado.</para>
+  </sect2>
+
+  <sect2 id="Some_Constants">
+    <title>Algumas constantes</title>
+
+    <programlisting>IMPORT std;
+
+P_Mult1 := 1000;
+P_Mult2 := 1000;
+TotalParents := P_Mult1 * P_Mult2;
+TotalChildren := 5000000;</programlisting>
+
+    <para>Essas constantes definem os números usados para gerar 1.000.000 de
+    registros principais e 5.000.000 de registros secundários. Ao defini-los
+    como atributos, o código poderia facilmente gerar um número inferior de
+    registros principais (como 10.000 ao alterar ambos os multiplicadores de
+    1.000 para 100). No entanto, o código, conforme escrito, foi projetado
+    para no máximo 1.000.000 registros principais e precisaria ser alterado em
+    vários locais para suportar novas gerações de registros. O número de
+    registros secundários pode ser alterado em qualquer direção sem outras
+    alterações ao código (embora, se elevado excessivamente, possa haver erros
+    de tempo de execução quanto ao tamanho máximo do registro variável para o
+    dataset secundário aninhado). Para fins de demonstrar as técnicas nestes
+    artigos do <emphasis>Guia do Programador</emphasis> , 1.000.000 registros
+    principais e 5.000.000 registros secundários são mais do que o
+    suficiente.</para>
+  </sect2>
+
+  <sect2 id="The_RECORD_Structures">
+    <title>Estruturas RECORD</title>
+
+    <programlisting>Layout_Person := RECORD
+  UNSIGNED3 PersonID;
+  STRING15  FirstName;
+  STRING25  LastName;
+  STRING1   MiddleInitial;
+  STRING1   Gender;
+  STRING42  Street;
+  STRING20  City;
+  STRING2   State;
+  STRING5   Zip;
+END;
+
+Layout_Accounts := RECORD
+  STRING20  Account;
+  STRING8   OpenDate;
+  STRING2   IndustryCode;
+  STRING1   AcctType;
+  STRING1   AcctRate;
+  UNSIGNED1 Code1;
+  UNSIGNED1 Code2;
+  UNSIGNED4 HighCredit;
+  UNSIGNED4 Balance;
+END;
+
+Layout_Accounts_Link := RECORD
+  UNSIGNED3 PersonID;
+  Layout_Accounts;
+END;
+
+Layout_Combined := RECORD,MAXLENGTH(1000)
+  Layout_Person;
+  DATASET(Layout_Accounts) Accounts;
+END;
+</programlisting>
+
+    <para>Essas estruturas RECORD definem os layouts de campo para três
+    datasets: um arquivo principal (Layout_Person), um arquivo secundário
+    (Layout_Accounts_Link) e um arquivo principal com dataset secundário
+    aninhado (Layout_Combined). Eles são usados para gerar três arquivos de
+    dados separados. As estruturas Layout_Accounts_Link e Layout_Accounts são
+    separadas porque os registros secundários na estrutura aninhada não irão
+    conter o campo de vínculo para o principal, considerando que o arquivo
+    secundário separado precisa conter o link.</para>
+  </sect2>
+
+  <sect2 id="Starting_Point_Data">
+    <title>Ponto de Inicial dos Dados</title>
+
+    <programlisting>//define data for record generation:
+             //100 possible middle initials, 52 letters and 48 blanks
+SetMiddleInitials := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ                  ' +
+                     'ABCDEFGHIJKLMNOPQRSTUVWXYZ                  ';
+
+             //1000 First names
+SET OF STRING14     SetFnames := [
+  'TIMTOHY       ','ALCIAN        ','CHAMENE       ',
+  ... ];
+
+            //1000 Last names
+SET OF STRING16 SetLnames := [
+  'BIALES          ','COOLING         ','CROTHALL        ',      
+  ... ];
+</programlisting>
+
+    <para>Esses conjuntos definem os dados que serão usados para gerar os
+    registros. Ao fornecer 1.000 nomes e sobrenomes, este código pode gerar
+    1.000.000 nomes únicos.</para>
+
+    <para><programlisting>//2400 street addresses to choose from
+SET OF STRING31    SetStreets := [
+     '1 SANDHURST DR                 ','1 SPENCER LN              ',
+     ... ];
+
+         //Matched sets of 9540 City,State, Zips
+SET OF STRING15 SetCity := [
+     'ABBEVILLE      ','ABBOTTSTOWN    ','ABELL          ',
+     ... ];
+
+SET OF STRING2 SetStates := [
+     'LA','PA','MD','NC','MD','TX','TX','IL','MA','LA','WI','NJ',
+     ... ];
+
+SET OF STRING5 SetZips := [
+     '70510','17301','20606','28315','21005','79311','79604',
+     ... ];
+</programlisting>Contar com 2.400 endereços e 9.540 combinações (válidas) de
+    cidade, estado e CEP oferece diversas oportunidades para gerar um conjunto
+    significativo de endereços.</para>
+  </sect2>
+
+  <sect2 id="Generating_Parent_Records">
+    <title>Gerando Registros Pais</title>
+
+    <programlisting>BlankSet := DATASET([{0,'','','','','','','','',[]}],
+                   Layout_Combined);
+CountCSZ := 9540;</programlisting>
+
+    <para>Aqui está o início do código de geração de dados. O BlankSet é um
+    registro "semente" vazio e único usado para iniciar o processo. O atributo
+    CountCSZ define simplesmente o número máximo de combinações de cidade,
+    estado e CEP disponível para uso em cálculos subsequentes que determinarão
+    o que usar em um determinado registro.</para>
+
+    <programlisting>Layout_Combined CreateRecs(Layout_Combined L,
+                           INTEGER C,
+                           INTEGER W) := TRANSFORM
+  SELF.FirstName := IF(W=1,SetFnames[C],L.FirstName);
+  SELF.LastName  := IF(W=2,SetLnames[C],L.LastName);
+  SELF := L;
+END;
+
+base_fn  := NORMALIZE(BlankSet,P_Mult1,CreateRecs(LEFT,COUNTER,1));
+
+base_fln := NORMALIZE(base_fn ,P_Mult2,CreateRecs(LEFT,COUNTER,2));
+</programlisting>
+
+    <para>A finalidade desse código é gerar 1.000.000 registros de
+    nome/sobrenome únicos como um ponto de partida. A operação NORMALIZE é
+    única no sentido de que seu segundo parâmetro define o número de vezes
+    para acionar a função TRANSFORM para cada registro de entrada. Isso o
+    torna excepcionalmente adequado para gerar o tipo de dados de "teste" de
+    que precisamos.</para>
+
+    <para>Estamos realizando duas operações NORMALIZE aqui. A primeira gera
+    1.000 registros com nomes únicos a partir de um único registro em branco
+    no DATASET BlankSet inline. A segunda operação usa os 1.000 registros da
+    primeira NORMALIZE e cria 1.000 novos registros com sobrenomes únicos para
+    cada registro de entrada, resultando em 1.000.000 de registros únicos de
+    nome/sobrenome.</para>
+
+    <para>Um truque interessante aqui é usar uma única função TRANSFORM para
+    as duas operações NORMALIZE. Definir TRANSFORM para receber um parâmetro
+    "extra" (terceiro) em relação ao normal é o que permite fazer isso. Esse
+    parâmetro simplesmente sinaliza qual passagem NORMALIZE o TRANSFORM está
+    realizando.</para>
+
+    <programlisting>Layout_Combined PopulateRecs(Layout_Combined L, 
+          Layout_Combined R,
+          INTEGER HashVal) := TRANSFORM
+  CSZ_Rec            := (HashVal % CountCSZ) + 1;
+  SELF.PersonID      := IF(L.PersonID = 0,
+                           Thorlib.Node() + 1,
+                           L.PersonID + CLUSTERSIZE);
+  SELF.MiddleInitial := SetMiddleInitials[(HashVal % 100) + 1 ];
+  SELF.Gender        := CHOOSE((HashVal % 2) + 1,'F','M');
+  SELF.Street        := SetStreets[(HashVal % 2400) + 1 ];
+  SELF.City          := SetCity[CSZ_Rec];
+  SELF.State         := SetStates[CSZ_Rec];
+  SELF.Zip           := SetZips[CSZ_Rec];
+  SELF               := R;
+END;
+
+base_fln_dist := DISTRIBUTE(base_fln,HASH32(FirstName,LastName));
+
+base_people   := ITERATE(base_fln_dist,
+                         PopulateRecs(LEFT,
+                         RIGHT,
+                         HASHCRC(RIGHT.FirstName,RIGHT.LastName)),
+                         LOCAL);
+
+base_people_dist := DISTRIBUTE(base_people,HASH32(PersonID));
+</programlisting>
+
+    <para>Depois que as duas operações NORMALIZE realizarem seu trabalho, a
+    próxima tarefa é preencher o restante dos campos. Uma vez que um desses
+    campos é o PersonID, que é o campo de identificador único para o registro,
+    a maneira mais rápida de preenchê-lo é com ITERATE usando a opção LOCAL .
+    Ao usar a função Thorlib.Node() e a diretiva de compilador CLUSTERSIZE, é
+    possível numerar unicamente cada registro em paralelo a cada nó com
+    ITERATE. Você pode acabar com algumas lacunas na numeração até o final,
+    mas já que o requisito aqui é a exclusividade e não a contiguidade, essas
+    lacunas são irrelevantes. Uma vez que as primeiras duas operações
+    NORMALIZE ocorreram em um único nó (confira as distorções mostradas no
+    gráfico do ECL Watch), a primeira coisa a se fazer é usar a função
+    DISTRIBUTE para os registros afim de que cada nó possua um conjunto
+    proporcional dos dados para trabalhar. Desta forma, ITERATE pode realizar
+    seu trabalho em cada conjunto de registros de forma paralela.</para>
+
+    <para>Para introduzir um elemento de aleatoriedade às escolhas de dados, o
+    ITERATE passa um valor de hash para a função TRANSFORM como um terceiro
+    parâmetro "extra". Essa é a mesma técnica usada anteriormente, porém
+    passando os valores calculados em vez de constantes.</para>
+
+    <para>A definição do atributo CSZ _Rec ilustra o uso de definições de
+    atributo local dentro das funções TRANSFORM. Definir a expressão uma vez e
+    depois usá-la múltiplas vezes conforme necessário para produzir uma
+    combinação válida de cidade, estado e CEP. O restante dos campos é
+    preenchido por dados selecionados usando o que foi passado no valor hash
+    em suas expressões. O operador de divisão de módulo (%--produz o restante
+    da divisão) é usado para garantir que um valor seja calculado e que esteja
+    no intervalo válido do número de elementos para o determinado conjunto de
+    dados a partir do qual o campo é preenchido.</para>
+  </sect2>
+
+  <sect2 id="Generating_Child_Records">
+    <title>Gerando Registros Filhos</title>
+
+    <programlisting>BlankKids := DATASET([{0,'','','','','',0,0,0,0}],
+          Layout_Accounts_Link);
+
+SetLinks  := SET(base_people,PersonID);
+
+SetIndustryCodes := ['BB','DC','ON','FM','FP','FF','FC','FA','FZ',
+                     'CG','FS','OC','ZZ','HZ','UT','HF','CS','DM',
+                     'JA','FY','HT','UE','DZ','AT'];
+
+SetAcctRates := ['1','0','9','*','Z','5','B','2',
+                 '3','4','A','7','8','E','C'];
+
+SetDateYears := ['1987','1988','1989','1990','1991','1992','1993',
+                 '1994','1995','1996','1997','1998','1999','2000',
+                 '2001','2002','2003','2004','2005','2006'];
+
+SetMonthDays := [31,28,31,30,31,30,31,31,30,31,30,31];
+
+SetNarrs     := [229,158,2,0,66,233,123,214,169,248,67,127,168,
+                 65,208,114,73,218,238,57,125,113,88,
+                 247,244,121,54,220,98,97];
+</programlisting>
+
+    <para>Novamente, começamos definindo um registro "semente" para o processo
+    como um DATASET em linha e vários DATASET adequados para os campos
+    específicos. A função SET compila um conjunto de valores válidos de
+    PersonID a ser usado para criar os vínculos entre os registros principal e
+    secundário.</para>
+
+    <programlisting>Layout_Accounts_Link CreateKids(Layout_Accounts_Link L,
+                                INTEGER C) := TRANSFORM
+  CSZ_IDX       := C % CountCSZ + 1;
+  HashVal       := HASH32(SetCity[CSZ_IDX],SetStates[CSZ_IDX],SetZips[CSZ_IDX]);
+  DateMonth     := HashVal % 12 + 1;
+  SELF.PersonID := CHOOSE(TRUNCATE(C / TotalParents ) + 1,
+                          IF(C % 2 = 0,
+                             SetLinks[C % TotalParents  + 1],
+                             SetLinks[TotalParents - (C % TotalParents )]),
+                          IF(C % 3 &lt;&gt; 0,
+                             SetLinks[C % TotalParents  + 1],
+                             SetLinks[TotalParents  - (C % TotalParents )]),
+                          IF(C % 5 = 0,
+                             SetLinks[C % TotalParents  + 1],
+                             SetLinks[TotalParents  - (C % TotalParents )]),
+                          IF(C % 7 &lt;&gt; 0,
+                             SetLinks[C % TotalParents  + 1],
+                             SetLinks[TotalParents  - (C % TotalParents )]),
+                          SetLinks[C % TotalParents  + 1]);
+ SELF.Account      := (STRING)HashVal;
+ SELF.OpenDate     := SetDateYears[DateMonth] + INTFORMAT(DateMonth,2,1) + 
+                          INTFORMAT(HashVal % SetMonthDays[DateMonth]+1,2,1);
+ SELF.IndustryCode := SetIndustrycodes[HashVal % 24 + 1];
+ SELF.AcctType     := CHOOSE(HashVal%5+1,'O','R','I','9',' ');
+ SELF.AcctRate     := SetAcctRates[HashVal % 15 + 1];
+ SELF.Code1        := SetNarrs[HashVal % 15 + 1];
+ SELF.Code2        := SetNarrs[HashVal % 15 + 16];
+ SELF.HighCredit   := HashVal % 50000;
+ SELF.Balance      := TRUNCATE((HashVal % 50000) * ((HashVal % 100 + 1) / 100));
+END;
+
+base_kids := NORMALIZE( BlankKids,
+                        TotalChildren,
+                        CreateKids(LEFT,COUNTER));
+base_kids_dist := DISTRIBUTE(base_kids,HASH32(PersonID));
+</programlisting>
+
+    <para>Esse processo é semelhante àquele usado para os registros
+    principais. Desta vez, em vez de passar em um valor de hash, o atributo
+    local realiza esse trabalho dentro da função TRANSFORM. Assim como antes,
+    o valor de hash é usado para selecionar os dados reais em cada campo do
+    registro.</para>
+
+    <para>A parte interessante aqui é a expressão para determinar o valor de
+    campo PersonID. Uma vez que estamos gerando 5.000.000 de registros
+    secundários, seria bastante simples apenas dar a cada registro principal
+    cinco registros secundários. No entanto, os dados reais raramente são
+    dessa forma. Consequentemente, a função CHOOSE é usada para selecionar um
+    método diferente para cada conjunto de um milhão de registros secundários.
+    O primeiro milhão usa a primeira expressão IF, o segundo milhão usa a
+    segunda e assim por diante. Isso cria um número variável de registros
+    secundários para cada registro principal no intervalo de um até
+    nove.</para>
+  </sect2>
+
+  <sect2 id="Create_the_Nested_Child-Dataset_Records">
+    <title>Criando Registros Aninhados de Dataset Filhos</title>
+
+    <programlisting>Layout_Combined AddKids(Layout_Combined L, base_kids R) := TRANSFORM
+  SELF.Accounts := L.Accounts + 
+     ROW({R.Account,R.OpenDate,R.IndustryCode,
+     R.AcctType,R.AcctRate,R.Code1,
+     R.Code2,R.HighCredit,R.Balance},
+         Layout_Accounts);
+  SELF := L;
+END;
+base_combined := DENORMALIZE( base_people_dist, 
+    base_kids_dist, 
+    LEFT.PersonID = RIGHT.PersonID,
+    AddKids(LEFT, RIGHT));
+</programlisting>
+
+    <para>Agora que temos conjuntos de registros separados entre registros
+    principal e secundário, o próximo passo é combiná-los em um único dataset
+    com os dados secundários de cada registro principal aninhados no mesmo
+    registro físico que o registro principal. A razão para aninhar os dados
+    secundários dessa forma é para facilitar as consultas de registro
+    principal-secundário na Refinaria de Dados e no motor de entrega rápida de
+    dados sem exigir o uso de etapas JOIN separadas para estabelecer os
+    vínculos entre os registros principal e secundário.</para>
+
+    <para>A composição do dataset secundário aninhado requer a operação
+    DENORMALIZE. Essa operação localiza os vínculos entre os registros
+    principais e seus secundários associados, acionando a função TRANSFORM o
+    mesmo número de vezes que houver registros secundários para cada registro
+    principal. A técnica interessante aqui é o uso da função ROW para compor
+    cada registro secundário aninhado adicional. Isso é feito para eliminar o
+    campo de vínculo (PersonID) de cada registro secundário armazenado no
+    dataset combinado, uma vez que esse é o mesmo valor contido no campo
+    PersonID do registro principal.</para>
+  </sect2>
+
+  <sect2 id="Write_Files_to_Disk">
+    <title>Gravar arquivos em disco</title>
+
+    <programlisting>O1 := OUTPUT(PROJECT(base_people_dist,Layout_Person),,
+            '~PROGGUIDE::EXAMPLEDATA::People',OVERWRITE);
+
+O2 := OUTPUT(base_kids_dist,,'~PROGGUIDE::EXAMPLEDATA::Accounts',OVERWRITE);
+
+O3 := OUTPUT(base_combined,,'~PROGGUIDE::EXAMPLEDATA::PeopleAccts',OVERWRITE);
+
+P1 := PARALLEL(O1,O2,O3);
+</programlisting>
+
+    <para>Essas definições do atributo OUTPUT irão gravar os datasets em
+    disco. Eles são gravados como definições de atributos, uma vez que serão
+    usados em uma ação SEQUENTIAL. O atributo da ação PARALLEL simplesmente
+    indica que todas essas gravações de discos podem ocorrer "simultaneamente"
+    se o otimizador decidir que pode fazer isso.</para>
+
+    <para>O primeiro OUTPUT usa um PROJECT para produzir registros principais
+    na forma de um arquivo separado, já que os dados foram originalmente
+    gerados em uma estrutura RECORD que contém o campo DATASET secundário
+    aninhado (Contas) em preparação para a criação do terceiro arquivo. O
+    PROJECT elimina esse campo Contas vazio do resultado desse dataset.</para>
+
+    <programlisting>D1 := DATASET('~PROGGUIDE::EXAMPLEDATA::People',
+              {Layout_Person,UNSIGNED8 RecPos{virtual(fileposition)}}, THOR);
+
+D2 := DATASET('~PROGGUIDE::EXAMPLEDATA::Accounts',
+              {Layout_Accounts_Link,UNSIGNED8 RecPos{virtual(fileposition)}},THOR);
+
+D3 := DATASET('~PROGGUIDE::EXAMPLEDATA::PeopleAccts',
+              {,MAXLENGTH(1000) Layout_Combined,UNSIGNED8 RecPos{virtual(fileposition)}},THOR);
+</programlisting>
+
+    <para>Essas declarações DATASET são necessárias para compilar índices. Os
+    campos UNSIGNED8 RecPos são os campos virtuais (eles só existem no tempo
+    de execução e não em disco), sendo os ponteiros do registro interno. Eles
+    são mencionados aqui para que possamos referenciá-los nas declarações
+    INDEX posteriores.</para>
+
+    <programlisting>I1 := INDEX(D1,{PersonID,RecPos},'~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID');
+
+I2 := INDEX(D2,{PersonID,RecPos},'~PROGGUIDE::EXAMPLEDATA::KEYS::Accounts.PersonID');
+
+I3 := INDEX(D3,{PersonID,RecPos},'~PROGGUIDE::EXAMPLEDATA::KEYS::PeopleAccts.PersonID');
+
+B1 := BUILD(I1,OVERWRITE);
+B2 := BUILD(I2,OVERWRITE);
+B3 := BUILD(I3,OVERWRITE);
+
+P2 := PARALLEL(B1,B2,B3);
+</programlisting>
+
+    <para>Essas declarações INDEX permitem que as ações BUILD usem o formato
+    de parâmetro único. Novamente, o atributo da ação PARALLEL indica que toda
+    a compilação de índice pode ser feita simultaneamente.</para>
+
+    <programlisting>SEQUENTIAL(P1,P2);</programlisting>
+
+    <para>Essa ação SEQUENTIAL simplesmente diz "grave todos os arquivos de
+    dados em disco e depois compile os índices".</para>
+  </sect2>
+
+  <sect2 id="Adding_the_Files-to_the_Repository">
+    <title>Definindo Arquivos</title>
+
+    <para>Depois que datasets e índices tiverem sido gravados em disco, é
+    preciso declarar os arquivos para usá-los no código ECL de exemplo nos
+    demais artigos. Essas declarações estão contidas no arquivo
+    DeclareData.ECL . Para disponibilizá-las para o restante do código de
+    exemplo, basta usar a função IMPORT. Dessa forma, no início de cada
+    exemplo, você encontrará esta linha de código:</para>
+
+    <programlisting>IMPORT $;</programlisting>
+
+    <para>Isso IMPORTs (IMPORTA) todos os arquivos na pasta ProgrammersGuide
+    (incluindo a definição de estrutura MODULE DeclareData). A referência a
+    qualquer dado do DeclareData é feita ao anexar $.DeclareData ao nome da
+    definição EXPORT que precisa ser usada, como mostrado a seguir:</para>
+
+    <programlisting>MyFile := $.DeclareData.Person.File;  //rename $DeclareData.Person.File to MyFile to make 
+                                      //subsequent code simpler</programlisting>
+
+    <para>Aqui está parte do código contido no arquivo DeclareData.ECL
+    :</para>
+
+    <programlisting>EXPORT DeclareData := MODULE
+
+  EXPORT Layout_Person := RECORD
+    UNSIGNED3 PersonID;
+    STRING15  FirstName;
+    STRING25  LastName;
+    STRING1   MiddleInitial;
+    STRING1   Gender;
+    STRING42  Street;
+    STRING20  City;
+    STRING2   State;
+    STRING5   Zip;
+  END;
+
+  EXPORT Layout_Accounts := RECORD
+    STRING20   Account;
+    STRING8    OpenDate;
+    STRING2    IndustryCode;
+    STRING1    AcctType;
+    STRING1    AcctRate;
+    UNSIGNED1  Code1;
+    UNSIGNED1  Code2;
+    UNSIGNED4  HighCredit;
+    UNSIGNED4  Balance;
+  END;
+
+  EXPORT Layout_Accounts_Link := RECORD
+    UNSIGNED3 PersonID;
+    Layout_Accounts;
+  END;
+
+  SHARED Layout_Combined := RECORD,MAXLENGTH(1000)
+    Layout_Person;
+    DATASET(Layout_Accounts) Accounts;
+  END;
+
+  EXPORT Person := MODULE
+    EXPORT File     := DATASET('~PROGGUIDE::EXAMPLEDATA::People',Layout_Person, THOR);
+    EXPORT FilePlus := DATASET('~PROGGUIDE::EXAMPLEDATA::People',
+                               {Layout_Person,UNSIGNED8 RecPos{virtual(fileposition)}}, THOR);
+  END;                                        
+  EXPORT Accounts := DATASET('~PROGGUIDE::EXAMPLEDATA::Accounts',
+                             {Layout_Accounts_Link,
+                              UNSIGNED8 RecPos{virtual(fileposition)}}, 
+                             THOR);
+  EXPORT PersonAccounts:=   DATASET('~PROGGUIDE::EXAMPLEDATA::PeopleAccts',
+                                    {Layout_Combined,
+                                     UNSIGNED8 RecPos{virtual(fileposition)}}, 
+                                     THOR);
+
+  EXPORT IDX_Person_PersonID := 
+  INDEX(Person,
+        {PersonID,RecPos},
+        '~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID');
+
+  EXPORT IDX_Accounts_PersonID := 
+  INDEX(Accounts,
+        {PersonID,RecPos},
+        '~PROGGUIDE::EXAMPLEDATA::KEYS::Accounts.PersonID');
+
+  EXPORT IDX_PersonAccounts_PersonID := 
+  INDEX(PersonAccounts,
+        {PersonID,RecPos},
+        '~PROGGUIDE::EXAMPLEDATA::KEYS::PeopleAccts.PersonID');
+
+END;
+</programlisting>
+
+    <para>Ao usar a estrutura MODULE como contêiner, todas as declarações
+    DATASET e INDEX ficam em uma única janela de editor de atributos. Isso
+    simplifica a manutenção e a atualização, além de garantir o acesso
+    completo a todas elas.</para>
+  </sect2>
+</sect1>

@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <bookinfo>
+    <title>Visão Geral das Ferramentas de Cliente</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Equipe de documentação</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>Setembro de 2011</pubdate>
+  </bookinfo>
+
+  <chapter id="Command_Line_ECL">
+    <title><emphasis role="bold">ECL Plus</emphasis></title>
+
+    <sect1 id="Command_Line_Interface" role="nobrk">
+      <title>Interface de linha de comando</title>
+
+      <sect2 id="ECLPlus_exe">
+        <title><emphasis>eclplus.exe</emphasis></title>
+
+        <para><emphasis role="bold">eclplus </emphasis><emphasis> action=
+        owner= user= password= cluster= server= queue= graph= timeout=
+        ecl=</emphasis><emphasis> file= format= output= jobname= -debugparam1=
+        _applicationparam1=</emphasis><emphasis>
+        /variablename1=</emphasis></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis>action=</emphasis></entry>
+
+                  <entry>Uma das seguintes opções:
+                  list|view|dump|delete|abort|query|graph (a opção padrão é
+                  "query").</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>owner=</emphasis></entry>
+
+                  <entry>O dono (proprietário) da tarefa.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>user=</emphasis></entry>
+
+                  <entry>O ID do usuário.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>password=</emphasis></entry>
+
+                  <entry>A senha que autoriza o acesso do usuário.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>cluster=</emphasis></entry>
+
+                  <entry>O nome do cluster a ser usado.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>server=</emphasis></entry>
+
+                  <entry>O endereço IP ou nome do DNS do servidor do ECL
+                  Watch.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>queue=</emphasis></entry>
+
+                  <entry>O nome da fila de jobs</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>graph=</emphasis></entry>
+
+                  <entry>O nome do gráfico.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>timeout=</emphasis></entry>
+
+                  <entry>Tempo limite da consulta em segundos (0 para
+                  assíncrono).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ecl=</emphasis></entry>
+
+                  <entry>O código ECL a ser executado. Opcionalmente é
+                  possível substituir pelo nome de um arquivo de entrada
+                  contendo o ECL a ser executado (na forma:
+                  @inputfile).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>file=</emphasis></entry>
+
+                  <entry>O nome lógico do arquivo, ou o nome lógico com as
+                  linhas de início e fim especificadas (na forma:
+                  !logicalName[startrow,endrow]).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>format=</emphasis></entry>
+
+                  <entry>Uma das seguintes opções: padrão | csv | csvh | xml |
+                  runecl | binário)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>output=</emphasis></entry>
+
+                  <entry>O nome do arquivo de resultado (ou de saída).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>jobname=</emphasis></entry>
+
+                  <entry>O nome dado ao job.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>pagesize=</emphasis></entry>
+
+                  <entry>O número de linhas por página. Se omitido, o padrão é
+                  500.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>-debugparam=</emphasis></entry>
+
+                  <entry>Parâmetros de debug a serem especificados na linha de
+                  comando, na forma: -debugparam=debugvalue</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>_applicationparam=</emphasis></entry>
+
+                  <entry>Parâmetros a serem especificados na linha de comando,
+                  na forma: _applicationparam=applicationvalue</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>/variablename= </emphasis></entry>
+
+                  <entry>Variáveis a serem especificadas na linha de comando,
+                  na forma: /variablename=[(int)|(bool)] value. O tipo de
+                  valor padrão é string, a menos que int ou bool tenham sido
+                  especificados (em parênteses antes do valor). O
+                  <emphasis>variablename</emphasis> é o nome ARMAZENADO (
+                  STORED ) de um arquivo EXL em seu código ECL.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>O executável <emphasis role="bold">eclplus</emphasis> aceita
+        parâmetros de linha de comando para enviar diretamente para um
+        mecanismo de execução ECL. Essas opções podem ser digitadas
+        diretamente na linha de comando, enviadas usando um script ou arquivo
+        de lote, através de um arquivo <emphasis role="bold">ini</emphasis>
+        localizado no mesmo diretório que o executável, ou em qualquer
+        combinação.</para>
+
+        <sect3 id="CT_CLI_eclplus.ini" role="brk">
+          <title>eclplus.ini</title>
+
+          <para>Todas as opções podem ser inseridas diretamente na linha de
+          comando, ou colocadas em um arquivo denominado eclplus.ini
+          localizado no mesmo diretório do executável. Se o seu sistema
+          operacional faz distinção entre maiúsculas e minúsculas, lembre-se
+          de que o nome do arquivo deve estar em letras minúsculas. As opções
+          que raramente são alteradas podem ser colocadas em um arquivo ini.
+          Por exemplo:</para>
+
+          <programlisting>server=10.150.50.12
+cluster=training
+queue=trainingQueue
+user=rtor
+password=password</programlisting>
+
+          <para>Em todos os exemplos abaixo, vamos supor que eclplus.ini
+          contém o conteúdo acima.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/caution.png" scale="noin"
+                    xml:base="../../"/></entry>
+
+                    <entry>Não recomendamos armazenar sua senha no arquivo ini
+                    (que não é criptografado). A senha está incluída no
+                    arquivo ini nesses exemplos para simplificar o código de
+                    exemplo.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3 id="CT_RunningQueriesBatchMode">
+          <title>Executando as consultas no modo batch</title>
+
+          <para>As consultas em modo de lote são executadas usando a opção
+          <emphasis>ecl=</emphasis> em qualquer uma de suas três formas. Na
+          primeira forma, basta colocar o código ECL na linha de
+          comando:</para>
+
+          <programlisting>eclplus ecl=1+1
+            // Result = 2</programlisting>
+
+          <para>Na segunda forma, seu código ECL está em um arquivo de
+          entrada. Por exemplo, suponha que você tem um arquivo de texto
+          denominado dataset.txt, que contém o seguinte código ECL :</para>
+
+          <programlisting>myrec := record
+string10 firstname,
+string10 lastname
+end;
+ds := dataset([{'Yanrui', 'Ma'}, {'Richard', 'Taylor'},
+{'Richard', 'Chapman'}], myrec);
+output(ds, ,'testdata::namesdb');</programlisting>
+
+          <para>Então se você executar:</para>
+
+          <programlisting>eclplus @dataset.txt</programlisting>
+
+          <para>Um dataset será criado e o resultado será gravado no arquivo
+          thor testdata::namesdb.</para>
+
+          <para>Se você também tiver um arquivo de texto denominado
+          datasetquery.txt, contendo:</para>
+
+          <programlisting>myrec := record
+string10 firstname,
+string10 lastname
+end;
+ds1 := dataset('testdata::namesdb', myrec, thor);
+output(ds1);</programlisting>
+
+          <para>Ao executar:</para>
+
+          <programlisting>eclplus @datasetquery.txt</programlisting>
+
+          <para>Você terá:</para>
+
+          <programlisting>firstname lastname
+Yanrui Ma
+Richard Taylor
+Richard Chapman</programlisting>
+        </sect3>
+
+        <sect3 id="CT_CLI_WorkunitManipulation">
+          <title>Manipulação da Workunit</title>
+
+          <para>Uma workunit é uma estrutura de dados especificada entre o
+          eclplus, o servidor dali, e o servidor eclcc. Ela contém informações
+          em tempo real sobre a consulta, para que você possa controlar o
+          processo de uma consulta manipulando a workunit.</para>
+        </sect3>
+
+        <sect3 id="CT_CLI_ListAllWorkunits">
+          <title>Listar todas as workunits</title>
+
+          <para>Para listar todas as workunits:</para>
+
+          <programlisting>eclplus action=list</programlisting>
+
+          <para/>
+
+          <para>O resultado teria esta forma:</para>
+
+          <programlisting>WUID OWNER JOBNAME STATUS
+W20090226-100258-85132143 yma dataset.txt completed
+W20090226-100958-85552898 yma datasetquery.txt completed</programlisting>
+
+          <para/>
+
+          <para/>
+
+          <para>Cada workunit possui um WUID (Identificador da workunit),
+          proprietário, nome e status. Veja que o nome é simplesmente o nome
+          do arquivo que contém a workunit; mas você mesmo pode especificar o
+          nome da workunit desta forma:</para>
+
+          <programlisting>eclplus jobname=myquery1 @datasetquery.txt</programlisting>
+        </sect3>
+
+        <sect3 id="CT_CLI_ViewResultofWorkunit">
+          <title>Visualizar o resultado de uma determinada workunit</title>
+
+          <para>É possível obter resultados específicos da workunit, como
+          esse:</para>
+
+          <programlisting>eclplus action=view wuid=
+          W20090226-100958-85552898</programlisting>
+
+          <para>O resultado teria essa forma:</para>
+
+          <programlisting>firstname lastname
+Yanrui Ma
+Richard Taylor
+Richard Chapman</programlisting>
+        </sect3>
+
+        <sect3 id="CT_CLI_DumpWorkunit">
+          <title>Dump de uma workunit</title>
+
+          <para>Se quiser obter todos os detalhes que descrevem uma workunit,
+          use a opção “dump” para o parâmetro de ação:</para>
+
+          <programlisting>eclplus action=dump wuid= W20090226-100958-85552898</programlisting>
+
+          <para>Veja a seção Dump de workunit (Workunit Dump) abaixo para ver
+          o resultado.</para>
+        </sect3>
+
+        <sect3 id="CT_CLI_SeeTheThorGraph">
+          <title>Visualizar o gráfico thor para uma workunit:</title>
+
+          <para>Esta ação retorna os dados XML para um ou mais gráficos da
+          workunit.</para>
+
+          <programlisting>eclplus action=graph graph=graph1 wuid=W20090226-100958-85552898</programlisting>
+
+          <para>O nome do gráfico deve ser fornecido no parâmetro
+          graph=.</para>
+        </sect3>
+
+        <sect3 id="CT_CLI_AbortWorkunit">
+          <title>Abortando a Workunit</title>
+
+          <para>Se uma workunit está levando muito tempo para ser executada, e
+          se você achar que há algo de errado, é possível abortá-la dessa
+          forma:</para>
+
+          <programlisting>eclplus action=abort wuid= W20090226-100958-85552898</programlisting>
+
+          <para>É possível usar a lista para descobrir o wuid, a workunit e
+          usar a opção abortar para cancelar essa workunit.</para>
+        </sect3>
+
+        <sect3 id="CT_CLI_Timeout">
+          <title>Timeout</title>
+
+          <para>Antes de executar uma consulta, se você souber que a consulta
+          demorará muito para ser executada, é possível especificar um tempo
+          limite; assim, o eclplus retornará quando atingir o tempo limite e a
+          consulta será executada em segundo plano.</para>
+
+          <para>Por exemplo:</para>
+
+          <programlisting>eclplus @datasetquery.txt timeout=0</programlisting>
+
+          <para>eclplus retornará imediatamente.</para>
+
+          <programlisting>eclplus @datasetquery.txt timeout=2</programlisting>
+
+          <para>eclplus retornará em 2 segundos.</para>
+
+          <para>Você pode listar/ver a workunit associada à consulta para
+          monitorar seu status.</para>
+        </sect3>
+
+        <sect3 id="CT_CLI_OutputFormat">
+          <title>Formato de saída</title>
+
+          <para>Por padrão, o resultado é exibido na tela. Você pode
+          direcioná-lo para um arquivo usando a opção de resultado:</para>
+
+          <programlisting>eclplus @datasetquery.txt output=o1.txt
+cat o1.txt
+firstname lastname
+Yanrui Ma
+Richard Taylor
+Richard Chapman</programlisting>
+
+          <para>Também é possível especificar os seguintes formatos de
+          resultado:</para>
+        </sect3>
+
+        <sect3 id="CT_CLI_CSV">
+          <title>csv</title>
+
+          <programlisting>eclplus @datasetquery.txt format=csv
+[QUERY 0]
+"Yanrui ","Ma "
+"Richard ","Taylor "
+"Richard ","Chapman "</programlisting>
+        </sect3>
+
+        <sect3 id="CT_CLI_CSVH">
+          <title>csvh</title>
+
+          <programlisting>eclplus @datasetquery.txt format=csvh
+[QUERY 0]
+"firstname","lastname"
+"Yanrui ","Ma "
+"Richard ","Taylor "
+"Richard ","Chapman "</programlisting>
+        </sect3>
+
+        <sect3 id="CT_CLI_RAW">
+          <title>raw</title>
+
+          <programlisting>eclplus @datasetquery.txt format=raw
+Yanrui     Ma
+Richard    Taylor
+Richard    Chapman</programlisting>
+        </sect3>
+
+        <sect3 id="CT_CLI_RUNECL">
+          <title>runecl</title>
+
+          <programlisting>eclplus @datasetquery.txt format=runecl
+[QUERY 0]
+[0]
+firstname -&gt; Yanrui
+lastname -&gt; Ma
+[1]
+firstname -&gt; Richard
+lastname -&gt; Taylor
+[2]
+firstname -&gt; Richard
+lastname -&gt; Chapman</programlisting>
+        </sect3>
+
+        <sect3 id="CT_CLI_Bin-ary-">
+          <title>bin(ary)</title>
+
+          <programlisting>eclplus @datasetquery.txt format=bin
+Yanrui Ma Richard Taylor Richard Chapman</programlisting>
+        </sect3>
+
+        <sect3 id="CT_CLI_WorkUnitDump">
+          <title>Despejo da Workunit</title>
+
+          <para>Um Dump de workunit é uma representação em XML de cada parte
+          dos dados em uma workunit. Ele contém todas as informações que você
+          poderia descobrir sobre a workunit ao usar o ECL Watch.</para>
+
+          <para>O dump da workunit abaixo veio de uma simples consulta
+          COUNT(pessoa) no ambiente de treinamento:</para>
+
+          <programlisting>&lt;W20110615-160604 agentPID="4162" agentSession="4296042782" cloneable="1" 
+ clusterName="thor" codeVersion="138"  isClone="1" scope="hpccdemo" 
+ state="completed" submitID="hpccdemo" 
+ token="X1lUMJ6oacON/1anTHTQW1JVHr1bbY8EWTSJhlDOrtYxmD13Z5ly4Qd26sEYVtxhW"&gt;
+  &lt;Action&gt;run&lt;/Action&gt;
+  &lt;Debug&gt;
+    &lt;applyinstantecltransformations&gt;1&lt;/applyinstantecltransformations&gt;
+    &lt;applyinstantecltransformationslimit&gt;100&lt;/applyinstantecltransformationslimit&gt;
+    &lt;created_by&gt;ws_workunits&lt;/created_by&gt;
+    &lt;created_for&gt;hpccdemo&lt;/created_for&gt;
+    &lt;eclagentlog&gt;//192.168.237.132/var/log/HPCCSystems/myeclagent/eclagent.06_15_11.log
+    &lt;/eclagentlog&gt;
+    &lt;targetclustertype&gt;hthor&lt;/targetclustertype&gt;
+  &lt;/Debug&gt;
+  &lt;Query fetchEntire="1"&gt;
+    &lt;Associated&gt;
+      &lt;File crc="701142319" filename="libW20110615-160604.so" type="dll"/&gt;
+    &lt;/Associated&gt;
+    &lt;Text&gt;
+      &lt;Archive build="community_3.0.0" eclVersion="3.0.0"&gt;  &lt;Query 
+       originalFilename="C:\DOCUME~1\Hpccdemo\LOCALS~1\Temp\TFR2CE.tmp"&gt; 
+       OUTPUT(&amp;apos;Hello World&amp;apos;); &lt;/Query&gt; &lt;/Archive&gt;
+    &lt;/Text&gt;
+  &lt;/Query&gt;
+  &lt;resultLimit&gt;100&lt;/resultLimit&gt;
+  &lt;Results&gt;
+    &lt;Result fetchEntire="1" name="Result 1" sequence="0" status="calculated"&gt;
+      &lt;rowCount&gt;1&lt;/rowCount&gt;
+      &lt;SchemaRaw xsi:type="SOAP-ENC:base64"&gt; UmVzdWx0XzEABPH///8BYXNjaWkAAWFzY2lpAAAYAAAAAA== 
+      &lt;/SchemaRaw&gt;
+      &lt;totalRowCount&gt;1&lt;/totalRowCount&gt;
+      &lt;Value xsi:type="SOAP-ENC:base64"&gt; CwAAAEhlbGxvIFdvcmxk &lt;/Value&gt;
+    &lt;/Result&gt;
+  &lt;/Results&gt;
+  &lt;TimeStamps&gt;
+    &lt;TimeStamp application="workunit"&gt;
+      &lt;Created ts="1308153964"&gt; 2011-06-15T16:06:04Z &lt;/Created&gt;
+    &lt;/TimeStamp&gt;
+    &lt;TimeStamp application="EclAgent" instance="localhost.localdom"&gt;
+      &lt;Started ts="1308153971"&gt; 2011-06-15T16:06:11Z &lt;/Started&gt;
+    &lt;/TimeStamp&gt;
+    &lt;TimeStamp application="EclAgent" instance="localhost.localdom"&gt;
+      &lt;Finished ts="1308153971"&gt; 2011-06-15T16:06:11Z &lt;/Finished&gt;
+    &lt;/TimeStamp&gt;
+  &lt;/TimeStamps&gt;
+  &lt;Timings&gt;
+    &lt;Timing count="1" duration="1" max="1308040" name="WorkUnit_lockRemote"/&gt;
+    &lt;Timing count="1" duration="6" max="6577412" name="SDS_Initialize"/&gt;
+    &lt;Timing count="1" duration="0" max="704338" name="Environment_Initialize"/&gt;
+    &lt;Timing count="1" duration="16" max="16414003" name="Process"/&gt;
+  &lt;/Timings&gt;
+  &lt;Workflow&gt;
+    &lt;Item mode="normal" state="done" type="normal" wfid="1"&gt;
+      &lt;Schedule/&gt;
+    &lt;/Item&gt;
+  &lt;/Workflow&gt;
+&lt;/W20110615-160604&gt;</programlisting>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

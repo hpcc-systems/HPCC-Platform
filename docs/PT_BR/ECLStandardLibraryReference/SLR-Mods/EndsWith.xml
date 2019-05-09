@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EndsWith">
+  <title>EndsWith</title>
+
+  <para><emphasis role="bold">STD.Str.EndsWith<indexterm>
+      <primary>STD.Str.EndsWith</primary>
+    </indexterm><indexterm>
+      <primary>Str.EndsWith</primary>
+    </indexterm><indexterm>
+      <primary>EndsWith</primary>
+    </indexterm>(</emphasis> <emphasis>source, suffix</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string a ser pesquisada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>suffix</emphasis></entry>
+
+          <entry>A string a ser encontrada.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>EndsWith retorna um valor BOOLEAN</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">EndsWith</emphasis> retorna TRUE se o
+  <emphasis>source</emphasis> termina com o texto no parâmetro
+  <emphasis>suffix</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.STr.EndsWith('a word away','away');   //returns TRUE
+STD.STr.EndsWith('a word a way','away');  //returns FALSE
+</programlisting>
+</sect1>

@@ -2025,7 +2025,7 @@ static IOutputMetaData *_getDaliLayoutInfo(MemoryBuffer &layoutBin, IPropertyTre
             props.getProp("ECL", layoutECL);
             MultiErrorReceiver errs;
             Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
-            if (errs.errCount() == 0)
+            if (expr && (errs.errCount() == 0))
             {
                 if (props.hasProp("_record_layout"))  // Some old indexes need the payload count patched in from here
                 {

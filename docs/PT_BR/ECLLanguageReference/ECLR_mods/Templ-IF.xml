@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_IF">
+  <title>#IF</title>
+
+  <para><emphasis role="bold">#IF<indexterm>
+      <primary>#IF</primary>
+    </indexterm>( </emphasis><emphasis> condition </emphasis><emphasis
+  role="bold">)</emphasis><emphasis role="bold"> </emphasis><emphasis/></para>
+
+  <para><emphasis>truestatements</emphasis><emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">[ #ELSEIF<indexterm>
+      <primary>#ELSEIF</primary>
+    </indexterm>( </emphasis><emphasis> condition </emphasis><emphasis
+  role="bold">)</emphasis><emphasis role="bold"> </emphasis><emphasis/></para>
+
+  <para><emphasis>truestatements </emphasis><emphasis
+  role="bold">]</emphasis><emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">[ #ELSE</emphasis><emphasis
+  role="bold"><indexterm>
+      <primary>#ELSE</primary>
+    </indexterm> </emphasis><emphasis>falsestatements </emphasis><emphasis
+  role="bold">]</emphasis><emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">#END</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="83.75pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>Uma expressão lógica.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>truestatements</emphasis></entry>
+
+            <entry>As declarações de modelos a serem executadas se a condição
+            for verdadeira.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>#ELSEIF</emphasis></entry>
+
+            <entry>Opcional. Fornece a estrutura as declarações a serem
+            executadas se a condição for verdadeira.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>#ELSE</emphasis></entry>
+
+            <entry>Opcional. Fornece as declarações a serem executadas se a
+            condição for falsa.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>falsestatements</emphasis></entry>
+
+            <entry>Opcional. As declarações de modelos a serem executadas se a
+            condição for falsa.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>#END</emphasis></entry>
+
+            <entry>O terminador da estrutura #IF.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A estrutura <emphasis role="bold">#IF </emphasis> avalia a
+  <emphasis>condição </emphasis> executa <emphasis>truestatements</emphasis>
+  ou <emphasis>falsestatements</emphasis> (se presentes). Essa declaração pode
+  ser usada fora de um escopo XML e não exige um LOADXML anterior para
+  instanciar um escopo XML.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  // This script creates a set attribute definition of the 1st 10
+  // natural numbers and defines an attribute named "Set10"
+  
+  #DECLARE (SetString);
+  #DECLARE (Ndx);
+  #SET (SetString, '[');   //initialize SetString to [
+  #SET (Ndx, 1);          //initialize Ndx to 1
+  #LOOP
+     #IF (%Ndx% &gt; 9)      //if we've iterated 9 times
+        #BREAK            // break out of the loop
+     #ELSE                //otherwise
+        #APPEND (SetString, %'Ndx'% + ',');
+                          //append Ndx and comma to SetString
+     #SET (Ndx, %Ndx% + 1);
+                          //and increment the value of Ndx
+     #END
+  #END
+  
+  #APPEND (SetString, %'Ndx'% + ']'); //add 10th element and closing ]
+  
+  EXPORT Set10 := %'SetString'%; //generate the ECL code
+                         // This generates:
+                         // EXPORT Set10 := [1,2,3,4,5,6,7,8,9,10];
+</programlisting>
+
+  <para>Ver também: <link linkend="_LOOP-_BREAK">#LOOP</link>, <link
+  linkend="_DECLARE">#DECLARE</link></para>
+</sect1>

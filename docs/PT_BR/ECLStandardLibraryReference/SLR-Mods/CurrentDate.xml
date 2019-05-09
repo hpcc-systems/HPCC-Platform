@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CurrentDate">
+  <title>CurrentDate</title>
+
+  <para><emphasis role="bold">STD.Date.CurrentDate
+  ([</emphasis><emphasis>in_local_time</emphasis><emphasis
+  role="bold">])</emphasis><indexterm>
+      <primary>STD.Date.CurrentDate</primary>
+    </indexterm><indexterm>
+      <primary>CurrentDate</primary>
+    </indexterm></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>in_local_time</emphasis></entry>
+
+          <entry>TRUE se o valor retornado deve ser local para o cluster que
+          calcula a hora, FALSE para UTC. Opcional. O padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>Today retorna um Date_t que representa a data atual.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">CurrentDate</emphasis> retorna a data
+  atual. Se o parâmetro in_local_time for TRUE, os valores retornados serão os
+  locais do cluster que calcula a data. Se FALSE, será retornado valor
+  UTC.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+d1 := STD.Date.CurrentDate(True); 
+     //d1 contains the current local date 
+</programlisting>
+
+  <para/>
+</sect1>

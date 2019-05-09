@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_EXPAND">
+  <title>#EXPAND</title>
+
+  <para><emphasis role="bold">#EXPAND<indexterm>
+      <primary>#EXPAND</primary>
+    </indexterm>( </emphasis><emphasis>token</emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="75.45pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>token</emphasis></entry>
+
+            <entry>O nome do parâmetro MACRO cujo valor de constante de string
+            especificado será expandido.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A declaração <emphasis role="bold">#EXPAND </emphasis> substitui e
+  analisa o texto da string do <emphasis>token</emphasis> especificado na
+  MACRO.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  MAC_join(attrname, leftDS, rightDS, linkflags) := MACRO
+    attrname := JOIN(leftDS,rightDS,#EXPAND(linkflags));
+  ENDMACRO;
+  
+  MAC_join(J1,People,Property,'LEFT.ID=RIGHT.PeopleID,LEFT OUTER')
+  //expands out to:
+  // J1 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID,LEFT OUTER);
+  
+  MAC_join(J2,People,Property,'LEFT.ID=RIGHT.PeopleID')
+  //expands out to:
+  // J2 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID);
+</programlisting>
+
+  <para>Ver também: <link linkend="MACRO_Structure">MACRO</link></para>
+</sect1>

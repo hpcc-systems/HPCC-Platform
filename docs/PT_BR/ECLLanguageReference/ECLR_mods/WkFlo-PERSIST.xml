@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PERSIST">
+  <title>PERSIST</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: PERSIST<indexterm>
+      <primary>PERSIST</primary>
+    </indexterm>(</emphasis><emphasis> filename </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, cluster</emphasis> <emphasis
+  role="bold">]</emphasis><emphasis role="bold"> [, CLUSTER<indexterm>
+      <primary>CLUSTER</primary>
+    </indexterm>(</emphasis><emphasis>target</emphasis><emphasis
+  role="bold">)] [, EXPIRE<indexterm>
+      <primary>EXPIRE</primary>
+    </indexterm>(</emphasis><emphasis>days</emphasis> <emphasis role="bold">)]
+  [, REFRESH<indexterm>
+      <primary>REFRESH</primary>
+    </indexterm>(</emphasis><emphasis>flag</emphasis> <emphasis role="bold">)]
+  [, SINGLE<indexterm>
+      <primary>SINGLE</primary>
+    </indexterm> | MULTIPLE<indexterm>
+      <primary>MULTIPLE</primary>
+    </indexterm>[(</emphasis><emphasis>count</emphasis><emphasis
+  role="bold">)]] ) <indexterm>
+      <primary>PERSIST workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82.80pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>O nome do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A definição do atributo. Isso normalmente define um
+            recordset (mas pode ser qualquer expressão).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filename</emphasis></entry>
+
+            <entry>Uma constante de string que especifica o nome de
+            armazenamento do resultado de expressão. Consulte <emphasis
+            role="bold">Escopo e nomes de arquivo lógicos.</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>cluster</emphasis></entry>
+
+            <entry>Opcional. Uma constante de string que especifica o nome do
+            cluster Thor no qual o <emphasis>atributo</emphasis> é recompilado
+            se/quando necessário. Isso possibilita usar atributos persistentes
+            em clusters menores, mas compilá-los em maiores, tornando a
+            utilização de recursos mais eficiente. Se omitido, o
+            <emphasis>atributo</emphasis> é recompilado no cluster em execução
+            atualmente.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+
+            <entry>Opcional. Especifica a gravação do <emphasis>nome de
+            arquivo</emphasis> para a lista especificada de clusters de
+            <emphasis>destino</emphasis> . Se omitido, o <emphasis>nome de
+            arquivo</emphasis> é gravado no cluster no qual a função PERSIST é
+            executada (como especificado pelo parâmetro
+            <emphasis>cluster</emphasis> ). O número de partes de arquivos
+            físicos gravadas em disco é sempre determinado pelo número de nós
+            no <emphasis>cluster</emphasis> no qual a função PERSIST é
+            executada, independentemente do número de nós no(s)
+            <emphasis>destino(s)</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>target</emphasis></entry>
+
+            <entry>Uma lista de constantes de string delimitada por vírgulas
+            que contém os <emphasis>nomes</emphasis> dos clusters no qual o
+            arquivo será gravado. Os nomes devem estar listados como aparecem
+            na página de Atividade do ECL Watch, ou como são retornados pela
+            função Std.System.Thorlib.Group(); opcionalmente, podem apresentar
+            colchetes contendo uma lista delimitada por vírgula dos números
+            dos nós (baseado em 1) e/ou dos intervalos (especificados com um
+            traço, como p.ex., n-m) para indicar o conjunto específico de nós
+            para gravar.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+
+            <entry>Opcional. Especifica que o <emphasis>nome de
+            arquivo</emphasis> é um arquivo temporário que pode ser removido
+            automaticamente após um número especificado de dias.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>days</emphasis></entry>
+
+            <entry>Opcional. O número de dias em que o arquivo será
+            automaticamente removido. Se omitido, por padrão, a configuração
+            PersistExpiryDefault será usada no Sasha.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">REFRESH</emphasis></entry>
+
+            <entry>Opcional. Opção de controle quando o PERSIST é recompilado.
+            Se omitido, o PERSIST recompila caso 1) o arquivo subjacente não
+            exista, ou 2) os dados tenham sido alterados ou 3) o código tenha
+            sido alterado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>flag</emphasis></entry>
+
+            <entry>Um valor booleano indicando se PERSIST deve ser recompilado
+            ou não. Quando definido para FALSE, o PERSIST recompila ONLY
+            (APENAS) se o arquivo subjacente não existir. Se seu layout
+            PERSIST tiver sido alterado e você especificar REFRESH(FALSE), a
+            incompatibilidade ocasionaria a falha do job.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SINGLE</emphasis></entry>
+
+            <entry>Opcional. Especifica para manter um único PERSIST. O nome
+            do arquivo de persistência é o mesmo do nome da
+            persistência.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MULTIPLE </emphasis></entry>
+
+            <entry>Opcional. Especifica para manter diferentes versões do
+            PERSIST. O nome do arquivo de persistência gerado é uma combinação
+            do nome fornecido com sufixo de valor de 32 bits derivado do
+            ECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>count</emphasis></entry>
+
+            <entry>Opcional. O número de versões de um PERSIST deve ser
+            mantido. Se omitido, o padrão do sistema será usado.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>O serviço <emphasis role="bold">PERSIST </emphasis> armazena o
+  resultado da <emphasis>expressão</emphasis> globalmente de forma a continuar
+  permanentemente disponível para uso (incluindo o resultado de qualquer
+  operação DISTRIBUTE ou GROUP na <emphasis>expressão</emphasis>). Isso é
+  especialmente útil para <emphasis>atributos</emphasis> baseados em
+  sequências de manipulação de dados dispendiosas e grandes. O
+  <emphasis>atributo</emphasis> é recalculado apenas quando o código ECL ou os
+  dados subjacentes que foram usados para criá-lo sofrem alterações; caso
+  contrário, os dados de <emphasis>atributo</emphasis> são simplesmente
+  retornados do arquivo <emphasis>nome</emphasis> armazenado em disco quando
+  referido. Implicitamente, esse serviço faz com que o
+  <emphasis>atributo</emphasis> seja avaliado em um escopo global em vez de
+  escopo de função.</para>
+
+  <para>PERSIST pode ser combinado com a cláusula WHEN para que, embora o
+  <emphasis>atributo </emphasis> possa ser usado mais de uma vez, sua execução
+  seja baseada na cláusula WHEN (ou o primeiro uso do
+  <emphasis>atributo</emphasis>) e não baseada no número de vezes que o
+  <emphasis>atributo</emphasis> é usado na computação. Isso oferece um tipo
+  recurso denominado "computação antecipada".</para>
+
+  <para/>
+
+  <para>Exemplo:</para>
+
+  <programlisting>  CountPeople := COUNT(Person) : PERSIST('PeopleCount');
+  //Makes CountPeople available for use in all subsequent work units
+  
+  sPeople := SORT(Person,Person.per_first_name) :
+          PERSIST('SortPerson'),WHEN(Daily);
+  //Makes sPeople available for use in all subsequent work units
+  
+  s1 := SORT(Person,Person.per_first_name) :
+          PERSIST('SortPerson1','OtherThor');
+      //run the code on the OtherThor cluster
+  s2 := SORT(Person,Person.per_first_name) :
+          PERSIST('SortPerson2',
+                  'OtherThor',
+                  CLUSTER('AnotherThor'));
+       //run the code on the OtherThor cluster
+       // and write the file to the AnotherThor cluster
+</programlisting>
+
+  <para>Ver também: <link linkend="STORED">STORED</link>, <link
+  linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link
+  linkend="CHECKPOINT">CHECKPOINT</link></para>
+</sect1>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CHOOSESETS">
+  <title>CHOOSESETS</title>
+
+  <para><emphasis role="bold">CHOOSESETS<indexterm>
+      <primary>CHOOSESETS</primary>
+    </indexterm><indexterm>
+      <primary>CHOOSESETS function</primary>
+    </indexterm>(</emphasis><emphasis> recset, condition  =&gt; n
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, o
+  </emphasis><emphasis role="bold">][ </emphasis><emphasis>,
+  </emphasis><emphasis role="bold">EXCLUSIVE</emphasis><emphasis><indexterm>
+      <primary>EXCLUSIVE</primary>
+    </indexterm> </emphasis><emphasis role="bold">|</emphasis><emphasis>
+  </emphasis><emphasis role="bold">LAST<indexterm>
+      <primary>LAST</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis
+  role="bold">|</emphasis><emphasis> </emphasis><emphasis
+  role="bold">ENTH<indexterm>
+      <primary>ENTH</primary>
+    </indexterm></emphasis> <emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="87.05pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento. Pode ser o nome
+            de um dataset ou de um record set derivado de algumas condições de
+            filtro, ou qualquer expressão que resulte em um record set
+            derivado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>A expressão lógica que define quais registros serão
+            incluídos no result set.</entry>
+          </row>
+
+          <row>
+            <entry>=&gt;</entry>
+
+            <entry>O operador "resulta em" - válido somente em CHOOSESETS,
+            CASE e MAP.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>O número máximo de registros a ser retornado. Se o número
+            for zero (0), não será retornado nenhum registro que atenda à
+            condição.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>o</emphasis></entry>
+
+            <entry>Opcional. O número máximo de registros a ser retornado que
+            não atende à nenhuma das condições especificadas.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">EXCLUSIVE</emphasis></entry>
+
+            <entry>Opcional. Especifica que os parâmetros da condição são
+            mutualmente exclusivos.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LAST</emphasis></entry>
+
+            <entry>Opcional. Especifica a escolha dos últimos n registros que
+            atendem à condição em vez do primeiro n. Essa opção é
+            implicitamente EXCLUSIVE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ENTH</emphasis></entry>
+
+            <entry>Opcional. Especifica a escolha de uma amostragem de
+            registros que atendem à condição em vez do primeiro n. Essa opção
+            é implicitamente EXCLUSIVE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CHOOSESETS retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">CHOOSESETS </emphasis> retorna um
+  conjunto de registros do <emphasis>recset</emphasis>. O conjunto de
+  resultado está limitado ao número <emphasis>n</emphasis> de registros que
+  atendem à <emphasis>condição </emphasis> listada. CHOOSESETS pode adotar
+  quantos parâmetros de <emphasis>condição =&gt; n</emphasis> forem
+  necessários para especificar exatamente o conjunto de registros desejado.
+  Esta é uma forma abreviada de concatenar os conjuntos do resultado dos
+  múltiplos acionamentos da função CHOOSEN para o mesmo
+  <emphasis>recset</emphasis> com <emphasis>condições </emphasis> de filtro
+  distintas, porém CHOOSESETS executa significativamente mais rápido. Esta
+  técnica também é conhecida como "cutback."</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyResultSet := CHOOSESETS(Person,
+      per_first_name = 'RICHARD' =&gt; 100,
+      per_first_name = 'GWENDOLYN' =&gt; 200, 100)
+// returns a set containing 100 Richards, 200 Gwendolyns, 100 others
+</programlisting>
+
+  <para>Ver também: <link linkend="CHOOSEN">CHOOSEN</link>, <link
+  linkend="SAMPLE">SAMPLE</link></para>
+</sect1>

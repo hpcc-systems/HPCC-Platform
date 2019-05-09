@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+ 
+
+    <sect1 id="ESDL_Attributes">
+    <title>Atributos ESDL</title>
+
+    <para>É possível usar atributos da ESDL para estender e substituir o comportamento padrão de uma definição ESDL. or exemplo, a adição de max_len(n) em uma string estabelece que a string precisará armazenar apenas um certo número de caracteres.</para>
+
+    <para>Vários atributos são tratados como dicas que podem, em comparação com os demais, exercer maior influência sobre algumas implementações. Por exemplo, max_len(n) afetará o código ECL gerado, mas é ignorado quando C++ é gerado.</para>
+    
+    </sect1>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_ecl_null">
+  <title>ecl_null <indexterm>
+      <primary>ecl_null</primary>
+    </indexterm>(<emphasis role="bold">n</emphasis><emphasis role="bold"> |
+  </emphasis><emphasis role="bold">string</emphasis><emphasis
+  role="bold">)</emphasis></title>
+
+  <para>O atributo <emphasis>ecl_null </emphasis> fala para o ESP remover
+  completamente o campo se o valor de campo for <emphasis>n</emphasis> ou
+  <emphasis>string</emphasis>. Isso oferece um meio de remover completamente
+  um campo quando não houver nenhum dado para ele.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>[ecl_null(0)] int Age; 
+[ecl_null("false")] bool IsMatch;   </programlisting>
+
+  <para>Age 0 significa que não há dados Age para esta pessoa. Assim, se Age
+  for 0, a tag &lt;Age&gt; não é retornada.</para>
+
+  <para>Sem este atributo, <emphasis
+  role="bold">&lt;Age&gt;0&lt;/Age&gt;</emphasis> seria retornada.</para>
+
+  <para>No segundo exemplo, o valor booleano de <emphasis>false</emphasis>,
+  que retornou como uma string, é considerado como nulo e, consequentemente, a
+  tag não é retornada.</para>
+</sect1>

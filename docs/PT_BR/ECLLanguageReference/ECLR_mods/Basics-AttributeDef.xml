@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Attribute_Definition">
+  <title>Definições</title>
+
+  <para>Cada Definição ECL<indexterm>
+      <primary>Cada definição ECL</primary>
+    </indexterm> é o componente básico da ECL. Uma definição especifica
+  <emphasis>o que </emphasis> fazer, mas não <emphasis>como</emphasis> fazer.
+  As definições podem ser consideradas como uma forma altamente desenvolvida
+  de substituição por macro, em que cada definição sucessiva aproveita cada
+  vez mais o trabalho realizado anteriormente. O resultado é uma construção de
+  query (consulta) extremamente eficiente.</para>
+
+  <para>Todas as definições têm o seguinte formato:</para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>Scope</emphasis><emphasis
+  role="bold">] [</emphasis><emphasis>ValueType</emphasis><emphasis
+  role="bold">] Name<indexterm>
+      <primary>Name</primary>
+    </indexterm> [ </emphasis>(<emphasis>parms</emphasis>) <emphasis
+  role="bold">] := Expression<indexterm>
+      <primary>Expression</primary>
+    </indexterm> [ </emphasis><emphasis>:WorkflowService</emphasis><emphasis
+  role="bold">] ;</emphasis></para>
+
+  <para>The Definition Operator<indexterm>
+      <primary>Definition Operator</primary>
+    </indexterm> (<emphasis role="bold"> :=</emphasis> read as “is defined
+  as”) defines an expression. No lado esquerdo do operador, há um
+  <emphasis>Escopo <indexterm>
+      <primary>Scope</primary>
+    </indexterm></emphasis> opcional (consulte <emphasis
+  role="bold">Visibilidade de atributos</emphasis>), um <emphasis>Tipo de
+  Valores<indexterm>
+      <primary>Value Types</primary>
+    </indexterm></emphasis> (consulte <emphasis role="bold">Tipos de
+  valores</emphasis>) e os parâmetros <indexterm>
+      <primary>parameters</primary>
+    </indexterm> (<emphasis>parms</emphasis>) que ele pode receber (consulte
+  <emphasis role="bold">Funções (Passagem de parâmetros</emphasis>)). No lado
+  direito, a expressão que produz o resultado e, opcionalmente, dois pontos
+  (:) e uma lista de <emphasis>WorkflowServices</emphasis> (consulte <emphasis
+  role="bold">Serviços de fluxo de trabalho</emphasis>) delimitada por
+  vírgulas. Uma definição deve ser concluída explicitamente com ponto e
+  vírgula (;). O nome da Definição pode ser usado em definições
+  subsequentes:</para>
+
+  <programlisting>MyFirstDefinition := 5; //defined as 5
+MySecondDefinition := MyFirstDefinition + 5; //this is 10</programlisting>
+
+  <sect2 id="Attribute_Name_Rules">
+    <title>Regras de nomenclatura de definição</title>
+
+    <para>Os nomes de Definições <indexterm>
+        <primary>Definition Name</primary>
+      </indexterm>s válidos começam com uma letra e podem conter apenas
+    letras, números e o caractere sublinhado (_).</para>
+
+    <programlisting>My_First_Definition1 := 5; // valid name
+My First Definition := 5;  // INVALID name, spaces not allowed</programlisting>
+
+    <para>Você poderá atribuir a uma Definition o nome de um módulo criado
+    anteriormente no Repository do ECL se o atributo estiver definido com um
+    <emphasis>ValueType</emphasis>.</para>
+  </sect2>
+
+  <sect2 id="Reserved_Words">
+    <title>Palavras Reservadas</title>
+
+    <para>As palavras-chave do ECL<indexterm>
+        <primary>ECL keywords</primary>
+      </indexterm>, as funções integradas e suas opções são palavras
+    reservadas <indexterm>
+        <primary>Reserved Words</primary>
+      </indexterm>, mas de maneira geral apenas no contexto em que seu uso é
+    válido. Mesmo nesse contexto, você pode usar palavras reservadas como
+    nomes de campos ou definições, desde que elimine explicitamente qualquer
+    ambiguidade, como neste exemplo:</para>
+
+    <programlisting>ds2 := DEDUP(ds, ds.all, ALL); //ds.all is the 'all' field in the
+                               //ds dataset - not DEDUP's ALL option</programlisting>
+
+    <para>No entanto, é uma boa ideia evitar usar as palavras-chave da ECL
+    como nomes de definições ou campos.</para>
+
+    <para>Os nomes de definições ou campos não pode começar com <emphasis
+    role="bold">UNICODE_</emphasis> , <emphasis role="bold">UTF8_</emphasis>,
+    ou <emphasis role="bold">VARUNICODE_</emphasis>. Os rótulos que começam
+    com esses prefixos são tratados como nomes de tipo e devem ser
+    considerados como reservados.</para>
+  </sect2>
+
+  <sect2 id="Attribute_Naming">
+    <title>Nomenclatura de Definição</title>
+
+    <para>Use nomes descritivos para todas as definições EXPORTed e SHARED.
+    Dessa forma, o código ficará mais legível. A convenção de nomenclatura
+    adotada em toda a documentação e em todos os cursos de treinamento da ECL
+    é a seguinte:</para>
+
+    <programlisting><emphasis role="bold">Definition Type</emphasis>     <emphasis
+        role="bold">Are Named
+</emphasis>Boolean              Is...
+Set Definition       Set...
+Record Set           ...DatasetName</programlisting>
+
+    <para>Por exemplo:</para>
+
+    <programlisting>IsTrue := TRUE;                         // a BOOLEAN Definition
+SetNumbers := [1,2,3,4,5];              // a Set Definition
+R_People := People(firstname[1] = 'R'); // a Record Set Definition</programlisting>
+  </sect2>
+</sect1>

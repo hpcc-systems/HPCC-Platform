@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TYPEOF">
+  <title>TYPEOF</title>
+
+  <para><emphasis role="bold">TYPEOF<indexterm>
+      <primary>TYPEOF</primary>
+    </indexterm><indexterm>
+      <primary>TYPEOF data type</primary>
+    </indexterm>( </emphasis><emphasis>expression</emphasis><emphasis
+  role="bold"> )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>expression</emphasis></entry>
+
+          <entry>Uma expressão que define o tipo de valor. Pode ser o nome de
+          um campo de dados, de um parâmetro especificado, de uma função ou de
+          um atributo que fornece o tipo de valor (incluindo estruturas
+          RECORD). Esta deve ser uma expressão legal para o escopo atual, mas
+          não é avaliada quanto ao seu valor.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A declaração <emphasis role="bold">TYPEOF</emphasis> permite definir
+  um atributo ou parâmetro cujo tipo de valor é “ o mesmo” da
+  <emphasis>expressão</emphasis>. Isto é válido para ser usado em qualquer
+  lugar onde um tipo de valor explícito seja válido.</para>
+
+  <para>Seu uso mais comum seria para especificar o tipo de retorno de uma
+  função TRANSFORM como "o mesmo" da estrutura de um dataset ou de um
+  recorset.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>STRING3 Fred := 'ABC'; //declare Fred as a 3-byte string
+TYPEOF(Fred) Sue := Fred; //declare Sue as "just like" Fred</programlisting>
+
+  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+  TRANSFORM</link></para>
+</sect1>

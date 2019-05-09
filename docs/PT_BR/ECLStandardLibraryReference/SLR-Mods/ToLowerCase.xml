@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ToLowerCase">
+  <title>ToLowerCase</title>
+
+  <para><emphasis role="bold">STD.Str.ToLowerCase<indexterm>
+      <primary>STD.Str.ToLowerCase</primary>
+    </indexterm><indexterm>
+      <primary>Str.ToLowerCase</primary>
+    </indexterm><indexterm>
+      <primary>ToLowerCase</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.ToLowerCase<indexterm>
+      <primary>STD.Uni.ToLowerCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.ToLowerCase</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.LocaleToLowerCase<indexterm>
+      <primary>STD.Uni.LocaleToLowerCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleToLowerCase</primary>
+    </indexterm><indexterm>
+      <primary>LocaleToLowerCase</primary>
+    </indexterm>(</emphasis> <emphasis> source, locale </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>Uma string que contém os dados cuja formatação de maiúsculas e minúsculas será alterada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o código de idioma e país a ser usado para determinar a ordem correta de classificação e outras operações.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>ToLowerCase retorna um valor STRING ou UNICODE, conforme apropriado.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>As funções  <emphasis role="bold">ToLowerCase </emphasis> retornam a string 
+  <emphasis>source</emphasis>  com todos os caracteres maiúsculos convertidos em minúsculos.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.Str.ToLowerCase('ABCDE'); //A contains ‘abcde’
+</programlisting>
+</sect1>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Minute">
+  <title>Minute</title>
+
+  <para><emphasis role="bold">STD.Date.Minute<indexterm>
+      <primary>STD.Date.Minute</primary>
+    </indexterm><indexterm>
+      <primary>Date.Minute</primary>
+    </indexterm><indexterm>
+      <primary>Minute</primary>
+    </indexterm>(</emphasis> <emphasis>time</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>time</emphasis></entry>
+
+          <entry>Um valor de hora no formato Time_.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>Minute retorna um valor INTEGER que representa os minutos no
+          intervalo de 0 a 59.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">Minute</emphasis> retorna os minutos do
+  valor <emphasis>time</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+MyTime:= STD.Date.CurrentTime(TRUE);   //Local Time
+  
+t1 := STD.Date.Minute(MyTime);
+    //t1 contains the minute of the current local time
+</programlisting>
+
+  <para/>
+</sect1>

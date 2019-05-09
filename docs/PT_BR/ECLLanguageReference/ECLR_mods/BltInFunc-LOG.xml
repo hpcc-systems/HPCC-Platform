@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LOG">
+  <title>LOG</title>
+
+  <para><emphasis role="bold">LOG<indexterm>
+      <primary>LOG</primary>
+    </indexterm><indexterm>
+      <primary>LOG function</primary>
+    </indexterm>(</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="79.50pt" />
+
+      <colspec colwidth="309.30pt" />
+
+      <tbody>
+        <row>
+          <entry>n</entry>
+
+          <entry>O número real que será avaliado.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>LOG retorna um valor real único.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">LOG </emphasis> retorna o logaritmo de base 10 do parâmetro.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyLogPI := LOG(3.14159); //0.49715</programlisting>
+
+  <para>Ver também: <link linkend="EXP">EXP</link>, <link linkend="SQRT">SQRT</link>, <link linkend="POWER">POWER</link>, <link linkend="LN">LN</link></para>
+</sect1>

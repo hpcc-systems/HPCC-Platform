@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Indexing_into_SuperFiles">
+  <title><emphasis role="bold">Indexando em Superarquivos</emphasis></title>
+
+  <sect2 id="SuperFiles_vs_SuperKeys">
+    <title>Superarquivos vs. Superchaves</title>
+
+    <para>Um superarquivo pode conter arquivos INDEX em vez de arquivos
+    DATASET, tornando-o uma Superchave. Os mesmos processos e princípios de
+    criação e manutenção são aplicáveis conforme previamente descrito no
+    tópico <emphasis>Como criar e manter superarquivos</emphasis> .</para>
+
+    <para>Porém, <emphasis role="bold">uma Superchave pode não conter
+    subarquivos INDEX que fazem referência direta aos subarquivos de um
+    superarquivo usando o mecanismo do “indicador de registro”
+    {virtual(fileposition)} </emphasis>(usado pelas operações FETCH e JJOIN
+    full-keyed). Isso acontece porque o campo {virtual(fileposition)} é um
+    campo virtual (existe apenas quando o arquivo é lido a partir do disco)
+    que contém a posição relativa do byte de cada registro em uma única
+    entidade lógica.</para>
+
+    <para>As definições dos atributos a seguir usadas pelos exemplos de
+    códigos neste artigo são declaradas no atributo de estrutura MODULE
+    DeclareData:</para>
+
+    <programlisting>EXPORT i1name := '~PROGGUIDE::SUPERKEY::IDX1';
+EXPORT i2name := '~PROGGUIDE::SUPERKEY::IDX2';
+EXPORT i3name := '~PROGGUIDE::SUPERKEY::IDX3';
+EXPORT SFname := '~PROGGUIDE::SUPERKEY::SF1';
+EXPORT SKname := '~PROGGUIDE::SUPERKEY::SK1';
+EXPORT ds1 := DATASET(SubFile1,{Layout_Person,UNSIGNED8 RecPos {VIRTUAL(fileposition)}},THOR);
+EXPORT ds2 := DATASET(SubFile2,{Layout_Person,UNSIGNED8 RecPos {VIRTUAL(fileposition)}},THOR);
+EXPORT i1 := INDEX(ds1,{personid,RecPos},i1name);
+EXPORT i2 := INDEX(ds2,{personid,RecPos},i2name);
+EXPORT sf1 := DATASET(SFname,{Layout_Person,UNSIGNED8 RecPos {VIRTUAL(fileposition)}},THOR);
+EXPORT sk1 := INDEX(sf1,{personid,RecPos},SKname);
+EXPORT sk2 := INDEX(sf1,{personid,RecPos},i3name );
+</programlisting>
+  </sect2>
+
+  <sect2 id="There_is_a_Problem">
+    <title>Há uma problema</title>
+
+    <para>A maneira mais fácil de ilustrar o problema é executar o código a
+    seguir (este código está contido no IndexSuperFile1.ECL) que usa dois
+    subarquivos do tópico Como criar e manter superarquivos .
+    <emphasis>Criando e Mantendo Superarquivos</emphasis></para>
+
+    <programlisting>IMPORT $;
+
+OUTPUT($.DeclareData.ds1);
+OUTPUT($.DeclareData.ds2);
+</programlisting>
+
+    <para>Você notará que os valores RecPos retornados de ambos os datasets
+    são exatamente os mesmos (0, 89, 178, etc. ). Isso é esperado, já que
+    ambos possuem a mesma estrutura RECORD de comprimento fixo. O problema
+    está no uso deste campo ao compilar INDEXes individuais para os dois
+    datasets. Ele funciona perfeitamente como INDEXes individuais em DATASETs
+    individuais.</para>
+
+    <para>Por exemplo, é possível usar este código para compilar e testar
+    INDEXes individuais (contido em IndexSuperFile2..ECL):</para>
+
+    <programlisting>IMPORT $;
+
+Bld := PARALLEL(BUILDINDEX($.DeclareData.i1,OVERWRITE),BUILDINDEX
+                          ($.DeclareData.i2,OVERWRITE));
+
+F1 := FETCH($.DeclareData.ds1,
+            $.DeclareData.i1(personid=$.DeclareData.ds1[1].personid),
+            RIGHT.RecPos);
+F2 := FETCH($.DeclareData.ds2,
+            $.DeclareData.i2(personid=$.DeclareData.ds2[1].personid),
+            RIGHT.RecPos);
+
+Get := PARALLEL(OUTPUT(F1),OUTPUT(F2));
+SEQUENTIAL(Bld,Get);
+</programlisting>
+
+    <para>Neste caso, dois registros diferentes são retornados pelas duas
+    operações FETCH. Porém, ao criar um superarquivo e uma superchave e em
+    seguida tentar usá-los para realizar as duas mesmas operações FETCHes
+    novamente, ambos retornam o mesmo registro, como mostrado por este código
+    (contido no IndexSuperFile3.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+BldSF := SEQUENTIAL(
+  Std.File.CreateSuperFile($.DeclareData.SFname),
+  Std.File.CreateSuperFile($.DeclareData.SKname),
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.SFname,$.DeclareData.SubFile1),
+  Std.File.AddSuperFile($.DeclareData.SFname,$.DeclareData.SubFile2),
+  Std.File.AddSuperFile($.DeclareData.SKname,$.DeclareData.i1name),
+  Std.File.AddSuperFile($.DeclareData.SKname,$.DeclareData.i2name),
+  Std.File.FinishSuperFileTransaction());
+
+F1  := FETCH($.DeclareData.sf1,
+             $.DeclareData.sk1(personid=$.DeclareData.ds1[1].personid),
+             RIGHT.RecPos);
+F2  := FETCH($.DeclareData.sf1,
+             $.DeclareData.sk1(personid=$.DeclareData.ds2[1].personid),
+             RIGHT.RecPos);
+Get := PARALLEL(OUTPUT(F1),OUTPUT(F2));
+SEQUENTIAL(BldSF,Get);
+</programlisting>
+
+    <para>Após combinar os DATASETS em um superarquivo e combinar os INDEXes
+    em uma superchave, obtém-se múltiplas entradas na superchave (com valores
+    de campo de chave diferentes) apontadas para o mesmo registro físico no
+    superarquivo, uma vez que os valores do ponteiro do registro são os
+    mesmos.</para>
+  </sect2>
+
+  <sect2 id="And_the_Solution_Is">
+    <title>E a Solução é ...</title>
+
+    <para>Para solucionar este problema é preciso criar um único INDEX no
+    superarquivo, como mostrado através deste código (contido no
+    IndexSuperFile4.ECL):</para>
+
+    <programlisting>IMPORT $;
+
+F1  := FETCH($.DeclareData.sf1,
+             $.DeclareData.sk2(personid=$.DeclareData.ds1[1].personid),
+             RIGHT.RecPos);
+F2  := FETCH($.DeclareData.sf1,
+             $.DeclareData.sk2(personid=$.DeclareData.ds2[1].personid),
+             RIGHT.RecPos);
+Get := PARALLEL(OUTPUT(F1),OUTPUT(F2));
+
+SEQUENTIAL(BUILDINDEX($.DeclareData.sk2,OVERWRITE),Get);
+</programlisting>
+
+    <para>Ao usar um único INDEX em vez de uma superchave, as operações FETCH
+    localizarão novamente os registros corretos.</para>
+  </sect2>
+</sect1>

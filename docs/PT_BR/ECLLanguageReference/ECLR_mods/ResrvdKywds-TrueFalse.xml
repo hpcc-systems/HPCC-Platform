@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TRUE_FALSE">
+  <title>TRUE<indexterm>
+      <primary>TRUE</primary>
+    </indexterm> e FALSE<indexterm>
+      <primary>FALSE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">TRUE</emphasis></para>
+
+  <para><emphasis role="bold">FALSE</emphasis></para>
+
+  <para>As palavras-chave <emphasis role="bold">TRUE<indexterm>
+      <primary>TRUE</primary>
+    </indexterm> </emphasis>e <emphasis role="bold">FALSE <indexterm>
+      <primary>FALSE</primary>
+    </indexterm> </emphasis> são constantes booleanas.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>BooleanTrue := TRUE;
+Booleanfalse := FALSE;</programlisting>
+
+  <para>Ver também: <link linkend="BOOLEAN">BOOLEAN</link></para>
+</sect1>

@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FUNCTION_Structure">
+  <title>FUNCTION Structure<indexterm>
+      <primary>FUNCTION Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>[</emphasis><emphasis>resulttype</emphasis><emphasis
+  role="bold">]</emphasis><emphasis> funcname </emphasis><emphasis
+  role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
+  role="bold">) := FUNCTION<indexterm>
+      <primary>FUNCTION</primary>
+    </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold"/><emphasis>code</emphasis> <emphasis
+  role="bold"/></para>
+
+  <para><emphasis role="bold"> RETURN</emphasis>
+  <emphasis>retval</emphasis>;</para>
+
+  <para><emphasis role="bold">END;</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>O tipo do valor de retorno da função. Se omitido, o tipo será
+          obtido implicitamente da expressão <emphasis>retval</emphasis>
+          .</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry><para>O nome do atributo da ECL para a função.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>Uma lista separada por vírgulas com os parâmetros a serem
+          passados para a <emphasis>função</emphasis>. Estão disponíveis para
+          todos os atributos definidos no <emphasis>code</emphasis> da
+          FUNCTION.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>code</emphasis></entry>
+
+          <entry>As definições de atributos locais que compõem a função. Os
+          atributos não podem ser EXPORT ou SHARED, mas podem incluir ações
+          (como OUTPUT).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">RETURN<indexterm>
+              <primary>RETURN</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Especifica a expressão do valor de retorno da função
+          <emphasis>retval</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>retval</emphasis></entry>
+
+          <entry>O valor, a expressão, o conjunto de registros, a linha
+          (registro) ou a ação a ser retornada.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A estrutura <emphasis role="bold">FUNCTION </emphasis> permite passar
+  parâmetros para um conjunto de definições de atributos relacionados. Isso
+  possibilita passar parâmetros para um atributo que é definido em termos de
+  outros atributos não exportados, sem necessidade de parametrizar todos
+  eles.</para>
+
+  <para>As ações de efeitos colaterais contidas no <emphasis>code</emphasis>
+  da FUNCTION devem ter nomes de definição aos quais a função WHEN faz
+  referência para executar.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>EXPORT doProjectChild(parentRecord l,UNSIGNED idAdjust2) := FUNCTION
+  newChildRecord copyChild(childRecord l) := TRANSFORM
+     SELF.person_id := l.person_id + idAdjust2;
+     SELF := l;
+   END;
+
+   RETURN PROJECT(CHOOSEN(l.children, numChildren),copyChild(LEFT));
+END;
+     //And called from
+SELF.children := doProjectChild(l, 99);
+          
+//**********************************
+EXPORT isAnyRateGE(STRING1 rate) := FUNCTION
+   SetValidRates := ['0','1','2','3','4','5','6','7','8','9'];
+   IsValidTradeRate := ValidDate(Trades.trd_drpt) AND
+                       Trades.trd_rate &gt;= rate AND
+                       Trades.trd_rate IN SetValidRates;
+   ValidPHR := Prev_rate(phr_grid_flag = TRUE,
+                         phr_rate IN SetValidRates,
+                         ValidDate(phr_date));
+   IsPHRGridRate := EXISTS(ValidPHR(phr_rate &gt;= rate,
+                                    AgeOf(phr_date)&lt;=24));
+   IsMaxPHRRate := MAX(ValidPHR(AgeOf(phr_date) &gt; 24),
+                       Prev_rate.phr_rate) &gt;= rate;
+   RETURN IsValidTradeRate OR IsPHRGridRate OR IsMaxPHRRate;
+END;
+
+//*************************************************************
+//a FUNCTION with side-effect Action
+namesTable := FUNCTION
+   namesRecord := RECORD
+     STRING20 surname;
+     STRING10 forename;
+     INTEGER2 age := 25;
+   END;
+   o := OUTPUT('namesTable used by user &lt;x&gt;');
+   ds := DATASET([{'x','y',22}],namesRecord);
+   RETURN WHEN(ds,O);
+END;
+z := namesTable : PERSIST('z');
+  //the PERSIST causes the side-effect action to execute only when the PERSIST is re-built
+
+OUTPUT(z);
+
+//*************************************************************
+//a coordinated set of 3 examples
+
+NameRec := RECORD
+  STRING5 title;
+  STRING20 fname;
+  STRING20 mname;
+  STRING20 lname;
+  STRING5 name_suffix;
+  STRING3 name_score;
+END;
+MyRecord := RECORD
+  UNSIGNED id;
+  STRING  uncleanedName;
+  NameRec Name;
+END;
+ds := DATASET('RTTEST::RowFunctionData', MyRecord, THOR);
+STRING73 CleanPerson73(STRING inputName) := FUNCTION
+  suffix :=[ ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7',' 8','  9', 
+              ' J',' JR',' S',' SR'];
+  InWords := Std.Str.CleanSpaces(inputName);
+  HasSuffix := InWords[LENGTH(TRIM(InWords))-1 ..] IN suffix;
+  WordCount := LENGTH(TRIM(InWords,LEFT,RIGHT)) -
+               LENGTH(TRIM(InWords,ALL)) + 1;
+  HasMiddle := WordCount = 5 OR (WordCount = 4 AND NOT HasSuffix) ;
+  Sp1 := Std.Str.Find(InWords,' ',1);
+  Sp2 := Std.Str.Find(InWords,' ',2);
+  Sp3 := Std.Str.Find(InWords,' ',3);
+  Sp4 := Std.Str.Find(InWords,' ',4);
+  STRING5 title := InWords[1..Sp1-1];
+  STRING20 fname := InWords[Sp1+1..Sp2-1];
+  STRING20 mname := IF(HasMiddle,InWords[Sp2+1..Sp3-1],'');
+  STRING20 lname := MAP(HasMiddle AND NOT HasSuffix =&gt; InWords[Sp3+1..],
+                        HasMiddle AND HasSuffix =&gt; InWords[Sp3+1..Sp4-1],
+                        NOT HasMiddle AND NOT HasSuffix =&gt; InWords[Sp2+1..],
+                        NOT HasMiddle AND HasSuffix =&gt; InWords[Sp2+1..Sp3-1],
+                        '');
+  STRING5 name_suffix := IF(HasSuffix,InWords[LENGTH(TRIM(InWords))-1..],'');
+  STRING3 name_score := '';
+  RETURN title + fname + mname + lname + name_suffix + name_score;
+END;
+
+//Example 1 - a transform to create a row from an uncleaned name
+NameRec createRow(string inputName) := TRANSFORM
+  cleanedText := LocalAddrCleanLib.CleanPerson73(inputName);
+  SELF.title := cleanedText[1..5];
+  SELF.fname := cleanedText[6..25];
+  SELF.mname := cleanedText[26..45];
+  SELF.lname := cleanedText[46..65];
+  SELF.name_suffix := cleanedText[66..70];
+  SELF.name_score := cleanedText[71..73];
+END;
+myRecord t(myRecord l) := TRANSFORM
+  SELF.Name := ROW(createRow(l.uncleanedName));
+  SELF := l;
+END;
+y := PROJECT(ds, t(LEFT));
+OUTPUT(y);
+
+//Example 2 - an attribute using that transform to generate the row.
+NameRec cleanedName(STRING inputName) :=  ROW(createRow(inputName));
+myRecord t2(myRecord l) := TRANSFORM
+  SELF.Name := cleanedName(l.uncleanedName);
+  SELF := l;
+END;
+y2 := PROJECT(ds, t2(LEFT));
+OUTPUT(y2);
+
+//Example 3 = Encapsulate the transform inside the attribute by
+// defining a FUNCTION.
+NameRec cleanedName2(STRING inputName) := FUNCTION
+          
+  NameRec createRow := TRANSFORM
+     cleanedText := LocalAddrCleanLib.CleanPerson73(inputName);
+     SELF.title := cleanedText[1..5];
+     SELF.fname := cleanedText[6..25];
+     SELF.mname := cleanedText[26..45];
+     SELF.lname := cleanedText[46..65];
+     SELF.name_suffix := cleanedText[66..70];
+     SELF.name_score := cleanedText[71..73];
+  END;
+
+  RETURN ROW(createRow);
+END;
+
+myRecord t3(myRecord l) := TRANSFORM
+  SELF.Name := cleanedName2(l.uncleanedName);
+  SELF := l;
+END;
+
+y3 := PROJECT(ds, t3(LEFT));
+OUTPUT(y3);     
+
+//Example using MODULE structure to return multiple values from a FUNCTION
+OperateOnNumbers(Number1, Number2) := FUNCTION
+  result := MODULE
+    EXPORT Multiplied  := Number1 * Number2;
+    EXPORT Differenced := Number1 - Number2;
+    EXPORT Summed      := Number1 + Number2;  
+  END;
+  RETURN result;
+END;
+
+OperateOnNumbers(23,22).Multiplied;
+OperateOnNumbers(23,22).Differenced;
+OperateOnNumbers(23,22).Summed; </programlisting>
+
+  <para>Ver também: <link linkend="MODULE_Structure">Estrutura MODULE</link>,
+  <link linkend="TRANSFORM_Structure">Estrutura TRANSFORM</link>, <link
+  linkend="WHEN">WHEN</link></para>
+</sect1>

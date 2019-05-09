@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>Ferramentas do Cliente HPCC e ECL IDE</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito bem-vindos e podem ser enviados por e-mail para <email>docfeedback@hpccsystems.com</email> </para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre documentação</emphasis> na linha de assunto e indique o nome do documento, o número das páginas e número da versão atual no corpo da mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas da Reed Elsevier Properties Inc., usadas sob licença. </para>
+
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas. </para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_Overview.xml"
+              xpointer="xpointer(//*[@id='CT_Overview'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_ECL_IDE.xml"
+              xpointer="xpointer(//*[@id='The_ECL_Ide'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_ECL.xml"
+              xpointer="xpointer(//*[@id='Command_Line_ECL'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_ECL_CLI.xml" xpointer="xpointer(//*[@id='ECL_CLI'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="HPCCClientTools/CT_Mods/ECLCC.xml" xpointer="xpointer(//*[@id='ECL_Compiler'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_DFU.xml"
+              xpointer="xpointer(//*[@id='Command_Line_DFU'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+  <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
+              xpointer="xpointer(//*[@id='ESDL_CLI'])" xmlns:xi="http://www.w3.org/2001/XInclude" />
+</book>

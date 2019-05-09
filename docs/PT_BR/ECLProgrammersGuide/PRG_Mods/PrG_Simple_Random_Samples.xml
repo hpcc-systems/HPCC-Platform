@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Simple_Random_Samples">
+  <title><emphasis>Amostras aleatórias simples</emphasis></title>
+
+  <para>Há um conceito estatístico denominado "Amostra aleatória simples” –
+  diferente de simplesmente usar a função RANDOM() – no qual uma amostra
+  estatisticamente aleatória de registros é gerada a partir de qualquer
+  dataset. O algoritmo implementado no exemplo de código a seguir foi
+  fornecido por um cliente.</para>
+
+  <para>Esse código é implementado como uma MACRO para permitir que múltiplas
+  amostras sejam produzidas na mesma tarefa (contida no arquivo
+  SimpleRandomSamples.ECL):</para>
+
+  <programlisting>SimpleRandomSample(InFile,UID_Field,SampleSize,Result) := MACRO
+  //build a table of the UIDs
+  #UNIQUENAME(Layout_Plus_RecID)
+  %Layout_Plus_RecID% := RECORD
+     UNSIGNED8 RecID := 0;
+     InFile.UID_Field;
+  END;
+  #UNIQUENAME(InTbl)
+  %InTbl% := TABLE(InFile,%Layout_Plus_RecID%);
+
+  //then assign unique record IDs to the table entries
+  #UNIQUENAME(IDRecs)
+  %Layout_Plus_RecID% %IDRecs%(%Layout_Plus_RecID% L, INTEGER C) :=
+     TRANSFORM
+     SELF.RecID := C;
+     SELF := L;
+  END;
+  #UNIQUENAME(UID_Recs)
+  %UID_Recs% := PROJECT(%InTbl%,%IDRecs%(LEFT,COUNTER));
+
+   //discover the number of records
+   #UNIQUENAME(WholeSet)
+   %WholeSet% := COUNT(InFile) : GLOBAL;
+
+   //then generate the unique record IDs to include in the sample
+   #UNIQUENAME(BlankSet)
+   %BlankSet% := DATASET([{0}],{UNSIGNED8 seq});
+   #UNIQUENAME(SelectEm)
+   TYPEOF(%BlankSet%) %SelectEm%(%BlankSet% L, INTEGER c) := TRANSFORM
+     SELF.seq := ROUNDUP(%WholeSet% * (((RANDOM()%100000)+1)/100000));
+   END;
+   #UNIQUENAME(selected)
+   %selected% := NORMALIZE( %BlankSet%, SampleSize,
+                           %SelectEm%(LEFT, COUNTER));
+
+  //then filter the original dataset by the selected UIDs
+  #UNIQUENAME(SetSelectedRecs)
+%SetSelectedRecs% := SET(%UID_Recs%(RecID IN SET(%selected%,seq)),
+                          UID_Field);
+  result := infile(UID_Field IN %SetSelectedRecs% );
+ENDMACRO;
+</programlisting>
+
+  <para>Essa MACRO usa quatro parâmetros:</para>
+
+  <para>* O nome do arquivo para amostra * O nome do campo de identificador
+  único nesse arquivo * O tamanho da amostra a ser gerada * O nome do atributo
+  para o resultado (para que possa ser pós-processado)</para>
+
+  <para>O algoritmo em si é bastante simples. Primeiro criamos uma TABLE de
+  campos de identificadores numerados de forma única. Em seguida, usamos
+  NORMALIZE para produzir um conjunto de registros dos registros candidatos. O
+  candidato escolhido toda vez que a função TRANSFORM é acionada é determinado
+  ao gerar um valor "aleatório" entre zero e um, usando uma divisão de módulo
+  por cem mil no retorno da função RANDOM() e depois multiplicando o resultado
+  pelo número de registros para amostra, arredondando para o próximo número
+  inteiro maior. Isso determina a posição do identificador de campo para uso.
+  Depois que o conjunto de posições na TABLE é determinado, ele é usado para
+  definir o SET de campos únicos para uso no resultado final.</para>
+
+  <para>Esse algoritmo foi projetado para produzir uma amostra "com
+  substituição" para que seja possível ter um número inferior de registros
+  retornados em comparação ao tamanho de amostra solicitado. Para produzir
+  exatamente o tamanho de amostra necessário (isto é, uma amostra "sem
+  substituição"), é possível solicitar um tamanho de amostra maior (por
+  exemplo, 10% superior) e depois usar a função CHOOSEN para localizar apenas
+  o número real de registros necessário, como neste exemplo (também contido no
+  arquivo SimpleRandomSamples.ECL).</para>
+
+  <programlisting>SomeFile := DATASET([{'A1'},{'B1'},{'C1'},{'D1'},{'E1'},
+                     {'F1'},{'G1'},{'H1'},{'I1'},{'J1'},
+                     {'K1'},{'L1'},{'M1'},{'N1'},{'O1'},
+                     {'P1'},{'Q1'},{'R1'},{'S1'},{'T1'},
+                     {'U1'},{'V1'},{'W1'},{'X1'},{'Y1'},
+                     {'A2'},{'B2'},{'C2'},{'D2'},{'E2'},
+                     {'F2'},{'G2'},{'H2'},{'I2'},{'J2'},
+                     {'K2'},{'L2'},{'M2'},{'N2'},{'O2'},
+                     {'P2'},{'Q2'},{'R2'},{'S2'},{'T2'},
+                     {'U2'},{'V2'},{'W2'},{'X2'},{'Y2'},
+                     {'A3'},{'B3'},{'C3'},{'D3'},{'E3'},
+                     {'F3'},{'G3'},{'H3'},{'I3'},{'J3'},
+                     {'K3'},{'L3'},{'M3'},{'N3'},{'O3'},
+                     {'P3'},{'Q3'},{'R3'},{'S3'},{'T3'},
+                     {'U3'},{'V3'},{'W3'},{'X3'},{'Y3'},
+                     {'A4'},{'B4'},{'C4'},{'D4'},{'E4'},
+                     {'F4'},{'G4'},{'H4'},{'I4'},{'J4'},
+                     {'K4'},{'L4'},{'M4'},{'N4'},{'O4'},
+                     {'P4'},{'Q4'},{'R4'},{'S4'},{'T4'},
+                     {'U4'},{'V4'},{'W4'},{'X4'},{'Y4'}
+                     ],{STRING2 Letter});
+
+ds := DISTRIBUTE(SomeFile,HASH(letter[2]));
+SimpleRandomSample(ds,Letter,6, res1) //ask for 6
+SimpleRandomSample(ds,Letter,6, res2)
+SimpleRandomSample(ds,Letter,6, res3)
+
+OUTPUT(CHOOSEN(res1,5)); //actually need 5
+OUTPUT(CHOOSEN(res3,5));
+</programlisting>
+</sect1>

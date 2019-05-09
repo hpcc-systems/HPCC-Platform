@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="COMBINE">
+  <title>COMBINE</title>
+
+  <para><emphasis role="bold">COMBINE<indexterm>
+      <primary>COMBINE function</primary>
+    </indexterm>(</emphasis><emphasis> leftrecset, rightrecset
+  </emphasis><emphasis role="bold">[</emphasis>,<emphasis> transform
+  </emphasis><emphasis role="bold">]</emphasis><emphasis
+  role="bold">[,LOCAL])</emphasis></para>
+
+  <para><emphasis role="bold">COMBINE<indexterm>
+      <primary>COMBINE</primary>
+    </indexterm>(</emphasis><emphasis> leftrecset, rightrecset,
+  </emphasis><emphasis role="bold">GROUP<indexterm>
+      <primary>GROUP</primary>
+    </indexterm> </emphasis>,<emphasis> transform </emphasis><emphasis
+  role="bold">[,LOCAL]<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> </emphasis> <emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>leftrecset</emphasis></entry>
+
+            <entry>O recordset LEFT.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>rightrecset</emphasis></entry>
+
+            <entry>O recordset RIGHT.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>O acionamento da função TRANSFORM. Se omitida, COMBINE
+            retorna todos os campos de ambos <emphasis>leftrecset</emphasis> e
+            <emphasis>rightrecset</emphasis> com o segundo de qualquer campo
+            de nome em duplicidade removido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>A opção LOCAL é obrigatória quando COMBINE for usado no
+            Thor (e estiver implícito no hThor/Roxie).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">GROUP</emphasis></entry>
+
+            <entry>Especifica que <emphasis>rightrecset</emphasis> foi
+            GROUPed. Se não for este o caso, ocorrerá um erro.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>COMBINE retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">COMBINE </emphasis>combina
+  <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis> em uma
+  base de registro por registro na ordem em que aparecem em cada um.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements">
+    <title>Requerimentos da Função COMBINE TRANSFORM</title>
+
+    <para>Para o Form 1, a função transform deve adotar pelo menos dois
+    parâmetros: um registro LEFT que deve estar no mesmo formato que o
+    <emphasis>leftrecset</emphasis> e um RIGHT cujo formato deve ser o mesmo
+    que <emphasis>rightrecset</emphasis>. O formato do conjunto de registros
+    resultante deve ser diferente das entradas.</para>
+
+    <para>Para a form 2, a função transform deve adotar pelo menos três
+    parâmetros: um registro LEFT que deve estar no mesmo formato que o
+    <emphasis>leftrecset</emphasis>, um um registro RIGHT que deve estar no
+    mesmo formato que o <emphasis>rightrecset</emphasis> e um ROWS(RIGHT) cujo
+    formato deve ser o de um parâmetro
+    DATASET(RECORDOF(<emphasis>rightrecset</emphasis>)). O formato do conjunto
+    de registros resultante deve ser diferente das entradas.</para>
+  </sect2>
+
+  <sect2 id="COMBINE_Form_1">
+    <title>COMBINE Form 1</title>
+
+    <para>Form 1 do COMBINE gera seus resultados através da especificação de
+    cada registro do <emphasis>leftrecset</emphasis> (juntamente com o
+    registro na mesma posição ordinal dentro do
+    <emphasis>rightrecset</emphasis> ) para o <emphasis>transform</emphasis> a
+    fim de gerar um único registro de resultado. O agrupamento (se houver) no
+    <emphasis>leftrecset</emphasis> é preservado. Ocorrerá um erro se
+    <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis> tiverem
+    um número diferente de registros.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>inrec := RECORD
+  UNSIGNED6 did;
+END;
+outrec := RECORD(inrec)
+  STRING20  name;
+  STRING10  ssn;
+  UNSIGNED8  dob;
+END;
+ds := DATASET([1,2,3,4,5,6], inrec);
+i1 := DATASET([{1, 'Kevin'}, {2, 'Richard'}, {5,'Nigel'}],
+    { UNSIGNED6 did, STRING10 name });
+i2 := DATASET([{3, '123462'}, {5, '1287234'}, {6,'007001002'}],
+    { UNSIGNED6 did, STRING10 ssn });
+i3 := DATASET([{1, 19700117}, {4, 19831212}, {6,20000101}],
+    { UNSIGNED6 did, UNSIGNED8 dob}); 
+j1 := JOIN(ds, i1, LEFT.did = RIGHT.did, LEFT OUTER, LOOKUP);
+j2 := JOIN(ds, i2, LEFT.did = RIGHT.did, LEFT OUTER, LOOKUP);
+j3 := JOIN(ds, i3, LEFT.did = RIGHT.did, LEFT OUTER, LOOKUP);
+combined1 := COMBINE(j1, 
+                     j2,   
+             TRANSFORM(outRec,
+      SELF := LEFT;
+      SELF := RIGHT;
+      SELF := []));
+combined2 := COMBINE(combined1,
+                   j3,
+             TRANSFORM(outRec,
+      SELF.dob := RIGHT.dob;
+      SELF := LEFT));
+</programlisting>
+  </sect2>
+
+  <sect2 id="COMBINE_Form_2">
+    <title>COMBINE Form 2</title>
+
+    <para>Form 2 do COMBINE gera seus resultados através da especificação de
+    cada registro do <emphasis> leftrecset</emphasis> (o grupo na mesma
+    posição ordinal dentro do <emphasis>rightrecset </emphasis> – juntamente
+    com o primeiro registro no grupo) para o <emphasis>transform</emphasis> a
+    fim de gerar um único registro de resultado. O agrupamento (se houver) no
+    leftrecset é preservado. <emphasis>leftrecset</emphasis> . Ocorrerá um
+    erro se o número de registros no <emphasis>leftrecset</emphasis> for
+    distinto do número de grupos no <emphasis>rightrecset</emphasis>.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting>inrec := {UNSIGNED6 did};
+outrec := RECORD(inrec)
+  STRING20 name;
+  UNSIGNED score;
+END;
+nameRec := RECORD
+  STRING20 name;
+END;
+ 
+resultRec := RECORD(inrec)
+  DATASET(nameRec) names;
+END;
+ds := DATASET([1,2,3,4,5,6], inrec);
+dsg := GROUP(ds, ROW);
+i1 := DATASET([ {1, 'Kevin', 10},
+   {2, 'Richard', 5},
+   {5,'Nigel', 2},
+   {0, '', 0} ], outrec);
+i2 := DATASET([ {1, 'Kevin Halligan', 12},
+   {2, 'Richard Chapman', 15},
+   {3, 'Jake Smith', 20},
+   {5,'Nigel Hicks', 100},
+   {0, '', 0} ], outrec);
+i3 := DATASET([ {1, 'Halligan', 8},
+   {2, 'Richard', 8},
+   {6, 'Pete', 4},
+   {6, 'Peter', 8},
+   {6, 'Petie', 1},
+   {0, '', 0} ], outrec);
+j1 := JOIN( dsg,
+  i1,
+  LEFT.did = RIGHT.did,
+  TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+  LEFT OUTER, MANY LOOKUP);
+j2 := JOIN( dsg,
+  i2,
+  LEFT.did = RIGHT.did,
+  TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+  LEFT OUTER,
+  MANY LOOKUP);
+j3 := JOIN( dsg,
+  i3,
+  LEFT.did = RIGHT.did,
+  TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+  LEFT OUTER,
+  MANY LOOKUP);
+combined := REGROUP(j1, j2, j3);
+resultRec t(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
+ self.names := PROJECT(r, TRANSFORM(nameRec, SELF := LEFT));
+ self := l;
+ END;
+res1 := COMBINE(dsg,combined,GROUP,t(LEFT, ROWS(RIGHT)(score != 0)));
+//A variation using rows in a child query.
+resultRec t2(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
+ SELF.names := PROJECT(SORT(r, -score),
+        TRANSFORM(nameRec, SELF := LEFT));
+ SELF := l;
+ END;
+res2 := COMBINE(dsg,combined,GROUP,t2(LEFT,ROWS(RIGHT)(score != 0)));
+</programlisting>
+
+    <para>Ver também: <link linkend="GROUP">GROUP</link>, <link
+    linkend="REGROUP">REGROUP</link></para>
+  </sect2>
+</sect1>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetLogicalFileAttribute">
+  <title>GetLogicalFileAttribute</title>
+
+  <para><emphasis role="bold">STD.File.GetLogicalFileAttribute<indexterm>
+      <primary>STD.File.GetLogicalFileAttribute</primary>
+    </indexterm><indexterm>
+      <primary>File.GetLogicalFileAttribute</primary>
+    </indexterm><indexterm>
+      <primary>GetLogicalFileAttribute</primary>
+    </indexterm>(</emphasis> <emphasis> logicalfilename, attrname </emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>logicalfilename</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do arquivo
+          lógico, como conhecido pelo DFU.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>attrname</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do atributo
+          de arquivo a ser retornado. Os valores possíveis são recordSize,
+          recordCount, size, clusterName, directory, owner, description, ECL,
+          partmask, numparts, name, modified, format, job, checkSum, kind,
+          csvSeparate, csvTerminate, headerLength, footerLength, rowTag,
+          workunit, accessed, expireDays, maxRecordSize, csvQuote,
+          blockCompressed, compressedSize, fileCrc, formatCrc ou protected. O
+          valor faz distinção entre maiúsculas e minúsculas.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetHostName retorna um valor VARSTRING (terminado por
+          nulo).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">GetLogicalFileAttribute </emphasis>
+  retorna o valor de <emphasis>attrname</emphasis> para o
+  <emphasis>logicalfilename</emphasis> especificado.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+file := '~class::bmf::join::halfkeyed';
+
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordCount'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'size'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'clusterName'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'directory'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'owner'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'description'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'ECL'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'partmask'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'name'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'modified'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'protected'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'format'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'job'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'checkSum'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'kind'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvSeparate'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvTerminate'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'headerLength'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'footerLength'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'rowtag'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'workunit'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'accessed'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'expireDays'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'maxRecordSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvQuote'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'compressedSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'fileCrc'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'formatCrc'));
+</programlisting>
+</sect1>

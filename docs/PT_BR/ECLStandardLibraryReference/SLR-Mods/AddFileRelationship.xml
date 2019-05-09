@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AddFileRelationship">
+  <title>AddFileRelationship</title>
+
+  <para><emphasis role="bold">STD.File.AddFileRelationship<indexterm>
+      <primary>STD.File.AddFileRelationship</primary>
+    </indexterm><indexterm>
+      <primary>File.AddFileRelationship</primary>
+    </indexterm><indexterm>
+      <primary>AddFileRelationship</primary>
+    </indexterm>(</emphasis> <emphasis> primary, secondary,</emphasis>
+  <emphasis> primaryfields, secondaryfields, </emphasis> <emphasis
+  role="bold"> [ </emphasis> <emphasis>relationship </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis>, cardinality, payload </emphasis>
+  <emphasis role="bold"> [</emphasis> <emphasis>, description </emphasis>
+  <emphasis role="bold">] );</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>primary</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do arquivo
+          lógico do arquivo primário.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondary</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do arquivo
+          lógico do arquivo secundário.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>primaryfields</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do campo de
+          chave primária do arquivo <emphasis>primary</emphasis> . O valor
+          "__fileposition__" indica que <emphasis>secondary</emphasis> é um
+          INDEX que deve usar FETCH para acessar campos sem chave.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondaryfields</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do campo de
+          chave estrangeira relacionada ao arquivo
+          <emphasis>primary</emphasis> .</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>relationship</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém "link" ou "view"
+          para indicar o tipo de relação entre os arquivos
+          <emphasis>primary</emphasis> e <emphasis>secondary</emphasis> . Se
+          omitida, o padrão é "link."</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>cardinality</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o tipo de relação
+          entre os arquivos <emphasis>primary</emphasis> e <emphasis>
+          secondary</emphasis> . O formato é X:Y, onde X indica o
+          <emphasis>primary</emphasis> e Y indica o
+          <emphasis>secondary</emphasis>. Os valores válidos para X e Y são
+          "1" ou "M".</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>payload</emphasis></entry>
+
+          <entry>Um valor BOOLEAN indicando se <emphasis>primary</emphasis> ou
+          <emphasis>secondary</emphasis> são INDEXes da carga útil.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>description</emphasis></entry>
+
+          <entry>Uma string terminada em nulo que contém a descrição da
+          relação.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold"> AddFileRelationship</emphasis> define
+  a relação entre dois arquivos. Esses arquivos podem ser DATASETs ou INDEXes.
+  Cada registro no arquivo <emphasis>primary</emphasis> deve ser definido
+  unicamente por <emphasis>primaryfields (idealmente)</emphasis> ,
+  preferivelmente de forma eficiente.</para>
+
+  <para>Os parâmetros <emphasis>primaryfields</emphasis> e
+  <emphasis>secondaryfields</emphasis> podem ter o mesmo formato dos
+  mapeamentos de coluna para um arquivo (consulte a documentação da função
+  SetColumnMappings), embora sejam frequentemente apenas uma lista de
+  campos.</para>
+
+  <para>No momento, são usados de duas formas diferentes:</para>
+
+  <para>Primeiro, o navegador do roxie precisa de uma forma de determinar
+  quais índices são criados com base em quais arquivos. Uma relação "view"
+  deve ser adicionada a cada vez que um índice é criado de um arquivo, desta
+  forma:</para>
+
+  <programlisting>STD.File.AddFileRelationship(DG_FlatFileName, DG_IndexFileName,
+                             '', '', 'view', '1:1', false);</programlisting>
+
+  <para>Para implementar o navegador do roxie, não há necessidade de definir
+  <emphasis>primaryfields</emphasis> ou <emphasis>secondaryfields</emphasis>.
+  Portanto, é recomendado passar strings em branco.</para>
+
+  <para>Segundo, o navegador precisa de uma forma de encontrar todas as
+  informações originais do arquivo de um índice.</para>
+
+  <para>Essa fase depende da natureza do índice:</para>
+
+  <para>a) Se a opção de índice contém todos os dados relevantes do arquivo
+  original, não é necessário fazer nada.</para>
+
+  <para>b) Se o índice usa um campo fileposition para FETCH dados adicionais
+  do arquivo original, adicione uma relação entre o arquivo original e o
+  índice usando um valor especial de __fileposition__ para indicar que o
+  registro é recuperado usando FETCH.</para>
+
+  <programlisting>STD.File.AddFileRelationship('fetch_file', 
+                             'new_index',
+                             '__fileposition__',
+                             'index_filepos_field', 
+                             'link',
+                             '1:1', 
+                             true);</programlisting>
+
+  <para>O arquivo original é o primário, pois as linhas são identificadas
+  unicamente por fileposition (o que também acontece com o índice) e a
+  recuperação é eficiente.</para>
+
+  <para>c) Se o índice usar um campo de carga útil que precisa ser pesquisado
+  em outro índice para fornecer as informações, você precisará definir uma
+  relação entre o novo índice e o índice que fornece as informações
+  adicionais. O índice que fornece as informações adicionais é o
+  primário.</para>
+
+  <programlisting>STD.File.AddFileRelationship('related_index', 
+                             'new_index',
+                             'related_key_fields',
+                             'index_filepos_field', 
+                             'link',
+                             '1:M', 
+                             true);</programlisting>
+
+  <para>O indicador <emphasis>payload </emphasis> está presente, portanto, o
+  navegador do roxie pode distinguir esse link de uma relação mais geral entre
+  dois arquivos.</para>
+
+  <para>Você deverá garantir que todos os nomes de superarquivos sejam
+  expandidos se a relação for definida entre os subarquivos
+  particulares.</para>
+
+  <para>Ao percorrer todos os atributos, pode valer a pena examinar se faz
+  sentido adicionar relações para outras combinações de arquivos. Isso não
+  trará nenhum benefício imediato, mas poderá trazer quando adicionarmos um
+  diagrama ER ao sistema. Alguns exemplos podem ajudar a demonstrar a
+  sintaxe.</para>
+
+  <para>Em um exemplo típico, datasets com um arquivo de residências e
+  pessoas, o código abaixo define um linking de relação por ID de residência
+  (hhid):</para>
+
+  <programlisting>STD.File.AddFileRelationship('HHFile','PersonFile', 'hhid','hhid', 'link', '1:M', false);</programlisting>
+
+  <para>Aqui está um exemplo mais hipotético: um query de arquivo com nome e
+  sobrenome relacionado a um possível índice com nomes fonéticos:</para>
+
+  <programlisting>STD.File.AddFileRelationship('names', 'inquiries','plastname{set(phonetic)},
+                             pfirstname{set(phonetic)}',
+                             'lastname{set(fail)},firstname{set(fail)}','link', '1:M', false);</programlisting>
+
+  <para>O mapeamento de falha indica que você pode usar o mapeamento fonético
+  de consultas para nomes, mas não há forma de mapear de nomes para consultas.
+  Também podem existir atributos get(fail) nos campos de índice.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">Maps := STD.File.GetColumnMapping('Thor::in::SomeFile');
+</programlisting>
+</sect1>

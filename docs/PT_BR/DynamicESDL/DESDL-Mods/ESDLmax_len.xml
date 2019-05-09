@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_max_len">
+  <title><emphasis role="bold">max_len <indexterm>
+      <primary>max_len</primary>
+    </indexterm>(</emphasis><emphasis role="bold">n</emphasis><emphasis
+  role="bold">)</emphasis></title>
+
+  <para>O atributo <emphasis>max_len</emphasis> especifica o comprimento do
+  campo para o campo da string do ECL.</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>[max_len(20)] string City;   </programlisting>
+
+  <para>No ECL, isso significa que o campo “City” possui um comprimento fixo
+  de 20 caracteres. Para tipo de número inteiro, max_len significa o tamanho
+  máximo em bytes do número inteiro (8*max_len bits integer).</para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting>[max_len(3)] int Age;   </programlisting>
+
+  <para>Isso gera o código ECL:</para>
+
+  <programlisting>integer3 Age{xpath('Age')};   </programlisting>
+
+  <para>Este atributo também funciona para o tipo ESPenum. O tipo ECL também é
+  uma string.</para>
+
+  <programlisting>[max_len(2)] ESPenum StateCode State;   </programlisting>
+
+  <para>Aqui o StateCode é uma enumeração do código de estado de 2
+  caracteres.</para>
+
+  <para>Este atributo também pode ser usado para ESPstruct, ESPrequest,
+  ESPresponse:</para>
+
+  <programlisting>ESPstruct [max_len(1867)] IdentitySlim : Identity
+  {
+     ...
+  };   
+  </programlisting>
+
+  <para>Isso gera o código ECL:</para>
+
+  <programlisting>export t_MyQuery := record (share.t_Name), MAXLENGTH(1867)
+  {
+  };</programlisting>
+
+  <para>A opção option <emphasis>MAXLENGTH</emphasis> do ECL ajuda o motor ECL
+  a gerenciar melhor a memória.</para>
+
+  <para>Isso não afeta o tipo no XSD/WSDL. O ESP ignora este atributo ao gerar
+  o esquema. O tipo para a string é xsd:string, o qual não possui limite de
+  comprimento. Consequentemente, o esquema permanece o mesmo se houver
+  alteração no comprimento do campo na consulta Roxie.</para>
+</sect1>

@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="File_layout_resolution">
+  <title>Resolução deLlayout de arquivo no tempo de compilação</title>
+
+  <para>Ao ler um arquivo em disco no ECL, o layout do arquivo é especificado
+  no código ECL. Isso permite que o código seja compilado para acessar os
+  dados de modo muito eficiente, mas pode causar problemas se o arquivo em
+  disco estiver, na verdade, usando um layout diferente.</para>
+
+  <para>Em especial, isso pode ser um desafio para o processo de controle de
+  versão caso você tenha consultas ECL que estejam sendo alteradas para
+  adicionar funcionalidades, mas que precisam ser aplicadas sem modificar os
+  arquivos de dados cujo layout esteja sendo mudado em um cronograma
+  diferente.</para>
+
+  <para>Uma solução parcial para esse dilema foi criada no Roxie para indexar
+  arquivos – a capacidade de converter o tempo de execução dos campos no
+  arquivo de índice físico para os campos especificados no índice. No entanto,
+  essa solução tem um grande potencial de sobrecarga e não está disponível
+  para arquivos simples ou no Thor.</para>
+
+  <para>Um novo recurso, adicionado à versão 6.4.0 do HPCC Systems,
+  possibilita que a resolução do arquivo seja realizada no tempo de
+  compilação, proporcionando as seguintes vantagens:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>As mudanças de código podem ser isoladas das mudanças de layout de
+      arquivo – você só precisa declarar os campos que deseja de fato usar a
+      partir de um arquivo de dados.</para>
+    </listitem>
+  </itemizedlist>
+
+  <itemizedlist>
+    <listitem>
+      <para>As incompatibilidades de layout de arquivo podem ser detectadas
+      com antecedência.</para>
+    </listitem>
+  </itemizedlist>
+
+  <itemizedlist>
+    <listitem>
+      <para>O compilador pode usar informações sobre os tamanhos do arquivo
+      para orientar as decisões de otimização de código.</para>
+    </listitem>
+  </itemizedlist>
+
+  <para>Há duas construções de linguagem associadas a esse recurso:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>Usando um atributo LOOKUP em declarações DATASET ou INDEX.</para>
+    </listitem>
+  </itemizedlist>
+
+  <itemizedlist>
+    <listitem>
+      <para>Uso do atributo LOOKUP em uma função RECORDOF</para>
+    </listitem>
+  </itemizedlist>
+
+  <sect2 id="Using_LOOKUP_on_DATASET">
+    <title>Usando o LOOKUP em um DATASET</title>
+
+    <para>A adição do atributo LOOKUP a uma declaração DATASET indica que o
+    layout de arquivo deve ser consultado no tempo de compilação:</para>
+
+    <programlisting>myrecord := RECORD
+  STRING field1;
+  STRING field2;
+END;
+
+f := DATASET('myfilename', myrecord, FLAT);    
+  // This will fail at runtime if file layout does not match myrecord
+f := DATASET('myfilename', myrecord, FLAT, LOOKUP);    
+  // This will automatically project from the actual to the requested layout
+</programlisting>
+
+    <para>Se supormos que o layout real do arquivo em disco seja:</para>
+
+    <programlisting>myactualrecord := RECORD
+  STRING field1;
+  STRING field2;
+  STRING field3;
+END;</programlisting>
+
+    <?hard-pagebreak ?>
+
+    <para>Então o efeito do atributo LOOKUP será como se seu código
+    fosse:</para>
+
+    <programlisting>actualfile := DATASET('myfilename', myactualrecord, FLAT);
+f := PROJECT(actualfile, TRANSFORM(myrecord, SELF := LEFT; SELF := []));
+</programlisting>
+
+    <para>Os campos que estão presentes em ambas as estruturas de registro são
+    atribuídos entre eles; os campos que estão presentes apenas na versão de
+    disco são descartados e os campos que estão presentes apenas na versão ECL
+    recebem seu valor padrão (um aviso será emitido neste último caso).</para>
+
+    <para>Há também uma diretiva de compilador que pode ser usada para
+    especificar a conversão para todos os arquivos:</para>
+
+    <para><programlisting>#OPTION('translateDFSlayouts',TRUE);</programlisting></para>
+
+    <para>O atributo LOOKUP aceita um parâmetro (TRUE ou FALSE) para permitir
+    o controle mais fácil de onde e quando você deseja que a conversão ocorra.
+    Qualquer expressão booleana que possa ser avaliada no tempo de compilação
+    pode ser fornecida.</para>
+
+    <para>Ao usar #OPTION para <emphasis>translateDFSlayouts</emphasis>, você
+    pode querer usar LOOKUP(FALSE) para substituir o padrão em alguns datasets
+    específicos.</para>
+  </sect2>
+
+  <sect2 id="Using_LOOKUP_in_RECORDOF">
+    <title>Uso do atributo LOOKUP em uma função RECORDOF</title>
+
+    <para>O uso do atributo LOOKUP em uma função RECORDOF é útil quando os
+    campos estavam presentes no original e depois foram descartados, ou quando
+    você quer gravar em um arquivo que corresponda ao layout de um arquivo
+    existente (mas você não sabe qual é o layout).</para>
+
+    <para>O atributo LOOKUP na função RECORDOF usa um nome de arquivo em vez
+    de um dataset. O resultado é expandido no tempo de compilação para o
+    layout de registro armazenado nos metadados do arquivo nomeado. Há várias
+    formas desse constructo:</para>
+
+    <para><programlisting>RECORDOF('myfile', LOOKUP);
+RECORDOF('myfile', defaultstructure, LOOKUP);
+RECORDOF('myfile', defaultstructure, LOOKUP, OPT);</programlisting>Também é
+    possível especificar um DATASET como o primeiro parâmetro em vez de um
+    nome de arquivo (uma conveniência sintática), e o nome de arquivo
+    especificado no dataset será usado para a consulta.</para>
+
+    <para>A <emphasis> defaultstructure</emphasis> é útil para situações nas
+    quais as informações de layout de arquivo podem não estar disponíveis (por
+    exemplo, ao realizar uma verificação de sintaxe localmente ou ao criar um
+    arquivo). Também é útil quando o arquivo que está sendo verificado possa
+    não existir - é aí que o OPT deve ser usado.</para>
+
+    <para>O compilador verifica se a estrutura de registro real obtida da
+    consulta de sistema de arquivo distribuído contém todos os campos
+    especificados e se os tipos são compatíveis.</para>
+
+    <para>Por exemplo, para ler um arquivo cuja estrutura é desconhecida, além
+    de conter um campo de ID e criar um arquivo de resultado contendo todos os
+    registros que corresponderam a um valor fornecido, você poderia
+    escrever:</para>
+
+    <para><programlisting>myfile := DATASET('myinputfile', RECORDOF('myinputfile', { STRING id },
+                                                        LOOKUP), FLAT);
+filtered := myfile(id='123');
+OUTPUT(filtered,,'myfilteredfile');</programlisting></para>
+  </sect2>
+
+  <sect2 id="LOOKUP-Additional_Details">
+    <title>Detalhes Adicionais</title>
+
+    <itemizedlist>
+      <listitem>
+        <para>A sintaxe foi projetada para que não seja necessário realizar a
+        resolução de arquivos para verificação de sintaxe ou criação de
+        arquivos. Isso é importante para que o modo de repositório local possa
+        funcionar.</para>
+      </listitem>
+
+      <listitem>
+        <para>A resolução de arquivos externos funciona da mesma maneira –
+        basta usar a sintaxe de nome de arquivo para a resolução de nome de
+        arquivos externos.</para>
+      </listitem>
+
+      <listitem>
+        <para>Você também pode usar o atributo LOOKUP nas declarações INDEX,
+        assim como também DATASET.</para>
+      </listitem>
+
+      <listitem>
+        <para>Ao usar a forma RECORDOF e fornecer um layout padrão, pode ser
+        necessário usar a forma =&gt; da sintaxe de layout de registro para
+        especificar ambos campos de conteúdo e com chave no mesmo
+        registro.</para>
+      </listitem>
+
+      <listitem>
+        <para>Arquivos que foram distribuídos aos nós em vez de criados por
+        tarefas ECL podem não ter informações de registro (metadados)
+        disponíveis no sistema de arquivo distribuído.</para>
+      </listitem>
+
+      <listitem>
+        <para>Há alguns novos parâmetros ao eclcc que podem ser usados se você
+        quiser usar essa função para compilações locais:</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>-dfs=ip</entry>
+
+                  <entry>Usa IP do Dali especificado para resolução de nome de
+                  arquivo.</entry>
+                </row>
+
+                <row>
+                  <entry>-scope=prefix</entry>
+
+                  <entry>Usa prefixo de escopo especificado na resolução de
+                  nome de arquivo.</entry>
+                </row>
+
+                <row>
+                  <entry>-user=id</entry>
+
+                  <entry>Usa nome do usuário especificado na resolução do nome
+                  de arquivo.</entry>
+                </row>
+
+                <row>
+                  <entry>password=xxx</entry>
+
+                  <entry>Usa senha especificada na resolução de nome de
+                  arquivo (deixe em branco para solicitar)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </listitem>
+    </itemizedlist>
+  </sect2>
+</sect1>

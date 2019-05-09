@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="VARUNICODE">
+  <title>VARUNICODE</title>
+
+  <para><emphasis role="bold">VARUNICODE<indexterm>
+      <primary>VARUNICODE</primary>
+    </indexterm><indexterm>
+      <primary>VARUNICODE value type</primary>
+    </indexterm>[</emphasis><emphasis>locale</emphasis><emphasis
+  role="bold">][</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis></para>
+
+  <para>Uma string de caracteres Unicode com codificação UTF-16 de <emphasis>
+  n</emphasis> caracteres, terminada por nulo (não complementada com espaços).
+  A <emphasis>n </emphasis>n pode ser omitido apenas quando usado como um tipo
+  de parâmetro. <emphasis>locale </emphasis> é opcional e especifica um código
+  de local Unicode válido, como especificado nos padrões ISO 639 e 3166 (não é
+  necessário se LOCALE é especificado na estrutura RECORD que contém a
+  definição do campo).</para>
+
+  <para>A conversão do tipo UNICODE para VARUNICODE, STRING ou DATA é
+  permitida. A conversão para qualquer outro tipo implicará antes em uma
+  conversão implícita para STRING e depois para o tipo de valor
+  pretendido.</para>
+
+  <para>O limite de tamanho superior para qualquer valor de VARUNICODE é de 4
+  GB.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>VARUNICODE16 MyUNIString := U'1234567890ABCDEF';
+        // utf-16-encoded string
+VARUNICODE4 MyUnicodeString := U'abcd';
+        // same as: (UNICODE)'abcd'
+VARUNICODE5 MyUnicodeString := U'abcd\353';
+        // becomes 'abcdë'
+VARUNICODE5 MyUnicodeString := U'abcdë';
+        // same as previous example</programlisting>
+</sect1>

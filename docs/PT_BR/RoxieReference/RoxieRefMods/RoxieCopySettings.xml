@@ -1,0 +1,158 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2>
+  <title><emphasis role="bold">Consultas e Dados</emphasis></title>
+
+  <para>Arquivos de dados e arquivos de índices referidos pelo código ECL de uma consulta Roxie estão disponíveis de quatro maneiras, dependendo da configuração do cluster Roxie.</para>
+
+  <para>Há duas definições na configuração do Roxie que controlam onde o Roxie procura por arquivos de índice e dados:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="123.60pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">copyResources</emphasis></entry>
+
+            <entry>Copia os arquivos de chave e de dados necessários do local atual quando uma consulta é publicada.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">useRemoteResources</emphasis></entry>
+
+            <entry>Instrui o Roxie a procurar por arquivos de chave e de dados no local atual após a consulta ter sido publicada.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <graphic fileref="../../images/RM-31.jpg" />
+
+  <para>Essas opções podem parecer mutualmente exclusivas, mas o gráfico abaixo mostra o que cada uma das quatro possíveis combinações significa.</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="5">
+        <colspec colwidth="125.40pt" />
+
+        <tbody>
+          <row>
+            <entry>copyResources</entry>
+
+            <entry>T</entry>
+
+            <entry>T</entry>
+
+            <entry>F</entry>
+
+            <entry>F</entry>
+          </row>
+
+          <row>
+            <entry>useRemoteResources</entry>
+
+            <entry>T</entry>
+
+            <entry>F</entry>
+
+            <entry>T</entry>
+
+            <entry>F</entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry align="left">Direciona o cluster Roxie para use a instância remota dos dados até que possa copiar os dados localmente. Isso permite que uma consulta esteja disponível imediatamente enquanto os dados são copiados.</entry>
+
+            <entry align="left">Direciona o cluster Roxie para copiar os dados localmente. A consulta não pode ser executada até que os dados sejam copiados. Isso garante um ótimo desempenho depois que os dados são copiados.</entry>
+
+            <entry align="left">Direciona o cluster Roxie para carregar os dados de um local remoto. A consulta pode ser executada imediatamente, mas o desempenho é limitado pela largura de banda da rede. Isso permite que as consultas sejam executadas sem usar qualquer espaço em disco Roxie, mas reduz seus recursos de taxa de transferência.</entry>
+
+            <entry align="left">Utilizará dados e índices já carregados (colocado no cluster Roxie usando DFU), mas não copia nem lê dados remotos.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Quando  <emphasis role="bold">copyResources</emphasis>  é ativado, os arquivos de dados são copiados dos locais de origem para os nós do agente Roxie.  Os arquivos de índice também são copiados, com uma parte de arquivo extra que é a "chave das chaves", ou uma metachave.</para>
+
+  <para>Uma cópia da metachave sempre é armazenada em cada servidor Roxie e, na maioria dos casos, é carregada na memória na inicialização para elevar o desempenho.</para>
+
+  <sect3 id="RoxiePreferredCluster">
+    <title>Clusters preferenciais</title>
+
+    <para><emphasis role="bold">Clusters preferenciais</emphasis> permitem que se defina prioridades para clusters dos quais deseja que o Roxie copie arquivos.  Caso não esteja de qualquer outra forma especificado, o Roxie copia primeiramente dos clusters em seu próprio ambiente. Para ativar o recurso de clusters preferidos, é possível usar o Gerenciador de Configurações do HPCC Systems. (para obter informações adicionais sobre como configurar o HPCC System, consulte  <emphasis>Como instalar e executar a plataforma HPCC</emphasis>)<figure>
+        <title>Clusters preferenciais no Roxie</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/RxPrefCluster.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>A aba Clusters preferidos pode ser localizada na página RoxieCluster no Gerenciador de Configurações do HPCC.</para>
+
+    <para>Na guia Clusters preferidos, é possível adicionar o nome e a prioridade de seus clusters Roxie. O número de mais alta prioridade é o cluster preferido. Para excluir um Roxie par, adicione-o à lista de clusters preferidos com uma prioridade igual a 0 O Roxie então seguirá a prioridade especificada na lista de clusters preferidos dando a mais alta prioridade ao cluster Roxie com o mais alto valor de prioridade ao copiar os dados.</para>
+
+    <para>Você deve numerar suas prioridades com um esquema de numeração de no mínimo (o número de clusters)+1. Use um número mais alto para permitir que você adicione clusters mais tarde.</para>
+  </sect3>
+
+  <sect3 id="VipsRoxieAlias" role="brk">
+    <title>VIPs e Roxie Alias</title>
+
+    <para>Os clusters Roxie acessados por um VIP (IP virtual) normalmente usam nomes de destino separados para representar o mesmo conjunto de consultas. Cada Roxie também pode executar mais de um destino ao mesmo tempo.</para>
+
+    <para>O recurso Topology Alias (Alias de topologia) oferece uma maneira para especificar que qualquer um dos destinos que representa o mesmo conjunto de consultas pode ser usado. Permitir que os destinos que representam o mesmo conjunto de consultas tenham um alias compartilhado faz com que os acionadores selecionem o conjunto correto de consultas ao serem acionados por um VIP.</para>
+
+    <para>Essa configuração pode ser encontrada na seção Topology (Topologia) no Gerenciador de Configurações do HPCC.</para>
+
+    <para><figure>
+        <title>Alias Roxie no Gerenciador de Configurações</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/RoxieAlias.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para></para>
+
+    <?hard-pagebreak ?>
+
+    <para>O diagrama abaixo mostra o exemplo de um sistema usando aliases.</para>
+
+    <figure>
+      <title>Roxie Aliases em ambiente de produção</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="../../images/RoxieAliasDiagram.png" />
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <para></para>
+
+    <para></para>
+  </sect3>
+
+  <sect3 role="brk">
+    <title><emphasis role="bold">Suporte a Linha de Comando</emphasis></title>
+
+    <para>A ferramenta de linha de comando ECL oferece uma maneira de copiar consultas de um Roxie para outro. Normalmente, isso significa que arquivos de dados e índices serão copiados ou acessados remotamente pelas definições de configuração do Roxie.</para>
+
+    <para>Isso permite que você copie rapidamente uma consulta sem copiar os arquivos. Isso permite que copie rapidamente uma consulta sem copiar os arquivos.</para>
+
+    <programlisting>
+ecl queries copy --no-files
+     </programlisting>
+
+    <para>Isso especifica para NÃO copiar arquivos referenciados pela consulta que está sendo copiada. A consulta não pode ser executada até que os dados sejam disponibilizados.</para>
+  </sect3>
+</sect2>

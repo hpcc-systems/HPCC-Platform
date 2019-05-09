@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CmdProcess">
+  <title>CmdProcess</title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.System.Util.CmdProcess<indexterm>
+      <primary>STD.System.Util.CmdProcess</primary>
+    </indexterm> <indexterm>
+      <primary>System.Util.CmdProcess</primary>
+    </indexterm> <indexterm>
+      <primary>Util.CmdProcess</primary>
+    </indexterm> <indexterm>
+      <primary>CmdProcess</primary>
+    </indexterm>(</emphasis> <emphasis> program, input </emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>program</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome do programa a
+          ser executado. O nome pode incluir parâmetros da linha de
+          comando.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>input</emphasis></entry>
+
+          <entry>Uma string que contém o texto a ser direcionado ao
+          <emphasis>programa</emphasis> por meio de stdin.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>CmdProcess retorna um valor STRING.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">CmdProcess </emphasis> direciona o
+  texto de <emphasis>input</emphasis> ao <emphasis>programa</emphasis>
+  especificado. Essa função é semelhante à função incorporada PIPE, mas
+  limitada à entrada e saída de texto simples.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+   
+OUTPUT(STD.System.Util.CmdProcess('cat','George Jetson'));
+</programlisting>
+</sect1>

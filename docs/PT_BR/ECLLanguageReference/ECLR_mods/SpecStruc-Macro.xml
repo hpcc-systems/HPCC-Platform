@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MACRO_Structure">
+  <title>Estrutura MACRO<indexterm>
+      <primary>Estrutura MACRO</primary>
+    </indexterm></title>
+
+  <para><emphasis>[</emphasis><emphasis>resulttype</emphasis><emphasis
+  role="bold">]</emphasis><emphasis> macroname </emphasis><emphasis
+  role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
+  role="bold">) := MACRO</emphasis><emphasis role="bold"><indexterm>
+      <primary>MACRO</primary>
+    </indexterm> </emphasis><emphasis/></para>
+
+  <para><emphasis> tokenstream</emphasis>;<emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">ENDMACRO<indexterm>
+      <primary>ENDMACRO</primary>
+    </indexterm>;</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>Opcional. O tipo de resultado da macro. O único tipo válido é
+          DATASET. Se omitido e <emphasis>tokenstream</emphasis> não tiver
+          definições de Atributo, a macro será tratada como retornando um
+          valor (normalmente, INTEGER ou STRING).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>macroname</emphasis></entry>
+
+          <entry><para>O nome da função definida pela estrutura
+          MACRO.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>Uma lista separada por vírgulas dos nomes (tokens) dos
+          parâmetros a serem passados para a macro. Esses nomes são usados em
+          <emphasis>tokenstream</emphasis> para indicar onde os valores dos
+          parâmetros passados serão substituídos quando a macro for usada. Os
+          tipos de valores para esses parâmetros não são permitidos, mas é
+          possível especificar valores padrão como constantes de
+          string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>tokenstream</emphasis></entry>
+
+          <entry>As definições de atributo ou as ações que a macro
+          executará.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A estrutura <emphasis role="bold">MACRO </emphasis> possibilita criar
+  uma função sem conhecer os tipos de valor dos parâmetros que em algum
+  momento serão passados a ela. O uso mais comum é a execução de funções com
+  datasets arbitrários.</para>
+
+  <para>Uma macro se comporta como se você digitasse o
+  <emphasis>tokenstream</emphasis> na posição exata em que a macro é usada,
+  por meio de substituição léxica. Os tokens definidos em
+  <emphasis>parameterlist</emphasis> são substituídos pelo texto passado para
+  a macro em todos os lugares em que ocorrem no <emphasis>tokenstream
+  </emphasis>. Isso possibilita escrever uma definição de MACRO válida que
+  pode ser chamada com um conjunto de parâmetros que resulta em erros obscuros
+  no tempo de compilação.</para>
+
+  <para>Há dois tipos básicos de macro: Valor ou Atributo. Uma macro VALUE não
+  contém nenhuma definição de Atributo. Portanto, pode ser usada em qualquer
+  lugar em que o tipo de valor gerado é adequado ao uso. Uma macro de atributo
+  contém definições de atributo (detectadas pela presença de := no
+  <emphasis>tokenstream</emphasis>). Portanto, pode ser usada apenas onde uma
+  definição de Atributo é válida (uma linha por si só) e um item de
+  <emphasis>parameterlist</emphasis> deve normalmente nomear o Atributo a ser
+  usado para conter o resultado da macro (para que qualquer código depois da
+  chamada da macro possa usar o resultado).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>// This is a DATASET Value macro that results in a crosstab
+DATASET CrossTab(File,X,Y) := MACRO
+        TABLE(File,{X, Y, COUNT(GROUP)},X,Y)
+ENDMACRO;
+// and would be used something like this:
+OUTPUT(CrossTab(Person,person.per_st,Person.per_sex))
+// this macro usage is the equivalent of:
+//   OUTPUT(TABLE(Person,{person.per_st,Person.per_sex,COUNT(GROUP)},
+// person.per_st,Person.per_sex)
+//The advantage of using this macro is that it can be re-used to
+// produce another cross-tab without recoding
+// The following macro takes a LeftFile and looks up a field of it in
+// the RightFile and then sets a field in the LeftFile indicating if 
+// the lookup worked.
+IsThere(OutFile ,RecType,LeftFile,RightFile,LinkId ,SetField ) := MACRO
+    RecType Trans(RecType L, RecType R) := TRANSFORM
+        SELF.SetField := IF(NOT R.LinkId,0,1);
+        SELF := L;
+    END;
+    OutFile := JOIN(LeftFile,
+        RightFile,
+        LEFT.LinkId=RIGHT.LinkId,
+        Trans(LEFT,RIGHT),LEFT OUTER);
+ENDMACRO;
+    
+// and would be used something like this:
+MyRec := RECORD
+   Person.per_cid;
+   Person.per_st;
+   Person.per_sex;
+   Flag:=FALSE;
+END;
+MyTable1 := TABLE(Person(per_first_name[1]='R'),MyRec);
+MyTable2 := TABLE(Person(per_first_name[1]='R',per_sex='F'),MyRec);
+
+IsThere(MyOutTable,MyRec,MyTable1,MyTable2,per_cid,Flag)
+
+        // This macro call generates the following code:
+        // MyRec Trans(MyRec L, MyRec R) := TRANSFORM
+        // SELF.Flag := IF(NOT R.per_cid ,0,1);
+        // SELF := L;
+        // END;
+        // MyOutTable := JOIN(MyTable1,
+        // MyTable2,
+        // LEFT.per_cid=RIGHT.per_cid,
+        // Trans(LEFT,RIGHT),
+        // LEFT OUTER );
+
+OUTPUT(MyOutTable);
+//***********************************************************
+//This macro has defaults for its second and third parameters
+MyMac(FirstParm,yParm='22',zParm='42') := MACRO
+        FirstParm := yParm + zParm;
+ENDMACRO;
+
+// and would be used something like this:
+        MyMac(Fred)
+    // This macro call generates the following code:
+    // Fred := 22 + 42;
+    //***********************************************************
+    //This macro uses #EXPAND
+  
+MAC_join(attrname, leftDS, rightDS, linkflags) := MACRO
+  attrname := JOIN(leftDS,rightDS,#EXPAND(linkflags));
+ENDMACRO;
+MAC_join(J1,People,Property,'LEFT.ID=RIGHT.PeopleID,LEFT  OUTER')
+//expands out to:
+// J1 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID,LEFT OUTER);</programlisting>
+
+  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+  TRANSFORM</link>, <link linkend="RECORD_Structure">Estrutura RECORD</link>,
+  <link linkend="_UNIQUENAME">#UNIQUENAME</link>, <link
+  linkend="_EXPAND">#EXPAND</link></para>
+</sect1>

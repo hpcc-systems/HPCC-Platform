@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EMBED_Structure">
+  <title>Estrutura EMBED<indexterm>
+      <primary>EMBED Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>resulttype funcname</emphasis> <emphasis
+  role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
+  role="bold">) := EMBED(<indexterm>
+      <primary>EMBED</primary>
+    </indexterm></emphasis> <emphasis>language</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis>code</emphasis></para>
+
+  <para><emphasis role="bold">ENDEMBED<indexterm>
+      <primary>ENDEMBED</primary>
+    </indexterm>;</emphasis></para>
+
+  <para><emphasis>resulttype funcname</emphasis> <emphasis
+  role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
+  role="bold">) := EMBED(</emphasis> <emphasis>language, code</emphasis>
+  <emphasis role="bold">);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>O tipo do valor de retorno da função.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry><para>O nome da definição ECL da função.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>Uma lista separada por vírgulas com os parâmetros a serem
+          passados para a <emphasis>função</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>language</emphasis></entry>
+
+          <entry>O nome da linguagem de programação a ser incorporada. O
+          módulo de suporte à linguagem – para a linguagem que deseja
+          incorporar – precisa estar instalado em seu diretório de plugins.
+          São fornecidos módulos para linguagens como Java, R, Javascript e
+          Python. Você pode escrever o seu próprio módulo de suporte à
+          linguagem plugável para qualquer linguagem que ainda não conta com
+          suporte usando os módulos fornecidos como exemplos ou pontos de
+          partida.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>code</emphasis></entry>
+
+          <entry>A código fonte a ser incorporado.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A estrutura <emphasis role="bold">EMBED</emphasis> possibilita a
+  adição de código de <emphasis>linguagem</emphasis> em linha à sua ECL. Essa
+  estrutura é semelhante à estrutura BEGINC++, mas está disponível para
+  qualquer <emphasis>linguagem</emphasis> com um módulo de suporte à linguagem
+  plugável instalado, como R, Javascript e Python. Outros módulos poderão ser
+  fornecidos. Como alternativa, é possível escrever o seu próprio módulo usado
+  os módulos fornecidos como modelos/exemplos/pontos de partida. Essa
+  estrutura pode ser usada para escrever código Javascript, R ou Python, mas
+  não para escrever código Java (use a função IMPORT para código Java).</para>
+
+  <para>Os tipos de parâmetro que podem ser passados e retornados variam em
+  função de <emphasis>linguagem</emphasis>, mas de forma geral os tipos
+  escalares simples (INTEGER, REAL, STRING, UNICODE, BOOLEAN e DATA), bem como
+  os SETs desses tipos escalares, são permitidos desde que exista um tipo de
+  dados adequado na <emphasis>linguagem</emphasis> que possa ser usado para
+  mapear esses tipos escalares.</para>
+
+  <para>Esse primeiro formato de EMBED é a estrutura que deve ser encerrada
+  com ENDEMBED. Essa estrutura pode conter qualquer código na <emphasis>
+  linguagem</emphasis> permitida.</para>
+
+  <para>O segundo formato de EMBED é uma função autocontida. Os parâmetros de
+  <emphasis>code</emphasis> contêm todo o código a ser executado, o que limita
+  a utilidade a expressões bem simples.</para>
+
+  <para>Utilizando este form, você pode usar EMBED ao invés de BEGINC++ para
+  incorporar código C++ e especificar opções adicionais (por exemplo,
+  DISTRIBUTED):</para>
+
+  <para><programlisting>myFunction(string name) := EMBED(C++ [: options]) 
+  ... text 
+ENDEMBED</programlisting></para>
+
+  <para><emphasis role="bold">ATENÇÃO: Esse recurso pode gerar corrupção de
+  memória e/ou problemas de segurança. Portanto, recomendamos cautela e uma
+  consideração detalhada. Consulte o Suporte Técnico antes de
+  usar.</emphasis></para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>//First form: a structure
+IMPORT Python;  //make Python language available
+
+INTEGER addone(INTEGER p) := EMBED(Python)
+# Python code that returns one more than the value passed to it
+if p &lt; 10:
+  return p+1
+else:
+  return 0
+ENDEMBED;
+
+//Second form: a function
+INTEGER addtwo(INTEGER p) := EMBED(Python, 'p+2');   </programlisting>
+
+  <para>Ver também: <link linkend="BEGINCplus_Structure">Estrutura
+  BEGINC++</link>, <link linkend="IMPORT">IMPORT</link>, <link
+  linkend="IMPORT_function">Função IMPORT</link></para>
+</sect1>

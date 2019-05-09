@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Implicit_Dataset_Relationality">
+  <title>Dataset Implícitos<indexterm>
+      <primary>Implicit Dataset</primary>
+    </indexterm> Racionabilidade<indexterm>
+      <primary>Relationality</primary>
+    </indexterm><indexterm>
+      <primary>Racionalidade Implícita do Dataset</primary>
+    </indexterm></title>
+
+  <para>Dataset secundários aninhados<indexterm>
+      <primary>Datasets secundários aninhados</primary>
+    </indexterm> em uma Refinaria de dados (Thor) ou em um cluster de Motor de
+  entrega rápida de dados (Roxie) são inerentemente relacionais, pois todos os
+  dados principais-secundários estão contidos em um único registro físico. As
+  seguintes regras se aplicam a todas as relações inerentes.</para>
+
+  <para>O nível de escopo de uma determinada query é definido pelo dataset
+  primário da query. Durante a query, supõe-se que você está trabalhando com
+  um único registro desse dataset primário.</para>
+
+  <para>Vamos supor que você tem a seguinte estrutura relacional no banco de
+  dados:</para>
+
+  <programlisting>     Household           Parent 
+        Person           Child of Household 
+          Accounts       Child of Person, Grandchild of Household</programlisting>
+
+  <para>Isso significa que, no nível do escopo primário:</para>
+
+  <para>a) Todos os campos de qualquer arquivo que têm uma relação de um para
+  muitos com o arquivo primário estarão disponíveis. Ou seja, todos os campos
+  em qualquer registro principal (ou registro principal de um registro
+  principal etc.) estão disponíveis para o secundário. Por exemplo, se o
+  dataset Person for o escopo primário, todos os campos do dataset Household
+  estarão disponíveis.</para>
+
+  <para>b) Todos os datasets secundários (ou datasets secundários de um
+  dataset secundário etc.) podem ser usados para filtrar o principal, desde
+  que a subquery use uma função agregada ou opere no nível de existência de um
+  conjunto de registros secundários que cumpram os critérios do filtro
+  (consulte EXISTS).Você pode usar campos específicos de dentro de um registro
+  secundário no nível de escopo do registro principal usando EVALUATE ou
+  subscrevendo ([]) um registro secundário específico. Por exemplo, se o
+  dataset Person for o escopo primário, você poderá filtrar o conjunto de
+  registros relacionados de Accounts e verificar se filtrou todos os registros
+  relacionados de Accounts.</para>
+
+  <para>c) Se um dataset for usado em um escopo em que não é um secundário do
+  dataset primário, será avaliado no escopo que abrange o dataset. Por
+  exemplo, a expressão:</para>
+
+  <para><programlisting>Household(Person(personage &gt; AVE(Person,personage))</programlisting></para>
+
+  <para>significa "residências que contêm pessoas com idade acima da idade
+  média da residência". Isso <emphasis role="underline">não</emphasis>
+  significa "residências que contêm pessoas com idade acima da idade média de
+  todas as residências". Isso ocorre porque o dataset principal (Household)
+  abrange o dataset secundário (Person), o que faz com que a avaliação da
+  função AVE opere no nível das pessoas dentro da residência.</para>
+
+  <para>d) Um atributo definido com o serviço de fluxo de trabalho STORED() é
+  avaliado no nível global. É um erro se não puder ser avaliado
+  independentemente de outros datasets. Isso pode levar a alguns
+  comportamentos um pouco estranhos:</para>
+
+  <programlisting>AveAge := AVE(Person,personage);
+MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
+
+  <para>significa "residências que contêm pessoas com idade acima da idade
+  média da residência". No entanto,</para>
+
+  <programlisting>AveAge := AVE(Person,personage) : STORED('AveAge');
+MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
+
+  <para>Significa "residências que contêm pessoas com idade acima da idade
+  média de todas as residências". Isso ocorre porque agora o atributo AveAge é
+  avaliado fora do escopo que abrange Household.</para>
+</sect1>

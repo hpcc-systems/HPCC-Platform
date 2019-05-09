@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SET">
+  <title>SET</title>
+
+  <para><emphasis role="bold">SET<indexterm>
+      <primary>SET</primary>
+    </indexterm><indexterm>
+      <primary>SET function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, field</emphasis> <emphasis
+  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.60pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros do qual o SET de valores será
+            derivado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>field</emphasis></entry>
+
+            <entry>O campo no recordset do qual serão obtidos os
+            valores.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SET retorna um SET de valores do mesmo tipo do
+            campo.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">SET </emphasis> retorna um SET para ser
+  usado em qualquer operação de conjunto (como o operador IN), semelhante a
+  uma seleção secundária no SQL quando usada com o operador IN. Ela não remove
+  elementos em duplicidade e não ordena o conjunto.</para>
+
+  <para>Um problema comum é o uso da função SET em uma condição de filtro. Por
+  exemplo:</para>
+
+  <programlisting>MyDS := myDataset(myField IN SET(anotherDataset, someField));</programlisting>
+
+  <para>O código gerado para isso é ineficiente se "anotherDataset" contiver
+  um grande número de elementos, podendo também causar o erro no qual o
+  dataset é muito grande para gerar o resultado da tarefa ("Dataset too large
+  to output to workunit"). Uma maneira mais eficiente de regravar a expressão
+  seria:</para>
+
+  <programlisting>MyDS := JOIN(myDataset, anotherDataset, LEFT.myField = RIGHT.someField, TRANSFORM(LEFT), LOOKUP) ;</programlisting>
+
+  <para>O resultado final é o mesmo, o conjunto de registros "myDataset" no
+  qual o valor "myField" é um dos valores "someField" de "anotherDataset", mas
+  o código possui uma execução bem mais eficiente.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
+               {'C',4},{'D',6},{'E',2}],
+              {STRING1 Ltr, INTEGER1 Val});
+
+//a SET of just the Ltr field values:
+s1 := SET(ds,Ltr);
+COUNT(s1);  //results in 7
+s1;         //results in ['X','B','C','B','C','D','E']
+
+//a simple way to get just the unique elements
+//is to use a crosstab TABLE:
+t := TABLE(ds,{Ltr},Ltr); //order indeterminant
+
+s2 := SET(t,Ltr);
+COUNT(s2);  //results in 5
+s2;         //results in   ['D','X','C','E','B']
+
+//sorted unique elements
+s3 := SET(SORT(t,Ltr),Ltr);
+COUNT(s3);  //results in 5
+s3;         //results in ['B','C','D','E','X']</programlisting>
+
+  <para>Ver também: <link linkend="Recordset_Filtering">Conjuntos e
+  Filtros</link>, <link linkend="SET_OF">SET OF</link>, <link
+  linkend="Set_Operators">Operadores Set</link>, <link
+  linkend="IN_Operator">Operador IN</link></para>
+</sect1>

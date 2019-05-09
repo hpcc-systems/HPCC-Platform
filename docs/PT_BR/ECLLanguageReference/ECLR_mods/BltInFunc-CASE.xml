@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CASE">
+  <title>CASE</title>
+
+  <para><emphasis role="bold">CASE<indexterm>
+      <primary>CASE</primary>
+    </indexterm><indexterm>
+      <primary>CASE function</primary>
+    </indexterm>(</emphasis><emphasis>expression, caseval =&gt; value,
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>… , caseval =&gt;
+  value </emphasis><emphasis role="bold">]</emphasis><emphasis>
+  </emphasis><emphasis role="bold">[,</emphasis><emphasis> elsevalue
+  </emphasis><emphasis role="bold">] )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.75pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Uma expressão que resulta em um único valor.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>caseval</emphasis></entry>
+
+            <entry>Um valor a ser comparado com o resultado da
+            expressão.</entry>
+          </row>
+
+          <row>
+            <entry>=&gt;</entry>
+
+            <entry>O operador "resulta em" - válido somente em CHOOSESETS,
+            CASE e MAP.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>O valor a ser retornado. Isso pode ser qualquer expressão
+            ou ação.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>elsevalue</emphasis></entry>
+
+            <entry>Opcional. O valor a ser retornado quando o resultado da
+            expressão não corresponde a nenhum dos valores
+            <emphasis>caseval</emphasis> . Pode ser omitido se todos os
+            valores de retorno forem ações (o padrão então seria nenhuma
+            ação), ou se todos os valores de retorno forem conjuntos de
+            registro (o padrão então seria um conjunto de registros
+            vazio).</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CASE retorna um único valor, um conjunto de valores, um
+            conjunto de registros ou uma ação.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">CASE </emphasis>avalia a
+  <emphasis>expressão</emphasis> e retorna o <emphasis>valor</emphasis> cujo
+  <emphasis>caseval </emphasis>corresponde ao resultado da <emphasis>expressão
+  </emphasis>. Se não houver correspondência, ela retorna o
+  <emphasis>elsevalue</emphasis>.</para>
+
+  <para>Deverá haver a quantidade de parâmetros de <emphasis>caseval
+  </emphasis>=&gt; <emphasis>value</emphasis> necessária para especificar
+  todos os valores esperados da <emphasis>expressão</emphasis> (deve haver
+  pelo menos um). Todos os parâmetros do <emphasis>valor </emphasis> de
+  retorno devem ser do mesmo tipo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>MyExp := 1+2;
+MyChoice := CASE(MyExp, 1 =&gt; 9, 2 =&gt; 8, 3 =&gt; 7, 4 =&gt; 6, 5);
+  // returns a value of 7 for the caseval of 3
+MyRecSet := CASE(MyExp, 1 =&gt; Person(per_st = 'FL'),
+    2 =&gt; Person(per_st = 'GA'),
+    3 =&gt; Person(per_st = 'AL'),
+    4 =&gt; Person(per_st = 'SC'),
+    Person);
+  // returns set of Alabama Persons for the caseval of 3
+MyAction := CASE(MyExp, 1 =&gt; FAIL('Failed for reason 1'),
+    2 =&gt; FAIL('Failed for reason 2'),
+    3 =&gt; FAIL('Failed for reason 3'),
+    4 =&gt; FAIL('Failed for reason 4'),    FAIL('Failed for unknown reason'));
+  // for the caseval of 3, Fails for reason 3</programlisting>
+
+  <para>Ver também: <link linkend="MAP">MAP</link>, <link
+  linkend="CHOOSE">CHOOSE</link>, <link linkend="IF">IF</link>, <link
+  linkend="REJECTED">REJECTED</link>, <link
+  linkend="WHICH">WHICH</link></para>
+</sect1>

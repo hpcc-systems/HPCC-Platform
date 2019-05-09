@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="StartsWith">
+  <title>StartsWith</title>
+
+  <para><emphasis role="bold">STD.Str.StartsWith<indexterm>
+      <primary>STD.Str.StartsWith</primary>
+    </indexterm><indexterm>
+      <primary>Str.StartsWith</primary>
+    </indexterm><indexterm>
+      <primary>StartsWith</primary>
+    </indexterm>(</emphasis> <emphasis>source, prefix</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string a ser pesquisada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>prefix</emphasis></entry>
+
+          <entry>A string a ser encontrada.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>StartsWith retorna um valor BOOLEAN</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">StartsWith</emphasis> retorna TRUE se o
+  <emphasis>source</emphasis> começa com o texto no parâmetro
+  <emphasis>prefix</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Str.StartsWith('a word away','a word');   //returns TRUE
+STD.Str.StartsWith('a word away','aword');   //returns FALSE
+</programlisting>
+</sect1>

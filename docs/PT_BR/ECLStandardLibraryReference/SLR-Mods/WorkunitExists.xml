@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitExists">
+  <title>WorkunitExists</title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitExists(<indexterm>
+      <primary>STD.System.Workunit.WorkunitExists</primary>
+    </indexterm><indexterm>
+      <primary>System.Workunit.WorkunitExists</primary>
+    </indexterm><indexterm>
+      <primary>Workunit.WorkunitExists</primary>
+    </indexterm><indexterm>
+      <primary>WorkunitExists</primary>
+    </indexterm></emphasis> <emphasis> wuid </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, online </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, archived </emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o WorkUnit IDentifier a ser localizado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>online</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano true/false que especifica se a pesquisa deve ser executada online. Se omitido, o padrão é TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>archived</emphasis></entry>
+
+          <entry>Opcional. Um valor booleano true/false que especifica se a pesquisa deve ser executada nos arquivos. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WildMatch retorna um valor BOOLEAN.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">WorkunitExists </emphasis> retorna se  <emphasis>wuid</emphasis>  existe.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitExists('W20070308-164946'));</programlisting>
+</sect1>

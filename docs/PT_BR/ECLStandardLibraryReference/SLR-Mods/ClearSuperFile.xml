@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ClearSuperFile">
+  <title>ClearSuperFile</title>
+
+  <para><emphasis role="bold">STD.File.ClearSuperFile<indexterm>
+      <primary>STD.File.ClearSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.ClearSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>ClearSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, delete </emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>delete</emphasis></entry>
+
+          <entry>Um indicador booleano que especifica se os subarquivos serão
+          excluídos do disco ou apenas removidos da lista de arquivos do
+          <emphasis>superfile </emphasis>. Se omitido, o padrão é apenas
+          remover os <emphasis>superfile </emphasis> da lista de
+          arquivos.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Nulo</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">ClearSuperFile </emphasis> remove todos
+  os subarquivos da lista de arquivos que compõem o
+  <emphasis>superfile</emphasis>.</para>
+
+  <para>Essa função pode ser incluída em uma transação de superarquivo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">SEQUENTIAL(
+ STD.File.StartSuperFileTransaction(),
+ STD.File.ClearSuperFile('MySuperFile'),
+ STD.File.FinishSuperFileTransaction()
+);</programlisting>
+</sect1>

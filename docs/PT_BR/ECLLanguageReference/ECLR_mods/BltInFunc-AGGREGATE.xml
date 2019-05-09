@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AGGREGATE">
+  <title>AGGREGATE</title>
+
+  <para><emphasis role="bold">AGGREGATE<indexterm>
+      <primary>AGGREGATE</primary>
+    </indexterm><indexterm>
+      <primary>AGGREGATE function</primary>
+    </indexterm>(</emphasis> <emphasis>recordset,
+  resultrec,maintransform</emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis>, mergetransform</emphasis> <emphasis
+  role="bold">(RIGHT1<indexterm>
+      <primary>RIGHT1</primary>
+    </indexterm>,RIGHT2<indexterm>
+      <primary>RIGHT2</primary>
+    </indexterm>) ] [,</emphasis> <emphasis>groupingfields</emphasis>
+  <emphasis role="bold">] [, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> | FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm> | MANY<indexterm>
+      <primary>MANY</primary>
+    </indexterm>] [, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="85.75pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>O conjunto de registros para processamento.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>resultrec</emphasis></entry>
+
+            <entry>A estrutura RECORD do conjunto de registro do
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>maintransform</emphasis></entry>
+
+            <entry>A função TRANSFORM a ser acionada para cada par de
+            correspondência dos registros no <emphasis>recordset</emphasis>.
+            Trata-se de uma operação local implícita em cada nó.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mergetransform</emphasis></entry>
+
+            <entry>Opcional. A função TRANSFORM a ser acionada para realizar a
+            fusão global dos registros do resultado no
+            <emphasis>maintransform</emphasis>. Se omitida, o compilador
+            tentará deduzir a fusão do
+            <emphasis>maintransform</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>groupingfields</emphasis></entry>
+
+            <entry>Opcional. Uma lista de campos delimitada por vírgula no
+            <emphasis> recordset </emphasis> a ser agrupado. Cada campo deve
+            ser introduzido pela palavra-chave LEFT. Se omitida, todos os
+            registros serão correspondentes.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Opcional. Especifica que a operação é realizada em cada nó
+            de supercomputador de forma independente, sem exigir interação com
+            todos os outros nós para obter dados; a operação mantém a
+            distribuição de qualquer operação DISTRIBUTE anterior. Válido
+            apenas se <emphasis>mergetransform</emphasis> for omitido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Opcional. Indica que a expressão resultará em menos de
+            10.000 registros. Isso permite otimização para gerar um resultado
+            significativamente mais rápido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MANY</emphasis></entry>
+
+            <entry>Opcional. Indica que a expressão resultará em mais de
+            10.000 registros.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de resultado
+            não é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Especifica a importância da ordem do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>Quando for “False” (Falso), especifica que a ordem do
+            registro de resultado não é importante. Quando for “True’
+            (Verdadeiro), especifica a ordem padrão do registro de
+            resultado.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada é
+            importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Opcional. Especifica que a ordem do registro de entrada não
+            é importante.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Opcional. Tenta avaliar essa atividade usando os
+            <emphasis>numthreads</emphasis> threads</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Opcional. Substitui o algoritmo usado para essa
+            atividade.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
+            parte da lista de algoritmos compatíveis com as opções STABLE e
+            UNSTABLE da função SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>AGGREGATE retorna um conjunto de registros.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">AGGREGATE </emphasis> é semelhante à
+  ROLLUP, exceto quanto aos seu formato de resultado que não precisa
+  corresponder ao formato de entrada. A função também é semelhante à TABLE,
+  onde os <emphasis>groupingfields</emphasis> (se estiverem presente)
+  determinam os registros correspondentes de forma que você obterá um
+  resultado para cada valor único dos <emphasis>groupingfields</emphasis>. O
+  <emphasis>recordset</emphasis> de entrada não precisa ter sido classificado
+  pelos <emphasis>groupingfields</emphasis>.</para>
+
+  <para>A operação é implicitamente local, onde <emphasis>maintransform
+  </emphasis> é acionado para processar os registros localmente em cada nó e
+  os registros do resultado em cada nó são fundidos para gerar um resultado
+  global.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Aggregate">
+    <title>Requerimentos da Função TRANSFORM - AGGREGATE</title>
+
+    <para>A <emphasis>maintransform</emphasis> deve adotar pelo menos um
+    parâmetro: um registro LEFT de mesmo formato que a entrada recset.
+    <emphasis>recordset </emphasis>registros RIGHT1 e RIGHT2 de mesmo formato
+    que o <emphasis>resultrec</emphasis>. O formato do conjunto de registros
+    resultante deve ser o mesmo que o <emphasis>resultrec</emphasis>. LEFT se
+    refere ao próximo registro de entrada e RIGHT ao resultado do transform
+    anterior.</para>
+
+    <para>O <emphasis>mergetransform</emphasis> deve adotar pelo menos dois
+    parâmetros: registros RIGHT1 e RIGHT2 de mesmo formato que o
+    <emphasis>resultrec</emphasis>. O formato do conjunto de registros
+    resultante deve ser o mesmo que o <emphasis>resultrec</emphasis>. RIGHT1
+    se refere ao resultado de <emphasis>maintransform</emphasis> em um nó e
+    RIGHT2 ao resultado de <emphasis>maintransform</emphasis> em outro
+    nó.</para>
+
+    <para>O <emphasis>mergetransform</emphasis> é gerado para expressões da
+    forma:</para>
+
+    <programlisting>  SELF.x := &lt;RIGHT.x &lt;op&gt; f(LEFT) 
+  SELF.x := f(LEFT) &lt;op&gt; RIGHT.x</programlisting>
+
+    <para>onde &lt;op&gt; é: MAX, MIN, SUM, +, &amp;, |, ^, *</para>
+  </sect2>
+
+  <sect2 id="How_Aggregate_Works">
+    <title>Como AGGREGATE funciona</title>
+
+    <para>No <emphasis>maintransform</emphasis>, LEFT se refere ao próximo
+    registro de entrada e RIGHT ao resultado do transform anterior.</para>
+
+    <para>Há 4 casos interessantes:</para>
+
+    <para>(a) Se não houver correspondência de registros (e a operação não
+    estiver agrupada), o resultado será de um único registro com todos os
+    campos definidos para valores em branco.</para>
+
+    <para>(b) Se houver correspondência de um único registro, o primeiro
+    registro correspondente aciona o <emphasis>maintransform</emphasis> da
+    forma esperada.</para>
+
+    <para>(c) Se houver a correspondência de múltiplos registros em um único
+    nó, os registros subsequentes correspondentes acionarão o
+    <emphasis>maintransform</emphasis> , mas qualquer expressão no
+    <emphasis>maintransform</emphasis> que não fizer referência ao registro
+    RIGHT não será processada. Consequentemente, o valor desse campo é
+    determinado pelo primeiro registro correspondente em vez do último.</para>
+
+    <para>(d) Se houver múltiplos registros correspondentes em múltiplos nós,
+    a etapa (c) será desempenhada em cada nó e os registros de resumo serão
+    fundidos. Isso exige um <emphasis>mergetransform</emphasis> que adota dois
+    registros de tipo RIGHT. Sempre que possível, o gerador de código tenta
+    deduzir o <emphasis>mergetransform</emphasis> do
+    <emphasis>maintransform</emphasis>. Se ele não conseguir fazer isso, o
+    usuário precisará especificar um.</para>
+
+    <programlisting>inRecord := RECORD 
+  UNSIGNED box; 
+  STRING text{MAXLENGTH(10)}; 
+END; 
+inTable := DATASET([{1,'Fred'},{1,'Freddy'},
+                    {2,'Freddi'},{3,'Fredrik'},{1,'FredJon'}], inRecord);
+      
+//Example 1: Produce a list of box contents by concatenating a string:
+      
+outRecord1 := RECORD 
+  UNSIGNED box; 
+  STRING contents{MAXLENGTH(200)}; 
+END; 
+outRecord1 t1(inRecord l, outRecord1 r) := TRANSFORM 
+  SELF.box := l.box; 
+  SELF.contents := r.contents + IF(r.contents &lt;&gt; '', ',', '') + l.text; 
+END; 
+      
+outRecord1 t2(outRecord1 r1, outRecord1 r2) := TRANSFORM 
+  SELF.box := r1.box; 
+  SELF.contents := r1.contents + ',' + r2.contents; 
+END; 
+OUTPUT(AGGREGATE(inTable, outRecord1, t1(LEFT, RIGHT), t2(RIGHT1, RIGHT2), LEFT.box));
+      
+//This example could eliminate the merge transform if the SELF.contents expression in
+//the t1 TRANSFORM were simpler, like this:
+//     SELF.contents := r.contents + ',' + l.text;
+//which would make the AGGREGATE function like this:
+//   OUTPUT(AGGREGATE(inTable, outRecord1, t1(LEFT, RIGHT), LEFT.box));
+
+      
+//Example 2: A PIGMIX style grouping operation:
+outRecord2 := RECORD 
+  UNSIGNED box; 
+  DATASET(inRecord) items; 
+END; 
+outRecord2 t3(inRecord l, outRecord2 r) := TRANSFORM 
+  SELF.box := l.box; 
+  SELF.items:= r.items + l; 
+END; 
+OUTPUT(AGGREGATE(inTable, outRecord2, t3(LEFT, RIGHT), LEFT.box));</programlisting>
+
+    <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+    TRANSFORM</link>, <link linkend="RECORD_Structure">Estrutura
+    RECORD</link>, <link linkend="ROLLUP">ROLLUP</link>, <link
+    linkend="TABLE">TABLE</link></para>
+  </sect2>
+</sect1>

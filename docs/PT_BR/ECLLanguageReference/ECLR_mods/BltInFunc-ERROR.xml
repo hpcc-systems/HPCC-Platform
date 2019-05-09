@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ERROR">
+  <title>ERROR<indexterm>
+      <primary>ERROR</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">ERROR<indexterm>
+      <primary>ERROR function</primary>
+    </indexterm> [ ( </emphasis><emphasis>errormessage</emphasis> <emphasis
+  role="bold">| </emphasis><emphasis>errorcode </emphasis><emphasis
+  role="bold">) ] ;</emphasis><emphasis role="bold"/></para>
+
+  <para><emphasis role="bold">ERROR ( </emphasis><emphasis>errorcode
+  </emphasis>, <emphasis>errormessage</emphasis><emphasis role="bold">
+  </emphasis><emphasis role="bold">) ;</emphasis></para>
+
+  <para><emphasis role="bold">ERROR( </emphasis><emphasis>datatype
+  </emphasis><emphasis role="bold">[</emphasis>,<emphasis role="bold"> [
+  </emphasis><emphasis>errorcode </emphasis><emphasis role="bold">]
+  [</emphasis>, <emphasis>errormessage </emphasis><emphasis role="bold">] ] )
+  ;</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="82.40pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>errormessage</emphasis></entry>
+
+            <entry>Opcional. Uma constante da string que contém a mensagem a
+            ser exibida.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>errorcode</emphasis></entry>
+
+            <entry>Opcional. Uma constante de número inteiro que contém o
+            número do erro a ser exibido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>datatype</emphasis></entry>
+
+            <entry>O tipo de valor ou nome de uma estrutura RECORD . Pode usar
+            a função TYPEOF.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>A função <emphasis role="bold">ERROR </emphasis> interrompe
+  imediatamente o processamento na tarefa e exibe o
+  <emphasis>errorcode</emphasis> e/ou a <emphasis>errormessage</emphasis>. A
+  terceira forma está disponível para ser usada em contextos onde é exigido um
+  tipo de valor ou de dataset. Esta função faz o mesmo que a ação
+  FAIL<indexterm>
+      <primary>FAIL action</primary>
+    </indexterm>, mas pode ser usada em um contexto da expressão, tal como em
+  uma função TRANSFORM .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>outrec Xform(inrec L, inrec R) := TRANSFORM
+  SELF.key := IF(L.key &lt;= R.key, R.key,ERROR('Recs not in order'));
+END;
+</programlisting>
+
+  <para>Ver também: <link linkend="FAILURE">FAILURE</link>, <link
+  linkend="FAIL">FAIL</link></para>
+</sect1>

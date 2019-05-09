@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EncodeBase64">
+  <title>EncodeBase64</title>
+
+  <para><emphasis role="bold">STD.Str.EncodeBase64<indexterm>
+      <primary>STD.Str.EncodeBase64</primary>
+    </indexterm><indexterm>
+      <primary>Str.EncodeBase64</primary>
+    </indexterm><indexterm>
+      <primary>EncodeBase64</primary>
+    </indexterm>(</emphasis> <emphasis>value</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"/></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>Um valor DATA que contém os dados a serem
+          codificados.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>EncodeBase64 returns a STRING value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">EncodeBase64 </emphasis> retorna uma
+  STRING contendo os dados binários codificados em Base64.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+dat:=X'0102030405';
+EncodedStr:= STD.Str.EncodeBase64(dat);
+EncodedStr;</programlisting>
+
+  <para>Ver também: <link linkend="DecodeBase64">DecodeBase64</link></para>
+</sect1>

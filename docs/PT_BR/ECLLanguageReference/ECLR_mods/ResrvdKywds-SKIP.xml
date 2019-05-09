@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SKIP">
+  <title>SKIP</title>
+
+  <para><emphasis role="bold">SKIP<indexterm>
+      <primary>SKIP</primary>
+    </indexterm></emphasis></para>
+
+  <para><emphasis role="bold">SKIP </emphasis> só é válido dentro de uma
+  estrutura TRANSFORM <indexterm>
+      <primary>A estrutura TRANSFORM</primary>
+    </indexterm> e pode ser usada em qualquer caso que lugar em que uma
+  expressão é aplicada para indicar que o registro de resultado atual não deve
+  ser gerado no conjunto de resultados. COUNTER<indexterm>
+      <primary>No entanto, os valores</primary>
+    </indexterm> COUNTER são incrementados mesmo quando SKIP elimina a criação
+  do registro atual.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>SequencedAges := RECORD
+        Ages;
+        INTEGER8 Sequence := 0;
+END;
+
+SequencedAges AddSequence(Ages l, INTEGER c) := TRANSFORM
+        SELF.Sequence := IF(c % 2 = 0, SKIP,c); //skip the even recs
+        SELF := l;
+END;
+
+SequencedAgedRecs := PROJECT(AgedRecs, AddSequence(LEFT,COUNTER));</programlisting>
+
+  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+  TRANSFORM</link></para>
+</sect1>

@@ -1,0 +1,608 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>Compilador ECL</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito bem-vindos e podem ser enviados por e-mail para <email>docfeedback@hpccsystems.com</email> Inclua a frase
+      <emphasis role="bold">Feedback sobre documentação</emphasis> na linha de assunto e indique o nome do documento, o número das páginas e número da versão atual no corpo da mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas da Reed Elsevier Properties Inc., usadas sob licença. Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas. Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <releaseinfo>© 2015 HPCC Systems<superscript>®</superscript>. Todos os direitos reservados.</releaseinfo>
+
+    <date><emphasis role="bold"/></date>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <copyright>
+      <year>2015 HPCC Systems<superscript>®</superscript>. Todos os direitos reservados.</year>
+    </copyright>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="../../images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="ECL_Compiler">
+    <title><emphasis role="bold">Compilador ECL</emphasis></title>
+
+    <para>O compilador ECL é o componente compilador do HPCC. Ele é incorporado e incluído no momento da instalação do HPCC. O compilador é o componente responsável pela compilação do código ECL.</para>
+
+    <para>A sintaxe e várias opções do compilador implementadas são semelhantes ao compilador gcc. A versão do eclcc pode ser executada tanto em Linux quanto Windows; quando executada, carrega vários dos seus objetos compartilhados (arquivos do SO (OS) no Linux) ou DLLs (no Windows). O compilador ECL é capaz de processar código ECL hThor, Thor ou Roxie.</para>
+
+    <para><!--*** Now ECLCC is actually embedded in the HPCC - delivered with the RPMs--><informaltable
+        colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic
+              fileref="../../images/OSSgr3.png"/></entry>
+
+              <entry>Para compilar e executar o código ECL localmente em sua máquina Windows, é preciso ter o compilador Microsoft Visual Studio 2008 C++ (edição Express ou Professional). Ele está disponível em  <ulink
+              url="http://www.microsoft.com/express/Downloads/#2008-Visual-CPP">http://www.microsoft.com/express/Downloads/#2008-Visual-CPP</ulink></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable><!--  ***this whole thing should be comment!
+      /sect2 id="configuration-manager"/
+        <title>Dependencies and packages</title>
+
+        <para>Running eclcc depends on having these required component
+        packages listed below installed on the system.</para>
+
+        <itemizedlist mark="square">
+          <listitem>
+            <para>Microsoft Visual C++</para>
+          </listitem>
+
+          <listitem>
+            <para>Visual Studio 9 (Visual Studio 10 requires to manually set
+            the ENVIRONMENT VS90COMNTOOLS == C:\ProgramFiles\Microsoft Visual
+            Studio 10.0\Common7\Tools)</para>
+
+            <para>Can download from <ulink
+            url="http://www.microsoft.com/express/Downloads/#2008-Visual-CPP">http://www.microsoft.com/express/Downloads/#2008-Visual-CPP</ulink></para>
+          </listitem>
+
+          <listitem>
+            <para>Other Dependencies maybe required***
+            </para>
+              </listitem>
+            </itemizedlist>
+      //sect2/
+         ***END OF COMMENT***   --></para>
+
+    <sect1 id="Stand-Alone-ECL-Compiler">
+      <title><emphasis>Utilizando o Compilador ECL como opção Stand Alone
+      </emphasis></title>
+
+      <para>O compilador ECL é geralmente usado por meio do ECL IDE ou Eclipse, com o plugin ECL para Eclipse; porém, é possível usar o compilador ECL de forma independente para criar programas ou workunits também independentes. O compilador ECL pode ler o código ECL a partir da entrada padrão ou de um arquivo de entrada especificado. Ele compila o código em um programa executável (como o arquivo 'EXE' no Windows). O programa resultante, quando executado, realiza a tarefa e grava os resultados no local padrão. Alternativamente, o resultado poderia ser redirecionado para um arquivo ou canal em outro processo. Com o compilador ECL, você não precisa de um cluster de supercomputador para desenvolver e executar códigos ECL .</para>
+
+      <para>Executar o compilador ECL sem nenhuma opção (ou especificar --ajuda) exibirá a sintaxe.</para>
+
+      <para><programlisting>C:\eclcc&gt;eclcc -help
+</programlisting></para>
+
+      <para>Usage: eclcc &lt;options&gt; ECL_file.ecl</para>
+
+      <para>Opções gerais:</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>-I<emphasis> &lt;path&gt;</emphasis></entry>
+
+                <entry>Adiciona um caminho aos locais para procurar por importações ecl</entry>
+              </row>
+
+              <row>
+                <entry>-L &lt;<emphasis>path&gt;</emphasis></entry>
+
+                <entry>Adiciona um caminho aos locais para procurar por bibliotecas do sistema</entry>
+              </row>
+
+              <row>
+                <entry>-o<emphasis> &lt;file&gt;</emphasis></entry>
+
+                <entry>Especifica o nome do arquivo de resultado (padrão “a.out” se vinculado a um executável ou stdout)</entry>
+              </row>
+
+              <row>
+                <entry>-manifest</entry>
+
+                <entry>Especifica um caminho para manifestar os recursos de listagem do arquivo a serem adicionados</entry>
+              </row>
+
+              <row>
+                <entry>-checkDirty</entry>
+
+                <entry>Faz com que o eclcc gere um aviso para qualquer atributo que tenha sido modificado (conforme o resultado do status git) O uso dessa função exige que o git esteja instalado e disponível no caminho.</entry>
+              </row>
+
+              <row>
+                <entry>-foption[=value]</entry>
+
+                <entry>Define uma opção ecl. Ver #OPTION em  <emphasis>Referência de Linguagem ECL</emphasis>  para obter detalhes.</entry>
+              </row>
+
+              <row>
+                <entry>-main <emphasis>&lt;ref&gt;</emphasis></entry>
+
+                <entry>Compila definição &lt;ref&gt; da coleção de origem.</entry>
+              </row>
+
+              <row>
+                <entry>-syntax</entry>
+
+                <entry>Realiza a verificação da sintaxe do ECL</entry>
+              </row>
+
+              <row>
+                <entry>-platform=hthor</entry>
+
+                <entry>Gera código para cluster hthor</entry>
+              </row>
+
+              <row>
+                <entry>-platform=roxie</entry>
+
+                <entry>Gera código para cluster roxie (padrão)</entry>
+              </row>
+
+              <row>
+                <entry>-platform=thor</entry>
+
+                <entry>Gera código para cluster thor</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para><informaltable colsep="1" frame="all">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="../../images/tip.jpg"/></entry>
+
+                <entry><emphasis role="bold">OBSERVAÇÃO: </emphasis>Se houver espaços no caminho que você especificar, coloque-os em aspas. Por exemplo: -L"C:\Program Files"</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Opções de controle de resultados:</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>-E</entry>
+
+                <entry>Resultado ECL pré-processado na forma de arquivo xml</entry>
+              </row>
+
+              <row>
+                <entry>-M</entry>
+
+                <entry>Informação meta do resultado para arquivos ecl</entry>
+              </row>
+
+              <row>
+                <entry>-Md</entry>
+
+                <entry>Informação de dependência do resultado</entry>
+              </row>
+
+              <row>
+                <entry>-Me</entry>
+
+                <entry>eclcc deve avaliar o código ecl fornecido em vez de gerar uma workunit</entry>
+              </row>
+
+              <row>
+                <entry>-q</entry>
+
+                <entry>Salva o texto da consulta ECL como parte da workunit</entry>
+              </row>
+
+              <row>
+                <entry>-wu</entry>
+
+                <entry>Gera informações de workunit somente em arquivo xml</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <?hard-pagebreak ?>
+
+      <para/>
+
+      <para>Opções C++:</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>-S</entry>
+
+                <entry>Gera resultados c++, mas não compila</entry>
+              </row>
+
+              <row>
+                <entry>-c</entry>
+
+                <entry>Apenas compila (não vincula)</entry>
+              </row>
+
+              <row>
+                <entry>-g</entry>
+
+                <entry>Habilita símbolos debug no código gerado</entry>
+              </row>
+
+              <row>
+                <entry>-Wc, xx</entry>
+
+                <entry>Passa a opção xx para o compilador c++</entry>
+              </row>
+
+              <row>
+                <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
+
+                <entry>Substitui a definição do “nome” global do atributo</entry>
+              </row>
+
+              <row>
+                <entry>-Wl,xx</entry>
+
+                <entry>Passa a opção xx para o vinculador</entry>
+              </row>
+
+              <row>
+                <entry>-Wa, xx</entry>
+
+                <entry>Passa direto para o compilador c++</entry>
+              </row>
+
+              <row>
+                <entry>-Wp,xx</entry>
+
+                <entry>Passa direto para o compilador c++</entry>
+              </row>
+
+              <row>
+                <entry>-save-cpps</entry>
+
+                <entry>Não remove arquivos c++ gerados (implícito se tiver -g)</entry>
+              </row>
+
+              <row>
+                <entry>-shared</entry>
+
+                <entry>Gera objeto compartilhado da workunit em vez de um executável independente</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <?dbfo-need height="3in"?>
+
+      <para>Outras Opções:</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>--allow=str</entry>
+
+                <entry>Permite o recurso de nomeação (e.g., cpp, pipe, all)<para/><para><emphasis role="bold">cpp</emphasis>: Permite código incorporado no ECL (p.ex., c++, JAVA, Javascript, Python, R, etc.)</para><para><emphasis role="bold">pipe</emphasis>: Permite que o comando PIPE envie dados para um programa externo.</para><para><emphasis role="bold">all</emphasis>: Permite todos os recursos</para></entry>
+              </row>
+
+              <row>
+                <entry>-b</entry>
+
+                <entry>Modo Batch. Cada arquivo de origem é processado sucessivamente. O nome do resultado depende do nome do arquivo de entrada</entry>
+              </row>
+
+              <row>
+                <entry>-checkVersion</entry>
+
+                <entry>Habilita/desabilita verificação da versão ecl dos arquivos</entry>
+              </row>
+
+              <row>
+                <entry>--deny=all</entry>
+
+                <entry>Não permite o uso de todos os recursos nomeados que não foram especificados como permitidos usando – allow</entry>
+              </row>
+
+              <row>
+                <entry>--deny=str</entry>
+
+                <entry>Não permite o uso do recurso nomeado<para><emphasis
+                role="bold">cpp</emphasis>: Não permite o código incorporado no ECL (p.ex., c++, JAVA, Javascript, Python, R, etc.)</para><para><emphasis role="bold">pipe</emphasis>: Não permite que o comando PIPE envie dados para um programa externo.</para></entry>
+              </row>
+
+              <row>
+                <entry>-help, --help</entry>
+
+                <entry>Exibe mensagem de ajuda</entry>
+              </row>
+
+              <row>
+                <entry>--help -v</entry>
+
+                <entry>Exibe mensagem de ajuda detalhada</entry>
+              </row>
+
+              <row>
+                <entry>--internal</entry>
+
+                <entry>Executa testes internos</entry>
+              </row>
+
+              <row>
+                <entry>--legacy</entry>
+
+                <entry>Usa semântica de importação antiga (descontinuada)</entry>
+              </row>
+
+              <row>
+                <entry>--keywords</entry>
+
+                <entry>Gera as listas de palavras reservadas do ECL para stdout (formato XML)</entry>
+              </row>
+
+              <row>
+                <entry>--logfile <emphasis>&lt;file&gt;</emphasis></entry>
+
+                <entry>Grava o log em um arquivo específico</entry>
+              </row>
+
+              <row>
+                <entry>--logdetail=<emphasis>n</emphasis></entry>
+
+                <entry>Define o nível de detalhe no arquivo de log</entry>
+              </row>
+
+              <row>
+                <entry>-specs <emphasis>&lt;file&gt;</emphasis></entry>
+
+                <entry>Lê as configurações do eclcc de um arquivo específico</entry>
+              </row>
+
+              <row>
+                <entry>-split <emphasis>m:n</emphasis></entry>
+
+                <entry>Processa um subconjunto m de n arquivos de entrada (apenas com a opção -b)</entry>
+              </row>
+
+              <row>
+                <entry>-v --verbose</entry>
+
+                <entry>Exibe informações adicionais de rastreamento no momento da compilação</entry>
+              </row>
+
+              <row>
+                <entry>--version</entry>
+
+                <entry>Informação de versão de saída</entry>
+              </row>
+
+              <row>
+                <entry>--timings</entry>
+
+                <entry>Saída de informação adicional temporizada</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para/>
+    </sect1>
+
+    <sect1 id="compiled_options">
+      <title>Opções Compiladas:</title>
+
+      <para>Após ter compilado o código com sucesso, ele gerará um arquivo executável. Algumas opções adicionais podem ser usadas ao executar esse executável.</para>
+
+      <para>Uso: a.out &lt;options&gt;</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>-wu=&lt;file&gt;</entry>
+
+                <entry>Grava workunits formatadas em XML para um determinado arquivo e sai</entry>
+              </row>
+
+              <row>
+                <entry>-xml</entry>
+
+                <entry>Exibe o resultado como XML</entry>
+              </row>
+
+              <row>
+                <entry>-raw</entry>
+
+                <entry>Exibe o resultado como binário</entry>
+              </row>
+
+              <row>
+                <entry>-limit=x</entry>
+
+                <entry>Número limite de linhas do resultado</entry>
+              </row>
+
+              <row>
+                <entry>--help</entry>
+
+                <entry>Exibe texto de ajuda</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect1>
+
+    <sect1 id="ECLCompiler_Examples">
+      <title>Exemplos</title>
+
+      <para>O exemplo a seguir demonstra o que pode ser feito quando o compilador ECL estiver instalado e em operação.</para>
+
+      <sect2 id="ECLCompiler_RunningABasicECLProg_CLI">
+        <title>Executando um programa básico ECL utilizando o compilador por linha de comando</title>
+
+        <para>Quando o compilador ECL estiver instalado, você pode usá-lo (compilador ECL) para executar um programa ECL .</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Crie um arquivo chamado hello.ecl, e digite o seguinte:<programlisting>Output('Hello world'); </programlisting></para>
+
+            <para>(Incluindo as aspas).</para>
+
+            <para>Você pode usar o editor de sua preferência ou a linha de comando digitando o seguinte (para sistemas Windows):</para>
+
+            <para><programlisting>echo Output('Hello world'); &gt; hello.ecl</programlisting></para>
+
+            <para>Em um sistema Linux, seria preciso mudar alguns caracteres como segue:</para>
+
+            <para><programlisting>echo "Output('Hello world');" &gt; hello.ecl</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Use o compilador ECL para compilar o programa adicionando o seguinte comando:</para>
+
+            <para><programlisting>eclcc hello.ecl</programlisting><!--*** Need to tell them where to run this  --></para>
+
+            <!--  ***COMMENTED OUT per authors discretion - this code is just messy when talking about multiple platforms! 
+              If you prefer, you can pipe the source code directly into the
+            compiler as shown in the following example:
+            <para><programlisting>echo \'hello again\'| eclcc -</programlisting></para> -->
+          </listitem>
+
+          <listitem>
+            <para>Um arquivo executável será criado e poderá ser executado da seguinte maneira:</para>
+
+            <para>Em sistema Linux digite:</para>
+
+            <para><programlisting>   ./a.out
+</programlisting></para>
+
+            <para>Em sistema Windows digite:</para>
+
+            <para><programlisting>   a.out</programlisting>Isso irá gerar o resultado "Hello world" (sem as aspas) na saída std, sua janela de terminal neste exemplo. Você pode redirecionar ou transferir o resultado para um arquivo ou programa desejado. Este simples exemplo verificará se o compilador está funcionando adequadamente.</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="Compile_with_options">
+        <title role="brk">Compilar com Opções</title>
+
+        <para>Após ter verificado que o compilador ECL está funcionando de forma adequada, você pode tentar usar algumas das opções. Uma dessas variações pode especificar a opção -o que nos permite inserir um nome de arquivo de resultado mais significativo: Hello.</para>
+
+        <para><programlisting>eclcc -oHello hello.ecl</programlisting>Isso gera um arquivo de nome "Hello", que agora pode ser executado a partir da linha de comando.</para>
+
+        <para>Em sistema Linux digite:</para>
+
+        <programlisting>   ./Hello
+</programlisting>
+
+        <para>Em sistema Windows digite:</para>
+
+        <para><programlisting>   Hello</programlisting>Isso resultará na exibição do seguinte.</para>
+
+        <para><programlisting>Hello world</programlisting></para>
+
+        <para>Existem opções adicionais que podem ser usadas ao executar esse arquivo. Usando nosso programa Hello como exemplo, podemos executá-lo com uma opção para gerar um resultado diferente. Essa opção seria -xml, que gera o resultado em um formato XML .</para>
+
+        <para>Em sistema Linux digite:</para>
+
+        <programlisting>   ./Hello -xml
+</programlisting>
+
+        <para>Em sistema Windows digite:</para>
+
+        <para><programlisting>   Hello -xml</programlisting></para>
+
+        <para>Isso resultaria na exibição do seguinte:</para>
+
+        <programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;Hello world&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting>
+
+        <para>O exemplo a seguir fornece um valor definido especificado para o compilador:</para>
+
+        <programlisting>//file named hello2.ecl IMPORT ^ as repo; OUTPUT(repo.optionXX);</programlisting>
+
+        <para><programlisting>eclcc -Doptionxx='HELLO' hello2.ecl</programlisting></para>
+
+        <para>Isso resultaria na exibição do seguinte:</para>
+
+        <programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;HELLO&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting>
+
+        <para/>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

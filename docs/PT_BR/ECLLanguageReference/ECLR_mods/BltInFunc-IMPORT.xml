@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IMPORT_function">
+  <title>IMPORT</title>
+
+  <para><emphasis>resulttype funcname</emphasis> <emphasis
+  role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
+  role="bold">) := IMPORT(<indexterm>
+      <primary>IMPORT function</primary>
+    </indexterm></emphasis> <emphasis>language, function </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="110"/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>O tipo do valor de retorno da
+          <emphasis>função</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry><para>O nome de definição ECL da
+          <emphasis>função</emphasis>.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>Uma lista separada por vírgulas com os parâmetros a serem
+          passados para <emphasis>function</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>language</emphasis></entry>
+
+          <entry>Especifica o nome da linguagem de programação externa cujo
+          código você deseja incorporar à sua ECL. O módulo de suporte à
+          linguagem – para a linguagem que deseja incorporar – precisa estar
+          instalado em seu diretório de plugins. São fornecidos módulos para
+          linguagens como Java, R, Javascript e Python. Você pode escrever o
+          seu próprio módulo de suporte à linguagem plugável para qualquer
+          linguagem que ainda não conta com suporte usando os módulos
+          fornecidos como exemplos ou pontos de partida.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>function</emphasis></entry>
+
+          <entry>Uma constante da string que contém o nome da função a ser
+          incluída.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A declaração <emphasis role="bold">IMPORT</emphasis> permite acionar
+  códigos existentes gravados em <emphasis>linguagem</emphasis> externa. Pode
+  ser usada para acionar código Java ou Python, mas não é utilizável com
+  código Javascript ou R (para isso, use a estrutura EMBED ). O código Java
+  deve ser colocado em um arquivo .java e compilado da forma usual através do
+  compilador javac. Todas as classes de Java usadas devem ser seguras quanto
+  ao thread (linha de execução).</para>
+
+  <para><emphasis role="bold">ATENÇÃO: Esse recurso pode gerar corrupção de
+  memória e/ou problemas de segurança. Portanto, recomendamos cautela e uma
+  consideração detalhada. Consulte o Suporte Técnico antes de
+  usar.</emphasis></para>
+
+  <para>Exemplo:</para>
+
+  <programlisting>IMPORT Python;
+
+INTEGER addthree(INTEGER p) := IMPORT(Python, 'python_mod_name.addThree');
+
+//Java Example setting the classpath
+IMPORT java;
+STRING jcat(STRING a, STRING b) := 
+        IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;'
+        : classpath('/opt/HPCCSystems/classes/'));
+jcat('I',' concatenate');</programlisting>
+
+  <para>Ver também: <link linkend="IMPORT">IMPORT</link>, <link
+  linkend="EMBED_Structure">Estrutura EMBED</link></para>
+</sect1>

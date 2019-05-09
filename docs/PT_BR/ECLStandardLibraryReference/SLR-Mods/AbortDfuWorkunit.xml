@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AbortDfuWorkunit">
+  <title>AbortDfuWorkunit</title>
+
+  <para><emphasis role="bold">STD.File.AbortDfuWorkunit<indexterm>
+      <primary>STD.File.AbortDfuWorkunit</primary>
+    </indexterm><indexterm>
+      <primary>File.AbortDfuWorkunit</primary>
+    </indexterm><indexterm>
+      <primary>AbortDfuWorkunit</primary>
+    </indexterm>(</emphasis> <emphasis> dfuwuid</emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis>,espserverIPport </emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>dfuwuid</emphasis></entry>
+
+          <entry>Uma string terminada por nulo que contém o ID da workunit DFU (DFUWUID) do job a ser abortado. Esse valor é retornado pelas versões das funções Copy, SprayFixed, SprayVariable, SprayXML e Despray FileServices "com nome começando por f".</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>espserverIPport</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada por nulo que contém o protocolo, o IP, a porta e o diretório ou DNS equivalente do programa do servidor' ESP. Normalmente são os mesmos IP e porta do ECL Watch, com "/FileSpray" anexado. Se omitida, o padrão é o valor contido no atributo lib_system.ws_fs_server.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função  <emphasis role="bold">AbortDfuWorkunit</emphasis>  aborta a workunit DFU especificada. Normalmente, esse job foi iniciado com o parâmetro  <emphasis>timeout </emphasis> definido como zero (0).</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">STD.File.AbortDfuWorkunit('D20051108-143758');
+</programlisting>
+</sect1>

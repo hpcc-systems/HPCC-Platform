@@ -1,0 +1,211 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>O ECL Playground</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Equipe de documentação</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>2012</pubdate>
+  </bookinfo>
+
+  <chapter id="ECL_Playgd">
+    <title><emphasis role="bold">Utilizando o ECL Playground</emphasis></title>
+
+    <para>O ECL Playground O módulo a seguir está incluído na documentação do ECL Playground e no manual do ECL Watch.</para>
+
+    <sect1 id="ECL_Playground">
+      <title>Utilizando o ECL Playground</title>
+
+      <para>ECL Playground é uma ferramenta hospedada em um servidor ESP. A página é executada em seu navegador, permitindo o acesso e a execução do código ECL autocontido no HPCC System sem usar outras ferramentas.  O ECL Playground então exibe os resultados e os gráficos em seu navegador. A exibição é bastante semelhante à do ECL IDE .</para>
+
+      <sect2 id="ECLPlayground_AccessingThePlayground">
+        <title>Acessando o ECL Playground</title>
+
+        <para>ECL Playground é instalado com a plataforma do HPCC  Ele pode ser acessado através da página do ECL Watch.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Em seu navegador, acesse o URL do  <emphasis role="bold">ECL Watch</emphasis> . Por exemplo, http://nnn.nnn.nnn.nnn:8010, onde nnn.nnn.nnn.nnn é endereço IP do nó do servidor ESP.</para>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="../../images/caution.png" /></entry>
+
+                        <entry>Seu endereço IP poderá ser diferente dos endereços fornecidos nas imagens de exemplo. Favor usar o endereço IP do  <emphasis role="bold">seu</emphasis>
+                        nó.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>No ECL Watch, clique no ícone <emphasis
+              role="bold">ECL</emphasis>  e no link  <emphasis
+              role="bold">Playground</emphasis>  localizados no submenu de navegação.</para>
+
+              <para><figure>
+                  <title>Link do ECL Playground</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ECLP_001.jpg"
+                                 vendor="eclswatchSS" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <para>O ECL Playground será exibido.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="ECLPlayground_Introduction" role="brk">
+        <title>Introduzindo o ECL Playground</title>
+
+        <para>A página do ECL Playground é uma área de trabalho onde você pode ver e executar código ECL autocontido. É possível ver o código, enviá-lo e ver os resultados. Também é possível alterar o código e reenviá-lo para ver instantaneamente os nossos resultados diretamente em seu navegador. Esta é a ferramenta ideal para usuários que não são especialistas em programação do ECL, mas que querem alterar alguns códigos do ECL e ver os resultados.</para>
+
+        <para><figure>
+            <title>O ECL Playground</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLPl002.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>A página do ECL Playground está dividida em áreas. A parte superior mostra a área  <emphasis>Editor</emphasis>  e  <emphasis>Graphs Viewer</emphasis>. A lista suspensa do código de amostra está localizada no canto superior direito. A parte inferior da página exibe os resultados.</para>
+
+        <!--***NEW INTERFACE DESCR***-->
+
+        <para>O ECL Playground possui um conjunto de amostras do código ECL pronto para ser executado. A lista suspensa possui amostras do código. Selecione qualquer amostra para que ela seja carregada no editor.</para>
+
+        <para><figure>
+            <title>Lista suspensa de amostras</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLP_003b.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>O código selecionado será exibido na área do  <emphasis>Editor
+        </emphasis> Você então pode enviá-lo em sua forma atual ou modificar para depois enviar. Os resultados serão mostrados na parte inferior da página.</para>
+      </sect2>
+
+      <sect2 id="ECLPlayground_RunningECLCode">
+        <title>Executando Código ECL</title>
+
+        <para>Para executa o código de amostra selecionado, selecione um cluster de destino na lista suspensa e pressione o botão  <emphasis role="bold">Submit</emphasis>
+        .</para>
+
+        <para>A palavra  <emphasis
+        role="bold">completed</emphasis>  será exibida no momento em que o status e os resultados são exibidos no visualizador de resultados, caso a execução tenha sido bem-sucedida. Também é possível ver os gráficos acima à direita.</para>
+
+        <para><figure>
+            <title>Sucesso</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLP_005.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Um gráfico será gerado quando o job for concluído. Você pode examinar o gráfico com mais detalhes clicando duas vezes no gráfico para aumentar o zoom. Também é possível aumentar o zoom com a roda do mouse. Clique duas vezes em uma área em branco do gráfico para diminuir o zoom. Use as barras de rolagem na borda do gráfico para navegar. Você também pode arrastar o gráfico com o mouse.</para>
+
+        <para>Selecionar um nó no gráfico destaca a seção relevante do código no Editor. Isso ajuda na solução de problemas ou na modificação do código, já que mostra o código correspondente a um nó no gráfico.</para>
+
+        <para><figure>
+            <title>Error</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLP_004.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>A área de status mostra o status da tarefa. Em caso de falha da workunit, os erros serão exibidos no visualizador de resultados e código será destacado em vermelho no  <emphasis>Editor</emphasis>. Os avisos serão mostrados em amarelo.</para>
+
+        <sect3 id="ECLPlayground_AnalyzeResutls">
+          <title>Analisando os Resultados</title>
+
+          <para>Ao executar um código ECL que contém múltiplos resultados, cada resultado será exibido em guia separada. Selecione uma guia para ver aquele conjunto de resultados. Também é possível alterar o número de resultados exibidos ou paginar pelos resultados através dos links localizados n parte inferior.</para>
+
+          <para><figure>
+              <title>Múltiplos resultados</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLP_006a.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="ECLPlayground_ECLFromAWorkunit" role="brk">
+        <title>ECL de uma Workunit</title>
+
+        <para>Você pode acessar o código ECL dentro da página Detalhes da Workunit no ECL Watch.<orderedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Selecione <emphasis role="bold">Workunit</emphasis> do menu do ECL Watch <inlinegraphic fileref="../../images/ECLWA001.jpg" />
+              .</para>
+
+              <para><figure>
+                  <title>Navegar por Workunits</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ECLWA00A.jpg"
+                                 vendor="eclwatchSS" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no hyperlink de uma workunit para abrir a página Detalhes da Workunit.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Clique na guia<emphasis role="bold"> ECL </emphasis>para ver o código ECL da Workunit.<figure>
+                  <title>Link ECL</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ECLP_008.jpg"
+                                 vendor="eclwatchSS" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

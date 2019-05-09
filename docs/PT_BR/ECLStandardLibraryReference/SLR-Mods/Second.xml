@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Second">
+  <title>Second</title>
+
+  <para><emphasis role="bold">STD.Date.Second<indexterm>
+      <primary>STD.Date.Second</primary>
+    </indexterm><indexterm>
+      <primary>Date.Second</primary>
+    </indexterm><indexterm>
+      <primary>Second</primary>
+    </indexterm>(</emphasis> <emphasis>time</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>time</emphasis></entry>
+
+          <entry>Um valor de hora no formato Time_.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>Second retorna um valor INTEGER que representa os segundos no
+          intervalo de 0 a 59.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">Second </emphasis> retorna os segundos
+  do valor de <emphasis>time</emphasis> .</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+MyTime:= STD.Date.CurrentTime(TRUE);   //Local Time
+  
+t1 := STD.Date.Second(MyTime);
+    //t1 contains the second of the current local time
+</programlisting>
+
+  <para/>
+</sect1>
