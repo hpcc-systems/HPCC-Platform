@@ -14,24 +14,13 @@
 #    limitations under the License.
 ################################################################################
 
-add_subdirectory(DataPatterns)
-add_subdirectory(system)
-
 set(
     SRCS
-    Audit.ecl
-    BLAS.ecl
-    BundleBase.ecl
-    Date.ecl
-    File.ecl
-    Math.ecl
-    Metaphone3.ecl
-    Metaphone.ecl
-    Str.ecl
-    Uni.ecl
+    BestRecordStructure.ecl
+    Profile.ecl
 )
 
 foreach(module ${SRCS})
     SIGN_MODULE(${module})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${module} DESTINATION share/ecllibrary/std COMPONENT Runtime)
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${module} DESTINATION share/ecllibrary/std/DataPatterns COMPONENT Runtime)
 endforeach()
