@@ -41,7 +41,7 @@ endif()
 include(ExternalProject)
 ExternalProject_Add(
     antlr3c
-    DOWNLOAD_COMMAND tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/website-antlr3/download/C/libantlr3c-3.4.tar.gz
+    DOWNLOAD_COMMAND tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/libantlr3c/libantlr3c-3.4.tar.gz
     SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/src/libantlr3c-3.4
     CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/src/libantlr3c-3.4/configure ${ANTLRcCONFIGURE_COMMAND_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR}/antlr3c 2> antlr.cfg.err
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/antlr3c
