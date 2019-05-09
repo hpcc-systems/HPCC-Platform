@@ -78,7 +78,6 @@ EnvHelper::~EnvHelper()
   m_buildSetTree.clear();
   if (m_envCfgOptions) delete m_envCfgOptions;
   if (m_genEnvRules) delete m_genEnvRules;
-  if (m_numOfCompSigned) delete [] m_numOfCompSigned;
 }
 
 
@@ -143,8 +142,6 @@ void EnvHelper::init(IPropertyTree *config)
         throw MakeStringException( -1 , "Error loading buildset from configuration");
       }
    }
-
-   m_numOfCompSigned = NULL;
 
 }
 
@@ -235,15 +232,6 @@ void EnvHelper::processNodeAddress(IPropertyTree * param)
    {
      processNodeAddress(ipFileName, m_ipArray, true);
    }
-
-   if (m_ipArray.ordinality() > 0)
-   {
-     if (m_numOfCompSigned) delete [] m_numOfCompSigned;
-     m_numOfCompSigned = new int(m_ipArray.ordinality());
-     for (unsigned i=0; i < m_ipArray.ordinality(); i++)
-       m_numOfCompSigned[i] = 0;
-   }
-
 
 }
 
