@@ -140,7 +140,7 @@ class CWsDfuEx : public CWsDfu
     Owned<IConstEnvironment> env;
     static const unsigned defaultMaxFileAccessExpirySeconds=86400; // 24 hours
 
-    void dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn, const char *requestId, unsigned expirySecs, bool returnTextResponse, IEspDFUFileAccessInfo &accessInfo);
+    void dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn, SessionId clientSessionId, const char *requestId, unsigned expirySecs, bool returnTextResponse, unsigned lockTimeoutMs, IEspDFUFileAccessResponse &resp);
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsDfuEx(){};
@@ -176,8 +176,8 @@ public:
     virtual bool onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Request &req, IEspDFUFileCreateResponse &resp);
 
     // NB: the following 3 methods are deprecated from ver >= 1.50
-        virtual bool onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp);
-        virtual bool onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &req, IEspDFUFileCreateResponse &resp);
+    virtual bool onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp);
+    virtual bool onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &req, IEspDFUFileCreateResponse &resp);
 
 private:
     const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
