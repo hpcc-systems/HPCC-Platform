@@ -1,6 +1,6 @@
 const CLUSTER_MV = "192.168.99.103";
 const CLUSTER_GJS = "localhost";
-const debugServerIP = CLUSTER_MV ;
+const debugServerIP = CLUSTER_MV;
 
 let rewrite = [
     { from: "/esp/files/Login.html", to: "http://" + debugServerIP + ":8010/esp/files/Login.html" },
@@ -33,6 +33,7 @@ let rewrite = [
     { from: "/WsDfu/*", to: "http://" + debugServerIP + ":8010/WsDfu/$1" },
     { from: "/WsDFUXRef/*", to: "http://" + debugServerIP + ":8010/WsDFUXRef/$1" },
     { from: "/WsPackageProcess/*", to: "http://" + debugServerIP + ":8010/WsPackageProcess/$1" },
+    { from: "/WsStore/*", to: "http://" + debugServerIP + ":8010/WsStore/$1" },
     { from: "/*", to: "/$1" }
 ];
 
