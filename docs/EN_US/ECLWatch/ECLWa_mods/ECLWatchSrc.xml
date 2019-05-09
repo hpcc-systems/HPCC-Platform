@@ -1387,6 +1387,53 @@
           <para>Press the <emphasis role="bold">Copy</emphasis> button to
           display the copy drop menu, with additional file copy
           options.</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para>Check the<emphasis role="bold"> Overwrite</emphasis> box
+                to overwrite files of the same name.</para>
+              </listitem>
+
+              <listitem>
+                <para>Check the<emphasis role="bold"> Compress</emphasis> box
+                to compress the file copy.</para>
+              </listitem>
+
+              <listitem>
+                <para>Check the<emphasis role="bold"> Retain Superfile
+                Structure</emphasis> box for the copy to retain the structure
+                of a Superfile.</para>
+              </listitem>
+
+              <listitem>
+                <para>Check the<emphasis role="bold"> Replicate</emphasis> box
+                to create backup copies of all file parts.</para>
+              </listitem>
+
+              <listitem>
+                <para>Check the<emphasis role="bold"> No Split</emphasis> box
+                to to prevent splitting up the file copy into parts.</para>
+              </listitem>
+
+              <listitem>
+                <para>Check the<emphasis role="bold"> Wrap</emphasis> box to
+                keep the number of parts the same and wrap if the target
+                cluster is smaller than the original.</para>
+              </listitem>
+
+              <listitem>
+                <para>Check the<emphasis role="bold"> Preserve
+                Compression</emphasis> box to retain the file
+                compression.</para>
+              </listitem>
+
+              <listitem>
+                <para>Check the<emphasis role="bold"> Expire in
+                (days)</emphasis> box to enter a number of days before
+                automatically removing the file. If omitted, the default is -1
+                (never expires).</para>
+              </listitem>
+            </itemizedlist></para>
         </sect3>
 
         <sect3 id="LogicalFile_Sorting">
