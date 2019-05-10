@@ -72,6 +72,7 @@ removedir() {
 
 force=0
 leaveenv=0
+pckname=""
 
 TEMP=$(/usr/bin/getopt -o efh --long env,help,force -- "$@")
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
@@ -89,7 +90,6 @@ while true ; do
     esac
 done
 
-
 set_environmentvars
 
 mklink=""
@@ -100,20 +100,34 @@ if [ -n "${lpath}" -a -h "${lpath}" ] ; then
 fi
 
 if [ -e /etc/debian_version ]; then
-    echo "Removing DEB"
-    apt-get remove -y hpccsystems-platform
-    if [ $? -ne 0 ]; then
-       echo "An error has occured during removal.  Try \`apt-get -f remove hpccsystems-platform\` to fix this issue."
-       exit 1
+    pckname=$(apt-cache pkgnames hpccsystems-platform 2> /dev/null)
+    if [ -n "${pckname}" ] ; then
+        echo "Removing ${pckname}"
+        apt-get remove -y ${pckname}
+        if [ $? -ne 0 ]; then
+           echo "An error has occured during removal.  Try \`apt-get -f remove ${pckname}\` to fix this issue."
+           exit 1
+        fi
     fi
 elif [ -e /etc/redhat-release -o -e /etc/SuSE-release ]; then
-    echo "Removing RPM"
-    yum remove -y hpccsystems-platform
-    if [ $? -ne 0 ]; then
-       echo "An error has occured during removal.  Try to fix any issues and then run \`yum-complete-transaction\`."
-       exit 1
+    pckname=$(rpm -qa | grep hpccsystems-platform 2> /dev/null)
+    if [ -n "${pckname}" ] ; then
+        echo "Removing ${pckname}"
+        yum remove -y ${pckname}
+        if [ $? -ne 0 ]; then
+           echo "An error has occured during removal.  Try to fix any issues and then run \`yum-complete-transaction\`."
+           exit 1
+        fi
     fi
 fi
+
+if [ -z "${pckname}" ] ; then
+    echo "Error, unable to find any hpcc package for removal."
+    exit 1
+fi
+
+
+# Removing directories
 
 echo "Removing Directory - ${path}"
 removedir ${path}
@@ -149,5 +163,4 @@ elif [ -e /usr/bin/userdel ]; then
 elif [ -e /bin/userdel ]; then
     /bin/userdel -r ${user}
 fi
-
 exit 0
