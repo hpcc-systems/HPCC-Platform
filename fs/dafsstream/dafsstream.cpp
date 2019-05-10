@@ -50,6 +50,24 @@ static StringAttr defaultCompCompression = "LZ4";
 static const char *DFUFileIdSeparator = "|";
 static const unsigned defaultExpirySecs = 300;
 
+static const char *getReadActivityString(DFUFileType fileType)
+{
+    switch (fileType)
+    {
+        case dft_flat:
+            return "diskread";
+        case dft_index:
+            return "indexread";
+        case dft_csv:
+            return "csvread";
+        case dft_xml:
+            return "xmlread";
+        case dft_json:
+            return "jsonread";
+    }
+    return "unknown";
+}
+
 class CDaFsException : public CSimpleInterfaceOf<IDaFsException>
 {
     DaFsExceptionCode code;
@@ -206,7 +224,22 @@ public:
         if (isFileKey(fileDesc))
             fileType = dft_index;
         else
-            fileType = dft_flat;
+        {
+            const char *kind = fileDesc->queryKind();
+            if (kind)
+            {
+                if (streq("csv", kind))
+                    fileType = dft_csv;
+                else if (streq("xml", kind))
+                    fileType = dft_xml;
+                else if (streq("json", kind))
+                    fileType = dft_json;
+                else
+                    fileType = dft_flat;
+            }
+            else
+                fileType = dft_flat;
+        }
 
         fileDesc->getClusterGroupName(0, groupName);
         grouped = fileDesc->isGrouped();
@@ -857,12 +890,15 @@ public:
 
         switch (file->queryType())
         {
+            case dft_xml:
+            case dft_json:
+                requestNode->setProp("xpath", "/Dataset/Row"); // JCSMORE this is a default, but should be picked up from file->queryFileDescriptor()
+                // fall through
             case dft_flat:
-                requestNode->setProp("kind", "diskread");
-                break;
+            case dft_csv:
             case dft_index:
             {
-                requestNode->setProp("kind", "indexread");
+                requestNode->setProp("kind", getReadActivityString(file->queryType()));
                 break;
             }
             default:

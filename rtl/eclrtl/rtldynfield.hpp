@@ -108,11 +108,25 @@ enum class RecordTranslationMode:byte { None = 0, All = 1, Payload = 2, AlwaysDi
 extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *modeStr);
 extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val);
 
+interface IDynamicRowIterator;
+interface IDynamicFieldValueFetcher : extends IInterface
+{
+    virtual const byte *queryValue(unsigned fieldNum, size_t &sz) const = 0;
+    virtual IDynamicRowIterator *getNestedIterator(unsigned fieldNum) const = 0;
+    virtual size_t getSize(unsigned fieldNum) const = 0;
+    virtual size32_t getRecordSize() const = 0;
+};
+
+interface IDynamicRowIterator : extends IIteratorOf<IDynamicFieldValueFetcher>
+{
+};
+
 interface IDynamicTransform : public IInterface
 {
     virtual void describe() const = 0;
     virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const byte *sourceRec) const = 0;
     virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const RtlRow &sourceRow) const = 0;
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const IDynamicFieldValueFetcher & fetcher) const = 0;
     virtual bool canTranslate() const = 0;
     virtual bool needsTranslate() const = 0;
     virtual bool keyedTranslated() const = 0;
@@ -148,7 +162,18 @@ interface IKeyTranslator : public IInterface
     virtual bool needsTranslate() const = 0;
 };
 
+interface IDynamicTransformViaCallback : public IInterface
+{
+    virtual void describe() const = 0;
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const void *sourceRec) const = 0;
+    virtual bool canTranslate() const = 0;
+    virtual bool needsTranslate() const = 0;
+    virtual bool keyedTranslated() const = 0;
+    virtual bool needsNonVirtualTranslate() const = 0;
+};
+
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
+extern ECLRTL_API const IDynamicTransform *createRecordTranslatorViaCallback(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
 extern ECLRTL_API void throwTranslationError(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, const char * filename);
 
 extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);

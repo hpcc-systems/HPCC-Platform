@@ -329,6 +329,13 @@ void XmlDatasetColumnProvider::readUtf8X(size32_t & len, char * & target, const 
         rtlUtf8ToUtf8X(len, target, _lenDefault, _default);
 }
 
+const char *XmlDatasetColumnProvider::readRaw(const char * path, size32_t &sz) const
+{
+    const char *value = row->queryProp(path);
+    sz = value ? strlen(value) : 0;
+    return value;
+}
+
 //=====================================================================================================
 
 bool XmlSetColumnProvider::getBool(const char * name)
@@ -1632,7 +1639,12 @@ public:
         }
         return _default;
     }
-
+    virtual const char *readRaw(const char * path, size32_t &sz) const override
+    {
+        const char *value = node->queryProp(path);
+        sz = value ? strlen(value) : 0;
+        return value;
+    }
 };
 
 void CColumnIterator::setCurrent()

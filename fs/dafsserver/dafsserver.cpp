@@ -57,6 +57,10 @@
 
 #include "dafdesc.hpp"
 
+#include "thorcommon.hpp"
+#include "csvsplitter.hpp"
+#include "thorxmlread.hpp"
+
 #include "dafscommon.hpp"
 #include "rmtfile.hpp"
 #include "rmtclient_impl.hpp"
@@ -1124,8 +1128,16 @@ static IOutputMetaData *getTypeInfoOutputMetaData(IPropertyTree &actNode, const 
 
 class CRemoteActivityBase : public CSimpleInterface
 {
-protected:
+public:
+    virtual void init(IPropertyTree &config) { }
 };
+
+template<class ActivityClass> ActivityClass *constructAndInitialize(IPropertyTree &actNode, IFileDescriptor *fileDesc)
+{
+    Owned<ActivityClass> ret = new ActivityClass(actNode, fileDesc);
+    ret->init(actNode); // post constructor initialization
+    return ret.getClear();
+}
 
 class CRemoteDiskBaseActivity : public CRemoteActivityBase, implements IRemoteReadActivity, implements IVirtualFieldCallback
 {
@@ -1133,7 +1145,6 @@ protected:
     StringAttr fileName; // physical filename
     Linked<IOutputMetaData> inMeta, outMeta;
     unsigned __int64 processed = 0;
-    Owned<const IDynamicTransform> translator;
     bool outputGrouped = false;
     bool opened = false;
     bool eofSeen = false;
@@ -1141,25 +1152,22 @@ protected:
     RowFilter filters;
     // virtual field values
     StringAttr logicalFilename;
+    unsigned numInputFields = 0;
 
-    void initCommon(IPropertyTree &config)
+public:
+    IMPLEMENT_IINTERFACE_USING(CRemoteActivityBase)
+
+    CRemoteDiskBaseActivity(IPropertyTree &config, IFileDescriptor *fileDesc)
     {
         fileName.set(config.queryProp("fileName"));
         if (isEmptyString(fileName))
             throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: fileName missing");
-
-        record = &inMeta->queryRecordAccessor(true);
-        translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
-        Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
-        ForEach(*filterIter)
-            filters.addFilter(*record, filterIter->query().queryProp(nullptr));
         logicalFilename.set(config.queryProp("virtualFields/logicalFilename"));
     }
-public:
-    IMPLEMENT_IINTERFACE_USING(CRemoteActivityBase)
-
-    CRemoteDiskBaseActivity(IPropertyTree &config)
+    virtual void init(IPropertyTree &config) override
     {
+        record = &inMeta->queryRecordAccessor(true);
+        numInputFields = record->getNumFields();
     }
 // IRemoteReadActivity impl.
     virtual unsigned __int64 queryProcessed() const override
@@ -1205,41 +1213,41 @@ public:
     }
 };
 
-class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
+class CRemoteStreamReadBaseActivity : public CRemoteDiskBaseActivity
 {
     typedef CRemoteDiskBaseActivity PARENT;
 
-    CThorContiguousRowBuffer prefetchBuffer;
-    Owned<ISourceRowPrefetcher> prefetcher;
+protected:
     Owned<ISerialStream> inputStream;
     Owned<IFileIO> iFileIO;
     unsigned __int64 chooseN = 0;
     unsigned __int64 startPos = 0;
     bool compressed = false;
-    bool inputGrouped = false;
     bool cursorDirty = false;
-    mutable bool eogPending = false;
-    mutable bool someInGroup = false;
     RtlDynRow *filterRow = nullptr;
     // virtual field values
     unsigned partNum = 0;
     offset_t baseFpos = 0;
 
-    void checkOpen()
+    virtual bool refreshCursor()
+    {
+        if (inputStream->tell() != startPos)
+        {
+            inputStream->reset(startPos);
+            return true;
+        }
+        return false;
+    }
+    bool checkOpen() // NB: returns true if this call opened file
     {
         if (opened)
         {
             if (!cursorDirty)
-                return;
-            if (prefetchBuffer.tell() != startPos)
-            {
-                inputStream->reset(startPos);
-                prefetchBuffer.clearStream();
-                prefetchBuffer.setStream(inputStream);
-            }
+                return false;
+            refreshCursor();
             eofSeen = false;
             cursorDirty = false;
-            return;
+            return false;
         }
         cursorDirty = false;
         OwnedIFile iFile = createIFile(fileName);
@@ -1265,11 +1273,10 @@ class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
             }
         }
         inputStream.setown(createFileSerialStream(iFileIO, startPos));
-        prefetchBuffer.setStream(inputStream);
-        prefetcher.setown(inMeta->createDiskPrefetcher());
 
         opened = true;
         eofSeen = false;
+        return true;
     }
     void close()
     {
@@ -1288,29 +1295,86 @@ class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
             return true;
     }
 public:
-    CRemoteDiskReadActivity(IPropertyTree &config) : PARENT(config), prefetchBuffer(nullptr)
+    CRemoteStreamReadBaseActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
         compressed = config.getPropBool("compressed");
+        chooseN = config.getPropInt64("chooseN", defaultFileStreamChooseNLimit);
+
+        partNum = config.getPropInt("virtualFields/partNum");
+        baseFpos = (offset_t)config.getPropInt64("virtualFields/baseFpos");
+    }
+    ~CRemoteStreamReadBaseActivity()
+    {
+        delete filterRow;
+    }
+    virtual void init(IPropertyTree &config) override
+    {
+        PARENT::init(config);
+        if (config.hasProp("keyFilter"))
+        {
+            filterRow = new RtlDynRow(*record);
+            Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
+            ForEach(*filterIter)
+                filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+        }
+    }
+//interface IVirtualFieldCallback
+    virtual unsigned __int64 getFilePosition(const void * row) override
+    {
+        return inputStream->tell() + baseFpos;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override
+    {
+        return makeLocalFposOffset(partNum, inputStream->tell());
+    }
+};
+
+class CRemoteDiskReadActivity : public CRemoteStreamReadBaseActivity
+{
+    typedef CRemoteStreamReadBaseActivity PARENT;
+
+    CThorContiguousRowBuffer prefetchBuffer;
+    Owned<ISourceRowPrefetcher> prefetcher;
+    bool inputGrouped = false;
+    mutable bool eogPending = false;
+    mutable bool someInGroup = false;
+    Owned<const IDynamicTransform> translator;
+
+    virtual bool refreshCursor() override
+    {
+        if (prefetchBuffer.tell() != startPos)
+        {
+            inputStream->reset(startPos);
+            prefetchBuffer.clearStream();
+            prefetchBuffer.setStream(inputStream);
+            return true;
+        }
+        return false;
+    }
+    bool checkOpen()
+    {
+        if (!PARENT::checkOpen()) // returns true if it opened file
+            return false;
+        prefetchBuffer.setStream(inputStream);
+        prefetcher.setown(inMeta->createDiskPrefetcher());
+        return true;
+    }
+public:
+    CRemoteDiskReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc), prefetchBuffer(nullptr)
+    {
         inputGrouped = config.getPropBool("inputGrouped", false);
         outputGrouped = config.getPropBool("outputGrouped", false);
-        chooseN = config.getPropInt64("chooseN", defaultFileStreamChooseNLimit);
         if (!inputGrouped && outputGrouped)
             outputGrouped = false; // perhaps should fire error
         inMeta.setown(getTypeInfoOutputMetaData(config, "input", inputGrouped));
         outMeta.setown(getTypeInfoOutputMetaData(config, "output", outputGrouped));
         if (!outMeta)
             outMeta.set(inMeta);
-
-        partNum = config.getPropInt("virtualFields/partNum");
-        baseFpos = (offset_t)config.getPropInt64("virtualFields/baseFpos");
-
-        initCommon(config);
-        if (config.hasProp("keyFilter"))
-            filterRow = new RtlDynRow(*record);
     }
-    ~CRemoteDiskReadActivity()
+    virtual void init(IPropertyTree &config) override
     {
-        delete filterRow;
+        PARENT::init(config);
+        translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
     }
 // IRemoteReadActivity impl.
     virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
@@ -1319,6 +1383,7 @@ public:
         {
             eogPending = false;
             someInGroup = false;
+            retSz = 0;
             return nullptr;
         }
         checkOpen();
@@ -1396,21 +1461,370 @@ public:
     {
         return prefetchBuffer.tell() + baseFpos;
     }
-    virtual unsigned __int64 getLocalFilePosition(const void * row) override
+};
+
+
+class CRemoteCsvReadActivity : public CRemoteStreamReadBaseActivity
+{
+    typedef CRemoteStreamReadBaseActivity PARENT;
+
+    StringBuffer csvQuote, csvSeparate, csvTerminate, csvEscape;
+    unsigned __int64 headerLines = 0;
+    unsigned __int64 maxRowSize = 0;
+    bool preserveWhitespace = false;
+    CSVSplitter csvSplitter;
+    Owned<const IDynamicFieldValueFetcher> fieldFetcher;
+    Owned<const IDynamicTransform> translator;
+
+    class CFieldFetcher : public CSimpleInterfaceOf<IDynamicFieldValueFetcher>
     {
-        return makeLocalFposOffset(partNum, prefetchBuffer.tell());
+        CSVSplitter &csvSplitter;
+        unsigned numInputFields;
+    public:
+        CFieldFetcher(CSVSplitter &_csvSplitter, unsigned _numInputFields) : csvSplitter(_csvSplitter), numInputFields(_numInputFields)
+        {
+        }
+        virtual const byte *queryValue(unsigned fieldNum, size_t &sz) const override
+        {
+            dbgassertex(fieldNum < numInputFields);
+            sz = csvSplitter.queryLengths()[fieldNum];
+            return csvSplitter.queryData()[fieldNum];
+        }
+        virtual IDynamicRowIterator *getNestedIterator(unsigned fieldNum) const override
+        {
+            return nullptr;
+        }
+        virtual size_t getSize(unsigned fieldNum) const override
+        {
+            dbgassertex(fieldNum < numInputFields);
+            return csvSplitter.queryLengths()[fieldNum];
+        }
+        virtual size32_t getRecordSize() const override
+        {
+            size32_t sz = 0;
+            for (unsigned f=0; f<numInputFields; f++)
+                sz += csvSplitter.queryLengths()[f];
+            return sz;
+        }
+    };
+
+    bool checkOpen()
+    {
+        if (!PARENT::checkOpen())
+            return false;
+        csvSplitter.init(numInputFields, maxRowSize, csvQuote, csvSeparate, csvTerminate, csvEscape, preserveWhitespace);
+
+        if (headerLines)
+        {
+            do
+            {
+                size32_t lineLength = csvSplitter.splitLine(inputStream, maxRowSize);
+                if (0 == lineLength)
+                    break;
+                inputStream->skip(lineLength);
+            }
+            while (--headerLines);
+        }
+
+        if (!fieldFetcher)
+            fieldFetcher.setown(new CFieldFetcher(csvSplitter, numInputFields));
+
+        const RtlRecord &outRecord = outMeta->queryRecordAccessor(true);
+        translator.setown(createRecordTranslatorViaCallback(outRecord, *record));
+
+        return true;
     }
-    virtual const byte * lookupBlob(unsigned __int64 id) override
+    const unsigned defaultMaxCsvRowSize = 10; // MB
+public:
+    CRemoteCsvReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
-        throwUnexpected();
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
+        outMeta.setown(getTypeInfoOutputMetaData(config, "output", false));
+        if (!outMeta)
+            outMeta.set(inMeta);
+
+        maxRowSize = config.getPropInt64("maxRowSize", defaultMaxCsvRowSize) * 1024 * 1024;
+        preserveWhitespace = config.getPropBool("preserveWhitespace");
+
+        if (!config.getProp("csvQuote", csvQuote))
+            fileDesc->queryProperties().getProp("@csvQuote", csvQuote);
+        if (!config.getProp("csvSeparate", csvSeparate))
+            fileDesc->queryProperties().getProp("@csvSeparate", csvSeparate);
+        if (!config.getProp("csvTerminate", csvTerminate))
+            fileDesc->queryProperties().getProp("@csvTerminate", csvTerminate);
+        if (!config.getProp("csvEscape", csvEscape))
+            fileDesc->queryProperties().getProp("@csvEscape", csvEscape);
+
+        headerLines = config.getPropInt64("headerLines"); // really this should be a published attribute too
+    }
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("csvread[%s]", fileName.get());
+    }
+// IRemoteReadActivity impl.
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
+    {
+        if (eofSeen)
+        {
+            retSz = 0;
+            return nullptr;
+        }
+        checkOpen();
+        while (!eofSeen && (processed < chooseN))
+        {
+            size32_t lineLength = csvSplitter.splitLine(inputStream, maxRowSize);
+            if (!lineLength)
+                return nullptr;
+
+            retSz = translator->translate(outBuilder, *this, *fieldFetcher);
+
+            if (retSz) // could it ever be 0 (skip) ??
+            {
+                const void *ret = outBuilder.getSelf();
+                outBuilder.finishRow(retSz);
+                ++processed;
+                inputStream->skip(lineLength);
+                return ret;
+            }
+        }
+        eofSeen = true;
+        close();
+        retSz = 0;
+        return nullptr;
     }
 };
 
 
-IRemoteReadActivity *createRemoteDiskRead(IPropertyTree &actNode)
+class CRemoteMarkupReadActivity : public CRemoteStreamReadBaseActivity, implements IXMLSelect
 {
-    return new CRemoteDiskReadActivity(actNode);
-}
+    typedef CRemoteStreamReadBaseActivity PARENT;
+
+    ThorActivityKind kind;
+    IXmlToRowTransformer *xmlTransformer;
+    Linked<IColumnProvider> lastMatch;
+    Owned<IXMLParse> xmlParser;
+
+    StringBuffer xpath;
+    bool noRoot = false;
+    bool useXmlContents = false;
+
+    Owned<const IDynamicFieldValueFetcher> fieldFetcher;
+    Owned<const IDynamicTransform> translator;
+
+    class CFieldFetcher : public CSimpleInterfaceOf<IDynamicFieldValueFetcher>
+    {
+        unsigned numInputFields;
+        const RtlRecord &recInfo;
+        Linked<IColumnProvider> currentMatch;
+    public:
+        CFieldFetcher(const RtlRecord &_recInfo, IColumnProvider *_currentMatch) : recInfo(_recInfo), currentMatch(_currentMatch)
+        {
+            numInputFields = recInfo.getNumFields();
+        }
+        void setCurrentMatch(IColumnProvider *_currentMatch)
+        {
+            currentMatch.set(_currentMatch);
+        }
+    // IDynamicFieldValueFetcher impl.
+        virtual const byte *queryValue(unsigned fieldNum, size_t &sz) const override
+        {
+            dbgassertex(fieldNum < numInputFields);
+            dbgassertex(currentMatch);
+
+            size32_t rawSz;
+            const char *ret = currentMatch->readRaw(recInfo.queryName(fieldNum), rawSz);
+            sz = rawSz;
+            return (const byte *)ret;
+        }
+        virtual IDynamicRowIterator *getNestedIterator(unsigned fieldNum) const override
+        {
+            dbgassertex(fieldNum < numInputFields);
+            dbgassertex(currentMatch);
+
+            const RtlRecord *nested = recInfo.queryNested(fieldNum);
+            if (!nested)
+                return nullptr;
+
+            class CIterator : public CSimpleInterfaceOf<IDynamicRowIterator>
+            {
+                XmlChildIterator xmlIter;
+                Linked<IDynamicFieldValueFetcher> curFieldValueFetcher;
+                Linked<IColumnProvider> parentMatch;
+                const RtlRecord &nestedRecInfo;
+            public:
+                CIterator(const RtlRecord &_nestedRecInfo, IColumnProvider *_parentMatch, const char *fieldName) : nestedRecInfo(_nestedRecInfo), parentMatch(_parentMatch)
+                {
+                    VStringBuffer xpath("%s/Row", fieldName);
+                    xmlIter.initOwn(parentMatch->getChildIterator(xpath));
+                }
+                virtual bool first() override
+                {
+                    IColumnProvider *child = xmlIter.first();
+                    if (!child)
+                    {
+                        curFieldValueFetcher.clear();
+                        return false;
+                    }
+                    curFieldValueFetcher.setown(new CFieldFetcher(nestedRecInfo, child));
+
+                    return true;
+                }
+                virtual bool next() override
+                {
+                    IColumnProvider *child = xmlIter.next();
+                    if (!child)
+                    {
+                        curFieldValueFetcher.clear();
+                        return false;
+                    }
+                    curFieldValueFetcher.setown(new CFieldFetcher(nestedRecInfo, child));
+                    return true;
+                }
+                virtual bool isValid() override
+                {
+                    return nullptr != curFieldValueFetcher.get();
+                }
+                virtual IDynamicFieldValueFetcher &query() override
+                {
+                    assertex(curFieldValueFetcher);
+                    return *curFieldValueFetcher;
+                }
+            };
+            const char *fieldName = recInfo.queryName(fieldNum);
+            return  new CIterator(*nested, currentMatch, fieldName);
+        }
+        virtual size_t getSize(unsigned fieldNum) const override
+        {
+            dbgassertex(fieldNum < numInputFields);
+            dbgassertex(currentMatch);
+            size32_t sz;
+            currentMatch->readRaw(recInfo.queryName(fieldNum), sz);
+            return sz;
+        }
+        virtual size32_t getRecordSize() const override
+        {
+            size32_t sz = 0;
+            for (unsigned f=0; f<numInputFields; f++)
+                sz += getSize(f); // JCSMORE - a bit ineffficient (cache sizes?)
+            return sz;
+        }
+    };
+
+    bool checkOpen()
+    {
+        if (!PARENT::checkOpen())
+            return false;
+
+        class CSimpleStream : public CSimpleInterfaceOf<ISimpleReadStream>
+        {
+            Linked<ISerialStream> stream;
+        public:
+            CSimpleStream(ISerialStream *_stream) : stream(_stream)
+            {
+            }
+        // ISimpleReadStream impl.
+            virtual size32_t read(size32_t max_len, void * data) override
+            {
+                size32_t got;
+                const void *res = stream->peek(max_len, got);
+                if (got)
+                {
+                    memcpy(data, res, got);
+                    stream->skip(got);
+                }
+                return got;
+            }
+        };
+        Owned<ISimpleReadStream> simpleStream = new CSimpleStream(inputStream);
+        if (kind==TAKjsonread)
+            xmlParser.setown(createJSONParse(*simpleStream, xpath, *this, noRoot?ptr_noRoot:ptr_none, useXmlContents));
+        else
+            xmlParser.setown(createXMLParse(*simpleStream, xpath, *this, noRoot?ptr_noRoot:ptr_none, useXmlContents));
+
+        const RtlRecord &outRecord = outMeta->queryRecordAccessor(true);
+
+        if (!fieldFetcher)
+            fieldFetcher.setown(new CFieldFetcher(*record, nullptr));
+        translator.setown(createRecordTranslatorViaCallback(outRecord, *record));
+
+        return true;
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CRemoteStreamReadBaseActivity);
+
+    CRemoteMarkupReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc, ThorActivityKind _kind) : PARENT(config, fileDesc), kind(_kind)
+    {
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
+        outMeta.setown(getTypeInfoOutputMetaData(config, "output", false));
+        if (!outMeta)
+            outMeta.set(inMeta);
+
+        config.getProp("xpath", xpath);
+        noRoot = config.getPropBool("noRoot");
+    }
+    IColumnProvider *queryMatch() const { return lastMatch; }
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("%s[%s]", getActivityText(kind), fileName.get());
+    }
+// IRemoteReadActivity impl.
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
+    {
+        if (eofSeen)
+        {
+            retSz = 0;
+            return nullptr;
+        }
+        checkOpen();
+
+        while (xmlParser->next())
+        {
+            if (lastMatch)
+            {
+                ((CFieldFetcher *)fieldFetcher.get())->setCurrentMatch(lastMatch);
+                retSz = translator->translate(outBuilder, *this, *fieldFetcher);
+
+                lastMatch.clear();
+                if (retSz) // could it ever be 0 (skip) ??
+                {
+                    const void *ret = outBuilder.getSelf();
+                    outBuilder.finishRow(retSz);
+                    ++processed;
+                    return ret;
+                }
+            }
+        }
+        eofSeen = true;
+        close();
+        retSz = 0;
+        return nullptr;
+    }
+// IXMLSelect impl.
+    virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
+    {
+        lastMatch.set(&entry);
+    }
+};
+
+class CRemoteXmlReadActivity : public CRemoteMarkupReadActivity
+{
+    typedef CRemoteMarkupReadActivity PARENT;
+public:
+    CRemoteXmlReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc, TAKxmlread)
+    {
+    }
+};
+
+
+class CRemoteJsonReadActivity : public CRemoteMarkupReadActivity
+{
+    typedef CRemoteMarkupReadActivity PARENT;
+public:
+    CRemoteJsonReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc, TAKjsonread)
+    {
+    }
+};
+
 
 class CRemoteIndexBaseActivity : public CRemoteDiskBaseActivity
 {
@@ -1420,6 +1834,7 @@ protected:
     bool isTlk = false;
     bool allowPreload = false;
     unsigned fileCrc = 0;
+    Owned<const IDynamicTransform> translator;
     Owned<IKeyIndex> keyIndex;
     Owned<IKeyManager> keyManager;
 
@@ -1451,11 +1866,16 @@ protected:
         eofSeen = true;
     }
 public:
-    CRemoteIndexBaseActivity(IPropertyTree &config) : PARENT(config)
+    CRemoteIndexBaseActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
         isTlk = config.getPropBool("isTlk");
         allowPreload = config.getPropBool("allowPreload");
         fileCrc = config.getPropInt("crc");
+    }
+    virtual void init(IPropertyTree &config) override
+    {
+        PARENT::init(config);
+        translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
     }
 };
 
@@ -1465,21 +1885,22 @@ class CRemoteIndexReadActivity : public CRemoteIndexBaseActivity
 
     unsigned __int64 chooseN = 0;
 public:
-    CRemoteIndexReadActivity(IPropertyTree &config) : PARENT(config)
+    CRemoteIndexReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
         chooseN = config.getPropInt64("chooseN", defaultFileStreamChooseNLimit);
         inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
         outMeta.setown(getTypeInfoOutputMetaData(config, "output", false));
         if (!outMeta)
             outMeta.set(inMeta);
-
-        initCommon(config);
     }
 // IRemoteReadActivity impl.
     virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
     {
         if (eofSeen)
+        {
+            retSz = 0;
             return nullptr;
+        }
         checkOpen();
         if (!eofSeen)
         {
@@ -1528,11 +1949,6 @@ public:
 };
 
 
-IRemoteReadActivity *createRemoteIndexRead(IPropertyTree &actNode)
-{
-    return new CRemoteIndexReadActivity(actNode);
-}
-
 class CRemoteWriteBaseActivity : public CRemoteActivityBase, implements IRemoteWriteActivity
 {
 protected:
@@ -1545,13 +1961,6 @@ protected:
     Owned<IFileIO> iFileIO;
     bool grouped = false;
 
-
-    void initCommon(IPropertyTree &config)
-    {
-        fileName.set(config.queryProp("fileName"));
-        if (isEmptyString(fileName))
-            throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteWriteBaseActivity: fileName missing");
-    }
     void close()
     {
         iFileIO.clear();
@@ -1561,12 +1970,13 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CRemoteActivityBase)
 
-    CRemoteWriteBaseActivity(IPropertyTree &config)
+    CRemoteWriteBaseActivity(IPropertyTree &config, IFileDescriptor *fileDesc)
     {
+        fileName.set(config.queryProp("fileName"));
+        if (isEmptyString(fileName))
+            throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteWriteBaseActivity: fileName missing");
         grouped = config.getPropBool("inputGrouped");
         meta.setown(getTypeInfoOutputMetaData(config, "input", grouped));
-
-        initCommon(config);
     }
     ~CRemoteWriteBaseActivity()
     {
@@ -1648,7 +2058,7 @@ class CRemoteDiskWriteActivity : public CRemoteWriteBaseActivity
         eofSeen = false;
     }
 public:
-    CRemoteDiskWriteActivity(IPropertyTree &config) : PARENT(config)
+    CRemoteDiskWriteActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
         const char *compressed = config.queryProp("compressed"); // the compression format for the serialized rows in the transport
         if (!isEmptyString(compressed))
@@ -1681,11 +2091,6 @@ public:
     }
 };
 
-IRemoteWriteActivity *createRemoteDiskWrite(IPropertyTree &actNode)
-{
-    return new CRemoteDiskWriteActivity(actNode);
-}
-
 
 // create a { unsigned8 } output meta for the count
 static const RtlIntTypeInfo indexCountFieldType(type_unsigned|type_int, 8);
@@ -1700,20 +2105,21 @@ class CRemoteIndexCountActivity : public CRemoteIndexBaseActivity
     unsigned __int64 rowLimit = 0;
 
 public:
-    CRemoteIndexCountActivity(IPropertyTree &config) : PARENT(config)
+    CRemoteIndexCountActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
         rowLimit = config.getPropInt64("chooseN");
 
         inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
         outMeta.setown(new CDynamicOutputMetaData(indexCountRecord));
-
-        initCommon(config);
     }
 // IRemoteReadActivity impl.
     virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
     {
         if (eofSeen)
+        {
+            retSz = 0;
             return nullptr;
+        }
         checkOpen();
         unsigned __int64 count = 0;
         if (!eofSeen)
@@ -1737,11 +2143,6 @@ public:
 };
 
 
-IRemoteReadActivity *createRemoteIndexCount(IPropertyTree &actNode)
-{
-    return new CRemoteIndexCountActivity(actNode);
-}
-
 void checkExpiryTime(IPropertyTree &metaInfo)
 {
     const char *expiryTime = metaInfo.queryProp("expiryTime");
@@ -1764,12 +2165,12 @@ void checkExpiryTime(IPropertyTree &metaInfo)
         throw createDafsException(DAFSERR_cmdstream_authexpired, "createRemoteActivity: authorization expired");
 }
 
-void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IPropertyTree *keyPairInfo)
+IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IPropertyTree *keyPairInfo)
 {
     if (!authorizedOnly) // if configured false, allows unencrypted meta info
     {
         if (actNode.hasProp("fileName"))
-            return;
+            return nullptr;
     }
     StringBuffer metaInfoB64;
     actNode.getProp("metaInfo", metaInfoB64);
@@ -1823,13 +2224,14 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
     assertex(partNum);
     unsigned partCopy = actNode.getPropInt("filePartCopy", 1);
 
+    Owned<IFileDescriptor> fileDesc;
     unsigned metaInfoVersion = metaInfo->getPropInt("version");
     switch (metaInfoVersion)
     {
         case 0:
             // implies unsigned direct request from engines (on unsecure port)
             // fall through
-        case 1:
+        case 1: // legacy
         {
             IPropertyTree *fileInfo = metaInfo->queryPropTree("FileInfo");
             assertex(fileInfo);
@@ -1847,8 +2249,7 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
         {
             IPropertyTree *fileInfo = metaInfo->queryPropTree("FileInfo");
 
-            // may want to keep this for a little longer
-            Owned<IFileDescriptor> fileDesc = deserializeFileDescriptorTree(fileInfo);
+            fileDesc.setown(deserializeFileDescriptorTree(fileInfo));
 
             RemoteFilename rfn;
             fileDesc->getFilename(partNum-1, partCopy-1, rfn);
@@ -1864,11 +2265,13 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
     }
 
     verifyex(actNode.removeProp("metaInfo")); // no longer needed
+
+    return fileDesc.getClear();
 }
 
 IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnly, const IPropertyTree *keyPairInfo)
 {
-    verifyMetaInfo(actNode, authorizedOnly, keyPairInfo);
+    Owned<IFileDescriptor> fileDesc = verifyMetaInfo(actNode, authorizedOnly, keyPairInfo);
 
     const char *partFileName = actNode.queryProp("fileName");
     const char *kindStr = actNode.queryProp("kind");
@@ -1877,6 +2280,12 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
     {
         if (strieq("diskread", kindStr))
             kind = TAKdiskread;
+        if (strieq("csvread", kindStr))
+            kind = TAKcsvread;
+        else if (strieq("xmlread", kindStr))
+            kind = TAKxmlread;
+        else if (strieq("jsonread", kindStr))
+            kind = TAKjsonread;
         else if (strieq("indexread", kindStr))
             kind = TAKindexread;
         else if (strieq("indexcount", kindStr))
@@ -1893,22 +2302,37 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
     {
         case TAKdiskread:
         {
-            activity.setown(createRemoteDiskRead(actNode));
+            activity.setown(constructAndInitialize<CRemoteDiskReadActivity>(actNode, fileDesc));
+            break;
+        }
+        case TAKcsvread:
+        {
+            activity.setown(constructAndInitialize<CRemoteCsvReadActivity>(actNode, fileDesc));
+            break;
+        }
+        case TAKxmlread:
+        {
+            activity.setown(constructAndInitialize<CRemoteXmlReadActivity>(actNode, fileDesc));
+            break;
+        }
+        case TAKjsonread:
+        {
+            activity.setown(constructAndInitialize<CRemoteJsonReadActivity>(actNode, fileDesc));
             break;
         }
         case TAKindexread:
         {
-            activity.setown(createRemoteIndexRead(actNode));
+            activity.setown(constructAndInitialize<CRemoteIndexReadActivity>(actNode, fileDesc));
             break;
         }
         case TAKindexcount:
         {
-            activity.setown(createRemoteIndexCount(actNode));
+            activity.setown(constructAndInitialize<CRemoteIndexCountActivity>(actNode, fileDesc));
             break;
         }
         case TAKdiskwrite:
         {
-            activity.setown(createRemoteDiskWrite(actNode));
+            activity.setown(constructAndInitialize<CRemoteDiskWriteActivity>(actNode, fileDesc));
             break;
         }
         default: // in absense of type, read is assumed and file format is auto-detected.
@@ -1919,12 +2343,12 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
                 if (!isEmptyString(action))
                 {
                     if (streq("count", action))
-                        activity.setown(createRemoteIndexCount(actNode));
+                        activity.setown(constructAndInitialize<CRemoteIndexCountActivity>(actNode, fileDesc));
                     else
                         throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "Unknown action '%s' on index '%s'", action, partFileName);
                 }
                 else
-                    activity.setown(createRemoteIndexRead(actNode));
+                    activity.setown(constructAndInitialize<CRemoteIndexReadActivity>(actNode, fileDesc));
             }
             else // flat file
             {
@@ -1936,7 +2360,7 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
                         throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "Unknown action '%s' on flat file '%s'", action, partFileName);
                 }
                 else
-                    activity.setown(createRemoteDiskRead(actNode));
+                    activity.setown(constructAndInitialize<CRemoteDiskReadActivity>(actNode, fileDesc));
             }
             break;
         }
