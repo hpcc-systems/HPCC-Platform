@@ -9464,7 +9464,10 @@ protected:
         pipeCommand.setown(cmd);
         pipe.setown(createPipeProcess());
         if(!pipe->run(NULL, cmd, ".", false, true, true, 0x10000))
-            throw MakeStringException(ROXIE_PIPE_ERROR, "Could not run pipe process %s", cmd);
+        {
+            // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
+            WARNLOG(ROXIE_PIPE_ERROR, "Could not run pipe process %s", cmd);
+        }
         Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
         readTransformer->setStream(pipeReader.get());
     }
@@ -9654,16 +9657,30 @@ public:
 private:
     bool waitForPipe()
     {
-        if (firstRead)
+        Owned<IException> pipeException;
+        try
         {
-            pipeOpened.wait();
-            firstRead = false;
+            if (firstRead)
+            {
+                pipeOpened.wait();
+                firstRead = false;
+            }
+            if (!pipe)
+                return false;  // done
+            if (!readTransformer->eos())
+                return true;
         }
-        if (!pipe)
-            return false;  // done
-        if (!readTransformer->eos())
-            return true;
+        catch (IException *e)
+        {
+            // NB: the original exception is probably a IPipeProcessException, but because InterruptableSemaphore rethrows it, we must catch it as an IException
+            if (QUERYINTERFACE(e, IPipeProcessException))
+                pipeException.setown(e);
+            else
+                throw;
+        }
         verifyPipe();
+        if (pipeException) // NB: verifyPipe may throw error based on pipe prog. output 1st.
+            throw pipeException.getClear();
         if (recreate && !inputExhausted)
             pipeOpened.wait();
         return false;
@@ -9674,7 +9691,10 @@ private:
         pipeCommand.setown(cmd);
         pipe.setown(createPipeProcess());
         if(!pipe->run(NULL, cmd, ".", true, true, true, 0x10000))
-            throw MakeStringException(ROXIE_PIPE_ERROR, "Could not run pipe process %s", cmd);
+        {
+            // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
+            WARNLOG(ROXIE_PIPE_ERROR, "Could not run pipe process %s", cmd);
+        }
         writeTransformer->writeHeader(pipe);
         Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
         readTransformer->setStream(pipeReader.get());
@@ -9700,7 +9720,6 @@ private:
             pipeVerified.signal();
         }
     }
-
 };
 
 class CRoxieServerPipeWriteActivity : public CRoxieServerInternalSinkActivity
@@ -9767,20 +9786,34 @@ public:
 
     virtual void onExecute()
     {
-        for (;;)
+        Owned<IPipeProcessException> pipeException;
+        try
         {
-            const void *row = inputStream->ungroupedNextRow();
-            if (!row)
-                break;
-            processed++;
-            if(recreate)
-                openPipe(helper.getNameFromRow(row));
-            writeTransformer->writeTranslatedText(row, pipe);
-            ReleaseRoxieRow(row);
-            if(recreate)
+            for (;;)
+            {
+                OwnedConstRoxieRow row(inputStream->ungroupedNextRow());
+                if (!row)
+                    break;
+                processed++;
+                if(recreate)
+                    openPipe(helper.getNameFromRow(row));
+                writeTransformer->writeTranslatedText(row, pipe);
+                if (recreate)
+                {
+                    closePipe();
+                    verifyPipe();
+                }
+            }
+            if (!recreate)
                 closePipe();
         }
-        closePipe();
+        catch (IPipeProcessException *e)
+        {
+            pipeException.setown(e);
+        }
+        verifyPipe();
+        if (pipeException) // NB: verifyPipe may throw error based on pipe prog. output 1st.
+            throw pipeException.getClear();
     }
 
 private:
@@ -9789,7 +9822,10 @@ private:
         pipeCommand.setown(cmd);
         pipe.setown(createPipeProcess());
         if(!pipe->run(NULL, cmd, ".", true, false, true, 0x10000))
-            throw MakeStringException(ROXIE_PIPE_ERROR, "Could not run pipe process %s", cmd);
+        {
+            // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
+            WARNLOG(ROXIE_PIPE_ERROR, "Could not run pipe process %s", cmd);
+        }
         writeTransformer->writeHeader(pipe);
     }
 
@@ -9797,14 +9833,20 @@ private:
     {
         writeTransformer->writeFooter(pipe);
         pipe->closeInput();
-        unsigned err = pipe->wait();
-        if(err && !(helper.getPipeFlags() & TPFnofail))
-        {
-            throw createPipeFailureException(pipeCommand.get(), err, pipe);
-        }
-        pipe.clear();
     }
 
+    void verifyPipe()
+    {
+        if (pipe)
+        {
+            unsigned err = pipe->wait();
+            if(err && !(helper.getPipeFlags() & TPFnofail))
+            {
+                throw createPipeFailureException(pipeCommand.get(), err, pipe);
+            }
+            pipe.clear();
+        }
+    }
 };
 
 class CRoxieServerPipeReadActivityFactory : public CRoxieServerActivityFactory
