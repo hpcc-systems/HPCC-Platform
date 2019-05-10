@@ -906,6 +906,7 @@ ESPenum DFUFileType : string
     Xml("Xml"),
     Csv("Csv"),
     Json("Json"),
+    Unset("Unset"), // placed here to avoid enum values shifting (if at start) and causing backward compatibility issues.
 };
 
 ESPresponse [exceptions_inline] DFUFileAccessResponse

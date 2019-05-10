@@ -6069,6 +6069,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     encodeDFUFileMeta(metaInfoBlob, metaInfo, env);
     accessInfo.setMetaInfoBlob(metaInfoBlob);
 
+    CDFUFileType kind = CDFUFileType_Unset;
     if (returnTextResponse)
     {
         getFilePartsInfo(context, *fileDesc, false, accessInfo);
@@ -6078,7 +6079,6 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
         accessInfo.setFileAccessPort(metaInfo->getPropInt("port"));
         accessInfo.setFileAccessSSL(metaInfo->getPropBool("secure"));
 
-        CDFUFileType kind = DFUFileType_Undefined;
         if (isFileKey(fileDesc))
             kind = CDFUFileType_Index;
         else
@@ -6093,8 +6093,8 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
             else if (streq("json", kindStr))
                 kind = CDFUFileType_Json;
         }
-        resp.setType(kind);
     }
+    resp.setType(kind);
 
     LOG(daliAuditLogCat,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", cluster.str(), userID.str(), fileName.str(), requestId, expirySecs);
 }

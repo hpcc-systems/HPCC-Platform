@@ -74,6 +74,7 @@ public:
     virtual void        readDataRaw(size32_t len, void * text, const char * path, size32_t _lenDefault, const void * _default);
     virtual void        readDataRawX(size32_t & len, void * & text, const char * path, size32_t _lenDefault, const void * _default);
 
+    virtual const char *readRaw(const char * path, size32_t &sz) const override;
 };
 
 class thorhelper_decl XmlColumnIterator : implements IColumnProviderIterator, public CInterface

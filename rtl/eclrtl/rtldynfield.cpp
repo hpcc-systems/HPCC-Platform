@@ -993,6 +993,7 @@ enum FieldMatchType {
     // This flag may be set in conjunction with the others
     match_inifblock   = 0x400,   // matching to a field in an ifblock - may not be present
     match_deblob      = 0x1000,  // source needs fetching from a blob prior to translation
+    match_dynamic     = 0x2000,  // source needs fetching from dynamic source (callback)
 };
 
 StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
@@ -1013,6 +1014,7 @@ StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
     if (flags & match_fail) out.append("|fail");
     if (flags & match_virtual) out.append("|virtual");
     if (flags & match_deblob) out.append("|blob");
+    if (flags & match_dynamic) out.append("|dynamic");
     assertex(out.length() > origlen);
     return out.remove(origlen, 1);
 }
@@ -1023,8 +1025,8 @@ inline FieldMatchType &operator|=(FieldMatchType &a, FieldMatchType b) { return 
 class GeneralRecordTranslator : public CInterfaceOf<IDynamicTransform>
 {
 public:
-    GeneralRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo)
-    : destRecInfo(_destRecInfo), sourceRecInfo(_srcRecInfo)
+    GeneralRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, bool _binarySource)
+        : destRecInfo(_destRecInfo), sourceRecInfo(_srcRecInfo), binarySource(_binarySource)
     {
         matchInfo = new MatchInfo[destRecInfo.getNumFields()];
         createMatchInfo();
@@ -1036,18 +1038,26 @@ public:
     {
         delete [] matchInfo;
     }
+// IDynamicTransform impl.
     virtual void describe() const override
     {
         doDescribe(0);
     }
     virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const byte *sourceRec) const override
     {
+        assertex(binarySource);
         return doTranslate(builder, callback, 0, sourceRec);
     }
     virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const RtlRow &sourceRow) const override
     {
+        assertex(binarySource);
         sourceRow.lazyCalcOffsets(-1);  // MORE - could save the max one we actually need...
-        return doTranslate(builder, callback, 0, sourceRow);
+        return doTranslateOpaqueType(builder, callback, 0, &sourceRow);
+    }
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const IDynamicFieldValueFetcher & fetcher) const override
+    {
+        assertex(!binarySource);
+        return doTranslateOpaqueType(builder, callback, 0, &fetcher);
     }
     virtual bool canTranslate() const override
     {
@@ -1099,9 +1109,9 @@ private:
         unsigned numOffsets = sourceRecInfo.getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
         RtlRow sourceRow(sourceRecInfo, sourceRec, numOffsets, variableOffsets);  // MORE - could save the max source offset we actually need, and only set up that many...
-        return doTranslate(builder, callback, offset, sourceRow);
+        return doTranslateOpaqueType(builder, callback, offset, &sourceRow);
     }
-    size32_t doTranslate(ARowBuilder &builder, IVirtualFieldCallback & callback, size32_t offset, const RtlRow &sourceRow) const
+    size32_t doTranslateOpaqueType(ARowBuilder &builder, IVirtualFieldCallback & callback, size32_t offset, const void *sourceRow) const
     {
         dbgassertex(canTranslate());
         byte * destConditions = (byte *)alloca(destRecInfo.getNumIfBlocks() * sizeof(byte));
@@ -1110,7 +1120,10 @@ private:
         bool hasBlobs = false;
         if (!estimate)
         {
-            estimate = estimateNewSize(sourceRow);
+            if (binarySource)
+                estimate = estimateNewSize(*(const RtlRow *)sourceRow);
+            else
+                estimate = destRecInfo.getMinRecordSize();
             builder.ensureCapacity(offset+estimate, "record");
         }
         size32_t origOffset = offset;
@@ -1130,14 +1143,14 @@ private:
                 switch (getVirtualInitializer(field->initializer))
                 {
                 case FVirtualFilePosition:
-                    offset = type->buildInt(builder, offset, field, callback.getFilePosition(sourceRow.queryRow()));
+                    offset = type->buildInt(builder, offset, field, callback.getFilePosition(sourceRow));
                     break;
                 case FVirtualLocalFilePosition:
-                    offset = type->buildInt(builder, offset, field, callback.getLocalFilePosition(sourceRow.queryRow()));
+                    offset = type->buildInt(builder, offset, field, callback.getLocalFilePosition(sourceRow));
                     break;
                 case FVirtualFilename:
                     {
-                        const char * filename = callback.queryLogicalFilename(sourceRow.queryRow());
+                        const char * filename = callback.queryLogicalFilename(sourceRow);
                         offset = type->buildString(builder, offset, field, strlen(filename), filename);
                         break;
                     }
@@ -1149,9 +1162,17 @@ private:
             {
                 unsigned matchField = match.matchIdx;
                 const RtlTypeInfo *sourceType = sourceRecInfo.queryType(matchField);
-                size_t sourceOffset = sourceRow.getOffset(matchField);
-                const byte *source = sourceRow.queryRow() + sourceOffset;
-                size_t copySize = sourceRow.getSize(matchField);
+
+                size_t sourceOffset = 0;
+                const byte *source = nullptr;
+                size_t copySize = 0;
+                if (binarySource)
+                {
+                    const RtlRow &rtlRow = *(const RtlRow *)sourceRow;
+                    sourceOffset = rtlRow.getOffset(matchField);
+                    source = rtlRow.queryRow() + sourceOffset;
+                    copySize = rtlRow.getSize(matchField);
+                }
                 if (match.matchType & match_deblob)
                 {
                     offset_t blobId = sourceType->getInt(source);
@@ -1185,7 +1206,7 @@ private:
                                 else
                                     break;
                             }
-                            copySize = sourceRow.getOffset(matchField+1) - sourceOffset;
+                            copySize = ((const RtlRow *)sourceRow)->getOffset(matchField+1) - sourceOffset;
                         }
                         builder.ensureCapacity(offset+copySize, field->name);
                         memcpy(builder.getSelf()+offset, source, copySize);
@@ -1216,6 +1237,13 @@ private:
                     case match_typecast:
                         offset = translateScalar(builder, offset, field, *type, *sourceType, source);
                         break;
+                    case match_typecast|match_dynamic:
+                    {
+                        const IDynamicFieldValueFetcher &callbackRowHandler = *(const IDynamicFieldValueFetcher *)sourceRow;
+                        source = callbackRowHandler.queryValue(matchField, copySize);
+                        offset = translateScalarFromUtf8(builder, offset, field, *type, *sourceType, (const char *)source, (size_t)copySize);
+                        break;
+                    }
                     case match_link:
                     {
                         // a 32-bit record count, and a (linked) pointer to an array of record pointers
@@ -1223,6 +1251,61 @@ private:
                         *(size32_t *)dest = *(size32_t *)source;
                         *(const byte ***)(dest + sizeof(size32_t)) = rtlLinkRowset(*(const byte ***)(source + sizeof(size32_t)));
                         offset += sizeof(size32_t)+sizeof(const byte **);
+                        break;
+                    }
+                    case match_recurse|match_dynamic:
+                    {
+                        const IDynamicFieldValueFetcher &callbackRowHandler = *(const IDynamicFieldValueFetcher *)sourceRow;
+                        Owned<IDynamicRowIterator> iterator = callbackRowHandler.getNestedIterator(matchField);
+                        if (type->getType()==type_record)
+                        {
+                            IDynamicFieldValueFetcher &fieldFetcher = iterator->query();
+                            offset = match.subTrans->doTranslateOpaqueType(builder, callback, offset, &fieldFetcher);
+                        }
+                        else if (type->isLinkCounted())
+                        {
+                            // a 32-bit record count, and a pointer to an array of record pointers
+                            IEngineRowAllocator *childAllocator = builder.queryAllocator()->createChildRowAllocator(type->queryChildType());
+                            assertex(childAllocator);  // May not be available when using serialized types (but unlikely to want to create linkcounted children remotely either)
+
+                            size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
+                            builder.ensureCapacity(offset+sizeInBytes, field->name);
+                            size32_t numRows = 0;
+                            const byte **childRows = nullptr;
+                            ForEach(*iterator)
+                            {
+                                IDynamicFieldValueFetcher &fieldFetcher = iterator->query();
+                                RtlDynamicRowBuilder childBuilder(*childAllocator);
+                                size32_t childLen = match.subTrans->doTranslateOpaqueType(childBuilder, callback, 0, &fieldFetcher);
+                                childRows = childAllocator->appendRowOwn(childRows, ++numRows, (void *) childBuilder.finalizeRowClear(childLen));
+                            }
+                            if (type->getType() == type_dictionary)
+                            {
+                                const RtlTypeInfo * childType = type->queryChildType();
+                                assertex(childType && childType->getType() == type_record);
+                                CHThorHashLookupInfo lookupHelper(static_cast<const RtlRecordTypeInfo &>(*childType));
+                                rtlCreateDictionaryFromDataset(numRows, childRows, childAllocator, lookupHelper);
+                            }
+                            // Go back in and patch the count, remembering it may have moved
+                            rtlWriteInt4(builder.getSelf()+offset, numRows);
+                            * ( const void * * ) (builder.getSelf()+offset+sizeof(size32_t)) = childRows;
+                            offset += sizeInBytes;
+                        }
+                        else
+                        {
+                            size32_t countOffset = offset;
+                            byte *dest = builder.ensureCapacity(offset+sizeof(size32_t), field->name)+offset;
+                            offset += sizeof(size32_t);
+                            size32_t initialOffset = offset;
+                            *(size32_t *)dest = 0;  // patched below when true figure known
+                            ForEach(*iterator)
+                            {
+                                IDynamicFieldValueFetcher &fieldFetcher = iterator->query();
+                                offset = match.subTrans->doTranslateOpaqueType(builder, callback, offset, &fieldFetcher);
+                            }
+                            dest = builder.getSelf() + countOffset;  // Note - may have been moved by reallocs since last calculated
+                            *(size32_t *)dest = offset - initialOffset;
+                        }
                         break;
                     }
                     case match_recurse:
@@ -1347,6 +1430,7 @@ private:
     }
     const RtlRecord &destRecInfo;
     const RtlRecord &sourceRecInfo;
+    bool binarySource = true;
     unsigned fixedDelta = 0;  // total size of all fixed-size source fields that are not matched
     UnsignedArray unmatched;  // List of all variable-size source fields that are unmatched
     FieldMatchType matchFlags = match_perfect;
@@ -1363,47 +1447,50 @@ private:
         }
     } *matchInfo;
 
-    size32_t estimateNewSize(const RtlRow &sourceRow) const
+    static size32_t translateScalarFromUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, const RtlTypeInfo &destType, const RtlTypeInfo &sourceType, const char *source, size_t srcSize)
     {
-        //DBGLOG("Source record size is %d", (int) sourceRow.getRecordSize());
-        size32_t expectedSize = sourceRow.getRecordSize() - fixedDelta;
-        //DBGLOG("Source record size without omitted fixed size fields is %d", expectedSize);
-        ForEachItemIn(i, unmatched)
+        switch(destType.getType())
         {
-            unsigned fieldNo = unmatched.item(i);
-            expectedSize -= sourceRow.getSize(fieldNo);
-            //DBGLOG("Reducing estimated size by %d to %d for omitted field %d (%s)", (int) sourceRow.getSize(fieldNo), expectedSize, fieldNo, sourceRecInfo.queryName(fieldNo));
-        }
-        if (matchFlags & ~(match_perfect|match_link|match_none|match_virtual|match_extend|match_truncate))
+        case type_boolean:
+        case type_int:
+        case type_swapint:
+        case type_packedint:
+        case type_filepos:
+        case type_keyedint:
         {
-            for (unsigned idx = 0; idx < destRecInfo.getNumFields(); idx++)
-            {
-                const MatchInfo &match = matchInfo[idx];
-                const RtlTypeInfo *type = destRecInfo.queryType(idx);
-                unsigned matchField = match.matchIdx;
-                switch (match.matchType)
-                {
-                case match_perfect:
-                case match_link:
-                case match_none:
-                case match_virtual:
-                case match_extend:
-                case match_truncate:
-                    // These ones were already included in fixedDelta
-                    break;
-                default:
-                    // This errs on the side of small - i.e. it assumes that all typecasts end up at minimum size
-                    // We could do better in some cases e.g. variable string <-> variable unicode we can assume factor of 2,
-                    // uft8 <-> string we could calculate here - but unlikely to be worth the effort.
-                    // But it's fine for fixed size output fields, including truncate/extend
-                    // We could also precalculate the expected delta if all omitted fields are fixed size - but not sure how likely/worthwhile that is.
-                    expectedSize += type->getMinSize() - sourceRow.getSize(matchField);
-                    //DBGLOG("Adjusting estimated size by (%d - %d) to %d for translated field %d (%s)", (int) sourceRow.getSize(matchField), type->getMinSize(), expectedSize, matchField, sourceRecInfo.queryName(matchField));
-                    break;
-                }
-            }
+            __int64 res = rtlStrToInt8(srcSize, source);
+            offset = destType.buildInt(builder, offset, field, res);
+            break;
         }
-        return expectedSize;
+        case type_real:
+        {
+            double res = rtlStrToReal(srcSize, source);
+            offset = destType.buildReal(builder, offset, field, res);
+            break;
+        }
+        case type_data:
+        case type_string:
+        case type_decimal:  // Go via string - not common enough to special-case
+        case type_varstring:
+        case type_qstring:
+        case type_utf8:
+            //MORE: Could special case casting from utf8 to utf8 similar to strings above
+        case type_unicode:
+        case type_varunicode:
+        {
+            size32_t utf8chars = rtlUtf8Length(srcSize, source);
+            offset = destType.buildUtf8(builder, offset, field, utf8chars, source);
+            break;
+        }
+        case type_set:
+        {
+            UNIMPLEMENTED; // JCS->GH - but perhaps can/should translate using iterator too?
+            break;
+        }
+        default:
+            throwUnexpected();
+        }
+        return offset;
     }
     static bool canTranslateNonScalar(const RtlTypeInfo * type, const RtlTypeInfo * sourceType)
     {
@@ -1417,7 +1504,6 @@ private:
             return true;
         return false;
     }
-
     void createMatchInfo()
     {
         for (unsigned idx = 0; idx < destRecInfo.getNumFields(); idx++)
@@ -1440,7 +1526,7 @@ private:
             {
                 bool deblob = false;
                 const RtlTypeInfo *sourceType = sourceRecInfo.queryType(info.matchIdx);
-                if (sourceType->isBlob())
+                if (binarySource && sourceType->isBlob())
                 {
                     if (type->isBlob())
                     {
@@ -1460,11 +1546,16 @@ private:
                         switch (type->getType())
                         {
                         case type_set:
-                            if (type->queryChildType()->fieldType==sourceType->queryChildType()->fieldType &&
-                                type->queryChildType()->length==sourceType->queryChildType()->length)
-                                info.matchType = match_perfect;
+                            if (binarySource)
+                            {
+                                if (type->queryChildType()->fieldType==sourceType->queryChildType()->fieldType &&
+                                    type->queryChildType()->length==sourceType->queryChildType()->length)
+                                    info.matchType = match_perfect;
+                                else
+                                    info.matchType = match_typecast;
+                            }
                             else
-                                info.matchType = match_typecast;
+                                info.matchType = match_typecast|match_dynamic;
                             break;
                         case type_row:      // These are not expected I think...
                             throwUnexpected();
@@ -1475,29 +1566,38 @@ private:
                         {
                             const RtlRecord *subDest = destRecInfo.queryNested(idx);
                             const RtlRecord *subSrc = sourceRecInfo.queryNested(info.matchIdx);
-                            info.subTrans = new GeneralRecordTranslator(*subDest, *subSrc);
+                            info.subTrans = new GeneralRecordTranslator(*subDest, *subSrc, binarySource);
                             if (!info.subTrans->needsTranslate())
                             {
-                                // Child does not require translation, but check linkcount mode matches too!
-                                if (type->isLinkCounted())
-                                    if (sourceType->isLinkCounted())
-                                        info.matchType = match_link;
-                                    else
-                                        info.matchType = match_recurse;
+                                if (!binarySource)
+                                    info.matchType = match_recurse|match_dynamic;
                                 else
-                                    if (sourceType->isLinkCounted())
-                                        info.matchType = match_recurse;
-                                    else
-                                        info.matchType = match_perfect;
-                                if (info.matchType != match_recurse)
                                 {
-                                    delete info.subTrans;
-                                    info.subTrans = nullptr;
+                                    // Child does not require translation, but check linkcount mode matches too!
+                                    if (type->isLinkCounted())
+                                    {
+                                        if (sourceType->isLinkCounted())
+                                            info.matchType = match_link;
+                                        else
+                                            info.matchType = match_recurse;
+                                    }
+                                    else
+                                    {
+                                        if (sourceType->isLinkCounted())
+                                            info.matchType = match_recurse;
+                                        else
+                                            info.matchType = match_perfect;
+                                    }
+                                    if (info.matchType != match_recurse)
+                                    {
+                                        delete info.subTrans;
+                                        info.subTrans = nullptr;
+                                    }
                                 }
                             }
                             else if (info.subTrans->canTranslate())
                             {
-                                info.matchType = match_recurse;
+                                info.matchType = binarySource ? match_recurse : (match_recurse|match_dynamic);
                                 matchFlags |= info.subTrans->matchFlags;
                             }
                             else
@@ -1505,7 +1605,9 @@ private:
                             break;
                         }
                         case type_blob:
-                            if (sourceType->isBlob())
+                            if (!binarySource)
+                                info.matchType = match_fail;
+                            else if (sourceType->isBlob())
                                 info.matchType = match_perfect;  // We don't check that the child type matches
                             else
                                 info.matchType = match_fail;
@@ -1516,7 +1618,9 @@ private:
                         }
                     }
                 }
-                else if (type->fieldType==sourceType->fieldType)
+                else if (!binarySource)
+                    info.matchType = match_typecast|match_dynamic;
+                else if ((type->fieldType==sourceType->fieldType))
                 {
                     if (type->length==sourceType->length)
                     {
@@ -1594,11 +1698,58 @@ private:
             //DBGLOG("Source record contains %d bytes of omitted fixed size fields", fixedDelta);
         }
     }
+    size32_t estimateNewSize(const RtlRow &sourceRow) const
+    {
+        //DBGLOG("Source record size is %d", (int) sourceRow.getRecordSize());
+        size32_t expectedSize = sourceRow.getRecordSize() - fixedDelta;
+        //DBGLOG("Source record size without omitted fixed size fields is %d", expectedSize);
+        ForEachItemIn(i, unmatched)
+        {
+            unsigned fieldNo = unmatched.item(i);
+            expectedSize -= sourceRow.getSize(fieldNo);
+            //DBGLOG("Reducing estimated size by %d to %d for omitted field %d (%s)", (int) sourceRow.getSize(fieldNo), expectedSize, fieldNo, sourceRecInfo.queryName(fieldNo));
+        }
+        if (matchFlags & ~(match_perfect|match_link|match_none|match_virtual|match_extend|match_truncate))
+        {
+            for (unsigned idx = 0; idx < destRecInfo.getNumFields(); idx++)
+            {
+                const MatchInfo &match = matchInfo[idx];
+                const RtlTypeInfo *type = destRecInfo.queryType(idx);
+                unsigned matchField = match.matchIdx;
+                switch (match.matchType)
+                {
+                case match_perfect:
+                case match_link:
+                case match_none:
+                case match_virtual:
+                case match_extend:
+                case match_truncate:
+                    // These ones were already included in fixedDelta
+                    break;
+                default:
+                    // This errs on the side of small - i.e. it assumes that all typecasts end up at minimum size
+                    // We could do better in some cases e.g. variable string <-> variable unicode we can assume factor of 2,
+                    // uft8 <-> string we could calculate here - but unlikely to be worth the effort.
+                    // But it's fine for fixed size output fields, including truncate/extend
+                    // We could also precalculate the expected delta if all omitted fields are fixed size - but not sure how likely/worthwhile that is.
+                    expectedSize += type->getMinSize() - sourceRow.getSize(matchField);
+                    //DBGLOG("Adjusting estimated size by (%d - %d) to %d for translated field %d (%s)", (int) sourceRow.getSize(matchField), type->getMinSize(), expectedSize, matchField, sourceRecInfo.queryName(matchField));
+                    break;
+                }
+            }
+        }
+        return expectedSize;
+    }
 };
 
-extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo)
+extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &destRecInfo, const RtlRecord &srcRecInfo)
 {
-    return new GeneralRecordTranslator(_destRecInfo, _srcRecInfo);
+    return new GeneralRecordTranslator(destRecInfo, srcRecInfo, true);
+}
+
+extern ECLRTL_API const IDynamicTransform *createRecordTranslatorViaCallback(const RtlRecord &destRecInfo, const RtlRecord &srcRecInfo)
+{
+    return new GeneralRecordTranslator(destRecInfo, srcRecInfo, false);
 }
 
 extern ECLRTL_API void throwTranslationError(const RtlRecord & destRecInfo, const RtlRecord & srcRecInfo, const char * filename)
@@ -1616,8 +1767,9 @@ class TranslatedRowStream : public CInterfaceOf<IRowStream>
 {
 public:
     TranslatedRowStream(IRowStream *_inputStream, IEngineRowAllocator *_resultAllocator, const RtlRecord &outputRecord, const RtlRecord &inputRecord)
-    : inputStream(_inputStream), resultAllocator(_resultAllocator), translator(new GeneralRecordTranslator(outputRecord, inputRecord))
+    : inputStream(_inputStream), resultAllocator(_resultAllocator)
     {
+        translator.setown(createRecordTranslator(outputRecord, inputRecord));
         translator->describe();
     }
     virtual const void *nextRow() override

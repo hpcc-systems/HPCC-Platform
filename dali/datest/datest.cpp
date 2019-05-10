@@ -2238,11 +2238,26 @@ void TestSDS1()
 #endif
 }
 
-void testDfuStreamRead(const char *fname)
+void testDfuStreamRead(StringArray &params)
 {
     // reads a DFS file
     try
     {
+        const char *fname = params.item(0);
+        const char *filter = nullptr;
+        const char *outputECLFormat = nullptr;
+        if (params.ordinality()>1)
+        {
+            filter = params.item(1);
+            if (isEmptyString(filter))
+                filter = nullptr;
+            if (params.ordinality()>2)
+            {
+                outputECLFormat = params.item(2);
+                if (isEmptyString(outputECLFormat))
+                    outputECLFormat = nullptr;
+            }
+        }
         Owned<IUserDescriptor> userDesc = createUserDescriptor();
         userDesc->set("jsmith","password");
 
@@ -2254,12 +2269,21 @@ void testDfuStreamRead(const char *fname)
         }
 
         IOutputMetaData *meta = srcFile->queryEngineInterface()->queryMeta();
-        CommonXmlWriter xmlWriter(0);
+        CommonXmlWriter xmlWriter(XWFnoindent);
 
         unsigned sourceN = srcFile->queryNumParts();
         for (unsigned p=0; p<sourceN; p++)
         {
             Owned<IDFUFilePartReader> reader = srcFile->createFilePartReader(p, 0, nullptr, true);
+
+            if (outputECLFormat)
+            {
+                reader->setOutputRecordFormat(outputECLFormat);
+                meta = reader->queryMeta();
+            }
+
+            if (filter)
+                reader->addFieldFilter(filter);
 
             reader->start();
 
@@ -3524,7 +3548,7 @@ int main(int argc, char* argv[])
             else if (TEST("MULTICONNECT"))
                 testMultiConnect();
             else if (TEST("DFUSTREAMREAD"))
-                testDfuStreamRead(testParams.item(0));
+                testDfuStreamRead(testParams);
             else if (TEST("DFUSTREAMWRITE"))
                 testDfuStreamWrite(testParams.ordinality() ? testParams.item(0) : nullptr);
             else if (TEST("DFUSTREAMCOPY"))

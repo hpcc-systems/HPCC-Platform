@@ -88,7 +88,7 @@
  *   For nested selects the code would need to be consistent.
  */
 
-static unsigned countFields(const RtlFieldInfo * const * fields, bool & containsNested, unsigned &numIfBlocks)
+static unsigned countFields(const RtlFieldInfo * const * fields, bool & containsNested, bool &containsXPaths, unsigned &numIfBlocks)
 {
     unsigned cnt = 0;
     for (;*fields;fields++)
@@ -101,10 +101,14 @@ static unsigned countFields(const RtlFieldInfo * const * fields, bool & contains
                 numIfBlocks++;
             const RtlFieldInfo * const * nested = type->queryFields();
             if (nested)
-                cnt += countFields(nested, containsNested, numIfBlocks);
+                cnt += countFields(nested, containsNested, containsXPaths, numIfBlocks);
         }
         else
+        {
+            if (!containsXPaths && !isEmptyString((*fields)->xpath))
+                containsXPaths = true;
             cnt++;
+        }
     }
     return cnt;
 }
@@ -155,7 +159,7 @@ public:
     const IfBlockInfo &ifblock;
 };
 
-static unsigned expandNestedRows(unsigned idx, unsigned startIdx, const char *prefix, const RtlFieldInfo * const * fields, const RtlFieldInfo * * target, const char * *names, const IfBlockInfo *inIfBlock, ConstPointerArrayOf<IfBlockInfo> &ifblocks)
+static unsigned expandNestedRows(unsigned idx, unsigned startIdx, StringBuffer &prefix, StringBuffer &xPathPrefix, const RtlFieldInfo * const * fields, const RtlFieldInfo * * target, const char * *names, const char * *xpaths, const IfBlockInfo *inIfBlock, ConstPointerArrayOf<IfBlockInfo> &ifblocks)
 {
     for (;*fields;fields++)
     {
@@ -173,10 +177,21 @@ static unsigned expandNestedRows(unsigned idx, unsigned startIdx, const char *pr
             const RtlFieldInfo * const * nested = type->queryFields();
             if (nested)
             {
-                StringBuffer newPrefix(prefix);
-                if (cur->name && *cur->name)
-                    newPrefix.append(cur->name).append('.');
-                idx = expandNestedRows(idx, isIfBlock ? startIdx : idx, newPrefix.str(), nested, target, names, nestIfBlock, ifblocks);
+                size32_t prevPrefixLength = prefix.length();
+                if (!isEmptyString(cur->name))
+                    prefix.append(cur->name).append('.');
+
+                size32_t prevXPathPrefixLength = xPathPrefix.length();
+                if (xpaths)
+                {
+                    const char *xpath = cur->queryXPath();
+                    if (!isEmptyString(xpath))
+                        xPathPrefix.append(xpath).append('/');
+                }
+                idx = expandNestedRows(idx, isIfBlock ? startIdx : idx, prefix, xPathPrefix, nested, target, names, xpaths, nestIfBlock, ifblocks);
+                prefix.setLength(prevPrefixLength);
+                if (xpaths)
+                    xPathPrefix.setLength(prevXPathPrefixLength);
             }
         }
         else
@@ -186,9 +201,19 @@ static unsigned expandNestedRows(unsigned idx, unsigned startIdx, const char *pr
                 StringBuffer name(prefix);
                 name.append(cur->name);
                 names[idx] = name.detach();
+                if (xpaths)
+                {
+                    StringBuffer xpath(xPathPrefix);
+                    xpath.append(cur->queryXPath());
+                    xpaths[idx] = xpath.detach();
+                }
             }
             else
+            {
                 names[idx] = nullptr;
+                if (xpaths)
+                    xpaths[idx] = nullptr;
+            }
             if (inIfBlock && !(cur->flags & RFTMinifblock))
                 target[idx++] = new RtlCondFieldStrInfo(*cur, *inIfBlock);
             else
@@ -226,7 +251,7 @@ RtlRecord::RtlRecord(const RtlRecordTypeInfo & record, bool expandFields)
 {
 }
 
-RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : fields(_fields), originalFields(_fields), names(nullptr), nameMap(nullptr)
+RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : fields(_fields), originalFields(_fields), names(nullptr), xpaths(nullptr), nameMap(nullptr)
 {
     numVarFields = 0;
     numTables = 0;
@@ -236,14 +261,18 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
     if (expandFields)
     {
         bool containsNested = false;
-        numFields = countFields(fields, containsNested, numIfBlocks);
+        bool containsXPaths = false;
+        numFields = countFields(fields, containsNested, containsXPaths, numIfBlocks);
         if (containsNested)
         {
             ConstPointerArrayOf<IfBlockInfo> _ifblocks;
             const RtlFieldInfo * * allocated  = new const RtlFieldInfo * [numFields+1];
             names = new const char *[numFields];
+            if (containsXPaths)
+                xpaths = new const char *[numFields];
             fields = allocated;
-            unsigned idx = expandNestedRows(0, 0, nullptr, originalFields, allocated, names, nullptr, _ifblocks);
+            StringBuffer prefix, xPathPrefix;
+            unsigned idx = expandNestedRows(0, 0, prefix, xPathPrefix, originalFields, allocated, names, xpaths, nullptr, _ifblocks);
             ifblocks = _ifblocks.detach();
             assertex(idx == numFields);
             allocated[idx] = nullptr;
@@ -326,6 +355,14 @@ RtlRecord::~RtlRecord()
             free((char *) names[i]);
         }
         delete [] names;
+    }
+    if (xpaths)
+    {
+        for (unsigned i = 0; i < numFields; i++)
+        {
+            free((char *) xpaths[i]);
+        }
+        delete [] xpaths;
     }
     if (fields != originalFields)
     {
@@ -526,6 +563,13 @@ const char *RtlRecord::queryName(unsigned field) const
     if (names && names[field])
         return names[field];
     return fields[field]->name;
+}
+
+const char *RtlRecord::queryXPath(unsigned field) const // NB: returns name if no xpath
+{
+    if (xpaths && xpaths[field])
+        return xpaths[field];
+    return fields[field]->queryXPath();
 }
 
 const RtlRecord *RtlRecord::queryNested(unsigned fieldId) const
