@@ -8619,8 +8619,12 @@ IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const WuScopeFilter & f
 
     if (sources & SSFsearchWorkflow)
     {
-        Owned<IConstWUScopeIterator> workflowIter(new WorkflowStatisticsScopeIterator(getWorkflowItems()));
-        compoundIter->addIter(workflowIter);
+        Owned<IConstWorkflowItemIterator> iter = getWorkflowItems();
+        if (iter)
+        {
+            Owned<IConstWUScopeIterator> workflowIter(new WorkflowStatisticsScopeIterator(iter));
+            compoundIter->addIter(workflowIter);
+        }
     }
 
 
