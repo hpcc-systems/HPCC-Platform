@@ -8,7 +8,8 @@ var webpack = require("webpack");
 var BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 module.exports = function (env) {
-    const isProduction = env && env.build === "prod";
+    const isDev = env && env.build === "development";
+    const isProduction = !isDev;
 
     const plugins = [
         new DojoWebpackPlugin({
