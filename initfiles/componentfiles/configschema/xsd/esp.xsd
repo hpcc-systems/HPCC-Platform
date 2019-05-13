@@ -144,7 +144,6 @@
                                 <xs:simpleType>
                                     <xs:restriction base="xs:string">
                                         <xs:enumeration value="none" hpcc:description=""/>
-                                        <xs:enumeration value="local" hpcc:description=""/>
                                         <xs:enumeration value="ldap"
                                                         hpcc:requiredAttributes="ldapServer,ldapAuthMethod,ldapConnections,passwordExpirationWarningDays,checkViewPermissions"
                                                         hpcc:description=""/>
