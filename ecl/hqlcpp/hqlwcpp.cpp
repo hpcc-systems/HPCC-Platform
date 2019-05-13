@@ -1491,7 +1491,7 @@ StringBuffer & HqlCppWriter::generateChildExpr(IHqlExpression * expr, unsigned c
             case no_add:
             case no_band:
             case no_bor:
-                needBra = false;
+                needBra = (childIndex != 0); // Operators are left associative, so use () on rhs to preserve order
                 break;
             }
         }
