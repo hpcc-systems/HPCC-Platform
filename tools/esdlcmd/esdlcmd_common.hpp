@@ -79,6 +79,8 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDLOPT_OUTPUT_CATEGORIES       "--output-categories"
 #define ESDLOPT_USE_UTF8_STRINGS        "--utf8"
 
+#define ESDLOPT_NO_EXPORT               "--no-export"
+
 #define ESDLOPT_WSDL_ADDRESS            "--wsdl-address"
 
 #define DEFAULT_NAMESPACE_BASE          "urn:hpccsystems:ws"
