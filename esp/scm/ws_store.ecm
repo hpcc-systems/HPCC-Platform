@@ -142,7 +142,7 @@ ESPrequest CreateStoreRequest
     string Name;
     string Type;
     string Description;
-    bool   UserSpecific(false);
+    [depr_ver("1.01")] bool UserSpecific(false);
 };
 
 ESPresponse [exceptions_inline] CreateStoreResponse
