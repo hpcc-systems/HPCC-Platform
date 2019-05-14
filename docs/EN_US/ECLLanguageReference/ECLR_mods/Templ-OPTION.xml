@@ -638,6 +638,15 @@
               <entry>For Roxie queries. Maximum run time (in ms) for a
               query.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>generateGlobalId</emphasis></entry>
+
+              <entry>Default = false</entry>
+
+              <entry>For Roxie queries. When true, generates a unique GlobalId
+              if one is not provided.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
