@@ -679,11 +679,15 @@
           <title>Visualizations</title>
 
           <para>You can see visual representations of select workunits.
-          Visualizations are available from the workunit <emphasis
-          role="bold">Outputs</emphasis> tab. The Visualize tab provides a
-          number of chart types you can generate if you have included
-          additional resources in your ECL code via the enhanced manifest
-          mechanism (such as an index web page). <figure>
+          Visualizations are accessible from the workunit details page. On the
+          workunit details page select the <emphasis
+          role="bold">Outputs</emphasis> tab. Check the box to select the
+          result and press the <emphasis role="bold">Visualize</emphasis>
+          action button. <graphic
+          fileref="../../images/ECLWAViz01.jpg" /></para>
+
+          <para>The Visualize tab provides a number of chart types you can
+          generate from your result.<figure>
               <title>Visualization</title>
 
               <mediaobject>
@@ -693,12 +697,10 @@
               </mediaobject>
             </figure></para>
 
-          <para>To access Visualizations, click on the Outputs tab from the
-          selected workunit details page, then select the <emphasis
-          role="bold">Visualize</emphasis> tab. You can view different
-          visualization types by clicking on the drop list on the Visualize
-          tab. Click on the <emphasis role="bold">Mappings</emphasis> drop
-          menu, to change the parameters.</para>
+          <para>You can view different visualization types by clicking on the
+          drop list on the Visualize tab. Click on the <emphasis
+          role="bold">Mappings</emphasis> drop menu, to change the
+          parameters.</para>
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsInputsTab" role="brk">
