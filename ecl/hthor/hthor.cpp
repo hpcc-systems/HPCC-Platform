@@ -168,15 +168,16 @@ ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logica
     return ldFile.getClear();
 }
 
-// NB: If returns true, localPath contains the local path of rfn
-bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn, StringBuffer &localPath)
+bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn)
 {
     if (!agent.queryWorkUnit()->getDebugValueBool("forceRemoteDisabled", false))
     {
-        rfn.getLocalPath(localPath);
-        if (!rfn.isLocal() || agent.queryWorkUnit()->getDebugValueBool("forceRemoteRead", testForceRemote(localPath)))
+        if (!rfn.isLocal())
             return true;
-        localPath.clear();
+        StringBuffer localPath;
+        rfn.getLocalPath(localPath);
+        if (agent.queryWorkUnit()->getDebugValueBool("forceRemoteRead", testForceRemote(localPath)))
+            return true;
     }
     return false;
 }
@@ -8300,7 +8301,7 @@ bool CHThorDiskReadBaseActivity::openNext()
             /* If part can potentially be remotely streamed, 1st check if any part is local,
              * then try to remote stream, and otherwise failover to legacy remote access
              */
-            unsigned localCopy = NotFound;
+            unsigned startCopy = 0;
             if (tryRemoteStream && (rt_binary == readType))
             {
                 std::vector<unsigned> remoteCandidates;
@@ -8308,16 +8309,21 @@ bool CHThorDiskReadBaseActivity::openNext()
                 for (unsigned copy=0; copy<numCopies; copy++)
                 {
                     RemoteFilename rfn;
-                    curPart->getFilename(rfn, copy);
-                    StringBuffer localPath;
-                    if (!isRemoteReadCandidate(agent, rfn, localPath))
+                    if (curPart)
+                        curPart->getFilename(rfn,copy);
+                    else
+                        ldFile->getPartFilename(rfn, partNum, copy);
+
+                    if (!isRemoteReadCandidate(agent, rfn))
                     {
-                        Owned<IFile> iFile = createIFile(localPath.str());
+                        StringBuffer path;
+                        rfn.getPath(path);
+                        Owned<IFile> iFile = createIFile(path);
                         try
                         {
                             if (iFile->exists())
                             {
-                                localCopy = copy;
+                                startCopy = copy;
                                 remoteCandidates.clear();
                                 break;
                             }
@@ -8400,7 +8406,6 @@ bool CHThorDiskReadBaseActivity::openNext()
             }
             if (!inputfile)
             {
-                unsigned startCopy = (NotFound != localCopy) ? localCopy : 0;
                 unsigned copy = startCopy;
                 while (true)
                 {
