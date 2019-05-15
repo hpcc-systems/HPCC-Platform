@@ -1240,8 +1240,12 @@ public:
                               (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert)));
                         if (!srcFile)
                             throw MakeStringException(-1,"Source file %s could not be found",tmp.str());
-                        oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
+
                         iskey = isFileKey(srcFile);
+                        if ((cmd==DFUcmd_copy) && (srcFile->querySuperFile() != nullptr) && iskey)
+                            throwError1(DFTERR_InvalidSuperindexCopy, srcFile->queryLogicalName());
+
+                        oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
                         kind.set(srcFile->queryAttributes().queryProp("@kind"));
                         if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))    // keys default wrap for copy
                             destination->setNumPartsOverride(srcFile->numParts());
