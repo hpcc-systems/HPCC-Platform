@@ -542,45 +542,52 @@ int main(int argc,char **argv)
 
             // any overrides by Instance definitions?
             // NB: This won't work if netAddress is "." or if we start supporting hostnames there
-            StringBuffer ipStr;
-            queryHostIP().getIpText(ipStr);
-            VStringBuffer daFileSrvPath("Instance[@netAddress=\"%s\"]", ipStr.str());
-            IPropertyTree *dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
-            if (dafileSrvInstance)
+            int attempts = 2;
+            while (attempts > 0)
             {
-                Owned<IPropertyTree> _dafileSrvInstance;
-
-                // check if there's a DaFileSrvGroup
-                const char *instanceGroupName = dafileSrvInstance->queryProp("@group");
-                if (!isEmptyString(instanceGroupName) && (isEmptyString(componentGroupName) || !strsame(instanceGroupName, componentGroupName))) // i.e. only if different
+                StringBuffer ipStr;
+                queryHostIP().getIpText(ipStr, (attempts==2));
+                VStringBuffer daFileSrvPath("Instance[@netAddress=\"%s\"]", ipStr.str());
+                IPropertyTree *dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
+                if (dafileSrvInstance)
                 {
-                    VStringBuffer dafilesrvGroupPath("Software/DafilesrvGroup[@name=\"%s\"]", instanceGroupName);
-                    IPropertyTree *daFileSrvGroup = env->queryPropTree(dafilesrvGroupPath);
-                    if (daFileSrvGroup)
+                    Owned<IPropertyTree> _dafileSrvInstance;
+
+                    // check if there's a DaFileSrvGroup
+                    const char *instanceGroupName = dafileSrvInstance->queryProp("@group");
+                    if (!isEmptyString(instanceGroupName) && (isEmptyString(componentGroupName) || !strsame(instanceGroupName, componentGroupName))) // i.e. only if different
                     {
-                        // create a copy of the group settings and merge in (overwrite) with the instance settings, i.e. any group settings become defaults
-                        _dafileSrvInstance.setown(createPTreeFromIPT(daFileSrvGroup));
-                        synchronizePTree(_dafileSrvInstance, dafileSrvInstance, false, false);
-                        dafileSrvInstance = _dafileSrvInstance;
+                        VStringBuffer dafilesrvGroupPath("Software/DafilesrvGroup[@name=\"%s\"]", instanceGroupName);
+                        IPropertyTree *daFileSrvGroup = env->queryPropTree(dafilesrvGroupPath);
+                        if (daFileSrvGroup)
+                        {
+                            // create a copy of the group settings and merge in (overwrite) with the instance settings, i.e. any group settings become defaults
+                            _dafileSrvInstance.setown(createPTreeFromIPT(daFileSrvGroup));
+                            synchronizePTree(_dafileSrvInstance, dafileSrvInstance, false, false);
+                            dafileSrvInstance = _dafileSrvInstance;
+                        }
                     }
+                    maxThreads = dafileSrvInstance->getPropInt("@maxThreads", maxThreads);
+                    maxThreadsDelayMs = dafileSrvInstance->getPropInt("@maxThreadsDelayMs", maxThreadsDelayMs);
+                    maxAsyncCopy = dafileSrvInstance->getPropInt("@maxAsyncCopy", maxAsyncCopy);
+
+                    parallelRequestLimit = dafileSrvInstance->getPropInt("@parallelRequestLimit", parallelRequestLimit);
+                    throttleDelayMs = dafileSrvInstance->getPropInt("@throttleDelayMs", throttleDelayMs);
+                    throttleCPULimit = dafileSrvInstance->getPropInt("@throttleCPULimit", throttleCPULimit);
+                    throttleQueueLimit = dafileSrvInstance->getPropInt("@throttleQueueLimit", throttleQueueLimit);
+
+                    parallelSlowRequestLimit = dafileSrvInstance->getPropInt("@parallelSlowRequestLimit", parallelSlowRequestLimit);
+                    throttleSlowDelayMs = dafileSrvInstance->getPropInt("@throttleSlowDelayMs", throttleSlowDelayMs);
+                    throttleSlowCPULimit = dafileSrvInstance->getPropInt("@throttleSlowCPULimit", throttleSlowCPULimit);
+                    throttleSlowQueueLimit = dafileSrvInstance->getPropInt("@throttleSlowQueueLimit", throttleSlowQueueLimit);
+
+                    dedicatedRowServicePort = dafileSrvInstance->getPropInt("@rowServicePort", dedicatedRowServicePort);
+                    dedicatedRowServiceSSL = dafileSrvInstance->getPropBool("@rowServiceSSL", dedicatedRowServiceSSL);
+                    rowServiceOnStdPort = dafileSrvInstance->getPropBool("@rowServiceOnStdPort", rowServiceOnStdPort);
+
+                    break;
                 }
-                maxThreads = dafileSrvInstance->getPropInt("@maxThreads", maxThreads);
-                maxThreadsDelayMs = dafileSrvInstance->getPropInt("@maxThreadsDelayMs", maxThreadsDelayMs);
-                maxAsyncCopy = dafileSrvInstance->getPropInt("@maxAsyncCopy", maxAsyncCopy);
-
-                parallelRequestLimit = dafileSrvInstance->getPropInt("@parallelRequestLimit", parallelRequestLimit);
-                throttleDelayMs = dafileSrvInstance->getPropInt("@throttleDelayMs", throttleDelayMs);
-                throttleCPULimit = dafileSrvInstance->getPropInt("@throttleCPULimit", throttleCPULimit);
-                throttleQueueLimit = dafileSrvInstance->getPropInt("@throttleQueueLimit", throttleQueueLimit);
-
-                parallelSlowRequestLimit = dafileSrvInstance->getPropInt("@parallelSlowRequestLimit", parallelSlowRequestLimit);
-                throttleSlowDelayMs = dafileSrvInstance->getPropInt("@throttleSlowDelayMs", throttleSlowDelayMs);
-                throttleSlowCPULimit = dafileSrvInstance->getPropInt("@throttleSlowCPULimit", throttleSlowCPULimit);
-                throttleSlowQueueLimit = dafileSrvInstance->getPropInt("@throttleSlowQueueLimit", throttleSlowQueueLimit);
-
-                dedicatedRowServicePort = dafileSrvInstance->getPropInt("@rowServicePort", dedicatedRowServicePort);
-                dedicatedRowServiceSSL = dafileSrvInstance->getPropBool("@rowServiceSSL", dedicatedRowServiceSSL);
-                rowServiceOnStdPort = dafileSrvInstance->getPropBool("@rowServiceOnStdPort", rowServiceOnStdPort);
+                attempts--;
             }
         }
         keyPairInfo = env->queryPropTree("EnvSettings/Keys");

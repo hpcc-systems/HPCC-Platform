@@ -13334,7 +13334,7 @@ IPropertyTree * resolveDefinitionInArchive(IPropertyTree * archive, const char *
 extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc, unsigned minActivity, unsigned maxActivity)
 {
     StringBuffer hostname;
-    queryHostIP().getIpText(hostname);
+    hostname.append(GetCachedHostName());
 
     StringBuffer fullPathname;
     makeAbsolutePath(name, fullPathname);

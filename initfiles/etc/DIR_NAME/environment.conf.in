@@ -21,6 +21,8 @@ blockname=${DIR_NAME}
 interface=*
 # enable epoll method for notification events (true/false)
 use_epoll=true
+# resolve IPs to host names for groups (true/false)
+group_hostnames=true
 #epoll_hdlperthrd=10
 # allow kernel pagecache flushing where enabled (true/false)
 allow_pgcache_flush=true

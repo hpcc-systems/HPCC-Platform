@@ -263,10 +263,17 @@ void DllLocation::remove(bool removeFiles, bool removeDirectory)
     ForEach(*iter)
     {
         IPropertyTree & cur = iter->query();
-        if (propsMatch(cur, *locationRoot, "@ip") && propsMatch(cur, *locationRoot, "@dll") && propsMatch(cur, *locationRoot, "@lib"))
+        IpAddress curip;
+        IpAddress locip;
+        curip.ipset(cur.queryProp("@ip"));
+        locip.ipset(locationRoot->queryProp("@ip"));
+        if (curip.ipequals(locip))
         {
-            conn->queryRoot()->removeTree(&cur);
-            break;
+            if (propsMatch(cur, *locationRoot, "@dll") && propsMatch(cur, *locationRoot, "@lib"))
+            {
+                conn->queryRoot()->removeTree(&cur);
+                break;
+            }
         }
     }
 }
@@ -558,7 +565,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
     RemoteFilename dllRemote;
     StringBuffer ipText, dllText;
     dllRemote.setRemotePath(dllPath);
-    dllRemote.queryIP().getIpText(ipText);
+    dllRemote.queryIP().getIpText(ipText, getResolveHN());
     dllRemote.getLocalPath(dllText);
 
     Owned<IRemoteConnection> conn = getEntryConnection(name, RTM_LOCK_WRITE);
@@ -571,9 +578,13 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
         ForEach(*iter)
         {
             IPropertyTree & cur = iter->query();
-            if ((stricmp(cur.queryProp("@ip"),ipText.str()) == 0) && 
-                (stricmp(cur.queryProp("@dll"),dllText.str()) == 0))
-                return;
+            if (stricmp(cur.queryProp("@dll"),dllText.str()) == 0)
+            {
+                IpAddress curip;
+                curip.ipset(cur.queryProp("@ip"));
+                if (dllRemote.queryIP().ipequals(curip))
+                    return;
+            }
         }
     }
     else

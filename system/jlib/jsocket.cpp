@@ -2972,11 +2972,44 @@ static IpAddress cachehostip;
 static IpAddress localhostip;
 static CriticalSection hostnamesect;
 
+static StringAttr myhostname;
+static std::atomic_bool resolveHostnamesInit{false};
+static bool resolveHostnames = true;
+
+bool getResolveHN()
+{
+    if (!resolveHostnamesInit)
+    {
+        CriticalBlock c(hostnamesect);
+        if (!resolveHostnamesInit)
+        {
+            resolveHostnamesInit = true;
+            if (!queryEnvironmentConf().getPropBool("group_hostnames", true))
+                resolveHostnames = false;
+        }
+    }
+    return resolveHostnames;
+}
+
+bool setResolveHN(bool newrhn)
+{
+    bool prv = getResolveHN();
+    resolveHostnames = newrhn;
+    return prv;
+}
+
 const char * GetCachedHostName()
 {
     CriticalBlock c(hostnamesect);
     if (!cachehostname.get())
     {
+        char temp[1024];
+        if (gethostname(temp, sizeof(temp))==0)
+            cachehostname.set(temp);
+        else
+            cachehostname.set("localhost");         // assume no NIC card
+        myhostname.set(cachehostname.get());
+        getResolveHN();
 #ifndef _WIN32
         IpAddress ip;
         const char *ifs = queryEnvironmentConf().queryProp("interface");
@@ -2986,17 +3019,12 @@ const char * GetCachedHostName()
             ip.getIpText(ips);
             if (ips.length())
             {
-                cachehostname.set(ips.str());
                 cachehostip.ipset(ip);
-                return cachehostname.get();
+                if (!resolveHostnames)
+                    cachehostname.set(ips.str());
             }
         }
 #endif
-        char temp[1024];
-        if (gethostname(temp, sizeof(temp))==0)
-            cachehostname.set(temp);                
-        else
-            cachehostname.set("localhost");         // assume no NIC card
     }
     return cachehostname.get();
 }
@@ -3179,6 +3207,40 @@ static bool decodeNumericIP(const char *text,unsigned *netaddr)
 
 static bool lookupHostAddress(const char *name,unsigned *netaddr)
 {
+    if (!name || !*name)
+        return false;
+
+    GetCachedHostName();
+
+    if (streq(name, "localhost"))
+    {
+        IpAddress ip;
+        ip.ipset(queryLocalIP());
+        ip.copyAddress(netaddr);
+        return true;
+    }
+    else if ( (streq(name, ".")) || (streq(name, myhostname.get())) )
+    {
+        IpAddress ip;
+        ip.ipset(queryHostIP());
+        ip.copyAddress(netaddr);
+        return true;
+    }
+    else if ( (!isdigit(name[0])) && (strchr(name, '.')) ) // fqdn name compare
+    {
+        char n1[256];
+        strcpy(n1, name);
+        int l1 = strcspn(n1, ".");
+        n1[l1] = '\0';
+        if (streq(n1, myhostname.get()))
+        {
+            IpAddress ip;
+            ip.ipset(queryHostIP());
+            ip.copyAddress(netaddr);
+            return true;
+        }
+    }
+
     // if IP4only or using MS V6 can only resolve IPv4 using 
     static bool recursioncheck = false; // needed to stop error message recursing
     unsigned retry=10;
@@ -3325,6 +3387,11 @@ bool IpAddress::ipset(const char *text)
     return false;
 }
 
+void IpAddress::copyAddress(unsigned *other)
+{
+    memcpy(other, &netaddr, sizeof(netaddr));
+}
+
 inline char * addbyte(char *s,byte b)
 {
     if (b>=100) {
@@ -3343,8 +3410,28 @@ inline char * addbyte(char *s,byte b)
         
 
 
-StringBuffer & IpAddress::getIpText(StringBuffer & out) const
+StringBuffer & IpAddress::getIpText(StringBuffer & out, bool getHN) const
 {
+    if (getHN)
+    {
+        if (isLocal() && myhostname.get())
+            return out.clear().append(myhostname.get());
+        DEFINE_SOCKADDR(u);
+        socklen_t ul = setSockAddr(u, *this, 0);
+        char hname[1024];
+        int retry = 3;
+        while (retry--)
+        {
+            int rtnErr = getnameinfo((struct sockaddr *)&u, ul, hname, sizeof(hname), nullptr, 0, NI_NAMEREQD);
+            if (!rtnErr)
+                return out.clear().append(hname);
+            else if (rtnErr!=EAI_AGAIN)
+                break;
+            else
+                Sleep((3-retry)*10);
+        }
+    }
+
     if (::isIp4(netaddr)) {
         const byte *ip = (const byte *)&netaddr[3];
         char ips[16]; 
@@ -3553,12 +3640,12 @@ bool SocketEndpoint::set(const char *name,unsigned short _port)
     return false;
 }
 
-void SocketEndpoint::getUrlStr(char * str, size32_t len) const
+void SocketEndpoint::getUrlStr(char * str, size32_t len, bool getHN) const
 {
     if (len==0)
         return;
     StringBuffer _str;
-    getUrlStr(_str);
+    getUrlStr(_str, getHN);
     size32_t l = _str.length()+1;
     if (l>len)
     { 
@@ -3568,9 +3655,9 @@ void SocketEndpoint::getUrlStr(char * str, size32_t len) const
     memcpy(str,_str.str(),l);
 }
 
-StringBuffer &SocketEndpoint::getUrlStr(StringBuffer &str) const
+StringBuffer &SocketEndpoint::getUrlStr(StringBuffer &str, bool getHN) const
 {
-    getIpText(str);
+    getIpText(str, getHN);
     if (port) 
         str.append(':').append((unsigned)port);         // TBD IPv6 put [] on
     return str;

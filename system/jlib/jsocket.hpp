@@ -92,7 +92,7 @@ public:
     bool isLoopBack() const;                            // is loopback (localhost: 127.0.0.1 or ::1)
     bool isLocal() const;                               // matches local interface 
     bool isIp4() const;
-    StringBuffer &getIpText(StringBuffer & out) const;
+    StringBuffer &getIpText(StringBuffer & out, bool getHN=false) const;
     void ipserialize(MemoryBuffer & out) const;         
     void ipdeserialize(MemoryBuffer & in);          
     unsigned ipdistance(const IpAddress &ip,unsigned offset=0) const;       // network order distance (offset: 0-3 word (leat sig.), 0=Ipv4)
@@ -102,6 +102,7 @@ public:
 
     size32_t getNetAddress(size32_t maxsz,void *dst) const;     // for internal use - returns 0 if address doesn't fit
     void setNetAddress(size32_t sz,const void *src);            // for internal use
+    void copyAddress(unsigned *other);                          // for internal use
 
     inline bool operator == ( const IpAddress & other) const { return ipequals(other); }
     inline IpAddress & operator = ( const IpAddress &other )
@@ -126,6 +127,8 @@ extern jlib_decl const char * GetCachedHostName();
 inline StringBuffer & GetHostName(StringBuffer &str) { return str.append(GetCachedHostName()); }
 extern jlib_decl IpAddress &GetHostIp(IpAddress &ip);
 extern jlib_decl IpAddress &localHostToNIC(IpAddress &ip);  
+extern jlib_decl bool getResolveHN();
+extern jlib_decl bool setResolveHN(bool rhn);
 
 class jlib_decl SocketEndpoint : extends IpAddress
 {
@@ -144,8 +147,8 @@ public:
     inline void setLocalHost(unsigned short _port)              { port = _port; GetHostIp(*this); } // NB *not* localhost(127.0.0.1)
     inline void set(unsigned short _port, const IpAddress & _ip) { ipset(_ip); port = _port; };
     inline bool equals(const SocketEndpoint &ep) const          { return ((port==ep.port)&&ipequals(ep)); }
-    void getUrlStr(char * str, size32_t len) const;             // in form ip4:port or [ip6]:port
-    StringBuffer &getUrlStr(StringBuffer &str) const;           // in form ip4:port or [ip6]:port
+    void getUrlStr(char * str, size32_t len, bool getHN=false) const;   // in form ip4:port or [ip6]:port
+    StringBuffer &getUrlStr(StringBuffer &str, bool getHN=false) const; // in form ip4:port or [ip6]:port
 
     inline SocketEndpoint & operator = ( const SocketEndpoint &other )
     {

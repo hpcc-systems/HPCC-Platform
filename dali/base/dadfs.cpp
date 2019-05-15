@@ -7197,7 +7197,7 @@ public:
         ForEach(gi) {
             IPropertyTree *n = createPTree("Node");
             n = val->addPropTree("Node",n);
-            gi.query().endpoint().getIpText(str.clear());
+            gi.query().endpoint().getIpText(str.clear(), getResolveHN());
             n->setProp("@ip",str.str());
         }
         gi.Release();
@@ -9213,7 +9213,9 @@ class CInitGroups
             for (;;) {
                 const char *oldIp = oldIter->query().queryProp("@ip");
                 const char *newIp = newIter->query().queryProp("@ip");
-                if (!streq(oldIp, newIp))
+                IpAddress oip(oldIp);
+                IpAddress nip(newIp);
+                if (!nip.ipequals(oip))
                     return false;
                 if (!oldIter->next() || !newIter->next())
                     break;
@@ -9373,7 +9375,7 @@ class CInitGroups
         Owned<INodeIterator> iter = group->getIterator();
         StringBuffer str;
         ForEach(*iter) {
-            iter->query().endpoint().getIpText(str.clear());
+            iter->query().endpoint().getIpText(str.clear(), getResolveHN());
             IPropertyTree *n = createPTree("Node");
             n->setProp("@ip",str.str());
             cluster->addPropTree("Node", n);
@@ -9462,6 +9464,15 @@ class CInitGroups
                 }
             }
         }
+        else if (force) // update hostname/ip if requested
+        {
+            VStringBuffer msg("Forcing new group layout for %s [ matched active = true, matched old environment = %s ]", gname.str(), matchOldEnv?"true":"false");
+            UWARNLOG("%s", msg.str());
+            messages.append(msg).newline();
+            matchOldEnv = false;
+            matchExisting = false;
+        }
+
         if ((!existingClusterGroup && (grp_thorspares != groupType)) || (!matchExisting && !matchOldEnv))
         {
             VStringBuffer msg("New cluster layout for cluster %s", gname.str());
@@ -9580,7 +9591,7 @@ public:
                         ForEachItemIn(e, *eps) {
                             const SocketEndpoint &ep = eps->item(e);
                             StringBuffer ipStr;
-                            ep.getIpText(ipStr);
+                            ep.getIpText(ipStr, getResolveHN());
                             IPropertyTree *node = createPTree();
                             node->setProp("@ip", ipStr.str());
                             existing->addPropTree("Node", node);
@@ -9598,17 +9609,23 @@ public:
                         if (existing) {
                             ForEachItemIn(e, *eps) {
                                 const SocketEndpoint &ep = eps->item(e);
-                                StringBuffer ipStr;
-                                ep.getIpText(ipStr);
-                                VStringBuffer xpath("Node[@ip=\"%s\"]", ipStr.str());
-                                if (!existing->removeProp(xpath.str())) {
-                                    VStringBuffer errMsg("removeSpares: %s not found in spares", ipStr.str());
-                                    UWARNLOG("%s", errMsg.str());
-                                    messages.append(errMsg).newline();
-                                    while (eps->zap(ep)); // delete any other duplicates
+
+                                int attempts = 2;
+                                while (attempts > 0)
+                                {
+                                    StringBuffer ipStr;
+                                    ep.getIpText(ipStr, (attempts==2));
+                                    VStringBuffer xpath("Node[@ip=\"%s\"]", ipStr.str());
+                                    if (!existing->removeProp(xpath.str())) {
+                                        VStringBuffer errMsg("removeSpares: %s not found in spares", ipStr.str());
+                                        UWARNLOG("%s", errMsg.str());
+                                        messages.append(errMsg).newline();
+                                        while (eps->zap(ep)); // delete any other duplicates
+                                    }
+                                    else
+                                        while (existing->removeProp(xpath.str())); // remove any others, shouldn't be any
+                                    attempts--;
                                 }
-                                else
-                                    while (existing->removeProp(xpath.str())); // remove any others, shouldn't be any
                             }
                         }
                         break;

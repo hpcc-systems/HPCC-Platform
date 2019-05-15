@@ -36,8 +36,7 @@ struct SmartSocketEndpoint
             throw MakeStringException(-1,"SmartSocketEndpoint resolution failed for '%s' %d",_name,port);
         StringBuffer ipStr;
         ep.getIpText(ipStr);
-        if (strcmp(ipStr.str(), _name)!=0)
-            name.append(_name);
+        name.clear().append(_name);
         lastHostUpdate=msTick();
         status = true;
     }
