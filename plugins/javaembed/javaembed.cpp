@@ -363,7 +363,9 @@ public:
     jobject ToReflectedField(jclass cls, jfieldID fieldID, jboolean isStatic) {
         return checkException(functions->ToReflectedField(this,cls,fieldID,isStatic));
     }
-
+    jboolean IsAssignableFrom(jclass clazz1, jclass clazz2) {
+        return checkException(functions->IsAssignableFrom(this,clazz1,clazz2));
+    }
     jclass GetObjectClass(jobject obj)
     {
         return checkException(JNIEnv::GetObjectClass(obj));
@@ -650,6 +652,7 @@ static jclass customLoaderClass;
 static jmethodID clc_newInstance;
 static jmethodID clc_getSignature;
 static jclass hpccIteratorClass;
+static jclass utilIteratorClass;
 static jmethodID hi_constructor;
 
 static jclass systemClass;
@@ -706,6 +709,7 @@ static void setupGlobals(CheckedJNIEnv *J)
         arrayList_toArray = J->GetMethodID(arrayListClass, "toArray", "()[Ljava/lang/Object;" );
 
         langStringClass = J->FindGlobalClass("java/lang/String");
+        utilIteratorClass = J->FindGlobalClass("java/util/Iterator");
 
         langIllegalArgumentExceptionClass = J->FindGlobalClass("java/lang/IllegalArgumentException");
     }
@@ -1809,14 +1813,13 @@ public:
       javaBuilder(JNIenv, &dummyField, className)
     {
         nextRead = false;
-        nextPending = NULL;
     }
 
     bool hasNext()
     {
         if (!nextRead)
         {
-            nextPending = (const byte *) val->ungroupedNextRow();
+            nextPending.setown(val->ungroupedNextRow());
             nextRead = true;
             if (!nextPending)
                 val->stop();
@@ -1828,7 +1831,7 @@ public:
     {
         if (!hasNext())
             return NULL;
-        typeInfo->process(nextPending, nextPending, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
+        typeInfo->process((const byte *) nextPending.get(), (const byte *) nextPending.get(), &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
         nextRead = false;
         return javaBuilder.getObject();
     }
@@ -1837,7 +1840,7 @@ protected:
     Linked<IRowStream> val;
     RtlFieldStrInfo dummyField;
     JavaObjectBuilder javaBuilder;
-    const byte *nextPending;
+    roxiemem::OwnedConstRoxieRow nextPending;
     bool nextRead;
 };
 
@@ -1867,8 +1870,12 @@ public:
     JavaRowStream(jobject _iterator, IEngineRowAllocator *_resultAllocator)
     : resultAllocator(_resultAllocator)
     {
-        iterator = queryJNIEnv()->NewGlobalRef(_iterator, "iterator");
-        // Note that we can't cache the JNIEnv, iterClass, or methodIds here - calls may be made on different threads (though not at the same time).
+        CheckedJNIEnv *JNIenv = queryJNIEnv();
+        iterator = JNIenv->NewGlobalRef(_iterator, "iterator");
+        iterClass = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(iterator), "iterClass");
+        hasNextMethod = JNIenv->GetMethodID(iterClass, "hasNext", "()Z" );
+        nextMethod = JNIenv->GetMethodID(iterClass, "next", "()Ljava/lang/Object;" );
+        // Note that we can't save the JNIEnv value here - calls may be made on different threads (though not at the same time).
     }
     ~JavaRowStream()
     {
@@ -1887,15 +1894,12 @@ public:
         //    return NULL;
         // }
         // result = iterator.next();
-        jclass iterClass =JNIenv->GetObjectClass(iterator);
-        jmethodID hasNextMethod = JNIenv->GetMethodID(iterClass, "hasNext", "()Z" );
         jboolean hasNext = JNIenv->CallBooleanMethod(iterator, hasNextMethod);
         if (!hasNext)
         {
             stop();
             return NULL;
         }
-        jmethodID nextMethod = JNIenv->GetMethodID(iterClass, "next", "()Ljava/lang/Object;" );
         jobject result = JNIenv->CallObjectMethod(iterator, nextMethod);
         RtlDynamicRowBuilder rowBuilder(resultAllocator);
         const RtlTypeInfo *typeInfo = resultAllocator->queryOutputMeta()->queryTypeInfo();
@@ -1916,12 +1920,22 @@ public:
                 JNIenv->DeleteGlobalRef(iterator);
                 iterator = NULL;
             }
+            if (iterClass)
+            {
+                JNIenv->DeleteGlobalRef(iterClass);
+                iterClass = NULL;
+            }
+            hasNextMethod = nullptr;
+            nextMethod = nullptr;
         }
     }
 
 protected:
     Linked<IEngineRowAllocator> resultAllocator;
-    jobject iterator;
+    jobject iterator = nullptr;
+    jclass iterClass = nullptr;
+    jmethodID hasNextMethod = nullptr;
+    jmethodID nextMethod = nullptr;
 };
 
 const char *esdl2JavaSig(IEsdlDefinition &esdl, const char *esdlType)
@@ -2874,10 +2888,27 @@ public:
             b.read(attr_count);
             for (unsigned j = 0; j < attr_count; j++)
             {
-                b.skip(2);
+                uint16_t attr_name_idx; b.read(attr_name_idx);
+                StringAttr attrName;
+                readUtf(attrName, attr_name_idx);
                 uint32_t attr_length;
                 b.read(attr_length);
-                b.skip(attr_length);
+                if (streq(attrName, "Signature") && attr_length==2)
+                {
+                    uint16_t ext_sig_idx; b.read(ext_sig_idx);
+                    StringAttr extSig;
+                    readUtf(extSig, ext_sig_idx);
+#ifdef TRACE_CLASSFILE
+                    DBGLOG("Seen extended signature %s", extSig.str());
+#endif
+                    if (flags & ACC_PUBLIC)
+                    {
+                        methodSigs.pop();
+                        methodSigs.append(extSig);
+                    }
+                }
+                else
+                    b.skip(attr_length);
             }
         }
         /* Don't bother reading attributes as they are not really interesting to us
@@ -3050,7 +3081,13 @@ public:
         if (codeCtx)
         {
             engine = codeCtx->queryEngineContext();
-            nodeNum = codeCtx->getNodeNum();
+            try {
+                nodeNum = codeCtx->getNodeNum();
+            }
+            catch (IException *E)
+            {
+                E->Release();  // We may get an error if calling on the master - we just want to ignore it
+            }
         }
         StringBuffer lclassPath;
         if (engine)
@@ -3423,6 +3460,13 @@ public:
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
+        jclass iterClass =JNIenv->GetObjectClass(result.l);
+        if (!JNIenv->IsAssignableFrom(iterClass, utilIteratorClass))
+        {
+            StringBuffer s;
+            throw MakeStringException(0, "javaembed: In method %s: Java code should return an iterator", getReportName(s).str());
+            // MORE - perhaps we should also support Iterable?
+        }
         return new JavaRowStream(result.l, _resultAllocator);
     }
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
@@ -4075,6 +4119,7 @@ public:
         if (persistMode==persistNone)
             instance = 0;  // otherwise we leave it for next call as it saves a lot of time looking it up
         JNIenv->PopLocalFrame(nullptr);
+        iterators.kill();
 #ifdef FORCE_GC
         forceGC(JNIenv);
 #endif
