@@ -1734,14 +1734,13 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
 
 void CEspHttpServer::sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest& authReq, const char* errMsg)
 {
-    StringBuffer espURL, ip;
-    short port = 0;
-    ctx->getServAddress(ip, port);
+    StringBuffer espURL;
     if (isSSL)
         espURL.set("https://");
     else
         espURL.set("http://");
-    espURL.append(ip).append(":").append(port);
+    m_request->getHost(espURL);
+    espURL.append(":").append(m_request->getPort());
 
     StringBuffer content(
         "<!DOCTYPE html>"
