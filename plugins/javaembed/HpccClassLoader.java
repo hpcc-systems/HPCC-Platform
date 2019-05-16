@@ -71,16 +71,17 @@ public class HpccClassLoader extends java.lang.ClassLoader
     }
     public synchronized Class<?> findClass(String className) throws ClassNotFoundException
     {
-        Class<?> result = classes.get(className);
+        String luName = className.replace(".","/");
+        Class<?> result = classes.get(luName);
         if (result == null)
         {
             if (bytecodeLen != 0)
-                result = defineClassForEmbed(bytecodeLen, bytecode, className.replace(".","/"));
+                result = defineClassForEmbed(bytecodeLen, bytecode, luName);
             if ( result == null && pathLoader != null)
                 result = pathLoader.loadClass(className);
             if (result == null)
                 return super.findClass(className);
-            classes.put(className, result);
+            classes.put(luName, result);
         }
         return result; 
     }
