@@ -8,6 +8,7 @@ define([
     "dojo/store/Observable",
     "dojo/dom-construct",
     "dojo/on",
+    "dojo/dom-class",
 
     "dijit/registry",
     "dijit/form/Button",
@@ -19,12 +20,13 @@ define([
     "src/ESPUtil",
     "src/ESPRequest",
     "src/ESPWorkunit",
+    "src/Utility",
     "hpcc/DelayLoadWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, domConstruct, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, domConstruct, on, domClass,
     registry, Button, ToolbarSeparator,
     selector,
-    GridDetailsWidget, ESPUtil, ESPRequest, ESPWorkunit, DelayLoadWidget) {
+    GridDetailsWidget, ESPUtil, ESPRequest, ESPWorkunit, Utility, DelayLoadWidget) {
         return declare("LogsWidget", [GridDetailsWidget], {
             baseClass: "LogsWidget",
             i18n: nlsHPCC,
@@ -161,7 +163,11 @@ define([
                         },
                         FileSize: {
                             label: this.i18n.FileSize,
-                            width: 90
+                            width: 90,
+                            renderCell: function (object, value, node, options) {
+                                domClass.add(node, "justify-right");
+                                node.innerText = Utility.valueCleanUp(value);
+                            },
                         }
                     }
                 }, domID);
