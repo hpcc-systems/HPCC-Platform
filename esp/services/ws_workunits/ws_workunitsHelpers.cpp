@@ -3014,7 +3014,11 @@ int WUSchedule::run()
     unsigned int waitTimeMillies = 1000*60;
     while(!stopping)
     {
-        if (!detached)
+        if (!m_container)
+        {
+            DBGLOG("ECLWorkunit WUSchedule Thread is waiting for container to be set.");
+        }
+        else if (!detached)
         {
             try
             {
