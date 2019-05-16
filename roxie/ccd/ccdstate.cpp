@@ -2464,21 +2464,29 @@ private:
                 else
                     time(&to);
                 const char *id = control->queryProp("Query/@id");
+                bool rawStats = control->getPropBool("@rawStats", false);
                 if (id)
                 {
-                    Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx);
-                    if (f)
+                    if (!rawStats)
                     {
-                        Owned<const IPropertyTree> stats = f->getQueryStats(from, to);
-                        toXML(stats, reply);
+                        Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx);
+                        if (f)
+                        {
+                            Owned<const IPropertyTree> stats = f->getQueryStats(from, to);
+                            toXML(stats, reply);
+                        }
+                        else
+                            throw MakeStringException(ROXIE_CONTROL_MSG_ERROR, "Unknown query %s", id);
                     }
                     else
-                        throw MakeStringException(ROXIE_CONTROL_MSG_ERROR, "Unknown query %s", id);
+                    {
+                        Owned<const IPropertyTree> stats = getQueryRawStats(id, from, to);
+                        toXML(stats, reply);
+                    }
                 }
                 else
                 {
                     bool includeAllQueries = control->getPropBool("@all", true);
-                    bool rawStats = control->getPropBool("@rawStats", false);
                     Owned<const IPropertyTree> stats = getAllQueryStats(includeAllQueries, rawStats, from, to);
                     toXML(stats, reply);
                 }

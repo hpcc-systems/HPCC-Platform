@@ -163,6 +163,18 @@ ESPStruct [nil_remove] ECLQuery
 
 //  ===========================================================================
 
+ESPStruct [nil_remove] QueryStatsRecord
+{
+    string StartTime;
+    int64 ElapsedTimeMs;
+    int64 MemoryUsed;
+    int64 BytesOut;
+    int SlavesReplyLen;
+    bool Failed;
+};
+
+//  ===========================================================================
+
 ESPStruct [nil_remove] QuerySummaryStats
 {
     string Endpoint;
@@ -179,6 +191,24 @@ ESPStruct [nil_remove] QuerySummaryStats
     int64 TimeMaxTotalExecuteMinutes;
     int64 Percentile97;
     bool Percentile97Estimate;
+};
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] QueryStats
+{
+    string ID; //QueryID or Global
+    ESParray<ESPstruct QuerySummaryStats> AggregateQueryStatsList;
+    ESParray<ESPstruct QueryStatsRecord> QueryStatsRecordList;
+};
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] EndpointQueryStats
+{
+    string Endpoint;
+    string Status;
+    ESParray<ESPstruct QueryStats> QueryStatsList;
 };
 
 //  ===========================================================================
@@ -1187,11 +1217,13 @@ ESPrequest WUQueryGetSummaryStatsRequest
     string QueryId;
     string FromTime; //YYYY-MM-DDTHH:MM:SS
     string ToTime;
+    [min_ver("1.75")] bool IncludeRawStats(false);
 };
 
 ESPresponse [exceptions_inline] WUQueryGetSummaryStatsResponse
 {
     ESParray<ESPstruct QuerySummaryStats> StatsList;
+    [min_ver("1.75")] ESParray<ESPstruct EndpointQueryStats> QueryStatsList;
 };
 
 ESPrequest WUExportRequest
@@ -2265,7 +2297,7 @@ ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
 // ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.74"), default_client_version("1.74"), cache_group("ESPWsWUs"),
+    version("1.75"), default_client_version("1.75"), cache_group("ESPWsWUs"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

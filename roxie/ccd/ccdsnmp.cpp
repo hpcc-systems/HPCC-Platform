@@ -940,6 +940,28 @@ public:
         return result.getClear();
     }
 
+    const char *getQueryName()
+    {
+        return queryName.get();
+    }
+    static IPropertyTree *getQueryRawStats(const char *queryID, time_t from, time_t to)
+    {
+        ReadLockBlock b(queryStatsLock);
+
+        Owned<IPTree> result = createPTree("QueryStats", ipt_fast);
+        ForEachItemIn(idx, queryStatsAggregators)
+        {
+            CQueryStatsAggregator &thisQuery = queryStatsAggregators.item(idx);
+            const char *queryName = thisQuery.getQueryName();
+            if (queryName && strieq(queryName, queryID))
+            {
+                result->addPropTree("Query", thisQuery.getRawStats(from, to));
+                break;
+            }
+        }
+        return result.getClear();
+    }
+
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsedTimeMs, unsigned memUsed, unsigned slavesReplyLen, unsigned bytesOut)
     {
         time_t timeNow;
@@ -1053,6 +1075,11 @@ IQueryStatsAggregator *createQueryStatsAggregator(const char *_queryName, unsign
 IPropertyTree *getAllQueryStats(bool includeQueries, bool rawStats, time_t from, time_t to)
 {
      return CQueryStatsAggregator::getAllQueryStats(includeQueries, rawStats, from, to);
+}
+
+IPropertyTree *getQueryRawStats(const char *queryID, time_t from, time_t to)
+{
+     return CQueryStatsAggregator::getQueryRawStats(queryID, from, to);
 }
 
 //=======================================================================================================
