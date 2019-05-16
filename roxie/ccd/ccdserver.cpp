@@ -1716,7 +1716,7 @@ public:
     }
     virtual void stop()
     {
-        if (!prefiltered)
+        if (!prefiltered && inputStream)
         {
             inputStream->stop();
         }
