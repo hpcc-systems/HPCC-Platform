@@ -3332,99 +3332,230 @@ bool CWsWorkunitsEx::onWUGetNumFileToCopy(IEspContext& context, IEspWUGetNumFile
     return true;
 }
 
-void getSummaryStatsByQueryId(const char *target, const char *queryId, const char *fromTime, const char *toTime, IArrayOf<IEspQuerySummaryStats>& querySummaryStatsList)
-{
-    if (!target || !*target)
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Target name required");
-    if (!queryId || !*queryId)
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Query Id required");
-
-    Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target);
-    if (!info || (info->getPlatform()!=RoxieCluster)) //Only support roxie for now
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid Roxie name");
-
-    PROGLOG("getSummaryStatsByQueryId: target %s, query %s", target, queryId);
-
-    const SocketEndpointArray &eps = info->getRoxieServers();
-    if (eps.empty())
-        return;
-
-    VStringBuffer control("<control:queryAggregates");
-    if (!isEmpty(fromTime))
-        control.appendf(" from='%s'", fromTime);
-    if (!isEmpty(toTime))
-        control.appendf(" to='%s'", toTime);
-    control.appendf("><Query id='%s'/></control:queryAggregates>", queryId);
-    Owned<IPropertyTree> queryAggregates = sendRoxieControlAllNodes(eps.item(0), control.str(), false, ROXIELOCKCONNECTIONTIMEOUT);
-    if (!queryAggregates)
-        return;
-
-    if (getEspLogLevel() >= LogMax)
-    {
-        StringBuffer sb;
-        toXML(queryAggregates, sb);
-        DBGLOG("getSummaryStatsByQueryId(): '%s' => '%s'", control.str(), sb.str());
-    }
-
-    //Parse queryAggregates and build querySummaryStatsList.
-    Owned<IPropertyTreeIterator> aggregates = queryAggregates->getElements("Endpoint");
-    ForEach(*aggregates)
-    {
-        IPropertyTree &aggregate = aggregates->query();
-        const char *status = aggregate.queryProp("Status");
-        const char *ep = aggregate.queryProp("@ep");
-        if (isEmptyString(ep))
-            continue;
-
-        IPropertyTree *query = aggregate.queryPropTree("Query");
-        Owned<IEspQuerySummaryStats> querySummaryStats = createQuerySummaryStats();
-        querySummaryStats->setEndpoint(ep);
-        if (query->hasProp("countFailed"))
-            querySummaryStats->setCountFailed(query->getPropInt("countFailed"));
-        if (query->hasProp("countTotal"))
-            querySummaryStats->setCountTotal(query->getPropInt("countTotal"));
-        if (query->hasProp("averageBytesOut"))
-            querySummaryStats->setAverageBytesOut(query->getPropInt64("averageBytesOut"));
-        if (query->hasProp("averageMemUsed"))
-            querySummaryStats->setSizeAvgPeakMemory(query->getPropInt64("averageMemUsed"));
-        if (query->hasProp("averageSlavesReplyLen"))
-            querySummaryStats->setAverageSlavesReplyLen(query->getPropInt("averageSlavesReplyLen"));
-        if (query->hasProp("averageTimeMs"))
-            querySummaryStats->setTimeAvgTotalExecuteMinutes(query->getPropInt64("averageTimeMs"));
-        if (query->hasProp("minTimeMs"))
-            querySummaryStats->setTimeMinTotalExecuteMinutes(query->getPropInt64("minTimeMs"));
-        if (query->hasProp("maxTimeMs"))
-            querySummaryStats->setTimeMaxTotalExecuteMinutes(query->getPropInt64("maxTimeMs"));
-        if (query->hasProp("percentile97"))
-        {
-            querySummaryStats->setPercentile97(query->getPropInt("percentile97"));
-            if (query->hasProp("percentile97/@estimate"))
-                querySummaryStats->setPercentile97Estimate(query->getPropBool("percentile97/@estimate"));
-        }
-        const char *startTime = query->queryProp("startTime");
-        const char *endTime = query->queryProp("endTime");
-        if (!isEmptyString(startTime))
-            querySummaryStats->setStartTime(startTime);
-        if (!isEmptyString(endTime))
-            querySummaryStats->setEndTime(endTime);
-        if (!isEmptyString(status))
-            querySummaryStats->setStatus(status);
-        querySummaryStatsList.append(*querySummaryStats.getLink());
-    }
-    return;
-}
-
 bool CWsWorkunitsEx::onWUQueryGetSummaryStats(IEspContext& context, IEspWUQueryGetSummaryStatsRequest& req, IEspWUQueryGetSummaryStatsResponse& resp)
 {
     try
     {
+        const char *target = req.getTarget();
+        if (isEmptyString(target))
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Target name required");
+
+        Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target);
+        if (!info || (info->getPlatform()!=RoxieCluster)) //Only support roxie for now
+            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Roxie name not found");
+
+        double version = context.getClientVersion();
+        const char *queryId = req.getQueryId();
+        if (!isEmptyString(queryId))
+            PROGLOG("WUQueryGetSummaryStats: target %s, query %s", target, queryId);
+        else
+            PROGLOG("WUQueryGetSummaryStats: target %s", target);
+
+        const SocketEndpointArray &eps = info->getRoxieServers();
+        if (eps.empty())
+        {
+            IERRLOG("WUQueryGetSummaryStats: Failed to getRoxieServers for %s", target);
+            return true;
+        }
+
+        bool includeRawStats = req.getIncludeRawStats();
+        const char *fromTime = req.getFromTime();
+        const char *toTime = req.getToTime();
+        VStringBuffer control("<control:queryAggregates");
+        if (!isEmpty(fromTime))
+            control.appendf(" from='%s'", fromTime);
+        if (!isEmpty(toTime))
+            control.appendf(" to='%s'", toTime);
+        if (includeRawStats)
+        {
+            if (!isEmptyString(queryId))
+                control.appendf(" rawStats='1'><Query id='%s'/></control:queryAggregates>", queryId);
+            else
+                control.append(" all='1' rawStats='1' />");
+        }
+        else if (!isEmptyString(queryId))
+        {
+            control.appendf("><Query id='%s'/></control:queryAggregates>", queryId);
+        }
+        else
+            control.append(" />");
+
+        Owned<IPropertyTree> queryAggregates = sendRoxieControlAllNodes(eps.item(0), control.str(), false, ROXIELOCKCONNECTIONTIMEOUT);
+        if (!queryAggregates)
+        {
+            PROGLOG("WUQueryGetSummaryStats: %s returns empty for %s", control.str(), target);
+            return true;
+        }
+
+        if (getEspLogLevel() >= LogMax)
+        {
+            StringBuffer sb;
+            toXML(queryAggregates, sb);
+            DBGLOG("getQueryStats(): '%s' => '%s'", control.str(), sb.str());
+        }
+
         IArrayOf<IEspQuerySummaryStats> querySummaryStatsList;
-        getSummaryStatsByQueryId(req.getTarget(), req.getQueryId(), req.getFromTime(), req.getToTime(), querySummaryStatsList);
+        IArrayOf<IEspEndpointQueryStats> queryStatsList;
+        Owned<IPropertyTreeIterator> queryStatsOnEndpointItr = queryAggregates->getElements("Endpoint");
+        ForEach(*queryStatsOnEndpointItr)
+        {
+            IPropertyTree &queryStatsOnEndpoint = queryStatsOnEndpointItr->query();
+            const char *status = queryStatsOnEndpoint.queryProp("Status");
+            const char *ep = queryStatsOnEndpoint.queryProp("@ep");
+            if (isEmptyString(ep))
+                continue;
+
+            if (version >= 1.75)
+            {
+                if (includeRawStats)
+                    readQueryStatsList(&queryStatsOnEndpoint, status, ep, includeRawStats, queryStatsList);
+                else
+                    readQueryAggregateStats(queryStatsOnEndpoint.queryPropTree("Query"), status, ep, querySummaryStatsList);
+            }
+            else if (!isEmptyString(queryId))
+                readQueryAggregateStats(queryStatsOnEndpoint.queryPropTree("Query"), status, ep, querySummaryStatsList);
+        }
+
         resp.setStatsList(querySummaryStatsList);
+        resp.setQueryStatsList(queryStatsList);
     }
     catch(IException* e)
     {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
+}
+
+void CWsWorkunitsEx::readQueryAggregateStats(IPropertyTree *queryStats, const char *status, const char *ep,
+    IArrayOf<IEspQuerySummaryStats> &querySummaryStatsList)
+{
+    if (!queryStats)
+        return;
+
+    Owned<IEspQuerySummaryStats> querySummaryStats = createQuerySummaryStats();
+    if (!isEmptyString(ep))
+        querySummaryStats->setEndpoint(ep);
+    if (queryStats->hasProp("countFailed"))
+        querySummaryStats->setCountFailed(queryStats->getPropInt("countFailed"));
+    if (queryStats->hasProp("countTotal"))
+        querySummaryStats->setCountTotal(queryStats->getPropInt("countTotal"));
+    if (queryStats->hasProp("averageBytesOut"))
+        querySummaryStats->setAverageBytesOut(queryStats->getPropInt64("averageBytesOut"));
+    if (queryStats->hasProp("averageMemUsed"))
+        querySummaryStats->setSizeAvgPeakMemory(queryStats->getPropInt64("averageMemUsed"));
+    if (queryStats->hasProp("averageSlavesReplyLen"))
+        querySummaryStats->setAverageSlavesReplyLen(queryStats->getPropInt("averageSlavesReplyLen"));
+    if (queryStats->hasProp("averageTimeMs"))
+        querySummaryStats->setTimeAvgTotalExecuteMinutes(queryStats->getPropInt64("averageTimeMs"));
+    if (queryStats->hasProp("minTimeMs"))
+        querySummaryStats->setTimeMinTotalExecuteMinutes(queryStats->getPropInt64("minTimeMs"));
+    if (queryStats->hasProp("maxTimeMs"))
+        querySummaryStats->setTimeMaxTotalExecuteMinutes(queryStats->getPropInt64("maxTimeMs"));
+    if (queryStats->hasProp("percentile97"))
+    {
+        querySummaryStats->setPercentile97(queryStats->getPropInt("percentile97"));
+        if (queryStats->hasProp("percentile97/@estimate"))
+            querySummaryStats->setPercentile97Estimate(queryStats->getPropBool("percentile97/@estimate"));
+    }
+    const char *startTime = queryStats->queryProp("startTime");
+    const char *endTime = queryStats->queryProp("endTime");
+    if (!isEmptyString(startTime))
+        querySummaryStats->setStartTime(startTime);
+    if (!isEmptyString(endTime))
+        querySummaryStats->setEndTime(endTime);
+    if (!isEmptyString(status))
+        querySummaryStats->setStatus(status);
+    querySummaryStatsList.append(*querySummaryStats.getLink());
+}
+
+void CWsWorkunitsEx::readQueryStatsList(IPropertyTree *queryStatsTree, const char *status, const char *ep,
+    bool includeRawStats, IArrayOf<IEspEndpointQueryStats> &endpointQueryStatsList)
+{
+    if (!queryStatsTree)
+        return;
+
+    IArrayOf<IEspQueryStats> queryStatsList;
+    Owned<IPropertyTreeIterator> queryItr = queryStatsTree->getElements("QueryStats/Query");
+    ForEach(*queryItr)
+    {
+        IPropertyTree &query = queryItr->query();
+        readQueryStats(&query, query.queryProp("@id"), includeRawStats, queryStatsList);
+    }
+
+    IPropertyTree *globalStats = queryStatsTree->queryPropTree("QueryStats/Global");
+    if (globalStats)
+        readQueryStats(globalStats, "Global", includeRawStats, queryStatsList);
+
+    if (queryStatsList.ordinality() == 0)
+        return;
+
+    Owned<IEspEndpointQueryStats> endpointQueryStats = createEndpointQueryStats();
+    endpointQueryStats->setEndpoint(ep);
+    if (!isEmptyString(status))
+        endpointQueryStats->setStatus(status);
+
+    endpointQueryStats->setQueryStatsList(queryStatsList);
+    endpointQueryStatsList.append(*endpointQueryStats.getLink());
+}
+
+void CWsWorkunitsEx::readQueryStats(IPropertyTree *queryStatsTree, const char *id, bool includeRawStats,
+    IArrayOf<IEspQueryStats> &queryStatsList)
+{
+    if (!queryStatsTree)
+        return;
+
+    Owned<IEspQueryStats> queryStats = createQueryStats();
+    if (!isEmptyString(id))
+        queryStats->setID(id);
+
+    if (!includeRawStats)
+    {
+        IArrayOf<IEspQuerySummaryStats> aggregateQueryStatsList;
+        readQueryAggregateStats(queryStatsTree, nullptr, nullptr, aggregateQueryStatsList);
+        queryStats->setAggregateQueryStatsList(aggregateQueryStatsList);
+        queryStatsList.append(*queryStats.getLink());
+        return;
+    }
+
+    IArrayOf<IEspQuerySummaryStats> aggregateQueryStatsList;
+    Owned<IPropertyTreeIterator> aggregateRecordItr = queryStatsTree->getElements("QueryStatsAggregateRecord");
+    ForEach(*aggregateRecordItr)
+    {
+        IPropertyTree &query = aggregateRecordItr->query();
+        readQueryAggregateStats(&query, nullptr, nullptr, aggregateQueryStatsList);
+    }
+    queryStats->setAggregateQueryStatsList(aggregateQueryStatsList);
+
+    IArrayOf<IEspQueryStatsRecord> recordList;
+    Owned<IPropertyTreeIterator> recordItr = queryStatsTree->getElements("QueryStatsRecord");
+    ForEach(*recordItr)
+    {
+        IPropertyTree &query = recordItr->query();
+        readQueryStatsRecord(&query, recordList);
+    }
+    queryStats->setQueryStatsRecordList(recordList);
+
+    queryStatsList.append(*queryStats.getLink());
+}
+
+void CWsWorkunitsEx::readQueryStatsRecord(IPropertyTree *queryRecord, IArrayOf<IEspQueryStatsRecord> &recordList)
+{
+    if (!queryRecord)
+        return;
+
+    Owned<IEspQueryStatsRecord> record = createQueryStatsRecord();
+    const char *startTime = queryRecord->queryProp("@startTime");
+    if (!isEmptyString(startTime))
+        record->setStartTime(startTime);
+
+    if (queryRecord->hasProp("elapsedTimeMs"))
+        record->setElapsedTimeMs(queryRecord->getPropInt64("elapsedTimeMs"));
+    if (queryRecord->hasProp("memUsed"))
+        record->setMemoryUsed(queryRecord->getPropInt64("memUsed"));
+    if (queryRecord->hasProp("bytesOut"))
+        record->setBytesOut(queryRecord->getPropInt64("bytesOut"));
+    if (queryRecord->hasProp("slavesReplyLen"))
+        record->setSlavesReplyLen(queryRecord->getPropInt("slavesReplyLen"));
+
+    recordList.append(*record.getLink());
 }

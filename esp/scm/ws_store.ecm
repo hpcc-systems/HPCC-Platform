@@ -142,7 +142,7 @@ ESPrequest CreateStoreRequest
     string Name;
     string Type;
     string Description;
-    bool   UserSpecific(false);
+    [depr_ver("1.01")] bool UserSpecific(false);
 };
 
 ESPresponse [exceptions_inline] CreateStoreResponse
@@ -151,9 +151,10 @@ ESPresponse [exceptions_inline] CreateStoreResponse
     string Type;
     string Description;
     string Owner;
+    [min_ver("1.01")] bool Success;
 };
 
-ESPservice [version("1.00"), default_client_version("1.00"), auth_feature("WsStoreAccess:READ"), exceptions_inline("./smc_xslt/exceptions.xslt")] wsstore
+ESPservice [version("1.01"), default_client_version("1.01"), auth_feature("WsStoreAccess:READ"), exceptions_inline("./smc_xslt/exceptions.xslt")] wsstore
 {
     ESPmethod [auth_feature("WsStoreAccess:FULL")] Delete(DeleteRequest, DeleteResponse);
     ESPmethod [auth_feature("WsStoreAccess:FULL")] DeleteNamespace(DeleteNamespaceRequest, DeleteNamespaceResponse);

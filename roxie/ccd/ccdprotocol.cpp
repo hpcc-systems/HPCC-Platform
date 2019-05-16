@@ -1889,7 +1889,8 @@ readAnother:
                     }
                 }
 
-                msgctx->initQuery(querySetName, queryName); //needed here to allow checking hash options
+                if (!streq(queryPrefix.str(), "debug"))
+                    msgctx->initQuery(querySetName, queryName); //needed here to allow checking hash options
 
                 if (whitespace == WhiteSpaceHandling::Default) //value in the request wins
                     whitespace = msgctx->getStripWhitespace() ? WhiteSpaceHandling::Strip : WhiteSpaceHandling::Preserve; //might be changed by hash option, returns default otherwise
@@ -1935,109 +1936,111 @@ readAnother:
                     sink->onDebugMsg(msgctx, uid, queryPT, out);
                     response.append(out.str());
                 }
-
-                Owned<IActiveQueryLimiter> l;
-                if (queryLimiterFactory)
-                    l.setown(queryLimiterFactory->create(listener));
-                if (l && !l->isAccepted())
+                else
                 {
-                    if (isHTTP)
+                    Owned<IActiveQueryLimiter> l;
+                    if (queryLimiterFactory)
+                        l.setown(queryLimiterFactory->create(listener));
+                    if (l && !l->isAccepted())
                     {
-                        sendHttpServerTooBusy(*client, logctx);
-                        logctx.CTXLOG("FAILED: %s", sanitizedText.str());
-                        logctx.CTXLOG("EXCEPTION: Too many active queries");
+                        if (isHTTP)
+                        {
+                            sendHttpServerTooBusy(*client, logctx);
+                            logctx.CTXLOG("FAILED: %s", sanitizedText.str());
+                            logctx.CTXLOG("EXCEPTION: Too many active queries");
+                        }
+                        else
+                        {
+                            IException *e = MakeStringException(ROXIE_TOO_MANY_QUERIES, "Too many active queries");
+                            if (msgctx->trapTooManyActiveQueries())
+                                logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
+                            throw e;
+                        }
                     }
                     else
                     {
-                        IException *e = MakeStringException(ROXIE_TOO_MANY_QUERIES, "Too many active queries");
-                        if (msgctx->trapTooManyActiveQueries())
-                            logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
-                        throw e;
-                    }
-                }
-                else
-                {
-                    int bindCores = queryPT->getPropInt("@bindCores", msgctx->getBindCores());
-                    if (bindCores > 0)
-                        listener->setThreadAffinity(bindCores);
-                    IArrayOf<IPropertyTree> requestArray;
-                    if (isHTTP)
-                    {
-                        if (isRequestArray)
+                        int bindCores = queryPT->getPropInt("@bindCores", msgctx->getBindCores());
+                        if (bindCores > 0)
+                            listener->setThreadAffinity(bindCores);
+                        IArrayOf<IPropertyTree> requestArray;
+                        if (isHTTP)
                         {
-                            StringBuffer reqIterString;
-                            reqIterString.append(queryName).append("Request");
+                            if (isRequestArray)
+                            {
+                                StringBuffer reqIterString;
+                                reqIterString.append(queryName).append("Request");
 
-                            Owned<IPropertyTreeIterator> reqIter = queryPT->getElements(reqIterString.str());
-                            ForEach(*reqIter)
+                                Owned<IPropertyTreeIterator> reqIter = queryPT->getElements(reqIterString.str());
+                                ForEach(*reqIter)
+                                {
+                                    IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive|ipt_fast);
+                                    Owned<IPropertyTreeIterator> iter = reqIter->query().getElements("*");
+                                    ForEach(*iter)
+                                    {
+                                        fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
+                                    }
+                                    requestArray.append(*fixedreq);
+                                }
+                            }
+                            else
                             {
                                 IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive|ipt_fast);
-                                Owned<IPropertyTreeIterator> iter = reqIter->query().getElements("*");
+                                Owned<IPropertyTreeIterator> iter = queryPT->getElements("*");
                                 ForEach(*iter)
                                 {
                                     fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
                                 }
                                 requestArray.append(*fixedreq);
+
+                                msgctx->setIntercept(queryPT->getPropBool("@log", false));
+                                msgctx->setTraceLevel(queryPT->getPropInt("@traceLevel", logctx.queryTraceLevel()));
                             }
+                            if (httpHelper.getTrim())
+                                protocolFlags |= HPCC_PROTOCOL_TRIM;
                         }
                         else
                         {
-                            IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive|ipt_fast);
-                            Owned<IPropertyTreeIterator> iter = queryPT->getElements("*");
-                            ForEach(*iter)
+                            const char *format = queryPT->queryProp("@format");
+                            if (format)
                             {
-                                fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
+                                if (stricmp(format, "raw") == 0)
+                                {
+                                    protocolFlags |= HPCC_PROTOCOL_NATIVE_RAW;
+                                    if (client) //not stand alone roxie exe
+                                        protocolFlags |= HPCC_PROTOCOL_BLOCKED;
+                                    mlResponseFmt = MarkupFmt_Unknown;
+                                }
+                                else if (stricmp(format, "bxml") == 0)
+                                {
+                                    protocolFlags |= HPCC_PROTOCOL_BLOCKED;
+                                    mlResponseFmt = MarkupFmt_XML;
+                                }
+                                else if (stricmp(format, "ascii") == 0)
+                                {
+                                    protocolFlags |= HPCC_PROTOCOL_NATIVE_ASCII;
+                                    mlResponseFmt = MarkupFmt_Unknown;
+                                }
+                                else if (stricmp(format, "xml") != 0) // xml is the default
+                                    throw MakeStringException(ROXIE_INVALID_INPUT, "Unsupported format specified: %s", format);
                             }
-                            requestArray.append(*fixedreq);
-
+                            if (queryPT->getPropBool("@trim", false))
+                                protocolFlags |= HPCC_PROTOCOL_TRIM;
                             msgctx->setIntercept(queryPT->getPropBool("@log", false));
                             msgctx->setTraceLevel(queryPT->getPropInt("@traceLevel", logctx.queryTraceLevel()));
                         }
-                        if (httpHelper.getTrim())
-                            protocolFlags |= HPCC_PROTOCOL_TRIM;
-                    }
-                    else
-                    {
-                        const char *format = queryPT->queryProp("@format");
-                        if (format)
+
+                        msgctx->noteQueryActive();
+
+                        if (isHTTP)
                         {
-                            if (stricmp(format, "raw") == 0)
-                            {
-                                protocolFlags |= HPCC_PROTOCOL_NATIVE_RAW;
-                                if (client) //not stand alone roxie exe
-                                    protocolFlags |= HPCC_PROTOCOL_BLOCKED;
-                                mlResponseFmt = MarkupFmt_Unknown;
-                            }
-                            else if (stricmp(format, "bxml") == 0)
-                            {
-                                protocolFlags |= HPCC_PROTOCOL_BLOCKED;
-                                mlResponseFmt = MarkupFmt_XML;
-                            }
-                            else if (stricmp(format, "ascii") == 0)
-                            {
-                                protocolFlags |= HPCC_PROTOCOL_NATIVE_ASCII;
-                                mlResponseFmt = MarkupFmt_Unknown;
-                            }
-                            else if (stricmp(format, "xml") != 0) // xml is the default
-                                throw MakeStringException(ROXIE_INVALID_INPUT, "Unsupported format specified: %s", format);
+                            CHttpRequestAsyncFor af(queryName, sink, msgctx, requestArray, *client, httpHelper, protocolFlags, memused, slavesReplyLen, sanitizedText, logctx, (PTreeReaderOptions)readFlags, querySetName);
+                            af.For(requestArray.length(), global->numRequestArrayThreads);
                         }
-                        if (queryPT->getPropBool("@trim", false))
-                            protocolFlags |= HPCC_PROTOCOL_TRIM;
-                        msgctx->setIntercept(queryPT->getPropBool("@log", false));
-                        msgctx->setTraceLevel(queryPT->getPropInt("@traceLevel", logctx.queryTraceLevel()));
-                    }
-
-                    msgctx->noteQueryActive();
-
-                    if (isHTTP)
-                    {
-                        CHttpRequestAsyncFor af(queryName, sink, msgctx, requestArray, *client, httpHelper, protocolFlags, memused, slavesReplyLen, sanitizedText, logctx, (PTreeReaderOptions)readFlags, querySetName);
-                        af.For(requestArray.length(), global->numRequestArrayThreads);
-                    }
-                    else
-                    {
-                        Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags, (PTreeReaderOptions)readFlags);
-                        sink->onQueryMsg(msgctx, queryPT, protocol, protocolFlags, (PTreeReaderOptions)readFlags, querySetName, 0, memused, slavesReplyLen);
+                        else
+                        {
+                            Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags, (PTreeReaderOptions)readFlags);
+                            sink->onQueryMsg(msgctx, queryPT, protocol, protocolFlags, (PTreeReaderOptions)readFlags, querySetName, 0, memused, slavesReplyLen);
+                        }
                     }
                 }
             }

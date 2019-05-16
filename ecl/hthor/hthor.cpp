@@ -1173,6 +1173,7 @@ void CHThorIndexWriteActivity::execute()
 
     if(clusterHandler)
         clusterHandler->copyPhysical(file, agent.queryWorkUnit()->getDebugValueBool("__output_cluster_no_copy_physical", false));
+    clearKeyStoreCacheEntry(file->queryFilename());
 
     // Now publish to name services
     StringBuffer dir,base;

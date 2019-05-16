@@ -120,7 +120,11 @@ IEspStore* CwsstoreEx::loadStoreProvider(const char* instanceName, const char* l
 bool CwsstoreEx::onCreateStore(IEspContext &context, IEspCreateStoreRequest &req, IEspCreateStoreResponse &resp)
 {
     const char *user = context.queryUserId();
-    m_storeProvider->createStore(req.getType(), req.getName(), req.getDescription(), new CSecureUser(user, nullptr));
+    double version = context.getClientVersion();
+    bool success = m_storeProvider->createStore(req.getType(), req.getName(), req.getDescription(), new CSecureUser(user, nullptr));
+    if (version > 1)
+      resp.setSuccess(success);
+
     resp.setName(req.getName());
     resp.setType(req.getType());
     resp.setDescription(req.getDescription());
@@ -139,7 +143,9 @@ bool CwsstoreEx::onDelete(IEspContext &context, IEspDeleteRequest &req, IEspDele
         if (!m_defaultStore.isEmpty())
             storename = m_defaultStore.get();
     }
-    return m_storeProvider->deletekey(storename, req.getNamespace(), req.getKey(), new CSecureUser(user, nullptr), !req.getUserSpecific());
+
+    resp.setSuccess( m_storeProvider->deletekey(storename, req.getNamespace(), req.getKey(), new CSecureUser(user, nullptr), !req.getUserSpecific()));
+    return true;
 }
 
 bool CwsstoreEx::onDeleteNamespace(IEspContext &context, IEspDeleteNamespaceRequest &req, IEspDeleteNamespaceResponse &resp)
@@ -151,7 +157,7 @@ bool CwsstoreEx::onDeleteNamespace(IEspContext &context, IEspDeleteNamespaceRequ
 
     if (!global && !isEmptyString(targetUser))
     {
-        ESPLOG(LogMin, "CwsstoreEx::onDeleteNamespace: '%s' requesting to delete namespace on behalve of '%s'", user, targetUser);
+        ESPLOG(LogMin, "CwsstoreEx::onDeleteNamespace: '%s' requesting to delete namespace on behalf of '%s'", user, targetUser);
         user = targetUser;
     }
 
@@ -161,7 +167,8 @@ bool CwsstoreEx::onDeleteNamespace(IEspContext &context, IEspDeleteNamespaceRequ
             storename = m_defaultStore.get();
     }
 
-    return m_storeProvider->deleteNamespace(storename, req.getNamespace(), new CSecureUser(user, nullptr), !req.getUserSpecific());
+    resp.setSuccess(m_storeProvider->deleteNamespace(storename, req.getNamespace(), new CSecureUser(user, nullptr), !req.getUserSpecific()));
+    return true;
 }
 
 bool CwsstoreEx::onListNamespaces(IEspContext &context, IEspListNamespacesRequest &req, IEspListNamespacesResponse &resp)
@@ -178,6 +185,7 @@ bool CwsstoreEx::onListNamespaces(IEspContext &context, IEspListNamespacesReques
     StringArray namespaces;
     m_storeProvider->fetchAllNamespaces(namespaces, storename, new CSecureUser(user, nullptr), !req.getUserSpecific());
     resp.setNamespaces(namespaces);
+    resp.setStoreName(storename);
     return true;
 }
 
@@ -197,6 +205,7 @@ bool CwsstoreEx::onListKeys(IEspContext &context, IEspListKeysRequest &req, IEsp
     m_storeProvider->fetchKeySet(keys, storename, ns, new CSecureUser(user, nullptr), !req.getUserSpecific());
     resp.setKeySet(keys);
     resp.setNamespace(ns);
+    resp.setStoreName(storename);
 
     return true;
 }
@@ -215,7 +224,8 @@ bool CwsstoreEx::onSet(IEspContext &context, IEspSetRequest &req, IEspSetRespons
     }
 
     const char *user = context.queryUserId();
-    m_storeProvider->set(storename, ns, key, value, new CSecureUser(user, nullptr), !req.getUserSpecific());
+    resp.setSuccess(m_storeProvider->set(storename, ns, key, value, new CSecureUser(user, nullptr), !req.getUserSpecific()));
+
     return true;
 }
 
@@ -233,6 +243,7 @@ bool CwsstoreEx::onFetch(IEspContext &context, IEspFetchRequest &req, IEspFetchR
 
     m_storeProvider->fetch(storename, req.getNamespace(), req.getKey(), value, new CSecureUser(user, nullptr), !req.getUserSpecific());
     resp.setValue(value.str());
+
     return true;
 }
 
@@ -270,6 +281,7 @@ bool CwsstoreEx::onFetchKeyMetadata(IEspContext &context, IEspFetchKeyMDRequest 
     resp.setStoreName(storename);
     resp.setNamespace(req.getNamespace());
     resp.setKey(req.getKey());
+
     return true;
 }
 

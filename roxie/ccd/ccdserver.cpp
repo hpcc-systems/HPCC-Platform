@@ -1716,7 +1716,7 @@ public:
     }
     virtual void stop()
     {
-        if (!prefiltered)
+        if (!prefiltered && inputStream)
         {
             inputStream->stop();
         }
@@ -12290,6 +12290,7 @@ public:
             duplicateKeyCount = builder->getDuplicateCount();
             cummulativeDuplicateKeyCount += duplicateKeyCount;
             builder->finish(metadata, &fileCrc);
+            clearKeyStoreCache(false);
         }
     }
 

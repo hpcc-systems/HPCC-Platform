@@ -144,12 +144,14 @@ define([
 
             getDetailID: function (row, params) {
                 var retVal = "Detail" + row[this.idProperty];
-                if (params) {
-                    if (params.vizMode) {
-                        retVal += "Viz";
-                    } else if (params.legacyMode) {
-                        retVal += "Legacy";
-                    }
+                if (params && params.vizMode) {
+                    retVal += "Viz";
+                } else if (params && params.legacyMode) {
+                    retVal += "Legacy";
+                } else if (row.FileName && params && params.logicalFile) {
+                    retVal += "LogicalFile";
+                } else if (params && params.resultView && params.viewName) {
+                    retVal += "View";
                 }
                 return retVal;
             },

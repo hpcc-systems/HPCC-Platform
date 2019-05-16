@@ -8619,8 +8619,12 @@ IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const WuScopeFilter & f
 
     if (sources & SSFsearchWorkflow)
     {
-        Owned<IConstWUScopeIterator> workflowIter(new WorkflowStatisticsScopeIterator(getWorkflowItems()));
-        compoundIter->addIter(workflowIter);
+        Owned<IConstWorkflowItemIterator> iter = getWorkflowItems();
+        if (iter)
+        {
+            Owned<IConstWUScopeIterator> workflowIter(new WorkflowStatisticsScopeIterator(iter));
+            compoundIter->addIter(workflowIter);
+        }
     }
 
 
@@ -12407,29 +12411,38 @@ extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr
         Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, &secmgr, &secuser);
         SCMStringBuffer ip;
         unsigned port;
-        port = wu->getDebugAgentListenerPort();
-        wu->getDebugAgentListenerIP(ip);
-        SocketEndpoint debugEP(ip.str(), port);
-        Owned<ISocket> socket = ISocket::connect_timeout(debugEP, 1000);
-        unsigned len = (size32_t)strlen(command);
-        unsigned revlen = len;
-        _WINREV(revlen);
-        socket->write(&revlen, sizeof(revlen));
-        socket->write(command, len);
-        for (;;)
+        try
         {
-            socket->read(&len, sizeof(len));
-            _WINREV(len);                    
-            if (len == 0)
-                break;
-            if (len & 0x80000000)
+            port = wu->getDebugAgentListenerPort();
+            wu->getDebugAgentListenerIP(ip);
+            SocketEndpoint debugEP(ip.str(), port);
+            Owned<ISocket> socket = ISocket::connect_timeout(debugEP, 1000);
+            unsigned len = (size32_t)strlen(command);
+            unsigned revlen = len;
+            _WINREV(revlen);
+            socket->write(&revlen, sizeof(revlen));
+            socket->write(command, len);
+            for (;;)
             {
-                throwUnexpected();
+                socket->read(&len, sizeof(len));
+                _WINREV(len);
+                if (len == 0)
+                    break;
+                if (len & 0x80000000)
+                {
+                    throwUnexpected();
+                }
+                char * mem = (char*) response.reserve(len);
+                socket->read(mem, len);
             }
-            char * mem = (char*) response.reserve(len);
-            socket->read(mem, len);
+            return true;
         }
-        return true;
+        catch (IException *E)
+        {
+            VStringBuffer msg("In secDebugWorkunit wuid %s port %d ip %s command %s", wuid, port, ip.str(), command);
+            EXCLOG(E, msg.str());
+            throw;
+        }
     }
     return false;
 }

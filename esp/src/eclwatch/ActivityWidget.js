@@ -530,6 +530,14 @@ define([
                 return retVal;
             },
 
+            getDetailID: function (row, params) {
+                var retVal = "Detail" + row[this.idProperty];
+                if (params && params.OpenMode === "Graph") {
+                    retVal += "Graph";
+                }
+                return retVal;
+            },
+
             createDetail: function (id, row, params) {
                 if (params && params.usage) {
                     return new DelayLoadWidget({

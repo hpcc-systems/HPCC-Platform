@@ -337,6 +337,13 @@ private:
         const char *cluster, IArrayOf<IEspECLJob> &eclJobList, IArrayOf<IEspECLJob> &inProgressECLJobList);
     bool getThorJobsFromAuditLog(double version, CDateTime &queryAuditLogFrom, CDateTime &queryAuditLogTo,
         const char *cluster, unsigned maxJobsToReturn, IArrayOf<IEspECLJob> &eclJobList);
+    void readQueryAggregateStats(IPropertyTree *queryStats, const char *status, const char *ep,
+        IArrayOf<IEspQuerySummaryStats> &querySummaryStatsList);
+    void readQueryStatsRecord(IPropertyTree *queryRecord, IArrayOf<IEspQueryStatsRecord> &recordList);
+    void readQueryStats(IPropertyTree *queryStatsTree, const char *id, bool all,
+        IArrayOf<IEspQueryStats> &queryStatsList);
+    void readQueryStatsList(IPropertyTree *queryStatsTree, const char *status, const char *ep,
+        bool all, IArrayOf<IEspEndpointQueryStats> &endpointQueryStatsList);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;

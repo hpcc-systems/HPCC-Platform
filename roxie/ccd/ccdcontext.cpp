@@ -2786,8 +2786,8 @@ protected:
 
     void initDebugMode(bool breakAtStart, const char *debugUID)
     {
-        if (!debugPermitted || !ownEP.port || !nativeProtocol)
-            throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug queries are not permitted on this system");
+        if (!debugPermitted || !ownEP.port || nativeProtocol)
+            throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug query not permitted here");
         debugContext.setown(new CRoxieServerDebugContext(this, logctx, factory->cloneQueryXGMML()));
         debugContext->debugInitialize(debugUID, factory->queryQueryName(), breakAtStart);
         if (workUnit)

@@ -99,6 +99,14 @@ define([
                 });
             },
 
+            getDetailID: function (row, params) {
+                var retVal = "Detail" + row[this.idProperty];
+                if (params && params.showSource) {
+                    retVal += "Source";
+                }
+                return retVal;
+            },
+
             createDetail: function (id, row, params) {
                 if (params && params.showSource) {
                     return new DelayLoadWidget({

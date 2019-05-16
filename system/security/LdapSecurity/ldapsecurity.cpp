@@ -1234,10 +1234,11 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig)
                 location->getProp("@required", required);
                 location->getProp("@description", description);
                 
-                if(pathstr.length() == 0)
-                    throw MakeStringException(-1, "path empty in Authenticate/Location");
                 if(rstr.length() == 0)
                     throw MakeStringException(-1, "resource empty in Authenticate/Location");
+                if(pathstr.length() == 0)
+                    throw MakeStringException(-1, "path empty in Authenticate/Location for resource '%s'", rstr.str());
+
 
                 ISecResourceList* rlist = authmap->queryResourceList(pathstr.str());
                 if(rlist == NULL)
@@ -1285,6 +1286,10 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig)
                 ISecResourceList* rlist = feature_authmap->queryResourceList(pathstr.str());
                 if(rlist == NULL)
                 {
+                    if(rstr.length() == 0)
+                        throw MakeStringException(-1, "resource empty in Feature Map");
+                    if(pathstr.length() == 0)
+                        throw MakeStringException(-1, "path empty in Feature Map for resource '%s'", rstr.str());
                     rlist = createResourceList(pathstr.str());                      
                     feature_authmap->add(pathstr.str(), rlist);
                 }
@@ -1587,8 +1592,14 @@ LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config)
             location = &loc_iter->query();
             if (location)
             {
-                StringBuffer pathstr, rstr;
+                StringBuffer pathstr;
                 location->getProp("@path", pathstr);
+                if (pathstr.isEmpty())
+                {
+                    StringBuffer rstr;
+                    location->getProp("@resource", rstr);
+                    throw MakeStringException(-1, "path empty in DefaultAuthMap for resource '%s'", rstr.isEmpty() ? "unspecified" : rstr.str());
+                }
                 authmap->add(pathstr.str(), NULL);
             }
             loc_iter->next();

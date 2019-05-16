@@ -76,6 +76,7 @@ interface IQueryStatsAggregator : public IInterface
 extern IQueryStatsAggregator *queryGlobalQueryStatsAggregator();
 extern IQueryStatsAggregator *createQueryStatsAggregator(const char *queryName, unsigned expirySeconds);
 extern IPropertyTree *getAllQueryStats(bool includeQueries, bool rawStats, time_t from, time_t to);
+extern IPropertyTree *getQueryRawStats(const char *queryID, time_t from, time_t to);
 
 extern RelaxedAtomic<unsigned> queryCount;
 extern RoxieQueryStats unknownQueryStats;
