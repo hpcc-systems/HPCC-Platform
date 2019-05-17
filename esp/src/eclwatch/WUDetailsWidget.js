@@ -159,7 +159,7 @@ define([
                 this.checkThorLogStatus();
             },
 
-            _onSubmitDialog: function(){
+            _onSubmitDialog: function () {
                 var includeSlaveLogsCheckbox = this.includeSlaveLogsCheckbox.get("checked");
                 if (this.zapForm.validate()) {
                     //WUCreateAndDownloadZAPInfo is not a webservice so relying on form to submit.
@@ -172,7 +172,7 @@ define([
             },
 
             //  Hitched actions  ---
-            _onSave: function(event) {
+            _onSave: function (event) {
                 var protectedCheckbox = registry.byId(this.id + "Protected");
                 var context = this;
                 this.wu.update({
@@ -188,7 +188,9 @@ define([
                 this.wu.restore();
             },
             _onAutoRefresh: function (event) {
-                this.wu.disableMonitor(!this.widget.AutoRefresh.get("checked"));
+                var autoRefresh = this.widget.AutoRefresh.get("checked");
+                this.wu.disableMonitor(!autoRefresh);
+                this.wuStatus.disableMonitor(!autoRefresh);
             },
             _onRefresh: function (event) {
                 this.wu.refresh(true);
@@ -245,12 +247,12 @@ define([
                     );
                 }
             },
-            _onActiveGraph: function() {
+            _onActiveGraph: function () {
                 this.graphsWidgetLoaded = true;
                 var context = this;
                 this.graphsWidget.init({
                     Wuid: this.wu.Wuid
-                }).then(function(w) {
+                }).then(function (w) {
                     w.openGraph(context.wu.GraphName, "sg" + context.wu.GID);
                 });
                 this.selectChild(this.graphsWidget.id);
@@ -264,8 +266,8 @@ define([
                     }
                 }).then(function (response) {
                     context.zapDialog.show();
-                    context.emailCheckbox.on("change", function(evt){
-                        if (context.emailCheckbox.get("checked")){
+                    context.emailCheckbox.on("change", function (evt) {
+                        if (context.emailCheckbox.get("checked")) {
                             context.emailSubject.set("required", true);
                         } else {
                             context.emailSubject.set("required", false);
@@ -333,7 +335,7 @@ define([
                     .lazyRender()
                     ;
 
-                this.protected.on("change", function(evt){
+                this.protected.on("change", function (evt) {
                     context._onSave();
                 })
             },
@@ -595,10 +597,10 @@ define([
                     }
                     this.graphsWidget.set("tooltip", tooltip);
                     this.setDisabled(this.graphsWidget.id, false);
-                } else if (name === "resourceURLCount" && newValue) {
-                    this.widget._Resources.set("title", this.i18n.Resources + " (" + newValue + ")");
+                } else if (name === "ResourceURLCount" && newValue && newValue > 1) {
+                    this.widget._Resources.set("title", this.i18n.Resources + " (" + (newValue - 1) + ")");
                     this.setDisabled(this.widget._Resources.id, false);
-                } else if (name === "helpersCount" && newValue) {
+                } else if (name === "eclwatchHelpersCount" && newValue) {
                     this.logsWidget.set("title", this.i18n.Helpers + " (" + newValue + ")");
                     this.setDisabled(this.logsWidget.id, false);
                 } else if (name === "Archived") {
