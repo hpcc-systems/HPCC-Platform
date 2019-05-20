@@ -71,6 +71,10 @@ xmlns:set="http://exslt.org/sets">
                     <LogInfo name="{current()/@name}" default="{current()/@default}" XPath="{current()/@xpath}" xsl="{current()/@xsl}" multiple="{current()/@multiple}" encode="{current()/@encode}" type="{current()/@type}"/>
                 </xsl:for-each>
             </LogDataXPath>
+
+            <xsl:for-each select="$agentNode/Variant">
+                <Variant type="{current()/@type}" group="{current()/@group}"/>
+            </xsl:for-each>
         </LogAgent>
     </xsl:template>
 
