@@ -3224,8 +3224,75 @@ void FileSprayer::updateTargetProperties()
             }
 
             // Keep source kind
-            curProps.setProp("@kind", srcAttr->queryProp("@kind"));
+            if (srcAttr->hasProp(FPkind))
+            {
+                curProps.setProp(FPkind, srcAttr->queryProp(FPkind));
 
+                if (srcAttr->hasProp(FPformat))
+                    curProps.setProp(FPformat, srcAttr->queryProp(FPformat));
+            }
+            else
+            {
+                const char * targetKind = nullptr;
+
+                if (tgtFormat.markup == FMTxml)
+                    targetKind = "xml";
+                else if (tgtFormat.markup == FMTjson)
+                    targetKind = "json";
+
+                const char * targetFormat = nullptr;
+
+                switch (tgtFormat.type)
+                {
+                case FFTfixed:
+                case FFTvariable:
+                case FFTblocked:
+                    targetKind = "flat";
+                    break;
+                case FFTcsv:
+                    targetKind = "csv";
+                    break;
+                case FFTutf:
+                    targetFormat = "utf8n";
+                    break;
+                case FFTutf8:
+                    targetFormat = "utf8";
+                    break;
+                case FFTutf16:
+                    targetFormat = "utf16";
+                    break;
+                case FFTutf16be:
+                    targetFormat = "utf16be";
+                    break;
+                case FFTutf16le:
+                    targetFormat = "utf16le";
+                    break;
+                case FFTutf32:
+                    targetFormat = "utf32";
+                    break;
+                case FFTutf32be:
+                    targetFormat = "utf32be";
+                    break;
+                case FFTutf32le:
+                    targetFormat = "utf32le";
+                    break;
+                case FFTrecfmvb:
+                    targetFormat = "recfmvb";
+                    break;
+                case FFTrecfmv:
+                    targetFormat = "recfmv";
+                    break;
+                case FFTvariablebigendian:
+                    targetFormat = "variablebigendian";
+                    break;
+                }
+
+                if (targetKind)
+                    curProps.setProp(FPkind, targetKind);
+
+                if (targetFormat)
+                    curProps.setProp(FPformat, targetFormat);
+            }
             // and simple (top level) elements
             // History copied as well
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
