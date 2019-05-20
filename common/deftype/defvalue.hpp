@@ -83,6 +83,7 @@ extern DEFTYPE_API IValue * createUtf8Value(unsigned srclen, char const * value,
 extern DEFTYPE_API IValue * createUtf8Value(size32_t len, char const * value, char const * locale, bool unescape);
 extern DEFTYPE_API IValue * createDataValue(const char * value, unsigned size);
 extern DEFTYPE_API IValue * createDataValue(const char * value, ITypeInfo *type);
+extern DEFTYPE_API IValue * createDataValue(const char *val, ITypeInfo *type, size32_t srcLen);
 extern DEFTYPE_API IValue * createQStringValue(unsigned len, const char * value, ITypeInfo *type);
 extern DEFTYPE_API IValue * createVarStringValue(unsigned len, const char * value, ITypeInfo *type);
 extern DEFTYPE_API IValue * createVarStringValue(const char *val, ITypeInfo *type, int srcLength, ICharsetInfo * srcCharset);

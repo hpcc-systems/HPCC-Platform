@@ -22,6 +22,8 @@ EXPORT TestTrim := MODULE
     ASSERT((>DATA<)TRIM('\tabc\t\tdef\t', ALL) = (>DATA<)'\tabc\t\tdef\t', CONST);
     ASSERT((>DATA<)TRIM('', ALL) = (>DATA<)'', CONST);
     ASSERT((>DATA<)TRIM('\t', ALL) = (>DATA<)'\t', CONST);
+    ASSERT((string)(ebcdic string)(>DATA<)trim('A ') != (string)(ebcdic string)'A', CONST);
+    ASSERT((string)(>DATA<)(ebcdic string)trim('A ') != (string)(ebcdic string)'A', CONST);
     //---------------------------------------
     ASSERT(TRUE)
   ];

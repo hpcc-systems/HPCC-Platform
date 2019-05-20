@@ -202,6 +202,7 @@ public:
     virtual bool assignableFrom(ITypeInfo *t2);
     virtual StringBuffer &getECLType(StringBuffer & out);
     virtual const char *queryTypeName()         { return "data"; } // ???
+    virtual IValue * castFrom(size32_t len, const char * text);
 
     virtual void serialize(MemoryBuffer &tgt)   
     { 
