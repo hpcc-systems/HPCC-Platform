@@ -1333,6 +1333,19 @@ IValue *createDataValue(const char *val, ITypeInfo *type)
 }
 
 
+IValue *createDataValue(const char *val, ITypeInfo *type, size32_t srcLen)
+{
+    size32_t targetSize = type->getSize();
+    assertex(targetSize != UNKNOWN_LENGTH);
+    if (srcLen >= targetSize)
+        return new DataValue(val, type);
+
+    MemoryAttr stretched(targetSize);
+    rtlDataToData(targetSize, stretched.mem(), srcLen, val);
+    return new DataValue(stretched.get(), type);
+}
+
+
 //===========================================================================
 
 QStringValue::QStringValue(unsigned len, const void *v, ITypeInfo *_type) : MemoryValue(_type)

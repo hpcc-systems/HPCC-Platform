@@ -943,6 +943,13 @@ bool CDataTypeInfo::assignableFrom(ITypeInfo *t2)
     return false;
 }
 
+IValue * CDataTypeInfo::castFrom(size32_t len, const char * text)
+{
+    if (length == UNKNOWN_LENGTH)
+        return createDataValue(text, len);
+    return createDataValue(text, LINK(this), len);
+}
+
 
 //---------------------------------------------------------------------------
 
