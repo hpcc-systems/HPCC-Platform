@@ -79,6 +79,7 @@ define([
             });
             this.filter.on("apply", function (evt) {
                 context.refreshHRef();
+                context.logGrid._currentPage = 0;
                 context.refreshGrid();
             });
             this.rawText = registry.byId(this.id + "LogText");

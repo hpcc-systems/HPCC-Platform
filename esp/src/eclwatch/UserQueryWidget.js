@@ -482,6 +482,7 @@ define([
             });
             this.filter.on("apply", function (evt) {
                 context.refreshHRef();
+                context.usersGrid._currentPage = 0;
                 context.refreshUsersGrid();
             });
 
