@@ -61,8 +61,8 @@ struct IPluginContextEx : public IPluginContext
     virtual const char *ctxQueryProp(const char *propName) const = 0;
 };
 
-typedef bool (*EclPluginSetCtx) (IPluginContext *);
-typedef bool (*EclPluginSetCtxEx) (IPluginContextEx *);
+typedef void (*EclPluginSetCtx) (IPluginContext *);
+typedef void (*EclPluginSetCtxEx) (IPluginContextEx *);
 #define CTXMALLOC(ctx,l)    (ctx ? ctx->ctxMalloc(l) : malloc(l))
 #define CTXREALLOC(ctx,p,l) (ctx ? ctx->ctxRealloc(p,l) : realloc(p,l))
 #define CTXFREE(ctx,p)      (ctx ? ctx->ctxFree(p) : free(p))

@@ -56,6 +56,7 @@ static bool sortParallel(unsigned &numcpus)
 #define COMPARE(search,position)    compare(search,position)
 #define INSERT(position,search)     memmove(position,search, width)
 
+NO_SANITIZE("function")
 void * binary_add(const void *newitem, const void *base,
              size32_t nmemb, 
              size32_t width,
@@ -74,6 +75,7 @@ void * binary_add(const void *newitem, const void *base,
 #define INSERT(position,search)     *(const void * *)(position) = search
 #define NEVER_ADD
 
+NO_SANITIZE("function")
 extern jlib_decl void * binary_vec_find(const void *newitem, const void * * base,
                                         size32_t nmemb, 
                                         sortCompareFunction compare,
@@ -94,6 +96,7 @@ extern jlib_decl void * binary_vec_find(const void *newitem, const void * * base
 #define INSERT(position,search)     *(const void * *)(position) = search
 #define NEVER_ADD
 
+NO_SANITIZE("function")
 extern jlib_decl void * binary_vec_find(const void *newitem, const void * * base,
                                         size32_t nmemb, 
                                         ICompare & compare,
@@ -114,6 +117,7 @@ extern jlib_decl void * binary_vec_find(const void *newitem, const void * * base
 #define INSERT(position,search)     *(const void * *)(position) = search
 #define ALWAYS_ADD
 
+NO_SANITIZE("function")
 extern jlib_decl void * binary_vec_insert(const void *newitem, const void * * base,
                                           size32_t nmemb, 
                                           sortCompareFunction compare)
@@ -131,6 +135,7 @@ extern jlib_decl void * binary_vec_insert(const void *newitem, const void * * ba
 #define INSERT(position,search)     *(const void * *)(position) = search
 #define ALWAYS_ADD
 
+NO_SANITIZE("function")
 extern jlib_decl void * binary_vec_insert(const void *newitem, const void * * base,
                                           size32_t nmemb, 
                                           ICompare const & compare)
@@ -149,6 +154,7 @@ extern jlib_decl void * binary_vec_insert(const void *newitem, const void * * ba
 #define ALWAYS_ADD
 #define SEEK_LAST_MATCH
 
+NO_SANITIZE("function")
 extern jlib_decl void * binary_vec_insert_stable(const void *newitem, const void * * base,
                                           size32_t nmemb, 
                                           sortCompareFunction compare)
@@ -168,6 +174,7 @@ extern jlib_decl void * binary_vec_insert_stable(const void *newitem, const void
 #define ALWAYS_ADD
 #define SEEK_LAST_MATCH
 
+NO_SANITIZE("function")
 extern jlib_decl void * binary_vec_insert_stable(const void *newitem, const void * * base,
                                           size32_t nmemb, 
                                           ICompare const & compare)

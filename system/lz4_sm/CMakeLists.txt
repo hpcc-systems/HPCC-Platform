@@ -38,7 +38,8 @@ ADD_DEFINITIONS( -D_LIB )
 SET_SOURCE_FILES_PROPERTIES( ${SRCS} PROPERTIES LANGUAGE C )
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -std=c99")
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -std=c99")
+  remove_definitions (-fsanitize=undefined -fno-sanitize=alignment -fsanitize-trap=undefined)
 endif()
 
 HPCC_ADD_LIBRARY( lz4 STATIC ${SRCS} )

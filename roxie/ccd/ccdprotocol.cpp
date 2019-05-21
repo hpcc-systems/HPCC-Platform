@@ -527,7 +527,6 @@ protected:
     bool isBlocked;
     bool isRaw;
     bool isHTTP;
-    bool trim;   // MORE - this is never set!
     bool adaptiveRoot = false;
     bool onlyUseFirstRow = false;
 
@@ -557,7 +556,6 @@ public:
             else
                 result = new FlushingStringBuffer(client, isBlocked, mlFmt, isRaw, isHTTP, logctx);
             result->isSoap = isHTTP;
-            result->trim = trim;
             result->queryName.set(queryName);
             resultMap.replace(result, sequence);
         }
@@ -1051,7 +1049,6 @@ public:
         else
             content = new FlushingStringBuffer(client, getIsBlocked(), mlFmt, getIsRaw(), isHTTP, logctx);
         content->isSoap = isHTTP;
-        content->trim = getTrim();
         content->queryName.set(queryName);
         if (!isHTTP)
             content->startBlock();

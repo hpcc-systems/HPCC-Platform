@@ -526,4 +526,17 @@ typedef unsigned __int64 timestamp_type;
  #define DECL_EXCEPTION
 #endif
 
+//Sanitize support is different on every compiler
+//use these macros before a function definition to disable a particular sanitize option for the body of that function
+
+#ifdef __clang__
+ #define NO_SANITIZE(a) [[clang::no_sanitize(a)]]
+#elif __GNUC__ >= 8
+ #define NO_SANITIZE(a) [[gnu::no_sanitize(a)]]
+#else
+ #define NO_SANITIZE(a)
+#endif
+
+
+
 #endif

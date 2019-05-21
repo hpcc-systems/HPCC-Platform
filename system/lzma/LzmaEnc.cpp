@@ -1,6 +1,7 @@
 /* LzmaEnc.cpp -- LZMA Encoder
 2009-02-02 : Igor Pavlov : Public domain */
 
+#include "platform.h"
 #include <string.h>
 
 /* #define SHOW_STAT */
@@ -819,8 +820,7 @@ static void LenEnc_Encode2(CLenPriceEnc *p, CRangeEnc *rc, UInt32 symbol, UInt32
 }
 
 
-
-
+NO_SANITIZE("function")
 static void MovePos(CLzmaEnc *p, UInt32 num)
 {
   #ifdef SHOW_STAT
@@ -834,6 +834,7 @@ static void MovePos(CLzmaEnc *p, UInt32 num)
   }
 }
 
+NO_SANITIZE("function")
 static UInt32 ReadMatchDistances(CLzmaEnc *p, UInt32 *numDistancePairsRes)
 {
   UInt32 lenRes = 0, numPairs;
@@ -947,6 +948,7 @@ static UInt32 Backward(CLzmaEnc *p, UInt32 *backRes, UInt32 cur)
 
 #define LIT_PROBS(pos, prevByte) (p->litProbs + ((((pos) & p->lpMask) << p->lc) + ((prevByte) >> (8 - p->lc))) * 0x300)
 
+NO_SANITIZE("function")
 static UInt32 GetOptimum(CLzmaEnc *p, UInt32 position, UInt32 *backRes)
 {
   UInt32 numAvail, mainLen, numPairs, repMaxIndex, i, posState, lenEnd, len, cur;
@@ -1507,6 +1509,7 @@ static UInt32 GetOptimum(CLzmaEnc *p, UInt32 position, UInt32 *backRes)
 
 #define ChangePair(smallDist, bigDist) (((bigDist) >> 7) > (smallDist))
 
+NO_SANITIZE("function")
 static UInt32 GetOptimumFast(CLzmaEnc *p, UInt32 *backRes)
 {
   UInt32 numAvail, mainLen, mainDist, numPairs, repIndex, repLen, i;
@@ -1751,6 +1754,7 @@ void LzmaEnc_Destroy(CLzmaEncHandle p, ISzAlloc *alloc, ISzAlloc *allocBig)
   alloc->Free(alloc, p);
 }
 
+NO_SANITIZE("function")
 static SRes LzmaEnc_CodeOneBlock(CLzmaEnc *p, Bool useLimits, UInt32 maxPackSize, UInt32 maxUnpackSize)
 {
   UInt32 nowPos32, startPos32;
@@ -2121,18 +2125,6 @@ static size_t MyWrite(void *pp, const void *data, size_t size)
   return size;
 }
 
-
-UInt32 LzmaEnc_GetNumAvailableBytes(CLzmaEncHandle pp)
-{
-  const CLzmaEnc *p = (CLzmaEnc *)pp;
-  return p->matchFinder.GetNumAvailableBytes(p->matchFinderObj);
-}
-
-const Byte *LzmaEnc_GetCurBuf(CLzmaEncHandle pp)
-{
-  const CLzmaEnc *p = (CLzmaEnc *)pp;
-  return p->matchFinder.GetPointerToCurrentPos(p->matchFinderObj) - p->additionalOffset;
-}
 
 SRes LzmaEnc_CodeOneMemBlock(CLzmaEncHandle pp, Bool reInit,
     Byte *dest, size_t *destLen, UInt32 desiredPackSize, UInt32 *unpackSize)

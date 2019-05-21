@@ -444,7 +444,6 @@ public:
     bool isSoap;
     bool isEmpty;
     bool extend;
-    bool trim;
     bool tagClosed;
     StringAttr queryName;
     StringBuffer s;

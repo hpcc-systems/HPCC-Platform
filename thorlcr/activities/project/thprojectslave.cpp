@@ -157,6 +157,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
     public:
         CPrefetcher(CPrefetchProjectSlaveActivity &_parent) : threaded("CPrefetcher", this), parent(_parent)
         {
+            recordCount = 0; full = blocked = eoq = eoi = stopped = false; eog = true;
         }
         ~CPrefetcher() { stop(); }
         PrefetchInfo *pullRecord()

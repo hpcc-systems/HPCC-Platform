@@ -1346,7 +1346,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
 #endif
         unsigned shift = (sizeof(int64result)-resultsize) * 8;
         if (retType->isSigned())
-            int64result = (int64result << shift) >> shift;
+            int64result = (__int64) ((__uint64)int64result << shift) >> shift;
         else
             int64result = (((__uint64)int64result) << shift) >> shift;
 

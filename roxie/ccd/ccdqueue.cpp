@@ -194,7 +194,7 @@ void RoxiePacketHeader::setException(unsigned subChannel)
 
 unsigned RoxiePacketHeader::thisChannelRetries(unsigned subChannel)
 {
-    unsigned shift = SUBCHANNEL_BITS * (subChannel);
+    unsigned shift = SUBCHANNEL_BITS * subChannel;
     unsigned mask = SUBCHANNEL_MASK << shift;
     return (retries & mask) >> shift;
 }

@@ -2917,21 +2917,24 @@ bool PTree::checkPattern(const char *&xxpath) const
 
 AttrValue *PTree::findAttribute(const char *key) const
 {
-    AttrValue *a = attrs+numAttrs;
-    if (isnocase())
+    if (attrs)
     {
-        while (a-- != attrs)
+        AttrValue *a = attrs+numAttrs;
+        if (isnocase())
         {
-            if (strieq(a->key.get(), key))
-                return a;
+            while (a-- != attrs)
+            {
+                if (strieq(a->key.get(), key))
+                    return a;
+            }
         }
-    }
-    else
-    {
-        while (a-- != attrs)
+        else
         {
-            if (streq(a->key.get(), key))
-                return a;
+            while (a-- != attrs)
+            {
+                if (streq(a->key.get(), key))
+                    return a;
+            }
         }
     }
     return nullptr;

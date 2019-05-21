@@ -285,9 +285,9 @@ unsigned HqlLex::hex2digit(char c)
   return (c - '0');
 }
 
-__int64 HqlLex::str2int64(unsigned len, const char * digits, unsigned base)
+__uint64 HqlLex::str2uint64(unsigned len, const char * digits, unsigned base)
 {
-  __int64 value = 0;
+  __uint64 value = 0;
   while (len--)
   {
     char c = *digits++;
