@@ -279,7 +279,7 @@ void WsEclWuInfo::addOutputSchemas(StringBuffer &schemas, IConstWUResultIterator
         getSchemaFromResult(s, results->query());
         SCMStringBuffer resultName;
         results->query().getResultName(resultName);
-        StringBuffer sname =resultName.s.str();
+        StringBuffer sname(resultName.s.str());
         sname.replace(' ', '_');
         int seq = results->query().getResultSequence();
         schemas.appendf("<%s sequence=\"%d\" name=\"%s\" sname=\"%s\">%s</%s>", tag, seq, resultName.str(), sname.str(), s.str(), tag);
@@ -296,7 +296,7 @@ void WsEclWuInfo::addInputSchemas(StringBuffer &schemas, IConstWUResultIterator 
             getSchemaFromResult(s, results->query());
             SCMStringBuffer resultName;
             results->query().getResultName(resultName);
-            StringBuffer sname =resultName.s.str();
+            StringBuffer sname(resultName.s.str());
             sname.replace(' ', '_');
 
             int seq = results->query().getResultSequence();

@@ -1069,6 +1069,20 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="dafilesrvConnectTimeout" type="xs:nonNegativeInteger" use="optional" default="10">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Remote file access connect timeout in seconds</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="dafilesrvReadTimeout" type="xs:nonNegativeInteger"  use="optional" default="10">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Remote file access read timeout in seconds</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

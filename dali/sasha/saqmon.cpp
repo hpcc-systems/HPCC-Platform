@@ -58,7 +58,7 @@ public:
             stopsem.signal();
         }
         if (!join(1000*60*3))
-            ERRLOG("CSashaQMonitorServer aborted");
+            IERRLOG("CSashaQMonitorServer aborted");
     }
 
 
@@ -147,7 +147,7 @@ public:
                 if (q)
                     q->enqueue((IJobQueueItem *)qitem);
                 else
-                    ERRLOG("cQswitcher cannot match queue %s",qname); // I don't think this can ever really happen
+                    IERRLOG("cQswitcher cannot match queue %s",qname); // I don't think this can ever really happen
             }
             bool isAuto()
             {
@@ -213,7 +213,7 @@ public:
             return 0;
         Owned<IRemoteConnection> conn = querySDS().connect("Status/Servers", myProcessSession(), 0, 100000);
         if (!conn) {
-            ERRLOG("cannot connect to Status/Servers");
+            OERRLOG("cannot connect to Status/Servers");
             return -1;
         }
         unsigned *qidlecount = new unsigned[qnames.ordinality()];

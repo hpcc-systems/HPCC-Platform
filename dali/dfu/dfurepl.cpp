@@ -137,7 +137,7 @@ struct ReplicatePartItem: extends CInterface
             ReplicatePartCopyItem &dstcopy = copies.item(dst.item(i2));
             if (i3>=src.ordinality()) {
                 if (i3==0) {
-                    ERRLOG(LOGPFX "Cannot find copy for %s",dstcopy.file->queryFilename());
+                    OERRLOG(LOGPFX "Cannot find copy for %s",dstcopy.file->queryFilename());
                     dstcopy.state = RPCS_failed;
                 }
                 else
@@ -251,29 +251,29 @@ struct ReplicateFileItem: extends CInterface
         StringBuffer tmp;
         const char *lfn = dlfn.get();
         if (dlfn.isExternal()) {
-            ERRLOG(LOGPFX "Cannot replicate external file %s",lfn);
+            OERRLOG(LOGPFX "Cannot replicate external file %s",lfn);
             return;
         }
         if (dlfn.isForeign()) {
-            ERRLOG(LOGPFX "Cannot replicate foreign file %s",lfn);
+            OERRLOG(LOGPFX "Cannot replicate foreign file %s",lfn);
             return;
         }
         Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(dlfn,userdesc);
         if (!dfile) {
-            WARNLOG(LOGPFX "Cannot find file %s, perhaps deleted",lfn);
+            UWARNLOG(LOGPFX "Cannot find file %s, perhaps deleted",lfn);
             return;
         }
         CDateTime dt;       
         dfile->getModificationTime(dt);     // check not modified while queued
         if (!filedt.equals(dt)) {
             dt.getString(filedt.getString(tmp.clear()).append(','));
-            WARNLOG(LOGPFX "File %s changed (%s), ignoring replicate",lfn,tmp.str());
+            UWARNLOG(LOGPFX "File %s changed (%s), ignoring replicate",lfn,tmp.str());
             return;
         }
         // see if already replicating
         Owned<IRemoteConnection> pconn = querySDS().connect("DFU/Replicating", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY,  SDS_TIMEOUT);
         if (!pconn.get()) {
-            ERRLOG(LOGPFX "Connect to DFU/Replicating %s failed",lfn);
+            OERRLOG(LOGPFX "Connect to DFU/Replicating %s failed",lfn);
             return;
         }
         StringBuffer xpath;
@@ -284,16 +284,16 @@ struct ReplicateFileItem: extends CInterface
             pconn->queryRoot()->getProp(xpath.str(),tmp.clear());
             dt.setDateString(tmp.str());
             if (filedt.equals(dt)) {
-                WARNLOG(LOGPFX "Already replicating %s, ignoring",lfn);
+                UWARNLOG(LOGPFX "Already replicating %s, ignoring",lfn);
                 return;
             }
             else
-                WARNLOG(LOGPFX "Already replicating %s, contining",lfn);
+                UWARNLOG(LOGPFX "Already replicating %s, contining",lfn);
         }
         // now as long as SDS doesn't lock children this should be OK
         conn.setown(querySDS().connect("DFU/Replicating/File", myProcessSession(), RTM_CREATE_ADD | RTM_LOCK_READ, 5*60*1000));
         if (!conn.get()) {
-            ERRLOG(LOGPFX "Create of DFU/Replicating/File %s failed",lfn);
+            OERRLOG(LOGPFX "Create of DFU/Replicating/File %s failed",lfn);
             return;
         }
         genUUID(tmp.clear(),true);  // true for windows
@@ -340,11 +340,11 @@ struct ReplicateFileItem: extends CInterface
                     abort = false;
                 else {
                     newfiledt.getString(filedt.getString(tmp.clear()).append(','));
-                    WARNLOG(LOGPFX "File %s changed (%s)",lfn,tmp.str());
+                    UWARNLOG(LOGPFX "File %s changed (%s)",lfn,tmp.str());
                 }
             }
             else 
-                WARNLOG(LOGPFX "Cannot find file %s, perhaps deleted",lfn);
+                UWARNLOG(LOGPFX "Cannot find file %s, perhaps deleted",lfn);
         }
         catch (IException *e) { // actually don't expect (unless maybe dali down or something)
             EXCLOG(e,LOGPFX "Replicate error(3)");

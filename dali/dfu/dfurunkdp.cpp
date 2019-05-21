@@ -30,23 +30,6 @@
 
 #define FULL_TRACE
 
-static StringBuffer appendb32(StringBuffer &out,unsigned v)
-{
-    if (out.length())
-        out.append('_');
-    while (v) {
-        byte b = (byte)(v%32);
-        v /= 32;
-        if (b<26)
-            out.append((char)(b+'a'));
-        else
-            out.append((char)(b-26+'0'));
-    }
-    return out;
-}
-
-
-
 class CDKDPitem : public CInterface
 {
     SocketEndpoint ep;

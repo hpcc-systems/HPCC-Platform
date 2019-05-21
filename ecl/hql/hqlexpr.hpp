@@ -1192,7 +1192,7 @@ interface IHqlExpression : public IInterface
     virtual IHqlSimpleScope *querySimpleScope() = 0;
     virtual IHqlExpression *queryFunctionDefinition() const = 0;
     virtual IHqlExpression *queryExternalDefinition() const = 0;
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex=false) = 0;
+    virtual IHqlExpression *queryNormalizedSelector() = 0;
 
     virtual IHqlExpression *queryAttribute(IAtom * propName) const = 0;
     virtual IHqlExpression *queryProperty(ExprPropKind kind) = 0;
@@ -1529,7 +1529,7 @@ extern HQL_API IHqlExpression * queryJoinRhs(IHqlExpression * expr);
 
 extern HQL_API void lockTransformMutex();
 extern HQL_API void unlockTransformMutex();
-extern HQL_API void PrintLogExprTree(IHqlExpression *expr, const char *caption = NULL, bool full = false);
+extern HQL_API void PrintLogExprTree(IHqlExpression *expr, const char *caption = NULL);
 
 extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquery, unsigned limit);
 //extern HQL_API void loadImplicitScopes(IEclRepository &dataServer, HqlScopeArray &defualtScopes, int suppress, IIdAtom * suppressName);

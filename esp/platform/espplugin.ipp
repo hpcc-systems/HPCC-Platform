@@ -51,7 +51,7 @@ public:
         SharedObject::load(m_plugin.str(), true);       // I'm not really sure what this should be - if global (as default) there will be clashes between multiple dloads
         if (!loaded())
         {
-            ERRLOG("Failed to load shared object (%s)", m_plugin.str());
+            OERRLOG("Failed to load shared object (%s)", m_plugin.str());
             return false;
         }
         return true;

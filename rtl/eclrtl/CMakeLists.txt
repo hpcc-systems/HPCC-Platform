@@ -108,6 +108,10 @@ if (USE_ICU)
         )
 endif ()
 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-delete-non-virtual-dtor -Wno-overloaded-virtual -Wno-deprecated-declarations")
+endif()
+
 
 
 if (NOT PLUGIN)

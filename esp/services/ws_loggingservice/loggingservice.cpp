@@ -48,7 +48,7 @@ bool CWsLoggingServiceEx::init(const char* service, const char* type, IPropertyT
         IEspLogAgent* logAgent = loadLoggingAgent(agentName, agentPlugin);
         if (!logAgent)
         {
-            ERRLOG(-1, "Failed to create logging agent for %s", agentName);
+            OERRLOG(-1, "Failed to create logging agent for %s", agentName);
             continue;
         }
         logAgent->init(agentName, agentType, &ptree, process);
@@ -100,7 +100,7 @@ bool CWsLoggingServiceEx::onUpdateLog(IEspContext& context, IEspUpdateLogRequest
     {
         StringBuffer errorStr;
         e->errorMessage(errorStr);
-        ERRLOG("Failed to update log: cannot add to log queue: %s",errorStr.str());
+        OERRLOG("Failed to update log: cannot add to log queue: %s",errorStr.str());
         resp.setStatusCode(-1);
         resp.setStatusMessage(errorStr.str());
         e->Release();
@@ -132,7 +132,7 @@ bool CWsLoggingServiceEx::onGetTransactionSeed(IEspContext& context, IEspGetTran
         StringBuffer errorStr;
         e->errorMessage(errorStr);
         errorStr.insert(0, "Failed to get Transaction Seed: ");
-        ERRLOG("%s", errorStr.str());
+        OERRLOG("%s", errorStr.str());
         resp.setStatusCode(-1);
         resp.setStatusMessage(errorStr.str());
         e->Release();

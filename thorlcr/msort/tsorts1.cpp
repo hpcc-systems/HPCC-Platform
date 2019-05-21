@@ -63,13 +63,13 @@ public:
 #ifdef _TRACE
         char url[100];
         targetep.getUrlStr(url,sizeof(url));
-        PrintLog("SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
+        DBGLOG("SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
 #endif
         SocketEndpoint mergeep = targetep;
         mergeep.port+=SOCKETSERVERINC; 
         stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs);
 #ifdef _TRACE
-        PrintLog("SORT Merge READ: Stream(%u) connected to %s",streamno,url);
+        DBGLOG("SORT Merge READ: Stream(%u) connected to %s",streamno,url);
 #endif
     }
     virtual ~CMergeReadStream()
@@ -77,7 +77,7 @@ public:
         if (stream) {
             char url[100];
             endpoint.getUrlStr(url,sizeof(url));
-            PrintLog("SORT Merge READ: EOS via destructor for %s",url);
+            DBGLOG("SORT Merge READ: EOS via destructor for %s",url);
             stream->stop();
         }
         eos();
@@ -92,7 +92,7 @@ public:
 #ifdef _FULL_TRACE
             char url[100];
             endpoint.getUrlStr(url,sizeof(url));
-            PrintLog("SORT Merge READ: EOS for %s",url);
+            DBGLOG("SORT Merge READ: EOS for %s",url);
 #endif
             eos();
         }
@@ -105,7 +105,7 @@ public:
 #ifdef _FULL_TRACE
             char url[100];
             endpoint.getUrlStr(url,sizeof(url));
-            PrintLog("SORT Merge READ: stop for %s",url);
+            DBGLOG("SORT Merge READ: stop for %s",url);
 #endif
             stream->stop();
             eos();
@@ -163,7 +163,7 @@ public:
         char name[64];
         int port = socket->peer_name(name,sizeof(name));
         url.append(name).append(':').append(port);
-        PrintLog("SORT Merge WRITE: start %s, pos=%" RCPF "d, len=%" RCPF "d",url.str(),poscount,numrecs);
+        DBGLOG("SORT Merge WRITE: start %s, pos=%" RCPF "d, len=%" RCPF "d",url.str(),poscount,numrecs);
 #endif
         rowcount_t pos=poscount;
         try
@@ -319,7 +319,7 @@ public:
 
     void stop()
     {
-        PrintLog("CSortTransferServerThread::stop");
+        DBGLOG("CSortTransferServerThread::stop");
         term = true;
         try {
             server->cancel_accept();
@@ -328,12 +328,12 @@ public:
             PrintExceptionLog(e,"CSortTransferServerThread:stop");
         }
         verifyex(join(10*60*1000));
-        PrintLog("CSortTransferServerThread::stopped");
+        DBGLOG("CSortTransferServerThread::stopped");
     }
 
     int run() 
     {
-        PrintLog("CSortTransferServerThread started port %d",slave.getTransferPort());
+        DBGLOG("CSortTransferServerThread started port %d",slave.getTransferPort());
         unsigned numretries = 10;
         try {
             while (!term) {
@@ -380,7 +380,7 @@ public:
             e->Release();
         }
         subjoin();
-        PrintLog("CSortTransferServerThread finished");
+        DBGLOG("CSortTransferServerThread finished");
         return 0;
     }
 
@@ -451,9 +451,9 @@ public:
         for (i=0;i<numnodes;i++) {
             char url[100];
             endpoints[i].getUrlStr(url,sizeof(url));
-            PrintLog("  %s",url);
+            DBGLOG("  %s",url);
             for (j=0;j<numnodes;j++) {
-                PrintLog("  %u,",map[k]);
+                DBGLOG("  %u,",map[k]);
                 k++;
             }
         }
@@ -468,7 +468,7 @@ public:
                 respos += vMAPL(j,i)-vMAPL(j,i-1);      // note we are adding up all of the lower as we want start
 
         rowcount_t totalrows = resnum;
-        PrintLog("Output start = %" RCPF "d, num = %" RCPF "u",respos,resnum);
+        DBGLOG("Output start = %" RCPF "d, num = %" RCPF "u",respos,resnum);
 
         IArrayOf<IRowStream> readers;
         IException *exc = NULL;
@@ -483,7 +483,7 @@ public:
                 {
                     if (i==partno)
                     {
-                        PrintLog("SORT Merge READ: Stream(%u) local, pos=%" RCPF "u len=%" RCPF "u",i,sstart,snum);
+                        DBGLOG("SORT Merge READ: Stream(%u) local, pos=%" RCPF "u len=%" RCPF "u",i,sstart,snum);
                         readers.append(*slave.createMergeInputStream(sstart,snum));
                     }
                     else
@@ -529,7 +529,7 @@ void CSortMerge::closedown()
 {
     CriticalBlock block(crit);
 #ifdef _FULL_TRACE
-    PrintLog("SORT Merge: closing %s",url.str());
+    DBGLOG("SORT Merge: closing %s",url.str());
 #endif
     if (!socket)
         return;
@@ -565,7 +565,7 @@ void CSortMerge::closedown()
     }
     started = false;
 #ifdef _TRACE
-    PrintLog("SORT Merge: finished %s, %d rows merged",url.str(),ndone);
+    DBGLOG("SORT Merge: finished %s, %d rows merged",url.str(),ndone);
 #endif
 }
 

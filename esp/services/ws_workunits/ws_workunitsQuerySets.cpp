@@ -454,7 +454,7 @@ IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target,
 
 bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp)
 {
-    StringBuffer wuid = req.getWuid();
+    StringBuffer wuid(req.getWuid());
     WsWuHelpers::checkAndTrimWorkunit("WUCopyLogicalFiles", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -509,14 +509,14 @@ bool reloadCluster(IConstWUClusterInfo *clusterInfo, unsigned wait)
         catch(IMultiException *me)
         {
             StringBuffer err;
-            DBGLOG("ERROR control:reloading roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+            IERRLOG("ERROR control:reloading roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
             me->Release();
             return false;
         }
         catch(IException *e)
         {
             StringBuffer err;
-            DBGLOG("ERROR control:reloading roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+            IERRLOG("ERROR control:reloading roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
             e->Release();
             return false;
         }
@@ -796,14 +796,14 @@ bool CWsWorkunitsEx::isQuerySuspended(const char* query, IConstWUClusterInfo *cl
     catch(IMultiException *me)
     {
         StringBuffer err;
-        DBGLOG("ERROR control:queries roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+        IERRLOG("ERROR control:queries roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
         me->Release();
         return false;
     }
     catch(IException *e)
     {
         StringBuffer err;
-        DBGLOG("ERROR control:queries roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+        IERRLOG("ERROR control:queries roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
         e->Release();
         return false;
     }
@@ -811,7 +811,7 @@ bool CWsWorkunitsEx::isQuerySuspended(const char* query, IConstWUClusterInfo *cl
 
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
-    StringBuffer wuid = req.getWuid();
+    StringBuffer wuid(req.getWuid());
     WsWuHelpers::checkAndTrimWorkunit("WUPublishWorkunit", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -1059,7 +1059,7 @@ void retrieveQuerysetDetailsFromAlias(IEspContext &context, IPropertyTree *regis
     Owned<IPropertyTreeIterator> regAliases = registry->getElements(xpath.str());
     if (!regAliases->first())
     {
-        DBGLOG("Alias %s not found", name);
+        UWARNLOG("Alias %s not found", name);
         return;
     }
 
@@ -1074,7 +1074,7 @@ void retrieveQuerysetDetailsFromAlias(IEspContext &context, IPropertyTree *regis
         IPropertyTree *query = registry->queryPropTree(xpath);
         if (!query)
         {
-            DBGLOG("No matching Query %s found for Alias %s", a->getId(), name);
+            UWARNLOG("No matching Query %s found for Alias %s", a->getId(), name);
             return;
         }
 
@@ -1095,7 +1095,7 @@ void retrieveQuerysetDetailsFromQuery(IEspContext &context, IPropertyTree *regis
     Owned<IPropertyTreeIterator> regQueries = registry->getElements(xpath.str());
     if (!regQueries->first())
     {
-        DBGLOG("No matching Query %s found for %s", value, type);
+        UWARNLOG("No matching Query %s found for %s", value, type);
         return;
     }
 
@@ -1374,7 +1374,7 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
         Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, querySetId, &queryIDs, checkAllNodes);
         if (!queriesOnCluster)
         {
-            DBGLOG("getQueriesOnCluster() returns NULL for cluster<%s> and querySetId<%s>", cluster, querySetId);
+            UWARNLOG("getQueriesOnCluster() returns NULL for cluster<%s> and querySetId<%s>", cluster, querySetId);
             return;
         }
 
@@ -2150,14 +2150,14 @@ bool CWsWorkunitsEx::getQueryFiles(IEspContext &context, const char* wuid, const
     catch(IMultiException *me)
     {
         StringBuffer err;
-        DBGLOG("ERROR control:getQueryXrefInfo roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+        IERRLOG("ERROR control:getQueryXrefInfo roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
         me->Release();
         return false;
     }
     catch(IException *e)
     {
         StringBuffer err;
-        DBGLOG("ERROR control:getQueryXrefInfo roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+        IERRLOG("ERROR control:getQueryXrefInfo roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
         e->Release();
         return false;
     }
@@ -2499,7 +2499,7 @@ public:
     }
     void cloneQueryRemote(IPropertyTree *query, bool makeActive)
     {
-        StringBuffer wuid = query->queryProp("Wuid");
+        StringBuffer wuid(query->queryProp("Wuid"));
         if (!wuid.length())
             return;
         const char *queryName = query->queryProp("Name");
@@ -3226,7 +3226,7 @@ bool CWsWorkunitsEx::onWUUpdateQueryEntry(IEspContext& context, IEspWUUpdateQuer
         if (!tree)
             throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Query %s not found", query.str());
 
-        StringBuffer comment = req.getComment();
+        StringBuffer comment(req.getComment());
         if (comment.isEmpty())
             tree->removeProp("@comment");
         else
@@ -3279,7 +3279,7 @@ bool CWsWorkunitsEx::onWUGetNumFileToCopy(IEspContext& context, IEspWUGetNumFile
 
     try
     {
-        StringBuffer clusterName = req.getClusterName();
+        StringBuffer clusterName(req.getClusterName());
         if (clusterName.isEmpty())
             throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Cluster not specified");
 

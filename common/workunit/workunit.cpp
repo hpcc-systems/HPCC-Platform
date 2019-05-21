@@ -5444,7 +5444,7 @@ public:
                     const StringArray& values = orFilter->queryValues();
                     ForEachItemIn(i, values)
                     {
-                        StringBuffer path = xPath.get();
+                        StringBuffer path(xPath.get());
                         const char* value = values.item(i);
                         if (!isEmptyString(value))
                         {
@@ -7225,7 +7225,7 @@ public:
             getRoxieProcessServers(roxie, roxieServers);
             clusterWidth = roxieServers.length();
             ldapUser.set(roxie->queryProp("@ldapUser"));
-            StringBuffer encPassword = roxie->queryProp("@ldapPassword");
+            StringBuffer encPassword (roxie->queryProp("@ldapPassword"));
             if (encPassword.length())
                 decrypt(ldapPassword, encPassword);
             const char *redundancyMode = roxie->queryProp("@slaveConfig");
@@ -7389,7 +7389,7 @@ extern WORKUNIT_API void getDFUServerQueueNames(StringArray &ret, const char *pr
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
 
-    StringBuffer xpath = "Software/DfuServerProcess";
+    StringBuffer xpath ("Software/DfuServerProcess");
     if (!isEmptyString(process))
         xpath.appendf("[@name=\"%s\"]", process);
 
@@ -9325,7 +9325,7 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
     {    
         Owned<IConstWUFileUsage> file = files->get();
 
-        StringBuffer filename = file->queryName();
+        StringBuffer filename(file->queryName());
         size32_t length = filename.length();
         
         if (length == 0)

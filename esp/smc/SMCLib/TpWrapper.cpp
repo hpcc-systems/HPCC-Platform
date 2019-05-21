@@ -128,18 +128,18 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
             getThorSpareMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
         }
         else if (strcmp("HOLESTANDBYNODES",ClusterType) == 0)
-      {
+        {
             getMachineList(eqHoleStandbyProcess,path.str(),"", ClusterDirectory, MachineList);
-      }
+        }
     }
     catch(IException* e){   
-      StringBuffer msg;
-      e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        StringBuffer msg;
+        e->errorMessage(msg);
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CTpWrapper::getClusterMachineList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getClusterMachineList");
     }
 }
 
@@ -977,11 +977,11 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
     catch(IException* e){   
         StringBuffer msg;
         e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CTpWrapper::getClusterList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getClusterList");
     }
 }
 
@@ -1137,11 +1137,11 @@ void CTpWrapper::getClusterProcessList(const char* ClusterType, IArrayOf<IEspTpC
     catch(IException* e){   
         StringBuffer msg;
         e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CTpWrapper::getClusterList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getClusterList");
     }
 }
 
@@ -1232,11 +1232,11 @@ void CTpWrapper::getHthorClusterList(IArrayOf<IEspTpCluster>& clusterList)
     catch(IException* e){   
         StringBuffer msg;
         e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CTpWrapper::getHthorClusterList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getHthorClusterList");
     }
 }
 
@@ -1272,12 +1272,12 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
     {
         StringBuffer msg;
         e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...)
     {
-        WARNLOG("Unknown Exception caught within CTpWrapper::getGroupList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getGroupList");
     }
 }
 
@@ -1337,11 +1337,11 @@ void CTpWrapper::resolveGroupInfo(const char* groupName,StringBuffer& Cluster, S
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CTpWrapper::resolveGroupInfo");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::resolveGroupInfo");
     }
 }
 
@@ -1446,7 +1446,7 @@ void CTpWrapper::appendMachineList(double clientVersion, IConstEnvironment* cons
     node.endpoint().getIpText(netAddress);
     if (netAddress.length() == 0)
     {
-        WARNLOG("Net address not found for a node of %s", clusterName);
+        OWARNLOG("Net address not found for a node of %s", clusterName);
         return;
     }
 
@@ -1495,12 +1495,12 @@ void CTpWrapper::getThorSlaveMachineList(double clientVersion, const char* clust
     {
         StringBuffer msg;
         e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...)
     {
-        WARNLOG("Unknown Exception caught within CTpWrapper::getMachineList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getMachineList");
     }
 
     return;
@@ -1537,12 +1537,12 @@ void CTpWrapper::getThorSpareMachineList(double clientVersion, const char* clust
     {
         StringBuffer msg;
         e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...)
     {
-        WARNLOG("Unknown Exception caught within CTpWrapper::getMachineList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getMachineList");
     }
 
     return;
@@ -1604,11 +1604,11 @@ void CTpWrapper::getMachineList(const char* MachineType,
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CTpWrapper::getMachineList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getMachineList");
     }
 
 }
@@ -1649,7 +1649,7 @@ void CTpWrapper::getDropZoneMachineList(double clientVersion, bool ECLWatchVisib
     }
     catch(...)
     {
-        WARNLOG("Unknown Exception caught within CTpWrapper::getDropZoneMachineList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getDropZoneMachineList");
     }
     
 }
@@ -1919,11 +1919,11 @@ void CTpWrapper::setMachineInfo(const char* name,const char* type,IEspTpMachine&
     catch(IException* e){   
         StringBuffer msg;
         e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CTpWrapper::getDropZoneList");
+        IWARNLOG("Unknown Exception caught within CTpWrapper::getDropZoneList");
     }
 }
 

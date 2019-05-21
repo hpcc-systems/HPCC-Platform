@@ -3226,6 +3226,15 @@ public:
 
         unsigned processedBefore = processed;
         unsigned __int64 count = 0;
+        if (!resent && (keyedLimit != (unsigned __int64) -1) && ((keyedLimit > preabortIndexReadsThreshold) || (indexHelper->getFlags() & TIRcountkeyedlimit) != 0)) // Don't recheck the limit every time!
+        {
+            if (!checkLimit(keyedLimit))
+            {
+                limitExceeded(true);
+                return NULL;
+            }
+
+        }
         ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
         while (!aborted && inputsDone < inputCount && count < choosenLimit)
         {
@@ -3244,7 +3253,7 @@ public:
                         count += countHelper->numValid(tlk->queryKeyBuffer());
                         if (count > rowLimit)
                             limitExceeded(false);
-                        else if (count > keyedLimit)
+                        else if (keyprocessed > keyedLimit)
                             limitExceeded(true);
                         callback.finishedRow();
                     }
@@ -3258,7 +3267,7 @@ public:
                     if (count > rowLimit)
                         limitExceeded(false);
                     else if (count > keyedLimit)
-                        limitExceeded(true); // MORE - is this right?
+                        limitExceeded(true);
                 }
             }
             inputsDone++;

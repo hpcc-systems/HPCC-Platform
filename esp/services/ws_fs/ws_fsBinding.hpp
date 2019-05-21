@@ -47,7 +47,7 @@ public:
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
-        StringBuffer path = "/WsSMC/NotInCommunityEdition?form_";
+        StringBuffer path("/WsSMC/NotInCommunityEdition?form_");
         if (m_portalURL.length() > 0)
             path.appendf("&EEPortal=%s", m_portalURL.str());
 

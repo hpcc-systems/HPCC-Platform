@@ -1171,12 +1171,12 @@ void CLdapSecManager::getAllUsers(IUserArray& users)
 
 bool CLdapSecManager::getResources(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource> & resources)
 {
-    return m_ldap_client->getResources(rtype, basedn, "", resources);
+    return m_ldap_client->getResources(rtype, basedn, "", "", resources);
 }
 
 bool CLdapSecManager::getResourcesEx(SecResourceType rtype, const char * basedn, const char* searchstr, IArrayOf<ISecResource> & resources)
 {
-    return m_ldap_client->getResourcesEx(rtype, basedn, "", searchstr, resources);
+    return m_ldap_client->getResources(rtype, basedn, "", searchstr, resources);
 }
 
 ISecItemIterator* CLdapSecManager::getResourcesSorted(SecResourceType rtype, const char * basedn, const char * resourceName, unsigned extraNameFilter,
@@ -1475,7 +1475,7 @@ bool CLdapSecManager::createUserScopes()
 
 aindex_t CLdapSecManager::getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes)
 {
-    return m_ldap_client->getManagedScopeTree(rtype, basedn, scopes);
+    return m_ldap_client->getManagedScopeTree(nullptr, rtype, basedn, scopes);
 }
 
 SecAccessFlags CLdapSecManager::queryDefaultPermission(ISecUser& user)

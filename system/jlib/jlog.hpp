@@ -988,6 +988,24 @@ inline void IWARNLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
+inline IException *IWARNLOG(IException *except, const char *prefix=nullptr)
+{
+    LOG(MCinternalWarning, except, prefix);
+    return except;
+}
+
+inline IException *UWARNLOG(IException *except, const char *prefix=nullptr)
+{
+    LOG(MCuserWarning, except, prefix);
+    return except;
+}
+
+inline IException *OWARNLOG(IException *except, const char *prefix=nullptr)
+{
+    LOG(MCoperatorWarning, except, prefix);
+    return except;
+}
+
 inline void OERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
 inline void OERRLOG(LogMsgCode code, char const * format, ...)
 {

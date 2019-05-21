@@ -379,7 +379,14 @@
                 <xs:attribute name="maxPersistentRequests" type="xs:integer"
                               hpcc:displayName="Max Persistent Requests" hpcc:presetValue="100"
                               hpcc:tooltip="Maximum number of query requests per persistent http connection. (-1 for unlimited, 0 to disable)"/>
-
+                <xs:attribute name="dafilesrvConnectTimeout" type="xs:nonNegativeInteger"
+                              hpcc:displayName="Remote file connection timeout in seconds"
+                              hpcc:presentValue="10"
+                              hpcc:tooltip="Remote file access connection timeout in seconds"/>
+                <xs:attribute name="dafilesrvReadTimeout" type="xs:nonNegativeInteger"
+                              hpcc:displayName="Remote file read timeout in seconds"
+                              hpcc:presentValue="10"
+                              hpcc:tooltip="Remote file access read timeout in seconds"/>
             </xs:complexType>
         </xs:element>
     </hpcc:insert>

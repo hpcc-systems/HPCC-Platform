@@ -1932,7 +1932,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
         Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true, queryXsltConfig());
         if (!web)
         {
-            DBGLOG("WS-ECL failed to create WuWebView for workunit %s", wuid.str());
+            IERRLOG("WS-ECL failed to create WuWebView for workunit %s", wuid.str());
             return 0;
         }
         if (viewname)

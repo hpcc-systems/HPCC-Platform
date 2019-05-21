@@ -66,7 +66,7 @@ bool CLogContentFilter::readLogFilters(IPropertyTree* cfg, unsigned groupID)
     ForEach(*filters)
     {
         IPropertyTree &filter = filters->query();
-        StringBuffer value = filter.queryProp("@value");
+        StringBuffer value(filter.queryProp("@value"));
         if (!value.length())
             continue;
 
@@ -357,7 +357,7 @@ bool CDBLogAgentBase::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
         throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "%s: no getTransactionSeed service configured", agentName.get());
 
     bool bRet = false;
-    StringBuffer appName = req.getApplication();
+    StringBuffer appName(req.getApplication());
     appName.trim();
     if (appName.length() == 0)
         appName = defaultTransactionApp.get();
@@ -381,7 +381,7 @@ bool CDBLogAgentBase::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
         {
             StringBuffer errorStr, errorMessage;
             errorMessage.append("Failed to get TransactionSeed: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
-            ERRLOG("%s -- try %d", errorMessage.str(), retry);
+            OERRLOG("%s -- try %d", errorMessage.str(), retry);
             e->Release();
             if (retry < maxTriesGTS)
             {
@@ -447,7 +447,7 @@ bool CDBLogAgentBase::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResp
     {
         StringBuffer errorStr, errorMessage;
         errorMessage.append("Failed to update log: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
-        ERRLOG("%s", errorMessage.str());
+        OERRLOG("%s", errorMessage.str());
         e->Release();
         resp.setStatusCode(-1);
         resp.setStatusMessage(errorMessage.str());
@@ -490,12 +490,12 @@ bool CDBLogAgentBase::buildUpdateLogStatement(IPropertyTree* logRequest, const c
     {
         CLogField& logField = logFields.item(i);
 
-        StringBuffer colName = logField.getMapTo();
+        StringBuffer colName(logField.getMapTo());
         bool* found = handledFields.getValue(colName.str());
         if (found && *found)
             continue;
 
-        StringBuffer path = logField.getName();
+        StringBuffer path(logField.getName());
         if (path.charAt(path.length() - 1) == ']')
         {//Attr filter. Separate the last [] from the path.
             const char* pTr = path.str();
@@ -577,7 +577,7 @@ void CDBLogAgentBase::addMissingFields(CIArrayOf<CLogField>& logFields, BoolHash
         bool* found = handledFields.getValue(colName);
         if (found && *found)
             continue;
-        StringBuffer value = logField.getDefault();
+        StringBuffer value(logField.getDefault());
         if (!value.isEmpty())
             addField(logField, colName, value, fields, values);
     }

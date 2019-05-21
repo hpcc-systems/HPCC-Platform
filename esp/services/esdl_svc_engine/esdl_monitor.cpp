@@ -250,7 +250,7 @@ public:
             {
                 StringBuffer msg;
                 e->errorMessage(msg);
-                ERRLOG("Exception while loading dynamic binding %s: %d - %s", data->id.str(), e->errorCode(), msg.str());
+                IERRLOG("Exception while loading dynamic binding %s: %d - %s", data->id.str(), e->errorCode(), msg.str());
                 e->Release();
             }
         }
@@ -299,7 +299,7 @@ public:
                 removeBindingFromMap(data->id.str());
             }
             else
-                DBGLOG("Can't delete binding %s, it's not currently registered", data->id.str());
+                OWARNLOG("Can't delete binding %s, it's not currently registered", data->id.str());
         }
         else if (ntype == EsdlNotifyType::BindingUpdate)
         {
@@ -307,7 +307,7 @@ public:
             EsdlBindingImpl* theBinding = findBinding(data->id.str());
             if (!theBinding)
             {
-                DBGLOG("Binding %s not found, can't update", data->id.str());
+                OWARNLOG("Binding %s not found, can't update", data->id.str());
                 return;
             }
             DBGLOG("Reloading ESDL binding %s", data->id.str());
@@ -317,7 +317,7 @@ public:
         {
             if (!espProcessMatch(data->espProcess.str()))
             {
-                DBGLOG("ESDL binding %s is not for this esp process, ignore.", data->id.str());
+                OWARNLOG("ESDL binding %s is not for this esp process, ignore.", data->id.str());
                 return;
             }
 
@@ -334,14 +334,14 @@ public:
                 data->name.set(data->id);
             if (data->port == 0)
             {
-                DBGLOG("Port is not provided for binding, can't create binding.");
+                OWARNLOG("Port is not provided for binding, can't create binding.");
                 return;
             }
             addBinding(data);
         }
         else
         {
-            WARNLOG("Unexpected notify type received, ignore.");  //DefintionAdd and DefinitionDelete shouldn't happen
+            IWARNLOG("Unexpected notify type received, ignore.");  //DefintionAdd and DefinitionDelete shouldn't happen
         }
     }
 

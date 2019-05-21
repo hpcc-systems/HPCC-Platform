@@ -51,7 +51,7 @@ void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *se
 
     if (!daliClientActive())
     {
-        ERRLOG("No Dali Connection Active.");
+        OERRLOG("No Dali Connection Active.");
         throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI, "No Connection to Dali server is active. Please specify a Dali server in the configuration file.");
     }
 
@@ -491,7 +491,7 @@ bool CWsTopologyEx::isLineTerminator(const char* dataPtr, const size32_t dataSiz
     return false;
 }
 
-bool CWsTopologyEx::readLogLineID(char* linePtr, unsigned long& lineID)
+bool CWsTopologyEx::readLogLineID(const char* linePtr, unsigned long& lineID)
 {
     char *epTr;
     lineID = strtoul(linePtr, &epTr, 16);
@@ -520,11 +520,11 @@ bool CWsTopologyEx::readLogTime(char* pTr, int start, int length, CDateTime& dt)
     return bRet;
 }
 
-bool CWsTopologyEx::findTimestampAndLT(StringBuffer logname, IFile* rFile, ReadLog& readLogReq, CDateTime& latestLogTime)
+bool CWsTopologyEx::findTimestampAndLT(const char *logname, IFile* rFile, ReadLog& readLogReq, CDateTime& latestLogTime)
 {
     OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
     if (!rIO)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot read file %s.",logname.str());
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot read file %s.",logname);
 
     size32_t fileSize = (size32_t) rFile->size();
     size32_t readSize = 64000;
@@ -535,7 +535,7 @@ bool CWsTopologyEx::findTimestampAndLT(StringBuffer logname, IFile* rFile, ReadL
     StringBuffer dataBuffer;
     size32_t bytesRead = rIO->read(0, readSize, dataBuffer.reserve(readSize));
     if (bytesRead != readSize)
-        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
+        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname);
 
     char* pTr = (char*) dataBuffer.str();
     readLogReq.ltBytes = findLineTerminator(pTr, bytesRead);
@@ -553,7 +553,7 @@ bool CWsTopologyEx::findTimestampAndLT(StringBuffer logname, IFile* rFile, ReadL
     {
         bytesRead = rIO->read(fileSize - readSize, readSize, dataBuffer.clear().reserve(readSize));
         if (bytesRead != readSize)
-            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname);
         pTr = (char*) dataBuffer.str();
     }
 
@@ -606,8 +606,9 @@ char* CWsTopologyEx::readALogLine(char* dataPtr, size32_t& bytesRemaining, unsig
     return pTr;
 }
 
-void CWsTopologyEx::addALogLine(offset_t& readFrom, unsigned& locationFlag, StringBuffer dataRow, ReadLog& readLogReq, StringArray& returnbuff)
+void CWsTopologyEx::addALogLine(offset_t& readFrom, unsigned& locationFlag, const char * dataRow, ReadLog& readLogReq, StringArray& returnbuff)
 {
+    size_t len = strlen(dataRow);
     if (readLogReq.filterType == GLOFirstNRows)
     {
         locationFlag = 1; //enter the area to be retrieved
@@ -626,34 +627,34 @@ void CWsTopologyEx::addALogLine(offset_t& readFrom, unsigned& locationFlag, Stri
     else
     {
         unsigned long rowID;
-        if (!readLogLineID((char*)dataRow.str(), rowID)) //row id (and timestamp) not found in this log line
+        if (!readLogLineID(dataRow, rowID)) //row id (and timestamp) not found in this log line
         {
             if (locationFlag > 0)
                 returnbuff.append(dataRow);
-            readFrom += dataRow.length();
+            readFrom += len;
             return;
         }
 
         StringBuffer str;
-        str.append(dataRow.str(), 20, 8); //Read time
+        str.append(dataRow, 20, 8); //Read time
         if (readLogReq.endDate.length() > 0 && strcmp(str.str(), readLogReq.endDate.str()) > 0)
             locationFlag = 2; //out of the area to be retrieved
         else if (readLogReq.startDate.length() > 1 && strcmp(str.str(), readLogReq.startDate.str()) < 0)
-            readFrom += dataRow.length(); //skip this line
+            readFrom += len; //skip this line
         else
         {
             returnbuff.append(dataRow);
             if ((locationFlag < 1) && (readLogReq.filterType == GLOTimeRange))
                 readLogReq.pageFrom = readFrom;
 
-            readFrom += dataRow.length();
+            readFrom += len;
             locationFlag = 1; //enter the area to be retrieved
         }
     }
     return;
 }
 
-void CWsTopologyEx::readLogFileToArray(StringBuffer logname, OwnedIFileIO rIO, ReadLog& readLogReq, StringArray& returnbuf)
+void CWsTopologyEx::readLogFileToArray(const char *logname, OwnedIFileIO rIO, ReadLog& readLogReq, StringArray& returnbuf)
 {
     bool firstChuck = true;
     bool lastChuck = false;
@@ -699,7 +700,7 @@ void CWsTopologyEx::readLogFileToArray(StringBuffer logname, OwnedIFileIO rIO, R
             dataBuffer.append(logLine.str());
         size32_t nRead = rIO->read(readFrom, readSize, dataBuffer.reserve(readSize));
         if (nRead != readSize)
-            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname);
 
         logLineFrom = readFrom;
         readFrom += nRead;
@@ -726,18 +727,18 @@ void CWsTopologyEx::readLogFileToArray(StringBuffer logname, OwnedIFileIO rIO, R
     return;
 }
 
-void CWsTopologyEx::readLogFile(StringBuffer logname, IFile* rFile, ReadLog& readLogReq, StringBuffer& returnbuff)
+void CWsTopologyEx::readLogFile(const char *logname, IFile* rFile, ReadLog& readLogReq, StringBuffer& returnbuff)
 {
     OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
     if (!rIO)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot read file %s.",logname.str());
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot read file %s.", logname);
 
     if ((readLogReq.filterType == GLOFirstPage) || (readLogReq.filterType == GLOLastPage) || (readLogReq.filterType == GLOGoToPage)) //by page number
     {
         size32_t fileSize = (size32_t) (readLogReq.pageTo - readLogReq.pageFrom);
         size32_t nRead = rIO->read(readLogReq.pageFrom, fileSize, returnbuff.reserve(fileSize));
         if (nRead != fileSize)
-            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname);
     }
     else
     {
@@ -745,7 +746,7 @@ void CWsTopologyEx::readLogFile(StringBuffer logname, IFile* rFile, ReadLog& rea
         readLogFileToArray(logname, rIO, readLogReq, logLines);
         ForEachItemIn(i, logLines)
         {
-            StringBuffer logLine = logLines.item(i);
+            StringBuffer logLine(logLines.item(i));
             if ((!readLogReq.reverse && (readLogReq.filterType != 5)) ||
                 (readLogReq.reverse && (readLogReq.filterType == 5)))
                 returnbuff.append(logLine.str());

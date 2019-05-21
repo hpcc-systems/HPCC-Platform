@@ -27,8 +27,8 @@
 #include "jscm.hpp"
 #include "jatomic.hpp"
 
-void jlib_decl raiseAssertException(const char *assertion, const char *file, unsigned line);
-void jlib_decl raiseAssertCore(const char *assertion, const char *file, unsigned line);
+__declspec(noreturn) void jlib_decl raiseAssertException(const char *assertion, const char *file, unsigned line) __attribute__((noreturn));
+__declspec(noreturn) void jlib_decl raiseAssertCore(const char *assertion, const char *file, unsigned line) __attribute__((noreturn));
 
 #undef assert
 #undef assertex

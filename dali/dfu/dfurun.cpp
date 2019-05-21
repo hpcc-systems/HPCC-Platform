@@ -188,7 +188,7 @@ class CDFUengine: public CInterface, implements IDFUengine
             mask.appendf("Queue[@name=\"%s\"][1]",qname);
             IPropertyTree *t =  serverstatus->queryProperties()->queryPropTree(mask.str());
             if (!t) {
-                WARNLOG("DFUWU: setRunningStatus queue %s not set",qname);
+                OWARNLOG("DFUWU: setRunningStatus queue %s not set",qname);
                 return;
             }
             mask.clear().appendf("Job[@wuid=\"%s\"]",wuid);
@@ -281,7 +281,7 @@ class CDFUengine: public CInterface, implements IDFUengine
                                 onCycle();
                             break;
                         default:
-                            ERRLOG("DFURUN Unknown mode");
+                            OERRLOG("DFURUN Unknown mode");
                             break;
                         }
                     }
@@ -707,7 +707,7 @@ public:
             StringBuffer dir;
             RemoteFilename rfn;
             if (fdesc->numParts()!=1) {
-                ERRLOG("MONITOR: monitor file incorrectly specified");
+                OERRLOG("MONITOR: monitor file incorrectly specified");
                 if (raiseexception)
                     throw MakeStringException(-1,"MONITOR: monitor file incorrectly specified");
                 return true;
@@ -719,7 +719,7 @@ public:
             dirfn.setPath(rfn.queryEndpoint(),dir.str());
             Owned<IFile> dirf = createIFile(dirfn);
             if (!dirf||(dirf->isDirectory()!=foundYes)) {
-                ERRLOG("MONITOR: %s is not a directory in DFU WUID %s",dir.str(),wu->queryId());
+                OERRLOG("MONITOR: %s is not a directory in DFU WUID %s",dir.str(),wu->queryId());
                 if (raiseexception)
                     throw MakeStringException(-1,"MONITOR: %s is not a directory in DFU WUID %s",dir.str(),wu->queryId());
                 return true;
@@ -1076,7 +1076,7 @@ public:
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(dfuwuid,false);
         if (!wu) {
-            WARNLOG("DFURUN: Workunit %s not found",dfuwuid);
+            OWARNLOG("DFURUN: Workunit %s not found",dfuwuid);
             return DFUstate_unknown;
         }
         if (dfuServerName.length())
@@ -1117,12 +1117,12 @@ public:
             progress->setState(DFUstate_aborted);
             /* no break */
         case DFUstate_aborted:
-            WARNLOG("DFURUN: Workunit %s aborted",dfuwuid);
+            IWARNLOG("DFURUN: Workunit %s aborted",dfuwuid);
             return DFUstate_aborted;
         case DFUstate_queued:
             break;
         default:
-            WARNLOG("DFURUN: Workunit %s unexpected state %d",dfuwuid,(int)s);
+            OWARNLOG("DFURUN: Workunit %s unexpected state %d",dfuwuid,(int)s);
             return s;
         }
         bool replicating=false;

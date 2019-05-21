@@ -101,16 +101,6 @@ extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json
 }
 //---------------------------------------------------------------------------------------------------------------------
 
-static int compareOffsets(const unsigned *a, const unsigned *b)
-{
-    if (*a < *b)
-        return -1;
-    else if (*a==*b)
-        return 0;
-    else
-        return 1;
-}
-
 class ECLRTL_API CDynamicDiskReadArg : public CThorDiskReadArg, implements IDynamicIndexReadArg
 {
 public:
@@ -162,6 +152,7 @@ public:
     }
     virtual unsigned __int64 getChooseNLimit() override final { return chooseN; }
     virtual unsigned __int64 getRowLimit() override final { return rowLimit; }
+    virtual unsigned __int64 getSkipN() final { return skipN; }   // Work in progress, not yet implemented
 // IDynamicIndexReadArg
     virtual void addFilter(const char *filter) override final
     {
@@ -187,7 +178,7 @@ class ECLRTL_API CDynamicIndexReadArg : public CThorIndexReadArg, implements IDy
 public:
     CDynamicIndexReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_projected, IOutputMetaData *_out,
                          unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit, IVirtualFieldCallback &_callback)
-        : fileName(_fileName), in(_in), projected(_projected), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit), callback(_callback)
+        : fileName(_fileName), in(_in), projected(_projected), out(_out), callback(_callback), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit)
     {
         translator.setown(createRecordTranslator(out->queryRecordAccessor(true), in->queryRecordAccessor(true)));
 #ifdef _DEBUG
@@ -237,6 +228,7 @@ public:
     }
     virtual unsigned __int64 getChooseNLimit() override final { return chooseN; }
     virtual unsigned __int64 getRowLimit() override final { return rowLimit; }
+    virtual unsigned __int64 getSkipN() final { return skipN; }   // Work in progress, not yet implemented
 // IDynamicIndexReadArg
     virtual void addFilter(const char *filter) override final
     {
@@ -245,7 +237,6 @@ public:
 
 private:
     StringAttr fileName;
-    unsigned flags = 0;
     Owned<IOutputMetaData> in;
     Owned<IOutputMetaData> projected;
     Owned<IOutputMetaData> out;
@@ -268,18 +259,6 @@ public:
 private:
     Owned<IOutputMetaData> in;
 };
-
-static IOutputMetaData *loadTypeInfo(IPropertyTree &xgmml, const char *key)
-{
-    StringBuffer xpath;
-    MemoryBuffer binInfo;
-    xgmml.getPropBin(xpath.setf("att[@name='%s_binary']/value", key), binInfo);
-    assertex(binInfo.length());
-    bool grouped = xgmml.getPropBool(xpath.setf("att[@name='%s_binary']/value", key), false);
-
-    return new CDeserializedOutputMetaData(binInfo, grouped);
-}
-
 
 extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projected, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit)
 {

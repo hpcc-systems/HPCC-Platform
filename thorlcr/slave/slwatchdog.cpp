@@ -204,7 +204,7 @@ public:
         memcpy(&hb, mb.toByteArray(), sizeof(HeartBeatPacketHeader));
         if (hb.packetSize > UDP_DATA_MAX)
         {
-            WARNLOG("Progress packet too big! progress lost");
+            IWARNLOG("Progress packet too big! progress lost");
             hb.progressSize = 0;
             hb.packetSize = sizeof(HeartBeatPacketHeader);
         }

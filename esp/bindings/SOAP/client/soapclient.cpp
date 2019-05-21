@@ -177,7 +177,7 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
     int retstatus = soap_response->get_status();
     if(retstatus != SOAP_OK)
     {
-        StringBuffer errmsg = "SOAP error";
+        const char * errmsg = "SOAP error";
 
         if(retstatus == SOAP_CLIENT_ERROR)
             errmsg = "SOAP client error";
@@ -191,7 +191,7 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
             errmsg = "SOAP request type error";
         else if(retstatus == SOAP_AUTHENTICATION_ERROR)
             errmsg = "SOAP authentication error";
-
+        StringBuffer errStr(errmsg);
         const char *errText = soap_response->get_err();
         if (errText && *errText)
         {
@@ -204,16 +204,16 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
                     const char *endString = strchr(faultString, ']');
                     if (endString)
                     {
-                        errmsg.clear().append(endString-faultString, faultString);
+                        errStr.clear().append(endString-faultString, faultString);
                         errText = nullptr;
                     }
                 }
             }
             if (errText)
-                errmsg.appendf("[%s]", errText);
+                errStr.appendf("[%s]", errText);
         }
 
-        throw MakeStringException(retstatus, "%s", errmsg.str());
+        throw MakeStringException(retstatus, "%s", errStr.str());
     }
 
 #if defined(DEBUG_HTTP_)
@@ -234,7 +234,7 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
     }
     else
     {
-        DBGLOG("SOAP Response type %s not supported", soap_response->get_content_type());
+        UWARNLOG("SOAP Response type %s not supported", soap_response->get_content_type());
         return SOAP_REQUEST_TYPE_ERROR;
     }
 

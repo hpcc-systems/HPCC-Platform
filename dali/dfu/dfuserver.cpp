@@ -260,7 +260,7 @@ int main(int argc, const char *argv[])
         e->Release();
     }
     catch (const char *s) {
-        WARNLOG("DFU: %s",s);
+        OWARNLOG("DFU: %s",s);
     }
 
     delete serverstatus;

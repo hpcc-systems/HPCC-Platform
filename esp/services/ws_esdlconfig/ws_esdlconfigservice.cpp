@@ -533,7 +533,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
 
                         if (def)
                         {
-                            StringBuffer defid = def->queryProp("@id");
+                            StringBuffer defid(def->queryProp("@id"));
                             msg.appendf("\nFetched ESDL Biding definition declaration: '%s'.", defid.str());
                             resp.updateESDLBinding().updateDefinition().setId(defid);
                             resp.updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
@@ -843,7 +843,7 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                                 IPropertyTree * def = esdlbindingtree->queryPropTree("Definition[1]");
                                 if (def)
                                 {
-                                    StringBuffer defid = def->queryProp("@id");
+                                    StringBuffer defid(def->queryProp("@id"));
                                     msg.appendf("\nFetched ESDL Biding definition declaration: '%s'.", defid.str());
                                     resp.updateESDLBinding().updateDefinition().setId(defid);
                                     resp.updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
@@ -1119,7 +1119,7 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
         {
             if (!esdlBindId || !*esdlBindId)
             {
-                StringBuffer espPort = req.getEspPort();
+                StringBuffer espPort(req.getEspPort());
                 StringBuffer msg;
                 StringBuffer serviceName;
                 if (espProcName.length() == 0 || (espBindingName.length() == 0 && espPort.length() == 0))
@@ -1151,7 +1151,7 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
 
                 if (def)
                 {
-                    StringBuffer defid = def->queryProp("@id");
+                    StringBuffer defid(def->queryProp("@id"));
                     msg.appendf("\nFetched ESDL Biding definition declaration: '%s'.", defid.str());
                     resp.updateESDLBinding().updateDefinition().setId(defid);
                     resp.updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
@@ -1475,7 +1475,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
 
     context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "WsESDLConfigEx::GetESDLDefinition: Permission denied.");
 
-    StringBuffer id = req.getId();
+    StringBuffer id(req.getId());
     StringBuffer definition;
     const char* serviceName = req.getServiceName();
 
@@ -1722,7 +1722,7 @@ bool CWsESDLConfigEx::onListDESDLEspBindings(IEspContext &context, IEspListDESDL
                     {
                         IPropertyTree * def = esdlbindingtree->queryPropTree("Definition[1]");
 
-                        StringBuffer defid = def->queryProp("@id");
+                        StringBuffer defid(def->queryProp("@id"));
                         msg.appendf("\nFetched ESDL Biding definition declaration: '%s'.", defid.str());
                         desdlespbinding->updateESDLBinding().updateDefinition().setId(defid);
                         desdlespbinding->updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));

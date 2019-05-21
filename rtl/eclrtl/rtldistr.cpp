@@ -181,7 +181,7 @@ class CFixedDistributionTable : public CDistributionTable
 {
 public:
     CFixedDistributionTable(const char *_fieldname, unsigned _ksize, unsigned _threshold) 
-        : CDistributionTable(_fieldname), threshold(_threshold), table(_ksize, false), ksize(_ksize)
+        : CDistributionTable(_fieldname), ksize(_ksize), threshold(_threshold), table(_ksize, false)
     {
         estimated = false;
         cardinality = 0;
@@ -408,8 +408,7 @@ ECLRTL_API IStringDistributionTable *createIStringDistributionTable(const char *
     switch (size)
     {
     case 0:
-//  case UNKNOWN_LENGTH:
-        assertex(false); // TBD
+        throwUnexpected();
     case 1:
         return new CCharDistributionTable(name);
     default:

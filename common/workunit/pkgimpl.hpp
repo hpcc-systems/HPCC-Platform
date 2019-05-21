@@ -83,7 +83,7 @@ protected:
 
     virtual IPropertyTreeIterator *lookupElements(const char *xpath1, const char *xpath2) const = 0;
 
-    inline StringBuffer makeSuperFileXPath(StringBuffer &xpath, const char *superFileName) const
+    inline StringBuffer &makeSuperFileXPath(StringBuffer &xpath, const char *superFileName) const
     {
         superFileName = skipForeign(superFileName);
         return xpath.append("SuperFile[@id='").appendLower(strlen(superFileName), superFileName).append("']");

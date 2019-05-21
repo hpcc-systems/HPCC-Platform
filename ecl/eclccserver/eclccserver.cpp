@@ -220,7 +220,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 }
             }
             else
-                DBGLOG("Unrecognised error: %s", errStr);
+                IERRLOG("Unrecognised error: %s", errStr);
         }
         catch (IException *E)
         {
@@ -663,7 +663,7 @@ public:
                     }
                     catch(...)
                     {
-                        ERRLOG("Unexpected exception in eclccServer::run caught");
+                        IERRLOG("Unexpected exception in eclccServer::run caught");
                     }
                 }
             }
@@ -676,7 +676,7 @@ public:
             }
             catch (...)
             {
-                DBGLOG("Unknown exception caught in eclccServer::run - restarting");
+                IERRLOG("Unknown exception caught in eclccServer::run - restarting");
                 releaseAtoms();
                 ExitModuleObjects();
                 _exit(2);
@@ -774,7 +774,7 @@ int main(int argc, const char *argv[])
     }
     catch(...)
     {
-        ERRLOG("Failed to load eclccserver.xml");
+        OERRLOG("Failed to load eclccserver.xml");
         return 1;
     }
 
@@ -792,7 +792,7 @@ int main(int argc, const char *argv[])
     const char *daliServers = globals->queryProp("@daliServers");
     if (!daliServers)
     {
-        WARNLOG("No Dali server list specified - assuming local");
+        UWARNLOG("No Dali server list specified - assuming local");
         daliServers = ".";
     }
     Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
@@ -823,7 +823,7 @@ int main(int argc, const char *argv[])
     }
     catch(...)
     {
-        ERRLOG("Terminating unexpectedly");
+        IERRLOG("Terminating unexpectedly");
     }
     stopPerformanceMonitor();
     globals.clear();

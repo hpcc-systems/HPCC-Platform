@@ -67,7 +67,7 @@ IPropertyTree * SWComponentBase::addComponent(IPropertyTree *params)
 
   IPropertyTree * envTree = m_envHelper->getEnvTree();
 
-  StringBuffer deployable  = m_pBuildSet->queryProp("@" TAG_DEPLOYABLE);
+  const char *deployable  = m_pBuildSet->queryProp("@" TAG_DEPLOYABLE);
 
   IPropertyTree * pt = NULL;
 

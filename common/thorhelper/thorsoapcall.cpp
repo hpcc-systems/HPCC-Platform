@@ -630,7 +630,7 @@ interface IWSCAsyncFor: public IInterface
     virtual int readHttpResponse(StringBuffer &response, ISocket *socket) = 0;
     virtual void processResponse(Url &url, StringBuffer &response, ColumnProvider * meta) = 0;
 
-    virtual StringBuffer getResponsePath() = 0;
+    virtual const char *getResponsePath() = 0;
     virtual ConstPointerArray & getInputRows() = 0;
     virtual IWSCHelper * getMaster() = 0;
     virtual IEngineRowAllocator * getOutputAllocator() = 0;
@@ -1578,7 +1578,7 @@ private:
             if (master->httpHeaders.isEmpty() && master->httpHeaderName.get() && master->httpHeaderValue.get())
             {
                 //backward compatibility
-                StringBuffer hdr = master->httpHeaderName.get();
+                StringBuffer hdr(master->httpHeaderName.get());
                 hdr.append(": ").append(master->httpHeaderValue);
                 if (soapTraceLevel > 6 || master->logXML)
                     multiLog(master->logctx, "SOAPCALL: Adding HTTP Header(%s)", hdr.str());
@@ -2129,7 +2129,7 @@ public:
             }
         }
     }
-    inline virtual StringBuffer getResponsePath() { return responsePath; }
+    inline virtual const char *getResponsePath() { return responsePath; }
     inline virtual ConstPointerArray & getInputRows() { return inputRows; }
     inline virtual CWSCHelper * getMaster() { return master; }
     inline virtual IEngineRowAllocator * getOutputAllocator() { return outputAllocator; }

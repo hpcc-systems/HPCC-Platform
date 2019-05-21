@@ -87,8 +87,8 @@ private:
 
     struct Entry
     {
-        StringBuffer key;
-        StringBuffer value;
+        StringAttr key;
+        StringAttr value;
     };
 
     using Entries = std::list<Entry>;
@@ -107,7 +107,7 @@ private:
 template <typename TValue, typename TSuffix, class TSerializer>
 inline bool CTxSummary::append(const char* key, const TValue& value, const TSuffix& suffix, const TSerializer& serializer)
 {
-    auto buffer = serializer.makeBuffer();
+    StringBuffer buffer;
     serializer.serialize(value, buffer);
     serializer.serialize(suffix, buffer);
     return append(key, serializer.str(buffer));
@@ -117,7 +117,7 @@ inline bool CTxSummary::append(const char* key, const TValue& value, const TSuff
 template <typename TValue, typename TSuffix, class TSerializer>
 inline bool CTxSummary::set(const char* key, const TValue& value, const TSuffix& suffix, const TSerializer& serializer)
 {
-    auto buffer = serializer.makeBuffer();
+    StringBuffer buffer;
     serializer.serialize(value, buffer);
     serializer.serialize(suffix, buffer);
     return set(key, serializer.str(buffer));

@@ -284,8 +284,7 @@ interface ILdapClient : extends IInterface
     virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword = 0) = 0;
     virtual bool updateUser(const char* type, ISecUser& user) = 0;
     virtual bool updateUserPassword(const char* username, const char* newPassword) = 0;
-    virtual bool getResources(SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources) = 0;
-    virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char* prefix, const char* searchstr, IArrayOf<ISecResource>& resources) = 0;
+    virtual bool getResources(SecResourceType rtype, const char * basedn, const char* prefix, const char* searchstr, IArrayOf<ISecResource>& resources) = 0;
     virtual IPropertyTreeIterator* getResourceIterator(SecResourceType rtype, const char * basedn, const char* prefix,
         const char* resourceName, unsigned extraNameFilter) = 0;
     virtual ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char * basedn, const char* resourceName, unsigned extraNameFilter,
@@ -312,7 +311,7 @@ interface ILdapClient : extends IInterface
     virtual ILdapConfig* queryConfig() = 0;
     virtual const char* getPasswordStorageScheme() = 0;
     virtual bool createUserScope(ISecUser& user) = 0;
-    virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes) = 0;
+    virtual aindex_t getManagedScopeTree(LDAP* ld, SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes) = 0;
     virtual SecAccessFlags queryDefaultPermission(ISecUser& user) = 0;
 
     //Data View related interfaces

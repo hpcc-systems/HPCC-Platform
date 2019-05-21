@@ -16,6 +16,7 @@
 ############################################################################## */
 
 import Std.File;
+import Std.Str;
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 
@@ -33,6 +34,11 @@ string compareDatasets(dataset(rec) ds1, dataset(rec) ds2) := FUNCTION
    RETURN if(result, 'Pass', 'Fail');
 END;
 
+RemovePrefix(string lfn, unsigned scopes) := FUNCTION
+  unsigned4 postPrefixPos := Str.Find(lfn, '::', scopes);
+  unsigned4 postScopePos := IF(postPrefixPos=0, 1, postPrefixPos+2); // ensures valid if mismatch
+  return lfn[postScopePos..];
+END;
 
 SEQUENTIAL(
   OUTPUT(ds, , prefix + 'renametest.d00', OVERWRITE),
@@ -47,4 +53,8 @@ SEQUENTIAL(
   File.RenameLogicalFile(prefix + 'renametest.d00', prefix + 'afterrename1.d00', true),
   output(compareDatasets(ds, ds2)),
   File.DeleteLogicalFile(prefix + 'afterrename1.d00'),
+  RemovePrefix(File.ForeignLogicalFileName('somescope::somefilename', '192.168.168.168', true), 3);
+  RemovePrefix(File.ForeignLogicalFileName('somescope::somefilename', '192.168.168.168', false), 3);
+  RemovePrefix(File.ForeignLogicalFileName('somescope::somefilename', '192.168.168.168', true, true), 2);
+  RemovePrefix(File.ForeignLogicalFileName('somescope::somefilename', '192.168.168.168', false, true), 2);
 );

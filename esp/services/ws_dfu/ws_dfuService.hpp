@@ -198,11 +198,11 @@ private:
     void doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name,const char *cluster,
         const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo,
         CDFUChangeProtection protect, IEspDFUFileDetail& FileDetails);
-    bool createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, unsigned& yearFrom,
+    bool createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, const char * interval, unsigned& yearFrom,
         unsigned& monthFrom, unsigned& dayFrom, unsigned& yearTo, unsigned& monthTo, unsigned& dayTo);
     bool setSpaceItemByScope(IArrayOf<IEspSpaceItem>& SpaceItems64, const char*scopeName, const char*logicalName, __int64 size);
     bool setSpaceItemByOwner(IArrayOf<IEspSpaceItem>& SpaceItems64, const char *owner, const char *logicalName, __int64 size);
-    bool setSpaceItemByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, StringBuffer mod, const char*logicalName, __int64 size);
+    bool setSpaceItemByDate(IArrayOf<IEspSpaceItem>& SpaceItems, const char * interval, const char *mod, const char*logicalName, __int64 size);
     bool findPositionToAdd(const char *datetime, const __int64 size, const int numNeeded, const unsigned orderType,
                        IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& addToPos, bool& reachLimit);
     __int64 findPositionByParts(const __int64 parts, bool decsend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
@@ -223,10 +223,10 @@ private:
     void setRootFilter(INewResultSet* result, const char* filterBy, IResultSetFilter* filter, bool disableUppercaseTranslation = true);
     void getMappingColumns(IRelatedBrowseFile * file, bool isPrimary, UnsignedArray& cols);
     void readColumnsForDisplay(StringBuffer& schemaText, StringArray& columnsDisplay, StringArray& columnsDisplayType);
-    void mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, StringBuffer schemaText2,
+    void mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, const char * schemaText2,
         StringArray& columnsDisplay, StringArray& columnsDisplayType, StringArray& columnsHide);
     void mergeDataRow(StringBuffer& newRow, int depth, IPropertyTreeIterator* it, StringArray& columnsHide, StringArray& columnsUsed);
-    void mergeDataRow(StringBuffer& newRow, StringBuffer dataRow1, StringBuffer dataRow2, StringArray& columnsHide);
+    void mergeDataRow(StringBuffer& newRow, const char * dataRow1, const char * dataRow2, StringArray& columnsHide);
     void browseRelatedFileSchema(IRelatedBrowseFile * file, const char* parentName, unsigned depth, StringBuffer& schemaText,
         StringArray& columnsDisplay, StringArray& columnsDisplayType, StringArray& columnsHide);
     int browseRelatedFileDataSet(double version, IRelatedBrowseFile * file, const char* parentName, unsigned depth, __int64 start, __int64& count, __int64& read,

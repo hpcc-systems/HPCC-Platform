@@ -167,13 +167,13 @@ unsigned CMasterWatchdogBase::readPacket(HeartBeatPacketHeader &hb, MemoryBuffer
     {
         if (read < sizeof(HeartBeatPacketHeader))
         {
-            WARNLOG("Receive Monitor Packet: wrong size, got %d, less than HeartBeatPacketHeader size", read);
+            IWARNLOG("Receive Monitor Packet: wrong size, got %d, less than HeartBeatPacketHeader size", read);
             return 0;
         }
         memcpy(&hb, mb.readDirect(sizeof(HeartBeatPacketHeader)), sizeof(HeartBeatPacketHeader));
         if (read != hb.packetSize)  // check for corrupt packets
         {
-            WARNLOG("Receive Monitor Packet: wrong size, expected %d, got %d", hb.packetSize, read);
+            IWARNLOG("Receive Monitor Packet: wrong size, expected %d, got %d", hb.packetSize, read);
             return 0;
         }
         mb.setLength(hb.packetSize);

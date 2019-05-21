@@ -151,8 +151,9 @@ extern DAFSCLIENT_API bool AuthenticationEnabled;
 class CRemoteBase : public CSimpleInterfaceOf<IDaFsConnection>
 {
     Owned<ISocket>          socket;
-    static  SocketEndpoint  lastfailep;
+    static SocketEndpoint   lastfailep;
     static unsigned         lastfailtime;
+    static CriticalSection  lastFailEpCrit;
     DAFSConnectCfg          connectMethod;
 
     void connectSocket(SocketEndpoint &ep, unsigned localConnectTime=0, unsigned localRetries=0);

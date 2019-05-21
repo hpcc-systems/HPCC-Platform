@@ -416,7 +416,7 @@ void CSoapResponseBinding::handleExceptions(IMultiException *me, const char *ser
         StringBuffer text;
         me->errorMessage(text);
         text.append('\n');
-        WARNLOG("Exception(s) in %s::%s - %s", serv, meth, text.str());
+        IWARNLOG("Exception(s) in %s::%s - %s", serv, meth, text.str());
 
         IArrayOf<IException>& exceptions = me->getArray();
         ForEachItemIn(i, exceptions)

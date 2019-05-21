@@ -2360,6 +2360,17 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                     if (!getBoolAttribute(expr, orderedAtom, true))
                         meta.removeAllSortOrders();
                     meta.applyProject(mapper);
+                    if (!isKnownDistribution(meta.distribution) && !createDefaultRight)
+                    {
+                        IHqlExpression * rightDistributeInfo = queryDistribution(expr->queryChild(1));
+                        if (isKnownDistribution(rightDistributeInfo))
+                        {
+                            OwnedHqlExpr rightSelect = createSelector(no_right, expr->queryChild(1), expr->queryAttribute(_selectorSequence_Atom));
+                            OwnedHqlExpr mappedRight = mapJoinDistribution(mapper, rightDistributeInfo, rightSelect);
+                            if (mappedRight)
+                                meta.distribution.setown(mappedRight.getClear());
+                        }
+                    }
                 }
                 else
                 {

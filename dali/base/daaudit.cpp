@@ -161,7 +161,7 @@ public:
             if (!fio) {
                 StringBuffer fn;
                 files->getName(fn);
-                WARNLOG("Could not open %s",fn.str());
+                OWARNLOG("Could not open %s",fn.str());
                 continue;
             }
             bool eof=false;

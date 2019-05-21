@@ -6149,7 +6149,7 @@ void CHqlSelectBaseExpression::gatherTablesUsed(HqlExprCopyArray & inScope)
 
 //==============================================================================================================
 
-IHqlExpression * CHqlNormalizedSelectExpression::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlNormalizedSelectExpression::queryNormalizedSelector()
 {
     return this;
 }
@@ -6162,7 +6162,7 @@ void CHqlNormalizedSelectExpression::calcNormalized()
 #endif
 }
 
-IHqlExpression * CHqlSelectExpression::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlSelectExpression::queryNormalizedSelector()
 {
     if (normalized)
         return normalized;
@@ -6267,7 +6267,7 @@ void CHqlField::onCreateField()
 #endif
 #ifdef DEBUG_ON_CREATE
     if (queryName() == createIdAtom("imgLength"))
-        PrintLog("Create field %s=%p", expr->queryName()->str(), expr);
+        DBGLOG("Create field %s=%p", expr->queryName()->str(), expr);
 #endif
 
     infoFlags &= ~(HEFfunctionOfGroupAggregate);
@@ -6386,11 +6386,9 @@ IAtom * CHqlRow::queryName() const
     return NULL;
 }
 
-IHqlExpression *CHqlRow::queryNormalizedSelector(bool skipIndex)
+IHqlExpression *CHqlRow::queryNormalizedSelector()
 {
-    if (!skipIndex || (op != no_selectnth))
-        return normalized.get() ? normalized.get() : this;
-    return queryChild(0)->queryNormalizedSelector(skipIndex);
+    return normalized.get() ? normalized.get() : this;
 }
 
 IHqlSimpleScope *CHqlRow::querySimpleScope()
@@ -6565,13 +6563,11 @@ IHqlExpression *CHqlDictionary::clone(HqlExprArray &newkids)
     return createDictionary(op, newkids);
 }
 
-IHqlExpression * CHqlDictionary::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlDictionary::queryNormalizedSelector()
 {
     if (!normalized)
         return this;
-    if (!skipIndex)
-        return normalized;
-    return normalized->queryNormalizedSelector(skipIndex);
+    return normalized;
 }
 
 
@@ -6714,7 +6710,7 @@ void CHqlDataset::cacheParent()
             }
             else
             {
-                PrintLog("cacheParent->queryDataset get NULL for: %s", getOpString(inDs->getOperator()));
+                DBGLOG("cacheParent->queryDataset get NULL for: %s", getOpString(inDs->getOperator()));
             }
         }
         break;
@@ -6800,7 +6796,7 @@ void CHqlDataset::cacheParent()
             rootTable = this;
             normalized.setown(calcNormalizedSelector());
             IHqlExpression * ds = queryChild(0);
-            container = LINK(queryDatasetCursor(ds)->queryNormalizedSelector(false));
+            container = LINK(queryDatasetCursor(ds)->queryNormalizedSelector());
 #ifdef _DEBUG
             assertex(!hasAttribute(newAtom) || !isAlwaysActiveRow(ds));
 #endif
@@ -6846,13 +6842,11 @@ bool CHqlDataset::isAggregate()
     return isAggregateDataset(this);
 }
 
-IHqlExpression * CHqlDataset::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlDataset::queryNormalizedSelector()
 {
     if (!normalized)
         return this;
-    if (!skipIndex)
-        return normalized;
-    return normalized->queryNormalizedSelector(skipIndex);
+    return normalized;
 }
 
 
@@ -7244,9 +7238,9 @@ IHqlExpression * CHqlAnnotation::queryProperty(ExprPropKind kind)
     return body->queryProperty(kind);
 }
 
-IHqlExpression * CHqlAnnotation::queryNormalizedSelector(bool skipIndex)
+IHqlExpression * CHqlAnnotation::queryNormalizedSelector()
 {
-    return body->queryNormalizedSelector(skipIndex);
+    return body->queryNormalizedSelector();
 }
 
 IHqlExpression * CHqlAnnotation::queryExternalDefinition() const 
@@ -8726,7 +8720,7 @@ void CHqlRemoteScope::noteExternalLookup(HqlLookupContext & ctx, IHqlExpression 
 
 IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-//  PrintLog("lookupSymbol %s#%d", searchName->getAtomNamePtr(),version);
+//  DBGLOG("lookupSymbol %s#%d", searchName->getAtomNamePtr(),version);
     preloadSymbols(ctx, false);
     OwnedHqlExpr resolvedSym = resolved->lookupSymbol(searchName, lookupFlags, ctx);
     if (resolvedSym && resolvedSym->getOperator() == no_processing)
@@ -10129,7 +10123,7 @@ CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescop
             defined.setValue(lower(valueId),value);
         }
     }
-    //PrintLog(debug.str());
+    //DBGLOG(debug.str());
 }
 
 //==============================================================================================================
@@ -14022,16 +14016,13 @@ static bool queryOriginalName(ITypeInfo* type, StringBuffer& s)
 }
 
 
-void PrintLogExprTree(IHqlExpression *expr, const char *caption, bool full)
+void PrintLogExprTree(IHqlExpression *expr, const char *caption)
 {
-    StringBuffer s;
-    toECL(expr, s, full);
-    s.append('\n');
+#ifndef DISABLE_PRINTLOG
     if (caption)
-        PrintLog(caption);
-    else if (full)
-        s.insert(0, "\n");
-    PrintLogDirect(s.str());
+        IERRLOG("%s", caption);
+    dbglogExpr(expr);
+#endif
 }
 
 //========This will go to IExpression implementations ======================================================================================================
@@ -14504,7 +14495,7 @@ extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquer
     }
     catch (...)
     {
-        PrintLog("InstantECL transformations - exception caught");
+        IERRLOG("InstantECL transformations - exception caught");
     }
     return LINK(qquery);
 }

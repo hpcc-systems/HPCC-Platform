@@ -562,8 +562,9 @@ double rtlRoundTo(const double x, int places)
 {
     if (x < 0)
         return -rtlRoundTo(-x, places);
-    volatile double tt = x * kk;
-    double x0 = x + tt;
+// See HPCC-15557 and HPCC-21878 regarding the following two lines.
+//    volatile double tt = x * kk;
+//    double x0 = x + tt;
     if (places >= 0)
     {
         double scale = powerOfTen(places);
@@ -3983,18 +3984,18 @@ unsigned rtlHashData( unsigned length, const void *_k, unsigned initval)
    c += length;
    switch(len)              /* all the case statements fall through */
    {
-   case 11: c+=GETBYTE3(7);
-   case 10: c+=GETBYTE2(7);
-   case 9 : c+=GETBYTE1(7);
+   case 11: c+=GETBYTE3(7); // Fall through...
+   case 10: c+=GETBYTE2(7); // Fall through...
+   case 9 : c+=GETBYTE1(7); // Fall through...
       /* the first byte of c is reserved for the length */
-   case 8 : b+=GETBYTE3(4);
-   case 7 : b+=GETBYTE2(4);
-   case 6 : b+=GETBYTE1(4);
-   case 5 : b+=GETBYTE0(4);
-   case 4 : a+=GETBYTE3(0);
-   case 3 : a+=GETBYTE2(0);
-   case 2 : a+=GETBYTE1(0);
-   case 1 : a+=GETBYTE0(0);
+   case 8 : b+=GETBYTE3(4); // Fall through...
+   case 7 : b+=GETBYTE2(4); // Fall through...
+   case 6 : b+=GETBYTE1(4); // Fall through...
+   case 5 : b+=GETBYTE0(4); // Fall through...
+   case 4 : a+=GETBYTE3(0); // Fall through...
+   case 3 : a+=GETBYTE2(0); // Fall through...
+   case 2 : a+=GETBYTE1(0); // Fall through...
+   case 1 : a+=GETBYTE0(0); // Fall through...
      /* case 0: nothing left to add */
    }
    mix(a,b,c);
@@ -4059,18 +4060,18 @@ unsigned rtlHashDataNC( unsigned length, const void * _k, unsigned initval)
    c += length;
    switch(len)              /* all the case statements fall through */
    {
-   case 11: c+=GETBYTE3(7)&0xdf;
-   case 10: c+=GETBYTE2(7)&0xdf;
-   case 9 : c+=GETBYTE1(7)&0xdf;
+   case 11: c+=GETBYTE3(7)&0xdf; // Fall through...
+   case 10: c+=GETBYTE2(7)&0xdf; // Fall through...
+   case 9 : c+=GETBYTE1(7)&0xdf; // Fall through...
       /* the first byte of c is reserved for the length */
-   case 8 : b+=GETBYTE3(4)&0xdf;
-   case 7 : b+=GETBYTE2(4)&0xdf;
-   case 6 : b+=GETBYTE1(4)&0xdf;
-   case 5 : b+=GETBYTE0(4)&0xdf;
-   case 4 : a+=GETBYTE3(0)&0xdf;
-   case 3 : a+=GETBYTE2(0)&0xdf;
-   case 2 : a+=GETBYTE1(0)&0xdf;
-   case 1 : a+=GETBYTE0(0)&0xdf;
+   case 8 : b+=GETBYTE3(4)&0xdf; // Fall through...
+   case 7 : b+=GETBYTE2(4)&0xdf; // Fall through...
+   case 6 : b+=GETBYTE1(4)&0xdf; // Fall through...
+   case 5 : b+=GETBYTE0(4)&0xdf; // Fall through...
+   case 4 : a+=GETBYTE3(0)&0xdf; // Fall through...
+   case 3 : a+=GETBYTE2(0)&0xdf; // Fall through...
+   case 2 : a+=GETBYTE1(0)&0xdf; // Fall through...
+   case 1 : a+=GETBYTE0(0)&0xdf; // Fall through...
      /* case 0: nothing left to add */
    }
    mix(a,b,c);
@@ -5104,6 +5105,7 @@ void rtlStrToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char *
     outlen = rtlUtf8Length(outsize, out);
 }
 
+#if U_ICU_VERSION_MAJOR_NUM<50
 static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
 {
     rtlDataAttr uleft(llen*sizeof(UChar));
@@ -5112,6 +5114,7 @@ static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32
     rtlUtf8ToUnicode(rlen, uright.getustr(), rlen, right);
     return rtlCompareUnicodeUnicode(llen, uleft.getustr(), rlen, uright.getustr(), locale);
 }
+#endif
 
 #ifdef _USE_ICU
 int rtlCompareUtf8Utf8(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)

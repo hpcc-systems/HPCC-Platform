@@ -127,7 +127,7 @@ int main(int argc, char** argv)
   StringBuffer ipAddrs;
   int roxieNodes=1, thorNodes=1, slavesPerNode=1, supportNodes=1, espNodes=1, thorChannelsPerSlave=1, roxieChannelsPerSlave=1;
   bool roxieOnDemand = true;
-  MapStringTo<StringBuffer> dirMap;
+  MapStringTo<StringAttr, const char *> dirMap;
   StringArray overrides;
   StringBufferArray arrXPaths;
   StringBufferArray arrAttrib;

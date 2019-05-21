@@ -89,7 +89,7 @@ CEspHttpServer::~CEspHttpServer()
     }
     catch (...)
     {
-        ERRLOG("In CEspHttpServer::~CEspHttpServer() -- Unknown Exception.");
+        IERRLOG("In CEspHttpServer::~CEspHttpServer() -- Unknown Exception.");
     }
 }
 
@@ -137,7 +137,7 @@ static bool authenticateOptionalFailed(IEspContext& ctx, IEspHttpBinding* bindin
         if(!user || user->getStatus()==SecUserStatus_Inhouse || user->getStatus()==SecUserStatus_Unknown)
             return false;
 
-        ERRLOG("User %s trying to access unauthorized feature: internal", user->getName() ? user->getName() : ctx.queryUserId());
+        OERRLOG("User %s trying to access unauthorized feature: internal", user->getName() ? user->getName() : ctx.queryUserId());
         return true;
     }
     // TODO: handle binding specific optionals
@@ -200,7 +200,7 @@ int CEspHttpServer::processRequest()
     }
     catch (...)
     {
-        DBGLOG("Unknown Exception - reading request [CEspHttpServer::processRequest()]");
+        IERRLOG("Unknown Exception - reading request [CEspHttpServer::processRequest()]");
         return 0;
     }
 
@@ -404,8 +404,8 @@ int CEspHttpServer::processRequest()
     {
         StringBuffer content_type;
         __int64 len = m_request->getContentLength();
-        DBGLOG("Unknown Exception - processing request");
-        DBGLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %" I64F "d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
+        UWARNLOG("Unknown Exception - processing request");
+        UWARNLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %" I64F "d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
         if (len > 0)
             m_request->logMessage(LOGCONTENT, "HTTP request content received:\n");
         return 0;
@@ -1599,7 +1599,7 @@ void CEspHttpServer::sendLockResponse(bool lock, bool error, const char* msg)
 
 void CEspHttpServer::sendGetAuthTypeResponse(EspAuthRequest& authReq, const char* authType)
 {
-    StringBuffer authTypeStr = authType;
+    StringBuffer authTypeStr(authType);
     if (authTypeStr.isEmpty())
     {
         switch (authReq.authBinding->getDomainAuthType())
@@ -2037,7 +2037,7 @@ void CEspHttpServer::askUserLogin(EspAuthRequest& authReq, const char* msg)
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
     if (urlCookie.isEmpty())
     {
-        StringBuffer sessionStartURL = authReq.httpPath;
+        StringBuffer sessionStartURL(authReq.httpPath);
         if (authReq.requestParams && authReq.requestParams->hasProp("__querystring"))
             sessionStartURL.append("?").append(authReq.requestParams->queryProp("__querystring"));
         if (!sessionStartURL.isEmpty() && streq(sessionStartURL.str(), "/WsSMC/"))
@@ -2180,7 +2180,7 @@ unsigned CEspHttpServer::readCookie(const char* cookieName)
     CEspCookie* sessionIDCookie = m_request->queryCookie(cookieName);
     if (sessionIDCookie)
     {
-        StringBuffer sessionIDStr = sessionIDCookie->getValue();
+        StringBuffer sessionIDStr(sessionIDCookie->getValue());
         if (sessionIDStr.length())
             return atoi(sessionIDStr.str());
     }

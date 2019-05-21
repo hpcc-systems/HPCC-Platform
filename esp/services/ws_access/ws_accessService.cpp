@@ -70,7 +70,7 @@ void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *ser
     IPropertyTree* servicecfg = cfg->getPropTree(xpath.str());
     if(servicecfg == NULL)
     {
-        WARNLOG(-1, "config not found for service %s/%s",process, service);
+        OWARNLOG("Config not found for service %s/%s",process, service);
         return;
     }
     m_servicecfg.setown(servicecfg);
@@ -295,7 +295,7 @@ bool Cws_accessEx::getNewFileScopePermissions(ISecManager* secmgr, IEspResourceA
     CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
     while (newResources.ordinality())
     {
-        StringBuffer namebuf = newResources.item(0);
+        StringBuffer namebuf(newResources.item(0));
         try
         {
             IArrayOf<CPermission> permissions;
@@ -382,7 +382,7 @@ bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspResourceA
 
         ForEachItemIn(y, newResources)
         {
-            StringBuffer namebuf = newResources.item(y);
+            StringBuffer namebuf(newResources.item(y));
             paction.m_rname.clear().append(namebuf.str());
             ldapsecmgr->changePermission(paction);
         }
@@ -699,7 +699,7 @@ bool Cws_accessEx::onUserGroupEdit(IEspContext &context, IEspUserGroupEditReques
         {
             StringBuffer errmsg;
             e->errorMessage(errmsg);
-            DBGLOG("error changing user's group membership: %s", errmsg.str());
+            OERRLOG("error changing user's group membership: %s", errmsg.str());
             resp.setRetcode(e->errorCode());
             resp.setRetmsg(errmsg.str());
             return false;
@@ -1540,7 +1540,7 @@ bool Cws_accessEx::onGroupMemberEdit(IEspContext &context, IEspGroupMemberEditRe
         {
             StringBuffer errmsg;
             e->errorMessage(errmsg);
-            DBGLOG("error changing user's group membership: %s", errmsg.str());
+            OERRLOG("error changing user's group membership: %s", errmsg.str());
             resp.setRetcode(e->errorCode());
             resp.setRetmsg(errmsg.str());
             return false;
@@ -1822,7 +1822,7 @@ bool Cws_accessEx::onResourceQuery(IEspContext &context, IEspResourceQueryReques
             }
         }
 
-        StringBuffer nameReq = req.getName();
+        StringBuffer nameReq(req.getName());
         const char* prefix = req.getPrefix();
         if (!nameReq.length() && req.getRtitle() && !stricmp(req.getRtitle(), "CodeGenerator Permission"))
             nameReq.set(prefix);
@@ -2000,7 +2000,7 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
                 StringBuffer retmsg;
                 ForEachItemIn(y, newResources)
                 {
-                    StringBuffer namebuf = newResources.item(y);
+                    StringBuffer namebuf(newResources.item(y));
                     if (retmsg.length() < 1)
                         retmsg.append(namebuf);
                     else
@@ -2132,7 +2132,7 @@ void Cws_accessEx::addResourcePermission(const char *name, int type, int allows,
     if (isEmptyString(name))
         return;
 
-    StringBuffer nameIn = name;
+    StringBuffer nameIn(name);
     Owned<IEspResourcePermission> permission = createResourcePermission();
     permission->setAccount_name(name);
     permission->setEscaped_account_name(nameIn.replaceString("\'", "\\\'").str());
@@ -2854,7 +2854,7 @@ int Cws_accessEx::enableDisableScopeScans(IEspContext &context, bool doEnable, S
     int retCode;
     bool rc = querySessionManager().enableScopeScans(userdesc, doEnable, &retCode, retMsg);
     if (!rc || retCode != 0)
-        DBGLOG("Error %d enabling Scope Scans : %s", retCode, retMsg.str());
+        IERRLOG("Error %d enabling Scope Scans : %s", retCode, retMsg.str());
     return retCode;
 }
 
@@ -4388,7 +4388,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                 access = SecAccess_None;
                 ForEachItemIn(y, scopes)
                 {
-                    StringBuffer namebuf = scopes.item(y);
+                    StringBuffer namebuf(scopes.item(y));
                     try
                     {
                         IArrayOf<CPermission> permissions;

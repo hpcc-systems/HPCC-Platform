@@ -78,7 +78,7 @@ void LogError( const char *s,DWORD dwError )
     FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwError,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
             (LPTSTR) &lpBuffer, 0, NULL );   
-    ERRLOG( "%s(%d): %s", s, dwError, lpBuffer );   
+    OERRLOG( "%s(%d): %s", s, dwError, lpBuffer );   
     LocalFree( lpBuffer );
 }
 
@@ -280,7 +280,7 @@ bool uninstallService(const char *servicename,const char *servicedisplayname)
                 if ( ss.dwCurrentState == SERVICE_STOPPED ) 
                     PROGLOG("%s Service stopped",servicedisplayname); 
                 else 
-                    ERRLOG("%s failed to stop",servicedisplayname); 
+                    OERRLOG("%s failed to stop",servicedisplayname); 
             } 
             CloseServiceHandle(hService); 
         }
@@ -359,7 +359,7 @@ int main(int argc,char **argv)
     const char *logdir=NULL;
     bool requireauthenticate = false;
     StringBuffer logDir;
-    StringBuffer instanceName;
+    StringBuffer componentName;
 
     // Get SSL Settings
     DAFSConnectCfg  connectMethod;
@@ -386,13 +386,119 @@ int main(int argc,char **argv)
     bool dedicatedRowServiceSSL = defaultDedicatedRowServiceSSL;
     bool rowServiceOnStdPort = defaultRowServiceOnStdPort;
 
+    // these should really be in env, but currently they are not ...
+    listenep.port = port;
+
+    // get command line arguements, including dafilesrv name
+    while (argc>i) {
+        if (stricmp(argv[i],"-D")==0) {
+            i++;
+            isdaemon = true;
+        }
+        else if (stricmp(argv[i],"-R")==0) { // for remote run
+            i++;
+#ifdef _WIN32
+            isdaemon = false;
+#else
+            isdaemon = true;
+#endif
+        }
+        else if (stricmp(argv[i],"-A")==0) {
+            i++;
+            requireauthenticate = true;
+        }
+        else if ((argv[i][0]=='-')&&(toupper(argv[i][1])=='T')&&(!argv[i][2]||isdigit(argv[i][2]))) {
+            if (argv[i][2])
+                setDaliServerTrace((byte)atoi(argv[i]+2));
+            i++;
+            isdaemon = false;
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-L")==0)) {
+            i++;
+            logDir.clear().append(argv[i++]);
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-I")==0)) {
+            i++;
+            componentName.clear().append(argv[i++]);
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-p")==0)) {
+            i++;
+            listenep.port = atoi(argv[i++]);
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-addr")==0)) {
+            i++;
+            if (strchr(argv[i],'.')||!isdigit(argv[i][0]))
+                listenep.set(argv[i], listenep.port);
+            else
+                listenep.port = atoi(argv[i]);
+            i++;
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-sslp")==0)) {
+            i++;
+            sslport = atoi(argv[i++]);
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-sbsize")==0)) {
+            i++;
+            sendbufsize = atoi(argv[i++]);
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-rbsize")==0)) {
+            i++;
+            recvbufsize = atoi(argv[i++]);
+        }
+        else if (stricmp(argv[i],"-h")==0) {
+            usage();
+            exit(0);
+        }
+        else if (stricmp(argv[i],"-LOCAL")==0) {
+            i++;
+            locallisten = true;
+        }
+        else if (stricmp(argv[i],"-NOSSL")==0) { // overrides config setting
+            i++;
+            if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
+            {
+                PROGLOG("DaFileSrv SSL specified in config but overridden by -NOSSL in command line");
+                connectMethod = SSLNone;
+            }
+        }
+        else
+            break;
+    }
+
+#ifdef _WIN32
+    if ((argc>i)&&(stricmp(argv[i],"-install")==0)) {
+        if (installService(DAFS_SERVICE_NAME,DAFS_SERVICE_DISPLAY_NAME,NULL)) {
+            PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Installed");
+            return 0;
+        }
+        return 1;
+    }
+    if ((argc>i)&&(stricmp(argv[i],"-remove")==0)) {
+        if (uninstallService(DAFS_SERVICE_NAME,DAFS_SERVICE_DISPLAY_NAME)) {
+            PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Uninstalled");
+            return 0;
+        }
+        return 1;
+    }
+#endif
+    if (argc > i) {
+        if (strchr(argv[i],'.')||!isdigit(argv[i][0]))
+            listenep.set(argv[i], listenep.port);
+        else
+            listenep.port = atoi(argv[i]);
+        sendbufsize = (argc>i+1)?(atoi(argv[i+1])*1024):0;
+        recvbufsize = (argc>i+2)?(atoi(argv[i+2])*1024):0;
+    }
+
     Owned<IPropertyTree> env = getHPCCEnvironment();
     IPropertyTree *keyPairInfo = nullptr;
     if (env)
     {
         StringBuffer dafilesrvPath("Software/DafilesrvProcess");
-        if (instanceName.length())
-            dafilesrvPath.appendf("[@name=\"%s\"]", instanceName.str());
+        if (componentName.length())
+            dafilesrvPath.appendf("[@name=\"%s\"]", componentName.str());
+        else
+            dafilesrvPath.append("[1]"); // in absence of name, use 1st
         IPropertyTree *daFileSrv = env->queryPropTree(dafilesrvPath);
         Owned<IPropertyTree> _dafileSrv;
 
@@ -487,119 +593,16 @@ int main(int argc,char **argv)
     }
 #endif
 
-    // these should really be in env, but currently they are not ...
-    listenep.port = port;
-
-    while (argc>i) {
-        if (stricmp(argv[i],"-D")==0) {
-            i++;
-            isdaemon = true;
-        }
-        else if (stricmp(argv[i],"-R")==0) { // for remote run
-            i++;
-#ifdef _WIN32
-            isdaemon = false;
-#else
-            isdaemon = true;
-#endif
-        }
-        else if (stricmp(argv[i],"-A")==0) { 
-            i++;
-            requireauthenticate = true;
-        }
-        else if ((argv[i][0]=='-')&&(toupper(argv[i][1])=='T')&&(!argv[i][2]||isdigit(argv[i][2]))) {
-            if (argv[i][2])
-                setDaliServerTrace((byte)atoi(argv[i]+2));
-            i++;
-            isdaemon = false;
-        }
-        else if ((argc>i+1)&&(stricmp(argv[i],"-L")==0)) { 
-            i++;
-            logDir.clear().append(argv[i++]);
-        }
-        else if ((argc>i+1)&&(stricmp(argv[i],"-I")==0)) {
-            i++;
-            instanceName.clear().append(argv[i++]);
-        }
-        else if ((argc>i+1)&&(stricmp(argv[i],"-p")==0)) {
-            i++;
-            listenep.port = atoi(argv[i++]);
-        }
-        else if ((argc>i+1)&&(stricmp(argv[i],"-addr")==0)) {
-            i++;
-            if (strchr(argv[i],'.')||!isdigit(argv[i][0]))
-                listenep.set(argv[i], listenep.port);
-            else
-                listenep.port = atoi(argv[i]);
-            i++;
-        }
-        else if ((argc>i+1)&&(stricmp(argv[i],"-sslp")==0)) {
-            i++;
-            sslport = atoi(argv[i++]);
-        }
-        else if ((argc>i+1)&&(stricmp(argv[i],"-sbsize")==0)) {
-            i++;
-            sendbufsize = atoi(argv[i++]);
-        }
-        else if ((argc>i+1)&&(stricmp(argv[i],"-rbsize")==0)) {
-            i++;
-            recvbufsize = atoi(argv[i++]);
-        }
-        else if (stricmp(argv[i],"-h")==0) {
-            usage();
-            exit(0);
-        }
-        else if (stricmp(argv[i],"-LOCAL")==0) { 
-            i++;
-            locallisten = true;
-        }
-        else if (stricmp(argv[i],"-NOSSL")==0) { // overrides config setting
-            i++;
-            if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
-            {
-                PROGLOG("DaFileSrv SSL specified in config but overridden by -NOSSL in command line");
-                connectMethod = SSLNone;
-            }
-        }
-        else
-            break;
-    }
-
     if (0 == logDir.length())
     {
-        getConfigurationDirectory(NULL,"log","dafilesrv",instanceName.str(),logDir);
+        getConfigurationDirectory(NULL,"log","dafilesrv",componentName.str(),logDir);
         if (0 == logDir.length())
             logDir.append(".");
     }
-    if (instanceName.length())
+    if (componentName.length())
     {
         addPathSepChar(logDir);
-        logDir.append(instanceName.str());
-    }
-
-#ifdef _WIN32
-    if ((argc>i)&&(stricmp(argv[i],"-install")==0)) {
-        if (installService(DAFS_SERVICE_NAME,DAFS_SERVICE_DISPLAY_NAME,NULL)) {
-            PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Installed");
-            return 0;
-        }
-        return 1;
-    }
-    if ((argc>i)&&(stricmp(argv[i],"-remove")==0)) {
-        if (uninstallService(DAFS_SERVICE_NAME,DAFS_SERVICE_DISPLAY_NAME)) {
-            PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Uninstalled");
-            return 0;
-        }
-        return 1;
-    }
-#endif
-    if (argc > i) {
-        if (strchr(argv[i],'.')||!isdigit(argv[i][0]))
-            listenep.set(argv[i], listenep.port);
-        else
-            listenep.port = atoi(argv[i]);
-        sendbufsize = (argc>i+1)?(atoi(argv[i+1])*1024):0;
-        recvbufsize = (argc>i+2)?(atoi(argv[i+2])*1024):0;
+        logDir.append(componentName.str());
     }
 
     if ( (connectMethod == SSLNone) && (listenep.port == 0) )
@@ -817,7 +820,7 @@ int main(int argc,char **argv)
         lf->beginLogging();
     }
 
-    write_pidfile(instanceName.str());
+    write_pidfile(componentName.str());
     PROGLOG("Dafilesrv starting - Build %s", BUILD_TAG);
     PROGLOG("Parallel request limit = %d, throttleDelayMs = %d, throttleCPULimit = %d", parallelRequestLimit, throttleDelayMs, throttleCPULimit);
 

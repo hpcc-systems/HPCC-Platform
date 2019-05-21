@@ -332,7 +332,7 @@ bool FileSystemFile::checkValid()
                 }
                 else
                 {
-                    WARNLOG("getECLPluginDefinition not found in %s, unloading", filename);
+                    UWARNLOG("getECLPluginDefinition not found in %s, unloading", filename);
                     return false;
                 }
             }
@@ -414,7 +414,7 @@ void FileSystemDirectory::addFile(IFile &file, bool allowPlugins)
                 contents.append(*newSource.getClear());
             else
             {
-                WARNLOG("Duplicate module found at %s", filename);
+                UWARNLOG("Duplicate module found at %s", filename);
             }
         }
     }
@@ -796,7 +796,7 @@ CXmlEclElement * CXmlEclElement::select(IIdAtom * _name, EclSourceType _type, IP
     else if (_tree)
     {
         //Some old archives seeem to contain duplicate definitions.  Clean then up then delete this code
-        DBGLOG("Source Seems to have duplicate definition of %s", str(_name));
+        UWARNLOG("Source Seems to have duplicate definition of %s", str(_name));
         //throwUnexpected();
     }
 

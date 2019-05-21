@@ -215,7 +215,7 @@ public:
                     overflowsize = output->getPosition();
                     if (!overflowed)
                     {
-                        WARNLOG("Sample buffer full");
+                        DBGLOG("Sample buffer full");
                         overflowed = true;
                     }
                 }
@@ -233,7 +233,7 @@ public:
             idxFileIO.clear();
         }
         if (overflowed)
-            WARNLOG("Overflowed by %" I64F "d", overflowsize);
+            IWARNLOG("Overflowed by %" I64F "d", overflowsize);
         ActPrintLog(&activity, "Local Overflow Merge done: overflow file '%s', size = %" I64F "d", dataFile->queryFilename(), dataFile->size());
         return end;
     }
@@ -437,7 +437,7 @@ public:
     }
     IRowStream *sort(CThorExpandingRowArray &localRows, rowcount_t globalTotal, ICompare &iCompare, bool isStable, rowcount_t &rowCount)
     {
-        PrintLog("Minisort started: %s, totalrows=%" RIPF "d", partNo?"seconday node":"primary node", localRows.ordinality());
+        DBGLOG("Minisort started: %s, totalrows=%" RIPF "d", partNo?"seconday node":"primary node", localRows.ordinality());
         size32_t blksize = 0x100000;
 
         // JCSMORE - at the moment, the localsort set is already sorted
@@ -1094,10 +1094,10 @@ public:
         startmergesem.signal();
         ActPrintLog(activity, "StartMiniSort output started");
         traceWait("finishedmergesem(2)",finishedmergesem);
-        PrintLog("StartMiniSort output done");
+        DBGLOG("StartMiniSort output done");
         merger.clear();
         intercept.clear();
-        PrintLog("StartMiniSort exit");
+        DBGLOG("StartMiniSort exit");
     }
     virtual void Close()
     {

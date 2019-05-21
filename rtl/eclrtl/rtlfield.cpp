@@ -1023,6 +1023,12 @@ __int64 RtlKeyedIntTypeInfo::removeBias(unsigned __int64 value, unsigned length)
     return value - ((unsigned __int64)1 << (length*8-1));
 }
 
+const RtlTypeInfo * RtlKeyedIntTypeInfo::queryChildType() const
+{
+    return child;
+}
+
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlPackedIntTypeInfo::getMinSize() const

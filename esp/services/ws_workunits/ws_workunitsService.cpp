@@ -117,11 +117,11 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
     const char* strAction = (action < NumOfECLWUActionNames) ? ECLWUActionNames[action] : "Unknown Action";
     for(aindex_t i=0; i<wuids.length();i++)
     {
-        StringBuffer wuidStr = wuids.item(i);
+        StringBuffer wuidStr(wuids.item(i));
         const char* wuid = wuidStr.trim().str();
         if (isEmpty(wuid))
         {
-            WARNLOG("Empty Workunit ID");
+            UWARNLOG("Empty Workunit ID");
             continue;
         }
 
@@ -264,7 +264,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
             StringBuffer eMsg;
             StringBuffer failedMsg("Failed: ");
             setActionResult(wuid, action, failedMsg.append(e->errorMessage(eMsg)).str(), strAction, results);
-            WARNLOG("Failed to %s for workunit: %s, %s", strAction, wuid, eMsg.str());
+            OWARNLOG("Failed to %s for workunit: %s, %s", strAction, wuid, eMsg.str());
             AuditSystemAccess(context.queryUserId(), false, "Failed to %s %s", strAction, wuid);
             e->Release();
             continue;
@@ -275,7 +275,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
             StringBuffer failedMsg;
             failedMsg.appendf("Unknown exception");
             setActionResult(wuid, action, failedMsg.str(), strAction, results);
-            WARNLOG("Failed to %s for workunit: %s, %s", strAction, wuid, failedMsg.str());
+            IWARNLOG("Failed to %s for workunit: %s, %s", strAction, wuid, failedMsg.str());
             AuditSystemAccess(context.queryUserId(), false, "Failed to %s %s", strAction, wuid);
             continue;
         }
@@ -353,7 +353,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 {
     if (!daliClientActive())
     {
-        ERRLOG("No Dali Connection Active.");
+        OERRLOG("No Dali Connection Active.");
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
     setPasswordsFromSDS();
@@ -394,6 +394,9 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/serverForArchivedECLWU/@port", process, service);
         sashaServerPort = cfg->getPropInt(xpath.str(), DEFAULT_SASHA_PORT);
     }
+
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ThorSlaveLogThreadPoolSize", process, service);
+    thorSlaveLogThreadPoolSize = cfg->getPropInt(xpath, THOR_SLAVE_LOG_THREAD_POOL_SIZE);
 
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ZAPEmail", process, service);
     IPropertyTree *zapEmail = cfg->queryPropTree(xpath.str());
@@ -513,7 +516,7 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUUpdate", wuid);
 
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Write);
@@ -815,7 +818,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
         IArrayOf<IEspResubmittedWU> resubmittedWUs;
         for(aindex_t i=0; i<req.getWuids().length();i++)
         {
-            StringBuffer requestWuid = req.getWuids().item(i);
+            StringBuffer requestWuid(req.getWuids().item(i));
             WsWuHelpers::checkAndTrimWorkunit("WUResubmit", requestWuid);
 
             ensureWsWorkunitAccess(context, requestWuid.str(), SecAccess_Write);
@@ -919,7 +922,7 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUSchedule", wuid);
 
         const char* cluster = req.getCluster();
@@ -974,7 +977,7 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUSubmit", wuid);
 
         const char *cluster = req.getCluster();
@@ -1041,7 +1044,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
         if (notEmpty(cluster) && !isValidCluster(cluster))
             throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
 
-        StringBuffer wuidStr = req.getWuid();
+        StringBuffer wuidStr(req.getWuid());
         const char* runWuid = wuidStr.trim().str();
         StringBuffer wuid;
 
@@ -1114,7 +1117,7 @@ bool CWsWorkunitsEx::onWUFullResult(IEspContext &context, IEspWUFullResultReques
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUFullResult", wuid);
 
         ErrorSeverity severity = checkGetExceptionSeverity(req.getExceptionSeverity());
@@ -1167,7 +1170,7 @@ bool CWsWorkunitsEx::onWUWaitCompiled(IEspContext &context, IEspWUWaitRequest &r
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUWaitCompiled", wuid);
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUWaitCompiled: %s", wuid.str());
@@ -1190,7 +1193,7 @@ bool CWsWorkunitsEx::onWUWaitComplete(IEspContext &context, IEspWUWaitRequest &r
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUWaitComplete", wuid);
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUWaitComplete: %s", wuid.str());
@@ -1207,7 +1210,7 @@ bool CWsWorkunitsEx::onWUCDebug(IEspContext &context, IEspWUDebugRequest &req, I
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUCDebug", wuid);
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUCDebug: %s", wuid.str());
@@ -1547,7 +1550,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUInfo", wuid);
 
         double version = context.getClientVersion();
@@ -1672,7 +1675,7 @@ bool CWsWorkunitsEx::onWUInfoDetails(IEspContext &context, IEspWUInfoRequest &re
 
 bool CWsWorkunitsEx::onWUResultView(IEspContext &context, IEspWUResultViewRequest &req, IEspWUResultViewResponse &resp)
 {
-    StringBuffer wuid = req.getWuid();
+    StringBuffer wuid(req.getWuid());
     WsWuHelpers::checkAndTrimWorkunit("WUResultView", wuid);
 
     ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
@@ -2448,7 +2451,7 @@ public:
             const char* wuid = wuDataArray.item(0);
             if (isEmpty(wuid))
             {
-                WARNLOG("Empty WUID in SCA_LIST response"); // JCS->KW - have u ever seen this happen?
+                IWARNLOG("Empty WUID in SCA_LIST response"); // JCS->KW - have u ever seen this happen?
                 continue;
             }
             const char* owner = wuDataArray.item(1);
@@ -2520,7 +2523,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
 {
     try
     {
-        StringBuffer wuidStr = req.getWuid();
+        StringBuffer wuidStr(req.getWuid());
         const char* wuid = wuidStr.trim().str();
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
@@ -2956,7 +2959,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
 {
     try
     {
-        StringBuffer wuidStr = req.getWuid();
+        StringBuffer wuidStr(req.getWuid());
         const char* wuidIn = wuidStr.trim().str();
         if (wuidIn && *wuidIn)
         {
@@ -3026,14 +3029,8 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
             {
-                StringBuffer logDir, groupName;
-                getConfigurationDirectory(directories, "log", "thor", req.getProcess(), logDir);
-                const char* instanceName = req.getClusterGroup();
-                getClusterThorGroupName(groupName, instanceName);
-                if (groupName.isEmpty())
-                    throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", instanceName);
-
-                winfo.getWorkunitThorSlaveLog(groupName.str(), req.getIPAddress(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, nullptr, false);
+                winfo.getWorkunitThorSlaveLog(directories, req.getProcess(), req.getClusterGroup(), req.getIPAddress(),
+                    req.getLogDate(), req.getSlaveNumber(), mb, nullptr, false);
                 openSaveFile(context, opt, req.getSizeLimit(), "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))
@@ -3180,7 +3177,7 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
 {
     try
     {
-        StringBuffer wuidStr = req.getWuid();
+        StringBuffer wuidStr(req.getWuid());
         const char* wuidIn = wuidStr.trim().str();
         if (wuidIn && *wuidIn)
         {
@@ -3334,7 +3331,7 @@ bool CWsWorkunitsEx::onWUResultSummary(IEspContext &context, IEspWUResultSummary
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUResultSummary", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -3369,7 +3366,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
 {
     try
     {
-        StringBuffer wuidStr = req.getWuid();
+        StringBuffer wuidStr(req.getWuid());
         const char* wuid = wuidStr.trim().str();
         if (wuid && *wuid)
         {
@@ -3712,7 +3709,7 @@ bool CWsWorkunitsEx::onWUListLocalFileRequired(IEspContext& context, IEspWUListL
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUListLocalFileRequired", wuid);
 
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
@@ -3812,7 +3809,7 @@ bool CWsWorkunitsEx::onWUAddLocalFileToWorkunit(IEspContext& context, IEspWUAddL
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUAddLocalFileToWorkunit", wuid);
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Write);
         resp.setWuid(wuid.str());
@@ -3904,12 +3901,12 @@ bool CWsWorkunitsEx::onWUGetGraphNameAndTypes(IEspContext &context,IEspWUGetGrap
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUGraphQuery", wuid);
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
         PROGLOG("WUGetGraphNameAndTypes: %s", wuid.str());
 
-        StringBuffer type = req.getType();
+        StringBuffer type(req.getType());
         WUGraphType graphType = GraphTypeAny;
         if (type.trim().length())
             graphType = getGraphTypeFromString(type.str());
@@ -3931,7 +3928,7 @@ bool CWsWorkunitsEx::onWUProcessGraph(IEspContext &context,IEspWUProcessGraphReq
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUProcessGraph", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -4027,7 +4024,7 @@ bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& r
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUGetGraph", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -4089,7 +4086,7 @@ bool CWsWorkunitsEx::onWUDetails(IEspContext &context, IEspWUDetailsRequest &req
 {
     try
     {
-        StringBuffer wuid = req.getWUID();
+        StringBuffer wuid(req.getWUID());
         WsWuHelpers::checkAndTrimWorkunit("WUDetails", wuid);
 
         PROGLOG("WUDetails: %s", wuid.str());
@@ -4245,7 +4242,7 @@ bool CWsWorkunitsEx::onWUGraphInfo(IEspContext &context,IEspWUGraphInfoRequest &
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUGraphInfo", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -4274,7 +4271,7 @@ bool CWsWorkunitsEx::onWUGVCGraphInfo(IEspContext &context,IEspWUGVCGraphInfoReq
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUGVCGraphInfo", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -4314,7 +4311,7 @@ bool CWsWorkunitsEx::onWUGraphTiming(IEspContext &context, IEspWUGraphTimingRequ
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
+        StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUGraphTiming", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -4723,7 +4720,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         StringBuffer zipFileName, zipFileNameWithPath;
         //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
         CWsWuFileHelper helper(directories);
-        helper.createWUZAPFile(context, cwu, zapInfoReq, zipFileName, zipFileNameWithPath);
+        helper.createWUZAPFile(context, cwu, zapInfoReq, zipFileName, zipFileNameWithPath, thorSlaveLogThreadPoolSize);
 
         //Download ZIP file to user
         Owned<IFile> f = createIFile(zipFileNameWithPath.str());
@@ -4756,7 +4753,7 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
 {
     try
     {
-        StringBuffer wuid = req.getWUID();
+        StringBuffer wuid(req.getWUID());
         WsWuHelpers::checkAndTrimWorkunit("WUGetZAPInfo", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -4917,7 +4914,7 @@ bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &r
         if (!req.getCreateDescriptions_isNull())
             createDescriptions = req.getCreateDescriptions();
 
-        StringBuffer wuid = req.getWUID();
+        StringBuffer wuid(req.getWUID());
         PROGLOG("WUGetStats: %s", wuid.str());
 
         IArrayOf<IEspWUStatisticItem> statistics;
@@ -5241,7 +5238,7 @@ void CWsWorkunitsEx::deployEclDefinition(IEspContext &context, const char *targe
 void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *target,  const char *eclDefinition,
     int msToWait, IEspWUEclDefinitionActionRequest &req, IArrayOf<IConstWUEclDefinitionActionResult> &results)
 {
-    StringBuffer priorityReq = req.getPriority();
+    StringBuffer priorityReq(req.getPriority());
     if (priorityReq.trim().length() && !isValidPriorityValue(priorityReq.str()))
     {
         VStringBuffer msg("Invalid Priority: %s", priorityReq.str());
@@ -5249,7 +5246,7 @@ void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *targ
         return;
     }
 
-    StringBuffer memoryLimitReq = req.getMemoryLimit();
+    StringBuffer memoryLimitReq(req.getMemoryLimit());
     if (memoryLimitReq.trim().length() && !isValidMemoryValue(memoryLimitReq.str()))
     {
         VStringBuffer msg("Invalid MemoryLimit: %s", memoryLimitReq.str());
@@ -5275,9 +5272,9 @@ void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *targ
     }
 
     //Do publish now
-    StringBuffer comment = req.getComment();
-    StringBuffer remoteDali = req.getRemoteDali();
-    StringBuffer sourceProcess = req.getSourceProcess();
+    StringBuffer comment(req.getComment());
+    StringBuffer remoteDali(req.getRemoteDali());
+    StringBuffer sourceProcess(req.getSourceProcess());
     int timeLimit = req.getTimeLimit();
     int warnTimeLimit = req.getWarnTimeLimit();
 
@@ -5349,7 +5346,7 @@ bool CWsWorkunitsEx::onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefi
 
         ensureWsCreateWorkunitAccess(context);
 
-        StringBuffer target = req.getTarget();
+        StringBuffer target(req.getTarget());
         if (target.trim().isEmpty())
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"Target not defined in onWUEclDefinitionAction.");
 
@@ -5358,9 +5355,9 @@ bool CWsWorkunitsEx::onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefi
         int msToWait = req.getMsToWait();
         for (aindex_t i = 0; i < eclDefinitions.length(); i++)
         {
-            StringBuffer eclDefinitionName = eclDefinitions.item(i);
+            StringBuffer eclDefinitionName(eclDefinitions.item(i));
             if (eclDefinitionName.trim().isEmpty())
-                WARNLOG("Empty ECL Definition name in WUEclDefinitionAction request");
+                UWARNLOG("Empty ECL Definition name in WUEclDefinitionAction request");
             else if (action == CEclDefinitionActions_SyntaxCheck)
                 checkEclDefinitionSyntax(context, target.str(), eclDefinitionName.str(), msToWait, results);
             else if (action == CEclDefinitionActions_Deploy)

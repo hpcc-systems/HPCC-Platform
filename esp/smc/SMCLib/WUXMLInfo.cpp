@@ -62,13 +62,13 @@ void CWUXMLInfo::buildXmlActiveWuidStatus(const char* ClusterName, IEspECLWorkun
         }
     }
     catch(IException* e){   
-      StringBuffer msg;
-      e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        StringBuffer msg;
+        e->errorMessage(msg);
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlActiveWuidStatus");
+        IWARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlActiveWuidStatus");
     }
 
 }
@@ -98,11 +98,11 @@ bool CWUXMLInfo::buildXmlWuidInfo(IConstWorkUnit &wu, IEspECLWorkunit& wuStructu
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlWuidInfo");
+        IWARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlWuidInfo");
     }
     return true;
 }
@@ -122,11 +122,11 @@ bool CWUXMLInfo::buildXmlWuidInfo(const char* wuid, IEspECLWorkunit& wuStructure
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlWuidInfo");
+        IWARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlWuidInfo");
     }
     return false;
 }
@@ -154,12 +154,12 @@ bool CWUXMLInfo::buildXmlWuidInfo(IConstWorkUnit &wu, StringBuffer& wuStructure,
     {
         StringBuffer msg;
         e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...)
     {
-        WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlWuidInfo");
+        IWARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlWuidInfo");
     }
     return true;
 }
@@ -185,11 +185,11 @@ bool CWUXMLInfo::buildXmlGraphList(IConstWorkUnit &wu,IPropertyTree& XMLStructur
     catch(IException* e) {
         StringBuffer msg;
         e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...) {
-        WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlGraphList");
+        IWARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlGraphList");
     }
     return true;
 }
@@ -212,11 +212,11 @@ bool CWUXMLInfo::buildXmlExceptionList(IConstWorkUnit &wu,IPropertyTree& XMLStru
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlExceptionList");
+        IWARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlExceptionList");
     }
     return true;
 }
@@ -285,11 +285,11 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlExceptionList");
+        IWARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlExceptionList");
     }
     return true;
 }
@@ -331,11 +331,11 @@ bool CWUXMLInfo::buildXmlLogList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+        IWARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
-        WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlLogList");
+        IWARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlLogList");
     }
     return true;
 }

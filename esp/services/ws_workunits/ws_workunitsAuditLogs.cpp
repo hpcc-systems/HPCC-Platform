@@ -1380,7 +1380,7 @@ void streamJobQueueListResponse(IEspContext &context, const char *cluster, const
 
 void logWUClusterJobESPCall(const char* method, const char* cluster, const char* from, const char* to)
 {
-    StringBuffer logMsg = method;
+    StringBuffer logMsg(method);
     if (notEmpty(cluster))
         logMsg.appendf(" cluster %s,", cluster);
     if (notEmpty(from))
@@ -1442,7 +1442,7 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
 
     //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
     CWsWuFileHelper helper(directories);
-    response->setContent(helper.createWUZAPFileIOStream(context, cwu, zapInfoReq));
+    response->setContent(helper.createWUZAPFileIOStream(context, cwu, zapInfoReq, thorSlaveLogThreadPoolSize));
     response->setContentType(HTTP_TYPE_OCTET_STREAM);
     response->send();
 }
@@ -1674,7 +1674,7 @@ bool CWsWorkunitsEx::onWUClusterJobQueueLOG(IEspContext &context,IEspWUClusterJo
         SecAccessFlags accessOthers;
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
 
-        StringBuffer logMsg = "WUClusterJobQueueLOG: ";
+        StringBuffer logMsg("WUClusterJobQueueLOG: ");
         CDateTime fromTime;
         if(notEmpty(req.getStartDate()))
         {
@@ -1798,8 +1798,8 @@ bool CWsWorkunitsEx::onWUGetThorJobList(IEspContext &context, IEspWUGetThorJobLi
         maxJobsToReturn = defaultMaxJobsInWUGetJobListResponse;
 
     CDateTime queryAuditLogFrom, queryAuditLogTo;
-    StringBuffer startDate = req.getStartDate();
-    StringBuffer endDate = req.getEndDate();
+    StringBuffer startDate(req.getStartDate());
+    StringBuffer endDate(req.getEndDate());
     if (!startDate.isEmpty())
     {
         if (startDate.length() == 10)
@@ -2119,8 +2119,8 @@ bool CWsWorkunitsEx::onWUGetThorJobQueue(IEspContext &context, IEspWUGetThorJobQ
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
 
         const char *cluster = req.getCluster();
-        StringBuffer startDate = req.getStartDate();
-        StringBuffer endDate = req.getEndDate();
+        StringBuffer startDate(req.getStartDate());
+        StringBuffer endDate(req.getEndDate());
         unsigned maxJobQueueItemsToReturn = req.getMaxJobQueueItemsToReturn();
         if (maxJobQueueItemsToReturn == 0)
             maxJobQueueItemsToReturn = defaultMaxJobQueueItemsInWUGetJobQueueResponse;

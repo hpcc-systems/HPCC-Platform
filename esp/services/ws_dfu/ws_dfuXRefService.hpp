@@ -117,12 +117,12 @@ public:
         {
             StringBuffer errorStr;
             e->errorMessage(errorStr);
-            ERRLOG("Exception thrown while running XREF: %s", errorStr.str());
+            IERRLOG("Exception thrown while running XREF: %s", errorStr.str());
             e->Release();
         }
         catch(...)
         {
-            ERRLOG("Unknown Exception thrown from XREF");
+            IERRLOG("Unknown Exception thrown from XREF");
         }
     }
 

@@ -1184,8 +1184,6 @@ protected:
             memcpy(row, buff.bufferBase(), offset);
             rows.append(row);
 
-            unsigned pf2 = f2;
-            unsigned pf3 = f3;
             if (++countf3 == numf3)
             {
                 f2++;

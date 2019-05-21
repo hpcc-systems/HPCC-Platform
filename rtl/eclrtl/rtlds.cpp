@@ -694,7 +694,6 @@ extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, const 
 
 extern ECLRTL_API bool rtlDictionaryExists(size32_t tableSize, const byte **table)
 {
-    unsigned __int64 ret = 0;
     for (size32_t i = 0; i < tableSize; i++)
         if (table[i])
             return true;
@@ -1620,7 +1619,7 @@ const byte * RtlVariableDatasetCursor::select(unsigned idx)
 
 //---------------------------------------------------------------------------
 
-RtlLinkedDatasetCursor::RtlLinkedDatasetCursor(unsigned _numRows, const byte * * _rows) : numRows(_numRows), rows(_rows)
+RtlLinkedDatasetCursor::RtlLinkedDatasetCursor(unsigned _numRows, const byte * * _rows) : rows(_rows), numRows(_numRows)
 {
     cur = (unsigned)-1;
 }

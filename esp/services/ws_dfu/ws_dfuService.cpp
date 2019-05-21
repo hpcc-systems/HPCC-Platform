@@ -221,7 +221,7 @@ bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEs
         ForEachItemIn(k1, clusters1)
         {
             IEspTpCluster& cluster = clusters1.item(k1);
-            StringBuffer slaveName = cluster.getName();
+            StringBuffer slaveName(cluster.getName());
             dfuclusters.append(slaveName.str());
         }
 
@@ -848,7 +848,7 @@ bool CWsDfuEx::setSpaceItemByOwner(IArrayOf<IEspSpaceItem>& SpaceItems64, const 
     return true;
 }
 
-bool CWsDfuEx::createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, unsigned& yearFrom,
+bool CWsDfuEx::createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, const char *interval, unsigned& yearFrom,
     unsigned& monthFrom, unsigned& dayFrom, unsigned& yearTo, unsigned& monthTo, unsigned& dayTo)
 {
     if (!stricmp(interval, COUNTBY_YEAR))
@@ -986,11 +986,11 @@ bool CWsDfuEx::createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, Strin
     return true;
 }
 
-bool CWsDfuEx::setSpaceItemByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, StringBuffer mod, const char*logicalName, __int64 size)
+bool CWsDfuEx::setSpaceItemByDate(IArrayOf<IEspSpaceItem>& SpaceItems, const char * interval, const char * mod, const char*logicalName, __int64 size)
 {
     unsigned year, month, day;
     CDateTime wuTime;
-    wuTime.setString(mod.str(),NULL,true);
+    wuTime.setString(mod,NULL,true);
     wuTime.getDate(year, month, day, true);
 
     StringBuffer name;
@@ -1129,7 +1129,7 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
             msgHead.appendf("%s: Superfile:%s, Subfile(s): ", action, superfile);
 
         unsigned filesInMsgBuf = 0;
-        StringBuffer msgBuf = msgHead;
+        StringBuffer msgBuf(msgHead);
         for(unsigned i = 0; i < num; i++)
         {
             subfileArray.append((char*) subfiles.item(i));
@@ -1411,7 +1411,8 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
         userdesc->set(username, context.queryPassword(), context.querySignature());
     }
 
-    StringBuffer returnStr, auditStr = (",FileAccess,WsDfu,DELETED,");
+    StringBuffer returnStr;
+    StringBuffer auditStr(",FileAccess,WsDfu,DELETED,");
     IArrayOf<IEspDFUActionInfo> actionResults;
 
     StringArray superFiles, failedFiles;
@@ -1447,7 +1448,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
         double version = context.getClientVersion();
         if (version > 1.03)
         {
-            StringBuffer backToPage = req.getBackToPage();
+            StringBuffer backToPage(req.getBackToPage());
             if (backToPage.length() > 0)
             {
                 const char* oldStr = "&";
@@ -1581,7 +1582,7 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
         resp.setDefFile(buff);
 
         //set the type
-        StringBuffer type = "text/";
+        StringBuffer type("text/");
         if (format == CDFUDefFileFormat_xml)
             type.append("xml");
         else
@@ -2106,7 +2107,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
         }
         FileDetails.setProtectList(protectList);
     }
-    StringBuffer strDesc = df->queryAttributes().queryProp("@description");
+    StringBuffer strDesc(df->queryAttributes().queryProp("@description"));
     if (description)
     {
         DistributedFilePropertyLock lock(df);
@@ -2339,7 +2340,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             ForEachItemIn(k, roxieclusters)
             {
                 IEspTpCluster& r_cluster = roxieclusters.item(k);
-                StringBuffer sName = r_cluster.getName();
+                StringBuffer sName(r_cluster.getName());
                 if (FindInStringArray(clusters, sName.str()))
                 {
                     fromRoxieCluster = true;
@@ -2396,12 +2397,12 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
                 catch(IException *e)
                 {
                     StringBuffer msg;
-                    ERRLOG("Exception %d:%s in WS_DFU queryDistributedFileSystem().getSize()", e->errorCode(), e->errorMessage(msg).str());
+                    IERRLOG("Exception %d:%s in WS_DFU queryDistributedFileSystem().getSize()", e->errorCode(), e->errorMessage(msg).str());
                     e->Release();
                 }
                 catch(...)
                 {
-                    ERRLOG("Unknown exception in WS_DFU queryDistributedFileSystem().getSize()");
+                    IERRLOG("Unknown exception in WS_DFU queryDistributedFileSystem().getSize()");
                 }
 
                 PartList.append(*FilePart.getClear());
@@ -2456,7 +2457,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             }
             catch(...)
             {
-                DBGLOG("Failed in retrieving graphs from workunit %s", wuid);
+                IERRLOG("Failed in retrieving graphs from workunit %s", wuid);
             }
         }
     }
@@ -3010,7 +3011,7 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
     ForEachItemIn(k, roxieclusters)
     {
         IEspTpCluster& cluster = roxieclusters.item(k);
-        StringBuffer sName = cluster.getName();
+        StringBuffer sName(cluster.getName());
         roxieClusterNames.append(sName.str());
     }
 
@@ -3324,8 +3325,8 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
         addToQueryStringFromInt(basicQuery, "FileSizeTo", req.getFileSizeTo());
     }
 
-    StringBuffer ParametersForFilters = basicQuery;
-    StringBuffer ParametersForPaging = basicQuery;
+    StringBuffer ParametersForFilters(basicQuery);
+    StringBuffer ParametersForPaging(basicQuery);
 
     addToQueryStringFromInt(ParametersForFilters, "PageSize",pagesize);
     addToQueryStringFromInt(ParametersForPaging, "PageSize", pagesize);
@@ -3372,7 +3373,7 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
         resp.setSortby(sortBy);
         resp.setDescending(descending);
 
-        StringBuffer strbuf = sortBy;
+        StringBuffer strbuf(sortBy);
         strbuf.append("=");
         String str1(strbuf.str());
         String str(basicQuery.str());
@@ -3762,7 +3763,7 @@ void CWsDfuEx::setDFUQueryResponse(IEspContext &context, unsigned totalFiles, St
         addToQueryStringFromInt(queryReq, "FileSizeTo", req.getFileSizeTo());
     }
 
-    StringBuffer queryReqNoPageSize = queryReq;
+    StringBuffer queryReqNoPageSize(queryReq);
     addToQueryStringFromInt(queryReq, "PageSize", pageSize);
     resp.setFilters(queryReq.str());
 
@@ -4790,13 +4791,13 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
 
     try
     {
-        StringBuffer fileNameStr = req.getLogicalFileName();
+        StringBuffer fileNameStr(req.getLogicalFileName());
         const char* fileName = fileNameStr.trim().str();
         if (!fileName || !*fileName)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "CWsDfuEx::onDFUGetFileMetaData: LogicalFileName not set");
 
         const char* cluster = NULL;
-        StringBuffer clusterNameStr = req.getClusterName();
+        StringBuffer clusterNameStr(req.getClusterName());
         if (clusterNameStr.trim().length() > 0)
             cluster = clusterNameStr.str();
 
@@ -5274,16 +5275,16 @@ void CWsDfuEx::readColumnsForDisplay(StringBuffer& schemaText, StringArray& colu
     return;
 }
 
-void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, StringBuffer schemaText2,
+void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, const char * schemaText2,
                                     StringArray& columnsDisplay, StringArray& columnsDisplayType, StringArray& columnsHide)
 {
     if (schemaText.length() < 1)
         return;
-    if (schemaText2.length() < 1)
+    if (isEmptyString(schemaText2))
         return;
 
     Owned<IPropertyTree> schema = createPTreeFromXMLString(schemaText.str());
-    Owned<IPropertyTree> schema2 = createPTreeFromXMLString(schemaText2.str());
+    Owned<IPropertyTree> schema2 = createPTreeFromXMLString(schemaText2);
     if (!schema || !schema2)
         return;
 
@@ -5493,15 +5494,15 @@ void CWsDfuEx::mergeDataRow(StringBuffer& newRow, int depth, IPropertyTreeIterat
     return;
 }
 
-void CWsDfuEx::mergeDataRow(StringBuffer& newRow, StringBuffer dataRow1, StringBuffer dataRow2, StringArray& columnsHide)
+void CWsDfuEx::mergeDataRow(StringBuffer& newRow, const char * dataRow1, const char * dataRow2, StringArray& columnsHide)
 {
-    if (dataRow1.length() < 1)
+    if (isEmptyString(dataRow1))
         return;
-    if (dataRow2.length() < 1)
+    if (isEmptyString(dataRow2))
         return;
 
-    Owned<IPropertyTree> data1 = createPTreeFromXMLString(dataRow1.str());
-    Owned<IPropertyTree> data2 = createPTreeFromXMLString(dataRow2.str());
+    Owned<IPropertyTree> data1 = createPTreeFromXMLString(dataRow1);
+    Owned<IPropertyTree> data2 = createPTreeFromXMLString(dataRow2);
     if (!data1 || !data2)
         return;
 
@@ -5668,7 +5669,7 @@ int CWsDfuEx::browseRelatedFileDataSet(double version, IRelatedBrowseFile * file
                     for (unsigned ii = 0; ii<dataSetOutput0.length(); ii++)
                     {
                         StringBuffer text0;
-                        StringBuffer text1 = dataSetOutput0.item(ii);
+                        StringBuffer text1(dataSetOutput0.item(ii));
                         if (text1.length() > 0)
                         {
                             mergeDataRow(text0, text, text1, columnsHide);
@@ -5749,12 +5750,12 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     }
     catch (IException *e)
     {
-        DBGLOG(e);
+        IERRLOG(e);
         e->Release();
     }
     catch(...)
     {
-        DBGLOG("Unknown Exception - view data file: %s", indexName);
+        IERRLOG("Unknown Exception - view data file: %s", indexName);
     }
 
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
@@ -5851,7 +5852,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
         dataSetText.newline();
         for (unsigned i = 0; i<dataSetOutput.length(); i++)
         {
-            StringBuffer text0 = dataSetOutput.item(i);
+            StringBuffer text0(dataSetOutput.item(i));
             if (text0.length() > 0)
             {
                 dataSetText.append(text0);
@@ -6226,7 +6227,7 @@ bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &r
         const char *fileName = requestBase.getName();
         const char *clusterName = requestBase.getCluster();
         const char *recordDefinition = req.getECLRecordDefinition();
-        StringBuffer requestId = requestBase.getJobId();
+        StringBuffer requestId(requestBase.getJobId());
         unsigned expirySecs = requestBase.getExpirySeconds();
         bool returnTextResponse = true;
 
@@ -6252,7 +6253,7 @@ bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &r
 
         CDfsLogicalFileName lfn;
         lfn.set(fileName);
-        StringBuffer normalizedFileName = lfn.get();
+        StringBuffer normalizedFileName(lfn.get());
 
         checkLogicalName(normalizedFileName, userDesc, false, true, false, nullptr);
 
@@ -6260,7 +6261,7 @@ bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &r
         StringBuffer groupName;
         Owned<IGroup> group = getDFUFileIGroup(clusterName, clusterType, clusterTypeEx, req.getPartLocations(), groupName);
 
-        StringBuffer tempFileName = normalizedFileName;
+        StringBuffer tempFileName(normalizedFileName);
         tempFileName.append(DFUFileCreate_FileNamePostfix);
 
         //create FileId
@@ -6323,7 +6324,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
         const char *clusterName = req.getCluster();
         const char *recordDefinition = req.getECLRecordDefinition();
         unsigned expirySecs = req.getExpirySeconds();
-        StringBuffer requestId = req.getRequestId();
+        StringBuffer requestId(req.getRequestId());
         bool returnTextResponse = req.getReturnTextResponse();
 
         if (isEmptyString(fileName))
@@ -6356,11 +6357,11 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
 
         CDfsLogicalFileName lfn;
         lfn.set(fileName);
-        StringBuffer normalizedFileName = lfn.get();
+        StringBuffer normalizedFileName(lfn.get());
 
         checkLogicalName(normalizedFileName, userDesc, false, true, false, nullptr);
 
-        StringBuffer tempFileName = normalizedFileName;
+        StringBuffer tempFileName(normalizedFileName);
         tempFileName.append(".").append(dfuCreateUniqId++); // avoid potential clash if >1 creating file. One will succeed at publish time.
         tempFileName.append(DFUFileCreate_FileNamePostfix);
 
@@ -6484,7 +6485,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
                 fileDesc->queryProperties().setPropBool("@blockCompressed", true);
         }
 
-        StringBuffer newFileName = normalizeTempFileName;
+        StringBuffer newFileName(normalizeTempFileName);
         const char *start = newFileName;
         const char *pos = start + (newFileName.length() - postFixLen);
         const char *startPos = pos;

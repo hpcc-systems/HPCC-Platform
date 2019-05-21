@@ -189,8 +189,8 @@ public:
     bool set(const char *_net,const char *_mask); // _net NULL means match everything
                                                   // _mask NULL means match exact
     bool test(const IpAddress &ip) const;
-    StringBuffer getNetText(StringBuffer &text) const;
-    StringBuffer getMaskText(StringBuffer &text) const;
+    StringBuffer &getNetText(StringBuffer &text) const;
+    StringBuffer &getMaskText(StringBuffer &text) const;
     bool isNull() const;
     bool operator==(IpSubNet const &other) const
     {
@@ -611,7 +611,7 @@ extern jlib_decl IBufferedSocket* createBufferedSocket(ISocket* socket);
 extern jlib_decl IpSubNet &queryPreferredSubnet(); // preferred subnet when resolving multiple NICs
 extern jlib_decl bool setPreferredSubnet(const char *ip,const char *mask); // also resets cached host IP
 
-extern jlib_decl StringBuffer lookupHostName(const IpAddress &ip,StringBuffer &ret);
+extern jlib_decl StringBuffer &lookupHostName(const IpAddress &ip,StringBuffer &ret);
 
 extern jlib_decl bool isInterfaceIp(const IpAddress &ip, const char *ifname);
 extern jlib_decl bool getInterfaceIp(IpAddress &ip, const char *ifname);

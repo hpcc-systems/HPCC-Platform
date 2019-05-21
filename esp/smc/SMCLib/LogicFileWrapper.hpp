@@ -103,12 +103,12 @@ struct DeleteTask: public CInterface, implements ITask
             {
                 StringBuffer str;
                 e->errorMessage(str);
-                PrintLog(str.str());
+                OERRLOG("%s",str.str());
                 e->Release();
             }
             catch(...)
             {
-                PrintLog("Unknown Exception thrown while deleteing file part\n");
+                IERRLOG("Unknown Exception thrown while deleting file part\n");
             }
         }
         if(errs.length())
@@ -146,7 +146,7 @@ struct CompressTask: public CInterface, implements ITask
         }
         catch(...)
         {
-            PrintLog("Unknown Exception thrown\n");
+            IERRLOG("Unknown Exception thrown\n");
         }
         return 0;
     }

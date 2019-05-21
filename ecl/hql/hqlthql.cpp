@@ -3441,7 +3441,7 @@ static StringBuffer &toECL(StringBuffer &s, HqltHql & hqlthql, HqlExprArray & qu
 #else
     catch(...)
     {
-        PrintLog("WARNING: toECL() threw an exception");
+        IERRLOG("toECL() threw an exception");
         s.setLength(startpos);
     }
 #endif
@@ -3473,7 +3473,7 @@ static StringBuffer &toECLDefinition(StringBuffer &s, HqltHql & hqlthql, HqlExpr
 #else
     catch(...)
     {
-        PrintLog("WARNING: toECLDefinition() threw an exception");
+        IERRLOG("toECLDefinition() threw an exception");
         s.setLength(startpos);
     }
 #endif
@@ -3543,7 +3543,7 @@ void splitECL(IHqlExpression * expr, StringBuffer &s, StringBuffer &d)
 #else
     catch(...)
     {
-        PrintLog("WARNING: toECL() threw an exception");
+        IERRLOG("toECL() threw an exception");
         s.setLength(startpos);
     }
 #endif

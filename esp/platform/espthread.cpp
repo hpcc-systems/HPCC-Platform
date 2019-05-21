@@ -183,12 +183,12 @@ int CEspProtocolThread::run()
     catch (IException *e) 
     {
         StringBuffer estr;
-        ERRLOG("Exception(%d, %s) in CEspProtocolThread::run while processing request.", e->errorCode(), e->errorMessage(estr).str());
+        IERRLOG("Exception(%d, %s) in CEspProtocolThread::run while processing request.", e->errorCode(), e->errorMessage(estr).str());
         e->Release();
     }
     catch(...)
     {
-        ERRLOG("Unknown Exception in CEspProtocolThread::run while processing request.");
+        IERRLOG("Unknown Exception in CEspProtocolThread::run while processing request.");
     }
 
     if(!keepAlive)

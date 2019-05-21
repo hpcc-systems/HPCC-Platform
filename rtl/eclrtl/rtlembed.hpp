@@ -28,7 +28,7 @@ class NullFieldProcessor : public CInterfaceOf<IFieldProcessor>
 public:
     NullFieldProcessor(const RtlFieldInfo * field)
     : intResult(0), uintResult(0), boolResult(false), doubleResult(0),
-      unicodeResult(NULL), stringResult(NULL), resultChars(0), fieldExpected(field)
+      stringResult(NULL), unicodeResult(NULL), resultChars(0), fieldExpected(field)
     {
         if (field && field->initializer && !isVirtualInitializer(field->initializer))
         {

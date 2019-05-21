@@ -6350,7 +6350,7 @@ bool IpSubNet::test(const IpAddress &ip) const
     return false;
 }
 
-StringBuffer IpSubNet::getNetText(StringBuffer &text) const
+StringBuffer &IpSubNet::getNetText(StringBuffer &text) const
 {
     char tmp[INET6_ADDRSTRLEN];
     const char *res  = ::isIp4(net) ? _inet_ntop(AF_INET, &net[3], tmp, sizeof(tmp))
@@ -6358,7 +6358,7 @@ StringBuffer IpSubNet::getNetText(StringBuffer &text) const
     return text.append(res);
 }
 
-StringBuffer IpSubNet::getMaskText(StringBuffer &text) const
+StringBuffer &IpSubNet::getMaskText(StringBuffer &text) const
 {
     char tmp[INET6_ADDRSTRLEN];
     // isIp4(net) is correct here
@@ -6396,7 +6396,7 @@ bool setPreferredSubnet(const char *ip,const char *mask)
         return false;
 }
 
-StringBuffer lookupHostName(const IpAddress &ip,StringBuffer &ret)
+StringBuffer &lookupHostName(const IpAddress &ip,StringBuffer &ret)
 {
 // not a common routine (no Jlib function!) only support IPv4 initially
     unsigned ipa;

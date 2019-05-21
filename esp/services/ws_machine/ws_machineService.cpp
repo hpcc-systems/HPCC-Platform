@@ -495,7 +495,7 @@ void Cws_machineEx::addProcessData(CMachineData* machine, const char* processTyp
     if (!machine)
         return;
 
-    StringBuffer pathStr = path;
+    StringBuffer pathStr(path);
     if (pathStr.length() > 0)
     {
         char pathSep = machine->getPathSep();
@@ -531,7 +531,7 @@ void Cws_machineEx::addProcessData(CMachineData* machine, const char* processTyp
         if (!name || streq(name, "."))
             continue;
 
-        StringBuffer processName = name;
+        StringBuffer processName(name);
         processName.toLowerCase().replaceString(".exe", "");
         if (processName.length() < 1)
             continue;
@@ -714,7 +714,7 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
         gi->query().endpoint().getIpText(addressRead);
         if (addressRead.length() == 0)
         {
-            WARNLOG("Network address not found for a node in node group %s", groupName.str());
+            OWARNLOG("Network address not found for a node in node group %s", groupName.str());
             continue;
         }
 
@@ -734,14 +734,14 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
 
         if (netAddress.length() == 0)
         {
-            WARNLOG("Network address not found for a node in node group %s", groupName.str());
+            OWARNLOG("Network address not found for a node in node group %s", groupName.str());
             continue;
         }
 
         Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachineByAddress(addressRead.str());
         if (!pMachineInfo.get())
         {
-            WARNLOG("Machine not found at network address %s", addressRead.str());
+            OWARNLOG("Machine not found at network address %s", addressRead.str());
             continue;
         }
 
@@ -800,7 +800,7 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
             Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachine(name0);
             if (!pMachineInfo.get())
             {
-                WARNLOG("Machine %s not found in environment setting", name0);
+                OWARNLOG("Machine %s not found in environment setting", name0);
                 continue;
             }
 
@@ -810,14 +810,15 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
             const char* ip = ep.str();
             if (!ip)
             {
-                WARNLOG("Network address not found for machine %s", name0);
+                OWARNLOG("Network address not found for machine %s", name0);
                 continue;
             }
 
-            StringBuffer netAddress, configNetAddress = ip;
+            StringBuffer netAddress;
+            StringBuffer configNetAddress(ip);
             if (!streq(ip, "."))
             {
-                netAddress.append(ip);
+                netAddress.set(ip);
             }
             else
             {
@@ -1581,7 +1582,7 @@ void Cws_machineEx::setMachineInfo(IEspContext& context, CMachineInfoThreadParam
         int len = additionalProcessFilters.length();
         for (int i=0; i<len; i++)
         {
-            StringBuffer processName = additionalProcessFilters.item(i);
+            StringBuffer processName(additionalProcessFilters.item(i));
             processName.toLowerCase().replaceString(".exe", "");
             if (processName.length() > 0)
                 additionalProcesses.insert(processName.str());
@@ -1810,7 +1811,7 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam, C
         const char* pName = processInfo.getDescription();
         if (pParam->m_machineData.getOS() == MachineOsW2K)
         {
-            StringBuffer sName = pName;
+            StringBuffer sName(pName);
             pName = sName.toLowerCase().replaceString(".exe", "").str();
             if (!dependencies.empty())
                 dependencies.erase(pName);
@@ -1840,7 +1841,7 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam, C
                     const char* pch = strchr(pPath, ' ');
                     if (pch)
                     {
-                        StringBuffer sPath = pPath;
+                        StringBuffer sPath(pPath);
                         sPath.setLength( pch - pPath );
                         pPath = sPath.str();
                     }
@@ -3069,7 +3070,7 @@ void Cws_machineEx::buildComponentUsageCacheID(StringBuffer& id, IArrayOf<IConst
     ForEachItemIn(i, componentList)
     {
         IConstComponent& component = componentList.item(i);
-        StringBuffer str = component.getType();
+        StringBuffer str(component.getType());
         if (str.isEmpty())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Empty Component Type");
         str.append(":").append(component.getName());

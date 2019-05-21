@@ -931,7 +931,7 @@ public:
 
     IPropertyTree *checkExtractNestedResponseType(IPropertyTree *depTree, IPropertyTree *respType, StringBuffer &respTypeName)
     {
-        StringBuffer typeName = respType->queryProp("@name");
+        StringBuffer typeName(respType->queryProp("@name"));
         if (typeName.length()<=2)
             return respType;
         if (!streq(typeName.str()+ typeName.length()-2, "Ex"))
@@ -996,7 +996,7 @@ public:
             throw( MakeStringException(0, "Esdl Response type '%s' definition not found", esp_resp_type.str()));
 
         bool skipOutputResponseTag = false;
-        StringBuffer resp_type = esp_resp_type.get();
+        StringBuffer resp_type(esp_resp_type.get());
         if (resp_type.length()>2 && resp_type.charAt(resp_type.length()-2)=='E' && resp_type.charAt(resp_type.length()-1)=='x')
         {
             skipOutputResponseTag = true;

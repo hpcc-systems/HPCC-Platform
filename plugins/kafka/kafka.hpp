@@ -275,10 +275,11 @@ extern "C++"
                 KafkaStreamedDataset* getMessageDataset(IEngineRowAllocator* allocator, __int64 maxRecords = 1);
 
                 /**
-                 * @return  StringBuffer object containing the path to this
-                 *          consumer's offset file
+                 * @param offsetPath  StringBuffer object to contain the path to this
+                 *                    consumer's offset file
+                 * @return            Reference to pass-in buffer
                  */
-                StringBuffer offsetFilePath() const;
+                StringBuffer &offsetFilePath(StringBuffer &offsetPath) const;
 
                 /**
                  * Commits the given offset to storage so we can pick up

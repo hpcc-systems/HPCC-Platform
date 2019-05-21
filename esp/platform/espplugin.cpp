@@ -106,11 +106,11 @@ int CEspServiceThread::run()
     catch (IException *e) 
    {
       StringBuffer estr;
-      ERRLOG("Exception(%d, %s) socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket->OShandle());
+      IERRLOG("Exception(%d, %s) socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket->OShandle());
       e->Release();
     }
 
-   ERRLOG("Closing Socket(%d)", m_socket->OShandle());
+   DBGLOG("Closing Socket(%d)", m_socket->OShandle());
 
    m_socket->shutdown();
    m_socket->close();

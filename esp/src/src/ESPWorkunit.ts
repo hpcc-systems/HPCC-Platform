@@ -9,6 +9,9 @@ import * as all from "dojo/promise/all";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
 
+import { Workunit as HPCCWorkunit } from "@hpcc-js/comms";
+import { IEvent } from "@hpcc-js/util";
+
 import * as Utility from "./Utility";
 import * as WsWorkunits from "./WsWorkunits";
 import * as WsTopology from "./WsTopology";
@@ -70,7 +73,7 @@ var Store = declare([ESPRequest.Store], {
     }
 });
 
-var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore:line
+var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
     i18n: nlsHPCC,
 
     //  Asserts  ---
@@ -96,6 +99,9 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
         this.hasCompleted = completed;
         if (justCompleted) {
             topic.publish("hpcc/ecl_wu_completed", this);
+        }
+        if (!this.hasCompleted) {
+            this.startMonitor();
         }
     },
     _VariablesSetter: function (Variables) {
@@ -145,10 +151,6 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
         }
         this.set("timers", timers);
     },
-    _ResourceURLCountSetter: function (ResourceURLCount) {
-        //  All WU's have 1 resource URL, which we are not interested in  ---
-        this.set("resourceURLCount", ResourceURLCount - 1);
-    },
     _ResourceURLsSetter: function (resourceURLs) {
         var data = [];
         arrayUtil.forEach(resourceURLs.URL, function (url, idx) {
@@ -189,17 +191,17 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
         this.refreshHelpersCount();
     },
     refreshHelpersCount: function () {
-        var helpersCount = 2;   //  ECL + Workunit XML are also helpers...
+        var eclwatchHelpersCount = 2;   //  ECL + Workunit XML are also helpers...
         if (this.helpers) {
-            helpersCount += this.helpers.length;
+            eclwatchHelpersCount += this.helpers.length;
         }
         if (this.thorLogList) {
-            helpersCount += this.thorLogList.length;
+            eclwatchHelpersCount += this.thorLogList.length;
         }
         if (this.hasArchiveQuery) {
-            helpersCount += 1;
+            eclwatchHelpersCount += 1;
         }
-        this.set("helpersCount", helpersCount);
+        this.set("eclwatchHelpersCount", eclwatchHelpersCount);
     },
 
     //  ---  ---  ---
@@ -215,6 +217,7 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
             declare.safeMixin(this, args);
         }
         this.wu = this;
+        this._hpccWU = HPCCWorkunit.attach({ baseUrl: "" }, this.Wuid);
     }),
     isComplete: function () {
         return this.hasCompleted;
@@ -233,6 +236,29 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
     },
     isAbleToReschedule: function () {
         return this.EventSchedule === 1;
+    },
+    isMonitoring: function (): boolean {
+        return !!this._hpccWatchHandle;
+    },
+    disableMonitor: function (disableMonitor: boolean) {
+        if (disableMonitor) {
+            this.stopMonitor();
+        } else {
+            this.startMonitor();
+        }
+    },
+    startMonitor: function () {
+        if (this.isMonitoring())
+            return;
+        this._hpccWatchHandle = this._hpccWU.watch((changes: IEvent[]) => {
+            this.updateData(this._hpccWU.properties);
+        }, true);
+    },
+    stopMonitor: function () {
+        if (this._hpccWatchHandle) {
+            this._hpccWatchHandle.release();
+            delete this._hpccWatchHandle;
+        }
     },
     monitor: function (callback) {
         if (callback) {
@@ -273,6 +299,7 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
                 } else {
                     _workunits[response.WUCreateResponse.Workunit.Wuid] = context;
                     context.Wuid = response.WUCreateResponse.Workunit.Wuid;
+                    context._hpccWU = HPCCWorkunit.attach({ baseUrl: "" }, context.Wuid);
                     context.startMonitor(true);
                     context.updateData(response.WUCreateResponse.Workunit);
                     context.onCreate();
@@ -458,16 +485,10 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore
         });
     },
     refresh: function (full) {
-        if (full || this.Archived || this.__hpcc_changedCount === 0) {
-            return this.getInfo({
-                onGetText: function () {
-                },
-                onGetWUExceptions: function () {
-                }
-            });
-        } else {
-            return this.getQuery();
-        }
+        return this._hpccWU.refresh(full || this.Archived || this.__hpcc_changedCount === 0).then(wu => {
+            this.updateData(wu.properties);
+            return wu.properties;
+        });
     },
     getQuery: function () {
         this._assertHasWuid();

@@ -32,7 +32,7 @@ const char* const DefaultFailSafeLogsDir = "./FailSafeLogs";
 
 interface ILogFailSafe : IInterface
 {
-    virtual void Add(const char*, const StringBuffer& strContents, CLogRequestInFile* reqInFile)=0;//
+    virtual void Add(const char*, const char *strContents, CLogRequestInFile* reqInFile)=0;//
     virtual void Add(const char*,IInterface& pIn, CLogRequestInFile* reqInFile)=0;
     virtual StringBuffer& GenerateGUID(StringBuffer& GUID,const char* seed="") = 0;
     virtual void AddACK(const char* GUID)=0;
@@ -84,7 +84,7 @@ public:
 
     virtual ~CLogFailSafe();
     StringBuffer& GenerateGUID(StringBuffer& GUID,const char* seed="");
-    virtual void Add(const char*, const StringBuffer& strContents, CLogRequestInFile* reqInFile);//
+    virtual void Add(const char*, const char *strContents, CLogRequestInFile* reqInFile);//
     virtual void Add(const char*,IInterface& pIn, CLogRequestInFile* reqInFile);
     virtual void AddACK(const char* GUID);
     virtual void RollCurrentLog();

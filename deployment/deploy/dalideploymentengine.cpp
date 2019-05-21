@@ -70,7 +70,8 @@ void CDaliDeploymentEngine::copyInstallFiles(IPropertyTree& instanceNode, const 
    if ((m_deployFlags & DEFLAGS_CONFIGFILES) && computer && *computer)
    {
       // Create dalisds.xml is not already exists
-      StringBuffer hostRoot(getHostRoot(computer, NULL));
+      StringBuffer hostRoot;
+      getHostRoot(hostRoot, computer, NULL);
 
       const char* dir = m_process.queryProp("@dataPath");
       if (!dir || !*dir)

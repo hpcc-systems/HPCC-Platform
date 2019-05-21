@@ -80,7 +80,7 @@ CLogFailSafe::~CLogFailSafe()
 
 void CLogFailSafe::readCfg(IPropertyTree* cfg)
 {
-    StringBuffer safeRolloverThreshold = cfg->queryProp(PropSafeRolloverThreshold);
+    StringBuffer safeRolloverThreshold(cfg->queryProp(PropSafeRolloverThreshold));
     if (!safeRolloverThreshold.isEmpty())
         readSafeRolloverThresholdCfg(safeRolloverThreshold);
 
@@ -287,9 +287,9 @@ void CLogFailSafe::Add(const char* GUID,IInterface& pIn, CLogRequestInFile* reqI
     Add(GUID, dataStr, reqInFile);
 }
 
-void CLogFailSafe::Add(const char* GUID, const StringBuffer& strContents, CLogRequestInFile* reqInFile)
+void CLogFailSafe::Add(const char* GUID, const char *strContents, CLogRequestInFile* reqInFile)
 {
-    VStringBuffer dataStr("<cache>%s</cache>", strContents.str());
+    VStringBuffer dataStr("<cache>%s</cache>", strContents);
 
     if (safeRolloverSizeThreshold <= 0)
     {
@@ -339,7 +339,7 @@ void CLogFailSafe::RollOldLogs()
 {
     ForEachItemIn(i, oldLogs)
     {
-        StringBuffer fileName = oldLogs.item(i);
+        StringBuffer fileName(oldLogs.item(i));
         Owned<IFile> file = createIFile(fileName);
         fileName.replaceString(logFileExt, rolloverFileExt);
         file->rename(fileName.str());

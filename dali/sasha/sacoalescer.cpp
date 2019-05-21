@@ -41,7 +41,7 @@ void coalesceDatastore(bool force)
         unsigned keepStores = confProps.getPropInt("@keepStores");
         if (0 == dataPath.length())
         {
-            ERRLOG("COALESCER: No dali data path found.");
+            OERRLOG("COALESCER: No dali data path found.");
             return;
         }
         
@@ -102,7 +102,7 @@ void coalesceDatastore(bool force)
                     _root.setown(createPTree("SDS"));
                 }
                 else {
-                    ERRLOG("Base store %d not found, exiting",baseEdition);
+                    OERRLOG("Base store %d not found, exiting",baseEdition);
                     break; // don't think much point continuing is there?
                 }
             }
@@ -236,7 +236,7 @@ public:
             unsigned interval = coalesceProps->getPropInt("@interval",DEFAULT_INTERVAL);
             if (!interval)
             {
-                ERRLOG("COALESCER: disabled");
+                OERRLOG("COALESCER: disabled");
                 return 0;
             }
             PROGLOG("COALESCER: min interval = %d hr", interval);
@@ -256,9 +256,9 @@ public:
                     if (GetCurrentDirectory(1024, cwd))
                         PROGLOG("COALESCE: Running '%s' in '%s'",cmd.str(),cwd);
                     else
-                        ERRLOG("COALESCE: Running '%s' in unknown current directory",cmd.str());
+                        OERRLOG("COALESCE: Running '%s' in unknown current directory",cmd.str());
                     if (!invoke_program(cmd.str(), runcode, false, NULL, &h)) 
-                        ERRLOG("Could not run saserver in coalesce mode");
+                        OERRLOG("Could not run saserver in coalesce mode");
                     else {
                         PROGLOG("COALESCE: started pid = %d",(int)h);
                         while (!wait_program(h,runcode,false)) {

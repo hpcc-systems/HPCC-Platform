@@ -153,7 +153,7 @@ int EclCMDShell::run()
 #ifndef _DEBUG
     catch (...)
     {
-        ERRLOG("Unexpected exception\n");
+        IERRLOG("Unexpected exception\n");
         return 4;
     }
 #endif

@@ -187,7 +187,7 @@ bool ESPMemCached::checkServersUp()
     for (unsigned i = 0; i < numberOfServers-1; ++i)
     {
         if (!streq(stats[i].version, stats[i+1].version))
-            DBGLOG("ESPMemCached: Inhomogeneous versions of memcached across servers.");
+            OWARNLOG("ESPMemCached: Inhomogeneous versions of memcached across servers.");
     }
     return true;
 }
@@ -226,7 +226,7 @@ ESPCacheResult ESPMemCached::get(const char* groupID, const char* cacheID, Strin
     if (value)
         out.set(value);
 
-    StringBuffer msg = "'Get' request failed - ";
+    StringBuffer msg("'Get' request failed - ");
     if (rc == MEMCACHED_NOTFOUND)
         msg.append("(cacheID: '").append(cacheID).append("') ");
     assertOnError(rc, msg.str());
@@ -286,7 +286,7 @@ void ESPMemCached::assertPool()
 {
     if (!pool)
     {
-        StringBuffer msg = "ESPMemCached: Failed to instantiate server pool with:";
+        StringBuffer msg("ESPMemCached: Failed to instantiate server pool with:");
         msg.newline().append(options);
         ESPLOG(LogNormal, "%s", msg.str());
     }

@@ -3963,8 +3963,8 @@ bool CWsDeployFileInfo::handleAttributeAdd(IEspContext &context, IEspHandleAttri
 
   IPropertyTree* pSetting = &iter->query();
   Owned<IPropertyTree> pEnvRoot = getEnvTree(context, &req.getReqInfo());
-  StringBuffer xpath =  pSetting->queryProp(XML_ATTR_PARAMS);
-  StringBuffer attribName = pSetting->queryProp(XML_ATTR_ATTRIB);
+  StringBuffer xpath(pSetting->queryProp(XML_ATTR_PARAMS));
+  StringBuffer attribName(pSetting->queryProp(XML_ATTR_ATTRIB));
 
   if (attribName.length() == 0)
     throw MakeStringException(-1,"Attribute name can't be empty!");
@@ -3997,7 +3997,7 @@ bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAt
 
   IPropertyTree* pSetting = &iter->query();
   Owned<IPropertyTree> pEnvRoot = &m_Environment->getPTree();
-  StringBuffer xpath2 =  pSetting->queryProp("@params");
+  StringBuffer xpath2(pSetting->queryProp("@params"));
   IPropertyTree* pComp = pEnvRoot->queryPropTree(xpath2.str());
 
   if (pComp == NULL)
@@ -4302,7 +4302,7 @@ bool CWsDeployFileInfo::handleComponentCopy(IPropertyTree *pComponents, IPropert
     }
 
     const char* compType = pComp.queryProp(XML_ATTR_COMPTYPE);
-    StringBuffer sbNewName = compName;
+    StringBuffer sbNewName(compName);
 
     xpath.clear().appendf("%s", compType);
     getUniqueName(pEnvRoot2, sbNewName, xpath.str(), XML_TAG_SOFTWARE);
@@ -5703,7 +5703,8 @@ void CWsDeployFileInfo::generateGraph(IEspContext &context, IConstWsDeployReqInf
   }
 
   m_pGraphXml.set(new SCMStringBuffer());
-  xsltTransform(m_pEnvXml->str(), StringBuffer(getCFD()).append("xslt/graph_env.xslt").str(), NULL, m_pGraphXml->s);
+  StringBuffer buf;
+  xsltTransform(m_pEnvXml->str(), buf.append(getCFD()).append("xslt/graph_env.xslt").str(), NULL, m_pGraphXml->s);
 }
 
 //---------------------------------------------------------------------------

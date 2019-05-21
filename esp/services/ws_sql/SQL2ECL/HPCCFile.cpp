@@ -73,7 +73,7 @@ bool HPCCFile::getFileRecDef(StringBuffer & out, const char * structname, const 
         ForEachItemIn(rowindex, this->columns)
         {
            out.append(recordindent);
-           out.append(this->columns.item(rowindex).toEclRecString().str());
+           this->columns.item(rowindex).toEclRecString(out);
            out.append(";");
            out.append(linedelimiter);
         }
@@ -109,7 +109,7 @@ bool HPCCFile::getFileRecDefwithIndexpos(HPCCColumnMetaData * fieldMetaData, Str
         ForEachItemIn(rowindex, this->columns)
         {
            out.append("\t");
-           out.append(this->columns.item(rowindex).toEclRecString().str());
+           this->columns.item(rowindex).toEclRecString(out);
            out.append(";");
            out.append("\n");
         }
@@ -129,7 +129,7 @@ bool HPCCFile::getFileRecDefwithIndexpos(HPCCColumnMetaData * fieldMetaData, Str
 
 bool HPCCFile::setFileColumns(const char * eclString)
 {
-    StringBuffer text = eclString;
+    StringBuffer text(eclString);
 
     MultiErrorReceiver errs;
     OwnedHqlExpr record = parseQuery(text.str(), &errs);
