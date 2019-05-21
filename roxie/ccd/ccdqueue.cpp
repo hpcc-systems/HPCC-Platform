@@ -2878,7 +2878,7 @@ public:
     virtual int run()
     {
         Owned<StringContextLogger> logctx = new StringContextLogger("PacketDiscarder");
-        rowManager.setown(roxiemem::createRowManager(1, NULL, *logctx, NULL, false));
+        rowManager.setown(roxiemem::createRowManager(0, NULL, *logctx, NULL, false));
         mc.setown(ROQ->queryReceiveManager()->createMessageCollator(rowManager, RUID_DISCARD));
         ROQ->queryReceiveManager()->setDefaultCollator(mc);
         while (!aborted)
