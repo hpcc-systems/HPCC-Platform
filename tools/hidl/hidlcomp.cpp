@@ -135,25 +135,26 @@ const char *clarion_type_name[] =
 
 const int type_size[] = 
 {
-    1,
-    1,
-    1,
-    1,
-    0,  // pretend we don't know (To be fixed at some later date)
-    2,
-    2,
-    4,
-    4,
-    4,
-    4,
-    8,
-    8,
-    8,
-    4, // STRUCT
-    4, // ENUM
-    0, // void
-    1, // ESP_STRUCT
-    1  // ESP_ENUM
+    0,  // tk_null
+    1,  // TK_CHAR
+    1,  // TK_UCHAR
+    1,  // BYTE
+    1,  // BOOL
+    2,  // SHORT
+    2,  // USHORT
+    4,  // INT
+    4,  // UNSIGNED
+    4,  // LONG
+    4,  // ULONG
+    8,  // LONGLONG
+    8,  // ULONGLONG
+    8,  // DOUBLE
+    4,  // FLOAT
+    4,  // STRUCT
+    4,  // ENUM
+    0,  // void
+    1,  // ESP_STRUCT
+    1   // ESP_ENUM
 };
 
 static const char *xlattable[] = 
