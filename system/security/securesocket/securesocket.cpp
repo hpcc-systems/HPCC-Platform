@@ -773,28 +773,23 @@ void CSecureSocket::readTimeout(void* buf, size32_t min_size, size32_t max_size,
             timeleft = socketTimeRemaining(useSeconds, start, timeout);
         }
 
+        ERR_clear_error();
         rc = SSL_read(m_ssl, (char*)buf + size_read, max_size - size_read);
-        if(rc > 0)
+        if (rc > 0)
         {
             size_read += rc;
         }
         else
         {
             int err = SSL_get_error(m_ssl, rc);
-            // Ignoring SSL_ERROR_SYSCALL because IE prompting user acceptance of the certificate 
-            // causes this error, but is harmless.
-            // Ignoring SSL_ERROR_SYSCALL also seems to ignore the timeout value being exceeded,
-            //    but for persistence at least, treating zero bytes read can be treated as a graceful completion of connection
-            if((err != SSL_ERROR_NONE) && (err != SSL_ERROR_SYSCALL))
-            {
-                if(m_loglevel >= SSLogMax)
-                {
-                    char errbuf[512];
-                    ERR_error_string_n(ERR_get_error(), errbuf, 512);
-                    DBGLOG("Warning: SSL_read error %d - %s", err, errbuf);
-                }
-            }
-            break;
+            char errbuf[512];
+            ERR_error_string_n(err, errbuf, 512);
+            ERR_clear_error();
+            VStringBuffer errmsg("SSL_read error %d - %s", err, errbuf);
+            if (m_loglevel >= SSLogMax)
+                DBGLOG("Warning: %s", errmsg.str());
+            if (min_size > 0)
+                throw createJSocketException(JSOCKERR_graceful_close, errmsg);
         }
     } while (size_read < min_size);
 }
