@@ -262,6 +262,7 @@ define([
                 });
                 this.filter.on("apply", function (evt) {
                     context.refreshHRef();
+                    context.packagesGrid._currentPage = 0;
                     context.refreshGrid();
                 });
                 this.initPackagesGrid();
