@@ -101,6 +101,25 @@ protected:
     unsigned maxIndex = 0;
 };
 
+class CConstDfuQueueInfoIterator : public CSimpleInterfaceOf<IConstDfuQueueInfoIterator>
+{
+public:
+    CConstDfuQueueInfoIterator();
+
+    virtual bool first() override;
+    virtual bool next() override;
+    virtual bool isValid() override;
+    virtual IConstDfuQueueInfo & query() override;
+    virtual unsigned count() const override;
+
+protected:
+    Owned<IConstDfuQueueInfo> curr;
+    Owned<CLocalEnvironment> constEnv;
+    unsigned index = 1;
+    unsigned maxIndex = 0;
+};
+
+
 class CConstSparkThorInfoIterator : public CSimpleInterfaceOf<IConstSparkThorInfoIterator>
 {
 public:
@@ -168,6 +187,12 @@ private:
     mutable unsigned numOfDropZones;
     mutable unsigned numOfSparkThors;
 
+    mutable bool isDropZoneRestrictionLoaded = false;
+    mutable bool dropZoneRestrictionEnabled = true;
+
+    void buildDfuQueueCache() const;
+    mutable unsigned numOfDfuQueues = 0;
+    mutable bool dfuQueueCacheBuilt = false;
 
     IConstEnvBase * getCache(const char *path) const;
     void setCache(const char *path, IConstEnvBase *value) const;
@@ -175,9 +200,6 @@ private:
     void buildDropZoneCache() const;
     void buildSparkThorCache() const;
     void init();
-    mutable bool isDropZoneRestrictionLoaded = false;
-    mutable bool dropZoneRestrictionEnabled = true;
-
 
     void ensureClusterGroupKeyMap() const // keyPairMap and keyGroupMap it alters is mutable
     {
@@ -315,6 +337,11 @@ public:
     unsigned getNumberOfDropZones() const { buildDropZoneCache(); return numOfDropZones; }
     IConstDropZoneInfo * getDropZoneByIndex(unsigned index) const;
     bool isDropZoneRestrictionEnabled() const;
+
+    unsigned getNumberOfDfuQueues() const { buildDfuQueueCache(); return numOfDfuQueues; }
+    IConstDfuQueueInfo * getDfuQueueByIndex(unsigned index) const;
+    virtual IConstDfuQueueInfoIterator * getDfuQueueIterator() const;
+    bool isValidDfuQueueName(const char * queueName) const;
 
     virtual const char *getClusterGroupKeyPairName(const char *group) const override
     {
@@ -471,6 +498,12 @@ public:
             { return c->getSparkThor(name); }
     virtual IConstSparkThorInfoIterator *getSparkThorIterator() const
             { return c->getSparkThorIterator(); }
+
+    virtual IConstDfuQueueInfoIterator * getDfuQueueIterator() const
+            { return c->getDfuQueueIterator(); }
+    virtual bool isValidDfuQueueName(const char * queueName) const
+            { return c->isValidDfuQueueName(queueName); }
+
 };
 
 void CLockedEnvironment::commit()
@@ -1159,6 +1192,22 @@ private:
     StringBuffer posixPath;
 };
 
+class CConstDfuQueueInfo : public CConstEnvBase, implements IConstDfuQueueInfo
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_ICONSTENVBASE;
+    CConstDfuQueueInfo(CLocalEnvironment *env, IPropertyTree *root) : CConstEnvBase(env, root)
+    {
+    }
+
+    virtual IStringVal& getDfuQueueName(IStringVal &str) const
+    {
+        str.set(root->queryProp("@queue"));
+        return str;
+    }
+};
+
 class CConstSparkThorInfo : public CConstEnvBase, implements IConstSparkThorInfo
 {
 public:
@@ -1318,9 +1367,11 @@ void CLocalEnvironment::init()
     machineCacheBuilt = false;
     dropZoneCacheBuilt = false;
     sparkThorCacheBuilt = false;
+    dfuQueueCacheBuilt = false;
     numOfMachines = 0;
     numOfDropZones = 0;
     numOfSparkThors = 0;
+    numOfDfuQueues = 0;
     isDropZoneRestrictionLoaded = false;
     clusterGroupKeyNameCache = false;
     ::getFileAccessUrl(fileAccessUrl);
@@ -1455,6 +1506,35 @@ void CLocalEnvironment::buildDropZoneCache() const
             cache.setValue(x.str(), cached);
         }
         dropZoneCacheBuilt = true;
+    }
+}
+
+
+void CLocalEnvironment::buildDfuQueueCache() const
+{
+    synchronized procedure(safeCache);
+    if (!dfuQueueCacheBuilt)
+    {
+        Owned<IPropertyTreeIterator> it = p->getElements("Software/DfuServerProcess");
+        ForEach(*it)
+        {
+            const char *qname = it->query().queryProp("@queue");
+
+            if (qname)
+            {
+                StringBuffer x("Software/DfuQueue[@qname=\"");
+                x.append(qname).append("\"]");
+                Owned<IConstEnvBase> cached = new CConstDfuQueueInfo((CLocalEnvironment *) this, &it->query());
+                cache.setValue(x.str(), cached);
+            }
+
+            numOfDfuQueues++;
+            StringBuffer x("Software/DfuQueue[@id=\"");
+            x.append(numOfDfuQueues).append("\"]");
+            Owned<IConstEnvBase> cached = new CConstDfuQueueInfo((CLocalEnvironment *) this, &it->query());
+            cache.setValue(x.str(), cached);
+        }
+        dfuQueueCacheBuilt = true;
     }
 }
 
@@ -1593,6 +1673,23 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByIndex(unsigned index) const
     synchronized procedure(safeCache);
     return (CConstDropZoneInfo *) getCache(xpath.str());
 }
+
+IConstDfuQueueInfo * CLocalEnvironment::getDfuQueueByIndex(unsigned index) const
+{
+    if (!numOfDfuQueues || (index == 0))
+        return nullptr;
+
+    buildDfuQueueCache();
+    if (index > numOfDfuQueues)
+        return nullptr;
+
+    StringBuffer xpath("Software/DfuQueue[@id=\"");
+    xpath.append(index).append("\"]");
+    synchronized procedure(safeCache);
+
+    return (CConstDfuQueueInfo *) getCache(xpath.str());
+}
+
 
 
 IConstInstanceInfo * CLocalEnvironment::getInstance(const char *type, const char *version, const char *domain) const
@@ -1920,6 +2017,29 @@ IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIterator() const
     return new CConstDropZoneInfoIterator();
 }
 
+
+IConstDfuQueueInfoIterator * CLocalEnvironment::getDfuQueueIterator() const
+{
+    return new CConstDfuQueueInfoIterator();
+}
+
+bool CLocalEnvironment::isValidDfuQueueName(const char * queueName) const
+{
+    bool retVal = false;
+    if (!isEmptyString(queueName))
+    {
+        Owned<IConstDfuQueueInfoIterator> queueIt = getDfuQueueIterator();
+        ForEach(*queueIt)
+        {
+            SCMStringBuffer _queueName;
+            queueIt->query().getDfuQueueName(_queueName);
+            retVal = streq(queueName, _queueName.str());
+        }
+    }
+
+    return retVal;
+}
+
 IConstMachineInfoIterator * CLocalEnvironment::getMachineIterator() const
 {
     return new CConstMachineInfoIterator();
@@ -2178,6 +2298,51 @@ unsigned CConstDropZoneInfoIterator::count() const
 {
     return maxIndex;
 }
+
+//--------------------------------------------------
+
+CConstDfuQueueInfoIterator::CConstDfuQueueInfoIterator()
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    constEnv.setown((CLocalEnvironment *)factory->openEnvironment());
+    maxIndex = constEnv->getNumberOfDfuQueues();
+}
+
+bool CConstDfuQueueInfoIterator::first()
+{
+    index = 1;
+    curr.setown(constEnv->getDfuQueueByIndex(index));
+    return curr != nullptr;
+}
+
+bool CConstDfuQueueInfoIterator::next()
+{
+    if (index < maxIndex)
+    {
+        index++;
+        curr.setown(constEnv->getDfuQueueByIndex(index));
+    }
+    else
+        curr.clear();
+
+    return curr != nullptr;
+}
+
+bool CConstDfuQueueInfoIterator::isValid()
+{
+    return curr != nullptr;
+}
+
+IConstDfuQueueInfo & CConstDfuQueueInfoIterator::query()
+{
+    return *curr;
+}
+
+unsigned CConstDfuQueueInfoIterator::count() const
+{
+    return maxIndex;
+}
+
 
 //--------------------------------------------------
 
