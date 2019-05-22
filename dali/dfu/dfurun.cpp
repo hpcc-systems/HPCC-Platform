@@ -1199,13 +1199,21 @@ public:
                     if (!tmp.length())
                         throw MakeStringException(-1,"Source file not specified");
                     foreigncopy = false;
-                    if ((cmd==DFUcmd_copy)||multiclustermerge) {
+                    if ((cmd==DFUcmd_copy)||multiclustermerge)
+                    {
                         foreigndalinode.setown(getForeignDali(source));
                         foreigncopy = foreigndalinode.get()!=NULL;
-                        if (foreigncopy) {
+                        if (foreigncopy)
+                        {
+                            CDfsLogicalFileName lfn;
+                            lfn.set(tmp);
+                            lfn.setForeign(foreigndalinode->endpoint(),true);
+                            tmp = lfn.get();
+
                             StringBuffer fu;
                             StringBuffer fp;
-                            if (source->getForeignUser(fu,fp)) {
+                            if (source->getForeignUser(fu,fp))
+                            {
                                  foreignuserdesc.setown(createUserDescriptor());
                                  foreignuserdesc->set(fu.str(),fp.str());
                             }
@@ -1213,46 +1221,43 @@ public:
                                 foreignuserdesc.set(userdesc);
                         }
                     }
-                    if (foreigncopy) {
-                        foreignfdesc.setown(queryDistributedFileDirectory().getFileDescriptor(tmp.str(),foreignuserdesc,foreigndalinode));
-                        if (!foreignfdesc) {
-                            StringBuffer s;
-                            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",tmp.str(),foreigndalinode->endpoint().getUrlStr(s).str());
-                        }
-                        kind.set(foreignfdesc->queryProperties().queryProp("@kind"));
-                        oldRoxiePrefix.set(foreignfdesc->queryProperties().queryProp("@roxiePrefix"));
-                        iskey = strsame("key", kind);
-                        if (destination->getWrap()||iskey)
-                            destination->setNumPartsOverride(foreignfdesc->numParts());
-                        if (options->getPush()) {// need to set ftslave location
+                    srcFile.setown(fdir.lookup(tmp.str(),userdesc,
+                            (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert)));
+
+                    if (!srcFile)
+                        throw MakeStringException(-1,"Source file %s could not be found",tmp.str());
+
+                    iskey = isFileKey(srcFile);
+                    if ((cmd==DFUcmd_copy) && (srcFile->querySuperFile() != nullptr) && iskey)
+                        throwError1(DFTERR_InvalidSuperindexCopy, srcFile->queryLogicalName());
+
+                    oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
+                    kind.set(srcFile->queryAttributes().queryProp("@kind"));
+
+                    if (destination->getWrap()||iskey)
+                        destination->setNumPartsOverride(srcFile->numParts());
+
+                    if (options->getSubfileCopy())
+                        opttree->setPropBool("@compress",srcFile->isCompressed());
+
+                    if (foreigncopy)
+                    {
+                        foreignfdesc.setown(srcFile->getFileDescriptor());
+
+                        if (options->getPush())
+                        {
+                            // need to set ftslave location
                             StringBuffer progpath;
                             StringBuffer workdir;
-                            INode *n = foreignfdesc->queryNode(0);
-                            if (n&&getRemoteRunInfo("FTSlaveProcess", "ftslave", NULL, n->endpoint(), progpath, workdir, foreigndalinode, 1000*60*5)) {
+                            if (foreigndalinode && getRemoteRunInfo("FTSlaveProcess", "ftslave", NULL, foreigndalinode->endpoint(), progpath, workdir, foreigndalinode, 1000*60*5))
+                            {
                                 opttree->setProp("@slave",progpath.str());
                             }
                         }
-                        if (options->getSubfileCopy())
-                            opttree->setPropBool("@compress",foreignfdesc->isCompressed());
-                    }
-                    else {
-                        srcFile.setown(fdir.lookup(tmp.str(),userdesc,
-                              (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert)));
-                        if (!srcFile)
-                            throw MakeStringException(-1,"Source file %s could not be found",tmp.str());
 
-                        iskey = isFileKey(srcFile);
-                        if ((cmd==DFUcmd_copy) && (srcFile->querySuperFile() != nullptr) && iskey)
-                            throwError1(DFTERR_InvalidSuperindexCopy, srcFile->queryLogicalName());
-
-                        oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
-                        kind.set(srcFile->queryAttributes().queryProp("@kind"));
-                        if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))    // keys default wrap for copy
-                            destination->setNumPartsOverride(srcFile->numParts());
-                        if (options->getSubfileCopy())
-                            opttree->setPropBool("@compress",srcFile->isCompressed());
                     }
-                    if (destination->getMultiCopy()&&!destination->getWrap()) {
+                    if (destination->getMultiCopy()&&!destination->getWrap())
+                    {
                         Owned<IFileDescriptor> tmpfd = foreigncopy?foreignfdesc.getLink():srcFile->getFileDescriptor();
                         auxfdesc.setown(createMultiCopyFileDescriptor(tmpfd,destination->getNumParts(0)));
                     }
