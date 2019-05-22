@@ -401,6 +401,7 @@ define({root:
     MaxNode: "Max Node",
     MaxSize: "Max Size",
     MaxSkew: "Max Skew",
+    MaximizeRestore: "Maximize/Restore",
     MaximumNumberOfSlaves: "Slave Number",
     MaxRecordLength: "Max Record Length",
     Mean: "Mean",

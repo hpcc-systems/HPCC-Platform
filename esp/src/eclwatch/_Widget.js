@@ -10,12 +10,15 @@ define([
     "dojo/dom-attr",
     "dojo/dom-style",
 
+    "src/ESPUtil",
+
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry"
 
 ], function (declare, arrayUtil, lang, i18n, nlsHPCC, ioQuery, dom, domConstruct, domAttr, domStyle,
+    ESPUtil,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry) {
 
         //  IE8 textContent polyfill  ---
@@ -147,6 +150,11 @@ define([
                 if (win) {
                     win.focus();
                 }
+            },
+
+            _prevMax: undefined,
+            _onMaximize: function (max) {
+                this._prevMax = ESPUtil.maximizeWidget(this, max, this._prevMax);
             },
 
             init: function (params) {

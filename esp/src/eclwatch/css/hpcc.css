@@ -962,6 +962,12 @@ margin-left:-20px;
     height: 16px;
 }
 
+.iconMaximize {
+    background-image: url("../img/maximize.png"); 
+    width: 16px;
+    height: 16px;
+}
+
 .iconNewPageNoFrame {
     background-image: url("../img/openNewPageNoFrame.png"); 
     width: 16px;

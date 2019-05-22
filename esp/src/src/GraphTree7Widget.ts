@@ -16,7 +16,7 @@ import { Graph as GraphWidget, Subgraph, Vertex } from "@hpcc-js/graph";
 
 // @ts-ignore
 import * as _Widget from "hpcc/_Widget";
-import { Grid } from "./ESPUtil";
+import { Grid, maximizeWidget } from "./ESPUtil";
 import * as WsWorkunits from "./WsWorkunits";
 import { debounce, getImageURL, Persist } from "./Utility";
 import { declareDecorator } from './DeclareDecorator';
@@ -292,6 +292,11 @@ export class GraphTree7Widget {
 
     _onFindPrevious() {
         this._doFind(true);
+    }
+
+    _prevMaxGraph;
+    _onMaximizeGraph(max) {
+        this._prevMaxGraph = maximizeWidget(registry.byId(this.id + "MainBorderContainer"), max, this._prevMaxGraph);
     }
 
     isWorkunit() {
