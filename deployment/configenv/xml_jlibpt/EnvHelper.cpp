@@ -316,7 +316,12 @@ const char* EnvHelper::getXMLTagName(const char* name)
    else if (!strcmp(nameLC, "dropzone"))
       return XML_TAG_DROPZONE;
    else if (!strcmp(nameLC, "eclcc"))
-      return "EclCCProcess";
+      // eclccserver define this as EclCCServer but buildset set it to EclCCServerProcess.
+      // Our default environment.xml and envgen generated one use EclCCServerProcess.
+      // Seems both EclCCServer and EclCCServerProcess work. Will keep EclCCServerProcess for now.
+      return "EclCCServerProcess";
+   else if (!strcmp(nameLC, "eclplus"))
+      return "EclPlusProcess";
    else if (!strcmp(nameLC, "eclccsrv") || !strcmp(nameLC, "eclccserver") || !strcmp(nameLC, "eclcc"))
       return XML_TAG_ECLCCSERVERPROCESS;
    else if (!strcmp(nameLC, "esp") || !strcmp(nameLC, "espprocess"))
@@ -341,6 +346,8 @@ const char* EnvHelper::getXMLTagName(const char* name)
       return "BackupNodeProcess";
    else if (!strcmp(nameLC, "spark") || !strcmp(nameLC, "sparkthor") || !strcmp(nameLC, "SparkThorProcess"))
       return "SparkThorProcess";
+   else if (!strcmp(nameLC, "ldap") || !strcmp(nameLC, "ldapserver") || !strcmp(nameLC, "LDAPServerProcess"))
+      return "LDAPServerProcess";
    else if (!strcmp(nameLC, "buildset"))
       return "BuildSet";
    else

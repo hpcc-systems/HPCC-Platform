@@ -98,11 +98,35 @@ unsigned SWProcess::add(IPropertyTree *params)
      {
         addInstances(compTree, params);
      }
-     // Other selectors handled by concrete software process,
-     // For example, NodeGroup in BackupNodeProcess, EspBinding in EspProcess
+     else
+     {
+       // Following method can be overwritten.
+       // For example, NodeGroup in BackupNodeProcess, EspBinding in EspProcess
+       addOtherSelector(compTree, params);
+     }
+  }
+  else
+  {
+     IPropertyTree* pAttrs = params->queryPropTree("Attributes");
+     updateNode(compTree, pAttrs);
   }
 
   return rc;
+}
+
+void SWProcess::addOtherSelector(IPropertyTree *compTree, IPropertyTree *params)
+{
+   const char* selector = params->queryProp("@selector");
+   IPropertyTree* selectorTree = compTree->queryPropTree(selector);
+   if (!selectorTree)
+   {
+      selectorTree = createPTree(selector);
+      compTree->addPropTree(selector, selectorTree);
+   }
+
+   IPropertyTree* pAttrs = params->queryPropTree("Attributes");
+   if (pAttrs)
+     updateNode(selectorTree, pAttrs);
 }
 
 //int SWProcess::addNode(IPropertyTree *params, const char* xpath, bool merge)

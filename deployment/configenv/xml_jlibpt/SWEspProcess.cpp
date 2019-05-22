@@ -26,16 +26,8 @@ SWEspProcess::SWEspProcess(const char* name, EnvHelper * envHelper):SWProcess(na
 {
 }
 
-unsigned SWEspProcess::add(IPropertyTree *params)
+void SWEspProcess::addOtherSelector(IPropertyTree *compTree, IPropertyTree *params)
 {
-   int rc = SWProcess::add(params);
-
-   IPropertyTree * envTree = m_envHelper->getEnvTree();
-   const char* key = params->queryProp("@key");
-   StringBuffer xpath;
-   xpath.clear().appendf(XML_TAG_SOFTWARE "/%s[@name=\"%s\"]",m_processName.str(), key);
-   IPropertyTree * compTree = envTree->queryPropTree(xpath.str());
-
    const char* selector = params->queryProp("@selector");
    if (selector && !stricmp(selector, "EspBinding"))
    {
@@ -45,9 +37,6 @@ unsigned SWEspProcess::add(IPropertyTree *params)
 
       addBinding(compTree, pAttrs);
    }
-
-   return rc;
-
 }
 
 void SWEspProcess::addBinding(IPropertyTree *parent, IPropertyTree * attrs)

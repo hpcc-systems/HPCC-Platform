@@ -482,12 +482,21 @@ void CEnvGen::addUpdateAttributesFromString(IPropertyTree *updateTree, const cha
 
      StringArray keyValues;
      keyValues.appendList(saAttrs[i], "=");
+
      pAttr->addProp("@name", keyValues[0]);
+     StringBuffer sbValue;
+     sbValue.clear().appendf("%s", keyValues[1]);
+     sbValue.replaceString("[equal]", "=");
 
      StringArray newOldValues;
-     newOldValues.appendList(keyValues[1], ATTR_V_SEP);
-     pAttr->addProp("@value", newOldValues[0]);
-     if (newOldValues.ordinality() > 1) pAttr->addProp("@oldValue", newOldValues[1]);
+     if (strcmp(keyValues[1], ""))
+     {
+        newOldValues.appendList(sbValue.str(), ATTR_V_SEP);
+        pAttr->addProp("@value", newOldValues[0]);
+        if (newOldValues.ordinality() > 1) pAttr->addProp("@oldValue", newOldValues[1]);
+     }
+     else
+        pAttr->addProp("@value", "");
    }
 }
 
@@ -922,7 +931,8 @@ void CEnvGen::addUpdateTaskFromFile(const char * inFile)
    }
 
    // add Config attributies to params
-   IPropertyTree *pCfg = inPTree->queryPropTree("Config");
+   IPropertyTree *pCfg = m_params->queryPropTree("Config");
+   assert(pCfg);
    Owned<IAttributeIterator> attrIter = inPTree->getAttributes();
    ForEach(*attrIter)
    {
@@ -933,7 +943,7 @@ void CEnvGen::addUpdateTaskFromFile(const char * inFile)
    }
 
    // add Tasks to params
-   Owned<IPropertyTreeIterator> taskIter = pCfg->getElements("Task");
+   Owned<IPropertyTreeIterator> taskIter = inPTree->getElements("Task");
    ForEach(*taskIter)
    {
       IPropertyTree* task = &taskIter->query();

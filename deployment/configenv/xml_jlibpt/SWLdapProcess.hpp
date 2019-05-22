@@ -14,8 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-#ifndef _SWBACKUPNODE_HPP_
-#define _SWBACKUPNODE_HPP_
+#ifndef _SWLDAPPROCESS_HPP_
+#define _SWLDAPPROCESS_HPP_
 
 #include "EnvHelper.hpp"
 #include "SWProcess.hpp"
@@ -23,13 +23,12 @@
 namespace ech
 {
 
-class SWBackupNode : public SWProcess
+class SWLdapProcess : public SWProcess
 {
 public:
-    SWBackupNode(const char* name, EnvHelper * envHelper);
-    virtual void addOtherSelector(IPropertyTree *compTree, IPropertyTree *params);
+    SWLdapProcess(const char* name, EnvHelper * envHelper);
 
-//protected:
+    unsigned add(IPropertyTree *params);
 
 };
 
