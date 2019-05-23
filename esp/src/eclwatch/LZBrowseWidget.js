@@ -546,6 +546,7 @@ define([
                 this.filter.on("apply", function (evt) {
                     context.landingZonesGrid.clearSelection();
                     context.refreshHRef();
+                    context.landingZonesGrid._currentPage = 0;
                     context.refreshGrid();
                 });
                 this.sprayFixedDestinationSelect.init({

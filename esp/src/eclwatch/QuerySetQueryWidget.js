@@ -164,6 +164,7 @@ define([
                 });
                 this.filter.on("apply", function (evt) {
                     context.refreshHRef();
+                    context.querySetGrid._currentPage = 0;
                     context.refreshGrid();
                 });
                 topic.subscribe("hpcc/ecl_wu_published", function (topic) {

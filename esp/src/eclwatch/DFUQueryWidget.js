@@ -453,6 +453,7 @@ define([
                 });
                 this.filter.on("apply", function (evt) {
                     context.refreshHRef();
+                    context.workunitsGrid._currentPage = 0;
                     context.refreshGrid();
                 });
                 topic.subscribe("hpcc/dfu_wu_completed", function (topic) {

@@ -71,6 +71,7 @@ define([
                 });
                 this.filter.on("apply", function (evt) {
                     context.refreshHRef();
+                    context.diskUsageGrid._currentPage = 0;
                     context.refreshGrid();
                 });
                 this.refreshGrid();
