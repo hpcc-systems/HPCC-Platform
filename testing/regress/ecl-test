@@ -60,7 +60,9 @@ class RegressMain:
         elif self.args.runtests:
             print "Run test cases: "
             for engine in self.regress.config.Engines:
+                self.args.engine = engine
                 cluster = self.regress.config.Clusters[engine]
+                self.args.cluster = cluster
                 self.regress.bootstrap(engine, cluster, self.args)
                 print("Cluster: %s" % (cluster))
                 suite = self.regress.suites[engine]
