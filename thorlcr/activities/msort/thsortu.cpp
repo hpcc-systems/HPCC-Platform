@@ -279,12 +279,10 @@ void swapRows(RtlDynamicRowBuilder &row1, RtlDynamicRowBuilder &row2)
 class CJoinHelper : implements IJoinHelper, public CSimpleInterface
 {
     CActivityBase &activity;
-    IThorRowInterfaces *rowIf;
-    ICompare *compareLR;
-    ICompare *compareL; 
-    ICompare *compareR; 
-
-    ICompare *limitedCompareR;  
+    IThorRowInterfaces *rowIf = nullptr;
+    ICompare *compareLR = nullptr;
+    ICompare *compareL = nullptr;
+    ICompare *compareR = nullptr;
 
     CThorExpandingRowArray rightgroup;
     OwnedConstThorRow prevleft;
@@ -294,44 +292,44 @@ class CJoinHelper : implements IJoinHelper, public CSimpleInterface
     OwnedConstThorRow denormLhs;
     RtlDynamicRowBuilder denormTmp;
     CThorExpandingRowArray denormRows;
-    unsigned denormCount;
-    unsigned joinCounter;
-    size32_t outSz;
-    unsigned rightidx;
-    enum { JScompare, JSmatch, JSrightgrouponly, JSonfail } state;
-    bool eofL;
-    bool eofR;
-    IHThorJoinArg *helper;
-    IOutputMetaData * outputmetaL;
-    bool leftouter;
-    bool rightouter;
-    bool exclude;
-    bool firstonlyL;
-    bool firstonlyR;
+    unsigned denormCount = 0;
+    unsigned joinCounter = 0;
+    size32_t outSz = 0;
+    unsigned rightidx = 0;
+    enum { JScompare, JSmatch, JSrightgrouponly, JSonfail } state = JScompare;
+    bool eofL = false;
+    bool eofR = false;
+    IHThorJoinArg *helper = nullptr;
+    IOutputMetaData * outputmetaL = nullptr;
+    bool leftouter = false;
+    bool rightouter = false;
+    bool exclude = false;
+    bool firstonlyL = false;
+    bool firstonlyR = false;
     MemoryBuffer rightgroupmatchedbuf;
-    bool *rightgroupmatched;
-    bool leftmatched;
-    bool rightmatched;
+    bool *rightgroupmatched = nullptr;
+    bool leftmatched = false;
+    bool rightmatched = false;
     OwnedConstThorRow defaultLeft;
     OwnedConstThorRow defaultRight;
     Linked<IRowStream> strmL;
     Linked<IRowStream> strmR;
-    bool abort;
-    bool nextleftgot;
-    bool nextrightgot;
-    unsigned atmost;
-    rowcount_t lhsProgressCount, rhsProgressCount;
-    unsigned keepmax;
-    unsigned abortlimit;
-    unsigned keepremaining;
-    bool betweenjoin;
+    bool abort = false;
+    bool nextleftgot = false;
+    bool nextrightgot = false;
+    unsigned atmost = (unsigned)-1;
+    rowcount_t lhsProgressCount = 0, rhsProgressCount = 0;
+    unsigned keepmax = (unsigned)-1;
+    unsigned abortlimit = (unsigned)-1;
+    unsigned keepremaining = (unsigned)-1;
+    bool betweenjoin = false;
     Owned<IException> onFailException;
-    ThorActivityKind kind;
-    activity_id activityId;
+    ThorActivityKind kind = TAKnone;
+    activity_id activityId = 0;
     Owned<ILimitedCompareHelper> limitedhelper;
     Owned<CDualCache> dualcache;
     Linked<IEngineRowAllocator> allocator;
-    IMulticoreIntercept* mcoreintercept;
+    IMulticoreIntercept* mcoreintercept = nullptr;
     Linked<IEngineRowAllocator> allocatorL;
     Linked<IEngineRowAllocator> allocatorR;
 
@@ -355,23 +353,10 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IThorRowInterfaces *_rowIf)
-        : activity(_activity), rowIf(_rowIf), denormTmp(NULL), rightgroup(_activity, NULL), denormRows(_activity, NULL)
+        : activity(_activity), rowIf(_rowIf), denormTmp(NULL), rightgroup(_activity, NULL), denormRows(_activity, NULL), helper(_helper)
     {
         allocator.set(rowIf->queryRowAllocator());
         kind = activity.queryContainer().getKind();
-        helper = _helper; 
-        denormCount = 0;
-        joinCounter = 0;
-        outSz = 0;
-        lhsProgressCount = rhsProgressCount = 0;
-        keepmax = (unsigned)-1;
-        abortlimit = (unsigned)-1;
-        keepremaining = keepmax;
-        outputmetaL = NULL;
-        limitedCompareR = NULL;
-        nextleftgot = false;
-        nextrightgot = false;
-        mcoreintercept = NULL;
     }
 
     ~CJoinHelper()
@@ -408,6 +393,8 @@ public:
         }
         allocatorL.set(_allocatorL);
         allocatorR.set(_allocatorR);
+        rightgroup.kill();
+        rightmatched = false;
         state = JScompare;
         nextleftgot = false;
         nextrightgot = false;
@@ -427,6 +414,8 @@ public:
             limitedhelper.setown(createLimitedCompareHelper());
             limitedhelper->init(helper->getJoinLimit(),strmR,compareLR,helper->queryPrefixCompare());
         }
+        else
+            limitedhelper.clear();
         leftouter = (flags & JFleftouter) != 0;
         rightouter = (flags & JFrightouter) != 0;
         exclude = (flags & JFexclude) != 0;
@@ -453,11 +442,15 @@ public:
             size32_t sz = helper->createDefaultLeft(r);
             defaultLeft.setown(r.finalizeRowClear(sz));
         }
+        else
+            defaultLeft.clear();
         if (leftouter || JFonfail & helper->getJoinFlags()) {
             RtlDynamicRowBuilder r(allocatorR);
             size32_t sz = helper->createDefaultRight(r);
             defaultRight.setown(r.finalizeRowClear(sz));
         }
+        else
+            defaultRight.clear();
         abort = false;
         atmost = helper->getJoinLimit();
         if (atmost)
@@ -474,6 +467,13 @@ public:
         outputmetaL = _outputmeta;
         if (TAKdenormalize == kind || TAKhashdenormalize == kind || TAKlookupdenormalize == kind || TAKsmartdenormalize == kind)
             denormTmp.setAllocator(allocator).ensureRow();
+        denormCount = 0;
+        joinCounter = 0;
+        outSz = 0;
+        rightidx = 0;
+        leftmatched = false;
+        lhsProgressCount = 0;
+        rhsProgressCount = 0;
         return true;
     }
 
@@ -969,39 +969,39 @@ public:
 class SelfJoinHelper: implements IJoinHelper, public CSimpleInterface
 {
     CActivityBase &activity;
-    IThorRowInterfaces *rowIf;
-    ICompare *compare;
+    IThorRowInterfaces *rowIf = nullptr;
+    ICompare *compare = nullptr;
     CThorExpandingRowArray curgroup;
-    unsigned leftidx;
-    unsigned rightidx;
-    bool leftmatched;
+    unsigned leftidx = 0;
+    unsigned rightidx = 0;
+    bool leftmatched = false;
     MemoryBuffer rightmatchedbuf;
-    bool *rightmatched;
-    enum { JSload, JSmatch, JSleftonly, JSrightonly, JSonfail } state;
-    bool eof;
-    IHThorJoinArg *helper;
-    IOutputMetaData * outputmetaL;
-    bool leftouter;
-    bool rightouter;
-    bool exclude;
-    bool firstonlyL;
-    bool firstonlyR;
+    bool *rightmatched = nullptr;
+    enum { JSload, JSmatch, JSleftonly, JSrightonly, JSonfail } state = JSload;
+    bool eof = false;
+    IHThorJoinArg *helper = nullptr;
+    IOutputMetaData * outputmetaL = nullptr;
+    bool leftouter = false;
+    bool rightouter = false;
+    bool exclude = false;
+    bool firstonlyL = false;
+    bool firstonlyR = false;
     OwnedConstThorRow defaultLeft;
     OwnedConstThorRow defaultRight;
     Owned<IRowStream> strm;
-    bool abort;
-    unsigned atmost;
-    rowcount_t progressCount;
-    unsigned joinCounter;
-    unsigned keepmax;
-    unsigned abortlimit;
-    unsigned keepremaining;
+    bool abort = false;
+    unsigned atmost = (unsigned)-1;
+    rowcount_t progressCount = 0;
+    unsigned joinCounter = 0;
+    unsigned keepmax = (unsigned)-1;
+    unsigned abortlimit = (unsigned)-1;
+    unsigned keepremaining = (unsigned)-1;
     OwnedConstThorRow nextrow;
     Owned<IException> onFailException;
-    activity_id activityId;
+    activity_id activityId = 0;
     Linked<IEngineRowAllocator> allocator;
     Linked<IEngineRowAllocator> allocatorin;
-    IMulticoreIntercept* mcoreintercept;
+    IMulticoreIntercept* mcoreintercept = nullptr;
     
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -1011,8 +1011,6 @@ public:
     {
         allocator.set(rowIf->queryRowAllocator());
         helper = _helper;       
-        outputmetaL = NULL;
-        mcoreintercept = NULL;
     }
 
     bool init(
