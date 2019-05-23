@@ -32,6 +32,7 @@ public:
 
    virtual void create(IPropertyTree *params);
    virtual unsigned add(IPropertyTree *params);
+   virtual void addOtherSelector(IPropertyTree *compTree, IPropertyTree *params);
    virtual void modify(IPropertyTree *params);
    //virtual void remove(IPropertyTree *params);
    virtual IPropertyTree * addComponent(IPropertyTree *params);

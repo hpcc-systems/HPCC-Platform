@@ -48,6 +48,7 @@ set (    INCLUDES
          ComponentFromXSD.hpp
          environment.hpp
          SWBackupNode.hpp
+         SWLdapProcess.hpp
 
     )
 set (    SRCS
@@ -72,6 +73,7 @@ set (    SRCS
          SWTopology.cpp
          ComponentFromXSD.cpp
          SWBackupNode.cpp
+         SWLdapProcess.cpp
     )
 
 include_directories (

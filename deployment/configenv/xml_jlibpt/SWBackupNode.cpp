@@ -25,15 +25,10 @@ SWBackupNode::SWBackupNode(const char* name, EnvHelper * envHelper):SWProcess(na
 {
 }
 
-unsigned SWBackupNode::add(IPropertyTree *params)
+void SWBackupNode::addOtherSelector(IPropertyTree *compTree, IPropertyTree *params)
 {
-   unsigned rc = SWProcess::add(params);
-
-   IPropertyTree * envTree = m_envHelper->getEnvTree();
-   const char* key = params->queryProp("@key");
    StringBuffer xpath;
-   xpath.clear().appendf(XML_TAG_SOFTWARE "/%s[@name=\"%s\"]", m_processName.str(), key);
-   IPropertyTree * compTree = envTree->queryPropTree(xpath.str());
+
    assert(compTree);
    const char* selector = params->queryProp("@selector");
    if (selector && !stricmp("NodeGroup", selector))
@@ -57,6 +52,5 @@ unsigned SWBackupNode::add(IPropertyTree *params)
        }
        compTree->addPropTree(selector, nodeGroup);
    }
-   return rc;
 }
 }

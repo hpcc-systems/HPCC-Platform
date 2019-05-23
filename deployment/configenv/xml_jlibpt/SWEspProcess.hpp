@@ -28,7 +28,7 @@ class SWEspProcess : public SWProcess
 public:
     SWEspProcess(const char* name, EnvHelper * envHelper);
 
-    unsigned add(IPropertyTree *params);
+    virtual void addOtherSelector(IPropertyTree *compTree, IPropertyTree *params);
     //IPropertyTree * addComponent(IPropertyTree *params);
     void addBinding(IPropertyTree *parent, IPropertyTree * attrs);
 
