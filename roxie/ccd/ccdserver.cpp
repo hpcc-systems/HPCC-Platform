@@ -12366,6 +12366,7 @@ public:
         // properties of the logical file
         IPropertyTree & properties = desc->queryProperties();
         properties.setProp("@kind", "key");
+        properties.setPropBool("@local", true);
         properties.setPropInt64("@size", indexFileSize);
         properties.setPropInt64("@recordCount", reccount);
         properties.setPropInt64("@duplicateKeyCount", duplicateKeyCount);

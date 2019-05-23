@@ -339,8 +339,8 @@ protected:
 CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadBaseArg &_arg, ThorActivityKind _kind, IDistributedFile * _df, IPropertyTree *_node)
     : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), df(LINK(_df)), activityRecordMetaBuff(NULL)
 {
-    singlePart = false;
-    localSortKey = (df->queryAttributes().hasProp("@local"));
+    singlePart = (1 == df->numParts()); // NB: including supers
+    localSortKey = (df->queryAttributes().hasProp("@local") && !singlePart);
     IDistributedSuperFile *super = df->querySuperFile();
     superCount = 1;
     superIndex = 0;
@@ -353,10 +353,6 @@ CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, 
             throw MakeStringException(1000, "SORTED attribute is not supported when reading from superkey");
         superName.append(df->queryLogicalName());
         df.clear();
-    }
-    else if (df->numParts() == 1)
-    {
-        singlePart = true;
     }
 
     eclKeySize.set(helper.queryDiskRecordSize());

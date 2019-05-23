@@ -1223,6 +1223,7 @@ void CHThorIndexWriteActivity::execute()
     // properties of the logical file
     IPropertyTree & properties = desc->queryProperties();
     properties.setProp("@kind", "key");
+    properties.setPropBool("@local", true);
     properties.setPropInt64("@size", indexFileSize);
     properties.setPropInt64("@recordCount", reccount);
     properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
