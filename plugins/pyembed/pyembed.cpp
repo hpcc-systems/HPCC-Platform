@@ -1163,6 +1163,42 @@ protected:
     PythonThreadContext *sharedCtx;
 };
 
+//----------------------------------------------------------------------
+
+// GILBlock ensures the we hold the Python "Global interpreter lock" for the appropriate duration
+
+class GILBlock
+{
+public:
+    GILBlock(PyThreadState * &_state) : state(_state)
+    {
+        PyEval_RestoreThread(state);
+    }
+    ~GILBlock()
+    {
+        state = PyEval_SaveThread();
+    }
+private:
+    PyThreadState * &state;
+};
+
+
+// GILUnblock ensures the we release the Python "Global interpreter lock" for the appropriate duration
+
+class GILUnblock
+{
+public:
+    GILUnblock()
+    {
+        state = PyEval_SaveThread();
+    }
+    ~GILUnblock()
+    {
+        PyEval_RestoreThread(state);
+    }
+private:
+    PyThreadState *state;
+};
 
 //----------------------------------------------------------------------
 
@@ -1186,6 +1222,7 @@ void ECLDatasetIterator_dealloc(PyObject *self)
     ECLDatasetIterator *p = (ECLDatasetIterator *)self;
     if (p->val)
     {
+        GILUnblock b;
         p->val->stop();
         ::Release(p->val);
         p->val = NULL;
@@ -1196,27 +1233,32 @@ void ECLDatasetIterator_dealloc(PyObject *self)
 PyObject* ECLDatasetIterator_iternext(PyObject *self)
 {
     ECLDatasetIterator *p = (ECLDatasetIterator *)self;
+    roxiemem::OwnedConstRoxieRow nextRow;
     if (p->val)
     {
-        roxiemem::OwnedConstRoxieRow nextRow = p->val->ungroupedNextRow();
+        GILUnblock b;
+        nextRow.setown(p->val->ungroupedNextRow());
         if (!nextRow)
         {
             p->val->stop();
             ::Release(p->val);
             p->val = NULL;
         }
-        else
-        {
-            RtlFieldStrInfo dummyField("<row>", NULL, p->typeInfo);
-            PythonNamedTupleBuilder tupleBuilder(NULL, &dummyField);
-            const byte *brow = (const byte *) nextRow.get();
-            p->typeInfo->process(brow, brow, &dummyField, tupleBuilder);
-            return tupleBuilder.getTuple(p->typeInfo);
-        }
     }
-    // If we get here, it's EOF
-    PyErr_SetNone(PyExc_StopIteration);
-    return NULL;
+    if (p->val)
+    {
+        RtlFieldStrInfo dummyField("<row>", NULL, p->typeInfo);
+        PythonNamedTupleBuilder tupleBuilder(NULL, &dummyField);
+        const byte *brow = (const byte *) nextRow.get();
+        p->typeInfo->process(brow, brow, &dummyField, tupleBuilder);
+        return tupleBuilder.getTuple(p->typeInfo);
+    }
+    else
+    {
+        // If we get here, it's EOF
+        PyErr_SetNone(PyExc_StopIteration);
+        return NULL;
+    }
 }
 
 static PyTypeObject ECLDatasetIteratorType =
@@ -1268,23 +1310,6 @@ static PyObject *createECLDatasetIterator(const RtlTypeInfo *_typeInfo, IRowStre
 }
 
 //-----------------------------------------------------
-
-// GILBlock ensures the we hold the Python "Global interpreter lock" for the appropriate duration
-
-class GILBlock
-{
-public:
-    GILBlock(PyThreadState * &_state) : state(_state)
-    {
-        PyEval_RestoreThread(state);
-    }
-    ~GILBlock()
-    {
-        state = PyEval_SaveThread();
-    }
-private:
-    PyThreadState * &state;
-};
 
 void Python27GlobalState::unregister(const char *key)
 {
