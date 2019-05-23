@@ -15214,6 +15214,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
 ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeLinkedChild(BuildCtx & ctx, IHqlExpression * expr)
 {
     OwnedHqlExpr dataset;
+    OwnedHqlExpr selector;
     OwnedHqlExpr childDataset;
     node_operator selectorOp = no_none;
     IHqlExpression * selSeq = NULL;
@@ -15223,18 +15224,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeLinkedChild(BuildCtx 
     case no_select:
         {
             bool isNew;
-            dataset.set(querySelectorDataset(expr, isNew));
-            //Ensure input is a dataset so cleanly bound as a cursor later
-            if (dataset->isDatarow())
-                dataset.setown(createDatasetFromRow(dataset.getClear()));
+            IHqlExpression * root = querySelectorDataset(expr, isNew);
             assertex(isNew);
-            OwnedHqlExpr active = ensureActiveRow(dataset);
-            childDataset.setown(replaceSelectorDataset(expr, active));
+            dataset.set(root);
+            selector.setown(createDataset(no_anon, LINK(root->queryRecord()), createUniqueId()));
+            OwnedHqlExpr active = ensureActiveRow(selector);
+            childDataset.setown(replaceExpression(expr, root, active));
             break;
         }
     case no_normalize:
         {
             dataset.set(expr->queryChild(0));
+            selector.set(dataset);
             childDataset.set(expr->queryChild(1));
             selectorOp = no_left;
             selSeq = querySelSeq(expr);
@@ -15262,7 +15263,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeLinkedChild(BuildCtx 
     {
         MemberFunction func(*this, instance->startctx, "virtual byte * first(const void * parentRecord) override");
         func.ctx.addQuotedLiteral("const byte * left = (const byte *)parentRecord;");
-        bindTableCursor(func.ctx, dataset, "left", selectorOp, selSeq);
+        bindTableCursor(func.ctx, selector, "left", selectorOp, selSeq);
 
         ExpressionFormat format = !hasLinkCountedModifier(value) ? FormatLinkedDataset : FormatNatural;
         Owned<IHqlCppDatasetCursor> dsCursor = createDatasetSelector(func.ctx, value, format);
