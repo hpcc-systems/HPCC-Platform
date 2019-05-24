@@ -905,6 +905,7 @@ ESPenum DFUFileType : string
     Index("Index"),
     Xml("Xml"),
     Csv("Csv"),
+    Json("Json"),
 };
 
 ESPresponse [exceptions_inline] DFUFileAccessResponse

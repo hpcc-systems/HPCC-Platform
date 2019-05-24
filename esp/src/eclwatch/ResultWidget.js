@@ -183,6 +183,7 @@ define([
                         });
                         context.filter.on("apply", function (evt) {
                             context.refreshHRef();
+                            context.grid._currentPage = 0;
                             context.refresh();
                         });
                         context.filter.refreshState();

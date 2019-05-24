@@ -1404,7 +1404,8 @@
               <listitem>
                 <para>Check the<emphasis role="bold"> Retain Superfile
                 Structure</emphasis> box for the copy to retain the structure
-                of a Superfile.</para>
+                of a Superfile. If you are copying a superfile that contains
+                INDEXes, you must enable this option.</para>
               </listitem>
 
               <listitem>

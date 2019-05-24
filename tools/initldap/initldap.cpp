@@ -101,9 +101,6 @@ bool initLDAP(IPropertyTree * ldapProps)
             return true;
     }
 
-    if (stricmp(serverType.get(),"ActiveDirectory"))
-        ldapProps->setProp("@systemBasedn", "");
-
     //Replace system user with LDAP Admin credentials
     ldapProps->setProp("@systemUser", ldapUser);
     ldapProps->setProp("@systemCommonName", ldapUser);

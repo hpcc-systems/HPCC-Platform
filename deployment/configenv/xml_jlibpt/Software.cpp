@@ -28,6 +28,7 @@
 #include "SWTopology.hpp"
 #include "deployutils.hpp"
 #include "ComponentBase.hpp"
+#include "SWLdapProcess.hpp"
 
 namespace ech
 {
@@ -174,6 +175,11 @@ void Software::getSWCompName(const char *inputName, StringBuffer& out)
    {
       out.append("eclccserver");
    }
+   else if (!stricmp(compNameLC, "eclplus") || !stricmp(compNameLC, "eclplusserver") ||
+            !stricmp(compNameLC, "EclPlusProcess"))
+   {
+      out.append("eclplus");
+   }
    else if (!stricmp(compNameLC, "sch") || !stricmp(compNameLC, "eclsch") ||
             !stricmp(compNameLC, "scheduler") || !stricmp(compNameLC, "EclCCSchedulerProcess"))
    {
@@ -195,6 +201,10 @@ void Software::getSWCompName(const char *inputName, StringBuffer& out)
    else if (!stricmp(compNameLC, "spark") || !stricmp(compNameLC, "sparkthor") || !stricmp(compNameLC, "SparkThorProcess"))
    {
       out.append("sparkthor");
+   }
+   else if (!stricmp(compNameLC, "ldap") || !stricmp(compNameLC, "ldapserver") || !stricmp(compNameLC, "LDAPServerProcess"))
+   {
+      out.append("ldapServer");
    }
    else
    {
@@ -280,6 +290,10 @@ IConfigComp* Software::getSWComp(const char *compName)
    {
       pComp = (IConfigComp*) new SWProcess(buildSetName, m_envHelper);
    }
+   else if (!stricmp(buildSetName, "eclplus"))
+   {
+      pComp = (IConfigComp*) new SWProcess(buildSetName, m_envHelper);
+   }
    else if (!stricmp(buildSetName, "eclscheduler"))
    {
       pComp = (IConfigComp*) new SWProcess(buildSetName, m_envHelper);
@@ -299,6 +313,10 @@ IConfigComp* Software::getSWComp(const char *compName)
    else if (!stricmp(buildSetName, "backupnode"))
    {
       pComp = (IConfigComp*) new SWBackupNode(buildSetName, m_envHelper);
+   }
+   else if (!stricmp(buildSetName, "ldapServer"))
+   {
+      pComp = (IConfigComp*) new SWLdapProcess(buildSetName, m_envHelper);
    }
    else
    {

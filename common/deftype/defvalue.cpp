@@ -56,7 +56,7 @@ union RealUnion
 
 //===========================================================================
 
-static double powerOfTen[] = {1e0, 1e1, 1e2, 1e3, 1e4,
+static const double powerOfTen[] = {1e0, 1e1, 1e2, 1e3, 1e4,
                        1e5, 1e6, 1e7, 1e8, 1e9, 
                        1e10, 1e11, 1e12, 1e13, 1e14,
                        1e15, 1e16, 1e17, 1e18, 1e19, 
@@ -64,8 +64,8 @@ static double powerOfTen[] = {1e0, 1e1, 1e2, 1e3, 1e4,
                        1e25, 1e26, 1e27, 1e28, 1e29, 
                        1e30, 1e31, 1e32 };
 
-static unsigned __int64 maxUIntValue[]  =   { I64C(0), I64C(0xFF), I64C(0xFFFF), I64C(0xFFFFFF), I64C(0xFFFFFFFF), I64C(0xFFFFFFFFFF), I64C(0xFFFFFFFFFFFF), I64C(0xFFFFFFFFFFFFFF), U64C(0xFFFFFFFFFFFFFFFF) };
-static __int64 maxIntValue[] =  { I64C(0), I64C(0x7F), I64C(0x7FFF), I64C(0x7FFFFF), I64C(0x7FFFFFFF), I64C(0x7FFFFFFFFF), I64C(0x7FFFFFFFFFFF), I64C(0x7FFFFFFFFFFFFF), I64C(0x7FFFFFFFFFFFFFFF) };
+static const unsigned __int64 maxUIntValue[]  =   { I64C(0), I64C(0xFF), I64C(0xFFFF), I64C(0xFFFFFF), I64C(0xFFFFFFFF), I64C(0xFFFFFFFFFF), I64C(0xFFFFFFFFFFFF), I64C(0xFFFFFFFFFFFFFF), U64C(0xFFFFFFFFFFFFFFFF) };
+static const __uint64 maxIntValue[] =  { I64C(0), I64C(0x7F), I64C(0x7FFF), I64C(0x7FFFFF), I64C(0x7FFFFFFF), I64C(0x7FFFFFFFFF), I64C(0x7FFFFFFFFFFF), I64C(0x7FFFFFFFFFFFFF), I64C(0x7FFFFFFFFFFFFFFF) };
 
 int rangeCompare(double value, ITypeInfo * targetType)
 {
@@ -1333,6 +1333,19 @@ IValue *createDataValue(const char *val, ITypeInfo *type)
 }
 
 
+IValue *createDataValue(const char *val, ITypeInfo *type, size32_t srcLen)
+{
+    size32_t targetSize = type->getSize();
+    assertex(targetSize != UNKNOWN_LENGTH);
+    if (srcLen >= targetSize)
+        return new DataValue(val, type);
+
+    MemoryAttr stretched(targetSize);
+    rtlDataToData(targetSize, stretched.mem(), srcLen, val);
+    return new DataValue(stretched.get(), type);
+}
+
+
 //===========================================================================
 
 QStringValue::QStringValue(unsigned len, const void *v, ITypeInfo *_type) : MemoryValue(_type)
@@ -1823,7 +1836,7 @@ void PackedIntValue::toMem(void *target)
 
 //---------------------------------------------------------------------------
 
-bool isInRange(__int64 value, bool isSigned, unsigned size)
+bool isInRange(__uint64 value, bool isSigned, unsigned size)
 {
     if (isSigned)
         value += (maxIntValue[size]+1);

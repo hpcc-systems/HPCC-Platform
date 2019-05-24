@@ -141,7 +141,9 @@
           overwriting only those already existing subfiles whose content has
           changed. If FALSE and the file to copy is a superfile, then the
           operation consolidates all the superfile content into a single
-          logical file on the target, not a superfile.</entry>
+          logical file on the target, not a superfile. If FALSE and the file
+          to copy is a superfile containing INDEXes, then the operation is not
+          valid and will produce an error. </entry>
         </row>
 
         <row>

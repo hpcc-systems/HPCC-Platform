@@ -948,8 +948,8 @@ class CHThorFirstNActivity : public CHThorSimpleActivityBase
 {
     IHThorFirstNArg &helper;
     __int64 doneThisGroup;
-    __int64 limit;  // You would think int was enough for most practical cases...
-    __int64 skip;
+    __uint64 limit;  // You would think int was enough for most practical cases...
+    __uint64 skip;
     bool finished;
     bool grouped;
 public:

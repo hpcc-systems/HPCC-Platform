@@ -6090,6 +6090,8 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
                 kind = CDFUFileType_Csv;
             else if (streq("xml", kindStr))
                 kind = CDFUFileType_Xml;
+            else if (streq("json", kindStr))
+                kind = CDFUFileType_Json;
         }
         resp.setType(kind);
     }
@@ -6380,6 +6382,27 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
         if (!userId.isEmpty())
             fileDesc->queryProperties().setProp("@owner", userId);
         fileDesc->queryProperties().setProp("ECL", recordDefinition);
+
+        CDFUFileType kind = req.getType();
+        switch (kind)
+        {
+            case CDFUFileType_Flat:
+                fileDesc->queryProperties().setProp("@kind", "flat");
+                break;
+            case CDFUFileType_Csv:
+                fileDesc->queryProperties().setProp("@kind", "csv");
+                break;
+            case CDFUFileType_Xml:
+                fileDesc->queryProperties().setProp("@kind", "xml");
+                break;
+            case CDFUFileType_Json:
+                fileDesc->queryProperties().setProp("@kind", "json");
+                break;
+            case CDFUFileType_Index:
+                fileDesc->queryProperties().setProp("@kind", "key");
+            default:
+                break; // unknown
+        }
 
         MemoryBuffer layoutBin;
         exportRecordDefinitionBinaryType(recordDefinition, layoutBin);

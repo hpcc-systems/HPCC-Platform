@@ -19,6 +19,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
     <xsl:output method="text" version="1.0" encoding="UTF-8" indent="yes"/>
     <xsl:param name="sourceFileName" select="'UNKNOWN'"/>
+    <xsl:param name="definitionName" select="''"/>
     <xsl:param name="responseType" select="''"/>
     <xsl:param name="requestType" select="''"/>
     <xsl:param name="platform" select="'roxie'"/>
@@ -39,6 +40,10 @@
 <xsl:template match="esxdl">
   <xsl:call-template name="doNotChangeManuallyComment"/>
 
+<xsl:if test="$definitionName">
+EXPORT <xsl:value-of select="$definitionName"/>() := MACRO<xsl:text>
+</xsl:text>
+</xsl:if>
 <xsl:if test="$diffmode='Monitor'">
 IMPORT cassandra;
 </xsl:if>
@@ -417,6 +422,11 @@ END;
       <xsl:text>{'</xsl:text><xsl:value-of select="."/>', difference.Monitor<xsl:value-of select="."/><xsl:text>}</xsl:text>
     </xsl:for-each>], SelectorRec), NAMED('Selected'));
   </xsl:if>
+
+<xsl:if test="$definitionName">
+ENDMACRO;<xsl:text>
+</xsl:text>
+</xsl:if>
 
   <xsl:call-template name="doNotChangeManuallyComment"/>
 </xsl:template>

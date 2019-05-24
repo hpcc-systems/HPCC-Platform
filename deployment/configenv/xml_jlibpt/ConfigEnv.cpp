@@ -223,7 +223,7 @@ void ConfigEnv::setAttribute(const char *xpath , const char* attrName, const cha
 {
    IPropertyTree * envTree = m_envHelper->getEnvTree();
    IPropertyTree * pAttrTree = envTree->queryPropTree(xpath);
-   if (pAttrTree)
+   if (!pAttrTree)
    {
       pAttrTree = createPTree();
       pAttrTree->appendProp(attrName, attrValue);

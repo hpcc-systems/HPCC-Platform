@@ -110,7 +110,6 @@ private:
    IPropertyTree * m_config;
 
    StringArray m_ipArray;
-   int *m_numOfCompSigned;
    int m_supportIpListPosition = 0;
 
    MapStringToMyClass<IConfigComp> m_compMap;

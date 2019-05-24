@@ -78,7 +78,6 @@ EnvHelper::~EnvHelper()
   m_buildSetTree.clear();
   if (m_envCfgOptions) delete m_envCfgOptions;
   if (m_genEnvRules) delete m_genEnvRules;
-  if (m_numOfCompSigned) delete [] m_numOfCompSigned;
 }
 
 
@@ -143,8 +142,6 @@ void EnvHelper::init(IPropertyTree *config)
         throw MakeStringException( -1 , "Error loading buildset from configuration");
       }
    }
-
-   m_numOfCompSigned = NULL;
 
 }
 
@@ -236,15 +233,6 @@ void EnvHelper::processNodeAddress(IPropertyTree * param)
      processNodeAddress(ipFileName, m_ipArray, true);
    }
 
-   if (m_ipArray.ordinality() > 0)
-   {
-     if (m_numOfCompSigned) delete [] m_numOfCompSigned;
-     m_numOfCompSigned = new int(m_ipArray.ordinality());
-     for (unsigned i=0; i < m_ipArray.ordinality(); i++)
-       m_numOfCompSigned[i] = 0;
-   }
-
-
 }
 
 bool EnvHelper::getCompNodeList(const char * compName, StringArray *ipList, const char *cluster)
@@ -328,7 +316,12 @@ const char* EnvHelper::getXMLTagName(const char* name)
    else if (!strcmp(nameLC, "dropzone"))
       return XML_TAG_DROPZONE;
    else if (!strcmp(nameLC, "eclcc"))
-      return "EclCCProcess";
+      // eclccserver define this as EclCCServer but buildset set it to EclCCServerProcess.
+      // Our default environment.xml and envgen generated one use EclCCServerProcess.
+      // Seems both EclCCServer and EclCCServerProcess work. Will keep EclCCServerProcess for now.
+      return "EclCCServerProcess";
+   else if (!strcmp(nameLC, "eclplus"))
+      return "EclPlusProcess";
    else if (!strcmp(nameLC, "eclccsrv") || !strcmp(nameLC, "eclccserver") || !strcmp(nameLC, "eclcc"))
       return XML_TAG_ECLCCSERVERPROCESS;
    else if (!strcmp(nameLC, "esp") || !strcmp(nameLC, "espprocess"))
@@ -353,6 +346,8 @@ const char* EnvHelper::getXMLTagName(const char* name)
       return "BackupNodeProcess";
    else if (!strcmp(nameLC, "spark") || !strcmp(nameLC, "sparkthor") || !strcmp(nameLC, "SparkThorProcess"))
       return "SparkThorProcess";
+   else if (!strcmp(nameLC, "ldap") || !strcmp(nameLC, "ldapserver") || !strcmp(nameLC, "LDAPServerProcess"))
+      return "LDAPServerProcess";
    else if (!strcmp(nameLC, "buildset"))
       return "BuildSet";
    else

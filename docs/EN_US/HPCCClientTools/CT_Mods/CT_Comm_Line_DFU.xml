@@ -736,6 +736,13 @@ dfuplus action=dspray srcname=le::imagedb
           that contains a variable length field, you must include the
           <emphasis role="bold">nosplit</emphasis> option.</para>
 
+          <para>To copy a superfile and retain its structure, use the <link
+          linkend="CLI_DFU_CopySuperOperations">copysuper</link> operation. If
+          you use the copy operation for a superfile, it consolidates all the
+          superfile content into a single logical file on the target, not a
+          superfile. This is not valid for a superfile containing INDEXes and
+          will produce an error.</para>
+
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">copy</emphasis> <emphasis>operation</emphasis>:</para>
 
@@ -1159,7 +1166,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
                     </emphasis></emphasis></entry>
 
                     <entry>Optional, The username to use for the source
-                    environment. </entry>
+                    environment.</entry>
                   </row>
 
                   <row>
@@ -1167,7 +1174,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
                     </emphasis></emphasis></entry>
 
                     <entry>Optional, The password to use for the source
-                    environment. </entry>
+                    environment.</entry>
                   </row>
                 </tbody>
               </tgroup>

@@ -1458,6 +1458,18 @@ public:
                     }
                 }
             }
+            catch (IMP_Exception *e)
+            {
+                EXCLOG(e, nullptr);
+                e->Release();
+                break;
+            }
+            catch (IJSOCK_Exception *e)
+            {
+                EXCLOG(e, nullptr);
+                e->Release();
+                break;
+            }
             catch (IException *e)
             {
                 if (replyAttempt)

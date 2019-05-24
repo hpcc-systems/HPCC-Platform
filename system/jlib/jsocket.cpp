@@ -697,6 +697,11 @@ extern jlib_decl void throwJSocketException(int jsockErr)
     THROWJSOCKEXCEPTION2(jsockErr);
 }
 
+extern jlib_decl IJSOCK_Exception* createJSocketException(int jsockErr, const char *_msg)
+{
+    return new SocketException(jsockErr, _msg);
+}
+
 inline void LogErr(unsigned err,unsigned ref,const char *info,unsigned lineno,const char *tracename)
 {
     if (err)
