@@ -1574,7 +1574,7 @@ public:
         {
             size32_t lineLength = csvSplitter.splitLine(inputStream, maxRowSize);
             if (!lineLength)
-                return nullptr;
+                break;
 
             retSz = translator->translate(outBuilder, *this, *fieldFetcher);
 
