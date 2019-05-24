@@ -1884,7 +1884,15 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         wu->setClusterName(gName.str());
 
         wu->setJobName(destTitle.str());
-        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+        const char * dfuQueue = req.getDFUServerQueue();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+        if (!isEmptyString(dfuQueue))
+        {
+            if (!constEnv->isValidDfuQueueName(dfuQueue))
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid DFU server queue name:'%s'", dfuQueue);
+        }
+        setDFUServerQueueReq(dfuQueue, wu);
         setUserAuth(context, wu);
         wu->setCommand(DFUcmd_import);
 
@@ -2049,7 +2057,16 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
 
         wu->setClusterName(gName.str());
         wu->setJobName(destTitle.str());
-        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+
+        const char * dfuQueue = req.getDFUServerQueue();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+        if (!isEmptyString(dfuQueue))
+        {
+            if (!constEnv->isValidDfuQueueName(dfuQueue))
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid DFU server queue name:'%s'", dfuQueue);
+        }
+        setDFUServerQueueReq(dfuQueue, wu);
         setUserAuth(context, wu);
         wu->setCommand(DFUcmd_import);
 

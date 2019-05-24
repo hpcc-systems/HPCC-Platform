@@ -156,7 +156,6 @@
 #define DFTERR_NoMatchingDropzonePath_Text      "No Drop Zone on '%s' configured at '%s'."
 #define DFTERR_LocalhostAddressUsed_Text        "Localhost address used in remote file name: '%s'"
 
-
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%" I64F "d expected %" I64F "d) at %s of block %d"
 #define DFTERR_NoSolarisDir_Text                "Directory not yet supported for solaris"

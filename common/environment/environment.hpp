@@ -128,6 +128,16 @@ interface  IConstDropZoneInfoIterator : extends IIteratorOf<IConstDropZoneInfo>
     virtual unsigned count() const = 0;
 };
 
+interface IConstDfuQueueInfo : extends IConstEnvBase
+{
+    virtual IStringVal & getDfuQueueName(IStringVal & str) const = 0;
+};
+
+interface IConstDfuQueueInfoIterator : extends IIteratorOf<IConstDfuQueueInfo>
+{
+    virtual unsigned count() const = 0;
+};
+
 interface IConstDaFileSrvInfo : extends IConstEnvBase
 {
     virtual const char *getName() const = 0;
@@ -187,6 +197,9 @@ interface IConstEnvironment : extends IConstEnvBase
     virtual IConstDaFileSrvInfo *getDaFileSrvGroupInfo(const char *name) const = 0;
     virtual IConstSparkThorInfo *getSparkThor(const char *name) const = 0;
     virtual IConstSparkThorInfoIterator *getSparkThorIterator() const = 0;
+
+    virtual IConstDfuQueueInfoIterator * getDfuQueueIterator() const = 0;
+    virtual bool isValidDfuQueueName(const char * queueName) const = 0;
 };
 
 
