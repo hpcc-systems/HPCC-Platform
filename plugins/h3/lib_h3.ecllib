@@ -58,4 +58,11 @@ EXPORT h3 := SERVICE : plugin('h3plugin'), library('h3'), namespace('h3'), CPP, 
     REAL8 hexAreaKm2(CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='hexAreaKm2';
     REAL8 hexAreaM2(CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='hexAreaM2';
     UNSIGNED8 numHexagons(CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='numHexagons';
+
+    // ECL Optimized  ---
+    STRING16 ECLIndex(CONST h3_degrees_t lat, CONST h3_degrees_t lng, CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='ECLIndex';
+    STRING16 toECLIndex(CONST h3_index_t h3Idx) : cpp,action,context,fold,entrypoint='toECLIndex';
+    h3_index_t fromECLIndex(CONST STRING16 eclIdx) : cpp,action,context,fold,entrypoint='fromECLIndex';
+    h3_resolution_t ECLIndexResolution(CONST STRING16 eclIdx) : cpp,action,context,fold,entrypoint='ECLIndexResolution';
+    STRING16 ECLIndexParent(CONST STRING16 eclIdx, CONST h3_resolution_t resolution) : cpp,action,context,fold,entrypoint='ECLIndexParent';
 END;

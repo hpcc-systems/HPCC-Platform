@@ -44,7 +44,6 @@ ECL_H3_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 }
 
 #include <h3api.h>
-#define H3_INDEX_MINSTRLEN 17
 
 static void toSetOf(bool &__isAllResult, size32_t &__lenResult, void *&__result, H3Index *buff, int maxBuffLen)
 {
@@ -117,6 +116,7 @@ ECL_H3_API uint32_t ECL_H3_CALL baseCell(ICodeContext *_ctx, unsigned __int64 in
     return ::h3GetBaseCell(index);
 }
 
+#define H3_INDEX_MINSTRLEN 17
 ECL_H3_API void ECL_H3_CALL toString(ICodeContext *_ctx, size32_t &lenVarStr, char *&varStr, unsigned __int64 index)
 {
     varStr = static_cast<char *>(rtlMalloc(H3_INDEX_MINSTRLEN));
@@ -273,6 +273,62 @@ ECL_H3_API double ECL_H3_CALL hexAreaM2(ICodeContext *_ctx, uint32_t resolution)
 ECL_H3_API unsigned __int64 ECL_H3_CALL numHexagons(ICodeContext *_ctx, uint32_t resolution)
 {
     return ::numHexagons(resolution);
+}
+
+// ECL Optimized  ---
+const unsigned __int64 MASK_CELL_BASE = 0b01111111;
+const unsigned __int64 MASK_CELL_RES = 0b00000111;
+const unsigned __int64 MASK_RES = 0b00001111;
+#define MASK_GET(valToMask, mask, shift) ((valToMask) >> (shift)) & (mask)
+#define MASK_SET(valToMask, mask, shift, val) (((valToMask) & ~(static_cast<unsigned __int64>(mask) << (shift))) | (static_cast<unsigned __int64>(val) << (shift)))
+
+ECL_H3_API void ECL_H3_CALL toECLIndex(ICodeContext *_ctx, char * __result, unsigned __int64 index)
+{
+    for (unsigned int i = 0; i < 16; ++i) {
+        const unsigned char resVal = MASK_GET(index, i == 0 ? MASK_CELL_BASE : MASK_CELL_RES, (15 - i) * 3);
+        __result[i] = ((i == 0 && resVal == MASK_CELL_BASE) || (i > 0 && resVal == MASK_CELL_RES)) ? ' ' : '0' + resVal;
+    }
+}
+
+ECL_H3_API void ECL_H3_CALL ECLIndex(ICodeContext *_ctx, char * __result, double lat, double lon, uint32_t resolution)
+{
+    return toECLIndex(_ctx, __result, index(_ctx, lat, lon, resolution));
+}
+
+ECL_H3_API unsigned __int64 ECL_H3_CALL fromECLIndex(ICodeContext *_ctx, const char *eclIndex)
+{
+    unsigned __int64 __result = 646078419604526808; //  lat:0, lng:0, res:15
+    unsigned __int64 res = 0;
+    for (unsigned int i = 0; i < 16; ++i) {
+        unsigned char resVal = eclIndex[i];
+        if (resVal == ' ') {
+            resVal = i == 0 ? MASK_CELL_BASE : MASK_CELL_RES;
+        } else {
+            resVal -= '0';
+            res = i;
+        }
+        __result = MASK_SET(__result, i == 0 ? MASK_CELL_BASE : MASK_CELL_RES, (15 - i) * 3, resVal);
+    }
+    return MASK_SET(__result, MASK_RES, 52, res);
+}
+
+ECL_H3_API uint32_t ECL_H3_CALL ECLIndexResolution(ICodeContext *_ctx, const char *eclIndex)
+{
+    //  This is equivilant to:  LENGTH(TRIM(eclIndex)) - 1;
+    for (unsigned int i = 1; i < 16; ++i) {
+        if (eclIndex[i] == ' ') {
+            return i - 1;
+        }
+    }
+    return 15;
+}
+
+ECL_H3_API void ECL_H3_CALL ECLIndexParent(ICodeContext *_ctx, char * __result, const char *eclIndex, uint32_t resolution)
+{
+    //  This is equivilant to:  eclIndex[1..resolution + 1];
+    for (unsigned int i = 0; i < 16; ++i) {
+        __result[i] = i <= resolution ? eclIndex[i] : ' ';
+    }
 }
 
 } // namespace h3

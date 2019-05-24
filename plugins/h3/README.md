@@ -154,7 +154,7 @@ distortion. This is the same set of limitations as the local IJ coordinate space
 h3_index_t parent(CONST h3_index_t idx, CONST h3_resolution_t resolution)
 ```
 
-Returns the parent (coarser) index containing `idx` as resolution `resolution`.
+Returns the parent (coarser) index containing `idx` at resolution `resolution`.
 
 #### children
 
@@ -229,3 +229,45 @@ UNSIGNED8 numHexagons(CONST h3_resolution_t resolution)
 
 Number of unique **H3** indexes at the given `resolution`.
 
+### ECL Optimized
+_The following functions provide an ECL friendly representation of the h3 index.  Specifically, it is a `STRING16` format where each character represents a finer precision coordinate location (one character per resolution).  This allows for quick equality and parentage checking using string slicing techniques._ 
+
+#### ECLIndex
+
+```c
+STRING16 ECLIndex(CONST h3_degrees_t lat, CONST h3_degrees_t lng, CONST h3_resolution_t resolution)
+```
+
+Indexes the location at the specified `lat`, `lng` and `resolution` (0->15).
+
+#### toECLIndex
+
+```c
+STRING16 toECLIndex(CONST h3_index_t h3Idx)
+```
+
+Converts a h3Index to an ECL Index.
+
+#### fromECLIndex
+
+```c
+h3_index_t fromECLIndex(CONST STRING16 eclIdx)
+```
+
+Converts an ECL Index to a h3Index.
+
+#### ECLIndexResolution
+
+```c
+h3_resolution_t ECLIndexResolution(CONST STRING16 eclIdx)
+```
+
+Returns the resolution of the `eclIdx`.  This is equivilant to:  `LENGTH(TRIM(eclIdx)) - 1`
+
+#### ECLIndexParent
+
+```c
+STRING16 ECLIndexParent(CONST STRING16 eclIdx, CONST h3_resolution_t resolution)
+```
+
+Returns the parent (coarser) index containing `eclIdx` at resolution `resolution`.  This is equivilant to `eclIdx[1..resolution + 1]`
