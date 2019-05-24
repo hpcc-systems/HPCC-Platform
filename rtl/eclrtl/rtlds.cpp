@@ -1892,3 +1892,14 @@ void MemoryBufferBuilder::finishRow(size32_t length)
     self = NULL;
     reserved = 0;
 }
+
+void MemoryBufferBuilder::removeBytes(size32_t len)
+{
+    dbgassertex(buffer);
+    if (reserved>len)
+        len = reserved;
+    size32_t sz = buffer->length();
+    dbgassertex(sz>=len);
+    buffer->setLength(sz-len);
+    reserved -= len;
+}

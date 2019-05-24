@@ -2238,11 +2238,15 @@ void TestSDS1()
 #endif
 }
 
-void testDfuStreamRead(const char *fname)
+void testDfuStreamRead(StringArray &params)
 {
     // reads a DFS file
     try
     {
+        const char *fname = params.item(0);
+        const char *filter = nullptr;
+        if (params.ordinality()>1)
+            filter = params.item(1);
         Owned<IUserDescriptor> userDesc = createUserDescriptor();
         userDesc->set("jsmith","password");
 
@@ -2260,6 +2264,8 @@ void testDfuStreamRead(const char *fname)
         for (unsigned p=0; p<sourceN; p++)
         {
             Owned<IDFUFilePartReader> reader = srcFile->createFilePartReader(p, 0, nullptr, true);
+            if (filter)
+                reader->addFieldFilter(filter);
 
             reader->start();
 
@@ -3524,7 +3530,7 @@ int main(int argc, char* argv[])
             else if (TEST("MULTICONNECT"))
                 testMultiConnect();
             else if (TEST("DFUSTREAMREAD"))
-                testDfuStreamRead(testParams.item(0));
+                testDfuStreamRead(testParams);
             else if (TEST("DFUSTREAMWRITE"))
                 testDfuStreamWrite(testParams.ordinality() ? testParams.item(0) : nullptr);
             else if (TEST("DFUSTREAMCOPY"))

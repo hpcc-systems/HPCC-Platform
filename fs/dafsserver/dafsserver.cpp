@@ -1307,17 +1307,6 @@ public:
     {
         delete filterRow;
     }
-    virtual void init(IPropertyTree &config) override
-    {
-        PARENT::init(config);
-        if (config.hasProp("keyFilter"))
-        {
-            filterRow = new RtlDynRow(*record);
-            Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
-            ForEach(*filterIter)
-                filters.addFilter(*record, filterIter->query().queryProp(nullptr));
-        }
-    }
 //interface IVirtualFieldCallback
     virtual unsigned __int64 getFilePosition(const void * row) override
     {
@@ -1375,6 +1364,13 @@ public:
     {
         PARENT::init(config);
         translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
+        if (config.hasProp("keyFilter"))
+        {
+            filterRow = new RtlDynRow(*record);
+            Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
+            ForEach(*filterIter)
+                filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+        }
     }
 // IRemoteReadActivity impl.
     virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
@@ -1557,6 +1553,22 @@ public:
 
         headerLines = config.getPropInt64("headerLines"); // really this should be a published attribute too
     }
+    virtual void init(IPropertyTree &config) override
+    {
+        PARENT::init(config);
+        /* JCSMORE - this needs resolving properly, currently
+         * diskread filters on actual format, and this is filtering on output(projected) format.
+         * We probably need expected format sent too, and filter on that..
+         */
+        if (config.hasProp("keyFilter"))
+        {
+            const RtlRecord &outRecord = outMeta->queryRecordAccessor(true);
+            filterRow = new RtlDynRow(outRecord);
+            Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
+            ForEach(*filterIter)
+                filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+        }
+    }
     virtual StringBuffer &getInfoStr(StringBuffer &out) const override
     {
         return out.appendf("csvread[%s]", fileName.get());
@@ -1581,11 +1593,17 @@ public:
             if (retSz) // could it ever be 0 (skip) ??
             {
                 const void *ret = outBuilder.getSelf();
-                outBuilder.finishRow(retSz);
-                ++processed;
-                inputStream->skip(lineLength);
-                return ret;
+                if (fieldFilterMatch(ret))
+                {
+                    outBuilder.finishRow(retSz);
+                    ++processed;
+                    inputStream->skip(lineLength);
+                    return ret;
+                }
+                else
+                    outBuilder.removeBytes(retSz);
             }
+            inputStream->skip(lineLength);
         }
         eofSeen = true;
         close();
@@ -1762,6 +1780,22 @@ public:
         config.getProp("xpath", xpath);
         noRoot = config.getPropBool("noRoot");
     }
+    virtual void init(IPropertyTree &config) override
+    {
+        PARENT::init(config);
+        /* JCSMORE - this needs resolving properly, currently
+         * diskread filters on actual format, and this is filtering on output(projected) format.
+         * We probably need expected format sent too, and filter on that..
+         */
+        if (config.hasProp("keyFilter"))
+        {
+            const RtlRecord &outRecord = outMeta->queryRecordAccessor(true);
+            filterRow = new RtlDynRow(outRecord);
+            Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
+            ForEach(*filterIter)
+                filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+        }
+    }
     IColumnProvider *queryMatch() const { return lastMatch; }
     virtual StringBuffer &getInfoStr(StringBuffer &out) const override
     {
@@ -1788,9 +1822,14 @@ public:
                 if (retSz) // could it ever be 0 (skip) ??
                 {
                     const void *ret = outBuilder.getSelf();
-                    outBuilder.finishRow(retSz);
-                    ++processed;
-                    return ret;
+                    if (fieldFilterMatch(ret))
+                    {
+                        outBuilder.finishRow(retSz);
+                        ++processed;
+                        return ret;
+                    }
+                    else
+                        outBuilder.removeBytes(retSz);
                 }
             }
         }
