@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
     Owned<IGroup> group = createIGroup(1,&dalieps); 
 
     try {
-        initClientProcess(group, DCR_Other);            // I will add a DCR_Orbit at some point
+        initClientProcess(group, DCR_Testing);            // I will add a DCR_Orbit at some point
         try {
             doStuff();
         }

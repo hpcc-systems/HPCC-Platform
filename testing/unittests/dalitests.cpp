@@ -62,7 +62,7 @@ void daliClientInit()
     SocketEndpointArray epa;
     epa.append(ep);
     Owned<IGroup> group = createIGroup(epa);
-    initClientProcess(group, DCR_Other);
+    initClientProcess(group, DCR_Testing);
 
     initCounter++;
 }

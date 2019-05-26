@@ -163,9 +163,9 @@ public:
         try
         {
             IGroup * group = createIGroup(epa);
-//          CSystemCapability capability(DCR_Diagnostic, "DALITREE");
+//          CSystemCapability capability(DCR_TreeView, "DALITREE");
 //          capability.secure((byte *)CLIENT_ENCRYPT_KEY, strlen(CLIENT_ENCRYPT_KEY));
-            if(initClientProcess(group, DCR_Util, 0, NULL, NULL, CONNECTION_TIMEOUT))//, &capability)) 
+            if(initClientProcess(group, DCR_TreeView, 0, NULL, NULL, CONNECTION_TIMEOUT))//, &capability))
                 type = CT_remote;
             group->Release();
         }

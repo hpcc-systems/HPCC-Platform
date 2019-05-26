@@ -6477,14 +6477,11 @@ void CCovenSDSManager::saveDelta(const char *path, IPropertyTree &changeTree)
     if (externalEnvironment)
     {
         // don't save any changed to /Environment if external
-        if (0 == strncmp("/Environment", path, strlen("/Environment")))
+
+        if (startsWith(path, "/Environment") || (streq(path, "/") && changeTree.hasProp("*[@name=\"Environment\"]")))
         {
-            OWARNLOG("Attempt to change read-only Dali environment, path = %s", path);
-            return;
-        }
-        if (0 == strcmp("/", path) && changeTree.hasProp("*[@name=\"Environment\"]"))
-        {
-            OWARNLOG("Attempt to change read-only Dali environment, path = %s", path);
+            querySessionManager().refreshWhiteList();
+            PROGLOG("Dali Environment updated, path = %s", path);
             return;
         }
     }

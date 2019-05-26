@@ -18,8 +18,6 @@
 import lib_logging;
 import lib_workunitservices;
 
-#option('slaveDaliClient', true);
-
 Display :=
     SERVICE
         unsigned4 echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlDisplay';
@@ -56,5 +54,5 @@ SEQUENTIAL(
     before(doDisplay('Begin Apply....')),
     after(doDisplay('...End Apply'))
     ),
- OUTPUT(workunitservices.WorkunitMessages(WORKUNIT), { message })
+ NOTHOR(OUTPUT(workunitservices.WorkunitMessages(WORKUNIT), { message }))
 );

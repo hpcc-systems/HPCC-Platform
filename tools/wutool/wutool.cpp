@@ -363,7 +363,7 @@ int main(int argc, const char *argv[])
         if (globals->getProp("DALISERVER", daliServers))
         {
             Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
-            initClientProcess(serverGroup,DCR_Other);
+            initClientProcess(serverGroup, DCR_Testing);
             setPasswordsFromSDS();
         }
         else if (!serverSpecified)

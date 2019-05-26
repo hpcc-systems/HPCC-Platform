@@ -2592,7 +2592,7 @@ public:
             Sleep(1000);
             WriteLockBlock b(*reinitLock);
             PROGLOG("shutdown / reinit test");
-            reinitClientProcess(group, DCR_Other);
+            reinitClientProcess(group, DCR_Testing);
         }
         else
         {
@@ -3089,7 +3089,7 @@ void TestServerShutdown(IGroup *group)
         catch (IException *e) {
             pexception("Exception",e);
         }
-        reinitClientProcess(group, DCR_Other);
+        reinitClientProcess(group, DCR_Testing);
     }
 }
 
@@ -3447,9 +3447,9 @@ int main(int argc, char* argv[])
         IGroup *group = createIGroup(epa); 
 
         if (TEST("SESSION"))
-            initClientProcess(group,DCR_Other, testParams.ordinality() ? 0 : 7777);
+            initClientProcess(group,DCR_Testing, testParams.ordinality() ? 0 : 7777);
         else
-            initClientProcess(group, DCR_Other);
+            initClientProcess(group, DCR_Testing);
 
         
         //testlockprop("test::propagated_matchrecs");

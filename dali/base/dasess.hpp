@@ -44,31 +44,40 @@ enum DaliClientRole // if changed must update queryRoleName()
 {
     DCR_Unknown,
     DCR_Private,
-    DCR_Diagnostic,
+    DCR_Deprecated1,
     DCR_ThorSlave,
     DCR_ThorMaster,
-    DCR_Deprecated1, // legacy role
     DCR_Deprecated2, // legacy role
     DCR_Deprecated3, // legacy role
+    DCR_Deprecated4, // legacy role
     DCR_EclServer,
     DCR_EclAgent,
     DCR_DaliServer, // special (self)
     DCR_SashaServer,
-    DCR_Util,
-    DCR_Dfu,
+    DCR_Deprecated5,
+    DCR_Deprecated6,
     DCR_DfuServer,
     DCR_EspServer,
-    DCR_WuClient, // GAB etc
+    DCR_Deprecated7,
     DCR_Config,
-    DCR_Scheduler,
+    DCR_Deprecated8,
     DCR_RoxyMaster,
-    DCR_RoxySlave,
-    DCR_Other,
+    DCR_Deprecated9,
+    DCR_Deprecated10,
     DCR_BackupGen,
     DCR_AgentExec,
     DCR_EclScheduler,
     DCR_EclCCServer,
     DCR_EclCC,
+    DCR_DaFsControl,
+    DCR_SwapNode,
+    DCR_DaliAdmin,
+    DCR_UpdateEnv,
+    DCR_TreeView,
+    DCR_DaliDiag,
+    DCR_ScheduleAdmin,
+    DCR_Testing,
+    DCR_XRef,
     DCR_Max
 };
 
@@ -122,6 +131,8 @@ interface ISessionManager: extends IInterface
     virtual bool clearPermissionsCache(IUserDescriptor *udesc)=0;
     virtual bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg)=0;
     virtual bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)=0;
+    virtual void refreshWhiteList() = 0;
+    virtual StringBuffer &getWhiteList(StringBuffer &out) const = 0;
 };
 
 // the following are getPermissionsLDAP input flags for audit reporting

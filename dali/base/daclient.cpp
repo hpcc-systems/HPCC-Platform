@@ -290,7 +290,7 @@ bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp
     Owned<IGroup> group = createIGroup(epa);
 
     bool ret = true;
-    initClientProcess(group, DCR_Util);
+    initClientProcess(group, DCR_UpdateEnv);
     StringBuffer response;
     if (querySDS().updateEnvironment(env, forceGroupUpdate, response))
     {

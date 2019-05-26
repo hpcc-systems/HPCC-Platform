@@ -3330,7 +3330,7 @@ int main(int argc, char* argv[])
                 epa.append(ep);
                 Owned<IGroup> group = createIGroup(epa);
                 unsigned start = msTick();
-                initClientProcess(group, DCR_Util);
+                initClientProcess(group, DCR_DaliAdmin);
                 daliconnectelapsed = msTick()-start;
             }
             catch (IException *e) {
