@@ -73,7 +73,12 @@ CEspHttpServer::~CEspHttpServer()
                 if (paramStr && *paramStr)
                     logStr.appendf("?%s", paramStr);
 
-                DBGLOG("Request[%s]", logStr.str());
+                if (ctx->queryHasException())
+                    DBGLOG("Log request due to exception. Request[%s]", logStr.str());
+                else
+                    DBGLOG("Log request due to long processing time: %u seconds. Request[%s]",
+                        (unsigned) (ctx->queryProcessingTime() * 0.001), logStr.str());
+
                 if (m_request->isSoapMessage())
                 {
                     StringBuffer requestStr;
