@@ -1338,11 +1338,31 @@ EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
         return authSucceeded;
     }
 
+    //The userName may be in the Authorization header.
+    authReq.ctx->getUserID(userName);
+    if (!userName.isEmpty())
+        return authSucceeded;
+
     const char* userNameIn = (authReq.requestParams) ? authReq.requestParams->queryProp("username") : NULL;
     if (isEmptyString(userNameIn))
     {
-        //Display a GetUserName (similar to login) page to get a user name.
-        askUserLogin(authReq, "Empty username.");
+        //We should send BasicAuthenticationChallenge for CORS Request, HTPP Post Request, etc.
+        StringBuffer authorizationHeader, originHeader;
+        m_request->getHeader("Authorization", authorizationHeader);
+        m_request->getHeader("Origin", originHeader);
+        bool basicAuthentication = !authorizationHeader.isEmpty() || authReq.authBinding->isCORSRequest(originHeader.str()) ||
+            strieq(authReq.httpMethod.str(), POST_METHOD);
+        if (basicAuthentication)
+        {
+            ESPLOG(LogMin, "Authentication failed: send BasicAuthentication.");
+            m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), true);
+        }
+        else
+        {
+            ESPLOG(LogMin, "Authentication failed: call askUserLogin.");
+            //Display a GetUserName (similar to login) page to get a user name.
+            askUserLogin(authReq, "Empty username.");
+        }
         return authFailed;
     }
 
