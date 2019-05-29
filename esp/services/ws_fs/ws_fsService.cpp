@@ -40,6 +40,11 @@
 #include "sacmd.hpp"
 #include "exception_util.hpp"
 
+#define DFUSERVER_TYPE      "DfuServerProcess"
+#define FILE_DFUSERVER_LOG  "DFUServerLog"
+#define DFUWU_LOG_START     "DFU Server running job: "
+#define DFUWU_LOG_FINISHED  "DFU Server finished job: "
+
 #define DFU_WU_URL          "DfuWorkunitsAccess"
 #define DFU_EX_URL          "DfuExceptionsAccess"
 #define FILE_SPRAY_URL      "FileSprayAccess"
@@ -2688,37 +2693,147 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
     return true;
 }
 
+//the expected format for the log line is: 'LineID Date Time ProcessID ThreadID ...'.
+bool CFileSprayEx::parseDFUServerLogLine(const char* line, const char* endWUID, unsigned& processID)
+{
+    //Skip lineID, date and time
+    const char* bptr = line;
+    for (unsigned i = 0; i < 3; i++)
+    {
+        bptr = strchr(bptr, ' ');
+        if (!bptr)
+            return false;
+        bptr++;
+    }
+
+    //Read ProcessID
+    const char* eptr = bptr + 1;
+    while (*eptr && isdigit(*eptr))
+        eptr++;
+
+    if (*eptr != ' ')
+        return false;
+
+    processID = (unsigned) atoi_l(bptr, eptr - bptr);
+
+    return (endWUID && strstr(eptr+1, endWUID));
+}
+
+StringBuffer& CFileSprayEx::readDFUServerLog(IConstDFUWorkUnit* wu, const char* wuid, StringBuffer& outputBuf)
+{
+    //Get DFU server name and DFU server log
+    StringBuffer dfuServerName, dfuLog;
+    wu->getDFUServerName(dfuServerName);
+    wu->getDebugValue("dfulog", dfuLog);
+
+    //Find out the network address to read the log file
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+    Owned<IConstInstanceInfoIterator> instanceItr = constEnv->getInstanceIterator(DFUSERVER_TYPE, dfuServerName);
+    if (!instanceItr || !instanceItr->first())
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Instance not found for DfuServerProcess %s.", dfuServerName.str());
+
+    Owned<IConstMachineInfo> machine = instanceItr->query().getMachine();
+    if (!machine)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Machine not specified for DfuServerProcess %s.", dfuServerName.str());
+
+    SCMStringBuffer netAddress;
+    machine->getNetAddress(netAddress);
+
+    //Create IFile/IFileIO to read the log file
+    RemoteFilename rfn;
+    rfn.setRemotePath(dfuLog);
+    SocketEndpoint ep(netAddress.str());
+    rfn.setIp(ep);
+    OwnedIFile sourceFile = createIFile(rfn);
+    if (!sourceFile)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open %s at %s.", dfuLog.str(), netAddress.str());
+
+    OwnedIFileIO sourceIO = sourceFile->openShared(IFOread,IFSHfull);
+    if (!sourceIO)
+        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read file %s.", sourceFile->queryFilename());
+
+    //Read DFU server log for this workunit
+    VStringBuffer startwuid("%s%s", DFUWU_LOG_START, wuid);
+    VStringBuffer endwuid("%s%s", DFUWU_LOG_FINISHED, wuid);
+    bool eof = false;
+    bool outputThisLine = false;
+    unsigned processID = 0;
+    StringBuffer line;
+
+    Owned<IFileIOStream> ios = createIOStream(sourceIO);
+    Owned<IStreamLineReader> lineReader = createLineReader(ios, true);
+    while (!eof)
+    {
+        eof = lineReader->readLine(line.clear());
+        if (outputThisLine)
+        {
+            //If the slave is restarted before WU is finished, we cannot find out the "Finished wuid=...".
+            //So, we should check whether the DFU server is restarting or not.
+            unsigned pID = 0;
+            bool foundEndWUID = parseDFUServerLogLine(line, endwuid, pID);
+            if ((pID > 0) && (pID != processID))
+                break; //the DFU server is restarting...
+
+            outputBuf.append(line.length(), line.str());
+            if (foundEndWUID)
+                outputThisLine = false;
+        }
+        else if (strstr(line, startwuid))
+        {
+            outputThisLine = true;
+            outputBuf.append(line.length(), line.str());
+            if (processID == 0)
+                parseDFUServerLogLine(line, nullptr, processID);
+        }
+    }
+    return outputBuf;
+}
+
+
+
 bool CFileSprayEx::onDFUWUFile(IEspContext &context, IEspDFUWUFileRequest &req, IEspDFUWUFileResponse &resp)
 {
     try
     {
         context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
-        if (*req.getWuid())
+        const char* wuid = req.getWuid();
+        if (isEmptyString(wuid))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "DFU workunit ID not specified.");
+
+        Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+        Owned<IConstDFUWorkUnit> wu = factory->openWorkUnit(wuid, false);
+        if(!wu)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "DFU workunit %s not found.", wuid);
+
+        //const char* type = req.getType();
+        const char* type = FILE_DFUSERVER_LOG;
+        if (!isEmptyString(type) && strieq(type, FILE_DFUSERVER_LOG))
         {
-            Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-            Owned<IConstDFUWorkUnit> wu = factory->openWorkUnit(req.getWuid(), false);
-            if(!wu)
-                throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
+            StringBuffer buf;
+            readDFUServerLog(wu, wuid, buf);
+            resp.setFile(buf.str());
+            resp.setFile_mimetype(HTTP_TYPE_TEXT_PLAIN);
+            return true;
+        }
 
-            PROGLOG("DFUWUFile: %s", req.getWuid());
-            StringBuffer xmlbuf;
-            xmlbuf.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        StringBuffer xmlbuf;
+        xmlbuf.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 
-            const char* plainText = req.getPlainText();
-            if (plainText && (!stricmp(plainText, "yes")))
-            {
-                wu->toXML(xmlbuf);
-                resp.setFile(xmlbuf.str());
-                resp.setFile_mimetype(HTTP_TYPE_TEXT_PLAIN);
-            }
-            else
-            {
-                xmlbuf.append("<?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>");
-                wu->toXML(xmlbuf);
-                resp.setFile(xmlbuf.str());
-                resp.setFile_mimetype(HTTP_TYPE_APPLICATION_XML);
-            }
+        const char* plainText = req.getPlainText();
+        if (plainText && (!stricmp(plainText, "yes")))
+        {
+            wu->toXML(xmlbuf);
+            resp.setFile(xmlbuf.str());
+            resp.setFile_mimetype(HTTP_TYPE_TEXT_PLAIN);
+        }
+        else
+        {
+            xmlbuf.append("<?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>");
+            wu->toXML(xmlbuf);
+            resp.setFile(xmlbuf.str());
+            resp.setFile_mimetype(HTTP_TYPE_APPLICATION_XML);
         }
     }
     catch(IException* e)

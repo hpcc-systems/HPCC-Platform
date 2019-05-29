@@ -310,6 +310,7 @@ public:
     virtual IConstMachineInfo * getMachineByAddress(const char * machineIp) const;
     virtual IConstMachineInfo * getMachineForLocalHost() const;
     virtual IConstDropZoneInfo * getDropZone(const char * name) const;
+    virtual IConstInstanceInfoIterator * getInstanceIterator(const char * type, const char * name) const;
     virtual IConstInstanceInfo * getInstance(const char * type, const char * version, const char *domain) const;
     virtual CConstInstanceInfo * getInstanceByIP(const char *type, const char *version, IpAddress &ip) const;
     virtual IConstComputerTypeInfo * getComputerType(const char * name) const;
@@ -456,6 +457,8 @@ public:
             { return c->getMachineForLocalHost(); }
     virtual IConstDropZoneInfo * getDropZone(const char * name) const
             { return c->getDropZone(name); }
+    virtual IConstInstanceInfoIterator * getInstanceIterator(const char *type, const char * name) const
+            { return c->getInstanceIterator(type, name); }
     virtual IConstInstanceInfo * getInstance(const char *type, const char *version, const char *domain) const
             { return c->getInstance(type, version, domain); }
     virtual bool getRunInfo(IStringVal & path, IStringVal & dir, const char *type, const char *version, const char *machineaddr,const char *defprogname) const
@@ -1723,6 +1726,21 @@ IConstInstanceInfo * CLocalEnvironment::getInstance(const char *type, const char
     return nullptr;
 }
 
+IConstInstanceInfoIterator * CLocalEnvironment::getInstanceIterator(const char *type, const char * name) const
+{
+    if (isEmptyString(type) || isEmptyString(name))
+        return nullptr;
+
+    StringBuffer xpath("Software/");
+    xpath.append(type);
+    if (name)
+        xpath.append("[@name='").append(name).append("']");
+    xpath.append("/Instance");
+
+    synchronized procedure(safeCache);
+    assertex(p);
+    return new CConstInstanceInfoIterator(this, p->getElements(xpath));
+}
 
 CConstInstanceInfo * CLocalEnvironment::getInstanceByIP(const char *type, const char *version, IpAddress &ip) const
 {

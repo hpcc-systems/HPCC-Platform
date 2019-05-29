@@ -178,6 +178,7 @@ interface IConstEnvironment : extends IConstEnvBase
     virtual IConstMachineInfo * getMachineForLocalHost() const = 0;
     virtual IConstDropZoneInfo * getDropZone(const char * name) const = 0;
     virtual IConstInstanceInfo * getInstance(const char * type, const char * version, const char * domain) const = 0;
+    virtual IConstInstanceInfoIterator * getInstanceIterator(const char * type, const char * name) const = 0;
     virtual IConstComputerTypeInfo * getComputerType(const char * name) const = 0;
     virtual bool getRunInfo(IStringVal & path, IStringVal & dir, const char * type, const char * version, const char * machineaddr, const char * defaultprogname) const = 0;
     virtual IEnvironment & lock() const = 0;

@@ -68,6 +68,8 @@ class CFileSprayEx : public CFileSpray
 {
     void readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath,
         StringBuffer& sourceIPReq, StringBuffer& sourcePathReq);
+    StringBuffer& readDFUServerLog(IConstDFUWorkUnit* wu, const char* wuid, StringBuffer& outputBuf);
+    bool parseDFUServerLogLine(const char* line, const char* endWUID, unsigned& processID);
 
 public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
