@@ -266,7 +266,7 @@ void startSlaveLog()
     lf->beginLogging();
 
     StringBuffer url;
-    createUNCFilename(lf->queryLogFileSpec(), url, false);
+    createUNCFilename(lf->queryLogFileSpec(), url);
 
     LOG(MCdebugProgress, thorJob, "Opened log file %s", url.str());
     LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
