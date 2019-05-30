@@ -140,7 +140,9 @@ class CWsDfuEx : public CWsDfu
     Owned<IConstEnvironment> env;
     static const unsigned defaultMaxFileAccessExpirySeconds=86400; // 24 hours
 
-    void dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn, SessionId clientSessionId, const char *requestId, unsigned expirySecs, bool returnTextResponse, unsigned lockTimeoutMs, IEspDFUFileAccessResponse &resp);
+    void dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn, SessionId clientSessionId,
+        const char *auditMethod, const char *requestId, unsigned expirySecs, bool returnTextResponse,
+        unsigned lockTimeoutMs, IEspDFUFileAccessResponse &resp);
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsDfuEx(){};

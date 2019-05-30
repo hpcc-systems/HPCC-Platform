@@ -188,6 +188,14 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
     maxFileAccessExpirySeconds = serviceTree->getPropInt("@maxFileAccessExpirySeconds", defaultMaxFileAccessExpirySeconds);
 }
 
+StringBuffer &createAuditUserString(IEspContext &context, const char *userID, StringBuffer &auditUser)
+{
+    if (!isEmptyString(userID))
+        auditUser.append(userID).append('@');
+    context.getPeer(auditUser);
+    return auditUser;
+}
+
 bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEspDFUSearchResponse & resp)
 {
     try
@@ -1250,10 +1258,10 @@ typedef enum {
 
 
 DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles,
-    const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults, bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively);
+    const char *auditStr, const char *auditUser, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults, bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively);
 
 bool doRemoveFileFromSuperfiles(const char *lfn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles, bool deleteRecursively,
-    const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults)
+    const char *auditStr, const char *auditUser, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults)
 {
     StringArray emptySuperFiles;
     IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
@@ -1290,13 +1298,13 @@ bool doRemoveFileFromSuperfiles(const char *lfn, IUserDescriptor *userdesc, Stri
         }
     }
     ForEachItemIn(i, emptySuperFiles)
-        doDeleteFile(emptySuperFiles.item(i), userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, false, true, deleteRecursively);
+        doDeleteFile(emptySuperFiles.item(i), userdesc, superFiles, failedFiles, auditStr, auditUser, returnStr, actionResults, false, true, deleteRecursively);
 
     return true;
 }
 
 DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles,
-    const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults,
+    const char *auditStr, const char *auditUser, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults,
     bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively)
 {
     StringArray parsed;
@@ -1333,7 +1341,7 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
             }
         }
         fdir.removeEntry(fn, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
-        LOG(daliAuditLogCat, "%s,%s", auditStr, fn);
+        LOG(daliAuditLogCat, "%s,%s,,%s,\"method=WsDfu.DFUArrayAction\"", auditStr, fn, auditUser);
         setDeleteFileResults(lfn, group, false, isSuper ? "Deleted Superfile" : "Deleted File", NULL, returnStr, actionResults);
     }
     catch(IException* e)
@@ -1342,9 +1350,9 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
         e->errorMessage(emsg);
         if (removeFromSuperfiles && strstr(emsg, "owned by"))
         {
-            if (!doRemoveFileFromSuperfiles(lfn, userdesc, superFiles, failedFiles, deleteRecursively, auditStr, returnStr, actionResults))
+            if (!doRemoveFileFromSuperfiles(lfn, userdesc, superFiles, failedFiles, deleteRecursively, auditStr, auditUser, returnStr, actionResults))
                 return DeleteActionFailure;
-            return doDeleteFile(fn, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, superFilesOnly, false, false);
+            return doDeleteFile(fn, userdesc, superFiles, failedFiles, auditStr, auditUser, returnStr, actionResults, superFilesOnly, false, false);
         }
         if (e->errorCode() == DFSERR_CreateAccessDenied)
             emsg.replaceString("Create ", "Delete ");
@@ -1362,7 +1370,7 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
 }
 
 void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles,
-    const char *auditStr, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
+    const char *auditStr, const char *auditUser, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
     bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively)
 {
     ForEachItemIn(i, files)
@@ -1372,7 +1380,7 @@ void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &s
             continue;
 
         PROGLOG("Deleting %s", fn);
-        if (DeleteActionFailure==doDeleteFile(fn, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, superFilesOnly, removeFromSuperfiles, deleteRecursively))
+        if (DeleteActionFailure==doDeleteFile(fn, userdesc, superFiles, failedFiles, auditStr, auditUser, returnStr, actionResults, superFilesOnly, removeFromSuperfiles, deleteRecursively))
         {
             failedFiles.appendUniq(fn);
             PROGLOG("Delete %s failed", fn);
@@ -1384,17 +1392,17 @@ void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &s
 }
 
 inline void doDeleteSuperFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles,
-    StringArray &failedFiles, const char *auditStr, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
+    StringArray &failedFiles, const char *auditStr, const char *auditUser, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
     bool removeFromSuperfiles, bool deleteRecursively)
 {
-    doDeleteFiles(files, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, true, removeFromSuperfiles, deleteRecursively);
+    doDeleteFiles(files, userdesc, superFiles, failedFiles, auditStr, auditUser, returnStr, actionResults, true, removeFromSuperfiles, deleteRecursively);
 }
 
 inline void doDeleteSubFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles,
-    StringArray &failedFiles, const char *auditStr, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
+    StringArray &failedFiles, const char *auditStr, const char *auditUser, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
     bool removeFromSuperfiles, bool deleteRecursively)
 {
-    doDeleteFiles(files, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, false, removeFromSuperfiles, deleteRecursively);
+    doDeleteFiles(files, userdesc, superFiles, failedFiles, auditStr, auditUser, returnStr, actionResults, false, removeFromSuperfiles, deleteRecursively);
 }
 
 bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
@@ -1412,20 +1420,16 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
     }
 
     StringBuffer returnStr;
-    StringBuffer auditStr(",FileAccess,WsDfu,DELETED,");
     IArrayOf<IEspDFUActionInfo> actionResults;
 
     StringArray superFiles, failedFiles;
 
-    auditStr.append(espProcess.get());
-    auditStr.append(',');
-    if (!isEmptyString(username))
-        auditStr.append(username).append('@');
-    context.getPeer(auditStr);
-
-    doDeleteSuperFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, auditStr.str(),
+    VStringBuffer auditStr(",FileAccess,Esp,%s,DELETE", espProcess.get());
+    StringBuffer auditUser;
+    createAuditUserString(context, username, auditUser);
+    doDeleteSuperFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, auditStr, auditUser,
         returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
-    doDeleteSubFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, auditStr.str(),
+    doDeleteSubFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, auditStr, auditUser,
         returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
 
     if (version >= 1.27)
@@ -6019,7 +6023,9 @@ SecAccessFlags translateToSecAccessFlags(CSecAccessType from)
     }
 }
 
-void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn, SessionId clientSessionId, const char *requestId, unsigned expirySecs, bool returnTextResponse, unsigned lockTimeoutMs, IEspDFUFileAccessResponse &resp)
+void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn,
+    SessionId clientSessionId, const char *auditMethod, const char *requestId, unsigned expirySecs,
+    bool returnTextResponse, unsigned lockTimeoutMs, IEspDFUFileAccessResponse &resp)
 {
     StringBuffer fileName;
     lfn.get(fileName, false, true);
@@ -6096,7 +6102,11 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
         resp.setType(kind);
     }
 
-    LOG(daliAuditLogCat,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", cluster.str(), userID.str(), fileName.str(), requestId, expirySecs);
+    StringBuffer auditUser;
+    createAuditUserString(context, userID, auditUser);
+    LOG(daliAuditLogCat,",FileAccess,Esp,%s,READ,%s@%s,,%s,\"method=%s,jobid=%s,expirySecs=%d\"",
+        espProcess.get(), fileName.str(), cluster.str(), auditUser.str(),
+        auditMethod, requestId, expirySecs);
 }
 
 // NB: deprecated from ver >= 1.50
@@ -6112,7 +6122,7 @@ bool CWsDfuEx::onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &r
         lfn.set(requestBase.getName());
         lfn.setCluster(requestBase.getCluster());
 
-        dFUFileAccessCommon(context, lfn, 0, requestBase.getJobId(), requestBase.getExpirySeconds(), returnTextResponse, 0, resp);
+        dFUFileAccessCommon(context, lfn, 0, "WsDfu.DFUFileAccess", requestBase.getJobId(), requestBase.getExpirySeconds(), returnTextResponse, 0, resp);
     }
     catch (IException *e)
     {
@@ -6129,7 +6139,7 @@ bool CWsDfuEx::onDFUFileAccessV2(IEspContext &context, IEspDFUFileAccessV2Reques
         lfn.set(req.getName());
         lfn.setCluster(req.getCluster());
 
-        dFUFileAccessCommon(context, lfn, req.getSessionId(), req.getRequestId(), req.getExpirySeconds(), req.getReturnTextResponse(), req.getLockTimeoutMs(), resp);
+        dFUFileAccessCommon(context, lfn, req.getSessionId(), "WsDfu.DFUFileAccessV2", req.getRequestId(), req.getExpirySeconds(), req.getReturnTextResponse(), req.getLockTimeoutMs(), resp);
     }
     catch (IException *e)
     {
@@ -6571,7 +6581,10 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
 
         newFile->rename(newFileName, userDesc);
 
-        LOG(daliAuditLogCat,",FileAccess,EspProcess,CREATED,%s,%s,%s", groupName, userId.str(), newFileName.str());
+        StringBuffer auditUser;
+        createAuditUserString(context, userId, auditUser);
+        LOG(daliAuditLogCat,",FileAccess,Esp,%s,CREATE,%s@%s,,%s,\"method=WsDfu.DFUFilePublish,LockTimeoutMS=%d\"",
+            espProcess.get(), newFileName.str(), groupName, auditUser.str(), req.getLockTimeoutMs());
     }
     catch (IException *e)
     {
