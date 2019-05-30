@@ -53,6 +53,9 @@
                                   hpcc:tooltip="Default connection timeout when sending query to Thor"/>
                     <xs:attribute name="wuQueueName" hpcc:displayName="Workunit Queue Name" type="xs:string"
                                   hpcc:tooltip="eclAgent Workunit Execution Queue Name"/>
+                    <xs:attribute name="analyzeWorkunit" hpcc:displayName="Analyze Workunit" type="xs:boolean"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="eclAgent analyzes workunit post-execution"/>
                 </xs:attributeGroup>
                 <xs:sequence>
                     <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded"

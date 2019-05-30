@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 #include "anacommon.hpp"
+#include "workunit.hpp"
 
 int compareIssuesCostOrder(CInterface * const * _l, CInterface * const * _r)
 {
@@ -36,6 +37,16 @@ void PerformanceIssue::print() const
     printf("[%" I64F "dms] %s: %s\n", statUnits2msecs(cost), scope.str(), comment.str());
 }
 
+void PerformanceIssue::createException(IWorkUnit * wu)
+{
+    Owned<IWUException> we = wu->createException();
+    we->setSeverity(SeverityInformation);
+    we->setScope(scope.str());
+    we->setPriority((unsigned) statUnits2msecs(cost));
+    we->setExceptionMessage(comment.str());
+    we->setExceptionSource("Workunit Analyser");
+}
+
 void PerformanceIssue::set(stat_type _cost, const char * msg, ...)
 {
     cost = _cost;
@@ -44,4 +55,3 @@ void PerformanceIssue::set(stat_type _cost, const char * msg, ...)
     comment.valist_appendf(msg, args);
     va_end(args);
 }
-

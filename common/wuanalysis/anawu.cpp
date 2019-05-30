@@ -88,17 +88,17 @@ public:
 
     void check(const char * scope, IWuActivity & activity);
     void analyse(IConstWorkUnit * wu);
+    void print();
+    void update(IWorkUnit *wu);
 
 protected:
     void collateWorkunitStats(IConstWorkUnit * workunit, const WuScopeFilter & filter);
-    void printWarnings();
     WuScope * selectFullScope(const char * scope);
 
-protected:
     CIArrayOf<AActivityRule> rules;
     CIArrayOf<PerformanceIssue> issues;
     WuScope root;
-    WuAnalyseOptions & options;
+    WuAnalyseOptions options;
 };
 
 //-----------------------------------------------------------------------------------------------------------
@@ -331,8 +331,21 @@ void WorkunitAnalyser::analyse(IConstWorkUnit * wu)
     root.connectActivities();
     // root.trace();
     root.applyRules(*this);
-    printWarnings();
+    issues.sort(compareIssuesCostOrder);
 }
+
+void WorkunitAnalyser::print()
+{
+    ForEachItemIn(i, issues)
+        issues.item(i).print();
+}
+
+void WorkunitAnalyser::update(IWorkUnit *wu)
+{
+    ForEachItemIn(i, issues)
+        issues.item(i).createException(wu);
+}
+
 
 void WorkunitAnalyser::collateWorkunitStats(IConstWorkUnit * workunit, const WuScopeFilter & filter)
 {
@@ -352,14 +365,6 @@ void WorkunitAnalyser::collateWorkunitStats(IConstWorkUnit * workunit, const WuS
             e->Release();
         }
     }
-}
-
-void WorkunitAnalyser::printWarnings()
-{
-    issues.sort(compareIssuesCostOrder);
-
-    ForEachItemIn(i, issues)
-        issues.item(i).print();
 }
 
 WuScope * WorkunitAnalyser::selectFullScope(const char * scope)
@@ -382,10 +387,16 @@ WuScope * WorkunitAnalyser::selectFullScope(const char * scope)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void analyseWorkunit(IConstWorkUnit * wu)
+void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options)
 {
-    WuAnalyseOptions options;
-    options.skewThreshold = statSkewPercent(10);
     WorkunitAnalyser analyser(options);
     analyser.analyse(wu);
+    analyser.update(wu);
+}
+
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options)
+{
+    WorkunitAnalyser analyser(options);
+    analyser.analyse(wu);
+    analyser.print();
 }

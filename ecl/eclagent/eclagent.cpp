@@ -52,6 +52,7 @@
 #include "roxiedebug.hpp"
 #include "roxiehelper.hpp"
 #include "jlzw.hpp"
+#include "anawu.hpp"
 
 using roxiemem::OwnedRoxieString;
 
@@ -1950,6 +1951,14 @@ void EclAgent::doProcess()
             break;
         }
 
+        if (w->getState() == WUStateCompleted && getClusterType(clusterType)==ThorLCRCluster)
+        {
+            if (w->getDebugValueBool("analyzeWorkunit", agentTopology->getPropBool("@analyzeWorkunit", true)))
+            {
+                WuAnalyseOptions options;  // TODO: read options from configuration file
+                analyseWorkunit(w.get(), options);
+            }
+        }
         if(w->queryEventScheduledCount() > 0)
             switch(w->getState())
             {
