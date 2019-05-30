@@ -93,6 +93,33 @@ void check(CassError rc)
     }
 }
 
+CassConsistency cass_consistency_from_string(const char *s)
+{
+    if (strieq("ANY", s))
+	    return CASS_CONSISTENCY_ANY;
+    if (strieq("ONE", s))
+	    return CASS_CONSISTENCY_ONE;
+    if (strieq("TWO", s))
+	    return CASS_CONSISTENCY_TWO;
+    if (strieq("THREE", s))
+	    return CASS_CONSISTENCY_THREE;
+    if (strieq("QUORUM", s))
+	    return CASS_CONSISTENCY_QUORUM;
+    if (strieq("ALL", s))
+	    return CASS_CONSISTENCY_ALL;
+    if (strieq("LOCAL_QUORUM", s))
+	    return CASS_CONSISTENCY_LOCAL_QUORUM;
+    if (strieq("EACH_QUORUM", s))
+	    return CASS_CONSISTENCY_EACH_QUORUM;
+    if (strieq("SERIAL", s))
+	    return CASS_CONSISTENCY_SERIAL;
+    if (strieq("LOCAL_SERIAL", s))
+	    return CASS_CONSISTENCY_LOCAL_SERIAL;
+    if (strieq("LOCAL_ONE", s))
+	    return CASS_CONSISTENCY_LOCAL_ONE;
+   return CASS_CONSISTENCY_UNKNOWN;
+}
+
 // Wrappers to Cassandra structures that require corresponding releases
 
 void CassandraClusterSession::setOptions(const StringArray &options)
@@ -259,6 +286,13 @@ void CassandraClusterSession::setOptions(const StringArray &options)
                 cass_bool_t enabled = getBoolOption(subargs.item(0), "enabled");
                 unsigned delay_secs = getUnsignedOption(subargs.item(0), "delay_secs");
                 cass_cluster_set_tcp_keepalive(cluster, enabled, delay_secs);
+            }
+            else if (strieq(optName, "consistency"))
+            {
+                CassConsistency consistency = cass_consistency_from_string(val);
+                if (consistency == CASS_CONSISTENCY_UNKNOWN)
+                    failx("Unrecognized cassandra consistency value %s", val);
+                checkSetOption(cass_cluster_set_consistency(cluster, consistency), "consistency");
             }
             else
                 failx("Unrecognized option %s", optName.str());
