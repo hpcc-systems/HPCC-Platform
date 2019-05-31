@@ -1164,8 +1164,8 @@ private:
                 const RtlTypeInfo *sourceType = sourceRecInfo.queryType(matchField);
 
                 size_t sourceOffset = 0;
-                const byte *source;
-                size_t copySize;
+                const byte *source = nullptr;
+                size_t copySize = 0;
                 if (binarySource)
                 {
                     const RtlRow &rtlRow = *(const RtlRow *)sourceRow;
@@ -1173,12 +1173,6 @@ private:
                     source = rtlRow.queryRow() + sourceOffset;
                     copySize = rtlRow.getSize(matchField);
                 }
-                else
-                {
-                    const IDynamicFieldValueFetcher &callbackRowHandler = *(const IDynamicFieldValueFetcher *)sourceRow;
-                    source = callbackRowHandler.queryValue(matchField, copySize);
-                }
-
                 if (match.matchType & match_deblob)
                 {
                     offset_t blobId = sourceType->getInt(source);
@@ -1244,8 +1238,12 @@ private:
                         offset = translateScalar(builder, offset, field, *type, *sourceType, source);
                         break;
                     case match_typecast|match_dynamic:
+                    {
+                        const IDynamicFieldValueFetcher &callbackRowHandler = *(const IDynamicFieldValueFetcher *)sourceRow;
+                        source = callbackRowHandler.queryValue(matchField, copySize);
                         offset = translateScalarFromUtf8(builder, offset, field, *type, *sourceType, (const char *)source, (size_t)copySize);
                         break;
+                    }
                     case match_link:
                     {
                         // a 32-bit record count, and a (linked) pointer to an array of record pointers
@@ -1460,7 +1458,7 @@ private:
         case type_filepos:
         case type_keyedint:
         {
-            __int64 res = rtlUtf8ToInt(srcSize, source);
+            __int64 res = rtlStrToInt8(srcSize, source);
             offset = destType.buildInt(builder, offset, field, res);
             break;
         }

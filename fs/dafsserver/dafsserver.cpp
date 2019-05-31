@@ -1129,6 +1129,9 @@ static IOutputMetaData *getTypeInfoOutputMetaData(IPropertyTree &actNode, const 
 class CRemoteActivityBase : public CSimpleInterface
 {
 public:
+    /* NB: to be called after derived class is fully constructed.
+     * It is not until then that all meta info is initialized.
+     */
     virtual void init(IPropertyTree &config) { }
 };
 
