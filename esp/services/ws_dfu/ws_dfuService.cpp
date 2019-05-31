@@ -6200,7 +6200,11 @@ static IGroup *getDFUFileIGroup(const char *clusterName, ClusterType clusterType
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "getDFUFileIGroup: Failed to get ConfigurationDirectory: %s.", groupName.str());
 
         GroupType grpType = (clusterType == ThorLCRCluster) ? grp_thor : ((clusterType == HThorCluster) ? grp_hthor : grp_roxie);
-        queryNamedGroupStore().add(groupName.str(), group, false, defaultDir.str(), grpType);
+
+        std::vector<std::string> hosts;
+        ForEachItemIn(l, locations)
+            hosts.push_back(locations.item(l));
+        queryNamedGroupStore().add(groupName, hosts, false, defaultDir, grpType);
         ESPLOG(LogMin, "DFUFileIGroup %s added", groupName.str());
     }
     return group.getClear();

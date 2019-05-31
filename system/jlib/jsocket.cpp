@@ -6832,6 +6832,39 @@ int wait_write_multiple(UnsignedArray &socks,       //IN   sockets to be checked
     return wait_multiple(false, socks, timeoutMS, readySocks);
 }
 
+inline bool isIPV4Internal(const char *ip)
+{
+    struct sockaddr_in sa;
+    return 0 != inet_pton(AF_INET, ip, &sa.sin_addr);
+}
+
+inline bool isIPV6Internal(const char *ip)
+{
+    struct sockaddr_in6 sa;
+    return 0 != inet_pton(AF_INET6, ip, &sa.sin6_addr);
+}
+
+bool isIPV4(const char *ip)
+{
+    if (isEmptyString(ip))
+        return false;
+    return isIPV4Internal(ip);
+}
+
+bool isIPV6(const char *ip)
+{
+    if (isEmptyString(ip))
+        return false;
+    return isIPV6Internal(ip);
+}
+
+bool isIPAddress(const char *ip)
+{
+    if (isEmptyString(ip))
+        return false;
+    return isIPV4(ip) || isIPV6(ip);
+}
+
 
 class CWhiteListHandler : public CSimpleInterfaceOf<IWhiteListHandler>, implements IWhiteListWriter
 {

@@ -39,6 +39,8 @@
 #include "dafdesc.hpp"
 #include "seclib.hpp"
 
+#include <vector>
+
 typedef __int64 DistributedLockID;
 #define FOREIGN_DALI_TIMEOUT (1000*60*5)
 
@@ -710,16 +712,16 @@ interface INamedGroupIterator: extends IInterface
     virtual StringBuffer &getdir(StringBuffer &dir) = 0;
 };
 
-interface INamedGroupStore: implements IGroupResolver
+interface INamedGroupStore : extends IGroupResolver
 {
     virtual IGroup *lookup(const char *logicalgroupname) = 0;
     virtual INamedGroupIterator *getIterator() = 0;
     virtual INamedGroupIterator *getIterator(IGroup *match, bool exact=false) = 0;
-    virtual void add(const char *logicalgroupname,IGroup *group, bool cluster=false, const char *dir=NULL, GroupType groupType = grp_unknown) = 0;
+    virtual void add(const char *logicalgroupname, const std::vector<std::string> &hosts, bool cluster=false, const char *dir=NULL, GroupType groupType = grp_unknown) = 0;
+    virtual unsigned removeNode(const char *logicalgroupname, const char *nodeToRemove) = 0;
     virtual void remove(const char *logicalgroupname) = 0;
-    virtual bool find(IGroup *grp, StringBuffer &lname, bool add=false) = 0;
     virtual void addUnique(IGroup *group,StringBuffer &lname,const char *dir=NULL) = 0;
-    virtual void swapNode(const IpAddress &from, const IpAddress &to) = 0;
+    virtual void swapNode(const char *from, const char *to) = 0;
     virtual IGroup *lookup(const char *logicalgroupname, StringBuffer &dir, GroupType &groupType) = 0;
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;     // sets default timeout for SDS connections and locking
     virtual unsigned setRemoteTimeout(unsigned timems) = 0;      // sets default timeout for remote SDS connections and locking
@@ -788,11 +790,11 @@ extern da_decl IDaliServer *createDaliDFSServer(IPropertyTree *config); // calle
 // to initialize clustergroups after clusters change in the environment
 extern da_decl void initClusterGroups(bool force, StringBuffer &response, IPropertyTree *oldEnvironment, unsigned timems=INFINITE);
 extern da_decl bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &response, unsigned timems=INFINITE);
-extern da_decl bool addClusterSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &response, unsigned timems=INFINITE);
-extern da_decl bool removeClusterSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &response, unsigned timems=INFINITE);
+extern da_decl bool addClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems=INFINITE);
+extern da_decl bool removeClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems=INFINITE);
 // should poss. belong in lib workunit
-extern da_decl StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupName);
-extern da_decl StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &groupName);
+extern da_decl StringBuffer &getClusterGroupName(const IPropertyTree &cluster, StringBuffer &groupName);
+extern da_decl StringBuffer &getClusterSpareGroupName(const IPropertyTree &cluster, StringBuffer &groupName);
 extern da_decl IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned timems=INFINITE); // returns the raw cluster group (as defined in the Cluster topology)
 extern da_decl IGroup *getClusterProcessNodeGroup(const char *clusterName, const char *type, unsigned timems=INFINITE); // returns the group of all processes of cluster group (i.e. cluster group * slavesPerNode)
 

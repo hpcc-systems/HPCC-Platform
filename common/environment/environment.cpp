@@ -168,7 +168,7 @@ private:
     // NOTE - order is important - we need to construct before p and (especially) destruct after p
     Owned<IRemoteConnection> conn;
     Owned<IPropertyTree> p;
-    mutable MapStringToMyClass<IConstEnvBase> cache;
+    mutable MapStringToMyClass<IConstEnvBase> cache; // NB: map of 'MappingStringToIInterface' that Link's the added IConstEnvBase, and Release's on element removal.
     mutable Mutex safeCache;
     mutable bool dropZoneCacheBuilt;
     mutable bool machineCacheBuilt;
@@ -307,7 +307,7 @@ public:
     virtual IEnvironment& lock() const;
     virtual IConstDomainInfo * getDomain(const char * name) const;
     virtual IConstMachineInfo * getMachine(const char * name) const;
-    virtual IConstMachineInfo * getMachineByAddress(const char * machineIp) const;
+    virtual IConstMachineInfo * getMachineByAddress(const char * hostOrIP) const;
     virtual IConstMachineInfo * getMachineForLocalHost() const;
     virtual IConstDropZoneInfo * getDropZone(const char * name) const;
     virtual IConstInstanceInfo * getInstance(const char * type, const char * version, const char *domain) const;
@@ -462,8 +462,8 @@ public:
             { return c->getDomain(name); }
     virtual IConstMachineInfo * getMachine(const char * name) const
             { return c->getMachine(name); }
-    virtual IConstMachineInfo * getMachineByAddress(const char * machineIp) const
-            { return c->getMachineByAddress(machineIp); }
+    virtual IConstMachineInfo * getMachineByAddress(const char * hostOrIP) const
+            { return c->getMachineByAddress(hostOrIP); }
     virtual IConstMachineInfo * getMachineForLocalHost() const
             { return c->getMachineForLocalHost(); }
     virtual IConstDropZoneInfo * getDropZone(const char * name) const
@@ -1463,12 +1463,12 @@ void CLocalEnvironment::buildMachineCache() const
         Owned<IPropertyTreeIterator> it = p->getElements("Hardware/Computer");
         ForEach(*it)
         {
+            Owned<IConstEnvBase> cached = new CConstMachineInfo((CLocalEnvironment *) this, &it->query());
             const char *name = it->query().queryProp("@name");
             if (name)
             {
                 StringBuffer x("Hardware/Computer[@name=\"");
                 x.append(name).append("\"]");
-                Owned<IConstEnvBase> cached = new CConstMachineInfo((CLocalEnvironment *) this, &it->query());
                 cache.setValue(x.str(), cached);
             }
             const char * netAddress = it->query().queryProp("@netAddress");
@@ -1476,7 +1476,6 @@ void CLocalEnvironment::buildMachineCache() const
             {
                 StringBuffer x("Hardware/Computer[@netAddress=\"");
                 x.append(netAddress).append("\"]");
-                Owned<IConstEnvBase> cached = new CConstMachineInfo((CLocalEnvironment *) this, &it->query());
                 cache.setValue(x.str(), cached);
 
                 IpAddress ip;
@@ -1487,7 +1486,6 @@ void CLocalEnvironment::buildMachineCache() const
             numOfMachines++;
             StringBuffer x("Hardware/Computer[@id=\"");
             x.append(MACHINE_PREFIX).append(numOfMachines).append("\"]");
-            Owned<IConstEnvBase> cached = new CConstMachineInfo((CLocalEnvironment *) this, &it->query());
             cache.setValue(x.str(), cached);
         }
         machineCacheBuilt = true;
@@ -1589,53 +1587,45 @@ IConstMachineInfo * CLocalEnvironment::getMachine(const char * name) const
     return (CConstMachineInfo *) cached;
 }
 
-IConstMachineInfo * CLocalEnvironment::getMachineByAddress(const char * machineIp) const
+IConstMachineInfo * CLocalEnvironment::getMachineByAddress(const char * hostOrIP) const
 {
-    if (!machineIp)
+    if (isEmptyString(hostOrIP))
         return nullptr;
     buildMachineCache();
-    Owned<IPropertyTreeIterator> iter;
-    StringBuffer xpath;
-    xpath.appendf("Hardware/Computer[@netAddress=\"%s\"]", machineIp);
+
     synchronized procedure(safeCache);
-    IConstEnvBase *cached = getCache(xpath.str());
-    if (!cached)
+
+    VStringBuffer xpath("Hardware/Computer[@netAddress=\"%s\"]", hostOrIP);
+    IConstEnvBase *cached = getCache(hostOrIP);
+    if (cached)
+        return (CConstMachineInfo *) cached;
+
+    IPropertyTree *d = p->queryPropTree(xpath); // exact match
+    if (!d && !isIPAddress(xpath)) // if not found and not an IP, resolve and match against resolved entries
     {
-        IPropertyTree *d = p->queryPropTree(xpath.str());
-        if (!d)
+        IpAddress ip(hostOrIP);
+        Owned<IPropertyTreeIterator> iter = p->getElements("Hardware/Computer");
+        ForEach(*iter)
         {
-            // I suspect not in the original spirit of this but look for resolved IP
-            Owned<IPropertyTreeIterator> iter = p->getElements("Hardware/Computer");
-            IpAddress ip;
-            ip.ipset(machineIp);
-            ForEach(*iter)
+            IPropertyTree &computer = iter->query();
+            IpAddress computerIP;
+            const char *computerNetAddress = computer.queryProp("@netAddress");
+            if (!isEmptyString(computerNetAddress))
             {
-                IPropertyTree &computer = iter->query();
-                IpAddress ip2;
-                const char *ips = computer.queryProp("@netAddress");
-                if (ips&&*ips)
+                // NB: could 1st check if computerNetAddress isIPAddress() and not bother resolving here if it is.
+                computerIP.ipset(computerNetAddress);
+                if (ip.ipequals(computerIP))
                 {
-                    ip2.ipset(ips);
-                    if (ip.ipequals(ip2))
-                    {
-                        d = &computer;
-                        break;
-                    }
+                    d = &computer;
+                    break;
                 }
             }
         }
-        if (!d)
-            return nullptr;
-        StringBuffer xpath1;
-        xpath1.appendf("Hardware/Computer[@name=\"%s\"]", d->queryProp("@name"));
-        cached = getCache(xpath1.str());
-        if (!cached)
-        {
-            cached = new CConstMachineInfo((CLocalEnvironment *) this, d);
-            setCache(xpath1.str(), cached);
-            setCache(xpath.str(), cached);
-        }
     }
+    if (!d)
+        return nullptr;
+    cached = new CConstMachineInfo((CLocalEnvironment *) this, d);
+    setCache(xpath.str(), cached);
     return (CConstMachineInfo *) cached;
 }
 

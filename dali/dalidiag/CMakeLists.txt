@@ -29,13 +29,14 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../common/remote 
-         ./../server 
-         ./../base 
-         ./../../system/mp 
-         ./../../system/include 
-         ./../../system/jlib
-         ./../../system/security/shared
+         ${HPCC_SOURCE_DIR}/common/remote 
+         ${HPCC_SOURCE_DIR}/common/environment 
+         ${HPCC_SOURCE_DIR}/dali/server 
+         ${HPCC_SOURCE_DIR}/dali/base 
+         ${HPCC_SOURCE_DIR}/system/mp 
+         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -47,6 +48,7 @@ target_link_libraries ( dalidiag
          mp 
          hrpc 
          remote 
+         environment 
          dalibase 
     )
 

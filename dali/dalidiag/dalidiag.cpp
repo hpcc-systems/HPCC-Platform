@@ -30,6 +30,8 @@
 #include "jptree.hpp"
 #include "jlzw.hpp"
 
+#include "environment.hpp"
+
 static const char *cmds[] = { "locks", "sdsstats", "sdssubscribers", "connections", "threads", "mpqueue", "clients", "mpverify", "timeq", "cleanq",  "timesds", "build", "sdsfetch", "dirparts", "sdssize", "nodeinfo", "slavenode", "backuplist", "save", NULL };
 
 void usage(const char *exe)
@@ -299,24 +301,30 @@ void partInfo(const char *name,unsigned copy)
 
 void nodeInfo(const char *ip)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), 0, INFINITE);
-    IPropertyTree* root = conn->queryRoot();
-    StringBuffer query("Hardware/Computer[@netAddress=\"");
-    query.append(ip).append("\"]");
-    Owned<IPropertyTree> machine = root->getPropTree(query.str());
-    if (machine) {
-        printf("Node:       %s\n",ip);
-        const char *name=machine->queryProp("@name");
-        printf("Name:       %s\n",name);
-        printf("State:      %s\n",machine->queryProp("@state"));
-        Owned<IPropertyTreeIterator> clusters= root->getElements("Software/ThorCluster");
-        ForEach(*clusters) {
-            query.clear().append("ThorSlaveProcess[@computer=\"").append(name).append("\"]");
-            IPropertyTree &cluster = clusters->query();
-            Owned<IPropertyTree> slave = cluster.getPropTree(query.str());
-            if (slave) {
-                printf("Cluster:    %s\n",cluster.queryProp("@name"));
-                printf("Id:         %s\n",slave->queryProp("@name"));
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+
+    Owned<IConstMachineInfo> machine = env->getMachineByAddress(ip);
+    if (machine)
+    {
+        Owned<const IPropertyTree> machinePTree = &machine->getPTree();
+
+        printf("Node:       %s\n", ip);
+        const char *name = machinePTree->queryProp("@name");
+        printf("Name:       %s\n", name);
+        printf("State:      %s\n", machinePTree->queryProp("@state"));
+
+        Owned<const IPropertyTree> envPTree = &env->getPTree();
+        Owned<IPropertyTreeIterator> clusters = envPTree->getElements("Software/ThorCluster");
+        ForEach(*clusters)
+        {
+            const IPropertyTree &cluster = clusters->query();
+            VStringBuffer xpath("ThorSlaveProcess[@computer=\"%s\"]", name);
+            const IPropertyTree *slave = cluster.queryPropTree(xpath);
+            if (slave)
+            {
+                printf("Cluster:    %s\n", cluster.queryProp("@name"));
+                printf("Id:         %s\n", slave->queryProp("@name"));
             }
         }
     }

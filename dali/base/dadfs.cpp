@@ -40,6 +40,11 @@
 #include "eclhelper.hpp"
 #include "seclib.hpp"
 
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+
 #ifdef _DEBUG
 //#define EXTRA_LOGGING
 //#define TRACE_LOCKS
@@ -138,7 +143,7 @@ static StringBuffer &getAttrQueryStr(StringBuffer &str,const char *sub,const cha
     return str;
 }
 
-static IPropertyTree *getNamedPropTree(IPropertyTree *parent,const char *sub,const char *key,const char *name,bool preload)
+static IPropertyTree *getNamedPropTree(const IPropertyTree *parent, const char *sub, const char *key, const char *name, bool preload)
 {  // no create
     if (!parent)
         return NULL;
@@ -149,7 +154,7 @@ static IPropertyTree *getNamedPropTree(IPropertyTree *parent,const char *sub,con
     return parent->getPropTree(query.str());
 }
 
-static IPropertyTree *addNamedPropTree(IPropertyTree *parent,const char *sub,const char *key,const char *name, IPropertyTree* init=NULL)
+static IPropertyTree *addNamedPropTree(IPropertyTree *parent, const char *sub, const char *key, const char *name, const IPropertyTree *init=nullptr)
 {
     IPropertyTree* ret = init?createPTreeFromIPT(init):createPTree(sub);
     assertex(key[0]=='@');
@@ -6830,15 +6835,7 @@ public:
         : conn(_conn), matchgroup(_matchgroup)
     {
         exactmatch = _exactmatch;
-        if (matchgroup.get()) {
-            StringBuffer query;
-            query.append("Group[Node/@ip=\"");
-            matchgroup->queryNode(0).endpoint().getUrlStr(query);
-            query.append("\"]");
-            pe.setown(conn->getElements(query.str()));
-        }
-        else
-            pe.setown(conn->queryRoot()->getElements("Group"));
+        pe.setown(conn->queryRoot()->getElements("Group"));
     }
 
     bool first()
@@ -6926,6 +6923,31 @@ public:
 protected:
     unsigned cachedtime;
 };
+
+static unsigned loadGroup(const IPropertyTree *groupTree, SocketEndpointArray &epa, GroupType *type, StringAttr *groupDir)
+{
+    if (type)
+        *type = translateGroupType(groupTree->queryProp("@kind"));
+    if (groupDir)
+    {
+        groupDir->set(groupTree->queryProp("@dir"));
+        if (groupDir->isEmpty())
+            groupDir->set(queryBaseDirectory(*type));
+    }
+    Owned<IPropertyTreeIterator> pe = groupTree->getElements("Node");
+    ForEach(*pe)
+    {
+        const char *host = pe->query().queryProp("@ip");
+        SocketEndpoint ep(host);
+        if (ep.isNull())
+        {
+            IWARNLOG("loadGroup: failed to resolve host '%s'", host);
+            return 0;
+        }
+        epa.append(ep);
+    }
+    return epa.ordinality();
+}
 
 class CNamedGroupStore: implements INamedGroupStore, public CInterface
 {
@@ -7076,19 +7098,9 @@ public:
                         return nullptr;
                     }
                 }
-                Owned<IPropertyTree> pt = getNamedPropTree(conn->queryRoot(),"Group","@name",gname.str(),true);
-                if (!pt)
+                Owned<IPropertyTree> groupTree = getNamedPropTree(conn->queryRoot(), "Group", "@name", gname.str(), true);
+                if (!groupTree || !loadGroup(groupTree, epa, &type, &groupdir))
                     return nullptr;
-                type = translateGroupType(pt->queryProp("@kind"));
-                groupdir.set(pt->queryProp("@dir"));
-                if (groupdir.isEmpty())
-                    groupdir.set(queryBaseDirectory(type));
-                Owned<IPropertyTreeIterator> pe2 = pt->getElements("Node");
-                ForEach(*pe2)
-                {
-                    SocketEndpoint ep(pe2->query().queryProp("@ip"));
-                    epa.append(ep);
-                }
             }
         }
         catch (IException *E)
@@ -7158,53 +7170,59 @@ public:
         return ret.getClear();
     }
 
-    IGroup *lookup(const char *logicalgroupname)
+    IPropertyTree *doAddHosts(CConnectLock &connlock, const char *name, const std::vector<std::string> &hosts, bool cluster, const char *dir)
     {
-        GroupType dummy;
-        return dolookup(logicalgroupname, NULL, NULL, dummy);
-    }
-
-    IGroup *lookup(const char *logicalgroupname, StringBuffer &dir, GroupType &groupType)
-    {
-        return dolookup(logicalgroupname, NULL, &dir, groupType);
-    }
-
-    INamedGroupIterator *getIterator()
-    {
-        CConnectLock connlock("CNamedGroup::getIterator", SDS_GROUPSTORE_ROOT, false, true, false, defaultTimeout);
-        return new CNamedGroupIterator(connlock.conn); // links connection
-    }
-
-    INamedGroupIterator *getIterator(IGroup *match,bool exact)
-    {
-        CConnectLock connlock("CNamedGroup::getIterator", SDS_GROUPSTORE_ROOT, false, false, false, defaultTimeout);
-        return new CNamedGroupIterator(connlock.conn,match,exact); // links connection
-    }
-
-    void doadd(CConnectLock &connlock,const char *name,IGroup *group,bool cluster,const char *dir)
-    {
-        if (!group)
-            return;
         IPropertyTree *val = createPTree("Group");
         val->setProp("@name",name);
         if (cluster)
             val->setPropBool("@cluster", true);
         if (dir)
             val->setProp("@dir",dir);
-
-        INodeIterator &gi = *group->getIterator();
-        StringBuffer str;
-        ForEach(gi) {
-            IPropertyTree *n = createPTree("Node");
-            n = val->addPropTree("Node",n);
-            gi.query().endpoint().getIpText(str.clear());
-            n->setProp("@ip",str.str());
+        for (auto &hostOrIpRange: hosts)
+        {
+            SocketEndpointArray epa;
+            epa.fromText(hostOrIpRange.c_str(), 0);
+            if (epa.ordinality()>1)
+            {
+                ForEachItemIn(e, epa)
+                {
+                    StringBuffer ipStr;
+                    epa.item(e).getIpText(ipStr);
+                    IPropertyTree *n = val->addPropTree("Node");
+                    n->setProp("@ip", ipStr);
+                }
+            }
+            else
+            {
+                IPropertyTree *n = val->addPropTree("Node");
+                n->setProp("@ip", hostOrIpRange.c_str());
+            }
         }
-        gi.Release();
-        connlock.conn->queryRoot()->addPropTree("Group",val);
+        val = connlock.conn->queryRoot()->addPropTree("Group",val);
+        return LINK(val);
     }
 
-    void addUnique(IGroup *group,StringBuffer &lname, const char *dir)
+    void doadd(CConnectLock &connlock,const char *name,IGroup *group,bool cluster,const char *dir)
+    {
+        if (!group)
+            return;
+        Owned<INodeIterator> gi = group->getIterator();
+        if (gi->first())
+        {
+            StringBuffer ipStr;
+            std::vector<std::string> ips;
+            while (true)
+            {
+                gi->query().endpoint().getIpText(ipStr.clear());
+                ips.push_back(ipStr.str());
+                if (!gi->next())
+                    break;
+            }
+            ::Release(doAddHosts(connlock, name, ips, cluster, dir));
+        }
+    }
+
+    virtual void addUnique(IGroup *group,StringBuffer &lname, const char *dir) override
     {
         if (group->ordinality()==1)
         {
@@ -7233,7 +7251,101 @@ public:
         lname.append(name);
     }
 
-    void add(const char *logicalgroupname, IGroup *group, bool cluster, const char *dir, GroupType groupType)
+    IGroup *lookup(const char *logicalgroupname, StringBuffer &dir, GroupType &groupType)
+    {
+        return dolookup(logicalgroupname, NULL, &dir, groupType);
+    }
+
+    virtual IGroup *lookup(const char *logicalgroupname) override
+    {
+        GroupType dummy;
+        return dolookup(logicalgroupname, NULL, NULL, dummy);
+    }
+
+    virtual INamedGroupIterator *getIterator() override
+    {
+        CConnectLock connlock("CNamedGroup::getIterator", SDS_GROUPSTORE_ROOT, false, true, false, defaultTimeout);
+        return new CNamedGroupIterator(connlock.conn); // links connection
+    }
+
+    virtual INamedGroupIterator *getIterator(IGroup *match,bool exact) override
+    {
+        CConnectLock connlock("CNamedGroup::getIterator", SDS_GROUPSTORE_ROOT, false, false, false, defaultTimeout);
+        return new CNamedGroupIterator(connlock.conn,match,exact); // links connection
+    }
+
+    virtual void add(const char *logicalgroupname, const std::vector<std::string> &hosts, bool cluster, const char *dir, GroupType groupType) override
+    {
+        dbgassertex(hosts.size());
+        StringBuffer name(logicalgroupname);
+        name.toLowerCase();
+        name.trim();
+        StringBuffer prop;
+        prop.appendf("Group[@name=\"%s\"]",name.str());
+        CConnectLock connlock("CNamedGroup::add", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
+        connlock.conn->queryRoot()->removeProp(prop.str());
+        if (0 == hosts.size())
+            return;
+        Owned<IPropertyTree> groupTree = doAddHosts(connlock, name.str(), hosts, cluster, dir);
+        SocketEndpointArray eps;
+        if (!loadGroup(groupTree, eps, nullptr, nullptr))
+        {
+            IWARNLOG("CNamedGroupStore.add: failed to add group '%s', due to unresolved hosts", name.str());
+            return;
+        }
+        Owned<IGroup> group = createIGroup(eps);
+        {
+            CriticalBlock block(cachesect);
+            cache.kill();
+            cache.append(*new CNamedGroupCacheEntry(group, name, dir, groupType));
+        }
+    }
+
+    virtual unsigned removeNode(const char *logicalgroupname, const char *nodeToRemove) override
+    {
+        StringBuffer name(logicalgroupname);
+        name.toLowerCase();
+        name.trim();
+        StringBuffer prop;
+        prop.appendf("Group[@name=\"%s\"]",name.str());
+        CConnectLock connlock("CNamedGroup::add", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
+
+        Owned<IPropertyTree> groupTree = getNamedPropTree(connlock.conn->queryRoot(), "Group", "@name", name, true);
+        if (!groupTree)
+            return 0;
+        SocketEndpointArray epa;
+        if (!loadGroup(groupTree, epa, nullptr, nullptr))
+            return 0;
+
+        unsigned numNodes = epa.ordinality();
+        Owned<IGroup> group = createIGroup(epa);
+        SocketEndpoint removeEp(nodeToRemove);
+
+        unsigned removeCount = 0;
+        while (removeCount != numNodes)
+        {
+            rank_t r = group->rank(removeEp);
+            if (RANK_NULL == r)
+                break;
+            group.setown(group->remove(r));
+            VStringBuffer xpath("Node[%u]", r+1); // 1 based
+            verifyex(groupTree->removeProp(xpath)); // remove corresponding position in IPT (in Dali)
+
+            ++removeCount;
+        }
+        if (0 == removeCount)
+            return 0;
+
+        const char *groupDir = groupTree->queryProp("@dir");
+        GroupType groupType = translateGroupType(groupTree->queryProp("@kind"));
+
+        CriticalBlock block(cachesect);
+        cache.kill();
+        cache.append(*new CNamedGroupCacheEntry(group, name, groupDir, groupType));
+        return removeCount;
+    }
+
+    virtual void remove(const char *logicalgroupname) override
     {
         StringBuffer name(logicalgroupname);
         name.toLowerCase();
@@ -7242,21 +7354,13 @@ public:
         prop.appendf("Group[@name=\"%s\"]",name.str());
         CConnectLock connlock("CNamedGroup::add", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
         connlock.conn->queryRoot()->removeProp(prop.str());
-        doadd(connlock,name.str(),group,cluster,dir);
         {
             CriticalBlock block(cachesect);
             cache.kill();
-            if (group)
-                cache.append(*new CNamedGroupCacheEntry(group, name.str(), dir, groupType));
         }
     }
 
-    void remove(const char *logicalgroupname)
-    {
-        add(logicalgroupname, NULL, false, NULL, grp_unknown);
-    }
-
-    bool find(IGroup *grp, StringBuffer &gname, bool add)
+    virtual bool find(IGroup *grp, StringBuffer &gname, bool add) override
     {
         // gname on entry is suggested name for add if set
         unsigned n = grp->ordinality();
@@ -7286,54 +7390,65 @@ public:
         return true;
     }
 
-    void swapNode(const IpAddress &from, const IpAddress &to)
+    virtual void swapNode(const char *fromHost, const char *toHost) override
     {
+        SocketEndpoint from(fromHost);
+        SocketEndpoint to(toHost);
         if (from.ipequals(to))
             return;
         CConnectLock connlock("CNamedGroup::swapNode", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
-        StringBuffer froms;
-        from.getIpText(froms);
-        StringBuffer tos;
-        to.getIpText(tos);
         Owned<IPropertyTreeIterator> pe  = connlock.conn->queryRoot()->getElements("Group");
-        ForEach(*pe) {
+        ForEach(*pe)
+        {
             IPropertyTree &group = pe->query();
             const char *kind = group.queryProp("@kind");
             if (kind && streq("Spare", kind))
                 continue;
             StringBuffer name;
-            group.getProp("@name",name);
-            StringBuffer xpath("Node[@ip = \"");
-            xpath.append(froms).append("\"]");
-            for (unsigned guard=0; guard<1000; guard++) {
-                Owned<IPropertyTreeIterator> ne = group.getElements(xpath.str());
-                if (!ne->first())
+            group.getProp("@name", name);
+
+            SocketEndpointArray eps;
+            if (!loadGroup(&group, eps, nullptr, nullptr))
+            {
+                IWARNLOG("swapNode: failed to load group: '%s'", name.str());
+                return;
+            }
+
+            unsigned epsPos = 0;
+            while (true)
+            {
+                if (epsPos == eps.ordinality())
                     break;
-                ne->query().setProp("@ip",tos.str());
-                PROGLOG("swapNode swapping %s for %s in group %s",froms.str(),tos.str(),name.str());
-                unsigned nodesSwapped = group.getPropInt("@nodesSwapped");
-                group.setPropInt("@nodesSwapped", nodesSwapped+1);
+                if (from == eps.item(epsPos))
+                {
+                    VStringBuffer xpath("Node[%u]/@ip", epsPos+1);
+                    group.setProp(xpath, toHost);
+                    PROGLOG("swapNode swapping %s for %s in group %s", fromHost, toHost, name.str());
+                    unsigned nodesSwapped = group.getPropInt("@nodesSwapped");
+                    group.setPropInt("@nodesSwapped", nodesSwapped+1);
+                }
+                ++epsPos;
             }
         }
         CriticalBlock block(cachesect);
         cache.kill();
     }
 
-    unsigned setDefaultTimeout(unsigned timems)
+    virtual unsigned setDefaultTimeout(unsigned timems) override
     {
         unsigned ret = defaultTimeout;
         defaultTimeout = timems;
         return ret;
     }
 
-    unsigned setRemoteTimeout(unsigned timems)
+    virtual unsigned setRemoteTimeout(unsigned timems) override
     {
         unsigned ret = defaultRemoteTimeout;
         defaultRemoteTimeout = timems;
         return ret;
     }
 
-    void resetCache()
+    virtual void resetCache() override
     {
         CriticalBlock block(cachesect);
         cache.kill();
@@ -9120,20 +9235,7 @@ public:
     }
 };
 
-struct CMachineEntry: public CInterface
-{
-    CMachineEntry(const char *_mname,SocketEndpoint _ep)
-        : mname(_mname),ep(_ep)
-    {
-    }
-    StringAttr mname;
-    SocketEndpoint ep;
-};
-
-typedef CMachineEntry *CMachineEntryPtr;
-typedef MapStringTo<CMachineEntryPtr> CMachineEntryMap;
-
-StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupName)
+StringBuffer &getClusterGroupName(const IPropertyTree &cluster, StringBuffer &groupName)
 {
     const char *name = cluster.queryProp("@name");
     const char *nodeGroupName = cluster.queryProp("@nodeGroup");
@@ -9143,7 +9245,7 @@ StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupNam
     return groupName.trim().toLowerCase();
 }
 
-StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &groupName)
+StringBuffer &getClusterSpareGroupName(const IPropertyTree &cluster, StringBuffer &groupName)
 {
     return getClusterGroupName(cluster, groupName).append("_spares");
 }
@@ -9151,8 +9253,7 @@ StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &gro
 // JCSMORE - dfs group handling may be clearer if in own module
 class CInitGroups
 {
-    CMachineEntryMap machinemap;
-    CIArrayOf<CMachineEntry> machinelist;
+    std::unordered_map<std::string, std::string> machineMap;
     CConnectLock groupsconnlock;
     StringArray clusternames;
     unsigned defaultTimeout;
@@ -9180,8 +9281,10 @@ class CInitGroups
         const char *oldDir = oldClusterGroup->queryProp("@dir");
         const char *newKind = newClusterGroup->queryProp("@kind");
         const char *newDir = newClusterGroup->queryProp("@dir");
-        if (oldKind) {
-            if (newKind) {
+        if (oldKind)
+        {
+            if (newKind)
+            {
                 if (!streq(newKind, newKind))
                     return false;
             }
@@ -9190,8 +9293,10 @@ class CInitGroups
         }
         else if (newKind)
             return false;
-        if (oldDir) {
-            if (newDir) {
+        if (oldDir)
+        {
+            if (newDir)
+            {
                 if (!streq(newDir,oldDir))
                     return false;
             }
@@ -9209,11 +9314,15 @@ class CInitGroups
             return true;
         Owned<IPropertyTreeIterator> newIter = newClusterGroup->getElements("Node");
         Owned<IPropertyTreeIterator> oldIter = oldClusterGroup->getElements("Node");
-        if (newIter->first() && oldIter->first()) {
-            for (;;) {
-                const char *oldIp = oldIter->query().queryProp("@ip");
-                const char *newIp = newIter->query().queryProp("@ip");
-                if (!streq(oldIp, newIp))
+        if (newIter->first() && oldIter->first())
+        {
+            for (;;)
+            {
+                // NB: for legacy reason these are called @ip in Dali, but they should typically be hostnames
+                SocketEndpoint oldEp, newEp;
+                oldEp.set(oldIter->query().queryProp("@ip"));
+                newEp.set(newIter->query().queryProp("@ip"));
+                if (oldEp != newEp)
                     return false;
                 if (!oldIter->next() || !newIter->next())
                     break;
@@ -9243,86 +9352,44 @@ class CInitGroups
         grp->setProp("@name", name);
     }
 
-    IGroup *getGroupFromCluster(GroupType groupType, IPropertyTree &cluster, bool expand)
+    IGroup *getGroupFromCluster(GroupType groupType, const IPropertyTree &cluster, bool expand)
     {
+        Owned<IPropertyTree> groupTree = createClusterGroupFromEnvCluster(groupType, cluster, nullptr, false, expand);
+        if (!groupTree)
+            return nullptr;
+        Owned<IPropertyTreeIterator> nodeIter = groupTree->getElements("Node");
+        if (!nodeIter->first())
+            return nullptr;
         SocketEndpointArray eps;
-        const char *processName=NULL;
-        switch (groupType)
+        do
         {
-            case grp_thor:
-                processName = "ThorSlaveProcess";
-                break;
-            case grp_thorspares:
-                processName = "ThorSpareProcess";
-                break;
-            case grp_roxie:
-                processName = "RoxieServerProcess";
-                break;
-            default:
-                throwUnexpected();
+            SocketEndpoint ep(nodeIter->query().queryProp("@ip"));
+            eps.append(ep);
         }
-        SocketEndpoint nullep;
-        Owned<IPropertyTreeIterator> nodes = cluster.getElements(processName);
-        ForEach(*nodes)
+        while (nodeIter->next());
+        return createIGroup(eps);
+    }
+
+    bool loadMachineMap(const IPropertyTree *env)
+    {
+        if (machinesLoaded)
+            return true;
+        Owned<IPropertyTreeIterator> machines = env->getElements("Hardware/Computer");
+        if (!machines->first())
         {
-            IPropertyTree &node = nodes->query();
-            SocketEndpoint ep;
-            const char *computer = node.queryProp("@computer");
-            const char *netAddress = node.queryProp("@netAddress");
-            if (computer && *computer)
-            {
-                CMachineEntryPtr *m = machinemap.getValue(computer);
-                if (!m)
-                {
-                    OERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
-                    return NULL;
-                }
-                ep.set((*m)->ep);
-            }
-            else if (netAddress && *netAddress)
-            {
-                ep.set(netAddress, 0);
-            }
-            else
-            {
-                OERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
-                return NULL;
-            }
-            switch (groupType)
-            {
-                case grp_roxie:
-                    // Redundant copies are located via the flags.
-                    // Old environments may contain duplicated sever information for multiple ports
-                    eps.appendUniq(ep);
-                    break;
-                case grp_thor:
-                case grp_thorspares:
-                    eps.append(ep);
-                    break;
-                default:
-                    throwUnexpected();
-            }
+            IWARNLOG("No Hardware/Computer's found");
+            return false;
         }
-        if (!eps.ordinality())
-            return NULL;
-        Owned<IGroup> grp;
-        if (grp_thor != groupType)
-            expand = false;
-        if (expand)
+        do
         {
-            unsigned slavesPerNode = cluster.getPropInt("@slavesPerNode", 1);
-            unsigned channelsPerSlave = cluster.getPropInt("@channelsPerSlave", 1);
-            SocketEndpointArray msEps;
-            for (unsigned s=0; s<(slavesPerNode*channelsPerSlave); s++)
-            {
-                ForEachItemIn(e, eps)
-                    msEps.append(eps.item(e));
-            }
-            grp.setown(createIGroup(msEps));
+            const IPropertyTree &machine = machines->query();
+            const char *host = machine.queryProp("@netAddress");
+            const char *name = machine.queryProp("@name");
+            machineMap.insert({ name, host });
         }
-        else
-            grp.setown(createIGroup(eps));
-        return grp.getClear();
+        while (machines->next());
+        machinesLoaded = true;
+        return true;
     }
 
     bool loadMachineMap()
@@ -9330,32 +9397,26 @@ class CInitGroups
         if (machinesLoaded)
             return true;
         //GH->JCS This can't be changed to use getEnvironmentFactory() unless that moved inside dalibase;
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Hardware", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (!conn) {
-            IWARNLOG("Cannot connect to /Environment/Hardware");
+        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+        if (!conn)
+        {
+            IWARNLOG("Cannot connect to /Environment");
             return false;
         }
-        IPropertyTree* root = conn->queryRoot();
-        Owned<IPropertyTreeIterator> machines= root->getElements("Computer");
-        ForEach(*machines) {
-            IPropertyTree &machine = machines->query();
-            SocketEndpoint ep(machine.queryProp("@netAddress"));
-            const char *name = machine.queryProp("@name");
-            CMachineEntry *entry = new CMachineEntry(name,ep);
-            machinemap.setValue(name, entry);
-            machinelist.append(*entry);
-        }
-        machinesLoaded = true;
-        return true;
+        return loadMachineMap(conn->queryRoot());
     }
 
-    IPropertyTree *createClusterGroup(GroupType groupType, IGroup *group, const char *dir, bool realCluster)
+    IPropertyTree *createClusterGroup(GroupType groupType, const std::vector<std::string> &hosts, const char *dir, const IPropertyTree &envCluster, bool realCluster, bool _expand)
     {
+        bool expand = _expand;
+        if (grp_thor != groupType)
+            expand = false;
         Owned<IPropertyTree> cluster = createPTree("Group");
         if (realCluster)
             cluster->setPropBool("@cluster", true);
-        const char *kind=NULL;
-        switch (groupType) {
+        const char *kind=nullptr;
+        switch (groupType)
+        {
             case grp_thor:
                 kind = "Thor";
                 break;
@@ -9370,26 +9431,93 @@ class CInitGroups
             cluster->setProp("@kind",kind);
         if (dir)
             cluster->setProp("@dir",dir);
-        Owned<INodeIterator> iter = group->getIterator();
-        StringBuffer str;
-        ForEach(*iter) {
-            iter->query().endpoint().getIpText(str.clear());
-            IPropertyTree *n = createPTree("Node");
-            n->setProp("@ip",str.str());
-            cluster->addPropTree("Node", n);
+
+        auto addHostsToIPTFunc = [cluster, &hosts]()
+        {
+            for (auto &host: hosts)
+            {
+                IPropertyTree *node = cluster->addPropTree("Node");
+                node->setProp("@ip", host.c_str());
+            }
+        };
+        if (expand)
+        {
+            unsigned slavesPerNode = envCluster.getPropInt("@slavesPerNode", 1);
+            unsigned channelsPerSlave = envCluster.getPropInt("@channelsPerSlave", 1);
+            for (unsigned s=0; s<(slavesPerNode*channelsPerSlave); s++)
+                addHostsToIPTFunc();
         }
+        else
+            addHostsToIPTFunc();
         return cluster.getClear();
     }
 
-    IPropertyTree *createClusterGroupFromEnvCluster(GroupType groupType, IPropertyTree &cluster, const char *dir, bool realCluster)
+    IPropertyTree *createClusterGroupFromEnvCluster(GroupType groupType, const IPropertyTree &cluster, const char *dir, bool realCluster, bool expand)
     {
-        Owned<IGroup> group = getGroupFromCluster(groupType, cluster, true);
-        if (!group)
-            return NULL;
-        return createClusterGroup(groupType, group, dir, realCluster);
+        const char *processName=nullptr;
+        switch (groupType)
+        {
+            case grp_thor:
+                processName = "ThorSlaveProcess";
+                break;
+            case grp_thorspares:
+                processName = "ThorSpareProcess";
+                break;
+            case grp_roxie:
+                processName = "RoxieServerProcess";
+                break;
+            default:
+                throwUnexpected();
+        }
+        std::vector<std::string> hosts;
+        Owned<IPropertyTreeIterator> nodes = cluster.getElements(processName);
+        ForEach(*nodes)
+        {
+            IPropertyTree &node = nodes->query();
+            const char *computer = node.queryProp("@computer");
+            const char *host = nullptr;
+            if (!isEmptyString(computer))
+            {
+                auto it = machineMap.find(computer);
+                if (it == machineMap.end())
+                {
+                    OERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
+                    return nullptr;
+                }
+                host = it->second.c_str();
+            }
+            else
+            {
+                host = node.queryProp("@netAddress");
+                if (isEmptyString(host))
+                {
+                    OERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
+                    return nullptr;
+                }
+            }
+            switch (groupType)
+            {
+                case grp_roxie:
+                    // Redundant copies are located via the flags.
+                    // Old environments may contain duplicated sever information for multiple ports
+                    if (hosts.end() == std::find(hosts.begin(), hosts.end(), host)) // only add if not already there
+                        hosts.push_back(host);
+                    break;
+                case grp_thor:
+                case grp_thorspares:
+                    hosts.push_back(host);
+                    break;
+                default:
+                    throwUnexpected();
+            }
+        }
+        if (!hosts.size())
+            return nullptr;
+
+        return createClusterGroup(groupType, hosts, dir, cluster, realCluster, expand);
     }
 
-    bool constructGroup(IPropertyTree &cluster, const char *altName, IPropertyTree *oldEnvCluster, GroupType groupType, bool force, StringBuffer &messages)
+    bool constructGroup(const IPropertyTree &cluster, const char *altName, IPropertyTree *oldEnvCluster, GroupType groupType, bool force, StringBuffer &messages)
     {
         /* a 'realCluster' is a cluster who's name matches it's nodeGroup
          * if the nodeGroup differs it implies it's sharing the nodeGroup with other thor instance(s).
@@ -9428,14 +9556,14 @@ class CInitGroups
         IPropertyTree *existingClusterGroup = groupsconnlock.conn->queryRoot()->queryPropTree(xpath.str()); // 'live' cluster group
 
         bool matchOldEnv = false;
-        Owned<IPropertyTree> newClusterGroup = createClusterGroupFromEnvCluster(groupType, cluster, defDir, realCluster);
-        bool matchExisting = clusterGroupCompare(newClusterGroup, existingClusterGroup);
+        Owned<IPropertyTree> newClusterGroup = createClusterGroupFromEnvCluster(groupType, cluster, defDir, realCluster, true);
+        bool matchExisting = !force && clusterGroupCompare(newClusterGroup, existingClusterGroup);
         if (oldEnvCluster)
         {
             // new matches old, only if neither has changed it's name to mismatch it's nodeGroup name
             if (realCluster == oldRealCluster)
             {
-                Owned<IPropertyTree> oldClusterGroup = createClusterGroupFromEnvCluster(groupType, *oldEnvCluster, defDir, oldRealCluster);
+                Owned<IPropertyTree> oldClusterGroup = createClusterGroupFromEnvCluster(groupType, *oldEnvCluster, defDir, oldRealCluster, true);
                 matchOldEnv = clusterGroupCompare(newClusterGroup, oldClusterGroup);
             }
             else
@@ -9480,26 +9608,53 @@ class CInitGroups
             return;
         unsigned ins = 0;
         Owned<IPropertyTreeIterator> insts = cluster.getElements("Instance");
-        ForEach(*insts) {
+        ForEach(*insts)
+        {
             const char *na = insts->query().queryProp("@netAddress");
-            if (na&&*na) {
+            if (!isEmptyString(na))
+            {
                 SocketEndpoint ep(na);
-                if (!ep.isNull()) {
+                if (!ep.isNull())
+                {
                     ins++;
                     VStringBuffer gname("hthor__%s", groupname);
                     if (ins>1)
                         gname.append('_').append(ins);
-                    Owned<IGroup> group = createIGroup(1, &ep);
-                    Owned<IPropertyTree> clusterGroup = createClusterGroup(grp_hthor, group, NULL, true);
+                    Owned<IPropertyTree> clusterGroup = createClusterGroup(grp_hthor, { na }, nullptr, cluster, true, false);
                     addClusterGroup(gname.str(), clusterGroup.getClear(), true);
                 }
             }
         }
     }
 
-    enum CgCmd { cg_null, cg_reset, cg_add, cg_remove };
+    struct BoundHost
+    {
+        BoundHost(const std::string &_host) : host(_host), ep(_host.c_str()) { }
+        std::string host;
+        SocketEndpoint ep;
+        bool operator == (const SocketEndpoint &other) const
+        {
+            return ep == other;
+        }
+    };
+    unsigned bind(const std::vector<std::string> &hosts, std::vector<BoundHost> &boundHosts) const
+    {
+        for (const auto &host: hosts)
+        {
+            SocketEndpoint boundHost(host.c_str());
+            if (boundHosts.end() == std::find(boundHosts.begin(), boundHosts.end(), boundHost))
+                boundHosts.push_back(BoundHost(host));
+        }
+        return boundHosts.size();
+    }
+    IPropertyTree *queryExistingSpareGroup(const IPropertyTree *cluster, StringBuffer &groupName)
+    {
+        getClusterSpareGroupName(*cluster, groupName);
+        IPropertyTree *root = groupsconnlock.conn->queryRoot();
+        VStringBuffer xpath("Group[@name=\"%s\"]", groupName.str());
+        return root->queryPropTree(xpath.str());
+    }
 public:
-
     CInitGroups(unsigned _defaultTimeout)
         : groupsconnlock("constructGroup",SDS_GROUPSTORE_ROOT,true,false,false,_defaultTimeout)
     {
@@ -9507,134 +9662,149 @@ public:
         machinesLoaded = false;
     }
 
-    bool doClusterGroup(CgCmd cmd, const char *_clusterName, const char *type, bool spares, SocketEndpointArray *eps, StringBuffer &messages)
+    IPropertyTree *queryCluster(const IPropertyTree *env, const char *_clusterName, const char *type, const char *msg, StringBuffer &messages)
     {
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (!conn)
-            return false;
-        if (!_clusterName || !*_clusterName)
-            return false;
+        if (isEmptyString(_clusterName) || isEmptyString(type))
+            return nullptr;
+        if (!streq("ThorCluster", type)) // currently only Thor supported here.
+            return nullptr;
         StringAttr clusterName = _clusterName;
         clusterName.toLowerCase();
-        if (!type || !*type)
-            return false;
-        bool ret = true;
-        IPropertyTree* root = conn->queryRoot();
-        Owned<IPropertyTreeIterator> clusters;
-        StringBuffer errMsg;
-        const char *clusterType = type;
-        if (loadMachineMap()) {
-            VStringBuffer xpath("%s[@name=\"%s\"]", type, clusterName.get());
-            clusters.setown(root->getElements(xpath.str()));
-            if (!clusters || !clusters->first()) {
-                VStringBuffer errMsg("Could not find type %s, %s cluster", type, clusterName.get());
+        if (loadMachineMap())
+        {
+            VStringBuffer xpath("Software/%s[@name=\"%s\"]", type, clusterName.get());
+            Owned<IPropertyTreeIterator> clusterIter = env->getElements(xpath);
+
+            if (!clusterIter->first())
+            {
+                VStringBuffer errMsg("%s: Could not find type %s, %s cluster", msg, type, clusterName.get());
                 UWARNLOG("%s", errMsg.str());
                 messages.append(errMsg).newline();
-                ret = false;
             }
-            else {
-                if (!streq("ThorCluster", type))
-                    return false; // currently only Thor supported here.
-                IPropertyTree &cluster = clusters->query();
-
-                switch (cmd) {
-                    case cg_reset:
-                    {
-                        if (spares) {
-                            if (!constructGroup(cluster,NULL,NULL,grp_thorspares,true,messages))
-                                ret = false;
-                        }
-                        else {
-                            if (!constructGroup(cluster,NULL,NULL,grp_thor,true,messages))
-                                ret = false;
-                        }
-                        break;
-                    }
-                    case cg_add:
-                    {
-                        assertex(eps);
-                        StringBuffer groupName;
-                        getClusterSpareGroupName(cluster, groupName);
-                        IPropertyTree *root = groupsconnlock.conn->queryRoot();
-                        VStringBuffer xpath("Group[@name=\"%s\"]",groupName.str());
-                        IPropertyTree *existing = root->queryPropTree(xpath.str());
-                        if (existing) {
-                            Owned<IPropertyTreeIterator> iter = existing->getElements("Node");
-                            ForEach(*iter) {
-                                SocketEndpoint ep(iter->query().queryProp("@ip"));
-                                if (eps->zap(ep)) {
-                                    StringBuffer epStr;
-                                    VStringBuffer errMsg("addSpares: not adding: %s, already in spares", ep.getUrlStr(epStr).str());
-                                    UWARNLOG("%s", errMsg.str());
-                                    messages.append(errMsg).newline();
-                                    while (eps->zap(ep)); // delete any other duplicates
-                                }
-                            }
-                        }
-                        else {
-                            existing = createPTree();
-                            existing->setProp("@name", groupName.str());
-                            existing = root->addPropTree("Group", existing);
-                        }
-                        // add remaining
-                        ForEachItemIn(e, *eps) {
-                            const SocketEndpoint &ep = eps->item(e);
-                            StringBuffer ipStr;
-                            ep.getIpText(ipStr);
-                            IPropertyTree *node = createPTree();
-                            node->setProp("@ip", ipStr.str());
-                            existing->addPropTree("Node", node);
-                        }
-                        break;
-                    }
-                    case cg_remove:
-                    {
-                        assertex(eps);
-                        StringBuffer groupName;
-                        getClusterSpareGroupName(cluster, groupName);
-                        IPropertyTree *root = groupsconnlock.conn->queryRoot();
-                        VStringBuffer xpath("Group[@name=\"%s\"]", groupName.str());
-                        IPropertyTree *existing = root->queryPropTree(xpath.str());
-                        if (existing) {
-                            ForEachItemIn(e, *eps) {
-                                const SocketEndpoint &ep = eps->item(e);
-                                StringBuffer ipStr;
-                                ep.getIpText(ipStr);
-                                VStringBuffer xpath("Node[@ip=\"%s\"]", ipStr.str());
-                                if (!existing->removeProp(xpath.str())) {
-                                    VStringBuffer errMsg("removeSpares: %s not found in spares", ipStr.str());
-                                    UWARNLOG("%s", errMsg.str());
-                                    messages.append(errMsg).newline();
-                                    while (eps->zap(ep)); // delete any other duplicates
-                                }
-                                else
-                                    while (existing->removeProp(xpath.str())); // remove any others, shouldn't be any
-                            }
-                        }
-                        break;
-                    }
-                }
-                if (clusters->next()) {
-                    VStringBuffer errMsg("resetThorGroup: more than one cluster named: %s", clusterName.get());
-                    UWARNLOG("%s", errMsg.str());
-                    messages.append(errMsg).newline();
-                    ret = false;
-                }
+            else
+            {
+                IPropertyTree *cluster = &clusterIter->query();
+                if (!clusterIter->next())
+                    return cluster;
+                VStringBuffer errMsg("%s: more than one cluster named: %s", msg, clusterName.get());
+                UWARNLOG("%s", errMsg.str());
+                messages.append(errMsg).newline();
             }
         }
-        return ret;
+        return nullptr;
     }
     bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &messages)
     {
-        return doClusterGroup(cg_reset, clusterName, type, spares, NULL, messages);
+        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+        if (!conn)
+            return false;
+        const IPropertyTree *cluster = queryCluster(conn->queryRoot(), clusterName, type, "resetClusterGroup", messages);
+        if (!cluster)
+            return false;
+        if (spares)
+        {
+            if (constructGroup(*cluster,NULL,NULL,grp_thorspares,true,messages))
+                return true;
+        }
+        else
+        {
+            if (constructGroup(*cluster,NULL,NULL,grp_thor,true,messages))
+                return true;
+        }
+        return false;
     }
-    bool addSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &messages)
+    bool addSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &messages)
     {
-        return doClusterGroup(cg_add, clusterName, type, true, &eps, messages);
+        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+        if (!conn)
+            return false;
+        const IPropertyTree *cluster = queryCluster(conn->queryRoot(), clusterName, type, "addSpares", messages);
+        if (!cluster)
+            return false;
+
+        std::vector<BoundHost> boundHostsToAdd;
+        bind(hosts, boundHostsToAdd);
+
+        StringBuffer groupName;
+        IPropertyTree *existing = queryExistingSpareGroup(cluster, groupName);
+        if (existing)
+        {
+            Owned<IPropertyTreeIterator> iter = existing->getElements("Node");
+            ForEach(*iter)
+            {
+                const char *host = iter->query().queryProp("@ip");
+                SocketEndpoint ep(host); // NB: for legacy reason it's called @ip, but should typically be a hostname
+
+                // delete any entries that are already in Group
+                auto it = std::remove(boundHostsToAdd.begin(), boundHostsToAdd.end(), ep);
+                if (it != boundHostsToAdd.end())
+                {
+                    boundHostsToAdd.erase(it, boundHostsToAdd.end());
+                    VStringBuffer errMsg("addSpares: not adding: %s, already in spares", host);
+                    UWARNLOG("%s", errMsg.str());
+                    messages.append(errMsg).newline();
+                }
+            }
+        }
+        else
+        {
+            existing = groupsconnlock.conn->queryRoot()->addPropTree("Group");
+            existing->setProp("@name", groupName.str());
+        }
+        // add remaining
+        for (const auto &boundHost: boundHostsToAdd)
+        {
+            IPropertyTree *node = existing->addPropTree("Node");
+            node->setProp("@ip", boundHost.host.c_str());
+        }
+        return true;
     }
-    bool removeSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &messages)
+    bool removeSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &messages)
     {
-        return doClusterGroup(cg_remove, clusterName, type, true, &eps, messages);
+        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+        if (!conn)
+            return false;
+        const IPropertyTree *cluster = queryCluster(conn->queryRoot(), clusterName, type, "removeSpares", messages);
+        if (!cluster)
+            return false;
+
+        std::vector<BoundHost> boundHostsToRemove;
+        bind(hosts, boundHostsToRemove);
+
+        StringBuffer groupName;
+        IPropertyTree *existing = queryExistingSpareGroup(cluster, groupName);
+        if (existing)
+        {
+            SocketEndpointArray existingGroupBoundEps;
+            StringAttr groupDir;
+            GroupType type;
+            if (!loadGroup(existing, existingGroupBoundEps, nullptr, nullptr))
+            {
+                IWARNLOG("removeSpares: failed to load group: '%s'", groupName.str());
+                return false;
+            }
+            for (const auto &boundHostToRemove: boundHostsToRemove)
+            {
+                bool matched = true;
+                ForEachItemIn(e, existingGroupBoundEps)
+                {
+                    if (existingGroupBoundEps.item(e) == boundHostToRemove.ep)
+                    {
+                        VStringBuffer xpath("Node[%u]", e+1);
+                        verifyex(existing->removeProp(xpath));
+                        matched = true;
+                    }
+                    // there shouldn't be any others, but in keeping with legacy code, continue matching
+                }
+                if (!matched)
+                {
+                    VStringBuffer errMsg("removeSpares: %s not found in spares", boundHostToRemove.host.c_str());
+                    UWARNLOG("%s", errMsg.str());
+                    messages.append(errMsg).newline();
+                }
+            }
+        }
+        return true;
     }
     void constructGroups(bool force, StringBuffer &messages, IPropertyTree *oldEnvironment)
     {
@@ -9689,7 +9859,7 @@ public:
             }
         }
     }
-    IGroup *getGroupFromCluster(const char *type, IPropertyTree &cluster, bool expand)
+    IGroup *getGroupFromCluster(const char *type, const IPropertyTree &cluster, bool expand)
     {
         loadMachineMap();
         GroupType gt = getGroupType(type);
@@ -9714,16 +9884,16 @@ bool resetClusterGroup(const char *clusterName, const char *type, bool spares, S
     return init.resetClusterGroup(clusterName, type, spares, response);
 }
 
-bool addClusterSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &response, unsigned timems)
+bool addClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems)
 {
     CInitGroups init(timems);
-    return init.addSpares(clusterName, type, eps, response);
+    return init.addSpares(clusterName, type, hosts, response);
 }
 
-bool removeClusterSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &response, unsigned timems)
+bool removeClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems)
 {
     CInitGroups init(timems);
-    return init.removeSpares(clusterName, type, eps, response);
+    return init.removeSpares(clusterName, type, hosts, response);
 }
 
 static IGroup *getClusterNodeGroup(const char *clusterName, const char *type, bool processGroup, unsigned timems)
