@@ -174,15 +174,6 @@ RemoteFileCommandType queryRemoteStreamCmd()
 }
 
 
-bool AuthenticationEnabled = true;
-bool enableDafsAuthentication(bool on)
-{
-    bool ret = AuthenticationEnabled;
-    AuthenticationEnabled = on;
-    return ret;
-}
-
-
 #define CLIENT_TIMEOUT      (1000*60*60*12)     // long timeout in case zombies
 #define CLIENT_INACTIVEWARNING_TIMEOUT (1000*60*60*12) // time between logging inactive clients
 #define SERVER_TIMEOUT      (1000*60*5)         // timeout when waiting for dafilesrv to reply after command
@@ -742,24 +733,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
         {
             if (TF_TRACE_CLIENT_CONN)
                 PROGLOG("Connected to %s",eps.str());
-            if (AuthenticationEnabled)
-            {
-                try
-                {
-                    sendAuthentication(ep); // this will log error
-                    break;
-                }
-                catch (IJSOCK_Exception *e)
-                {
-                    StringBuffer err;
-                    WARNLOG("Remote file authenticate %s for %s ",e->errorMessage(err).str(),ep.getUrlStr(eps.clear()).str());
-                    e->Release();
-                    if (!connectAttempts)
-                        break; // MCK - is this a warning or an error ? If an error, should we close and throw here ?
-                }
-            }
-            else
-                break;
+            break;
         }
         bool timeExpired = false;
         unsigned sleeptime = getRandom()%3000+1000;
@@ -953,92 +927,6 @@ void CRemoteBase::sendRemoteCommand(MemoryBuffer & src, bool retry)
 {
     MemoryBuffer reply;
     sendRemoteCommand(src, reply, retry);
-}
-
-void CRemoteBase::throwUnauthenticated(const IpAddress &ip, const char *user,unsigned err)
-{
-    if (err==0)
-        err = RFSERR_AuthenticateFailed;
-    StringBuffer msg;
-    msg.appendf("Authentication for %s on ",user);
-    ip.getIpText(msg);
-    msg.append(" failed");
-    throw createDafsException(err, msg.str());
-}
-
-void CRemoteBase::sendAuthentication(const IpAddress &serverip)
-{
-    // send my sig
-    // first send my sig which if stream unencrypted will get returned as a bad command
-    OnceKey oncekey;
-    genOnce(oncekey);
-    MemoryBuffer sendbuf;
-    initSendBuffer(sendbuf);
-    MemoryBuffer replybuf;
-    MemoryBuffer encbuf; // because aesEncrypt clears input
-    sendbuf.append((RemoteFileCommandType)RFCunlock).append(sizeof(oncekey),&oncekey);
-    try
-    {
-        sendDaFsBuffer(socket, sendbuf);
-        receiveDaFsBuffer(socket, replybuf, NORMAL_RETRIES, 1024);
-    }
-    catch (IException *e)
-    {
-        EXCLOG(e,"Remote file - sendAuthentication(1)");
-        throw;
-    }
-    unsigned errCode;
-    replybuf.read(errCode);
-    if (errCode!=0)  // no authentication required
-        return;
-    SocketEndpoint ep;
-    ep.setLocalHost(0);
-    byte ipdata[16];
-    size32_t ipds = ep.getNetAddress(sizeof(ipdata),&ipdata);
-    mergeOnce(oncekey,ipds,&ipdata);
-    StringBuffer username;
-    StringBuffer password;
-    IPasswordProvider * pp = queryPasswordProvider();
-    if (pp)
-        pp->getPassword(serverip, username, password);
-    if (!username.length())
-        username.append("sds_system");      // default account (note if exists should have restricted access!)
-    if (!password.length())
-        password.append("sds_man");
-    if (replybuf.remaining()<=sizeof(size32_t))
-        throwUnauthenticated(serverip,username.str());
-    size32_t bs;
-    replybuf.read(bs);
-    if (replybuf.remaining()<bs)
-        throwUnauthenticated(serverip,username.str());
-    MemoryBuffer skeybuf;
-    aesDecrypt(&oncekey,sizeof(oncekey),replybuf.readDirect(bs),bs,skeybuf);
-    if (skeybuf.remaining()<sizeof(OnceKey))
-        throwUnauthenticated(serverip,username.str());
-    OnceKey sokey;
-    skeybuf.read(sizeof(OnceKey),&sokey);
-    // now we have the key to use to send user/password
-    MemoryBuffer tosend;
-    tosend.append((byte)2).append(username).append(password);
-    initSendBuffer(sendbuf.clear());
-    sendbuf.append((RemoteFileCommandType)RFCunlockreply);
-    aesEncrypt(&sokey, sizeof(oncekey), tosend.toByteArray(), tosend.length(), encbuf);
-    sendbuf.append(encbuf.length());
-    sendbuf.append(encbuf);
-    try
-    {
-        sendDaFsBuffer(socket, sendbuf);
-        receiveDaFsBuffer(socket, replybuf.clear(), NORMAL_RETRIES, 1024);
-    }
-    catch (IException *e)
-    {
-        EXCLOG(e,"Remote file - sendAuthentication(2)");
-        throw;
-    }
-    replybuf.read(errCode);
-    if (errCode==0)  // suceeded!
-        return;
-    throwUnauthenticated(serverip,username.str(),errCode);
 }
 
 CRemoteBase::CRemoteBase(const SocketEndpoint &_ep, const char * _filename)

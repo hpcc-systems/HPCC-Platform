@@ -52,12 +52,12 @@ extern DAFSCLIENT_API IFile * createRemoteFile(SocketEndpoint &ep,const char * _
 
 interface IDaFsConnection;
 extern DAFSCLIENT_API unsigned short getDaliServixPort();  // assumed just the one for now
-extern DAFSCLIENT_API void setCanAccessDirectly(RemoteFilename & file,bool set);extern DAFSCLIENT_API unsigned getRemoteVersion(ISocket * _socket, StringBuffer &ver);
+extern DAFSCLIENT_API void setCanAccessDirectly(RemoteFilename & file,bool set);
+extern DAFSCLIENT_API unsigned getRemoteVersion(ISocket * _socket, StringBuffer &ver);
 extern DAFSCLIENT_API unsigned getCachedRemoteVersion(IDaFsConnection &daFsConnection);
 extern DAFSCLIENT_API unsigned getCachedRemoteVersion(const SocketEndpoint &ep, bool secure);
 extern DAFSCLIENT_API int setDafsTrace(ISocket * socket,byte flags);
 extern DAFSCLIENT_API int setDafsThrottleLimit(ISocket * socket, ThrottleClass throttleClass, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit, unsigned queueLimit, StringBuffer *errMsg=NULL);
-extern DAFSCLIENT_API bool enableDafsAuthentication(bool on);
 extern DAFSCLIENT_API int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr);
 extern DAFSCLIENT_API void setDafsEndpointPort(SocketEndpoint &ep);
 extern DAFSCLIENT_API void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir);
