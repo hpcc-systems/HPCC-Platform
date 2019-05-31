@@ -14681,8 +14681,9 @@ void TransformTrackingInfo::lock()
     if (curTransformDepth>=maxNestedLocks)
         maxNestedLocks = curTransformDepth+1;
 #endif
+    if (unlikely(((curTransformDepth+1) & TRANSFORM_DEPTH_MASK) == 0))
+        throw makeStringExceptionV(0, "INTERNAL ERROR: Transformers nested more than %u deep", TRANSFORM_DEPTH_MASK);
     curTransformDepth++;
-    assertex((curTransformDepth & TRANSFORM_DEPTH_MASK) != 0);          // 
     transformStackMark.append(transformStack.ordinality());
 }
 

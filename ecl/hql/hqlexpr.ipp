@@ -40,14 +40,15 @@
 #include "defvalue.hpp"
 #include "hqlexpr.hpp"
 
-
-typedef byte transformdepth_t;
-#define TRANSFORM_DEPTH_MASK    0x7f
-#define TRANSFORM_DEPTH_NOLINK  0x80
+//There is currently 1 spare byte in the base CHqlExpression - so there is no problem with this being 2 bytes
+//but if space becomes very tight it could be reduced back down to 1 byte
+typedef unsigned short transformdepth_t;
+#define TRANSFORM_DEPTH_MASK    0x7fff
+#define TRANSFORM_DEPTH_NOLINK  0x8000
 #define TRANSFORM_DEPTH(depth) (depth & TRANSFORM_DEPTH_MASK)
 
 //following are only stored in the save array
-#define TRANSFORM_DEPTH_SAVE_MATCH_EXPR     0x100
+#define TRANSFORM_DEPTH_SAVE_MATCH_EXPR     0x10000
 
 #define RELEASE_TRANSFORM_EXTRA(depth, extra)   { if (!(depth & TRANSFORM_DEPTH_NOLINK)) ::Release(extra); }
 
