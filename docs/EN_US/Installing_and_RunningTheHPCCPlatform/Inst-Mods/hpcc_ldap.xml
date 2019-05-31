@@ -812,6 +812,8 @@ Proceed?  y/n
       for example:</para>
 
       <para><programlisting>/opt/HPCCSystems/bin/addScopes /var/lib/HPCCSystems/mydali/daliconf.xml</programlisting></para>
+
+      <para>Run addScopes on the Dali node.</para>
     </sect3>
   </sect2>
 </sect1>
