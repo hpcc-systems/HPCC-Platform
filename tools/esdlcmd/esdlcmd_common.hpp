@@ -103,6 +103,8 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDL_OPTION_ECL_INCLUDE_LIST    "--ecl-imports"
 #define ESDL_OPTION_ECL_HEADER_BLOCK    "--ecl-header"
 
+#define ESDL_OPTION_CASSANDRA_CONSISTENCY  "--cassandra-consistency"
+
 #define ESDLOPT_INCLUDE_PATH            "--include-path"
 #define ESDLOPT_INCLUDE_PATH_S          "-I"
 #define ESDLOPT_INCLUDE_PATH_ENV        "ESDL_INCLUDE_PATH"

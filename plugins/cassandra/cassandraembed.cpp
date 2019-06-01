@@ -93,6 +93,18 @@ void check(CassError rc)
     }
 }
 
+//use cassandra.h mapping macros so we stay in sync
+
+#define CASS_CONSISTENCY_HPCC_MAP_ENTRY(value, desc) \
+    if (strieq(desc, name)) \
+        return value;
+
+CassConsistency cass_consistency_from_string(const char *name)
+{
+    CASS_CONSISTENCY_MAP(CASS_CONSISTENCY_HPCC_MAP_ENTRY)
+    return CASS_CONSISTENCY_UNKNOWN;
+}
+
 // Wrappers to Cassandra structures that require corresponding releases
 
 void CassandraClusterSession::setOptions(const StringArray &options)
@@ -260,6 +272,15 @@ void CassandraClusterSession::setOptions(const StringArray &options)
                 unsigned delay_secs = getUnsignedOption(subargs.item(0), "delay_secs");
                 cass_cluster_set_tcp_keepalive(cluster, enabled, delay_secs);
             }
+            else if (strieq(optName, "consistency"))
+            {
+                CassConsistency optConsistency = cass_consistency_from_string(val);
+                if (optConsistency == CASS_CONSISTENCY_UNKNOWN)
+                    failx("Unrecognized cassandra consistency value '%s'", val);
+                //use of cass_cluster_set_consistency() is not compatible with older driver
+                //save value and apply to each statement using cass_statement_set_consistency() for now
+                consistency = optConsistency;
+            }
             else
                 failx("Unrecognized option %s", optName.str());
         }
@@ -333,7 +354,7 @@ CassandraPrepared *CassandraClusterSession::prepareStatement(const char *query, 
 CassandraStatementInfo *CassandraClusterSession::createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const
 {
     Owned<CassandraPrepared> prepared = prepareStatement(script, false); // We could make tracing selectable
-    return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, semaphore, maxRetries);
+    return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, semaphore, maxRetries, consistency);
 }
 
 void CassandraClusterSession::executeAsync(CIArrayOf<CassandraStatement> &batch, const char *what) const
@@ -480,13 +501,15 @@ void CassandraRetryingFuture::signaller(CassFuture *future, void *data)
 
 //----------------------
 
-CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries)
+CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries, CassConsistency _consistency)
     : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(_semaphore), maxRetries(_maxRetries)
 {
     assertex(prepared && *prepared);
     statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
     if (pageSize)
         cass_statement_set_paging_size(*statement, pageSize);
+    if (_consistency != CASS_CONSISTENCY_UNKNOWN)
+        cass_statement_set_consistency(*statement, _consistency);
     inBatch = false;
 }
 CassandraStatementInfo::~CassandraStatementInfo()
