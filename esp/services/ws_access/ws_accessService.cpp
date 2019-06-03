@@ -199,6 +199,45 @@ CLdapSecManager* Cws_accessEx::queryLDAPSecurityManager(IEspContext &context)
     return dynamic_cast<CLdapSecManager*>(secMgr);
 }
 
+void Cws_accessEx::getBasednReq(IEspContext &context, const char* name, const char* basedn,
+    const char* rType, const char* rTitle, IEspDnStruct* dn)
+{
+    double version = context.getClientVersion();
+    if (version >= 1.14)
+    {
+        if (isEmptyString(name))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "BaseDN not specified");
+
+        if(m_basedns.length() == 0)
+            setBasedns(context);
+
+        ForEachItemIn(i, m_basedns)
+        {
+            IEspDnStruct& cur = m_basedns.item(i);
+            if(strieq(cur.getName(), name))
+            {
+                dn->setBasedn(cur.getBasedn());
+                dn->setRtype(cur.getRtype());
+                dn->setRtitle(cur.getRtitle());
+                return;
+            }
+        }
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "BaseDN %s not found", name);
+    }
+
+    //before version 1.14
+    if (isEmptyString(basedn))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Basedn not specified");
+    if (isEmptyString(rType))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Rtype not specified");
+    if (isEmptyString(rTitle))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Rtitle not specified");
+
+    dn->setBasedn(basedn);
+    dn->setRtype(rType);
+    dn->setRtitle(rTitle);
+}
+
 void Cws_accessEx::setBasedns(IEspContext &context)
 {
     CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
@@ -244,16 +283,15 @@ void Cws_accessEx::setBasedns(IEspContext &context)
     return;
 }
 
-bool Cws_accessEx::getNewFileScopePermissions(ISecManager* secmgr, IEspResourceAddRequest &req, StringBuffer& existingResource, StringArray& newResources)
+bool Cws_accessEx::getNewFileScopePermissions(ISecManager* secmgr, const char* name, IEspDnStruct* basednReq, StringBuffer& existingResource, StringArray& newResources)
 {
     if (!secmgr)
         return false;
 
-    const char* name0 = req.getName();
-    if (!name0 || !*name0)
+    if (isEmptyString(name))
         return false;
 
-    char* pStr0 = (char*) name0;
+    char* pStr0 = (char*) name;
     while (pStr0[0] == ':') //in case of some ':' by mistake
         pStr0++;
 
@@ -299,7 +337,7 @@ bool Cws_accessEx::getNewFileScopePermissions(ISecManager* secmgr, IEspResourceA
         try
         {
             IArrayOf<CPermission> permissions;
-            ldapsecmgr->getPermissionsArray(req.getBasedn(), str2type(req.getRtype()), namebuf.str(), permissions);
+            ldapsecmgr->getPermissionsArray(basednReq->getBasedn(), str2type(basednReq->getRtype()), namebuf.str(), permissions);
             if (!permissions.ordinality())
             {
                 break;
@@ -318,14 +356,14 @@ bool Cws_accessEx::getNewFileScopePermissions(ISecManager* secmgr, IEspResourceA
     return true;
 }
 
-bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspResourceAddRequest &req, StringBuffer& existingResource, StringArray& newResources)
+bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspDnStruct* basednReq, StringBuffer& existingResource, StringArray& newResources)
 {
     if (!secmgr || !newResources.ordinality())
     {
         return false;
     }
 
-    const char* basedn = req.getBasedn();
+    const char* basedn = basednReq->getBasedn();
     if (!basedn || !*basedn)
     {
         return false;
@@ -348,7 +386,7 @@ bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspResourceA
 
     IArrayOf<CPermission> requiredPermissions;
     CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
-    ldapsecmgr->getPermissionsArray(basednBuf, str2type(req.getRtype()), existingResource.str(), requiredPermissions);
+    ldapsecmgr->getPermissionsArray(basednBuf, str2type(basednReq->getRtype()), existingResource.str(), requiredPermissions);
     if (!requiredPermissions.ordinality())
     {
         return false;
@@ -364,8 +402,8 @@ bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspResourceA
             continue;
 
         CPermissionAction paction;
-        paction.m_basedn.append(req.getBasedn());
-        paction.m_rtype = str2type(req.getRtype());
+        paction.m_basedn.append(basednReq->getBasedn());
+        paction.m_rtype = str2type(basednReq->getRtype());
         paction.m_account_type = (ACT_TYPE)accType;
         paction.m_account_name.append(actname);
         paction.m_allows = perm.getAllows();
@@ -1600,27 +1638,14 @@ bool Cws_accessEx::onPermissions(IEspContext &context, IEspBasednsRequest &req, 
     return true;
 }
 
-const char* Cws_accessEx::getBaseDN(IEspContext &context, const char* rtype, StringBuffer& baseDN)
-{
-    if(!m_basedns.length())
-        setBasedns(context);
-    ForEachItemIn(y, m_basedns)
-    {
-        IEspDnStruct* curbasedn = &(m_basedns.item(y));
-        if(strieq(curbasedn->getRtype(), rtype))
-        {
-            baseDN.set(curbasedn->getBasedn());
-            return baseDN.str();
-        }
-    }
-    return NULL;
-}
-
 bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, IEspResourcesResponse &resp)
 {
     try
     {
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Read);
+        Owned<IEspDnStruct> basednReq = createDnStruct();
+        getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
+
+        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
 
         CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
         if(secmgr == NULL)
@@ -1628,17 +1653,7 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
 
         double version = context.getClientVersion();
         const char* filterInput = req.getSearchinput();
-        const char* basedn = req.getBasedn();
-        const char* rtypestr = req.getRtype();
-        if (!rtypestr || !*rtypestr)
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Rtype not specified");
-        StringBuffer baseDN;
-        if (!basedn || !*basedn)
-        {
-            basedn = getBaseDN(context, rtypestr, baseDN);
-            if (!basedn || !*basedn)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "BaseDN not found");
-        }
+        const char* basedn = basednReq->getBasedn();
 
         const char* moduletemplate = NULL;
         ForEachItemIn(x, m_basedns)
@@ -1650,10 +1665,13 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
             }
         }
 
-        resp.setBasedn(basedn);
-        resp.setRtype(rtypestr);
-        resp.setRtitle(req.getRtitle());
-        SecResourceType rtype = str2type(rtypestr);
+        if (version < 1.14)
+        {
+            resp.setBasedn(basedn);
+            resp.setRtype(basednReq->getRtype());
+            resp.setRtitle(basednReq->getRtitle());
+        }
+        SecResourceType rtype = str2type(basednReq->getRtype());
         if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
         {
             StringBuffer deft_basedn, deft_name;
@@ -1680,7 +1698,8 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
         if(prefix && *prefix)
         {
             prefixlen = strlen(prefix);
-            resp.setPrefix(prefix);
+            if (version < 1.14)
+                resp.setPrefix(prefix);
         }
 
         if (version > 1.04)
@@ -1794,28 +1813,17 @@ bool Cws_accessEx::onResourceQuery(IEspContext &context, IEspResourceQueryReques
             resp.setNoSecMngr(true);
             return true;
         }
+        Owned<IEspDnStruct> basednReq = createDnStruct();
+        getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Read);
+        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
 
-        const char* rtypeStr = req.getRtype();
-        if (!rtypeStr || !*rtypeStr)
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Rtype not specified");
-
-        StringBuffer baseDN;
-        const char* basednStr = req.getBasedn();
-        if (!basednStr || !*basednStr)
-        {
-            basednStr = getBaseDN(context, rtypeStr, baseDN);
-            if (!basednStr || !*basednStr)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "BaseDN not found");
-        }
-
-        SecResourceType rtype = str2type(rtypeStr);
+        SecResourceType rtype = str2type(basednReq->getRtype());
         const char* moduleTemplate = NULL;
         ForEachItemIn(x, m_basedns)
         {
             IEspDnStruct* curbasedn = &(m_basedns.item(x));
-            if(strieq(curbasedn->getBasedn(), basednStr))
+            if(strieq(curbasedn->getBasedn(), basednReq->getBasedn()))
             {
                 moduleTemplate = curbasedn->getTemplatename();
                 break;
@@ -1824,7 +1832,7 @@ bool Cws_accessEx::onResourceQuery(IEspContext &context, IEspResourceQueryReques
 
         StringBuffer nameReq(req.getName());
         const char* prefix = req.getPrefix();
-        if (!nameReq.length() && req.getRtitle() && !stricmp(req.getRtitle(), "CodeGenerator Permission"))
+        if (!nameReq.length() && basednReq->getRtitle() && !stricmp(basednReq->getRtitle(), "CodeGenerator Permission"))
             nameReq.set(prefix);
 
         __int64 pageStartFrom = 0;
@@ -1842,7 +1850,7 @@ bool Cws_accessEx::onResourceQuery(IEspContext &context, IEspResourceQueryReques
         unsigned total;
         __int64 cacheHint;
         IArrayOf<IEspResource> rarray;
-        Owned<ISecItemIterator> it = secmgr->getResourcesSorted(rtype, basednStr, nameReq.str(),
+        Owned<ISecItemIterator> it = secmgr->getResourcesSorted(rtype, basednReq->getBasedn(), nameReq.str(),
             RF_RT_FILE_SCOPE_FILE | RF_RT_MODULE_NO_REPOSITORY, sortOrder,
             (const __int64) pageStartFrom, (const unsigned) pageSize, &total, &cacheHint);
         ForEach(*it)
@@ -1930,26 +1938,33 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
 {
     try
     {
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
+        Owned<IEspDnStruct> basednReq = createDnStruct();
+        getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
+
+        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
 
         ISecManager* secmgr = context.querySecManager();
 
         if(secmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
-        resp.setBasedn(req.getBasedn());
-        resp.setRtype(req.getRtype());
-        resp.setRtitle(req.getRtitle());
-        resp.setPrefix(req.getPrefix());
+        double version = context.getClientVersion();
+        if (version < 1.14)
+        {
+            resp.setBasedn(basednReq->getBasedn());
+            resp.setRtype(basednReq->getRtype());
+            resp.setRtitle(basednReq->getRtitle());
+            resp.setPrefix(req.getPrefix());
+        }
 
         StringBuffer lastResource;
         StringArray newResources;
-        if(str2type(req.getRtype()) == RT_FILE_SCOPE)
+        if(str2type(basednReq->getRtype()) == RT_FILE_SCOPE)
         {
-            getNewFileScopePermissions(secmgr, req, lastResource, newResources);
+            getNewFileScopePermissions(secmgr, req.getName(), basednReq, lastResource, newResources);
         }
 
-        SecResourceType rtype = str2type(req.getRtype());
+        SecResourceType rtype = str2type(basednReq->getRtype());
         try
         {
             ISecUser* usr = NULL;
@@ -1959,7 +1974,7 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
             {
                 resp.setRetcode(-1);
                 StringBuffer errmsg;
-                errmsg.append(req.getRtitle()).append(" name can't be empty");
+                errmsg.append(basednReq->getRtitle()).append(" name can't be empty");
                 resp.setRetmsg(errmsg.str());
                 return false;
             }
@@ -1991,11 +2006,11 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
 
             ISecResource* r = rlist->addResource(namebuf.str());
             r->setDescription(req.getDescription());
-            secmgr->addResourcesEx(rtype, *usr, rlist, PT_DEFAULT, req.getBasedn());
+            secmgr->addResourcesEx(rtype, *usr, rlist, PT_DEFAULT, basednReq->getBasedn());
 
-            if(str2type(req.getRtype()) == RT_FILE_SCOPE && newResources.ordinality())
+            if(str2type(basednReq->getRtype()) == RT_FILE_SCOPE && newResources.ordinality())
             {
-                setNewFileScopePermissions(secmgr, req, lastResource, newResources);
+                setNewFileScopePermissions(secmgr, basednReq, lastResource, newResources);
 
                 StringBuffer retmsg;
                 ForEachItemIn(y, newResources)
@@ -2037,7 +2052,10 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
 {
     try
     {
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
+        Owned<IEspDnStruct> basednReq = createDnStruct();
+        getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
+
+        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
 
         CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
 
@@ -2049,9 +2067,9 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
         int doUpdate = req.getDoUpdate();
         if (doUpdate)
         {
-            const char* basedn = req.getBasedn();
-            const char* rtype = req.getRtype();
-            const char* rtitle = req.getRtitle();
+            const char* basedn = basednReq->getBasedn();
+            const char* rtype = basednReq->getRtype();
+            const char* rtitle = basednReq->getRtitle();
             const char* prefix = req.getPrefix();
 
             StringBuffer url("/ws_access/PermissionsResetInput");
@@ -2077,11 +2095,15 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
             return true;
         }
 
-        resp.setBasedn(req.getBasedn());
-        resp.setRtype(req.getRtype());
-        resp.setRtitle(req.getRtitle());
-        resp.setPrefix(req.getPrefix());
-        SecResourceType rtype = str2type(req.getRtype());
+        double version = context.getClientVersion();
+        if (version < 1.14)
+        {
+            resp.setBasedn(basednReq->getBasedn());
+            resp.setRtype(basednReq->getRtype());
+            resp.setRtitle(basednReq->getRtitle());
+            resp.setPrefix(req.getPrefix());
+        }
+        SecResourceType rtype = str2type(basednReq->getRtype());
         try
         {
             for(unsigned i = 0; i < names.length(); i++)
@@ -2099,7 +2121,7 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
                 if(prefix && *prefix)
                     namebuf.insert(0, prefix);
 
-                secmgr->deleteResource(rtype, namebuf.str(), req.getBasedn());
+                secmgr->deleteResource(rtype, namebuf.str(), basednReq->getBasedn());
             }
         }
         catch(IException* e)
@@ -2161,7 +2183,10 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
 {
     try
     {
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Read);
+        Owned<IEspDnStruct> basednReq = createDnStruct();
+        getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
+
+        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
 
         ISecManager* secmgr = context.querySecManager();
 
@@ -2170,9 +2195,10 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
 
         CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
 
+        double version = context.getClientVersion();
         const char* name = req.getName();
         StringBuffer namebuf(name);
-        if(str2type(req.getRtype()) == RT_MODULE && stricmp(name, "repository") != 0 && Utils::strncasecmp(name, "repository.", 11) != 0)
+        if(str2type(basednReq->getRtype()) == RT_MODULE && stricmp(name, "repository") != 0 && Utils::strncasecmp(name, "repository.", 11) != 0)
             namebuf.insert(0, "repository.");
 
         const char* prefix = req.getPrefix();
@@ -2180,7 +2206,7 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
             namebuf.insert(0, prefix);
 
         IArrayOf<CPermission> permissions;
-        ldapsecmgr->getPermissionsArray(req.getBasedn(), str2type(req.getRtype()), namebuf.str(), permissions);
+        ldapsecmgr->getPermissionsArray(basednReq->getBasedn(), str2type(basednReq->getRtype()), namebuf.str(), permissions);
 
         IArrayOf<IEspResourcePermission> parray;
         ForEachItemIn(x, permissions)
@@ -2189,11 +2215,14 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
             addResourcePermission(perm.getAccount_name(), perm.getAccount_type(), perm.getAllows(), perm.getDenies(), parray);
         }
 
-        resp.setBasedn(req.getBasedn());
-        resp.setRtype(req.getRtype());
-        resp.setRtitle(req.getRtitle());
-        resp.setName(req.getName());
-        resp.setPrefix(req.getPrefix());
+        if (version < 1.14)
+        {
+            resp.setBasedn(basednReq->getBasedn());
+            resp.setRtype(basednReq->getRtype());
+            resp.setRtitle(basednReq->getRtitle());
+            resp.setPrefix(req.getPrefix());
+            resp.setName(req.getName());
+        }
         resp.setPermissions(parray);
     }
     catch(IException* e)
@@ -2215,7 +2244,10 @@ bool Cws_accessEx::onResourcePermissionQuery(IEspContext &context, IEspResourceP
             return true;
         }
 
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Read);
+        Owned<IEspDnStruct> basednReq = createDnStruct();
+        getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
+
+        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
 
         __int64 pageStartFrom = 0;
         unsigned pageSize = 100;
@@ -2247,8 +2279,8 @@ bool Cws_accessEx::onResourcePermissionQuery(IEspContext &context, IEspResourceP
         unsigned total;
         __int64 cacheHint;
         IArrayOf<IEspResourcePermission> permissions;
-        Owned<ISecItemIterator> it = ldapSecMgr->getResourcePermissionsSorted(req.getName(), accountTypeReq, req.getBasedn(),
-            req.getRtype(), req.getPrefix(), sortOrder, (const __int64) pageStartFrom, (const unsigned) pageSize, &total, &cacheHint);
+        Owned<ISecItemIterator> it = ldapSecMgr->getResourcePermissionsSorted(req.getName(), accountTypeReq, basednReq->getBasedn(),
+            basednReq->getRtype(), req.getPrefix(), sortOrder, (const __int64) pageStartFrom, (const unsigned) pageSize, &total, &cacheHint);
         ForEach(*it)
         {
             IPropertyTree& r = it->query();
@@ -2677,6 +2709,7 @@ bool Cws_accessEx::onPermissionAddInput(IEspContext &context, IEspPermissionAddR
     return true;
 }
 
+
 bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissionsResetInputRequest &req, IEspPermissionsResetInputResponse &resp)
 {
     try
@@ -2909,13 +2942,21 @@ bool Cws_accessEx::onPermissionsReset(IEspContext &context, IEspPermissionsReset
 {
     try
     {
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
+        Owned<IEspDnStruct> basednReq = createDnStruct();
+        getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        resp.setBasedn(req.getBasedn());
-        resp.setRname(req.getRname());
-        resp.setRtype(req.getRtype());
-        resp.setRtitle(req.getRtitle());
-        resp.setPrefix(req.getPrefix());
+        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
+
+        double version = context.getClientVersion();
+        if (version < 1.14)
+        {
+            resp.setBasedn(basednReq->getBasedn());
+            resp.setRname(req.getRname());
+            resp.setRtype(basednReq->getRtype());
+            resp.setRtitle(basednReq->getRtitle());
+            resp.setPrefix(req.getPrefix());
+        }
+
         ISecManager* secmgr = context.querySecManager();
 
         if(secmgr == NULL)
@@ -2932,45 +2973,10 @@ bool Cws_accessEx::onPermissionsReset(IEspContext &context, IEspPermissionsReset
             throw MakeStringException(ECLWATCH_INVALID_RESOURCE_NAME, "A resource name must be specified.");
 
         StringArray userAccounts, groupAccounts;
-        if (users && *users)
-        {
-            char* pTr = (char*) users;
-            while (pTr)
-            {
-                char* ppTr = strchr(pTr, ',');
-                if (!ppTr)
-                    break;
-
-                if (ppTr - pTr > 1)
-                {
-                    char userName[255];
-                    strncpy(userName, pTr, ppTr - pTr);
-                    userName[ppTr - pTr] = 0;
-                    userAccounts.append(userName);
-                }
-                pTr = ppTr+1;
-            }
-        }
-        if (groups && *groups)
-        {
-            char* pTr = (char*) groups;
-            while (pTr)
-            {
-                char* ppTr = strchr(pTr, ',');
-                if (!ppTr)
-                    break;
-
-                if (ppTr - pTr > 1)
-                {
-                    char userName[255];
-                    strncpy(userName, pTr, ppTr - pTr);
-                    userName[ppTr - pTr] = 0;
-                    groupAccounts.append(userName);
-                }
-                pTr = ppTr+1;
-            }
-        }
-
+        if (!isEmptyString(users))
+            userAccounts.appendListUniq(users, ",");
+        if (!isEmptyString(groups))
+            groupAccounts.appendListUniq(groups, ",");
         if (userAccounts.length() < 1 && groupAccounts.length() < 1)
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "A user or group must be specified.");
 
@@ -2992,7 +2998,7 @@ bool Cws_accessEx::onPermissionsReset(IEspContext &context, IEspPermissionsReset
                         if (!name0 || !*name0)
                             continue;
 
-                        ret = permissionsReset(ldapsecmgr, req.getBasedn(), req.getRtype(), req.getPrefix(), name, USER_ACT, name0,
+                        ret = permissionsReset(ldapsecmgr, basednReq->getBasedn(), basednReq->getRtype(), req.getPrefix(), name, USER_ACT, name0,
                             req.getAllow_access(), req.getAllow_read(), req.getAllow_write(), req.getAllow_full(),
                             req.getDeny_access(), req.getDeny_read(), req.getDeny_write(), req.getDeny_full());
 
@@ -3012,7 +3018,7 @@ bool Cws_accessEx::onPermissionsReset(IEspContext &context, IEspPermissionsReset
                         if (!name0 || !*name0)
                             continue;
 
-                        ret = permissionsReset(ldapsecmgr, req.getBasedn(), req.getRtype(), req.getPrefix(), name, GROUP_ACT, name0,
+                        ret = permissionsReset(ldapsecmgr, basednReq->getBasedn(), basednReq->getRtype(), req.getPrefix(), name, GROUP_ACT, name0,
                             req.getAllow_access(), req.getAllow_read(), req.getAllow_write(), req.getAllow_full(),
                             req.getDeny_access(), req.getDeny_read(), req.getDeny_write(), req.getDeny_full());
 
@@ -3186,9 +3192,13 @@ bool Cws_accessEx::permissionAddInputOnAccount(IEspContext &context, const char*
     if(secmgr == NULL)
         throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
-    resp.setBasednName(req.getBasednName());
-    resp.setAccountName(req.getAccountName());
-    resp.setAccountType(req.getAccountType());
+    double version = context.getClientVersion();
+    if (version < 1.14)
+    {
+        resp.setBasednName(req.getBasednName());
+        resp.setAccountName(req.getAccountName());
+        resp.setAccountType(req.getAccountType());
+    }
 
     const char* prefix = req.getPrefix();
     const char* basednName = req.getBasednName();
@@ -3281,33 +3291,39 @@ bool Cws_accessEx::onPermissionAction(IEspContext &context, IEspPermissionAction
 {
     try
     {
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
+        Owned<IEspDnStruct> basednReq = createDnStruct();
+        getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        resp.setBasedn(req.getBasedn());
-        resp.setRname(req.getRname());
-        resp.setRtype(req.getRtype());
-        resp.setRtitle(req.getRtitle());
-        resp.setPrefix(req.getPrefix());
+        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
+
+        double version = context.getClientVersion();
+        if (version < 1.14)
+        {
+            resp.setBasedn(req.getBasedn());
+            resp.setRname(req.getRname());
+            resp.setRtype(req.getRtype());
+            resp.setRtitle(req.getRtitle());
+            resp.setPrefix(req.getPrefix());
+        }
         CLdapSecManager* ldapsecmgr = queryLDAPSecurityManager(context);
 
         if(ldapsecmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
         CPermissionAction paction;
-        paction.m_basedn.append(req.getBasedn());
+        paction.m_basedn.append(basednReq->getBasedn());
 
         const char* name = req.getRname();
         StringBuffer namebuf(name);
-        SecResourceType rtype = str2type(req.getRtype());
+        SecResourceType rtype = str2type(basednReq->getRtype());
         if(rtype == RT_MODULE && stricmp(name, "repository") != 0 && Utils::strncasecmp(name, "repository.", 11) != 0)
             namebuf.insert(0, "repository.");
         const char* prefix = req.getPrefix();
         if(prefix && *prefix)
             namebuf.insert(0, prefix);
 
-        double version = context.getClientVersion();
         paction.m_rname.append(namebuf.str());
-        paction.m_rtype = str2type(req.getRtype());
+        paction.m_rtype = rtype;
         paction.m_account_type = (ACT_TYPE)req.getAccount_type();
         if(stricmp(req.getAction(), "add") == 0)
         {

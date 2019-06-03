@@ -68,11 +68,12 @@ class Cws_accessEx : public Cws_access
     SecResourceType str2type(const char* rtstr);
 
     void setBasedns(IEspContext &context);
-    const char* getBaseDN(IEspContext &context, const char* rtype, StringBuffer& baseDN);
+    void getBasednReq(IEspContext &context, const char* name, const char* basedn,
+        const char* rType, const char* rTitle, IEspDnStruct* dn);
     bool permissionAddInputOnResource(IEspContext &context, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
     bool permissionAddInputOnAccount(IEspContext &context, const char* accountName, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
-    bool getNewFileScopePermissions(ISecManager* secmgr, IEspResourceAddRequest &req, StringBuffer& existingResource, StringArray& newResources);
-    bool setNewFileScopePermissions(ISecManager* secmgr, IEspResourceAddRequest &req, StringBuffer& existingResource, StringArray& newResources);
+    bool getNewFileScopePermissions(ISecManager* secmgr, const char* name, IEspDnStruct* req, StringBuffer& existingResource, StringArray& newResources);
+    bool setNewFileScopePermissions(ISecManager* secmgr, IEspDnStruct* req, StringBuffer& existingResource, StringArray& newResources);
     bool permissionsReset(CLdapSecManager* ldapsecmgr, const char* basedn, const char* rtype, const char* prefix,
         const char* resourceName, ACT_TYPE accountType, const char* accountName,
         bool allow_access, bool allow_read, bool allow_write, bool allow_full,

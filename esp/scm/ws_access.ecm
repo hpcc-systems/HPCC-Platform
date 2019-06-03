@@ -442,10 +442,11 @@ ESPresponse BasednsResponse
 
 ESPrequest ResourcesRequest
 {
-    string basedn;
-    string rtype;
-    string rtitle;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rtitle;
     string templatename;
+    [min_ver("1.14")] BasednName;
     string prefix;
     string searchinput;
 };
@@ -466,23 +467,24 @@ ESPstruct ScopeScanStatusStruct
 
 ESPresponse ResourcesResponse
 {
-    string basedn;
-    string rtype;
-    string rtitle;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rtitle;
     ESParray<ESPstruct Resource, Resource> Resources;
 
     string default_basedn;
     string default_name;
-    string prefix;
+    [depr_ver("1.14")] string prefix;
     [min_ver("1.05")] bool toomany;
     [min_ver("1.08")] ESPstruct ScopeScanStatusStruct scopeScansStatus;
 };
 
 ESPrequest [nil_remove] ResourceQueryRequest
 {
-    string basedn;
-    string rtype;
-    string rtitle;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rtitle;
+    [min_ver("1.14")] BasednName;
     string prefix;
     string Name;
     unsigned PageSize;
@@ -518,9 +520,10 @@ ESPresponse ResourceAddInputResponse
 
 ESPrequest ResourceAddRequest
 {
-    string basedn;
-    string rtype;
-    string rtitle;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rtitle;
+    [min_ver("1.14")] BasednName;
     string name;
     string description;
     string prefix;
@@ -528,10 +531,10 @@ ESPrequest ResourceAddRequest
 
 ESPresponse ResourceAddResponse
 {
-    string basedn;
-    string rtype;
-    string rtitle;
-    string prefix;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rtitle;
+    [depr_ver("1.14")] string prefix;
 
     int retcode;
     string retmsg;
@@ -539,9 +542,10 @@ ESPresponse ResourceAddResponse
 
 ESPrequest ResourceDeleteRequest
 {
-    string basedn;
-    string rtype;
-    string rtitle;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rtitle;
+    [min_ver("1.14")] BasednName;
     string prefix;
     ESParray<string> names;
     int DoUpdate(0);
@@ -549,10 +553,10 @@ ESPrequest ResourceDeleteRequest
 
 ESPresponse ResourceDeleteResponse
 {
-    string basedn;
-    string rtype;
-    string rtitle;
-    string prefix;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rtitle;
+    [depr_ver("1.14")] string prefix;
 
     int retcode;
     string retmsg;
@@ -560,10 +564,11 @@ ESPresponse ResourceDeleteResponse
 
 ESPrequest ResourcePermissionsRequest
 {
-    string basedn;
-    string rtype;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
     string name;
-    string rtitle;
+    [min_ver("1.14")] BasednName;
+    [depr_ver("1.14")] string rtitle;
     string prefix;
 };
 
@@ -584,19 +589,20 @@ ESPstruct ResourcePermission
 
 ESPresponse ResourcePermissionsResponse
 {
-    string basedn;
-    string rtype;
-    string name;
-    string rtitle;
-    string prefix;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string name;
+    [depr_ver("1.14")] string rtitle;
+    [depr_ver("1.14")] string prefix;
     ESParray<ESPstruct ResourcePermission, Permission> Permissions;
 };
 
 ESPrequest [nil_remove] ResourcePermissionQueryRequest
 {
-    string basedn;
-    string rtype;
-    string rtitle;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rtitle;
+    [min_ver("1.14")] BasednName;
     string prefix;
     string Name;
     ESPenum AccountTypeReq AccountType;
@@ -817,10 +823,11 @@ ESPresponse PermissionsResetInputResponse
 
 ESPrequest PermissionsResetRequest
 {
-    string basedn;
-    string rtype;
-    string rname;
-    string rtitle;
+    [min_ver("1.14")] BasednName;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rname; //Not used
+    [depr_ver("1.14")] string rtitle;
     string prefix;
     ESParray<string> names;
 
@@ -839,11 +846,11 @@ ESPrequest PermissionsResetRequest
 
 ESPresponse PermissionsResetResponse
 {
-    string basedn;
-    string rtype;
-    string rname;
-    string rtitle;
-    string prefix;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rname;
+    [depr_ver("1.14")] string rtitle;
+    [depr_ver("1.14")] string prefix;
 
     int retcode;
     string retmsg;
@@ -887,10 +894,10 @@ ESPresponse DisableScopeScansResponse
 
 ESPrequest PermissionActionRequest
 {
-    string basedn;
-    string rtype;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
     string rname;
-    string rtitle;
+    [depr_ver("1.14")] string rtitle;
     string prefix;
     string action;
 
@@ -913,12 +920,12 @@ ESPrequest PermissionActionRequest
 
 ESPresponse PermissionActionResponse
 {
-    string basedn;
-    string rtype;
-    string rname;
-    string rtitle;
-    string prefix;
-   [min_ver("1.01")] string AccountName;
+    [depr_ver("1.14")] string basedn;
+    [depr_ver("1.14")] string rtype;
+    [depr_ver("1.14")] string rname;
+    [depr_ver("1.14")] string rtitle;
+    [depr_ver("1.14")] string prefix;
+    [min_ver("1.01")] string AccountName;
     [min_ver("1.01")] bool IsGroup;
 
     int retcode;
@@ -978,7 +985,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
     [http_content("application/octet-stream")] binary Result;
 };
 
-ESPservice [version("1.13"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.14"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);
@@ -1004,7 +1011,7 @@ ESPservice [version("1.13"), auth_feature("NONE"), exceptions_inline("./smc_xslt
     ESPmethod [client_xslt("/esp/xslt/access_resources.xslt")] Resources(ResourcesRequest, ResourcesResponse);
     ESPmethod [client_xslt("/esp/xslt/access_resourceadd.xslt")] ResourceAdd(ResourceAddRequest, ResourceAddResponse);
     ESPmethod [client_xslt("/esp/xslt/access_resourcedelete.xslt")] ResourceDelete(ResourceDeleteRequest, ResourceDeleteResponse);
-    ESPmethod [client_xslt("/esp/xslt/access_resourceaddinput.xslt")] ResourceAddInput(ResourceAddInputRequest, ResourceAddInputResponse);
+    ESPmethod [depr_ver("1.14"), client_xslt("/esp/xslt/access_resourceaddinput.xslt")] ResourceAddInput(ResourceAddInputRequest, ResourceAddInputResponse);
 
     ESPmethod [min_ver("1.10")] QueryViews(QueryViewsRequest, QueryViewsResponse);
     ESPmethod [min_ver("1.10")] AddView(AddViewRequest, AddViewResponse);
@@ -1018,11 +1025,11 @@ ESPservice [version("1.13"), auth_feature("NONE"), exceptions_inline("./smc_xslt
     ESPmethod [min_ver("1.10")] QueryUserViewColumns(QueryUserViewColumnsRequest, QueryUserViewColumnsResponse);
 
     ESPmethod [client_xslt("/esp/xslt/access_permissions.xslt")] ResourcePermissions(ResourcePermissionsRequest, ResourcePermissionsResponse);
-    ESPmethod [client_xslt("/esp/xslt/access_permissionaddinput.xslt")] PermissionAddInput(PermissionAddRequest, PermissionAddResponse);
+    ESPmethod [depr_ver("1.14"), client_xslt("/esp/xslt/access_permissionaddinput.xslt")] PermissionAddInput(PermissionAddRequest, PermissionAddResponse);
     ESPmethod [client_xslt("/esp/xslt/access_permissionchange.xslt")] PermissionAction(PermissionActionRequest, PermissionActionResponse);
     ESPmethod [client_xslt("/esp/xslt/access_accountpermissions.xslt")] AccountPermissions(AccountPermissionsRequest, AccountPermissionsResponse);
     ESPmethod [client_xslt("/esp/xslt/access_filepermission.xslt")] FilePermission(FilePermissionRequest, FilePermissionResponse);
-    ESPmethod [client_xslt("/esp/xslt/access_permissionresetinput.xslt")] PermissionsResetInput(PermissionsResetInputRequest, PermissionsResetInputResponse);
+    ESPmethod [depr_ver("1.14"), client_xslt("/esp/xslt/access_permissionresetinput.xslt")] PermissionsResetInput(PermissionsResetInputRequest, PermissionsResetInputResponse);
     ESPmethod [client_xslt("/esp/xslt/access_permissionsreset.xslt")] PermissionsReset(PermissionsResetRequest, PermissionsResetResponse);
     ESPmethod [client_xslt("/esp/xslt/access_clearpermissionscache.xslt")] ClearPermissionsCache(ClearPermissionsCacheRequest, ClearPermissionsCacheResponse);
     ESPmethod QueryScopeScansEnabled(QueryScopeScansEnabledRequest, QueryScopeScansEnabledResponse);
