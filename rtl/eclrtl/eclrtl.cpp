@@ -5163,16 +5163,22 @@ void rtlDecPushUtf8(size32_t len, const char * data)
 
 bool rtlUtf8ToBool(size32_t inlen, const char * in)
 {
+    //NOTE: Theoretically this should pass insize rather than inlen, but the called function will stop when it gets
+    //to a non-ascii charcter, which means it will never behave incorrectly if insize != inlen
     return rtlStrToBool(inlen, in);
 }
 
 __int64 rtlUtf8ToInt(size32_t inlen, const char * in)
 {
+    //NOTE: Theoretically this should pass insize rather than inlen, but the called function will stop when it gets
+    //to a non-ascii charcter, which means it will never behave incorrectly if insize != inlen
     return rtlStrToInt8(inlen, in);         // good enough for the moment
 }
 
 double rtlUtf8ToReal(size32_t inlen, const char * in)
 {
+    //NOTE: Theoretically this should pass insize rather than inlen, but the called function will stop when it gets
+    //to a non-ascii charcter, which means it will never behave incorrectly if insize != inlen
     return rtlStrToReal(inlen, in);         // good enough for the moment
 }
 
