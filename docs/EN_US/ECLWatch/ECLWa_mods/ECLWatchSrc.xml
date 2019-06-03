@@ -1562,8 +1562,18 @@
         <title>Logical Files Details</title>
 
         <para>The Logical Files Detail page shows specific details for the
-        file selected. You select the file to view by clicking the appropriate
-        tab from the Navigation Tabs at the top of the page.</para>
+        file selected, including: Workunit ID, Owner, Super Owner, Cluster
+        Name, Description, Job Name, Protected state, Content Type, Key Type,
+        File Size, Format, Compressed state and information, Modified Date,
+        Expire in (days) value, Directory and Path Mask, Record Size, Record
+        Count, Replication state, File Parts, and Skew information. </para>
+
+        <para>Check the Protected box to protect the file from deletion or
+        expiration. </para>
+
+        <para>The Key Type value only displays if the file is an INDEX. Key
+        Type can have three possible values: Distributed, Local, or
+        Partitioned.</para>
 
         <para><figure>
             <title>Logical Files Detail Page</title>
