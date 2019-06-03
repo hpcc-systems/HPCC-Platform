@@ -12068,8 +12068,9 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
     else
         embedOptions.setown(getEmbedOptionString(bodyCode));
     IValue *optionVal = embedOptions->queryValue();
+    bool isActivity = functionBodyIsActivity(bodyCode);
 
-    bool threadlocal = bodyCode->hasAttribute(_threadlocal_Atom) && queryVal != nullptr && optionVal != nullptr;
+    bool threadlocal = bodyCode->hasAttribute(_threadlocal_Atom) && queryVal != nullptr && optionVal != nullptr && !isActivity;
     bool singletonEmbedContext = bodyCode->hasAttribute(_singletonEmbedContext_Atom);
     HqlExprArray noargs;
     OwnedHqlExpr getPlugin = bindFunctionCall(language, noargs);
@@ -12093,7 +12094,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
     else
         createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(ctx,");
 
-    if (functionBodyIsActivity(bodyCode))
+    if (isActivity)
         createParam.append("activity,");
     else
         createParam.append("nullptr,");

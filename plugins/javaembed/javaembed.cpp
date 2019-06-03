@@ -652,8 +652,8 @@ static jclass customLoaderClass;
 static jmethodID clc_newInstance;
 static jmethodID clc_getSignature;
 static jclass hpccIteratorClass;
-static jclass utilIteratorClass;
 static jmethodID hi_constructor;
+static jclass utilIteratorClass;
 
 static jclass systemClass;
 static jmethodID system_gc;
@@ -808,6 +808,21 @@ public:
 // EnableSEHtoExceptionMapping
 //
 
+static StringBuffer &appendClassPath(StringBuffer &classPath)
+{
+    const IProperties &conf = queryEnvironmentConf();
+    if (conf.hasProp("classpath"))
+    {
+        conf.getProp("classpath", classPath);
+        classPath.append(ENVSEPCHAR);
+    }
+    else
+    {
+        classPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes").append(ENVSEPCHAR);
+    }
+    return classPath;
+}
+
 static class JavaGlobalState
 {
 public:
@@ -823,19 +838,11 @@ public:
         {
             newPath.append(origPath).append(ENVSEPCHAR);
         }
-        const IProperties &conf = queryEnvironmentConf();
-        if (conf.hasProp("classpath"))
-        {
-            conf.getProp("classpath", newPath);
-            newPath.append(ENVSEPCHAR);
-        }
-        else
-        {
-            newPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes").append(ENVSEPCHAR);
-        }
+        appendClassPath(newPath);
         newPath.append(".");
         optionStrings.append(newPath);
 
+        const IProperties &conf = queryEnvironmentConf();
         if (conf.hasProp("jvmlibpath"))
         {
             StringBuffer libPath;
@@ -3069,8 +3076,8 @@ private:
 class JavaEmbedImportContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    JavaEmbedImportContext(ICodeContext *codeCtx, JavaThreadContext *_sharedCtx, jobject _instance, unsigned flags, const char *options)
-    : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance)
+    JavaEmbedImportContext(ICodeContext *codeCtx, JavaThreadContext *_sharedCtx, jobject _instance, unsigned flags, const char *options, const IThorActivityContext *_activityContext)
+    : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance), activityContext(_activityContext)
     {
         argcount = 0;
         argsig = NULL;
@@ -3977,6 +3984,18 @@ public:
         if (javaClass)
             reinit();
     }
+    void bindActivityParam()
+    {
+        // Note: We don't require that the function takes an activityCtx parameter - if they don't care, they can omit the param
+        if (strncmp(argsig, "Lcom/HPCCSystems/ActivityContext;", 33) == 0)
+        {
+            argsig += 33;
+            jvalue v;
+            v.l = JNIenv->NewObject(hpccIteratorClass, hi_constructor, activityContext, JNIenv->NewStringUTF(helperLibraryName));
+            addArg(v);
+        }
+
+    }
 
     IException *translateException(IException *E)
     {
@@ -4434,6 +4453,7 @@ protected:
     IArrayOf<ECLDatasetIterator> iterators;   // to make sure they get freed
     bool nonStatic = false;
     jobject instance = nullptr; // class instance of object to call methods on
+    const IThorActivityContext *activityContext = nullptr;
 
     unsigned nodeNum = 0;
     StringAttr globalScopeKey;
@@ -4460,6 +4480,8 @@ protected:
         argsig = signature;
         assertex(*argsig == '(');
         argsig++;
+        if (activityContext)
+            bindActivityParam();
     }
 };
 
@@ -4539,7 +4561,7 @@ public:
     {
         if (!object)
             return NULL;
-        Owned<JavaEmbedImportContext> fctx = new JavaEmbedImportContext(nullptr, queryContext(), object, 0, options);
+        Owned<JavaEmbedImportContext> fctx = new JavaEmbedImportContext(nullptr, queryContext(), object, 0, options, nullptr);
         fctx->importFunction(rtlUtf8Length(strlen(function), function), function);
         return fctx.getClear();
     }
@@ -4562,7 +4584,7 @@ public:
     }
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
-        return new JavaEmbedImportContext(ctx, queryContext(), nullptr, flags, options);
+        return new JavaEmbedImportContext(ctx, queryContext(), nullptr, flags, options, activityCtx);
     }
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
@@ -4759,7 +4781,11 @@ void doPrecompile(size32_t & __lenResult, void * & __result, const char *funcNam
 
     MemoryBuffer result;
     Owned<IPipeProcess> pipe = createPipeProcess();
-    VStringBuffer javac("javac %s %s", isEmptyString(compilerOptions) ? "-g:none" : compilerOptions, javafile.str());
+    StringBuffer options(compilerOptions);
+    if (isEmptyString(compilerOptions))
+        options.append("-g:none");
+    appendClassPath(options.append(" -cp "));
+    VStringBuffer javac("javac %s %s", options.str(), javafile.str());
     if (!pipe->run("javac", javac, tmpDirName, false, false, true, 0, false))
     {
         throw makeStringException(0, "Failed to run javac");
@@ -4862,6 +4888,12 @@ extern "C" {
 JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1hasNext (JNIEnv *, jclass, jlong);
 JNIEXPORT jobject JNICALL Java_com_HPCCSystems_HpccUtils__1next (JNIEnv *, jclass, jlong);
 JNIEXPORT jclass JNICALL Java_com_HPCCSystems_HpccClassLoader_defineClassForEmbed(JNIEnv *env, jobject loader, jint bytecodeLen, jlong bytecode, jstring name);
+
+JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1isLocal (JNIEnv *, jclass, jlong);
+JNIEXPORT jint JNICALL Java_com_HPCCSystems_HpccUtils__1numSlaves (JNIEnv *, jclass, jlong);
+JNIEXPORT jint JNICALL Java_com_HPCCSystems_HpccUtils__1numStrands (JNIEnv *, jclass, jlong);
+JNIEXPORT jint JNICALL Java_com_HPCCSystems_HpccUtils__1querySlave (JNIEnv *, jclass, jlong);
+JNIEXPORT jint JNICALL Java_com_HPCCSystems_HpccUtils__1queryStrand (JNIEnv *, jclass, jlong);
 }
 
 JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1hasNext (JNIEnv *JNIenv, jclass, jlong proxy)
@@ -4927,6 +4959,33 @@ JNIEXPORT jclass JNICALL Java_com_HPCCSystems_HpccClassLoader_defineClassForEmbe
     env->ReleaseStringUTFChars(name, nameChars);
     return ret;
 
+}
+
+JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1isLocal(JNIEnv *JNIenv, jclass, jlong proxy)
+{
+    const IThorActivityContext *a = (IThorActivityContext *) proxy;
+    return a->isLocal();
+}
+
+JNIEXPORT jint JNICALL Java_com_HPCCSystems_HpccUtils__1numSlaves(JNIEnv *JNIenv, jclass, jlong proxy)
+{
+    const IThorActivityContext *a = (IThorActivityContext *) proxy;
+    return a->numSlaves();
+}
+JNIEXPORT jint JNICALL Java_com_HPCCSystems_HpccUtils__1numStrands(JNIEnv *JNIenv, jclass, jlong proxy)
+{
+    const IThorActivityContext *a = (IThorActivityContext *) proxy;
+    return a->numStrands();
+}
+JNIEXPORT jint JNICALL Java_com_HPCCSystems_HpccUtils__1querySlave(JNIEnv *JNIenv, jclass, jlong proxy)
+{
+    const IThorActivityContext *a = (IThorActivityContext *) proxy;
+    return a->querySlave();
+}
+JNIEXPORT jint JNICALL Java_com_HPCCSystems_HpccUtils__1queryStrand(JNIEnv *JNIenv, jclass, jlong proxy)
+{
+    const IThorActivityContext *a = (IThorActivityContext *) proxy;
+    return a->queryStrand();
 }
 
 // Used for dynamically loading in ESDL

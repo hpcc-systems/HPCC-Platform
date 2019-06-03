@@ -18,11 +18,17 @@
 package com.HPCCSystems;
 
 import java.util.*;
-public class HpccUtils  implements Iterator
+public class HpccUtils  implements Iterator, ActivityContext
 {
     private long handle;
     private native static boolean _hasNext(long handle);
     private native static java.lang.Object _next(long handle);
+    private native static boolean _isLocal(long handle);
+    private native static int _numSlaves(long handle);
+    private native static int _numStrands(long handle);
+    private native static int _querySlave(long handle);
+    private native static int _queryStrand(long handle);
+    
 
     public HpccUtils(long _handle, String dllname)
     {
@@ -43,4 +49,11 @@ public class HpccUtils  implements Iterator
            throw new NoSuchElementException();
         return ret;
     }
+    
+    public boolean isLocal() { return _isLocal(handle); }
+    public int numSlaves() { return _numSlaves(handle); }
+    public int numStrands() { return _numStrands(handle); }
+    public int querySlave() { return _querySlave(handle); }
+    public int queryStrand() { return _queryStrand(handle); }
+    
 }
