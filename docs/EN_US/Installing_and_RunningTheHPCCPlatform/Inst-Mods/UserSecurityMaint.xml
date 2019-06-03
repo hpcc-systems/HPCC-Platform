@@ -169,7 +169,7 @@
           </listitem>
 
           <listitem>
-            <para>You can change your password here, if desired. </para>
+            <para>You can change your password here, if desired.</para>
           </listitem>
 
           <listitem>
@@ -412,8 +412,11 @@
         <title>To promote a user to an Administrator</title>
 
         <para>To modify a users credentials you must have Administrator level
-        access. To promote a user to an HPCC Administrator, add the user to
-        the <emphasis role="bold">Administrators</emphasis> group.</para>
+        access. You can designate the HPCC Administrator account to have
+        limited permissions only relating to HPCC elements and not LDAP
+        administrator's rights. To promote a user to an HPCC Administrator,
+        add the user to the configured <emphasis
+        role="bold">Administrators</emphasis> group.</para>
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -464,10 +467,12 @@
                   <term>NOTE:</term>
 
                   <listitem>
-                    <para>The name of the default Administrator group could
-                    vary. For example, in Active Directory, it is
-                    "Administrators", in OpenLDAP it is "Directory
-                    Administrators".</para>
+                    <para>The name of the default Administrators group could
+                    vary. It is a configurable value defined as the value of
+                    <emphasis role="bold">adminGroupName</emphasis> in the
+                    configuration. For example, if you set the adminGroupName
+                    to "HPCCAdministrators", in the environment then
+                    HPCCAdministrators would display in the list.</para>
                   </listitem>
                 </varlistentry>
               </variablelist></para>
