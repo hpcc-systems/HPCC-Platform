@@ -186,18 +186,18 @@ namespace couchbaseembed
     class CouchbaseConnection : public CInterface
     {
     public:
-        CouchbaseConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * password, const char * connOptions)
+        CouchbaseConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * password, const char * connOptions, const char * user)
         {
             StringBuffer connectionString;
 
             makeConnectionString(useSSL, host, port, bucketname, connOptions, connectionString);
-            m_pCouchbaseClient = new Couchbase::Client(connectionString.str(), password);
+            m_pCouchbaseClient = new Couchbase::Client(connectionString.str(), password, user);
             timeLastUsed = 0;
         }
 
-        CouchbaseConnection(const StringBuffer& connectionString, const char * password)
+        CouchbaseConnection(const StringBuffer& connectionString, const char * password, const char * user)
         {
-            m_pCouchbaseClient = new Couchbase::Client(connectionString.str(), password);
+            m_pCouchbaseClient = new Couchbase::Client(connectionString.str(), password, user);
             timeLastUsed = 0;
         }
 

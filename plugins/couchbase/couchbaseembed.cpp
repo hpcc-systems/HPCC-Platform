@@ -489,7 +489,7 @@ namespace couchbaseembed
                 }
             }
 
-            CouchbaseConnection* getConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * password, const char * connOptions, unsigned int maxConnections)
+            CouchbaseConnection* getConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * password, const char * connOptions, unsigned int maxConnections, const char * user)
             {
                 CouchbaseConnection* connectionObjPtr = nullptr;
                 StringBuffer connectionString;
@@ -550,7 +550,7 @@ namespace couchbaseembed
 
                     while (true)
                     {
-                        connectionObjPtr = new CouchbaseConnection(connectionString, password);
+                        connectionObjPtr = new CouchbaseConnection(connectionString, password, user);
                         connectionObjPtr->connect();
 
                         if (connectionObjPtr->getConnectionStatus().success())
@@ -719,12 +719,162 @@ namespace couchbaseembed
                     useSSL = clipStrToBool(val);
                 else if (stricmp(optName, "max_connections")==0)
                     maxConnections = atoi(val);
-
                 //Connection String options
+                /*
+                  operation_timeout=SECONDS: Specify the operation timeout in seconds. This is the time the client will wait for an operation to complete before timing it out. The default is 2.5
+                  config_cache=PATH: Enables the client to make use of a file based configuration cache rather than connecting for the bootstrap operation. If the file does not exist, the client will first connect to the cluster and then cache the bootstrap information in the file.
+                                    example  "couchbases://127.0.0.1/default?certpath=../etc/x509-cert/SSLCA/clientdir/trust.pem"
+                  certpath=PATH: The path to the server's SSL certificate. This is typically required for SSL connectivity unless the certificate has already been added to the openssl installation on the system (only applicable with couchbases:// scheme)
+                  ssl=no_verify: Temporarily disable certificate verification for SSL (only applicable with couchbases:// scheme). This should only be used for quickly debugging SSL functionality.
+                  sasl_mech_force=MECHANISM: Force a specific SASL mechanism to be used when performing the initial connection. This should only need to be modified for debugging purposes. The currently supported mechanisms are PLAIN and CRAM-MD5
+                  bootstrap_on=<both,http,cccp>: Specify the bootstrap protocol the client should use when attempting to connect to the cluster. Options are: cccp: Bootstrap using the Memcached protocol (supported on clusters 2.5 and greater); http: Bootstrap using the HTTP REST protocol (supported on any cluster version); and both: First attempt bootstrap over the Memcached protocol, and use the HTTP protocol if Memcached bootstrap fails. The default is both
+
+                  operation_timeout (Timeout)
+                 The operation timeout is the maximum amount of time the library will wait for an operation to receive a response before invoking its callback with a failure status.
+
+                 An operation might time-out if:
+                 -    A server is taking too long to respond
+                 -    An updated cluster configuration has not been promptly received
+
+                 When an operation times out, it will fail with the LCB_ETIMEDOUT error code.
+                 Connection String Example
+
+                 operation_timeout=2.5
+
+                 config_total_timeout (Timeout)
+                 This is how long the client will wait to obtain the initial configuration. This affects the maximum amount of time that the call to lcb_wait() will take after having called lcb_connect(). If lcb_get_bootstrap_status is returning with LCB_ETIMEDOUT and you are running on a slow network, modifying this setting may increase the chances of success.
+
+                 See also config_node_timeout.
+                 Connection String Example
+
+                 config_total_timeout=5
+
+                 config_node_timeout (Timeout)
+                 The per-node configuration timeout sets the amount of time to wait for each node within the bootstrap/configuration process. This interval is a subset of the config_total_timeout option mentioned above and is intended to ensure that the bootstrap process does not wait too long for a given node.
+
+                 Nodes that are physically offline may never respond, and it may take a long time until they are detected as being offline. See CCBC-261 and CCBC-313 for more reasons.
+                 Connection String Example
+
+                 config_node_timeout=2
+
+                 views_timeout (Timeout)
+                 The I/O timeout for view operations.
+                 Connection String Example
+
+                 views_timeout=75
+
+                 n1ql_timeout (Timeout). Since 2.5.3
+                 The I/O timeout for N1QL queries.
+                 Connection String Example
+
+                 n1ql_timeout=75
+
+                 durabilty_timeout (Timeout)
+                 The default timeout for lcb_durability_poll() This is the time the client will spend sending repeated probes to a given key’s vBucket masters and replicas before they are deemed not to have satisfied the durability requirements.
+                 Connection String Example
+
+                 durability_timeout=5
+
+                 durabilty_interval (Timeout)
+                 This is the time the client will wait between repeated probes to a given server.
+                 Connection String Example
+
+                 durability_interval=0.0001
+
+                 ipv6= (enum)
+                 Controls whether hostname lookups should prefer IPv4 or IPv6. Can be set to allow, disable (the default), or only. See Enumeration Type Documentation for more info.
+
+                 randomize_nodes (Boolean)
+                 This option controls whether the connection attempts for configuration retrievals should be done in the supplied order or whether they should be randomized. This setting is off by default. To affect the order of the initial connection, this option must be supplied in the connection string.
+
+                 For the initial connection, the default order is the list of hosts provided in the structure. For subsequent connections, this is the order of nodes as received by the server.
+                 Connection String Example
+
+                 randomize_nodes=1
+
+                 config_cache (Path)
+                 The configuration cache allows bootstrapping from a cluster without using the initial bootstrap connection, considerably reducing latency. If the file passed does not exist, the normal bootstrap process is performed, and the file is written to with the current information.
+                 The leading directories for the file must exist. Otherwise, the file will never be created.
+                 Configuration cache is not supported for memcached buckets
+                 Connection String Example
+
+                 config_cache=/tmp/cb_config_cache
+
+                 config_cache_ro (Path). Since 2.4.8
+                 This is identical to the config_cache option, except that it guarantees that the library will never overwrite or otherwise modify the path specified.
+                 Connection String Example
+
+                 config_cache_ro=1
+
+                 detailed_errcodes (Boolean)
+                 Sets the behavior for reporting network errors. By default network errors are returned as LCB_NETWORK_ERROR. Return codes for compatibility reasons. More detailed error codes may be available by enabling this option that will return appropriate error codes with a category LCB_ERRTYPE_NETWORK.
+
+                 Using this option means your programming model is centered around the various LCB_EIF* macros (see <libcouchbase/error.h>) rather than individual codes.
+
+                 For users of higher level languages (wrapping the library), this may result in different exceptions being thrown, but may also help debug network issues.
+                 Connection String Example
+
+                 detailed_errcodes=1
+
+                 http_poolsize (Integer)
+                 Set the maximum pool size for pooled HTTP (view or N1QL request) sockets. A setting of 0 disables pooling.
+                 Connection String Example
+
+                 http_poolsize=0
+
+                 error_thresh_delay (Timeout)
+                 This option controls refreshing the configuration upon the receipt of errors. The client throttles how many requests for a new configuration it will send in a given interval—this is to avoid sending many successive requests in the event of a non-transient error condition.
+
+                 This setting controls the duration of this interval. The value can be adjusted upwards if operating in an environment where it is normal to receive many timeouts, such as in a resource-contented server or network. It can be adjusted downwards if timeouts are expected only in situations where the cluster has changed state.
+                 Connection String Example
+
+                 error_thresh_delay=7.5
+
+                 bootstrap_on (String; see description)
+                 Controls how the client attempts to retrieve the configuration from the cluster. By default, the client attempts to connect to the data (memcached) port of each node listed and attempts to retrieve the configuration from there. If the retrieval fails, the client attempts the same process using the HTTP REST API port (8091) of each node.
+
+                 This setting can be used to have the client forcefully use a single mode. This might be helpful for quick initialization of memcached buckets, which can only send configurations over HTTP. It can also be used in the case of potential issues encountered with either mode.
+                 Possible values for this setting are:
+                     http, to force bootstrap over HTTP only
+                     cccp, to force bootstrap over memcached only
+                     both, which attempts both (as above). This option can only be set from within the connection string.
+
+                 bootstrap_on=http
+
+                 fetch_mutation_tokens (Boolean). Since 2.5.2
+                 Whether the server should send an additional 16 bytes of metadata for each mutation response. This option is off by default but is required for Enhanced Durability. This option should be set either in the connection string, or immediately calling lcb_create(). For non-C applications, this must always be in the connection string.
+                 Connection String Example
+
+                 fetch_mutation_tokens=1
+
+                 dur_mutation_tokens (Boolean). Since 2.5.2
+                 Determines if Enhanced Durability is used automatically. It is enabled by default if fetch_synctokens is also enabled. Applications can take advantage of this new feature without modifying any code other than enabling these settings.
+                 If you are checking durability constraints across client instances, and fetch_synctokens is enabled, then this setting should be disabled. Otherwise, the client will fail to retrieve the lcb_SYNCTOKEN (see more about this in the Enhanced Durability section). Alternatively, you can supply the sync token directly in the command structure.
+
+                 dur_mutation_tokens=1
+
+                 */
                 else if (stricmp(optName,   "detailed_errcodes")==0
                         || stricmp(optName, "operation_timeout")==0
                         || stricmp(optName, "config_total_timeout")==0
-                        || stricmp(optName, "http_poolsize")==0)
+                        || stricmp(optName, "config_node_timeout")==0
+                        || stricmp(optName, "views_timeout")==0
+                        || stricmp(optName, "durabilty_timeout")==0
+                        || stricmp(optName, "durabilty_interval")==0
+                        || stricmp(optName, "ipv6")==0
+                        || stricmp(optName, "randomize_nodes")==0
+                        || stricmp(optName, "config_cache_ro")==0
+                        || stricmp(optName, "http_poolsize")==0
+                        || stricmp(optName, "error_thresh_delay")==0
+                        || stricmp(optName, "fetch_mutation_tokens")==0
+                        || stricmp(optName, "dur_mutation_tokens")==0
+                        || stricmp(optName, "http_poolsize")==0
+                        || stricmp(optName, "config_cache")==0
+                        || stricmp(optName, "certpath")==0
+                        || stricmp(optName, "sasl_mech_force")==0
+                        || stricmp(optName, "bootstrap_on")==0
+                        || stricmp(optName, "console_log_level")==0)
+
                     connectionOptions.appendf("%s%s=%s", connectionOptions.length() == 0 ? "?" : "&", optName.str(), val);
                 else
                     failx("Unknown option %s", optName.str());
@@ -734,7 +884,7 @@ namespace couchbaseembed
         std::call_once(connectionCacheInitFlag, setupConnectionCache, logctx.queryTraceLevel());
 
         // Get a cached idle connection or create a new one
-        m_oCBConnection = connectionCache->getConnection(useSSL, server, port, bucketname, password, connectionOptions.str(), maxConnections);
+        m_oCBConnection = connectionCache->getConnection(useSSL, server, port, bucketname, password, connectionOptions.str(), maxConnections, user);
     }
 
     CouchbaseEmbedFunctionContext::~CouchbaseEmbedFunctionContext()

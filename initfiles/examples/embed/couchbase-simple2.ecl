@@ -29,6 +29,8 @@ IMPORT STD;
 
 server := '127.0.0.1';
 thebucket := 'iot';
+user := 'iotuser';
+password := 'iotpass';
 
 string adocid := '"mydocid' ;
 string adoc1  := '{"deviceID": "9cf9r-3c0f-446b-ad6a-4136deb88519" ,"deviceType": "handheld","message":{"locationData":{"x": 52.227,"y": 77.699,"z": 99.999, "zoneId": "W"}, "rawdata":{"ambientTemp": 68.21, "barometer": 14.81, "batteryLevelPercentage": 95.32, "bodyTemp": 30.08, "coLevel": 1.46, "forceSensitiveResistance": 136, "heartRate": 94}, "deviceTimestamp": "2017-06-05 15:04:35.924657-0400"}, "receivedTimestamp": "' + STD.System.Debug.msTick ( ) + '"}';
@@ -96,31 +98,31 @@ iotrec := RECORD
   messagerec message;
 END;
 
-BOOLEAN insertiotdoc(string docid, string doc) := EMBED(couchbase : server(server), bucket(thebucket), detailed_errcodes(1))
+BOOLEAN insertiotdoc(string docid, string doc) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1))
   INSERT INTO iot (KEY, VALUE) VALUES ($docid, $doc) RETURNING TRUE AS c;
 ENDEMBED;
 
-BOOLEAN upsertiotdoc(string docid, string doc) := EMBED(couchbase : server(server), bucket(thebucket), detailed_errcodes(1))
+BOOLEAN upsertiotdoc(string docid, string doc) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1))
   INSERT INTO iot (KEY, VALUE) VALUES ($docid, $doc) RETURNING TRUE AS c;
 ENDEMBED;
 
-STRING getlatesttimestamp() := EMBED(couchbase : server(server), bucket(thebucket), detailed_errcodes(1))
+STRING getlatesttimestamp() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1))
   SELECT max(iot.receivedTimestamp) FROM iot;
 ENDEMBED;
 
-dataset(iotrec) getlatestdoc(string devid) := EMBED(couchbase : server(server), bucket(thebucket), detailed_errcodes(1))
+dataset(iotrec) getlatestdoc(string devid) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1))
   SELECT iot.* FROM iot where iot.deviceID = $devid;
 ENDEMBED;
 
-integer devicecount() := EMBED(couchbase : server(server), bucket(thebucket), detailed_errcodes(1))
+integer devicecount() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1))
   SELECT count(DISTINCT iot.deviceID) FROM iot ;
 ENDEMBED;
 
-dataset(iotrec) devicebylocation(row(locationDatarec) values) := EMBED(couchbase : server(server), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(iotrec) devicebylocation(row(locationDatarec) values) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
   select iot.* from iot where iot.message.locationData.x = $x and iot.message.locationData.y = $y limit 1;
 ENDEMBED;
 
-dataset(deviceidrec) deviceidsbyzone(string zone) := EMBED(couchbase : server(server), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(deviceidrec) deviceidsbyzone(string zone) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
   select DISTINCT iot.deviceID from iot where iot.message.locationData.zoneId = $zone;
 ENDEMBED;
 
