@@ -5,6 +5,7 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
+    "dojo/dom-class",
 
     "dgrid/tree",
     "dgrid/selector",
@@ -15,7 +16,7 @@ define([
     "src/ESPUtil",
     "src/Utility",
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass,
     tree, selector,
     GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil, Utility) {
         return declare("SourceFilesWidget", [GridDetailsWidget], {
@@ -65,7 +66,12 @@ define([
                             }
                         }),
                         FileCluster: { label: this.i18n.FileCluster, width: 300, sortable: false },
-                        Count: { label: this.i18n.Usage, width: 72, sortable: true }
+                        Count: { label: this.i18n.Usage, width: 72, sortable: true,
+                            renderCell: function (object, value, node, options) {
+                                domClass.add(node, "justify-right");
+                                node.innerText = Utility.valueCleanUp(value);
+                            },
+                        }
                     }
                 }, domID);
 

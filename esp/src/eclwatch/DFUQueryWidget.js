@@ -659,14 +659,27 @@ define([
                         SuperOwners: { label: this.i18n.SuperOwner, width: 150 },
                         Description: { label: this.i18n.Description, width: 150 },
                         NodeGroup: { label: this.i18n.Cluster, width: 108 },
-                        RecordCount: { label: this.i18n.Records, width: 85 },
+                        RecordCount: {
+                            label: this.i18n.Records, width: 85,
+                            renderCell: function (object, value, node, options) {
+                                domClass.add(node, "justify-right");
+                                node.innerText = Utility.valueCleanUp(value);
+                            },
+                        },
                         IntSize: {
                             label: this.i18n.Size, width: 100,
-                            formatter: function (intsize, row) {
-                                return Utility.convertedSize(intsize);
-                            }
+                            renderCell: function (object, value, node, options) {
+                                domClass.add(node, "justify-right");
+                                node.innerText = Utility.convertedSize(value);
+                            },
                         },
-                        Parts: { label: this.i18n.Parts, width: 60 },
+                        Parts: {
+                            label: this.i18n.Parts, width: 60,
+                            renderCell: function (object, value, node, options) {
+                                domClass.add(node, "justify-right");
+                                node.innerText = Utility.valueCleanUp(value);
+                            },
+                        },
                         Modified: { label: this.i18n.ModifiedUTCGMT, width: 162 }
                     }
                 }, this.id + "WorkunitsGrid");

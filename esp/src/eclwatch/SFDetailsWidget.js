@@ -211,9 +211,24 @@ define([
                         },
                         Owner: { label: this.i18n.Owner, width: 72 },
                         Description: { label: this.i18n.Description, width: 153 },
-                        RecordCount: { label: this.i18n.Records, width: 72, sortable: false },
-                        Totalsize: { label: this.i18n.Size, width: 72, sortable: false },
-                        Parts: { label: this.i18n.Parts, width: 45, sortable: false },
+                        RecordCount: { label: this.i18n.Records, width: 72, sortable: false,
+                            renderCell: function (object, value, node, options) {
+                                domClass.add(node, "justify-right");
+                                node.innerText = Utility.valueCleanUp(value);
+                            },
+                        },
+                        Totalsize: { label: this.i18n.Size, width: 72, sortable: false,
+                            renderCell: function (object, value, node, options) {
+                                domClass.add(node, "justify-right");
+                                node.innerText = Utility.valueCleanUp(value);
+                            },
+                        },
+                        Parts: { label: this.i18n.Parts, width: 45, sortable: false,
+                            renderCell: function (object, value, node, options) {
+                                domClass.add(node, "justify-right");
+                                node.innerText = value;
+                            },
+                        },
                         Modified: { label: this.i18n.ModifiedUTCGMT, width: 155, sortable: false }
                     },
                     store: this.subfilesStore
