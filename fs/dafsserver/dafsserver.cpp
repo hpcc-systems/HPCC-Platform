@@ -152,8 +152,6 @@ const char *remoteServerVersionString() { return DAFILESRV_VERSIONSTRING; }
 #define CLIENT_INACTIVEWARNING_TIMEOUT (1000*60*60*12) // time between logging inactive clients
 #define SERVER_TIMEOUT      (1000*60*5)         // timeout when waiting for dafilesrv to reply after command
                                                 // (increased when waiting for large block)
-#define DAFS_CONNECT_FAIL_RETRY_TIME (1000*60*15)
-
 #define RFCText(cmd) #cmd
 
 const char *RFCStrings[] =

@@ -156,7 +156,7 @@ class CRemoteBase : public CSimpleInterfaceOf<IDaFsConnection>
     static CriticalSection  lastFailEpCrit;
     DAFSConnectCfg          connectMethod;
 
-    void connectSocket(SocketEndpoint &ep, unsigned localConnectTime=0, unsigned localRetries=0);
+    void connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs=0, unsigned connectRetries=INFINITE);
     void killSocket(SocketEndpoint &tep);
 
 protected: friend class CRemoteFileIO;
