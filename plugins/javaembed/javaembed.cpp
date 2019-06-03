@@ -654,6 +654,8 @@ static jmethodID clc_getSignature;
 static jclass hpccIteratorClass;
 static jmethodID hi_constructor;
 static jclass utilIteratorClass;
+static jclass langIterableClass;
+static jmethodID iterable_iterator;
 
 static jclass systemClass;
 static jmethodID system_gc;
@@ -709,6 +711,8 @@ static void setupGlobals(CheckedJNIEnv *J)
         arrayList_toArray = J->GetMethodID(arrayListClass, "toArray", "()[Ljava/lang/Object;" );
 
         langStringClass = J->FindGlobalClass("java/lang/String");
+        langIterableClass = J->FindGlobalClass("java/lang/Iterable");
+        iterable_iterator = J->GetMethodID(langIterableClass, "iterator", "()Ljava/util/Iterator;");
         utilIteratorClass = J->FindGlobalClass("java/util/Iterator");
 
         langIllegalArgumentExceptionClass = J->FindGlobalClass("java/lang/IllegalArgumentException");
@@ -3470,9 +3474,15 @@ public:
         jclass iterClass =JNIenv->GetObjectClass(result.l);
         if (!JNIenv->IsAssignableFrom(iterClass, utilIteratorClass))
         {
-            StringBuffer s;
-            throw MakeStringException(0, "javaembed: In method %s: Java code should return an iterator", getReportName(s).str());
-            // MORE - perhaps we should also support Iterable?
+            if (JNIenv->IsAssignableFrom(iterClass, langIterableClass))
+            {
+                result.l = JNIenv->CallObjectMethod(result.l, iterable_iterator);
+            }
+            else
+            {
+                StringBuffer s;
+                throw MakeStringException(0, "javaembed: In method %s: Java code should return an iterator or iterable object", getReportName(s).str());
+            }
         }
         return new JavaRowStream(result.l, _resultAllocator);
     }

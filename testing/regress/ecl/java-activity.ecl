@@ -43,7 +43,7 @@ public class myClass {
     }
   };
 
-  public static Iterator<kString> withParam(ActivityContext ctx, Iterator<kString> in, int slaveNo, int numSlaves)
+  public static Iterable<kString> withParam(ActivityContext ctx, Iterator<kString> in, int slaveNo, int numSlaves)
   {
     List<kString> list = new ArrayList<>();
     while (in.hasNext())
@@ -62,7 +62,7 @@ public class myClass {
     else if (ctx.querySlave() != slaveNo)
         list.add(new kString("Unexpected ctx.querySlave value", ctx.querySlave()));
     
-    return list.iterator();
+    return list;
   }
 }
 ENDEMBED;
