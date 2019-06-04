@@ -467,7 +467,7 @@ define([
                             }
                         },
                         Owner: { label: this.i18n.Owner, width: 90 },
-                        Jobname: { label: this.i18n.JobName },
+                        Jobname: { label: this.i18n.JobName, width: 500 },
                         Cluster: { label: this.i18n.Cluster, width: 90 },
                         RoxieCluster: { label: this.i18n.RoxieCluster, width: 99 },
                         State: { label: this.i18n.State, width: 90 },

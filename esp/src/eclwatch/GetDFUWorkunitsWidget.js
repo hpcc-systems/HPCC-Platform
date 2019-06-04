@@ -408,7 +408,7 @@ define([
                             }
                         },
                         User: { label: this.i18n.Owner, width: 90 },
-                        JobName: { label: this.i18n.JobName },
+                        JobName: { label: this.i18n.JobName, width: 500},
                         ClusterName: { label: this.i18n.Cluster, width: 126 },
                         StateMessage: { label: this.i18n.State, width: 72 },
                         PercentDone: {

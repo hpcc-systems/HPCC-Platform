@@ -637,7 +637,7 @@ define([
                             }
                         },
                         __hpcc_displayName: tree({
-                            label: this.i18n.LogicalName,
+                            label: this.i18n.LogicalName, width: 600,
                             formatter: function (name, row) {
                                 if (row.__hpcc_isDir) {
                                     return name;
