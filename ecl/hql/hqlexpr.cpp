@@ -1179,7 +1179,11 @@ void HqlParseContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression
     if (meta.dependencies && !meta.dependents.contains(*expr))
     {
         node_operator op = expr->getOperator();
-        if ((op != no_remotescope) && (op != no_mergedscope))
+        IHqlExpression * body = expr->queryBody(true);
+        //Unusual, but occurs for bundles.  If there is a global module that effectively aliases another module
+        //then the reference to that global module needs to be retained.
+        bool isAlias = (body != body->queryBody());
+        if (((op != no_remotescope) && (op != no_mergedscope)) || isAlias)
         {
             meta.dependents.append(*expr);
 
