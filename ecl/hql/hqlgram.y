@@ -8518,12 +8518,12 @@ simpleDataSet
                             $$.setExpr(createDataset(no_rollupgroup, $3.getExpr(), createComma($7.getExpr(), attr, $9.getExpr(), $11.getExpr())));
                             $$.setPosition($1);
                         }
-    | COMBINE '(' startLeftDelaySeqFilter ',' startRightFilter ')' endSelectorSequence
+    | COMBINE '(' startLeftDelaySeqFilter ',' startRightFilter optCommonAttrs ')' endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
-                            IHqlExpression * transform = parser->createDefJoinTransform(left,right,$1, $7.queryExpr(),NULL);
-                            IHqlExpression * combine = createDataset(no_combine, left, createComma(right, transform, $7.getExpr()));
+                            IHqlExpression * transform = parser->createDefJoinTransform(left,right,$1, $8.queryExpr(),NULL);
+                            IHqlExpression * combine = createDataset(no_combine, left, createComma(right, transform, $8.getExpr(), $6.getExpr()));
                             $$.setExpr(combine);
                             $$.setPosition($1);
                         }
