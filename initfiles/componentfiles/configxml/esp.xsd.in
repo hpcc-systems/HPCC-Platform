@@ -983,7 +983,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="logRequests" type="xs:boolean" use="optional" default="true"/>
+            <xs:attribute name="logRequests" type="xs:string" use="optional" default="never">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>never|only-ones-with-issues|all</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="logResponses" type="xs:boolean" use="optional" default="false"/>
             <xs:attribute name="txSummaryLevel" type="xs:nonNegativeInteger" use="optional" default="1">
                 <xs:annotation>

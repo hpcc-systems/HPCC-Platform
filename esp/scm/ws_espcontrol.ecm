@@ -20,7 +20,7 @@ EspInclude(common);
 ESPrequest [nil_remove] SetLoggingRequest
 {
     int LoggingLevel;
-    bool LogRequests;
+    string LogRequests;
     bool LogResponses;
 };
 

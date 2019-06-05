@@ -349,8 +349,9 @@
                 <xs:attribute name="componentfilesDir" type="xs:string"
                               hpcc:presetValue="${COMPONENTFILES_PATH}" hpcc:displayName="Component Files Dir"
                               hpcc:tooltip="Sets the componentfiles directory"/>
-                <xs:attribute name="logRequests" type="xs:boolean" hpcc:presetValue="true"
-                              hpcc:displayName="Log Requests"/>
+                <xs:attribute name="logRequests" type="xs:string" hpcc:presetValue="never"
+                              hpcc:displayName="Log Requests"
+                              hpcc:tooltip="never|only-ones-with-issues|all"/>
                 <xs:attribute name="logResponses" type="xs:boolean" hpcc:presetValue="false"
                               hpcc:displayName="Log Responses"/>
                 <xs:attribute name="txSummaryLevel" type="xs:nonNegativeInteger" hpcc:presetValue="1"

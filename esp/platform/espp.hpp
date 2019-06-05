@@ -54,7 +54,7 @@ private:
     bool m_exiting;
     bool m_useDali;
     LogLevel m_logLevel;
-    bool m_logReq;
+    LogRequest m_logReq;
     bool m_logResp;
     LogLevel txSummaryLevel;
     bool txSummaryResourceReq;
@@ -151,13 +151,13 @@ public:
     }
 
     void setLogLevel(LogLevel level) { m_logLevel = level; }
-    void setLogRequests(bool logReq) { m_logReq = logReq; }
+    void setLogRequests(LogRequest logReq) { m_logReq = logReq; }
     void setLogResponses(bool logResp) { m_logResp = logResp; }
     void setTxSummaryLevel(LogLevel level) { txSummaryLevel = level; }
     void setTxSummaryResourceReq(bool logReq) { txSummaryResourceReq = logReq; }
 
     LogLevel getLogLevel() { return m_logLevel; }
-    bool getLogRequests() { return m_logReq; }
+    LogRequest getLogRequests() { return m_logReq; }
     bool getLogResponses() { return m_logResp; }
     LogLevel getTxSummaryLevel() { return txSummaryLevel; }
     bool getTxSummaryResourceReq() { return txSummaryResourceReq; }

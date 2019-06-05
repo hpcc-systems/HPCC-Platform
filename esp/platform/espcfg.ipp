@@ -90,14 +90,14 @@ struct builtin
 struct esp_option
 {   
     LogLevel logLevel;
-    bool logReq;
+    LogRequest logReq;
     bool logResp;
     LogLevel txSummaryLevel;
     bool txSummaryResourceReq;
     StringAttr frameTitle;
     unsigned slowProcessingTime; //default 30 seconds
 
-    esp_option() : logReq(false), logResp(false), logLevel(LogMin), txSummaryLevel(LogMin), txSummaryResourceReq(false), slowProcessingTime(30000)
+    esp_option() : logReq(LogRequestsNever), logResp(false), logLevel(LogMin), txSummaryLevel(LogMin), txSummaryResourceReq(false), slowProcessingTime(30000)
     { }
 };
 

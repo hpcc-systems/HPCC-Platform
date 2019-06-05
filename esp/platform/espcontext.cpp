@@ -820,6 +820,22 @@ static IEspContainer*& getContainer()
     return gContainer;
 }
 
+LogRequest readLogRequest(char const* req)
+{
+    if (isEmptyString(req))
+        return LogRequestsNever;
+
+    if (strieq(req, "all"))
+        return LogRequestsAlways;
+    if (strieq(req, "never"))
+        return LogRequestsNever;
+    if (strieq(req, "only-ones-with-issues"))
+        return LogRequestsWithIssuesOnly;
+    if (strieq(req, "true"))
+        return LogRequestsAlways;
+    return LogRequestsWithIssuesOnly;
+}
+
 LogLevel getEspLogLevel() { return getEspLogLevel(NULL); }
 
 LogLevel getEspLogLevel(IEspContext* ctx)
@@ -858,11 +874,11 @@ bool getTxSummaryResourceReq()
     return false;
 }
 
-bool getEspLogRequests()
+LogRequest getEspLogRequests()
 {
     if (getContainer())
         return getContainer()->getLogRequests();
-    return false;
+    return LogRequestsNever;
 }
 
 bool getEspLogResponses()

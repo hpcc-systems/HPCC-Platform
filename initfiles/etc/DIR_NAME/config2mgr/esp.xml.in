@@ -18,7 +18,7 @@
 -->
 <Environment>
   <Software>
-    <EspProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" description="ESP server" componentfilesDir="${COMPONENTFILES_PATH}" enableSEHMapping="true" enableSNMP="false" formOptionsAccess="false" httpConfigAccess="true" logDir="${LOG_PATH}/config2mgr" logLevel="10" logRequests="true" logResponses="true" txSummaryLevel="1" txSummaryResourceReq="false" maxBacklogQueueSize="200" maxConcurrentThreads="0" name="configmgr" perfReportDelay="60" computer="localhost" directory="${PID_PATH}/config2mgr">
+    <EspProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" description="ESP server" componentfilesDir="${COMPONENTFILES_PATH}" enableSEHMapping="true" enableSNMP="false" formOptionsAccess="false" httpConfigAccess="true" logDir="${LOG_PATH}/config2mgr" logLevel="10" logRequests="all" logResponses="true" txSummaryLevel="1" txSummaryResourceReq="false" maxBacklogQueueSize="200" maxConcurrentThreads="0" name="configmgr" perfReportDelay="60" computer="localhost" directory="${PID_PATH}/config2mgr">
       <Environment/>
       <EspProtocol name="http" type="http_protocol" plugin="esphttp" maxRequestEntityLength="8000000"/>
       <EspService name="configmgr" type="ws_configmgr" plugin="libws_configmgr.so"/>

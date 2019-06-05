@@ -190,8 +190,7 @@ bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& 
 
         if (!req.getLoggingLevel_isNull())
             m_container->setLogLevel(req.getLoggingLevel());
-        if (!req.getLogRequests_isNull())
-            m_container->setLogRequests(req.getLogRequests());
+        m_container->setLogRequests(readLogRequest(req.getLogRequests()));
         if (!req.getLogResponses_isNull())
             m_container->setLogResponses(req.getLogResponses());
         resp.setStatus(0);

@@ -74,6 +74,13 @@ typedef enum AuthError_
     EspAuthErrorNotAuthorized
 } AuthError;
 
+typedef enum LogRequest_
+{
+    LogRequestsNever,
+    LogRequestsWithIssuesOnly,
+    LogRequestsAlways
+} LogRequest;
+
 #define ESPCTX_NO_NAMESPACES    0x00000001
 #define ESPCTX_WSDL             0x00000010
 #define ESPCTX_WSDL_EXT         0x00000100
@@ -220,8 +227,8 @@ interface IEspContainer : extends IInterface
     virtual void exitESP() = 0;
     virtual void setLogLevel(LogLevel level) = 0;
     virtual LogLevel getLogLevel() = 0;
-    virtual bool getLogRequests() = 0;
-    virtual void setLogRequests(bool logReq) = 0;
+    virtual LogRequest getLogRequests() = 0;
+    virtual void setLogRequests(LogRequest logReq) = 0;
     virtual bool getLogResponses() = 0;
     virtual void setLogResponses(bool logResp) = 0;
     virtual void setTxSummaryLevel(LogLevel level) = 0;
