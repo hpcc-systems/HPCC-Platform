@@ -4294,8 +4294,11 @@ public:
         
         attrs[ind++] = &cn_attr;
         attrs[ind++] = &oc_attr;
-        if (groupOwner && *groupOwner)
-            attrs[ind++] = &owner_attr;
+        if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
+        {
+            if (groupOwner && *groupOwner)
+                attrs[ind++] = &owner_attr;
+        }
         if (groupDesc && *groupDesc)
             attrs[ind++] = &desc_attr;
         attrs[ind] = NULL;
