@@ -260,6 +260,10 @@ hr.dashedLine {
     white-space: normal; 
 }
 
+.justify-right {
+    text-align: right !important;
+}
+
 .flat .hpccCentered { 
     text-align: center; 
 }

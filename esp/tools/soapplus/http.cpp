@@ -1319,7 +1319,7 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<C
         {
             while (1)
             {
-                len = sock->receive(recvbuf, 2047);
+                len = sock->receive(recvbuf, 0, 2047);
                 if (len > 0)
                 {
                     total_len += len;
@@ -1347,7 +1347,7 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<C
             unsigned int searchStart = 0;
             while (1)
             {
-                len = sock->receive(recvbuf, 1, 2047);
+                len = sock->receive(recvbuf, 0, 2047);
                 if (len > 0)
                 {
                     total_len += len;

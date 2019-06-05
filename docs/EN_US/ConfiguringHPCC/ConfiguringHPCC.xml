@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -1625,7 +1625,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>Persistent HTTP connections can cause backwards compatibility
           issues with non-standard HTTP clients. You can disable this feature
-          by setting <emphasis>maxPersistentRequests</emphasis> to 0. </para>
+          by setting <emphasis>maxPersistentRequests</emphasis> to 0.</para>
         </sect3>
 
         <sect3 role="brk">
@@ -2055,6 +2055,38 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               Computers</emphasis> portion earlier.</para>
             </listitem>
           </orderedlist>
+        </sect3>
+
+        <sect3>
+          <title>The HPCC Administrator's account</title>
+
+          <para>You can set up an HPCC Administrator's account with limited
+          administrative rights. The HPCC Administrator does not have to be an
+          LDAP Administrator's account. This allows the HPCC Administrator to
+          be able to set up users, groups, and set permissions in HPCC without
+          having rights to perform other LDAP administrative functions. To use
+          this feature: <orderedlist>
+              <listitem>
+                <para>Create an LDAP group to contain all the HPCC
+                Administrator users. For example: "HPCCAdminGroup"</para>
+              </listitem>
+
+              <listitem>
+                <para>In the HPCC configuration manager navigate to this (LDAP
+                Server Process) page and enter the HPCC Administrator group
+                name as the value in the <emphasis
+                role="bold">adminGroupName</emphasis> field.</para>
+              </listitem>
+
+              <listitem>
+                <para>Add (HPCC Administrator) users to this new group.</para>
+              </listitem>
+
+              <listitem>
+                <para>Save and deploy the new configuration file, then restart
+                ESP to apply the new configuration.</para>
+              </listitem>
+            </orderedlist></para>
         </sect3>
 
         <sect3>
@@ -2648,8 +2680,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <emphasis role="bold">Persistent Connections to Roxie</emphasis>
-
-            
           </para>
 
           <para>Persistent connections can cause backwards compatibility

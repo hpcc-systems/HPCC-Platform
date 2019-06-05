@@ -411,7 +411,13 @@ define([
                         JobName: { label: this.i18n.JobName },
                         ClusterName: { label: this.i18n.Cluster, width: 126 },
                         StateMessage: { label: this.i18n.State, width: 72 },
-                        PercentDone: { label: this.i18n.PctComplete, width: 90, sortable: false }
+                        PercentDone: {
+                            label: this.i18n.PctComplete, width: 90, sortable: false,
+                            renderCell: function (object, value, node, options) {
+                                domClass.add(node, "justify-right");
+                                node.innerText = Utility.valueCleanUp(value);
+                            }
+                        }
                     }
                 }, this.id + "WorkunitsGrid");
                 this.workunitsGrid.on(".dgrid-row-url:click", function (evt) {

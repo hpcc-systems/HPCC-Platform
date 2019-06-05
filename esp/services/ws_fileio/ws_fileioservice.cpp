@@ -93,15 +93,21 @@ bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const cha
         dropZoneInfo->getDirectory(directory);
         if (directory.length() != 0)
         {
-            const char ch = getPathSepChar(directory.str());
-            if (relPath[0] != ch)
+            absPath.set(directory.str());
+
+            char absPathLastChar = absPath.charAt(absPath.length() - 1);
+            const char pathSepChar = getPathSepChar(directory.str());
+            if (relPath[0] != pathSepChar)
             {
-                absPath.appendf("%s%c%s", directory.str(), ch, relPath);
+                if (absPathLastChar != pathSepChar)
+                    absPath.append(pathSepChar);
             }
             else
             {
-                absPath.appendf("%s%s", directory.str(), relPath);
+                if (absPathLastChar == pathSepChar)
+                    absPath.setLength(absPath.length() - 1);
             }
+            absPath.append(relPath);
             return true;
         }
         else

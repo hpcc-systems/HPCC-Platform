@@ -107,6 +107,14 @@ export function convertedSize(intsize: number): string {
     }
 }
 
+export function valueCleanUp(intsize): string {
+    if (intsize === null || intsize === undefined) {
+        return "";
+    } else {
+        return intsize;
+    }
+}
+
 export function unitTest(size, unit) {
     var nsIndex = size.indexOf(unit);
     if (nsIndex !== -1) {

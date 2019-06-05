@@ -67,12 +67,15 @@
      </xsl:if>
   </xsl:template>
 
+  <!--ADDED logic here where if successive consecutive <para> elements that they can be joined(see esp3 headings)-->  
   <xsl:template name = "element-ancestors">
+  <para><emphasis role="bold">
     <xsl:for-each select="ancestor::*">
        <xsl:if test = "name() = 'xs:element'">
-         <para><emphasis role="bold"> <xsl:value-of select = "@name"/></emphasis></para>
+         <xsl:value-of select = "@name"/><xsl:text> </xsl:text>
        </xsl:if>
     </xsl:for-each>
+	</emphasis></para>
   </xsl:template>
 
 
@@ -98,8 +101,8 @@
         <thead>
           <row>
             <entry>attribute</entry>
+            <entry>description</entry>
             <entry>values</entry>
-            <entry>default</entry>
             <entry>required</entry>
           </row>
         </thead>
