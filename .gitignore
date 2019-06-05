@@ -7,3 +7,5 @@ node_modules
 esp/src/lib
 esp/src/build
 .vscode/
+.eclcc/
+eclcc.log

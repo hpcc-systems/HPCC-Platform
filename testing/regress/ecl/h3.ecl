@@ -72,3 +72,13 @@ h3.radsToDegs(h3.degsToRads(42));
 h3.hexAreaKm2(12);
 h3.hexAreaM2(12);
 h3.numHexagons(4);
+
+//  ECL Index;
+eclIdx := h3.ECLIndex(lat, lng, res);
+h3.fromECLIndex(eclIdx) = h3Idx;
+h3.toECLIndex(h3Idx) = eclIdx;
+eclIdxRes5 := h3.ECLIndexParent(eclIdx, 5);
+LENGTH(TRIM(eclIdxRes5)) - 1 = 5;
+TRIM(eclIdxRes5) = eclIdx[1..6];
+h3.resolution(h3.fromECLIndex(eclIdxRes5)) = 5;
+
