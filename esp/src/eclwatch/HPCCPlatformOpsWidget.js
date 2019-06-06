@@ -62,12 +62,7 @@ define([
             initTab: function () {
                 var currSel = this.getSelectedChild();
                 if (currSel && !currSel.initalized) {
-                    if (currSel.id === this.id + "_TargetClusters") {
-                        currSel.set("content", dojo.create("iframe", {
-                            src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsTopology") + "/TpTargetClusterQuery?Type=ROOT"),
-                            style: "border: 0; width: 100%; height: 100%"
-                        }));
-                    } else if (currSel.id === this.id + "_ClusterProcesses") {
+                    if (currSel.id === this.id + "_ClusterProcesses") {
                         currSel.set("content", dojo.create("iframe", {
                             src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsTopology") + "/TpClusterQuery?Type=ROOT"),
                             style: "border: 0; width: 100%; height: 100%"
