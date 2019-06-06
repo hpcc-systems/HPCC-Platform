@@ -93,6 +93,18 @@ void check(CassError rc)
     }
 }
 
+//use cassandra.h mapping macros so we stay in sync
+
+#define CASS_CONSISTENCY_HPCC_MAP_ENTRY(value, desc) \
+    if (strieq(desc, name)) \
+        return value;
+
+CassConsistency cass_consistency_from_string(const char *name)
+{
+    CASS_CONSISTENCY_MAP(CASS_CONSISTENCY_HPCC_MAP_ENTRY)
+    return CASS_CONSISTENCY_UNKNOWN;
+}
+
 // Wrappers to Cassandra structures that require corresponding releases
 
 void CassandraClusterSession::setOptions(const StringArray &options)
@@ -259,6 +271,13 @@ void CassandraClusterSession::setOptions(const StringArray &options)
                 cass_bool_t enabled = getBoolOption(subargs.item(0), "enabled");
                 unsigned delay_secs = getUnsignedOption(subargs.item(0), "delay_secs");
                 cass_cluster_set_tcp_keepalive(cluster, enabled, delay_secs);
+            }
+            else if (strieq(optName, "consistency"))
+            {
+                CassConsistency optConsistency = cass_consistency_from_string(val);
+                if (optConsistency == CASS_CONSISTENCY_UNKNOWN)
+                    failx("Unrecognized cassandra consistency value '%s'", val);
+                checkSetOption(cass_cluster_set_consistency(cluster, optConsistency), "consistency");
             }
             else
                 failx("Unrecognized option %s", optName.str());
