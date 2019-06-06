@@ -16,9 +16,11 @@ declare const debugConfig: any;
 class RequestHelper {
 
     serverIP: null;
+    timeOutSeconds: number;
 
     constructor() {
         this.serverIP = (typeof debugConfig !== "undefined") ? debugConfig.IP : this.getParamFromURL("ServerIP");
+        this.timeOutSeconds = 60;
     }
 
     getParamFromURL(key) {
@@ -102,10 +104,10 @@ class RequestHelper {
 
         var retVal = null;
         if (this.isCrossSite()) {
-            var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), type: "jsonp" });
+            var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), timeoutSecs: params.request.timeOutSeconds || this.timeOutSeconds, type: "jsonp" });
             retVal = transport.send(action + postfix, params.request, handleAs === "text" ? "text" : "json");
         } else {
-            var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service) });
+            var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), timeoutSecs: params.request.timeOutSeconds || this.timeOutSeconds});
             retVal = transport.send(action + postfix, params.request, handleAs === "text" ? "text" : "json");
         }
 
