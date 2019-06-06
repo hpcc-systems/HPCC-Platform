@@ -32,7 +32,7 @@ enum ESDLConfigInfoType
     ESDLLogTransform = 1,
 };
 
-IPropertyTree * fetchConfigInfo(const char * config,
+IPropertyTree * fetchConfigInfo(Owned<IPropertyTree> configTree,
                                 StringBuffer & espProcName,
                                 StringBuffer & espBindingName,
                                 StringBuffer & esdlDefId,
@@ -40,7 +40,7 @@ IPropertyTree * fetchConfigInfo(const char * config,
 {
     IPropertyTree * methodstree = NULL;
 
-    if (!config || !*config)
+    if (!configTree.get())
     {
         throw MakeStringException(-1,"Empty config detected");
     }
@@ -50,7 +50,6 @@ IPropertyTree * fetchConfigInfo(const char * config,
         StringBuffer espBindingNameFromConfig;
         StringBuffer esdlDefIdFromConfig;
         StringBuffer esdlServiceNameFromConfig;
-        Owned<IPropertyTree>  configTree = createPTreeFromXMLString(config, ipt_caseInsensitive);
         //Now let's figure out the structure of the configuration passed in...
 
         StringBuffer rootname;
@@ -434,10 +433,14 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
 
         StringBuffer config(req.getConfig());
 
+        Owned<IPropertyTree>  configTree;
         Owned<IPropertyTree> methodstree;
 
         if (config.length() != 0)
-            methodstree.setown(fetchConfigInfo(config.str(), espProcName, espBindingName, esdlDefIdSTR, esdlServiceName));
+        {
+            configTree.setown(createPTreeFromXMLString(config, ipt_caseInsensitive));
+            methodstree.setown(fetchConfigInfo(configTree, espProcName, espBindingName, esdlDefIdSTR, esdlServiceName));
+        }
         else
         {
             if (ver >= 1.2)
@@ -505,7 +508,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
 
             StringBuffer msg;
             resp.updateStatus().setCode(m_esdlStore->bindService(espBindingName.str(),
-                                                           methodstree.get(),
+                                                           (configTree.get() ? configTree.get() : methodstree.get()),
                                                            espProcName.str(),
                                                            espPort.str(),
                                                            esdlDefIdSTR.str(),
