@@ -474,8 +474,10 @@ public:
             {
                 indexFileDesc->serializeParts(dst, &allParts[0], numParts);
                 std::vector<unsigned> &parts = remoteKeyedLookup ? indexMap.querySlaveParts(slave) : allParts;
-                dst.append((unsigned)parts.size());
-                dst.append(sizeof(unsigned)*parts.size(), &parts[0]);
+                unsigned numSlaveParts = parts.size();
+                dst.append(numSlaveParts);
+                if (numSlaveParts)
+                    dst.append(sizeof(unsigned)*numSlaveParts, &parts[0]);
             }
             if (remoteKeyedLookup)
                 indexMap.serializePartMap(dst);
@@ -492,7 +494,8 @@ public:
                     std::vector<unsigned> &parts = remoteKeyedFetch ? dataMap.querySlaveParts(slave) : allParts;
                     unsigned numSlaveParts = parts.size();
                     dst.append(numSlaveParts);
-                    dst.append(sizeof(unsigned)*numSlaveParts, &parts[0]);
+                    if (numSlaveParts)
+                        dst.append(sizeof(unsigned)*numSlaveParts, &parts[0]);
                 }
                 if (remoteKeyedFetch)
                     dataMap.serializePartMap(dst);
