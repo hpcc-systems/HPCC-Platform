@@ -44,7 +44,7 @@ if(SPARK)
         endif (NOT HADOOP_VERSION)
 
         if (NOT SPARK_VERSION)
-            set(SPARK_VERSION 2.3.2)
+            set(SPARK_VERSION 2.4.3)
         endif (NOT SPARK_VERSION)
 
         if (NOT SPARK_URL_BASE)
