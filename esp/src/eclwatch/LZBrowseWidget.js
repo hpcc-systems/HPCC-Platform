@@ -756,8 +756,8 @@ define([
                         targetRecordLength: editor({
                             editorArgs: {
                                 required: true,
-                                placeholder: this.i18n.RequiredForXML,
-                                promptMessage: this.i18n.RequiredForXML,
+                                placeholder: this.i18n.RequiredForFixedSpray,
+                                promptMessage: this.i18n.RequiredForFixedSpray,
                                 style: "width: 100%;"
                             },
                             label: this.i18n.RecordLength,
