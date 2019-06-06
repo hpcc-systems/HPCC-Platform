@@ -831,9 +831,9 @@ LogRequest readLogRequest(char const* req)
         return LogRequestsNever;
     if (strieq(req, "only-ones-with-issues"))
         return LogRequestsWithIssuesOnly;
-    if (strieq(req, "true"))
+    if (strToBool(req))
         return LogRequestsAlways;
-    return LogRequestsWithIssuesOnly;
+    return LogRequestsNever;
 }
 
 LogLevel getEspLogLevel() { return getEspLogLevel(NULL); }
