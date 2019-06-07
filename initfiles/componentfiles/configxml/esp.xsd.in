@@ -1061,6 +1061,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="minCompressLength" type="xs:integer" use="optional" default="1000">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Minumum content length in bytes for the content to be compressed.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="namespaceScheme" use="optional" default="basic">
                <xs:annotation>
                  <xs:appinfo>

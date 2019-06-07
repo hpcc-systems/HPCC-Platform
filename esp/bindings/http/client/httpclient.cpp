@@ -371,7 +371,10 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
 
     httprequest.setown(new CHttpRequest(*m_socket));
     httpresponse.setown(new CHttpResponse(*m_socket));
-    
+
+    httprequest->enableCompression();
+    httpresponse->enableCompression();
+
     httprequest->setMethod(method);
     httprequest->setVersion("HTTP/1.1");
 
@@ -670,6 +673,7 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
 
     httprequest->setContentType(contenttype);
 
+    bool alreadyEncoded = false;
     if (headers)
     {
         Owned<IPropertyIterator> iter = headers->getIterator();
@@ -678,11 +682,19 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
             const char *key = iter->getPropKey();
             if (key && *key)
             {
+                if (strieq(key, HTTP_HEADER_CONTENT_ENCODING) || strieq(key, HTTP_HEADER_TRANSFER_ENCODING))
+                    alreadyEncoded = true;
                 const char *value = headers->queryProp(key);
                 if (value && *value)
                     httprequest->addHeader(key, value);
             }
         }
+    }
+
+    if (!alreadyEncoded)
+    {
+        httprequest->enableCompression();
+        httpresponse->enableCompression();
     }
 
     if(m_userid.length() > 0)
@@ -846,7 +858,9 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
     Owned<CHttpRequest> httprequest(new CHttpRequest(*m_socket));
     Owned<CHttpResponse> httpresponse(new CHttpResponse(*m_socket));
 
-    
+    httprequest->enableCompression();
+    httpresponse->enableCompression();
+
     httprequest->setMethod("POST");
     httprequest->setVersion("HTTP/1.1");
 

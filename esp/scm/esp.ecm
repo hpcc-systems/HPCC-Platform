@@ -214,6 +214,8 @@ interface IEspContext : extends IInterface
     virtual void setAuthStatus(const char * status)=0;
     virtual const char * getRespMsg()=0;
     virtual void setRespMsg(const char * msg)=0;
+    virtual void setRequest(IHttpMessage* req) = 0;
+    virtual IHttpMessage* queryRequest() = 0;
 };
 
 

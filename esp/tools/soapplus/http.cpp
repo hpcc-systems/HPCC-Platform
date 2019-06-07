@@ -1515,6 +1515,8 @@ StringBuffer& HttpClient::generateGetRequest(StringBuffer& request)
     if(m_port != 80)
         request.appendf(":%d", m_port);
     request.append("\r\n");
+    if (m_globals->getPropBool("compress", false))
+        request.append("Accept-Encoding: gzip, deflate\r\n");
     if(!m_globals->getPropBool("isPersist", false))
         request.append("Connection: Close\r\n");
     request.append(m_authheader.str());
@@ -1554,6 +1556,9 @@ StringBuffer& HttpClient::insertSoapHeaders(StringBuffer& request)
     headers.append(m_authheader.str());
     if(m_globals->hasProp("soapaction"))
         headers.append("SOAPAction: ").append(m_globals->queryProp("soapaction")).append("\r\n");
+
+    if (m_globals->getPropBool("compress", false))
+        headers.append("Accept-Encoding: gzip, deflate\r\n");
 
     if(!m_globals->getPropBool("isPersist", false))
         headers.append("Connection: Close\r\n");

@@ -55,6 +55,7 @@
 #define HTTP_TYPE_FORM_ENCODED                  "application/x-www-form-urlencoded"
 #define HTTP_TYPE_SVG_XML                       "image/svg+xml"
 #define HTTP_TYPE_JAVASCRIPT                    "application/x-javascript"
+#define HTTP_TYPE_JAVASCRIPT2                   "application/javascript"
 
 #define HTTP_TYPE_TEXT_HTML_UTF8                "text/html; charset=UTF-8"
 #define HTTP_TYPE_TEXT_PLAIN_UTF8               "text/plain; charset=UTF-8"
