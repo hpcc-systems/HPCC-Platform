@@ -44,7 +44,7 @@ if(SPARK)
         endif (NOT HADOOP_VERSION)
 
         if (NOT SPARK_VERSION)
-            set(SPARK_VERSION 2.3.2)
+            set(SPARK_VERSION 2.4.3)
         endif (NOT SPARK_VERSION)
 
         if (NOT SPARK_URL_BASE)
@@ -91,7 +91,7 @@ if(SPARK)
     if(SHA512)
         set( SHA512STRING "${SHA512}" )
     else(SHA512)
-        set( SHA512STRING "e61d9330125746a24d7784166a15b41514546cad874357c98dca0a2c39fa7303d8fa7c049ba6cdf5a24c172d4f47a2e5b6e1f658a57a9b2a30d46d9858cdb531" )
+        set( SHA512STRING "e8b7f9e1dec868282cadcad81599038a22f48fb597d44af1b13fcc76b7dacd2a1caf431f95e394e1227066087e3ce6c2137c4abaf60c60076b78f959074ff2ad" )
     endif(SHA512)
 
     string(TOLOWER "${SHA512STRING}" SHA512STRING)
