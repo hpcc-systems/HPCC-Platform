@@ -265,6 +265,7 @@
               maxBacklogQueueSize="200"
               maxConcurrentThreads="0"
               maxRequestEntityLength="8000000"
+              minCompressLength="1000"
               name="myesp"
               perfReportDelay="60"
               portalurl="${PORTALURL}">

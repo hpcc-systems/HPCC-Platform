@@ -29,6 +29,9 @@
 //ESP Binidings
 #include "http/platform/httptransport.ipp"
 #include "bindutil.hpp"
+#ifdef _USE_ZLIB
+#include "zcrypt.hpp"
+#endif
 
 bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuffer &fileContents, bool &checkModifiedTime, StringBuffer &lastModified, StringBuffer &etag)
 {
@@ -630,8 +633,18 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
             DBGLOG("length of content read = %d", m_content.length());
     }
 
+    bool decompressed = false;
+    int compressType = 0;
+    if (shouldDecompress(compressType))
+        decompressed = decompressContent(nullptr, compressType);
+
     if (getEspLogRequests() == LogRequestsAlways)
-        logMessage(LOGCONTENT, "HTTP content received:\n");
+    {
+        if (!decompressed)
+            logMessage(LOGCONTENT, "HTTP content received:\n");
+        else
+            logMessage(LOGCONTENT, "Compressed HTTP content received, decompressed content:\n");
+    }
     return 0;
 }
 
@@ -754,18 +767,23 @@ void CHttpMessage::logSOAPMessage(const char* message, const char* prefix)
 
 void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, const char *prefix)
 {
+    logMessage(messageLogFlag, m_content, prefix);
+}
+
+void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, StringBuffer& content, const char *prefix)
+{
     try
     {
         if (((messageLogFlag == LOGHEADERS) || (messageLogFlag == LOGALL)) && (m_header.length() > 0))
             logMessage(m_header.str(), prefix, "Authorization:[~\r\n]*", "Authorization: (hidden)");
 
-        if (((messageLogFlag == LOGCONTENT) || (messageLogFlag == LOGALL)) && (m_content.length() > 0))
+        if (((messageLogFlag == LOGCONTENT) || (messageLogFlag == LOGALL)) && (content.length() > 0))
         {//log content
             if ((m_header.length() > 0) && (startsWith(m_header.str(), "POST /ws_access/AddUser")
                 || startsWith(m_header.str(), "POST /ws_access/UserResetPass") || startsWith(m_header.str(), "POST /ws_account/UpdateUser")))
                 DBGLOG("%s<For security, ESP does not log the content of this request.>", prefix);
             else if (isSoapMessage())
-                logSOAPMessage(m_content.str(), prefix);
+                logSOAPMessage(content.str(), prefix);
             else if(!isTextMessage())
                 DBGLOG("%s<non-text content or content type not specified>", prefix);
             else if ((m_content_type.length() > 0) && (strieq(m_content_type.get(), "text/css") || strieq(m_content_type.get(), "text/javascript")))
@@ -775,20 +793,20 @@ void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, const char *prefix)
                 StringBuffer httpPath;
                 getPath(httpPath);
                 if (!strieq(httpPath.str(), "/esp/login"))
-                    logMessage(m_content.str(), prefix);
+                    logMessage(content.str(), prefix);
                 else
-                    logMessage(m_content.str(), prefix, "password=*", "password=(hidden)");
+                    logMessage(content.str(), prefix, "password=*", "password=(hidden)");
             }
         }
     }
     catch (IException *e)
     {
         StringBuffer msg;
-        IERRLOG("EXCEPTION %s when logging the message: %s", e->errorMessage(msg).str(), m_content.str());
+        IERRLOG("EXCEPTION %s when logging the message: %s", e->errorMessage(msg).str(), content.str());
         if (m_content_type.length() > 0)
-            IERRLOG("EXCEPTION %s when logging the message (m_content_type:%s):%s", e->errorMessage(msg).str(), m_content_type.get(), m_content.str());
+            IERRLOG("EXCEPTION %s when logging the message (m_content_type:%s):%s", e->errorMessage(msg).str(), m_content_type.get(), content.str());
         else
-            IERRLOG("EXCEPTION %s when logging the message: %s", e->errorMessage(msg).str(), m_content.str());
+            IERRLOG("EXCEPTION %s when logging the message: %s", e->errorMessage(msg).str(), content.str());
         e->Release();
     }
     return;
@@ -796,17 +814,29 @@ void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, const char *prefix)
 
 int CHttpMessage::send()
 {
+    bool logMsg = getEspLogResponses();
+    bool compressed = false;
+    StringBuffer originalContent;
+    int compressType = 0;
+    if (shouldCompress(compressType))
+        compressed = compressContent(logMsg?&originalContent:nullptr, compressType);
+
     StringBuffer headers;
     constructHeaderBuffer(headers, true);
     
     int retcode = 0;
 
     // If m_content is empty but m_content_stream is set, the stream will not be logged here.
-    if (getEspLogResponses())
+    if (logMsg)
     {
         logMessage(headers.str(), "Sending out HTTP headers:\n", "Authorization:[~\r\n]*", "Authorization: (hidden)");
         if(m_content_length > 0 && m_content.length() > 0)
-            logMessage(LOGCONTENT, "Sending out HTTP content:\n");
+        {
+            if (!compressed)
+                logMessage(LOGCONTENT, "Sending out HTTP content:\n");
+            else
+                logMessage(LOGCONTENT, originalContent, "Sending out compressed HTTP content, original content:\n");
+        }
     }
 
     try
@@ -1048,6 +1078,45 @@ StringBuffer& CHttpMessage::getHeader(const char* headername, StringBuffer& head
         }
     }
     return headerval;       
+}
+
+bool CHttpMessage::hasHeader(const char* headername)
+{
+    if (!headername || !*headername)
+        return false;
+
+    ForEachItemIn(x, m_headers)
+    {
+        const char* header = m_headers.item(x);
+        if (header == NULL)
+            continue;
+        const char* colon = strchr(header, ':');
+        if (colon == NULL)
+            continue;
+        unsigned len = colon - header;
+        if ((strlen(headername) == len) && (strnicmp(headername, header, len) == 0))
+            return true;
+    }
+    return false;
+}
+
+void CHttpMessage::removeHeader(const char* headername)
+{
+    if (!headername || !*headername)
+        return;
+
+    ForEachItemInRev(x, m_headers)
+    {
+        const char* header = m_headers.item(x);
+        if (header == NULL)
+            continue;
+        const char* colon = strchr(header, ':');
+        if (colon == NULL)
+            continue;
+        unsigned len = colon - header;
+        if ((strlen(headername) == len) && (strnicmp(headername, header, len) == 0))
+            m_headers.remove(x);
+    }
 }
 
 bool isSoapContentType(const char* contenttype)
@@ -1722,6 +1791,7 @@ void CHttpRequest::updateContext()
 {
     if(m_context)
     {
+        m_context->setRequest(this);
         m_context->setContextPath(m_httpPath.str());
 
         StringBuffer temp;
@@ -1789,6 +1859,9 @@ void CHttpRequest::updateContext()
 
 StringBuffer& CHttpRequest::constructHeaderBuffer(StringBuffer& headerbuf, bool inclLength)
 {
+    if (m_compressionEnabled && !hasHeader(HTTP_HEADER_ACCEPT_ENCODING))
+        addHeader(HTTP_HEADER_ACCEPT_ENCODING, "gzip, deflate");
+
     if(m_httpMethod.length() > 0)
         headerbuf.append(queryMethod()).append(" ");
     else
@@ -2456,9 +2529,20 @@ int CHttpResponse::receive(bool alwaysReadContent, IMultiException *me)
         if (getEspLogLevel()>LogNormal)
             DBGLOG("length of content read = %d", m_content.length());
     }
-    
+
+    bool decompressed = false;
+    int compressType = 0;
+    if (shouldDecompress(compressType))
+        decompressed = decompressContent(nullptr, compressType);
+
     if (getEspLogRequests() == LogRequestsAlways)
-        logMessage(LOGCONTENT, "HTTP response content received:\n");
+    {
+        if (!decompressed)
+            logMessage(LOGCONTENT, "HTTP response content received:\n");
+        else
+            logMessage(LOGCONTENT, "Compressed HTTP response content received, decompressed content:\n");
+    }
+
     return 0;
 
 }
@@ -2540,4 +2624,177 @@ void CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, c
 {
     if (handleExceptions(xslp, me, serv, meth, errorXslt) && logHandleExceptions)
         PROGLOG("Exception(s) handled");
+}
+
+bool CHttpResponse::shouldCompress(int& compressType)
+{
+    compressType = 0;
+    if (!m_compressionEnabled)
+        return false;
+    if (m_content_length == 0 || m_content.length() == 0)
+        return false;
+
+#ifdef _USE_ZLIB
+    if (hasHeader(HTTP_HEADER_CONTENT_ENCODING) || hasHeader(HTTP_HEADER_TRANSFER_ENCODING)) //Already encoded/compressed
+        return false;
+
+    static const int DEFAULT_MIN_COMPRESS_LENGTH = 1000;
+    int min_len = DEFAULT_MIN_COMPRESS_LENGTH;
+    IPropertyTree* proccfg = nullptr;
+    IEspServer* espserver = queryEspServer();
+    if (espserver)
+        proccfg = espserver->queryProcConfig();
+    if (proccfg)
+        min_len = proccfg->getPropInt("@minCompressLength", DEFAULT_MIN_COMPRESS_LENGTH);
+    if (m_content.length() < min_len)
+        return false;
+
+    IEspContext * context = queryContext();
+    if (!context)
+        return false;
+    CHttpRequest* request = dynamic_cast<CHttpRequest*>(context->queryRequest());
+    if (!request)
+        return false;
+    StringBuffer acceptEncoding;
+    request->getHeader(HTTP_HEADER_ACCEPT_ENCODING, acceptEncoding);
+    if (acceptEncoding.length() == 0)
+        return false;
+    char* aestr = acceptEncoding.toLowerCase().detach();
+    char* nextptr = nullptr;
+    bool found = false;
+    for (char* oneword = j_strtok_r(aestr, ", ", &nextptr); oneword; oneword = j_strtok_r(nullptr, ", ", &nextptr))
+    {
+        if (streq(oneword, "gzip"))
+        {
+            compressType = static_cast<int>(ZlibCompressionType::GZIP);
+            found = true;
+            break; //Use gzip as much as possible due to some reported browser issues with deflate
+        }
+        else if (streq(oneword, "deflate"))
+        {
+            compressType = static_cast<int>(ZlibCompressionType::DEFLATE);
+            found = true;
+        }
+        else if (streq(oneword, "x-deflate"))
+        {
+            compressType = static_cast<int>(ZlibCompressionType::ZLIB_DEFLATE);
+            found = true;
+        }
+    }
+    free(aestr);
+    if (!found)
+        return false;
+
+    const char* content_type = m_content_type.get();
+    if (m_content_type.length() == 0 ||
+         !( strnicmp(content_type, "text", 4) == 0
+         || strnicmp(content_type, HTTP_TYPE_APPLICATION_XML, strlen(HTTP_TYPE_APPLICATION_XML)) == 0
+         || strnicmp(content_type, HTTP_TYPE_SOAP, strlen(HTTP_TYPE_SOAP)) == 0
+         || strnicmp(content_type, HTTP_TYPE_SVG_XML, strlen(HTTP_TYPE_SVG_XML)) == 0
+         || strnicmp(content_type, HTTP_TYPE_JSON, strlen(HTTP_TYPE_JSON)) == 0
+         || strnicmp(content_type, HTTP_TYPE_JAVASCRIPT, strlen(HTTP_TYPE_JAVASCRIPT)) == 0
+         || strnicmp(content_type, HTTP_TYPE_JAVASCRIPT2, strlen(HTTP_TYPE_JAVASCRIPT2)) == 0))
+        return false;
+
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline const char* zlibType2Header(ZlibCompressionType zltype)
+{
+    if (zltype==ZlibCompressionType::GZIP)
+        return "gzip";
+    else if (zltype==ZlibCompressionType::DEFLATE)
+        return "deflate";
+    else if (zltype==ZlibCompressionType::ZLIB_DEFLATE)
+        return "x-deflate";
+    else
+        return "";
+}
+
+bool CHttpResponse::compressContent(StringBuffer* originalContent, int compressType)
+{
+#ifdef _USE_ZLIB
+    ZlibCompressionType zlibtype = static_cast<ZlibCompressionType>(compressType);
+    MemoryBuffer zippedContent;
+    try
+    {
+        zlib_deflate(zippedContent, m_content.str(), m_content.length(), GZ_DEFAULT_COMPRESSION, zlibtype);
+    }
+    catch(IException* e)
+    {
+        StringBuffer estr;
+        IERRLOG("Exception(%d, %s) compressing response content.", e->errorCode(), e->errorMessage(estr).str());
+        return false;
+    }
+    catch(...)
+    {
+        IERRLOG("Unknown exception compressing response content.");
+        return false;
+    }
+    if (originalContent != nullptr)
+        originalContent->setown(m_content);
+    setContent(zippedContent.length(), zippedContent.toByteArray());
+    addHeader(HTTP_HEADER_CONTENT_ENCODING, zlibType2Header(zlibtype));
+    return true;
+#endif
+}
+
+bool CHttpResponse::shouldDecompress(int& compressType)
+{
+    compressType = 0;
+    if (!m_compressionEnabled)
+        return false;
+    if (m_content_length == 0 || m_content.length() == 0)
+        return false;
+
+#ifdef _USE_ZLIB
+    StringBuffer ceheader;
+    getHeader(HTTP_HEADER_CONTENT_ENCODING, ceheader);
+    ceheader.trim();
+    if (ceheader.length() == 0)
+        return false;
+    if (strieq(ceheader.str(), "gzip"))
+        compressType = static_cast<int>(ZlibCompressionType::GZIP);
+    else if (strieq(ceheader.str(), "deflate"))
+        compressType = static_cast<int>(ZlibCompressionType::DEFLATE);
+    else if (strieq(ceheader.str(), "x-deflate"))
+        compressType = static_cast<int>(ZlibCompressionType::ZLIB_DEFLATE);
+    else
+        return false;
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool CHttpResponse::decompressContent(StringBuffer* originalContent, int compressType)
+{
+#ifdef _USE_ZLIB
+    ZlibCompressionType zlibtype = static_cast<ZlibCompressionType>(compressType);
+    StringBuffer decompressedContent;
+    try
+    {
+        httpInflate((const unsigned char*)m_content.str(), m_content.length(), decompressedContent, zlibtype==ZlibCompressionType::GZIP);
+    }
+    catch(IException* e)
+    {
+        StringBuffer estr;
+        IERRLOG("Exception(%d, %s) decompressing response content.", e->errorCode(), e->errorMessage(estr).str());
+        return false;
+    }
+    catch(...)
+    {
+        IERRLOG("Unknown exception decompressing response content.");
+        return false;
+    }
+    if (originalContent != nullptr)
+        originalContent->setown(m_content);
+    m_content.setown(decompressedContent);
+    m_content_length = m_content.length();
+    removeHeader(HTTP_HEADER_CONTENT_ENCODING);
+    return true;
+#endif
 }
