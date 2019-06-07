@@ -616,13 +616,13 @@ public:
     CEndpointCS *getCrit(const SocketEndpoint &ep)
     {
         CriticalBlock b(crit);
-        Linked<CEndpointCS> clientCrit = find(ep);
-        if (!clientCrit || !clientCrit->isAlive()) // if !isAlive(), then it is in the process of being destroyed/removed.
+        CEndpointCS * clientCrit = find(ep);
+        if (!clientCrit || !clientCrit->isAliveAndLink()) // if !isAliveAndLink(), then it is in the process of being destroyed/removed.
         {
-            clientCrit.setown(new CEndpointCS(*this, ep));
+            clientCrit = new CEndpointCS(*this, ep);
             replace(*clientCrit); // NB table doesn't own
         }
-        return clientCrit.getClear();
+        return clientCrit;
     }
     unsigned getHashFromElement(const void *e) const
     {

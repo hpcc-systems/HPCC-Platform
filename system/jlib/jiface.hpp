@@ -68,7 +68,7 @@ class CSimpleInterfaceOf : public INTERFACE
 {
     friend class CInterfaceOf<INTERFACE>;    // want to keep xxcount private outside this pair of classes
 public:
-    inline virtual ~CSimpleInterfaceOf() {}
+    inline virtual ~CSimpleInterfaceOf() { }
 
     inline CSimpleInterfaceOf() : xxcount(1) { }
     inline bool IsShared(void) const    { return xxcount.load(std::memory_order_relaxed) > 1; }
@@ -119,31 +119,46 @@ class CInterfaceOf : public CSimpleInterfaceOf<INTERFACE>
 public:
     virtual void beforeDispose() {}
 
-    inline bool isAlive() const         { return this->xxcount.load(std::memory_order_relaxed) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
+    //Function to be called when checking if an entry in a non-linking cache is valid
+    //must be called inside a critical section that protects access to the cache.
+    //This function must only increment the link count if the object is valid - otherwise it
+    //ends up being freed more than once.
+    inline bool isAliveAndLink() const
+    {
+        unsigned expected = this->xxcount.load(std::memory_order_acquire);
+        for (;;)
+        {
+            //If count is 0, or count >= DEAD_PSEUDO_COUNT then return false - combine both into a single test
+            if ((expected-1) >= (DEAD_PSEUDO_COUNT-1))
+                return false;
+
+            //Avoid incrementing the link count if xxcount=0, otherwise it introduces a race condition
+            //so use compare and exchange to increment it only if it hasn't changed
+            if (this->xxcount.compare_exchange_weak(expected, expected+1, std::memory_order_acq_rel))
+                return true;
+        }
+    }
 
     inline bool Release(void) const
     {
         if (this->xxcount.fetch_sub(1,std::memory_order_release) == 1)
         {
-            unsigned zero = 0;
-            //Because beforeDispose could cause this object to be linked/released or call isAlive(), this->xxcount is set
-            //to a a high mid-point positive number to avoid poss. of releasing again.
-            if (this->xxcount.compare_exchange_strong(zero, DEAD_PSEUDO_COUNT, std::memory_order_acq_rel))
+            //Overwrite with a special value so that any calls to Link()/Release within beforeDispose()
+            //do not cause the object to be released again.
+            this->xxcount.store(DEAD_PSEUDO_COUNT, std::memory_order_release);
+            try
             {
-                try
-                {
-                    const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
-                }
-                catch (...)
-                {
-#if _DEBUG
-                    assert(!"ERROR - Exception in beforeDispose - object will be leaked");
-#endif
-                    throw;
-                }
-                delete this;
-                return true;
+                const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
             }
+            catch (...)
+            {
+#if _DEBUG
+                assert(!"ERROR - Exception in beforeDispose - object will be leaked");
+#endif
+                throw;
+            }
+            delete this;
+            return true;
         }
         return false;
     }
@@ -219,7 +234,11 @@ class CSingleThreadInterfaceOf : public CSingleThreadSimpleInterfaceOf<INTERFACE
 public:
     virtual void beforeDispose() {}
 
-    inline bool isAlive() const         { return this->xxcount < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
+    inline bool isAliveAndLink() const
+    {
+        this->Link();
+        return this->xxcount < DEAD_PSEUDO_COUNT;
+    }
 
     inline bool Release(void) const
     {

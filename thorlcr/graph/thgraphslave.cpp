@@ -2111,12 +2111,12 @@ public:
         if (crc)
             id.append(crc);
         CriticalBlock b(crit);
-        Linked<CLazyFileIO> file = files.find(id);
-        if (!file || !file->isAlive())
+        CLazyFileIO * file = files.find(id);
+        if (!file || !file->isAliveAndLink())
         {
             Owned<IActivityReplicatedFile> repFile = createEnsurePrimaryPartFile(logicalFilename, &partDesc);
             bool compressed = partDesc.queryOwner().isCompressed();
-            file.setown(new CLazyFileIO(*this, filename, id, repFile.getClear(), compressed, expander));
+            file = new CLazyFileIO(*this, filename, id, repFile.getClear(), compressed, expander);
             files.replace(* file); // NB: files does not own 'file', CLazyFileIO will remove itself from cache on destruction
 
             /* NB: there will be 1 CLazyFileIO per physical file part name
@@ -2130,7 +2130,7 @@ public:
              */
         }
         file->setActivity(&activity); // an activity needed by IActivityReplicatedFile, mainly for logging purposes.
-        return file.getClear();
+        return file;
     }
 friend class CLazyFileIO;
 };

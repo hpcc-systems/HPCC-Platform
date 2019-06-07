@@ -1829,8 +1829,7 @@ static ITypeInfo * commonUpType(CHashedTypeInfo * candidate)
         match = globalTypeCache->addOrFind(*candidate);
         if (match == candidate)
             return match;
-        match->Link();
-        if (!static_cast<CHashedTypeInfo *>(match)->isAlive())
+        if (!static_cast<CHashedTypeInfo *>(match)->isAliveAndLink())
         {
             globalTypeCache->replace(*candidate);
             return candidate;

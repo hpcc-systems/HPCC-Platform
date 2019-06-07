@@ -375,8 +375,7 @@ public:
         IResolvedFile *cache = files.getValue(filename);
         if (cache)
         {
-            LINK(cache);
-            if (cache->isAlive())
+            if (cache->isAliveAndLink())
                 return cache;
             if (traceLevel)
                 DBGLOG("Not returning %s from cache as isAlive() returned false", filename);

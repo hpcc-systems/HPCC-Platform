@@ -32,7 +32,7 @@ interface ILazyFileIO : extends IFileIO
 {
     virtual const char *queryFilename() = 0;
     virtual void checkOpen() = 0;
-    virtual bool isAlive() const = 0;
+    virtual bool isAliveAndLink() const = 0;
     virtual void addSource(IFile *source) = 0;
     virtual bool isRemote() = 0;
     virtual offset_t getSize() = 0;
@@ -105,7 +105,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual const char *queryPhysicalName() const = 0; // Returns NULL unless in local file mode.
     virtual const char *queryFileName() const = 0;
     virtual void setCache(IResolvedFileCache *cache) = 0;
-    virtual bool isAlive() const = 0;
+    virtual bool isAliveAndLink() const = 0;
     virtual const IPropertyTree *queryProperties() const = 0;
 
     virtual void remove() = 0;
