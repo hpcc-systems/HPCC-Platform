@@ -14041,7 +14041,7 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
     if (type->getTypeCode() == type_row)
         type = type->queryChildType();
 
-    f->setProp("@label", str(field->queryName()));
+    f->setProp("@label", str(field->queryId()));
     f->setProp("@name", str(field->queryName()));
     f->setPropInt("@position", offset++);
 
