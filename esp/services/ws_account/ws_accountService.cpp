@@ -165,7 +165,7 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             resp.setUsername(userInContext->getName());
             return true;
         }
-
+        double version = context.getClientVersion();
         const char* userName = userInContext->getName();
         Owned<ISecUser> user = secmgr->findUser(userName);
         if(user != NULL)
@@ -174,11 +174,17 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             user->getPasswordExpiration(dt);
             StringBuffer sb;
             if (dt.isNull())
+            {
                 sb.append("Never");
+                if (version >= 1.04)
+                    resp.setPasswordNeverExpires(true);
+            }
             else
             {
                 dt.getString(sb);
                 sb.replace('T', (char)0);//chop off timestring
+                if (version >= 1.04)
+                    resp.setPasswordNeverExpires(false);
             }
             resp.setPasswordExpiration(sb.str());
             resp.setPasswordDaysRemaining(user->getPasswordDaysRemaining());
@@ -186,7 +192,6 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             resp.setLastName(user->getLastName());
             resp.setUsername(user->getName());
 
-            double version = context.getClientVersion();
             if (version >= 1.01)
                 resp.setPasswordExpirationWarningDays(context.querySecManager()->getPasswordExpirationWarningDays());
 
@@ -195,6 +200,12 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
 
             if (version >= 1.03)
                 resp.setDistinguishedName(user->getDistinguishedName());
+
+            if (version >= 1.04)
+            {
+                resp.setAccountType(secmgr->isSuperUser(user) ? "Administrator" : "User");
+                resp.setPasswordIsExpired(userInContext->getAuthenticateStatus() == AS_PASSWORD_EXPIRED || userInContext->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED);
+            }
         }
     }
     catch(IException* e)
