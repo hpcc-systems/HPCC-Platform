@@ -237,7 +237,7 @@ public:
     inline bool isAliveAndLink() const
     {
         this->Link();
-        return this->xxcount < DEAD_PSEUDO_COUNT;
+        return true; // single threaded - must be valid if we have a pointer to it.
     }
 
     inline bool Release(void) const
