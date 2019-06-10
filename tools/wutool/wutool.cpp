@@ -30,6 +30,7 @@
 #include "dautils.hpp"
 #include "danqs.hpp"
 #include "dalienv.hpp"
+#include "anawu.hpp"
 
 #ifdef _USE_CPPUNIT
 #include "workunitservices.hpp"
@@ -87,6 +88,7 @@ void usage(const char * action = nullptr)
                "   results <workunits> - Dump results from specified workunits\n"
                "   info <workunits> <filter>\n"
                "                       - Display information from a workunit\n"
+               "   analyse <workunit>  - Analyse the workunit to highlight performance issues\n"
                "\n"
                "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
                "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
@@ -194,6 +196,10 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
             results->query().getResultEclSchema(schema);
             printf("%s\n", schema.str());
         }
+    }
+    else if (stricmp(action, "analyse")==0)
+    {
+        analyseWorkunit(&w);
     }
     else if (stricmp(action, "dump")==0)
     {
@@ -572,7 +578,7 @@ int main(int argc, const char *argv[])
         {
             usage();
         }
-        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive") || strieq(action, "info"))
+        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive") || strieq(action, "info") || strieq(action, "analyse"))
         {
             if (strieq(action, "info") && args.empty())
                 args.append("source[all],properties[all]");

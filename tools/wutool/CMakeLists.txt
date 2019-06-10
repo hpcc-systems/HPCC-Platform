@@ -36,6 +36,9 @@ include_directories (
          ./../../system/jlib 
          ./../../common/environment 
          ./../../common/workunit 
+         ./../../common/wuanalysis
+         ./../../common/thorhelper
+         ./../../rtl/include
          ./../../testing/unittests
          ./../../system/security/shared
     )
@@ -60,7 +63,8 @@ target_link_libraries ( wutool
          nbcd 
          eclrtl 
          deftype
-         workunit 
+         workunit
+         wuanalysis
          ${CPPUNIT_LIBRARIES}
     )
     
