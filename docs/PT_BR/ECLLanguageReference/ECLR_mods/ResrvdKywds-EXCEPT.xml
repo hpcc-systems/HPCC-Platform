@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EXCEPT">
@@ -8,15 +8,15 @@
       <primary>EXCEPT</primary>
     </indexterm> </emphasis><emphasis>fieldlist</emphasis></para>
 
-  <para><emphasis>fields</emphasis> Uma lista delimitada por vírgula dos
+  <para><emphasis>fields</emphasis> Uma lista delimitada por vírgula dos 
   campos de dados em uma estrutura RECORD.</para>
 
   <para>The <emphasis role="bold">EXCEPT </emphasis>keyword<indexterm>
       <primary>EXCEPT keyword</primary>
     </indexterm> specifies a list of <emphasis>fields</emphasis> <emphasis
-  role="underline">not</emphasis> to use in a SORT, GROUP, DEDUP, or ROLLUP
-  operation. Isso permite a realização da operação em todos os campos no
-  RECORD, EXCEPT naqueles <emphasis>campos </emphasis> que você nomear,
+  role="underline">not</emphasis> to use in a SORT, GROUP, DEDUP, or ROLLUP 
+  operation. Isso permite a realização da operação em todos os campos no 
+  RECORD, EXCEPT naqueles  <emphasis>campos </emphasis> que você nomear, 
   tornando o código mais legível e passível de manutenção.</para>
 
   <para>Exemplo:</para>

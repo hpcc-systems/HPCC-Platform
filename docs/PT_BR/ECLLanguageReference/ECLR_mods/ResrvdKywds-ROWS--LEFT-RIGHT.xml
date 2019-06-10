@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ROWS-LEFT-RIGHT">
@@ -12,11 +12,11 @@
 
   <para><emphasis role="bold">ROWS(RIGHT)</emphasis></para>
 
-  <para>As palavras-chave <emphasis role="bold">ROWS(LEFT)</emphasis> e
-  <emphasis role="bold">ROWS(RIGHT)</emphasis> indicam que o parâmetro está
+  <para>As palavras-chave  <emphasis role="bold">ROWS(LEFT)</emphasis>  e  
+  <emphasis role="bold">ROWS(RIGHT)</emphasis> indicam que o parâmetro está 
   sendo especificado para a função TRANSFORM é um conjunto de registros. Elas
-  são usadas em funções onde um dataset está sendo especificado, tais como
-  COMBINE, ROLLUP, JOIN, DENORMALIZE, e LOOP.</para>
+   são usadas em funções onde um dataset está sendo especificado, tais como 
+   COMBINE, ROLLUP, JOIN, DENORMALIZE, e LOOP.</para>
 
   <para>Exemplo:</para>
 

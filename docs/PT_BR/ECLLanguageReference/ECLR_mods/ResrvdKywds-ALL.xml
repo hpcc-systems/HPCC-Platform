@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ALL" role="nobrk">
@@ -8,12 +8,12 @@
 
   <para><emphasis role="bold">ALL</emphasis></para>
 
-  <para>A <emphasis role="bold">palavra-chave </emphasis> ALL<indexterm>
-      <primary>ALL keyword</primary>
-    </indexterm> especifica o conjunto de todos os valores possíveis quando
-  usados como o valor padrão de um parâmetro SET especificado, ou como
-  substituição de um SET em operações que exigem um SET (CONJUNTO) definido de
-  valores.</para>
+  <para>A  <emphasis role="bold">palavra-chave </emphasis> ALL<indexterm>
+      <primary>ALL keyword </primary>
+    </indexterm> especifica o conjunto de todos os valores possíveis quando 
+    usados como o valor padrão de um parâmetro SET especificado, ou como 
+    substituição de um SET em operações que exigem um SET (CONJUNTO) definido de 
+    valores.</para>
 
   <para>Exemplo:</para>
 
@@ -24,7 +24,7 @@ SET OF INTEGER4 MySet := IF(SomeCondition=TRUE,
       [88888,99999,66666,33333,55555],ALL);
 MyRecs := MyFile(Zip IN MySet);</programlisting>
 
-  <para>Ver também: <link linkend="SET_OF">SET OF</link>, <link
-  linkend="Function_Attributes__Parameter_Passing">Funções dos atributos
+  <para>Ver também: <link linkend="SET_OF">SET OF</link>,  <link
+  linkend="Function_Attributes__Parameter_Passing">Funções dos atributos 
   (Especificações de parâmetros</link>)</para>
 </sect1>

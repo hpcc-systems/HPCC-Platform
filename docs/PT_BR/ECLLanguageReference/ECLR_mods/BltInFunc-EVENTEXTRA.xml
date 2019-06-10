@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EVENTEXTRA">
@@ -11,9 +11,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.45pt"/>
+        <colspec colwidth="78.45pt" />
 
-        <colspec colwidth="310.35pt"/>
+        <colspec colwidth="310.35pt" />
 
         <tbody>
           <row>
@@ -27,8 +27,8 @@
 
   <para>A <emphasis role="bold">função</emphasis> EVENTEXTRA<indexterm>
       <primary>EVENTEXTRA function</primary>
-    </indexterm> retorna o conteúdo da <emphasis> tag</emphasis> do texto XML
-  no segundo parâmetro da função EVENT.</para>
+    </indexterm>  retorna o conteúdo da <emphasis> tag</emphasis>  do texto XML 
+    no segundo parâmetro da função EVENT.</para>
 
   <para>Exemplo:</para>
 

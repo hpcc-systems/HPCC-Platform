@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_IF">
@@ -7,31 +7,34 @@
   <para><emphasis role="bold">#IF<indexterm>
       <primary>#IF</primary>
     </indexterm>( </emphasis><emphasis> condition </emphasis><emphasis
-  role="bold">)</emphasis><emphasis role="bold"> </emphasis><emphasis/></para>
+  role="bold">)</emphasis><emphasis role="bold">
+  </emphasis><emphasis></emphasis></para>
 
-  <para><emphasis>truestatements</emphasis><emphasis role="bold"/></para>
+  <para><emphasis>truestatements</emphasis><emphasis
+  role="bold"></emphasis></para>
 
   <para><emphasis role="bold">[ #ELSEIF<indexterm>
       <primary>#ELSEIF</primary>
     </indexterm>( </emphasis><emphasis> condition </emphasis><emphasis
-  role="bold">)</emphasis><emphasis role="bold"> </emphasis><emphasis/></para>
+  role="bold">)</emphasis><emphasis role="bold">
+  </emphasis><emphasis></emphasis></para>
 
   <para><emphasis>truestatements </emphasis><emphasis
-  role="bold">]</emphasis><emphasis role="bold"/></para>
+  role="bold">]</emphasis><emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">[ #ELSE</emphasis><emphasis
   role="bold"><indexterm>
       <primary>#ELSE</primary>
     </indexterm> </emphasis><emphasis>falsestatements </emphasis><emphasis
-  role="bold">]</emphasis><emphasis role="bold"/></para>
+  role="bold">]</emphasis><emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">#END</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="83.75pt"/>
+        <colspec colwidth="83.75pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -43,29 +46,29 @@
           <row>
             <entry><emphasis>truestatements</emphasis></entry>
 
-            <entry>As declarações de modelos a serem executadas se a condição
-            for verdadeira.</entry>
+            <entry>As declarações de modelos a serem executadas se a condição 
+	    for verdadeira.</entry>
           </row>
 
           <row>
             <entry><emphasis>#ELSEIF</emphasis></entry>
 
-            <entry>Opcional. Fornece a estrutura as declarações a serem
-            executadas se a condição for verdadeira.</entry>
+            <entry>Opcional. Fornece a estrutura as declarações a serem 
+	    executadas se a condição for verdadeira.</entry>
           </row>
 
           <row>
             <entry><emphasis>#ELSE</emphasis></entry>
 
-            <entry>Opcional. Fornece as declarações a serem executadas se a
-            condição for falsa.</entry>
+            <entry>Opcional. Fornece as declarações a serem executadas se a 
+	    condição for falsa.</entry>
           </row>
 
           <row>
             <entry><emphasis>falsestatements</emphasis></entry>
 
-            <entry>Opcional. As declarações de modelos a serem executadas se a
-            condição for falsa.</entry>
+            <entry>Opcional. As declarações de modelos a serem executadas se a 
+	    condição for falsa.</entry>
           </row>
 
           <row>
@@ -77,10 +80,10 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A estrutura <emphasis role="bold">#IF </emphasis> avalia a
-  <emphasis>condição </emphasis> executa <emphasis>truestatements</emphasis>
-  ou <emphasis>falsestatements</emphasis> (se presentes). Essa declaração pode
-  ser usada fora de um escopo XML e não exige um LOADXML anterior para
+  <para>A estrutura  <emphasis role="bold">#IF </emphasis> avalia a 
+  <emphasis>condição  </emphasis> executa <emphasis>truestatements</emphasis>  
+  ou  <emphasis>falsestatements</emphasis> (se presentes). Essa declaração pode 
+  ser usada fora de um escopo XML e não exige um LOADXML anterior para 
   instanciar um escopo XML.</para>
 
   <para>Exemplo:</para>

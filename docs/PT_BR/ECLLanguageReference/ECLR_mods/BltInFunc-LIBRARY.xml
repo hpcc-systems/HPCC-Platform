@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LIBRARY">
@@ -14,8 +14,8 @@
     </indexterm>( </emphasis><emphasis>module </emphasis><emphasis
   role="bold">)</emphasis><emphasis>, interface </emphasis><emphasis
   role="bold">[</emphasis><emphasis> (</emphasis><emphasis role="bold">
-  </emphasis><emphasis>parameters) </emphasis><emphasis role="bold">]
-  )</emphasis><emphasis role="bold"/></para>
+  </emphasis><emphasis>parameters) </emphasis><emphasis role="bold">] 
+  )</emphasis><emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">LIBRARY(</emphasis><emphasis> module , interface
   </emphasis><emphasis role="bold">[</emphasis><emphasis>
@@ -24,72 +24,72 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="86.10pt"/>
+      <colspec colwidth="86.10pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
           <entry><emphasis role="bold">INTERNAL</emphasis></entry>
 
-          <entry>Opcional. Especifica que o módulo é um atributo, não uma
-          biblioteca externa (criado pela ação BUILD).</entry>
+          <entry>Opcional. Especifica que o módulo é um atributo, não uma 
+	  biblioteca externa (criado pela ação BUILD).</entry>
         </row>
 
         <row>
           <entry><emphasis>module</emphasis></entry>
 
-          <entry>O nome da biblioteca de consulta. Quando for INTERNAL, este é
-          o nome do atributo MODULE que implementa a biblioteca de consulta.
-          Se não for INTERNAL, é uma expressão da string que contém o nome da
-          tarefa que compilou a biblioteca de consulta (normalmente definido
-          com #WORKUNIT).</entry>
+          <entry>O nome da biblioteca de consulta. Quando for INTERNAL, este é 
+	  o nome do atributo MODULE que implementa a biblioteca de consulta. 
+	  Se não for INTERNAL, é uma expressão da string que contém o nome da 
+	  tarefa que compilou a biblioteca de consulta (normalmente definido 
+	  com #WORKUNIT).</entry>
         </row>
 
         <row>
           <entry><emphasis>interface</emphasis></entry>
 
-          <entry>O nome da estrutura INTERFACE que define a biblioteca de
-          consulta.</entry>
+          <entry>O nome da estrutura INTERFACE que define a biblioteca de 
+	  consulta.</entry>
         </row>
 
         <row>
           <entry><emphasis>parameters</emphasis></entry>
 
-          <entry>Opcional. Os valores a serem especificados para a INTERFACE,
-          se configurada para receber parâmetros.</entry>
+          <entry>Opcional. Os valores a serem especificados para a INTERFACE, 
+	  se configurada para receber parâmetros.</entry>
         </row>
 
         <row>
           <entry>Return:</entry>
 
-          <entry>LIBRARY resulta em um MODULE que pode ser usado para
-          referenciar os atributos exportadosde um módulo específico.</entry>
+          <entry>LIBRARY resulta em um MODULE que pode ser usado para 
+	  referenciar os atributos exportadosde um módulo específico.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>A função <emphasis role="bold">LIBRARY </emphasis> define uma
-  instância de uma biblioteca de consulta – a <emphasis>interface</emphasis>
-  implementada pelo <emphasis>module</emphasis> após ter passado pelos
-  parâmetros <emphasis> especificados. </emphasis><emphasis role="bold">As
-  bibliotecas de consulta são usadas apenas pelo hthor e
+  <para>A função  <emphasis role="bold">LIBRARY </emphasis> define uma 
+  instância de uma biblioteca de consulta – a  <emphasis>interface</emphasis>  
+  implementada pelo  <emphasis>module</emphasis>  após ter passado pelos 
+  parâmetros <emphasis> especificados. </emphasis><emphasis role="bold">As 
+  bibliotecas de consulta são usadas apenas pelo hthor e 
   Roxie.</emphasis></para>
 
-  <para>As bibliotecas INTERNAS são normalmente usadas no desenvolvimento de
-  consultas, ao passo que as bibliotecas externas são melhores para gerar
-  consultas. Uma biblioteca interna gera o código de biblioteca como uma
-  unidade separada, mas depois inclui essa unidade na tarefa de consulta. Ela
-  não possui a vantagem de redução do tempo de compilação ou do uso de memória
-  no Roxie (vantagens da biblioteca externa), mas retém a estrutura da
-  biblioteca, o que significa que as alterações no código não podem afetar
+  <para>As bibliotecas INTERNAS são normalmente usadas no desenvolvimento de 
+  consultas, ao passo que as bibliotecas externas são melhores para gerar 
+  consultas. Uma biblioteca interna gera o código de biblioteca como uma 
+  unidade separada, mas depois inclui essa unidade na tarefa de consulta. Ela 
+  não possui a vantagem de redução do tempo de compilação ou do uso de memória 
+  no Roxie (vantagens da biblioteca externa), mas retém a estrutura da 
+  biblioteca, o que significa que as alterações no código não podem afetar 
   mais ninguém que esteja usando o sistema.</para>
 
-  <para>As bibliotecas externas são criadas pela ação BUILD e usam uma forma
-  de “nome” #WORKUNIT para especificar o nome externo da biblioteca. Uma
-  biblioteca externa é previamente compilada e, por isso, reduz o tempo de
-  compilação das consultas que a utilizam. A biblioteca também diminui o uso
+  <para>As bibliotecas externas são criadas pela ação BUILD e usam uma forma 
+  de “nome” #WORKUNIT para especificar o nome externo da biblioteca. Uma 
+  biblioteca externa é previamente compilada e, por isso, reduz o tempo de 
+  compilação das consultas que a utilizam. A biblioteca também diminui o uso 
   da memória no Roxie.</para>
 
   <para>Exemplo:</para>
@@ -155,4 +155,10 @@ OUTPUT(lib3.others, NAMED('INTERNAL_nonmatches_interface_parms'));
 OUTPUT(lib4.matches,NAMED('EXTERNAL_matches_interface_parms'));
 OUTPUT(lib4.others, NAMED('EXTERNAL_nonmatches_interface_parms'));
 </programlisting>
+
+  <para></para>
+
+  <para>Ver também: <link linkend="MODULE_Structure">MODULE</link>, <link
+  linkend="INTERFACE_Structure">INTERFACE</link>, <link
+  linkend="BUILD">BUILD</link></para>
 </sect1>

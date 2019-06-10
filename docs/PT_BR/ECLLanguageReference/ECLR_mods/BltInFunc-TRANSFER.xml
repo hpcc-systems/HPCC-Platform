@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TRANSFER">
@@ -13,9 +13,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="77.70pt"/>
+        <colspec colwidth="77.70pt" />
 
-        <colspec colwidth="275.10pt"/>
+        <colspec colwidth="275.10pt" />
 
         <tbody>
           <row>
@@ -39,9 +39,9 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">TRANSFER </emphasis> retorna o
-  <emphasis>valor </emphasis> no <emphasis>tipo</emphasis> solicitado. Essa
-  não é uma conversão de tipo porque o padrão de bits permanece
+  <para>A função  <emphasis role="bold">TRANSFER </emphasis> retorna o 
+  <emphasis>valor </emphasis> no  <emphasis>tipo</emphasis> solicitado. Essa 
+  não é uma conversão de tipo porque o padrão de bits permanece 
   inalterado.</para>
 
   <para>Exemplo:</para>

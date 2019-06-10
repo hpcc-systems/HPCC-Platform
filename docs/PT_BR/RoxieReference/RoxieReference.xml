@@ -234,9 +234,9 @@
       usam alguma forma de balanceamento de carga para distribuir solicitações
       de modo uniforme para os servidores disponíveis.</para>
 
-      <para>O processo <emphasis role="bold">escravo</emphasis> aceita
+      <para>O processo <emphasis role="bold">Escravo</emphasis> aceita
       solicitações apenas de outros nós do servidor no cluster. Essas
-      solicitações correspondem a uma função única de ECL, como uma leitura de
+      solicitações correspondem a uma função única ECL, como uma leitura de
       índice filtrado ou uma busca de disco. Os resultados são enviados de
       volta ao servidor que fez a solicitação original. Para equilibrar o
       desempenho e gerenciar falhas de hardware, os escravos recebem as
@@ -270,7 +270,7 @@
       .DLL) e preparar o contexto de execução ao máximo possível para que ela
       esteja pronta para executar solicitações recebidas para executar a
       consulta logo que chegar. Isso pode incluir carregar o .so (ou .DLL),
-      solucionar as referências de arquivo e abrir arquivos (se houver
+      solucionar as referências e abrir arquivos (se houver
       identificadores de arquivos suficientes disponíveis), pré-carregar dados
       na memória, se solicitado, e avaliar o código ECL na consulta que foi
       marcada como: ONCE.</para>
@@ -279,8 +279,8 @@
       um cluster Thor no qual foi preparado ou, se preferir, pode ser copiado
       para o Roxie para que seja acessado localmente.</para>
 
-      <para>Normalmente, um sistema de desenvolvimento pode consultar dados in
-      situ no cluster Thor, enquanto um sistema de produção pode preferir os
+      <para>Normalmente, um sistema de desenvolvimento pode consultar dados 
+      no cluster Thor, enquanto um sistema de produção pode preferir os
       benefícios de desempenho de copiar dados localmente para o Roxie.</para>
 
       <para>O Roxie pode ler dados remotamente enquanto são copiados e
@@ -505,6 +505,67 @@
 
         <beginpage/>
       </sect2>
+<sect2>
+        <title>Tempo limite de Consulta Roxie</title>
+
+        <para>Há várias maneiras para gerenciar o tempo limite da consulta (em ordem de prioridade):</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Especifique o valor do atributo  <emphasis
+            role="bold">_timeLimit</emphasis>  com a solicitação da consulta. Por exemplo:</para>
+
+            <para><programlisting>&lt;myQuery timeLimit="2000"&gt; ... &lt;/myQuery&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique o valor no elemento  <emphasis
+            role="bold">_timeLimit</emphasis>  com a solicitação da consulta. Por exemplo:</para>
+
+            <para><programlisting>&lt;myQuery&gt; &lt;_timeLimit&gt;2000&lt;_timeLimit&gt; ... &lt;/myQuery&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique o valor do atributo  <emphasis
+            role="bold">timeLimit</emphasis>  na definição do pacote para a consulta.</para>
+
+            <para><programlisting>&lt;RoxiePackages&gt; &lt;!-- Begin Queries --&gt; &lt;Package id="MyQuery" timeLimit="2000"&gt; &lt;Base id="thor::MyData_Key"/&gt; &lt;/Package&gt; &lt;!-- End Queries --&gt; ... &lt;/RoxiePackages&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique um valor no código ECL da consulta usando  <emphasis
+            role="bold">#OPTION</emphasis>. Por exemplo,</para>
+
+            <para><programlisting>#OPTION('timeLimit', 2000);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique um valor na linha de comando usando  <emphasis
+            role="bold">eclcc </emphasis> via o argumento  <emphasis
+            role="bold">-f</emphasis> . Por exemplo,</para>
+
+            <para><programlisting>eclcc MyQuery.ecl -ftimeLimit="2000" 
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique um valor usando a interface de linha de comandos  <emphasis role="bold">ecl </emphasis>
+             usando o argumento  <emphasis
+            role="bold">--timeLimit=&lt;sec&gt;</emphasis> . Por exemplo,</para>
+
+            <para><programlisting>ecl publish roxie MyQuery.ecl --name=MyQuery --timeLimit=2000 -A ecl queries config roxie MyQuery --timeLimit=2000 ecl queries recreate roxie MyQuery --timeLimit=2000
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Use a configuração padrão na configuração do seu cluster Roxie. Existem valores padrão separados para os níveis de prioridade: <emphasis
+            role="bold">defaultLowPriorityTimeLimit</emphasis>, <emphasis
+            role="bold">defaultHighPriorityTimeLimit</emphasis>, e <emphasis
+            role="bold">defaultSLAPriorityTimeLimit</emphasis>.</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
     </sect1>
   </chapter>
 
@@ -544,12 +605,14 @@
     <sect1>
       <title>Visualizando Grupo de Consultas utilizando o ECL Watch</title>
 
-      <para>Usando o ECL Watch, é possível ver a consulta para todos os
-      clusters no seu HPCC. Clique no item de menu <emphasis
-      role="bold">Queries Set/Browser</emphasis> para ver os clusters que
-      estão usando Grupo de Consultas atualmente. Clique no link <emphasis
-      role="bold">myroxie</emphasis> para ver a lista de consultas atualmente
-      disponíveis para o Roxie. Com o uso deste recurso, é possível:</para>
+      <para>Usando o ECL Watch, é possível ver a consulta para todos os 
+      clusters no seu HPCC. Clique no item de menu  
+      <emphasis role="bold">Queries Set/Browser</emphasis>
+      para ver os clusters que estão 
+      usando Grupo de Consultas atualmente. Clique no link  
+      <emphasis role="bold">myroxie</emphasis>  
+      para ver a lista de consultas atualmente disponíveis 
+      para o Roxie.  Com o uso deste recurso, é possível:</para>
 
       <itemizedlist>
         <listitem>
@@ -695,10 +758,10 @@
                     <row>
                       <entry>Target Name</entry>
 
-                      <entry>O nome do arquivo lógico a ser criado no destino.
-                      Este campo é preenchido automaticamente com base no
-                      arquivo lógico original, mas é possível
-                      alterá-lo.</entry>
+                      <entry>O nome do arquivo lógico a ser copiado. 
+		      Este campo é preenchido automaticamente com base no 
+		      arquivo lógico original, mas é possível 
+		      alterá-lo.</entry>
                     </row>
 
                     <row>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ROUND">
@@ -14,9 +14,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.35pt"/>
+        <colspec colwidth="78.35pt" />
 
-        <colspec colwidth="274.45pt"/>
+        <colspec colwidth="274.45pt" />
 
         <tbody>
           <row>
@@ -28,9 +28,9 @@
           <row>
             <entry><emphasis>decimals</emphasis></entry>
 
-            <entry>Opcional. Um valor inteiro que especifica o número de casas
-            decimais que deve ser arredondado. Se omitida, o padrão é zero
-            (resultado em valor inteiro).</entry>
+            <entry>Opcional. Um valor inteiro que especifica o número de casas 
+	    decimais que deve ser arredondado. Se omitida, o padrão é zero 
+	    (resultado em valor inteiro).</entry>
           </row>
 
           <row>
@@ -42,10 +42,10 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">ROUND </emphasis> retorna um
-  <emphasis>realvalue</emphasis> arredondado usando o sistema de
-  arredondamento aritmético padrão (casas decimais com valor inferior a ,5 são
-  arredondadas para baixo e casas com valor acima ou igual a ,5 são
+  <para>A função  <emphasis role="bold">ROUND </emphasis> retorna um  
+  <emphasis>realvalue</emphasis>  arredondado usando o sistema de 
+  arredondamento aritmético padrão (casas decimais com valor inferior a ,5 são 
+  arredondadas para baixo e casas com valor acima ou igual a ,5 são 
   arredondadas para cima).</para>
 
   <para>Exemplo:</para>

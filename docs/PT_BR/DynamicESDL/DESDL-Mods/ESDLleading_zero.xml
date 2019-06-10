@@ -4,8 +4,7 @@
 <sect1 id="ESDL_Attributes_leading_zero">
   <title>leading_zero(<indexterm>
       <primary>leading_zero</primary>
-    </indexterm><emphasis role="bold">n</emphasis><emphasis
-  role="bold">)</emphasis></title>
+    </indexterm>n)</title>
 
   <para>O atributo  <emphasis>leading_zero</emphasis>  adiciona zero(s) ao valor do campo para que o comprimento total seja  <emphasis>n</emphasis>.</para>
 

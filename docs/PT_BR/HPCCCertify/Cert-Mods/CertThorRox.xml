@@ -284,7 +284,7 @@
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Submit</emphasis>
+          <para>Pressione o botão  <emphasis role="bold">Submit</emphasis>
           .</para>
 
           <para><figure>
@@ -482,8 +482,9 @@
       <listitem>
         <para>Abra o ECL Watch em seu navegador usando o seguinte URL:</para>
 
-        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp 
-        </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP do ESP Server e pppp é a porta. A porta padrão é 8010)</emphasis></para>
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+        </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP do 
+	seu servidor ESP e pppp é a porta. A porta padrão é 8010)</emphasis></para>
       </listitem>
 
       <listitem>
@@ -540,7 +541,9 @@
 
           <para><itemizedlist>
               <listitem>
-                <para>No canto direito inferior do ECL IDE, você verá uma seção rotulada Repository, contendo algumas pastas. Essas pastas contêm os arquivos do ECL. Clique no sinal + ao lado de 
+                <para>No canto direito inferior do ECL IDE, você verá uma seção rotulada 
+		Repository, contendo algumas pastas. Essas pastas contêm os arquivos do ECL. 
+		Clique no sinal + so seu lado. 
                 <emphasis>Samples</emphasis> para abrir a pasta.</para>
               </listitem>
 
@@ -630,8 +633,10 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>No canto direito inferior do ECL IDE, você verá uma seção rotulada Repository, contendo algumas pastas. Essas pastas contêm os arquivos do ECL. Clique no sinal+ ao lado de  <emphasis
-              role="bold">Samples</emphasis> para abrir a pasta.</para>
+              <para>No canto direito inferior do ECL IDE, você verá uma seção rotulada 
+	      Repository, contendo algumas pastas. Essas pastas contêm os arquivos do ECL. 
+	      Clique no sinal + ao seu lado <emphasis
+              role="bold">Samples</emphasis>.</para>
             </listitem>
 
             <listitem>
@@ -660,7 +665,7 @@
         <para>Selecione  <emphasis role="bold">Roxie</emphasis>  como Target no menu suspenso no lado direito.</para>
 
         <para><figure>
-            <title>Destino Roxie</title>
+            <title>Target roxie</title>
 
             <mediaobject>
               <imageobject>
@@ -729,8 +734,9 @@
       <listitem>
         <para>Abra a página ESP usando o seguinte URL:</para>
 
-        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp 
-        </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP do ESP Server e pppp é a porta. A porta padrão é 8002)</emphasis></para>
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+        </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP do 
+	seu servidor ESP e pppp é a porta. A porta padrão é 8002)</emphasis></para>
 
         <para><figure>
             <title>Roxie ESP</title>

@@ -10,14 +10,26 @@
 
   <para>Expressions<indexterm>
       <primary>As Expressões</primary>
-    </indexterm>  são avaliadas da esquerda para a direita e de dentro para fora (em funções aninhadas). Os Parêntesis podem ser usados para alterar a ordem de precedência padrão da avaliação para todos os operadores.</para>
+    </indexterm>  são avaliadas da esquerda para a direita e de dentro para fora (em funções aninhadas). 
+    Os Parêntesis podem ser usados para alterar a ordem de precedência padrão da avaliação para todos os operadores.</para>
 
   <sect2 id="Arithmetic_Operators">
     <title>Operadores Aritiméticos</title>
 
     <para>Os operadores padrão arithmetic<indexterm>
         <primary>arithmetic operators</primary>
-      </indexterm>  são suportados para uso em expressões, listadas aqui em sua avaliação:</para>
+      </indexterm>  são suportados para uso em expressões, listadas aqui em sua avaliação: </para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Observação :</term>
+
+          <listitem>
+            <para>*, /,% e DIV têm a mesma precedência e são associativos. 
+	    + e - têm a mesma precedência e são associativos.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
@@ -117,9 +129,10 @@
   <sect2 id="Bitwise_Operators">
     <title>Operadores Bitwise</title>
 
-    <para>Bitwise operators<indexterm>
-        <primary>Bitwise operators</primary>
-      </indexterm>  são suportados para uso em expressões, listadas aqui em sua avaliação:</para>
+    <para>Operadores Bitwise<indexterm>
+        <primary>Os operadores bitwise</primary>
+      </indexterm>  são suportadas para uso em expressões, listadas aqui em sua 
+      precedência de avaliação:</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
@@ -169,7 +182,7 @@
   <sect2 id="Bitshift_Operators">
     <title>Operadores Bitshift</title>
 
-    <para>Bitshift operators<indexterm>
+    <para>Operadores Bitshift<indexterm>
         <primary>Bitshift operators</primary>
       </indexterm>  são suportados para um em expressõe "inteiras":</para>
 
@@ -221,11 +234,11 @@
           <row>
             <entry>Equivalence<indexterm>
                 <primary>Equivalence</primary>
-              </indexterm> </entry>
+              </indexterm></entry>
 
             <entry>=</entry>
 
-            <entry>retorna TRUE ou FALSE </entry>
+            <entry>retorna TRUE ou FALSE</entry>
           </row>
 
           <row>

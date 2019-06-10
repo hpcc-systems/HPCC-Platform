@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="COMBINE">
@@ -19,17 +19,17 @@
     </indexterm> </emphasis>,<emphasis> transform </emphasis><emphasis
   role="bold">[,LOCAL]<indexterm>
       <primary>LOCAL</primary>
-    </indexterm> </emphasis> <emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm> </emphasis> <emphasis role="bold">[, UNORDERED | 
+    ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, 
+    STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads 
+    </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> 
+    <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.50pt"/>
+        <colspec colwidth="80.50pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -47,89 +47,80 @@
           <row>
             <entry><emphasis>transform</emphasis></entry>
 
-            <entry>O acionamento da função TRANSFORM. Se omitida, COMBINE
-            retorna todos os campos de ambos <emphasis>leftrecset</emphasis> e
-            <emphasis>rightrecset</emphasis> com o segundo de qualquer campo
-            de nome em duplicidade removido.</entry>
+            <entry>O acionamento da função TRANSFORM. Se omitida, COMBINE 
+	    retorna todos os campos de ambos  <emphasis>leftrecset</emphasis>  e 
+            <emphasis>rightrecset</emphasis> com o segundo de qualquer campo 
+	    de nome em duplicidade removido.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
-            <entry>A opção LOCAL é obrigatória quando COMBINE for usado no
-            Thor (e estiver implícito no hThor/Roxie).</entry>
+            <entry>A opção LOCAL é obrigatória quando COMBINE for usado no 
+	    Thor (e estiver implícito no hThor/Roxie).</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">GROUP</emphasis></entry>
 
-            <entry>Especifica que <emphasis>rightrecset</emphasis> foi
-            GROUPed. Se não for este o caso, ocorrerá um erro.</entry>
+            <entry> Especifica que  <emphasis>rightrecset</emphasis>  foi 
+	    GROUPed. Se não for este o caso, ocorrerá um erro.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de resultado
-            não é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de resultado 
+	    não é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Especifica a importância da ordem do registro de
-            resultado.</entry>
+            <entry>Especifica a importância da ordem do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Quando for “False” (Falso), especifica que a ordem do
-            registro de resultado não é importante. Quando for “True’
-            (Verdadeiro), especifica a ordem padrão do registro de
-            resultado.</entry>
+            <entry>Quando for “False” (Falso), especifica que a ordem do 
+	    registro de resultado não é importante. Quando for “True’ 
+	    (Verdadeiro), especifica a ordem padrão do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada é
-            importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada é 
+	    importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada não
-            é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada não 
+	    é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
           </row>
-
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Opcional. Tenta avaliar essa atividade usando os
-            <emphasis>numthreads</emphasis> threads</entry>
+            <entry>Opcional. Tenta avaliar essa atividade usando 
+	    <emphasis>numthreads</emphasis> threads.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Opcional. Substitui o algoritmo usado para essa
-            atividade.</entry>
+            <entry>Opcional. Substitui o algoritmo usado para essa 
+	    atividade.</entry>
           </row>
-
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
-            parte da lista de algoritmos compatíveis com as opções STABLE e
-            UNSTABLE da função SORT.</entry>
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer 
+	    parte da lista de algoritmos compatíveis com as opções STABLE e 
+	    UNSTABLE da função SORT.</entry>
           </row>
 
           <row>
@@ -141,25 +132,25 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">COMBINE </emphasis>combina
-  <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis> em uma
+  <para>A função  <emphasis role="bold">COMBINE  </emphasis>combina 
+  <emphasis>leftrecset</emphasis>  e  <emphasis>rightrecset</emphasis>  em uma 
   base de registro por registro na ordem em que aparecem em cada um.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements">
     <title>Requerimentos da Função COMBINE TRANSFORM</title>
 
-    <para>Para o Form 1, a função transform deve adotar pelo menos dois
-    parâmetros: um registro LEFT que deve estar no mesmo formato que o
-    <emphasis>leftrecset</emphasis> e um RIGHT cujo formato deve ser o mesmo
-    que <emphasis>rightrecset</emphasis>. O formato do conjunto de registros
+    <para>Para o Form 1, a função transform deve adotar pelo menos dois 
+    parâmetros: um registro LEFT que deve estar no mesmo formato que o 
+    <emphasis>leftrecset</emphasis>  e um RIGHT cujo formato deve ser o mesmo que  
+    <emphasis>rightrecset</emphasis>. O formato do conjunto de registros 
     resultante deve ser diferente das entradas.</para>
 
-    <para>Para a form 2, a função transform deve adotar pelo menos três
-    parâmetros: um registro LEFT que deve estar no mesmo formato que o
-    <emphasis>leftrecset</emphasis>, um um registro RIGHT que deve estar no
-    mesmo formato que o <emphasis>rightrecset</emphasis> e um ROWS(RIGHT) cujo
-    formato deve ser o de um parâmetro
-    DATASET(RECORDOF(<emphasis>rightrecset</emphasis>)). O formato do conjunto
+    <para>Para a form 2, a função transform deve adotar pelo menos três 
+    parâmetros: um registro LEFT que deve estar no mesmo formato que o 
+    <emphasis>leftrecset</emphasis>, um um registro RIGHT que deve estar no 
+    mesmo formato que o  <emphasis>rightrecset</emphasis>  e um ROWS(RIGHT) cujo 
+    formato deve ser o de um parâmetro 
+    DATASET(RECORDOF(<emphasis>rightrecset</emphasis>)). O formato do conjunto 
     de registros resultante deve ser diferente das entradas.</para>
   </sect2>
 
@@ -212,13 +203,13 @@ combined2 := COMBINE(combined1,
   <sect2 id="COMBINE_Form_2">
     <title>COMBINE Form 2</title>
 
-    <para>Form 2 do COMBINE gera seus resultados através da especificação de
-    cada registro do <emphasis> leftrecset</emphasis> (o grupo na mesma
-    posição ordinal dentro do <emphasis>rightrecset </emphasis> – juntamente
-    com o primeiro registro no grupo) para o <emphasis>transform</emphasis> a
-    fim de gerar um único registro de resultado. O agrupamento (se houver) no
-    leftrecset é preservado. <emphasis>leftrecset</emphasis> . Ocorrerá um
-    erro se o número de registros no <emphasis>leftrecset</emphasis> for
+    <para>Form 2 do COMBINE gera seus resultados através da especificação de 
+    cada registro do <emphasis> leftrecset</emphasis> (o grupo na mesma 
+    posição ordinal dentro do  <emphasis>rightrecset </emphasis> – juntamente 
+    com o primeiro registro no grupo) para o <emphasis>transform</emphasis> a 
+    fim de gerar um único registro de resultado. O agrupamento (se houver) no 
+    leftrecset é preservado. <emphasis>leftrecset</emphasis>. Ocorrerá um 
+    erro se o número de registros no <emphasis>leftrecset</emphasis> for 
     distinto do número de grupos no <emphasis>rightrecset</emphasis>.</para>
 
     <para>Exemplo:</para>
@@ -284,7 +275,7 @@ resultRec t2(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
 res2 := COMBINE(dsg,combined,GROUP,t2(LEFT,ROWS(RIGHT)(score != 0)));
 </programlisting>
 
-    <para>Ver também: <link linkend="GROUP">GROUP</link>, <link
+    <para>Ver também: <link linkend="GROUP">GROUP</link>, <link 
     linkend="REGROUP">REGROUP</link></para>
   </sect2>
 </sect1>

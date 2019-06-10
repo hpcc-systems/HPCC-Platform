@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="VARIANCE">
@@ -10,32 +10,32 @@
   role="bold">[ </emphasis><emphasis>, expresssion</emphasis><emphasis
   role="bold">] [, KEYED<indexterm>
       <primary>KEYED</primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | 
+    ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, 
+    STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads 
+    </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> 
+    <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.60pt"/>
+        <colspec colwidth="79.60pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>recset</emphasis></entry>
 
-            <entry>O conjunto de registros para processamento. Pode ser o nome
-            de um dataset ou de um recordset derivado de algumas condições de
-            filtro, ou qualquer expressão que resulte em um recordset
-            derivado. Isto também pode ser a palavra-chave GROUP <indexterm>
+            <entry>O conjunto de registros para processamento. Pode ser o nome 
+	    de um dataset ou de um recordset derivado de algumas condições de 
+	    filtro, ou qualquer expressão que resulte em um recordset 
+	    derivado. Isto também pode ser a palavra-chave GROUP <indexterm>
                 <primary>GROUP keyword</primary>
-              </indexterm> para indicar a operação sobre os elementos em cada
-            grupo quando usada em uma estrutura RECORD <indexterm>
+              </indexterm>  para indicar a operação sobre os elementos em cada 
+	      grupo quando usada em uma estrutura RECORD <indexterm>
                 <primary>RECORD structure</primary>
-              </indexterm> para gerar estatísticas de tabela de referência
-            cruzada.</entry>
+              </indexterm>  para gerar estatísticas de tabela de referência 
+	      cruzada.</entry>
           </row>
 
           <row>
@@ -47,82 +47,73 @@
           <row>
             <entry><emphasis>expressão</emphasis></entry>
 
-            <entry>Opcional. Uma expressão lógica indicando quais registros
-            devem ser incluídos no cálculo. Válido apenas quando o parâmetro
-            <emphasis>recset</emphasis> for a palavra-chave GROUP.</entry>
+            <entry>Opcional. Uma expressão lógica indicando quais registros 
+	    devem ser incluídos no cálculo. Válido apenas quando o parâmetro 
+            <emphasis>recset</emphasis>  for a palavra-chave GROUP.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">KEYED</emphasis></entry>
 
-            <entry>Opcional. Especifica que a atividade faz parte de uma
-            operação de leitura de índice, a qual permite que o otimizador
-            gere o código ideal para a operação.</entry>
+            <entry>Opcional. Especifica que a atividade faz parte de uma 
+	    operação de leitura de índice, a qual permite que o otimizador 
+	    gere o código ideal para a operação.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de resultado
-            não é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de resultado 
+	    não é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Especifica a importância da ordem do registro de
-            resultado.</entry>
+            <entry>Especifica a importância da ordem do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Quando for “False” (Falso), especifica que a ordem do
-            registro de resultado não é importante. Quando for “True’
-            (Verdadeiro), especifica a ordem padrão do registro de
-            resultado.</entry>
+            <entry>Quando for “False” (Falso), especifica que a ordem do 
+	    registro de resultado não é importante. Quando for “True’ 
+	    (Verdadeiro), especifica a ordem padrão do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada é
-            importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada é 
+	    importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada não
-            é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada não 
+	    é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
           </row>
-
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Opcional. Tenta avaliar essa atividade usando os
-            <emphasis>numthreads</emphasis> threads</entry>
+            <entry>Opcional. Tenta avaliar essa atividade usando os 
+	    <emphasis>numthreads</emphasis> threads</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Opcional. Substitui o algoritmo usado para essa
-            atividade.</entry>
+            <entry>Opcional. Substitui o algoritmo usado para essa 
+	    atividade.</entry>
           </row>
-
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
-            parte da lista de algoritmos compatíveis com as opções STABLE e
-            UNSTABLE da função SORT.</entry>
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer 
+	    parte da lista de algoritmos compatíveis com as opções STABLE e 
+	    UNSTABLE da função SORT.</entry>
           </row>
 
           <row>
@@ -134,8 +125,8 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">VARIANCE </emphasis> retorna a variação
-  (população) de <emphasis>valuex</emphasis>.</para>
+  <para>A função  <emphasis role="bold">VARIANCE </emphasis> retorna a variação 
+  (população) de  <emphasis>valuex</emphasis>.</para>
 
   <para>Exemplo:</para>
 
@@ -191,6 +182,6 @@
   analyse(ds3);
 </programlisting>
 
-  <para>Ver também: <link linkend="CORRELATION">CORRELATION</link>, <link
+  <para>Ver também: <link linkend="CORRELATION">CORRELATION</link>, <link 
   linkend="COVARIANCE">COVARIANCE</link></para>
 </sect1>

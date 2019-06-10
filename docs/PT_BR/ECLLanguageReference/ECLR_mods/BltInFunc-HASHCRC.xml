@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="HASHCRC">
@@ -13,9 +13,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="83.15pt"/>
+        <colspec colwidth="83.15pt" />
 
-        <colspec colwidth="305.65pt"/>
+        <colspec colwidth="305.65pt" />
 
         <tbody>
           <row>
@@ -33,13 +33,15 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">HASHCRC</emphasis> retorna um valor de
-  CRC (verificação de redundância cíclica) derivado de todos os valores da
+  <para>A função  <emphasis role="bold">HASHCRC</emphasis>  retorna um valor de 
+  CRC (verificação de redundância cíclica) derivado de todos os valores da 
   <emphasis>expressionlist</emphasis>.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting>OUTPUT(Person,{per_ssn,HASHCRC(per_ssn)});
+  <programlisting>OUTPUT(Person,{per_ssn,HASHCRC(per_ssn)}); 
+
+
     //output SSN and its CRC hash value</programlisting>
 
   <para>Ver também: <link linkend="DISTRIBUTE">DISTRIBUTE</link>, <link

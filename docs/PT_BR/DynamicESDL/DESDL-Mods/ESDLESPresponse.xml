@@ -1,12 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESPresponse">
-  <title><emphasis role="bold">ESPresponse</emphasis></title>
+  <title>ESPresponse</title>
 
   <para><indexterm>
       <primary>ESPresponse</primary>
-    </indexterm>A estrutura da resposta de um método.</para>
+    </indexterm>A estrutura da resposta de um método. 
+    ESPresponses podem ser aninhados e suportam herança.</para>
 
   <para><emphasis role="bold">Exemplo:</emphasis></para>
 
@@ -16,6 +17,12 @@
     string FirstName;
     string MiddleName;
     string LastName;
- 
-};  </programlisting>
+}; 
+  ESPresponse MyQueryResponseExtended:MyQueryResponse 
+{ 
+    string SSN; 
+    string partyAffilition; 
+};
+
+</programlisting>
 </sect1>

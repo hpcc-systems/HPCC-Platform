@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="HAVING">
@@ -8,18 +8,18 @@
       <primary>HAVING</primary>
     </indexterm><indexterm>
       <primary>HAVING function</primary>
-    </indexterm>(</emphasis><emphasis> groupdataset, expression </emphasis>
-  <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
-  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
-  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
-  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
-  )</emphasis></para>
+    </indexterm>(</emphasis><emphasis> groupdataset, expression </emphasis> 
+    <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool 
+    </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ 
+    (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, 
+    ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] 
+    )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="82.45pt"/>
+        <colspec colwidth="82.45pt" />
 
-        <colspec colwidth="306.35pt"/>
+        <colspec colwidth="306.35pt" />
 
         <tbody>
           <row>
@@ -31,73 +31,64 @@
           <row>
             <entry><emphasis>expression</emphasis></entry>
 
-            <entry>A expressão lógica pela qual os grupos serão
-            filtrados.</entry>
+            <entry>A expressão lógica pela qual os grupos serão 
+	    filtrados.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de resultado
-            não é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de resultado 
+	    não é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Especifica a importância da ordem do registro de
-            resultado.</entry>
+            <entry>Especifica a importância da ordem do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Quando for “False” (Falso), especifica que a ordem do
-            registro de resultado não é importante. Quando for “True’
-            (Verdadeiro), especifica a ordem padrão do registro de
-            resultado.</entry>
+            <entry>Quando for “False” (Falso), especifica que a ordem do 
+	    registro de resultado não é importante. Quando for “True’ 
+	    (Verdadeiro), especifica a ordem padrão do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada é
-            importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada é 
+	    importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada não
-            é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada não 
+	    é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
           </row>
-
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Opcional. Tenta avaliar essa atividade usando
-            <emphasis>numthreads</emphasis> threads</entry>
+            <entry>Opcional. Tenta avaliar essa atividade usando 
+	    <emphasis>numthreads</emphasis> threads</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Opcional. Substitui o algoritmo usado para essa
-            atividade.</entry>
+            <entry>Opcional. Substitui o algoritmo usado para essa 
+	    atividade.</entry>
           </row>
-
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
-            parte da lista de algoritmos compatíveis com as opções STABLE e
-            UNSTABLE da função SORT.</entry>
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer 
+	    parte da lista de algoritmos compatíveis com as opções STABLE e 
+	    UNSTABLE da função SORT.</entry>
           </row>
 
           <row>
@@ -109,10 +100,10 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">HAVING</emphasis> retorna um conjunto
-  de registros GROUPed&gt; que contém apenas os grupos para os quais a
-  <emphasis>expressão</emphasis> é “true” (verdadeira). Isso é semelhante a
-  cláusula HAVING no SQL. <emphasis role="bold"/></para>
+  <para>A função  <emphasis role="bold">HAVING</emphasis>  retorna um conjunto 
+  de registros GROUPed que contém apenas os grupos para os quais a 
+  <emphasis>expressão</emphasis>  é “true” (verdadeira). Isso é semelhante a 
+  cláusula HAVING no SQL. <emphasis role="bold"></emphasis></para>
 
   <para>Exemplo:</para>
 

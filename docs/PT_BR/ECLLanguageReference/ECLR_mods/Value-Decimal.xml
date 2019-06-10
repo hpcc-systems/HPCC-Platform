@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DECIMAL">
@@ -23,19 +23,19 @@
 
   <para>Um valor decimal <indexterm>
       <primary>compactado</primary>
-    </indexterm> de <emphasis>n</emphasis> dígitos totais (até o máximo de
-  32). Se o valor _<emphasis>y</emphasis> estiver presente, o
-  <emphasis>y</emphasis> define o número das casas decimais no valor.</para>
+    </indexterm>  de  <emphasis>n</emphasis>  dígitos totais (até o máximo de 
+    32). Se o valor _<emphasis>y</emphasis>  estiver presente, o 
+  <emphasis>y</emphasis>  define o número das casas decimais no valor.</para>
 
-  <para>Se a palavra-chave UNSIGNED for omitida, o nibble mais à direita
-  deterá o sinal. As declarações decimais não sinalizadas podem ser
-  compactadas para usar a sintaxe opcional UDECIMAL <emphasis>n</emphasis> em
+  <para>Se a palavra-chave UNSIGNED for omitida, o nibble mais à direita 
+  deterá o sinal. As declarações decimais não sinalizadas podem ser 
+  compactadas para usar a sintaxe opcional UDECIMAL <emphasis>n</emphasis>  em 
   vez de UNSIGNEDDECIMAL <emphasis>n</emphasis>.</para>
 
-  <para>O uso exclusivo de valores DECIMAIS DECIMAL em computação invoca as
-  bibliotecas matemáticas Binary Coded Decimal (BCD) (matemática de base 10),
+  <para>O uso exclusivo de valores DECIMAIS DECIMAL em computação invoca as 
+  bibliotecas matemáticas Binary Coded Decimal (BCD) (matemática de base 10), 
   permitindo até 32 dígitos de precisão (que pode estar em qualquer um dos
-  lados do ponto decimal).</para>
+   lados do ponto decimal).</para>
 
   <para>Exemplo:</para>
 

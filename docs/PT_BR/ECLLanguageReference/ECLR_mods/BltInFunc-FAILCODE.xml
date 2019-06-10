@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FAILCODE">
@@ -10,13 +10,13 @@
       <primary>FAILCODE</primary>
     </indexterm></emphasis></para>
 
-  <para>A função <emphasis role="bold">FAILCODE </emphasis> retorna o último
-  código de falha para ser usada no serviço de fluxo de trabalho FAILURE
+  <para>A função  <emphasis role="bold">FAILCODE </emphasis> retorna o último 
+  código de falha para ser usada no serviço de fluxo de trabalho FAILURE 
   <indexterm>
       <primary>FAILURE workflow</primary>
-    </indexterm> ou na estrutura TRANSFORM <indexterm>
+    </indexterm>  ou na estrutura TRANSFORM <indexterm>
       <primary>TRANSFORM</primary>
-    </indexterm> referenciada na opção ONFAIL do SOAPCALL</para>
+    </indexterm>  referenciada na opção ONFAIL do SOAPCALL  </para>
 
   <para>Exemplo:</para>
 
@@ -26,7 +26,7 @@ nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND
 :FAILURE(Email.simpleSend(SystemsPersonnel,
 SystemsPersonel.email,FAILCODE));</programlisting>
 
-  <para>Ver também: <link linkend="FAILURE">FAILURE</link>, <link
-  linkend="FAILMESSAGE">FAILMESSAGE</link>, <link
+  <para>Ver também: <link linkend="FAILURE">FAILURE</link>, <link 
+  linkend="FAILMESSAGE">FAILMESSAGE</link>, <link 
   linkend="SOAPCALL">SOAPCALL</link></para>
 </sect1>

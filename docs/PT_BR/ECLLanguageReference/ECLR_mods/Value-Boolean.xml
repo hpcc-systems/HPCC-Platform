@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="BOOLEAN" role="nobrk">
@@ -15,10 +15,10 @@
       <primary>TRUE</primary>
     </indexterm> e <emphasis role="bold">FALSE<indexterm>
       <primary>FALSE</primary>
-    </indexterm></emphasis> são palavras-chave reservadas do ECL; são
-  constantes booleanas que podem ser usadas para serem comparadas com um tipo
-  BOOLEAN. Quando BOOLEAN é usado em uma estrutura RECORD , é gerado um valor
-  inteiro de um único byte contendo (1) ou zero (0).</para>
+    </indexterm></emphasis>  são palavras-chave reservadas do ECL; são 
+    constantes booleanas que podem ser usadas para serem comparadas com um tipo 
+    BOOLEAN. Quando BOOLEAN é usado em uma estrutura RECORD , é gerado um valor 
+    inteiro de um único byte contendo (1) ou zero (0).</para>
 
   <para>Exemplo:</para>
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="INTERFACE_Structure">
@@ -6,8 +6,8 @@
       <primary>INTERFACE Structure</primary>
     </indexterm></title>
 
-  <para><emphasis>interfacename </emphasis><emphasis role="bold">[
-  (</emphasis><emphasis> parameters </emphasis><emphasis role="bold">) ] :=
+  <para><emphasis>interfacename </emphasis><emphasis role="bold">[ 
+  (</emphasis><emphasis> parameters </emphasis><emphasis role="bold">) ] := 
   INTERFACE<indexterm>
       <primary>INTERFACE</primary>
     </indexterm> [ (</emphasis><emphasis> inherit </emphasis><emphasis
@@ -19,9 +19,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
@@ -33,55 +33,55 @@
         <row>
           <entry><emphasis>parameters</emphasis></entry>
 
-          <entry><para>Opcional. Os parâmetros de entrada da
-          interface.</para></entry>
+          <entry><para>Opcional. Os parâmetros de entrada da 
+	  interface.</para></entry>
         </row>
 
         <row>
           <entry><emphasis>inherit</emphasis></entry>
 
-          <entry>Opcional. Uma lista separada por vírgula das estruturas da
-          INTERFACE cujos <emphasis>membros</emphasis> devem ser herdados.
-          Esse pode não ser um parâmetro especificado. Várias
-          <emphasis>interfaces</emphasis> herdadas podem conter definições de
-          mesmo nome se forem do mesmo tipo e receberem os mesmos parâmetros;
-          porém, se esses <emphasis>membros </emphasis>
-          <emphasis>herdados</emphasis> possuem valores definidos, o conflito
-          é solucionado pela substituição daquele <emphasis>membro</emphasis>
-          na instância atual.</entry>
+          <entry>Opcional. Uma lista separada por vírgula das estruturas da 
+	  INTERFACE cujos  <emphasis>membros</emphasis>  devem ser herdados. 
+	  Esse pode não ser um parâmetro especificado. Várias  
+	  <emphasis>interfaces</emphasis> herdadas podem conter definições de 
+	  mesmo nome se forem do mesmo tipo e receberem os mesmos parâmetros; 
+	  porém, se esses <emphasis>membros </emphasis> 
+	  <emphasis>herdados</emphasis> possuem valores definidos, o conflito 
+	  é solucionado pela substituição daquele <emphasis>membro</emphasis>  
+	  na instância atual.</entry>
         </row>
 
         <row>
           <entry><emphasis>members</emphasis></entry>
 
-          <entry>Definições, que podem ser EXPORTed ou SHARED. Estes podem ser
-          semelhantes aos campos definidos em uma estrutura RECORD onde apenas
+          <entry>Definições, que podem ser EXPORTed ou SHARED. Estes podem ser 
+	  semelhantes aos campos definidos em uma estrutura RECORD onde apenas 
           o tipo e o nome são definidos – a expressão que define o valor não
           deve ser incluída (exceto em alguns casos onde a própria expressão
           define o tipo da definição, como as estruturas TRANSFORM). Caso
-          nenhum valor padrão seja definido para o
-          <emphasis>membro</emphasis>, qualquer MODULE (MÓDULO) derivado da
-          INTERFACE deve definir o valor para aquele
-          <emphasis>membro</emphasis> antes que o MODULE (MÓDULO) possa ser
-          usado. Isso não inclui outra INTERFACE ou estruturas MODULE (MÓDULO)
-          abstratas.</entry>
+	   nenhum valor padrão seja definido para o 
+	   <emphasis>membro</emphasis>, qualquer MODULE (MÓDULO) derivado da 
+	   INTERFACE deve definir o valor para aquele 
+	   <emphasis>membro</emphasis> antes que o MODULE (MÓDULO) possa ser 
+	   usado. Isso não inclui outra INTERFACE ou estruturas MODULE (MÓDULO) 
+	   abstratas.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>A estrutura <emphasis role="bold">INTERFACE </emphasis>define um bloco
-  estruturado de <emphasis>membros</emphasis> relacionados que pode ter sido
-  especificado como um parâmetro único para consultas complexas – em vez de
-  especificar cada atributo individualmente. Isso é semelhante a uma estrutura
-  MODULE (MÓDULO) com a opção VIRTUAL , exceto que erros são fornecidos para
-  definições de <emphasis>membros</emphasis> privados (não SHARED ou
-  EXPORTed).</para>
+  <para>A estrutura  <emphasis role="bold">INTERFACE </emphasis>define um bloco 
+  estruturado de  <emphasis>membros</emphasis>  relacionados que pode ter sido 
+  especificado como um parâmetro único para consultas complexas – em vez de 
+  especificar cada atributo individualmente. Isso é semelhante a uma estrutura 
+  MODULE (MÓDULO) com a opção VIRTUAL , exceto que erros são fornecidos para 
+  definições de <emphasis>membros</emphasis>  privados (não SHARED ou 
+   EXPORTed).</para>
 
-  <para>Uma INTERFACE é uma estrutura abstrata; uma instância concreta que
-  deve ser definida antes de ser usada em uma consulta. Uma estrutura MODULE
-  (MÓDULO) que herda a INTERFACE e define os valores para os
-  <emphasis>membros</emphasis> cria a instância concreta para ser usada pela
+  <para>Uma INTERFACE é uma estrutura abstrata - uma instância concreta que 
+  deve ser definida antes de ser usada em uma consulta. Uma estrutura MODULE 
+  (MÓDULO) que herda a INTERFACE e define os valores para os  
+  <emphasis>membros</emphasis> cria a instância concreta para ser usada pela 
   consulta.</para>
 
   <para>Exemplo:</para>
@@ -173,7 +173,6 @@ HeaderRecs XF(InRec L, INTEGER C) :=  TRANSFORM
 END;
 batchHeaderLookup := PROJECT(InFile,XF(LEFT,COUNTER));
 batchHeaderLookup;</programlisting>
-
   <para>Ver também: <link linkend="MODULE_Structure">Estrutura MODULE</link>,
   <link linkend="LIBRARY">LIBRARY</link></para>
 </sect1>

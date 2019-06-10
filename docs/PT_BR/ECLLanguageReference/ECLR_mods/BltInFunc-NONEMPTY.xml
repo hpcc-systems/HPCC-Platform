@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NONEMPTY">
@@ -13,16 +13,16 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.00pt"/>
+        <colspec colwidth="80.00pt" />
 
-        <colspec colwidth="272.80pt"/>
+        <colspec colwidth="272.80pt" />
 
         <tbody>
           <row>
             <entry><emphasis>recordsetlist</emphasis></entry>
 
-            <entry>Uma lista delimitada por vírgulas de conjuntos de
-            registros.</entry>
+            <entry>Uma lista delimitada por vírgulas de conjuntos de 
+	    registros.</entry>
           </row>
 
           <row>
@@ -34,10 +34,10 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">NONEMPTY </emphasis> retorna o primeiro
-  conjunto de registro do <emphasis>recordsetlist</emphasis> que contém
-  quaisquer registros. Isso é semelhante ao uso da função EXISTS em uma
-  expressão IF para retornar um de dois possíveis conjuntos de
+  <para>A função  <emphasis role="bold">NONEMPTY </emphasis> retorna o primeiro 
+  conjunto de registro do  <emphasis>recordsetlist</emphasis>  que contém 
+  quaisquer registros. Isso é semelhante ao uso da função EXISTS em uma 
+  expressão IF para retornar um de dois possíveis conjuntos de 
   registros.</para>
 
   <para>Exemplo:</para>

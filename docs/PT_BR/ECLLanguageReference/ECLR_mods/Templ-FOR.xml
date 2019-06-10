@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_FOR">
@@ -6,20 +6,21 @@
 
   <para><emphasis role="bold">#FOR<indexterm>
       <primary>#FOR</primary>
-    </indexterm>( </emphasis><emphasis> tag </emphasis><emphasis role="bold">[
-  ( </emphasis><emphasis>filter </emphasis><emphasis role="bold">)
-  ]</emphasis><emphasis> </emphasis><emphasis
-  role="bold">)</emphasis><emphasis role="bold"> </emphasis><emphasis/></para>
+    </indexterm>( </emphasis><emphasis> tag </emphasis><emphasis role="bold">[ 
+    ( </emphasis><emphasis>filter </emphasis><emphasis role="bold">) 
+    ]</emphasis><emphasis> </emphasis><emphasis 
+    role="bold">)</emphasis><emphasis role="bold">
+    </emphasis><emphasis></emphasis></para>
 
-  <para><emphasis>statements</emphasis><emphasis role="bold"/></para>
+  <para><emphasis>statements</emphasis><emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">#END</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.40pt"/>
+        <colspec colwidth="79.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -31,8 +32,8 @@
           <row>
             <entry><emphasis>filter</emphasis></entry>
 
-            <entry>Uma expressão lógica que indica quais instâncias de tag
-            específicas serão processadas.</entry>
+            <entry>Uma expressão lógica que indica quais instâncias de tag 
+	    específicas serão processadas.</entry>
           </row>
 
           <row>
@@ -50,9 +51,9 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A estrutura <emphasis role="bold">#FOR </emphasis> executa loops pelo
-  XML, procurando cada instâncias de <emphasis>tag</emphasis> que cumpre a
-  expressão <emphasis>filter</emphasis> e executa <emphasis>statements
+  <para>A estrutura  <emphasis role="bold">#FOR </emphasis> executa loops pelo 
+  XML, procurando cada instâncias de  <emphasis>tag</emphasis>  que cumpre a 
+  expressão  <emphasis>filter</emphasis> e executa <emphasis>statements 
   </emphasis> nos dados contidos nessa <emphasis>tag</emphasis>.</para>
 
   <para>Exemplo:</para>

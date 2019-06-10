@@ -91,7 +91,8 @@
           <row>
             <entry><emphasis>datafile:</emphasis></entry>
 
-            <entry>(Válido apenas para --allowedsigned). Isso especifica que o acesso aos dados é permitido apenas se o código tiver sido assinado e se houver uma chave. </entry>
+            <entry>(Válido apenas para --allowedsigned). Isso especifica que o acesso aos dados é permitido 
+	    apenas se o código tiver sido assinado e se houver uma chave. </entry>
           </row>
         </tbody>
       </tgroup>

@@ -54,8 +54,14 @@
         </listitem>
       </orderedlist>
 
-      <para>Há diferentes maneiras para configurar o seu HPCC System. É possível usar o  <emphasis role="bold">Generate environment wizard</emphasis>  e utilizar esse ambiente ou, para usuários avançados, a  <emphasis
-      role="bold">Advanced View</emphasis>  para uma personalização mais específica.   Há também a opção de usar o recurso  <emphasis role="bold">Create blank environment</emphasis>  para gerar um ambiente vazio que você poderia então acessar e adicionar os componentes desejados.</para>
+      <para>Há diferentes maneiras para configurar o seu HPCC System. 
+      É possível usar o  <emphasis role="bold">Assistente Geração de Ambiente</emphasis>  
+      e utilizar esse ambiente ou, para usuários avançados, a  <emphasis
+      role="bold">Visualização Avançada</emphasis>  para uma personalização mais específica. 
+      Há também a opção de usar o recurso  <emphasis role="bold">
+      Create blank environment (Criar um ambiente em branco)</emphasis>  para gerar um ambiente 
+      vazio que você poderia então acessar e adicionar os componentes 
+      desejados.</para>
 
       <sect2 id="Env_Wizard">
         <title>Environment Wizard</title>
@@ -64,7 +70,8 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Para usar o assistente, selecione o botão  <emphasis role="bold">Generate new environment using wizard</emphasis> .</para>
+            <para>Para usar o assistente, selecione a opção  <emphasis role="bold">
+	    Generate new environment using wizard</emphasis> .</para>
 
             <para><graphic fileref="../../images/GS_ConfigMgrWizStart.jpg"
             vendor="configmgrSS" /></para>
@@ -146,7 +153,8 @@
                 <term>Ativar o Roxie sob demanda</term>
 
                 <listitem>
-                  <para>Especifique se você deseja permitir ou não que as consultas sejam executadas imediatamente no Roxie. Isso precisa ser ativado para executar o depurador. (O padrão é true)</para>
+                  <para>Especifique se você deseja permitir ou não que as consultas 
+		  sejam executadas imediatamente no Roxie. (O padrão é true)</para>
                 </listitem>
               </varlistentry>
             </variablelist>
@@ -204,10 +212,14 @@
               <para>Para o HPCC System.</para>
 
               <para>Se estiver em execução, pare o HPCC System (em todos os nós) usando um comando como este:</para>
-
-              <para><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
-
-              <variablelist>
+ 
+ <programlisting> sudo systemctl stop hpccsystems-platform.target</programlisting> 			  
+	  <!--commentedOut-per-HPCC-20681-->
+		  <!--            <xi:include href="../common/SysDStop.xml"
+		                  xpointer="element(/1)"
+                          xmlns:xi="http://www.w3.org/2001/XInclude" />    -->
+ 
+			<variablelist>
                 <varlistentry>
                   <term>Observação:</term>
 
@@ -218,7 +230,8 @@
                 </varlistentry>
               </variablelist>
 
-              <para><informaltable colsep="1" frame="all" rowsep="1">
+              <para>
+                <informaltable colsep="1" frame="all" rowsep="1">
                   <tgroup cols="2">
                     <colspec colwidth="49.50pt" />
 
@@ -226,14 +239,16 @@
 
                     <tbody>
                       <row>
-                        <entry><inlinegraphic
-                        fileref="../../images/caution.png" /></entry>
+                        <entry>
+                          <inlinegraphic fileref="../../images/caution.png" />
+                        </entry>
 
                         <entry>Certifique-se de que o HPCC não esteja em execução antes de tentar copiar o arquivo environment.xml.</entry>
                       </row>
                     </tbody>
                   </tgroup>
-                </informaltable></para>
+                </informaltable>
+              </para>
             </listitem>
 
             <listitem>
@@ -275,7 +290,12 @@
               <emphasis role="bold">/etc/HPCCSystems/</emphasis>  em
               <emphasis> cada</emphasis>  nó.</para>
 
-              <para>Você pode usar um script para forçar o arquivo XML para todos os nós. Consulte a seção  <emphasis>Scripts de exemplo</emphasis>  no documento anexo  <emphasis role="bluebold">Instalando e Excutando a plataforma HPCC</emphasis> . É possível usar os scripts como um modelo para criar seu próprio script e copiar o arquivo environment.xml para todos os seus nós.</para>
+              <para>Você pode usa um script para forçar o arquivo XML para todos os nós. 
+	      Consulte a seção  <emphasis>Scripts de exemplo</emphasis>  
+	      na seção Anexos do documento  <emphasis role="bluebold">
+	      Instalando e Excutando a plataforma HPCC</emphasis> . 
+	      É possível usar os scripts como um modelo para criar seu 
+	      próprio script e copiar o arquivo environment.xml para todos os seus nós.</para>
             </listitem>
 
             <listitem>
@@ -447,7 +467,13 @@
       <sect2 id="Sample-Size-HighDataVolume">
         <title>Tamanho de amostra para alto volume de dados (típico)</title>
 
-        <para>A situação mais comum para o HPCC é utilizá-lo com um alto volume de dados. Esse exemplo de dimensionamento sugerido seria adequado para um local com grandes volumes de dados. Uma boa política é definir o tamanho do Thor para 4 vezes o dos dados de origem em seu HPCC. Normalmente, o Roxie tem ¼ do tamanho do Thor. Isso porque os dados são compactados e o sistema não retém dados transitórios no Roxie. Lembre-se de que não é recomendado que o número de nós do Roxie ultrapasse o número de nós do Thor.</para>
+        <para>A situação mais comum para o HPCC é utilizá-lo com um alto volume de dados. 
+	Esse exemplo de dimensionamento sugerido seria adequado para um local 
+	com grandes volumes de dados. Uma boa política é definir o tamanho do Thor 
+	para 4 vezes o dos dados de origem em seu HPCC. Normalmente, Roxie teria 
+	cerca de 1/4 do tamanho de Thor. Isso porque os dados são compactados e o sistema não retém 
+	dados transitórios no Roxie. Lembre-se de que não é recomendado que o número 
+	de nós do Roxie ultrapasse o número de nós do Thor.</para>
 
         <sect3 id="SysAdm_SmplSiz_HiDataThor">
           <title>Considerações sobre Dimensionamento de dados Thor</title>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EVALUATE">
@@ -22,17 +22,17 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="80.60pt"/>
+          <colspec colwidth="80.60pt" />
 
-          <colspec/>
+          <colspec />
 
           <tbody>
             <row>
               <entry><emphasis>attrname</emphasis></entry>
 
-              <entry>Opcional. O nome da ação, que transforma a ação em uma
-              definição, consequentemente não é executado até que
-              <emphasis>attrname</emphasis> seja usado como uma ação.</entry>
+              <entry>Opcional. O nome da ação, que transforma a ação em uma 
+	      definição, consequentemente não é executado até que 
+              <emphasis>attrname</emphasis>  seja usado como uma ação.</entry>
             </row>
 
             <row>
@@ -50,24 +50,24 @@
             <row>
               <entry><emphasis>defname</emphasis></entry>
 
-              <entry>Opcional. O nome de uma definição específica dentro do
-              <emphasis>módulo</emphasis> a ser avaliado. Se omitido, todas as
-              definições no <emphasis>módulo</emphasis> serão
-              avaliadas.</entry>
+              <entry>Opcional. O nome de uma definição específica dentro do 
+              <emphasis>módulo</emphasis>  a ser avaliado. Se omitido, todas as 
+	      definições no  <emphasis>módulo</emphasis>  serão 
+	      avaliadas.</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
 
-    <para>A primeira forma da ação <emphasis role="bold">EVALUATE</emphasis>
-    nomeia uma <emphasis>expressão</emphasis> (tipicamente o acionamento de
-    uma função) a ser executada em um contexto de ação. Isso é útil
-    principalmente ao acionar funções que tenham efeitos colaterais, quando o
-    valor do retorno não é importante.</para>
+    <para>A primeira forma da ação  <emphasis role="bold">EVALUATE</emphasis>
+     nomeia uma  <emphasis>expressão</emphasis>  (tipicamente o acionamento de 
+     uma função) a ser executada em um contexto de ação. Isso é útil 
+     principalmente ao acionar funções que tenham efeitos colaterais, quando o 
+     valor do retorno não é importante.</para>
 
-    <para>O segundo form da ação <emphasis role="bold">EVALUATE</emphasis>
-    recursivamente expande e avalia as definições exportadas do
-    <emphasis>módulo</emphasis> . Se um <emphasis>defname</emphasis> for
+    <para>O segundo form da ação  <emphasis role="bold">EVALUATE</emphasis>
+     recursivamente expande e avalia as definições exportadas do 
+    <emphasis>módulo</emphasis> . Se um <emphasis>defname</emphasis>  for 
     especificado, apenas essa definição será avaliada.</para>
 
     <para>Exemplo:</para>
@@ -117,23 +117,23 @@ EVALUATE(M2);
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="79.15pt"/>
+          <colspec colwidth="79.15pt" />
 
-          <colspec colwidth="309.65pt"/>
+          <colspec colwidth="309.65pt" />
 
           <tbody>
             <row>
               <entry><emphasis>onerecord</emphasis></entry>
 
-              <entry>Um conjunto de registros que consiste de um único
-              registro.</entry>
+              <entry>Um conjunto de registros que consiste de um único 
+	      registro.</entry>
             </row>
 
             <row>
               <entry><emphasis>value</emphasis></entry>
 
-              <entry>O valor a ser retornado. Isso pode ser qualquer expressão
-              que produza um valor.</entry>
+              <entry>O valor a ser retornado. Isso pode ser qualquer expressão 
+	      que produza um valor.</entry>
             </row>
 
             <row>
@@ -145,26 +145,26 @@ EVALUATE(M2);
         </tgroup>
       </informaltable></para>
 
-    <para>A função <emphasis role="bold">EVALUATE</emphasis> retorna o
-    <emphasis>valor</emphasis> avaliado no contexto do conjunto
-    <emphasis>onerecord</emphasis> (o qual deve ser apenas um único registro).
-    Esta função normalmente usa a indexação para selecionar um único registro
-    para o record set <emphasis>onerecord</emphasis> . O uso serve para
-    retornar um valor de um registro secundário específico quando estiver
-    operando no nível de escopo do registro primário. A vantagem de EVALUATE
-    sobre o uso da indexação do record set em um único campo é que o
-    <emphasis>valor</emphasis> retornado pode ser constituído de qualquer
-    expressão, e não apenas de um único campo do dataset secundário (child
+    <para>A função  <emphasis role="bold">EVALUATE</emphasis>  retorna o 
+    <emphasis>valor</emphasis>  avaliado no contexto do conjunto
+    <emphasis>onerecord</emphasis>  (o qual deve ser apenas um único registro). 
+    Esta função normalmente usa a indexação para selecionar um único registro 
+    para o record set <emphasis>onerecord</emphasis>. O uso serve para 
+    retornar um valor de um registro secundário específico quando estiver 
+    operando no nível de escopo do registro primário. A vantagem de EVALUATE 
+    sobre o uso da indexação do record set em um único campo é que o 
+    <emphasis>valor</emphasis> retornado pode ser constituído de qualquer 
+    expressão, e não apenas de um único campo do dataset secundário (child 
     dataset).</para>
   </sect2>
 
   <sect2 id="Accessing_Field-level_Data_in_a_Specific_Record">
     <title>Acessando Field-level Data em um Registro Específico</title>
 
-    <para>Para acessar os dados de nível de campo em um registro específico,
-    os recursos de indexação do conjunto de registro deve ser usado para
-    selecionar um único registro. A função SORT e os filtros do conjunto de
-    registros são úteis na seleção e ordenação do conjunto de registros para
+    <para>Para acessar os dados de nível de campo em um registro específico, 
+    os recursos de indexação do conjunto de registro deve ser usado para 
+    selecionar um único registro. A função SORT e os filtros do conjunto de 
+    registros são úteis na seleção e ordenação do conjunto de registros para 
     que o registro adequado possa ser selecionado.</para>
 
     <para>Exemplo:</para>

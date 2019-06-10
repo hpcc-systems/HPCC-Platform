@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="HASH32">
@@ -13,9 +13,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="83.35pt"/>
+        <colspec colwidth="83.35pt" />
 
-        <colspec colwidth="305.45pt"/>
+        <colspec colwidth="305.45pt" />
 
         <tbody>
           <row>
@@ -33,12 +33,12 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">HASH32</emphasis> retorna um valor hash
-  de 32 bits derivado de todos os valores da
-  <emphasis>expressionlist</emphasis>. Ela usa um algoritmo hashing que é mais
-  rápido e menos provável do que o HASH para retornar os mesmos valores a
-  partir de dados diferentes. Os espaços atrás são aparados dos campos da
-  string (ou UNICODE) antes de o valor ser calculado (a conversão para DATA
+  <para>A função  <emphasis role="bold">HASH32</emphasis>  retorna um valor hash 
+  de 32 bits derivado de todos os valores da 
+  <emphasis>expressionlist</emphasis>. Ela usa um algoritmo hashing que é mais 
+  rápido e menos provável do que o HASH para retornar os mesmos valores a 
+  partir de dados diferentes. Os espaços atrás são aparados dos campos da 
+  string (ou UNICODE) antes de o valor ser calculado (a conversão para DATA 
   impede isso).</para>
 
   <para>Exemplo:</para>

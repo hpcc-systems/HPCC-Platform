@@ -1,14 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SERVICE_Structure" role="nobrk">
-  <title>Estrutura SERVICE<indexterm>
+  <title>SERVICE Structure<indexterm>
       <primary>SERVICE Structure</primary>
     </indexterm></title>
 
   <para><emphasis>servicename </emphasis><emphasis role="bold">:= SERVICE [ :
   </emphasis><emphasis>defaultkeywords</emphasis><emphasis role="bold">
-  ]</emphasis><emphasis role="bold"> </emphasis><emphasis/></para>
+  ]</emphasis><emphasis role="bold"> </emphasis><emphasis></emphasis></para>
 
   <para><emphasis> prototype </emphasis>:
   <emphasis>keywordlist</emphasis>;<emphasis role="bold"> </emphasis></para>
@@ -17,9 +17,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="85.30pt"/>
+        <colspec colwidth="85.30pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -31,9 +31,9 @@
           <row>
             <entry><emphasis>defaultkeywords</emphasis></entry>
 
-            <entry>Opcional. Uma lista delimitada por vírgula das
-            palavras-chave padrão e seus valores compartilhados por todos os
-            protótipos no serviço externo.</entry>
+            <entry>Opcional. Uma lista delimitada por vírgula das 
+	    palavras-chave padrão e seus valores compartilhados por todos os 
+	    protótipos no serviço externo.</entry>
           </row>
 
           <row>
@@ -45,20 +45,20 @@
           <row>
             <entry><emphasis>keywordlist</emphasis></entry>
 
-            <entry>Uma lista delimitada por vírgula das palavras-chave e seus
-            valores que instruem o compilador ECL como acessar o serviço
-            externo.</entry>
+            <entry>Uma lista delimitada por vírgula das palavras-chave e seus 
+	    valores que instruem o compilador ECL como acessar o serviço 
+	    externo.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A estrutura <emphasis role="bold">SERVICE </emphasis> possibilita a
-  criação de serviços externos para ampliar os recursos do ECL no desempenho
-  de qualquer funcionalidade desejada. Estes serviços externos do sistema são
-  implementados como funções exportadas em .SO(Shared Object). Um serviço de
+  <para>A estrutura  <emphasis role="bold">SERVICE </emphasis> possibilita a 
+  criação de serviços externos para ampliar os recursos do ECL no desempenho 
+  de qualquer funcionalidade desejada. Estes serviços externos do sistema são 
+  implementados como funções exportadas em .SO(Shared Object). Um serviço de 
   sistema da ECL .SO pode conter um ou mais serviços e (possivelmente) uma
-  única rotina de inicialização de .SO.</para>
+   única rotina de inicialização de .SO.</para>
 
   <para>Exemplo:</para>
 
@@ -122,7 +122,7 @@
   END;
 </programlisting>
 
-  <para>Ver também: <link
-  linkend="External_Service_Implementation">Implementação de Serviços
+  <para>Ver também: <link 
+  linkend="External_Service_Implementation">Implementação de Serviços 
   Externos</link>, <link linkend="CONST">CONST</link></para>
 </sect1>

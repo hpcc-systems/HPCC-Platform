@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TRIM">
@@ -8,15 +8,17 @@
       <primary>TRIM</primary>
     </indexterm><indexterm>
       <primary>TRIM Function</primary>
+    </indexterm><indexterm>
+      <primary>WHITESPACE</primary>
     </indexterm>(</emphasis><emphasis>string_value </emphasis><emphasis
-  role="bold">[ </emphasis><emphasis>,flag</emphasis><emphasis role="bold"> ]
+  role="bold">[ </emphasis><emphasis>,flag</emphasis><emphasis role="bold"> ] 
   )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="81.25pt"/>
+        <colspec colwidth="81.25pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -28,11 +30,13 @@
           <row>
             <entry><emphasis>flag</emphasis></entry>
 
-            <entry>Opcional. Especifica quais espaços serão removidos. Os
-            valores válidos do indicador são: RIGHT (remove espaços à direita
-            – este é o padrão), LEFT (remove espaços à esquerda), LEFT, RIGHT
-            (remove espaços à direita e à esquerda), e ALL (remove todos os
-            espaços, até mesmo aqueles dentro de string_value).</entry>
+            <entry>Opcional. Especifica quais espaços serão removidos. Os 
+	    valores válidos do indicador são: <para></para><para><emphasis role="bold">RIGHT</emphasis>
+            (remover espaços à direita - este é o padrão)</para><para><emphasis role="bold">LEFT</emphasis> 
+	    (remover espaços à esquerda)</para><para><emphasis role="bold">LEFT, RIGHT</emphasis> 
+	    (remover espaços iniciais e finais)</para><para><emphasis role="bold">ALL</emphasis> 
+	    (remove todos os espaços, mesmo aqueles dentro do string_value)</para><para><emphasis
+            role="bold">WHITESPACE</emphasis> remove todos os caracteres do espaço em branco</para></entry>
           </row>
 
           <row>
@@ -44,9 +48,17 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">TRIM </emphasis>retorna o
-  <emphasis>string_value </emphasis>com todos os espaços à direita e/ou à
-  esquerda removidos.</para>
+  <para>A função  <emphasis role="bold">TRIM </emphasis> retorna o 
+  <emphasis>string_value </emphasis> com todos os espaços à direita e / ou à 
+  esquerda (0x20) removidos. </para>
+
+  <para>A opção <emphasis role="bold">WHITESPACE</emphasis>  
+  remove todos os caracteres de espaço em branco. Em STRING, 
+  este é o espaço (0x20), a guia horizontal, a guia vertical, 
+  o avanço de linha, o feed de formulário, o retorno de carro 
+  (0x09 a 0x0D) e o espaço sem quebra (0xA0). Para UNICODE, ele 
+  remove todos os caracteres com a propriedade de espaço em
+   branco. </para>
 
   <para>Exemplo:</para>
 

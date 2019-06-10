@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_EXPORTXML">
@@ -11,16 +11,16 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="76.35pt"/>
+        <colspec colwidth="76.35pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>symbol</emphasis></entry>
 
-            <entry>O nome de uma variável de modelo que não foi declarada
-            previamente.</entry>
+            <entry>O nome de uma variável de modelo que não foi declarada 
+	    previamente.</entry>
           </row>
 
           <row>
@@ -32,9 +32,9 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A declaração <emphasis role="bold">#EXPORTXML </emphasis> produz o
-  mesmo XML que #EXPORT dos <emphasis>dados</emphasis> especificados e a
-  coloca no <emphasis>símbolo</emphasis>, em seguida, faz um LOADXML
+  <para>A declaração  <emphasis role="bold">#EXPORTXML </emphasis> produz o 
+  mesmo XML que #EXPORT dos  <emphasis>dados</emphasis>  especificados e a 
+  coloca no  <emphasis>símbolo</emphasis>, em seguida, faz um LOADXML 
   (<emphasis>símbolo, </emphasis> 'label') nos dados.</para>
 
   <para>Exemplo:</para>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ROUNDUP">
@@ -13,9 +13,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="77.80pt"/>
+        <colspec colwidth="77.80pt" />
 
-        <colspec colwidth="275.00pt"/>
+        <colspec colwidth="275.00pt" />
 
         <tbody>
           <row>
@@ -33,11 +33,11 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">ROUNDUP </emphasis> retorna o valor
-  inteiro arredondado do <emphasis>realvalue</emphasis><indexterm>
-      <primary>realvalue</primary>
-    </indexterm> arredondando qualquer porção decimal para o próximo valor
-  inteiro, independentemente do sinal.</para>
+  <para>A função  <emphasis role="bold">ROUNDUP </emphasis> retorna o valor 
+  inteiro arredondado do  <emphasis>realvalue</emphasis><indexterm>
+      <primary> realvalue </primary>
+    </indexterm> arredondando qualquer porção decimal para o próximo valor 
+    inteiro, independentemente do sinal.</para>
 
   <para>Exemplo:</para>
 
@@ -48,6 +48,6 @@ SomeRealValue := -3.9;
 INTEGER4 MyVal := ROUNDUP(SomeRealValue); // MyVal is -4
 </programlisting>
 
-  <para>Ver também: <link linkend="ROUND">ROUND</link>, <link
+  <para>Ver também: <link linkend="ROUND">ROUND</link>, <link 
   linkend="TRUNCATE">TRUNCATE</link></para>
 </sect1>

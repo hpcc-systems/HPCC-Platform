@@ -11,14 +11,14 @@
   <para/>
 
   <sect1 id="VizGrid">
-    <title>Grade</title>
+    <title>Grade (Grid)</title>
 
-    <para><emphasis role="bold">Visualizer.Any.Grade(<indexterm>
+    <para><emphasis role="bold">Visualizer.Any.Grid(<indexterm>
         <primary>Visualizer.Any.Grid</primary>
       </indexterm><indexterm>
         <primary>Any.Grid</primary>
       </indexterm><indexterm>
-        <primary>Grid</primary>
+        <primary>Grade (Grid)</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -45,7 +45,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -58,8 +58,7 @@
           <row>
             <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo
-            ID</entry>
+            <entry>Nome da Coluna de mapeamento &lt;--&gt;ID do campo</entry>
           </row>
 
           <row>
@@ -85,7 +84,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">Grid </emphasis>o método de visualização
+    <para>O método de visualização  <emphasis role="bold">Grid (Grade) </emphasis>
     cria uma tabela simples ou grade a partir de quaisquer dados.</para>
 
     <para>Exemplo:</para>
@@ -143,7 +142,7 @@ viz_Grid;
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU Atual</entry>
           </row>
 
           <row>
@@ -156,8 +155,8 @@ viz_Grid;
           <row>
             <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo
-            ID</entry>
+            <entry>Nome da coluna de mapeamento &lt;--&gt;ID do campo
+            </entry>
           </row>
 
           <row>
@@ -183,8 +182,8 @@ viz_Grid;
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">HandsonGrid </emphasis>método de
-    visualização cria uma tabela ou grade a partir de quaisquer dados.</para>
+    <para>O método de visualização<emphasis role="bold">HandsonGrid </emphasis>
+    cria uma tabela ou grade a partir de quaisquer dados.</para>
 
     <para>Exemplo:</para>
 

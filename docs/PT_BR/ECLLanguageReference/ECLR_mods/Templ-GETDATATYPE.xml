@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_GETDATATYPE">
@@ -11,23 +11,26 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="74.15pt"/>
+        <colspec colwidth="74.15pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>field</emphasis></entry>
 
-            <entry>Um símbolo previamente definido pelo usuário contendo o
-            nome de um campo em um dataset.</entry>
+            <entry>Um símbolo previamente definido pelo usuário contendo o 
+	    nome de um campo em um dataset.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">#GETDATATYPE </emphasis> retorna o tipo
-  de valor de <emphasis>field</emphasis>.</para>
+  <para>A função  <emphasis role="bold">#GETDATATYPE </emphasis> retorna o tipo 
+  de valor de  <emphasis>field</emphasis>. O argumento de  
+  <emphasis>campo</emphasis> deve ser um valor escalar ou 
+  um campo de um conjunto de dados (em vez de um campo de 
+  uma definição de registro).</para>
 
   <para>Exemplo:</para>
 
@@ -39,6 +42,6 @@
   res := %'fieldtype'%;
   res; // Output: res = 'data9'</programlisting>
 
-  <para>Ver também: <link linkend="Value_Types_Chapter">Tipos de
+  <para>Ver também: <link linkend="Value_Types_Chapter">Tipos de 
   valores</link></para>
 </sect1>

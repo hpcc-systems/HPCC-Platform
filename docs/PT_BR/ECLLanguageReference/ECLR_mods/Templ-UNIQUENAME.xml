@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_UNIQUENAME">
@@ -12,43 +12,43 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="76.20pt"/>
+        <colspec colwidth="76.20pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>namevar</emphasis></entry>
 
-            <entry>O rótulo da variável do modelo (sem os sinais de
-            porcentagem) a ser usado em declarações subsequentes (com os
-            sinais de porcentagem) que precisam do nome único gerado.</entry>
+            <entry>O rótulo da variável do modelo (sem os sinais de 
+	    porcentagem) a ser usado em declarações subsequentes (com os 
+	    sinais de porcentagem) que precisam do nome único gerado.</entry>
           </row>
 
           <row>
             <entry><emphasis>pattern</emphasis></entry>
 
-            <entry>Opcional. Um modelo para a criação de um nome único. O
-            modelo deve conter um sinal de dólar ($) para indicar a posição em
-            que um número único é gerado, e pode conter uma cerquilha (#) para
-            incluir namevar. Isso é útil para situações em que #UNIQUENAME é
-            usado para gerar nomes de arquivos e o resultado é destinado à
-            visualização no programa ECL IDE, pois #UNIQUENAME por padrão gera
-            identificadores que começam com dois caracteres de sublinhado (__)
-            e a ECL IDE os trata como campos ocultos. Se omitido, o formato
-            padrão é __#__$__.</entry>
+            <entry>Opcional. Um modelo para a criação de um nome único. O 
+	    modelo deve conter um sinal de dólar ($) para indicar a posição em 
+	    que um número único é gerado, e pode conter uma cerquilha (#) para 
+	    incluir namevar. Isso é útil para situações em que #UNIQUENAME é 
+	    usado para gerar nomes de arquivos e o resultado é destinado à 
+	    visualização no programa ECL IDE, pois #UNIQUENAME por padrão gera 
+	    identificadores que começam com dois caracteres de sublinhado (__) 
+	    e a ECL IDE os trata como campos ocultos. Se omitido, o formato 
+	    padrão é __#__$__.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A declaração <emphasis role="bold">#UNIQUENAME </emphasis> cria um
+  <para>A declaração  <emphasis role="bold">#UNIQUENAME </emphasis> cria um 
   identificador de ECL válido e único dentro do contexto do limite do escopo
-  atual. Isso é particularmente útil em estruturas MACRO, pois permite que a
-  macro seja usada várias vezes no mesmo escopo sem criar erros de nome de
-  atributo duplicado nas definições do atributo dentro da macro. Essa
-  declaração pode ser usada fora de um escopo XML e não exige um LOADXML
-  anterior para instanciar um escopo XML.</para>
+   atual. Isso é particularmente útil em estruturas MACRO, pois permite que a 
+   macro seja usada várias vezes no mesmo escopo sem criar erros de nome de 
+   atributo duplicado nas definições do atributo dentro da macro. Essa 
+   declaração pode ser usada fora de um escopo XML e não exige um LOADXML 
+   anterior para instanciar um escopo XML.</para>
 
   <para>Exemplo:</para>
 

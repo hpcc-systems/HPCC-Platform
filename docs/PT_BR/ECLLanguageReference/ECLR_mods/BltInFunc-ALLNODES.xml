@@ -2,7 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ALLNODES">
+  
+
   <title>ALLNODES</title>
+
+  
 
   <para><emphasis role="bold">ALLNODES<indexterm>
       <primary>ALLNODES</primary>
@@ -33,13 +37,21 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função  <emphasis role="bold">ALLNODES </emphasis> especifica que a  <emphasis>operação</emphasis>  é realizada em paralelo em todos os nós.
-  <emphasis role="bold">Essa função está disponível para uso apenas no Roxie.</emphasis></para>
+  <para>A função  <emphasis role="bold">ALLNODES </emphasis> especifica que a  <emphasis>operação</emphasis>
+   é realizada em paralelo em todos os nós. <emphasis role="bold">Essa função está 
+   disponível para uso apenas no Roxie.</emphasis></para>
 
   <para>Exemplo:</para>
+
+  
 
   <programlisting>ds := ALLNODES(JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID));
 </programlisting>
 
-  <para>Ver também: THISNODE, LOCAL, NOLOCAL</para>
+  
+
+  <para>Ver também: <link
+  linkend="THISNODE">THISNODE</link>, <link
+  linkend="LOCAL">LOCAL</link>, <link
+  linkend="NOLOCAL">NOLOCAL</link></para>
 </sect1>

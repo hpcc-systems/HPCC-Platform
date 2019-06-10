@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RECOVERY">
@@ -15,9 +15,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.65pt"/>
+        <colspec colwidth="79.65pt" />
 
-        <colspec colwidth="273.15pt"/>
+        <colspec colwidth="273.15pt" />
 
         <tbody>
           <row>
@@ -42,21 +42,21 @@
             <entry><emphasis>attempts</emphasis></entry>
 
             <entry>Opcional. O número de tentativas antes da
-            desistência.</entry>
+	    desistência.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>O serviço <emphasis role="bold">RECOVERY </emphasis> executa o
-  atributo <emphasis>handler</emphasis> quando a
-  <emphasis>expressão</emphasis> falha e em seguida reexecuta o
-  <emphasis>atributo</emphasis>. Se o <emphasis>atributo</emphasis> continuar
-  falhando após determinado número de <emphasis>tentativas</emphasis>,
-  qualquer cláusula FAILURE presente será executada. O RECOVERY é executado em
-  paralelo com o retorno mal sucedido do resultado. Esse serviço faz com que o
-  <emphasis>atributo </emphasis> seja avaliado em um escopo global em vez de
-  escopo de função. Disponível apenas se os serviços de fluxo de trabalho
+  <para>O serviço  <emphasis role="bold">RECOVERY </emphasis> executa o 
+  atributo <emphasis>handler</emphasis> quando a 
+  <emphasis>expressão</emphasis>  falha e em seguida reexecuta o 
+  <emphasis>atributo</emphasis>. Se o  <emphasis>atributo</emphasis> continuar 
+  falhando após determinado número de  <emphasis>tentativas</emphasis>, 
+  qualquer cláusula FAILURE presente será executada. O RECOVERY é executado em 
+  paralelo com o retorno mal sucedido do resultado. Esse serviço faz com que o 
+  <emphasis>atributo </emphasis> seja avaliado em um escopo global em vez de 
+  escopo de função. Disponível apenas se os serviços de fluxo de trabalho 
   estiverem ativados (consulte #OPTION(workflow)).</para>
 
   <para>Exemplo:</para>
@@ -72,6 +72,6 @@
                     'ouch.htm'));
 </programlisting>
 
-  <para>Ver também: <link linkend="SUCCESS">SUCCESS</link>, <link
+  <para>Ver também: <link linkend="SUCCESS">SUCCESS</link>, <link 
   linkend="FAILURE">FAILURE</link></para>
 </sect1>

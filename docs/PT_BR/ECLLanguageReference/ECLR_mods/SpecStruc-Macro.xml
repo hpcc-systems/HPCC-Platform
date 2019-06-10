@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="MACRO_Structure">
@@ -11,9 +11,9 @@
   role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
   role="bold">) := MACRO</emphasis><emphasis role="bold"><indexterm>
       <primary>MACRO</primary>
-    </indexterm> </emphasis><emphasis/></para>
+    </indexterm> </emphasis><emphasis></emphasis></para>
 
-  <para><emphasis> tokenstream</emphasis>;<emphasis role="bold"/></para>
+  <para><emphasis> tokenstream</emphasis>;<emphasisrole="bold"></emphasis></para>
 
   <para><emphasis role="bold">ENDMACRO<indexterm>
       <primary>ENDMACRO</primary>
@@ -21,52 +21,52 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
           <entry><emphasis>resulttype</emphasis></entry>
 
-          <entry>Opcional. O tipo de resultado da macro. O único tipo válido é
-          DATASET. Se omitido e <emphasis>tokenstream</emphasis> não tiver
-          definições de Atributo, a macro será tratada como retornando um
-          valor (normalmente, INTEGER ou STRING).</entry>
+          <entry>Opcional. O tipo de resultado da macro. O único tipo válido é 
+	  DATASET. Se omitido e  <emphasis>tokenstream</emphasis>não tiver 
+	  definições de Atributo, a macro será tratada como retornando um 
+	  valor (normalmente, INTEGER ou STRING).</entry>
         </row>
 
         <row>
           <entry><emphasis>macroname</emphasis></entry>
 
-          <entry><para>O nome da função definida pela estrutura
-          MACRO.</para></entry>
+          <entry><para>O nome da função definida pela estrutura 
+	  MACRO.</para></entry>
         </row>
 
         <row>
           <entry><emphasis>parameterlist</emphasis></entry>
 
-          <entry>Uma lista separada por vírgulas dos nomes (tokens) dos
-          parâmetros a serem passados para a macro. Esses nomes são usados em
-          <emphasis>tokenstream</emphasis> para indicar onde os valores dos
-          parâmetros passados serão substituídos quando a macro for usada. Os
-          tipos de valores para esses parâmetros não são permitidos, mas é
-          possível especificar valores padrão como constantes de
-          string.</entry>
+          <entry>Uma lista separada por vírgulas dos nomes (tokens) dos 
+	  parâmetros a serem passados para a macro. Esses nomes são usados em 
+          <emphasis>tokenstream</emphasis>  para indicar onde os valores dos 
+	  parâmetros passados serão substituídos quando a macro for usada. Os 
+	  tipos de valores para esses parâmetros não são permitidos, mas é 
+	  possível especificar valores padrão como constantes de 
+	  string.</entry>
         </row>
 
         <row>
           <entry><emphasis>tokenstream</emphasis></entry>
 
-          <entry>As definições de atributo ou as ações que a macro
-          executará.</entry>
+          <entry>As definições de atributo ou as ações que a macro 
+	  executará.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>A estrutura <emphasis role="bold">MACRO </emphasis> possibilita criar
-  uma função sem conhecer os tipos de valor dos parâmetros que em algum
-  momento serão passados a ela. O uso mais comum é a execução de funções com
+  <para>A estrutura  <emphasis role="bold">MACRO </emphasis> possibilita criar 
+  uma função sem conhecer os tipos de valor dos parâmetros que em algum 
+  momento serão passados a ela. O uso mais comum é a execução de funções com 
   datasets arbitrários.</para>
 
   <para>Uma macro se comporta como se você digitasse o
@@ -158,8 +158,7 @@ ENDMACRO;
 MAC_join(J1,People,Property,'LEFT.ID=RIGHT.PeopleID,LEFT  OUTER')
 //expands out to:
 // J1 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID,LEFT OUTER);</programlisting>
-
-  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura 
   TRANSFORM</link>, <link linkend="RECORD_Structure">Estrutura RECORD</link>,
   <link linkend="_UNIQUENAME">#UNIQUENAME</link>, <link
   linkend="_EXPAND">#EXPAND</link></para>

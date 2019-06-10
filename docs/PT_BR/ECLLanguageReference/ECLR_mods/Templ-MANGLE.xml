@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_MANGLE">
@@ -11,9 +11,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="76.15pt"/>
+        <colspec colwidth="76.15pt" />
 
-        <colspec colwidth="276.65pt"/>
+        <colspec colwidth="276.65pt" />
 
         <tbody>
           <row>
@@ -25,10 +25,10 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A <emphasis role="bold">sting </emphasis># <emphasis>MANGLE</emphasis>
-  substitui caracteres não alfanuméricos por um caractere de sublinhado (_),
-  seguido pelo valor hexa do caractere que está sendo substituído. #MANGLE
-  substitui caracteres não alfanuméricos por um caractere de sublinhado (_),
+  <para>A  <emphasis role="bold">sting </emphasis># <emphasis>MANGLE</emphasis>  
+  substitui caracteres não alfanuméricos por um caractere de sublinhado (_), 
+  seguido pelo valor hexa do caractere que está sendo substituído. #MANGLE 
+  substitui caracteres não alfanuméricos por um caractere de sublinhado (_), 
   seguido pelo valor hexa do caractere que está sendo substituído.</para>
 
   <para>Exemplo:</para>
@@ -47,5 +47,5 @@
   res2;          //res2 = 'SECTION_STATES/AREACODES' </programlisting>
 
   <para>Ver também: <link linkend="_DEMANGLE">#DEMANGLE</link>, <link
-  linkend="Attribute_Definition">Nomes do Atributo</link></para>
+  linkend="Attribute_Definition">Nomes do Atributo.</link></para>
 </sect1>

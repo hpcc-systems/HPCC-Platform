@@ -9,7 +9,8 @@
 
     <para><emphasis>Imagine a seguinte situação: você acabou de receber um arquivo de dados que foi colocado em sua zona de entrada de arquivos. Antes de realizar o spray (distribuição aos nós) para o cluster Thor e começar a trabalhar com ele, você quer conferi-lo rapidamente para ver com precisão que tipo de dados ele contém e se o formato desses dados corresponde ao formato recebido do fornecedor.  Há várias maneiras de se fazer isso, incluindo mapear uma unidade para sua zona de entrada de arquivo e usar um editor de texto/hex para abrir o arquivo e acessar o conteúdo.  </emphasis></para>
 
-    <para>Este artigo vai lhe ensinar como fazer isso através do QueryBuilder usando o ECL. Aqui está o código (contido no atributo MODULE Default.ProgGuide):</para>
+    <para>Este artigo vai lhe ensinar como fazer isso através do QueryBuilder usando o ECL. 
+    Aqui está o código (contido no atributo MODULE Default.ProgGuide):</para>
 
     <programlisting>IMPORT STD; EXPORT MAC_ScanFile(IP, infile, scansize) := MACRO ds := DATASET(Std.File.ExternalLogicalFileName(IP, infile), {DATA1 S}, THOR )[1..scansize]; OUTPUT(TABLE(ds,{hex := ds.s,txt := (STRING1)ds.s}),ALL); Rec := RECORD UNSIGNED2 C; DATA S {MAXLENGTH(8*1024)}; END; Rec XF1(ds L,INTEGER C) := TRANSFORM SELF.C := C; SELF.S := L.s; END; ds2 := PROJECT(ds,XF1(LEFT,COUNTER)); Rec XF2(Rec L,Rec R) := TRANSFORM SELF.S := L.S[1 .. R.C-1] + R.S[1]; SELF := L; END; Rolled := ROLLUP(ds2,TRUE,XF2(LEFT,RIGHT)); OUTPUT(TRANSFER(Rolled[1].S,STRING)); ENDMACRO;
 </programlisting>
@@ -18,7 +19,14 @@
 
     <para>Essa MACRO usa três parâmetros: o IP da zona de entrada de arquivo que contém o arquivo, o caminho totalmente qualificado para o arquivo na zona de entrada de arquivos e o número de bytes para leitura (máximo de 8K)</para>
 
-    <para>O DATASET inicial usa a função Std.File.ExternalLogicalFileName para nomear o arquivo. É necessário definir a estrutura RECORD único um único campo DATA para garantir que ambos os campos binário e de texto possam ser lidos corretamente. Especificar o DATASET como um arquivo THOR (independentemente do tipo real do arquivo) simplifica a leitura como um arquivo de registro de comprimento fixo. Os colchetes no final da declaração DATASET limitam automaticamente o número de registros de 1 byte lidos para o primeiro número  <emphasis>scansize</emphasis>  de bytes no arquivo.</para>
+    <para>O DATASET inicial usa a função Std.File.ExternalLogicalFileName para nomear o arquivo. 
+    É necessário definir a estrutura RECORD único um único campo DATA para 
+    garantir que ambos os campos binário e de texto possam ser lidos corretamente. 
+    Especificar o DATASET como um arquivo THOR (independentemente do tipo real do arquivo) 
+    simplifica a leitura como um arquivo de registro de comprimento fixo. 
+    Os colchetes no final da declaração DATASET limitam automaticamente o 
+    número de registros de 1 byte lidos para o primeiro número  
+    <emphasis>scansize</emphasis>  de bytes no arquivo.</para>
 
     <para>A primeira ação OUTPUT permite que você veja os dados hexadecimais brutos do arquivo.</para>
 

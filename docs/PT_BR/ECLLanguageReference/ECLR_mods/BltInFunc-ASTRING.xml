@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ASSTRING">
@@ -11,9 +11,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.00pt"/>
+        <colspec colwidth="79.00pt" />
 
-        <colspec colwidth="309.80pt"/>
+        <colspec colwidth="309.80pt" />
 
         <tbody>
           <row>
@@ -31,7 +31,7 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A <emphasis role="bold"> função </emphasis>ASSTRING<indexterm>
+  <para>A função  <emphasis role="bold">ASSTRING </emphasis><indexterm>
       <primary>ASSTRING function</primary>
     </indexterm> retorna o <emphasis>bitmap</emphasis> como uma string. Isso é
   equivalente ao TRANSFER
@@ -41,13 +41,13 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
-MyVal1 := ASSTRING(MyInt); //MyVal1 is "A" (ASCII 65)
- // this is directly equivalent to:
- // STRING1 MyVal1 := TRANSFER(MyInt,STRING1);INTEGER1 MyVal3 := (INTEGER)MyVal1; 
- //MyVal3 is 0 (zero) because "A" is not a numeric character
+  <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65 
+  MyVal1 := ASSTRING(MyInt); //MyVal1 is "A" (ASCII 65) 
+  // this is directly equivalent to: 
+  // STRING1 MyVal1 := TRANSFER(MyInt,STRING1);INTEGER1 MyVal3 := (INTEGER)MyVal1; 
+  //MyVal3 is 0 (zero) because "A" is not a numeric character
 </programlisting>
 
-  <para>Ver também: <link linkend="TRANSFER">TRANSFER</link>, <link
+  <para>Ver também: <link linkend="TRANSFER">TRANSFER</link>, <link 
   linkend="Type_Casting">Conversão de tipo</link></para>
 </sect1>

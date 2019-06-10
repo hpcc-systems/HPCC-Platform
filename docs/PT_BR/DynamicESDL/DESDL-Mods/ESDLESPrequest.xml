@@ -1,16 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESPrequest">
-  <title><emphasis role="bold">ESPrequest</emphasis></title>
+  <title>ESPrequest</title>
 
   <para><indexterm>
       <primary>ESPrequest</primary>
-    </indexterm>A estrutura de solicitação de um método.</para>
+    </indexterm>A estrutura de solicitação de um método. 
+    ESPrequests podem ser aninhados e suportam herança.</para>
 
   <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-  <programlisting>ESPrequest  MyQueryRequest
+  <programlisting>
+  ESPrequest  MyQueryRequest
 
 {
     string FirstName;
@@ -20,5 +22,10 @@
  
     bool Descending(false);
 };
+ESPrequest MyQueryRequestExtended:MyQueryRequest 
+{ 
+    string SSN; 
+};
+
    </programlisting>
 </sect1>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FAIL">
@@ -13,12 +13,12 @@
   role="bold">|</emphasis><emphasis> errorcode </emphasis><emphasis
   role="bold">) ] ;</emphasis></para>
 
-  <para><emphasis role="bold"/><emphasis
+  <para><emphasis role="bold"></emphasis><emphasis
   role="bold">[</emphasis><emphasis>attrname</emphasis> :=<emphasis
   role="bold"> ] FAIL(</emphasis><emphasis> errorcode , errormessage
   </emphasis><emphasis role="bold">) ;</emphasis></para>
 
-  <para><emphasis role="bold"/><emphasis
+  <para><emphasis role="bold"></emphasis><emphasis
   role="bold">[</emphasis><emphasis>attrname</emphasis> :=<emphasis
   role="bold"> ] FAIL(</emphasis><emphasis> datatype </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, </emphasis><emphasis
@@ -29,51 +29,51 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="82.40pt"/>
+        <colspec colwidth="82.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>attrname</emphasis></entry>
 
-            <entry>Opcional. O nome da ação, que transforma a ação em
-            definição de atributo, consequentemente não é executado até que
-            <emphasis>attrname</emphasis> seja usado como uma ação.</entry>
+            <entry>Opcional. O nome da ação, que transforma a ação em 
+	    definição de atributo, consequentemente não é executado até que 
+            <emphasis>attrname</emphasis>  seja usado como uma ação.</entry>
           </row>
 
           <row>
             <entry><emphasis>errormessage</emphasis></entry>
 
-            <entry>Opcional. Uma constante da string que contém a mensagem a
-            ser exibida.</entry>
+            <entry>Opcional. Uma constante da string que contém a mensagem a 
+	    ser exibida.</entry>
           </row>
 
           <row>
             <entry><emphasis>errorcode</emphasis></entry>
 
-            <entry>Opcional. Uma constante de número inteiro que contém o
-            número do erro a ser exibido.</entry>
+            <entry>Opcional. Uma constante de número inteiro que contém o 
+	    número do erro a ser exibido.</entry>
           </row>
 
           <row>
             <entry><emphasis>datatype</emphasis></entry>
 
-            <entry>O tipo de valor, nome de uma estrutura RECORD , DATASET, ou
-            DICTIONARY que será emulado.</entry>
+            <entry>O tipo de valor, nome de uma estrutura RECORD , DATASET, ou 
+	    DICTIONARY que será emulado.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A ação <emphasis role="bold">FAIL </emphasis>interrompe imediatamente
-  o processamento na workunit e exibe o <emphasis>errorcode </emphasis> e/ou a
-  <emphasis>errormessage</emphasis>. A terceira forma está disponível para ser
-  usada em contextos onde é exigido um tipo de valor ou de dataset. FAIL não
+  <para>A ação  <emphasis role="bold">FAIL </emphasis>interrompe imediatamente 
+  o processamento na workunit e exibe o  <emphasis>errorcode</emphasis> e/ou a  
+  <emphasis>errormessage</emphasis>. A terceira forma está disponível para ser 
+  usada em contextos onde é exigido um tipo de valor ou de dataset. FAIL não 
   deve ser usada em um contexto de expressão (tal como no TRANSFORM) – use a
-  <indexterm>
-      <primary>função</primary>
-    </indexterm> ERROR para essas situações.</para>
+  função <indexterm>
+      <primary>ERROR </primary>
+    </indexterm> para essas situações.</para>
 
   <para>Exemplo:</para>
 

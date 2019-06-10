@@ -26,19 +26,37 @@
 
       <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas. Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>Falha ao carregar FooterInfo.</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../common/Version.xml" xpointer="DateVer"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>Falha ao carregar DateVer.</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <corpname>HPCC Systems</corpname>
 
     <xi:include href="../../common/Version.xml" xpointer="Copyright"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>Falha ao carregar informações sobre direitos autorais.</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <mediaobject role="logo">
       <imageobject>
@@ -288,7 +306,7 @@
         <para>Os pacotes de instalação binária estão disponíveis para diversos sistemas operacionais Linux. Os requisitos da plataforma do HPCC System estão prontamente disponíveis no Portal do HPCC.</para>
 
         <para><ulink
-        url="http://hpccsystems.com/permlink/requirements">http://hpccsystems.com/permlink/requirements</ulink></para>
+        url="https://hpccsystems.com/training/documentation/system-requirements">https://hpccsystems.com/training/documentation/system-requirements</ulink></para>
       </sect2>
 
       <sect2 id="configuration-manager">
@@ -349,7 +367,7 @@
 
       <itemizedlist spacing="compact">
         <listitem>
-          <para>A execução da plataforma HPCC requer comunicação desde a estação de trabalho do usuário com um navegador até o HPCC. Isso será usado para acessar o ECL Watch -- uma interface com base na Web para seu HPCC System. O ECL Watch permite examinar e gerenciar os vários aspectos do HPCC e permite ver informações sobre tarefas executadas, arquivos de dados e métricas de sistema.</para>
+          <para>A execução da plataforma HPCC requer comunicação desde a estação de trabalho do usuário com um navegador até o HPCC. Isso será usado para acessar o ECL Watch -- uma interface web para seu HPCC System. O ECL Watch permite examinar e gerenciar os vários aspectos do HPCC e permite ver informações sobre tarefas executadas, arquivos de dados e métricas de sistema.</para>
 
           <para>Use um dos navegadores Web compatíveis com Javascript habilitado.</para>
 
@@ -367,10 +385,14 @@
             <listitem>
               <para>Google Chrome 10 (ou mais recente)</para>
             </listitem>
+
+            <listitem>
+              <para>Safari 10 (ou mais recente)</para>
+            </listitem>
           </itemizedlist>
 
           <para>Se a segurança do navegador estiver configurada para  <emphasis
-          role="bold">Alta</emphasis>, você precisa adicionar o ECLWatch como site confiável para permitir que o Javascript seja executado.</para>
+          role="bold">High</emphasis>, você precisa adicionar o ECLWatch como site confiável para permitir que o Javascript seja executado.</para>
 
           <!--note: window users may want to use the 32 bit graph control***-->
         </listitem>

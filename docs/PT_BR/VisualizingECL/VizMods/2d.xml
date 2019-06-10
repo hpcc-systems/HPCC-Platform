@@ -10,14 +10,14 @@
   <para>***mais em breve**</para>
 
   <sect1 id="Apply2Cells">
-    <title>Bubble</title>
+    <title>Bolha (Bubble)</title>
 
     <para><emphasis role="bold">Visualization.TwoD.Chart2D.Bubble(<indexterm>
         <primary>Visualization.TwoD.Bubble</primary>
       </indexterm><indexterm>
         <primary>TwoD.Bubble</primary>
       </indexterm><indexterm>
-        <primary>Bubble</primary>
+        <primary>Bolha (Bubble)</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -44,8 +44,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU atual
-            WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -58,8 +57,7 @@
           <row>
             <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Nome da Coluna de Mapas &amp;lt;--&amp;gt; ID de campo
-            ID</entry>
+            <entry>Nome da Coluna de mapeamento &lt;--&gt; ID do campo</entry>
           </row>
 
           <row>
@@ -72,15 +70,15 @@
           <row>
             <entry><emphasis>properties</emphasis></entry>
 
-            <entry>Propriedades estéticas Ver Propriedades estéticas
+            <entry>Propriedades de Visualização Consulte Propriedades de Visualização
             ***todo***</entry>
           </row>
 
           <row>
             <entry>Retorno:<emphasis/></entry>
 
-            <entry>Um resultado “meta” que descreve a visualização. Ver
-            Comum/Meta***todo***</entry>
+            <entry>Um resultado “meta” que descreve a visualização. Consulte 
+	    Common/Meta***todo***</entry>
           </row>
         </tbody>
       </tgroup>

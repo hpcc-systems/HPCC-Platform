@@ -22,24 +22,27 @@
 
       <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
 
-      <para>HPCC Systems<superscript>®</superscript>  é uma marca registrada da LexisNexis Risk Data Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da LexisNexis Risk Data Management Inc.</para>
 
       <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas.</para>
 
       <para>Todos os nomes e dados de exemplo utilizados neste manual são fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -230,7 +233,7 @@
 
         <para>A forma mais fácil de agendar um processo de backup é criar um job cron. Cron é um daemon que serve como um agendador de tarefas.</para>
 
-        <para>Cron tab (abreviação de CRON TABle) é um arquivo de texto que contém a lista de tarefas. Para editar com o editor padrão, use o comando:</para>
+        <para>A aba Cron (abreviação de CRON TABle) é um arquivo de texto que contém a lista de tarefas. Para editar com o editor padrão, use o comando:</para>
 
         <programlisting>sudo crontab -e</programlisting>
 

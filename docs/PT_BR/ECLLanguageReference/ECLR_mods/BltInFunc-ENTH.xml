@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ENTH">
@@ -14,127 +14,118 @@
   </emphasis><emphasis role="bold">] ] [</emphasis>,<emphasis role="bold">
   LOCAL<indexterm>
       <primary>LOCAL</primary>
-    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED | 
+    ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, 
+    STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads 
+    </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> 
+    <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="81.95pt"/>
+        <colspec colwidth="81.95pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>recordset</emphasis></entry>
 
-            <entry>O conjunto de registros para amostragem. Pode ser o nome de
-            um dataset ou de um recordset derivado de algumas condições de
-            filtro, ou qualquer expressão que resulte em um recordset
-            derivado.</entry>
+            <entry>O conjunto de registros para amostragem. Pode ser o nome de 
+	    um dataset ou de um recordset derivado de algumas condições de 
+	    filtro, ou qualquer expressão que resulte em um recordset 
+	    derivado.</entry>
           </row>
 
           <row>
             <entry><emphasis>numerator</emphasis></entry>
 
-            <entry>O número de registros a ser retornado. Os registros
-            selecionados são espaçados por todo o conjunto de
-            registros.</entry>
+            <entry>O número de registros a ser retornado. Os registros 
+	    selecionados são espaçados por todo o conjunto de 
+	    registros.</entry>
           </row>
 
           <row>
             <entry><emphasis>denominator</emphasis></entry>
 
-            <entry>Opcional. O tamanho de cada conjunto a partir do qual o
-            número do numerador de registros será retornado. Se omitido, o
-            valor do denominador será o número total de registros no
-            recordset.</entry>
+            <entry>Opcional. O tamanho de cada conjunto a partir do qual o 
+	    número do numerador de registros será retornado. Se omitido, o 
+	    valor do denominador será o número total de registros no 
+	    recordset.</entry>
           </row>
 
           <row>
             <entry><emphasis>which</emphasis></entry>
 
-            <entry>Opcional. Um número inteiro que especifica o número ordinal
-            do conjunto de amostra a ser retornado. Isso é usado para obter
-            múltiplas amostras sem sobreposição a partir de um mesmo conjunto
-            de registros. Se o numerador não for igual a 1, alguns registros
-            podem ser sobrepostos.</entry>
+            <entry>Opcional. Um número inteiro que especifica o número ordinal 
+	    do conjunto de amostra a ser retornado. Isso é usado para obter 
+	    múltiplas amostras sem sobreposição a partir de um mesmo conjunto 
+	    de registros. Se o numerador não for igual a 1, alguns registros 
+	    podem ser sobrepostos.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
-            <entry>Opcional. Especifica que a amostra é extraída em cada nó do
-            supercomputador sem considerar o número de registros nos demais
-            nós, melhorando significativamente o desempenho se os resultados
-            exatos não forem obrigatórios.</entry>
+            <entry>Opcional. Especifica que a amostra é extraída em cada nó do 
+	    supercomputador sem considerar o número de registros nos demais 
+	    nós, melhorando significativamente o desempenho se os resultados 
+	    exatos não forem obrigatórios.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de resultado
-            não é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de resultado 
+	    não é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Especifica a importância da ordem do registro de
-            resultado.</entry>
+            <entry>Especifica a importância da ordem do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Quando for “False” (Falso), especifica que a ordem do
-            registro de resultado não é importante. Quando for “True’
-            (Verdadeiro), especifica a ordem padrão do registro de
-            resultado.</entry>
+            <entry>Quando for “False” (Falso), especifica que a ordem do 
+	    registro de resultado não é importante. Quando for “True’ 
+	    (Verdadeiro), especifica a ordem padrão do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada é
-            importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada é 
+	    importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada não
-            é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada não 
+	    é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
           </row>
-
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Opcional. Tenta avaliar essa atividade usando os
-            <emphasis>numthreads</emphasis> threads</entry>
+            <entry>Opcional. Tenta avaliar essa atividade usando os 
+	    <emphasis>numthreads</emphasis> threads</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Opcional. Substitui o algoritmo usado para essa
-            atividade.</entry>
+            <entry>Opcional. Substitui o algoritmo usado para essa 
+	    atividade.</entry>
           </row>
-
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
-            parte da lista de algoritmos compatíveis com as opções STABLE e
-            UNSTABLE da função SORT.</entry>
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer 
+	    parte da lista de algoritmos compatíveis com as opções STABLE e 
+	    UNSTABLE da função SORT.</entry>
           </row>
 
           <row>
@@ -146,12 +137,12 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">ENTH </emphasis>retorna uma amostra de
-  conjunto de registros a partir do <emphasis>recordset</emphasis> nominado.
-  ENTH retorna o número do <emphasis>numerador</emphasis> de registros de cada
-  record set do <emphasis>denominador</emphasis> no
-  <emphasis>recordset</emphasis>. A menos que LOCAL seja especificado, os
-  registros são escolhidos nos intervalos exatos em todos os nós do
+  <para>A função  <emphasis role="bold">ENTH </emphasis>retorna uma amostra de 
+  conjunto de registros a partir do  <emphasis>recordset</emphasis> nominado. 
+  ENTH retorna o número do  <emphasis>numerador</emphasis>  de registros de cada 
+  record set do <emphasis>denominador</emphasis>  no 
+  <emphasis>recordset</emphasis>. A menos que LOCAL seja especificado, os 
+  registros são escolhidos nos intervalos exatos em todos os nós do 
   supercomputador.</para>
 
   <para>Exemplo:</para>
@@ -167,7 +158,6 @@ SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
                      {'U'},{'V'},{'W'},{'X'},{'Y'}],
      {STRING1 Letter});
 Set1 := ENTH(SomeFile,2,10,1); // returns E, J, O, T, Y
-
 </programlisting>
 
   <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link

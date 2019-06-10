@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NOFOLD">
@@ -14,9 +14,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="83.15pt"/>
+        <colspec colwidth="83.15pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -34,13 +34,13 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">NOFOLD</emphasis> cria uma barreira que
-  previne a ocorrência de otimizações entre a <emphasis>expressão</emphasis> e
-  o contexto na qual ela é utilizada. Isso é usado para prevenir um dobramento
-  constante no contexto para que ele possa ser avaliado no estado em que se
-  encontra. Note que isso não previne o dobramento constante dentro da própria
-  <emphasis>expressão</emphasis> . Normalmente, a função é usada apenas para
-  evitar que os casos de teste sejam otimizados em algo completamente
+  <para>A função  <emphasis role="bold">NOFOLD</emphasis>  cria uma barreira que 
+  previne a ocorrência de otimizações entre a <emphasis>expressão</emphasis> e 
+  o contexto na qual ela é utilizada. Isso é usado para prevenir um dobramento 
+  constante no contexto para que ele possa ser avaliado no estado em que se 
+  encontra. Note que isso não previne o dobramento constante dentro da própria 
+  <emphasis>expressão</emphasis> . Normalmente, a função é usada apenas para 
+  evitar que os casos de teste sejam otimizados em algo completamente 
   diferente ou para contornar temporariamente os erros no compilador.</para>
 
   <para>Exemplo:</para>

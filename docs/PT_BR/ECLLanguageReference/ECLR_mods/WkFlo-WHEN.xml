@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WHEN">
@@ -17,9 +17,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.45pt"/>
+        <colspec colwidth="79.45pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -31,20 +31,20 @@
           <row>
             <entry><emphasis>event</emphasis></entry>
 
-            <entry>O evento disparador da execução da ação. Pode ser as
-            funções EVENT ou CRON, EVENTNAME ou o nome de um EVENTO EVENT
-            (como um atalho para EVENT(event,'*')), ou qualquer atributo
-            definido com essas funções.</entry>
+            <entry>O evento disparador da execução da ação. Pode ser as 
+	    funções EVENT ou CRON, EVENTNAME ou o nome de um EVENTO EVENT 
+	    (como um atalho para EVENT(event,'*')), ou qualquer atributo 
+	    definido com essas funções.</entry>
           </row>
 
           <row>
             <entry><emphasis>COUNT</emphasis></entry>
 
-            <entry>Opcional. Especifica o número de eventos que acionarão as
-            instâncias da ação. Se omitido, o padrão é ilimitado
-            (continuamente aguardando outro evento acionar outra instância da
-            ação), até que a tarefa seja manualmente removida da lista das
-            tarefas que estão sendo monitoradas pelo agendador.</entry>
+            <entry>Opcional. Especifica o número de eventos que acionarão as 
+	    instâncias da ação. Se omitido, o padrão é ilimitado 
+	    (continuamente aguardando outro evento acionar outra instância da 
+	    ação), até que a tarefa seja manualmente removida da lista das 
+	    tarefas que estão sendo monitoradas pelo agendador.</entry>
           </row>
 
           <row>
@@ -56,9 +56,9 @@
       </tgroup>
     </informaltable></para>
 
-  <para>O serviço <emphasis role="bold">WHEN </emphasis> executa a
-  <emphasis>ação </emphasis> sempre que o <emphasis>evento </emphasis> for
-  acionado.</para>
+  <para>O serviço  <emphasis role="bold">WHEN  </emphasis> executa a 
+  <emphasis>ação </emphasis> sempre que o  <emphasis>evento</emphasis> for 
+  acionado. </para>
 
   <para>Exemplo:</para>
 

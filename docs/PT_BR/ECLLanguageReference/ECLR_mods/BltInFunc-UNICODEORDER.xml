@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="UNICODEORDER">
@@ -12,9 +12,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="76.10pt"/>
+        <colspec colwidth="76.10pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -32,9 +32,9 @@
           <row>
             <entry><emphasis>locale</emphasis></entry>
 
-            <entry>Opcional. Uma constante de string que contém um código de
-            localidade válido, como especificado nas normas ISO 639 e
-            3166.</entry>
+            <entry>Opcional. Uma constante de string que contém um código de 
+	    localidade válido, como especificado nas normas ISO 639 e 
+	    3166.</entry>
           </row>
 
           <row>
@@ -46,17 +46,17 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A <emphasis role="bold">função </emphasis>UNICODEORDER <indexterm>
+  <para>A  <emphasis role="bold">função  </emphasis>UNICODEORDER <indexterm>
       <primary>UNICODEORDER function</primary>
-    </indexterm> retorna -1, 0, ou 1, dependendo da avaliação das expressões
-  <emphasis>left </emphasis> e <emphasis>right </emphasis>. Isto equivale ao
+    </indexterm>  retorna -1, 0, ou 1, dependendo da avaliação das expressões 
+  <emphasis>left </emphasis> e  <emphasis>right </emphasis>. Isto equivale ao 
   operador de comparação de equivalência &lt;=&gt; <indexterm>
       <primary>operador de comparação</primary>
-    </indexterm> , porém adotando o unicode <emphasis>locale</emphasis> como
-  base de determinação. Se <emphasis>left</emphasis> &lt; <emphasis>right,
-  </emphasis>será retornado o valor -1; se <emphasis>left</emphasis> =
-  <emphasis>right, </emphasis>será retornado valor 0; se
-  <emphasis>left</emphasis> &gt; <emphasis>right, </emphasis>será retornado o
+    </indexterm> , porém adotando o unicode  <emphasis>locale</emphasis>  como 
+    base de determinação. Se  <emphasis>left</emphasis>  &lt;  <emphasis>right, 
+  </emphasis>será retornado o valor -1; se  <emphasis>left</emphasis>  = 
+  <emphasis>right,  </emphasis>será retornado valor 0; se  
+  <emphasis>left</emphasis> &gt;  <emphasis>right,  </emphasis>será retornado o 
   valor 1.</para>
 
   <para>Exemplo:</para>
@@ -70,6 +70,6 @@
   c := UNICODEORDER(y , z, 'es'); // returns 1
 </programlisting>
 
-  <para>Ver também: <link linkend="FROMUNICODE">FROMUNICODE</link>, <link
+  <para>Ver também: <link linkend="FROMUNICODE">FROMUNICODE</link>, <link 
   linkend="TOUNICODE">TOUNICODE</link></para>
 </sect1>

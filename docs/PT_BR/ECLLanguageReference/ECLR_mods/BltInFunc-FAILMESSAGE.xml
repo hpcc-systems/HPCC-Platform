@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FAILMESSAGE">
@@ -13,27 +13,27 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="74.15pt"/>
+        <colspec colwidth="74.15pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>tag</emphasis></entry>
 
-            <entry>Uma constante da string que define o nome da tag XML que
-            contém o texto a ser retornado, normalmente informação adicional
-            retornada pelo SOAPCALL. Se omitida, o padrão é “text”.</entry>
+            <entry>Uma constante da string que define o nome da tag XML que 
+	    contém o texto a ser retornado, normalmente informação adicional 
+	    retornada pelo SOAPCALL. Se omitida, o padrão é “text”.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">FAILMESSAGE </emphasis> retorna a
-  última mensagem de falha para ser usada no serviço de fluxo de trabalho
+  <para>A função  <emphasis role="bold">FAILMESSAGE </emphasis> retorna a 
+  última mensagem de falha para ser usada no serviço de fluxo de trabalho 
   FAILURE ou na <indexterm>
       <primary>estrutura TRANSFORM</primary>
-    </indexterm> TRANSFORM referenciada na opção ONFAIL de SOAPCALL.</para>
+    </indexterm>  TRANSFORM referenciada na opção ONFAIL de SOAPCALL.</para>
 
   <para>Exemplo:</para>
 

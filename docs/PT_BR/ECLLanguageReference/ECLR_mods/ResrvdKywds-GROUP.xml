@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GROUP">
@@ -10,17 +10,17 @@
       <primary>GROUP</primary>
     </indexterm></emphasis></para>
 
-  <para>A palavra-chave <emphasis role="bold">GROUP </emphasis>é usada dentro
-  do parâmetro de resultado <emphasis>format</emphasis> (estrutura RECORD) da
-  definição TABLE, onde grupos opcionais por <emphasis>expressões</emphasis>
-  também estão presentes. GROUP substitui o parâmetro
-  <emphasis>recordset</emphasis> de qualquer função embutida agregada usada no
-  resultado, para indicar que a operação é desempenhada por cada grupo da
-  <emphasis>expressão</emphasis>. Isso é semelhante à cláusula “GROUP BY” do
-  SQL . O uso mais comum é gerar uma tabela na forma de um relatório de tabela
+  <para>A palavra-chave  <emphasis role="bold">GROUP </emphasis>é usada dentro 
+  do parâmetro de resultado  <emphasis>format</emphasis>  (estrutura RECORD) da 
+  definição TABLE, onde grupos opcionais por  <emphasis>expressões</emphasis>  
+  também estão presentes. GROUP substitui o parâmetro  
+  <emphasis>recordset</emphasis>  de qualquer função embutida agregada usada no 
+  resultado, para indicar que a operação é desempenhada por cada grupo da  
+  <emphasis>expressão</emphasis>. Isso é semelhante à cláusula “GROUP BY” do 
+  SQL . O uso mais comum é gerar uma tabela na forma de um relatório de tabela 
   de referência cruzada.</para>
 
-  <para>Há também uma função GROUP embutida que oferece funcionalidade
+  <para>Há também uma função GROUP embutida que oferece funcionalidade 
   semelhante.</para>
 
   <para>Exemplo:</para>

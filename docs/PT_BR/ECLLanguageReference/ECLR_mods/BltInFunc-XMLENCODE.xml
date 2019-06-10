@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="XMLENCODE">
@@ -16,9 +16,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="77.05pt"/>
+        <colspec colwidth="77.05pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -30,9 +30,9 @@
           <row>
             <entry><emphasis role="bold">ALL</emphasis></entry>
 
-            <entry>Opcional. Especifica a inclusão de novos caracteres de
-            linha na codificação para que o texto possa ser usado em
-            definições de atributo.</entry>
+            <entry>Opcional. Especifica a inclusão de novos caracteres de 
+	    linha na codificação para que o texto possa ser usado em 
+	    definições de atributo.</entry>
           </row>
 
           <row>
@@ -44,9 +44,9 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">XMLENCODE</emphasis> codifica
-  caracteres especiais em uma string XML (por exemplo,&lt; é convertido para
-  &amp;lt) para permitir o uso da opção CSV no OUTPUT, a fim de gerar arquivos
+  <para>A função  <emphasis role="bold">XMLENCODE</emphasis>  codifica 
+  caracteres especiais em uma string XML (por exemplo,&lt; é convertido para 
+  &amp;lt) para permitir o uso da opção CSV no OUTPUT, a fim de gerar arquivos 
   XML mais complexos em comparação ao uso da opção XML.</para>
 
   <para>Exemplo:</para>

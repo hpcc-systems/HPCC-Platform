@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IN_Operator">
@@ -13,33 +13,33 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
           <entry><emphasis>value</emphasis></entry>
 
-          <entry>O valor a ser localizado no <emphasis>value_set</emphasis>.
-          Trata-se geralmente de um único valor, porém se o
-          <emphasis>value_set</emphasis> for um DICTIONARY com chave de
-          múltiplos componentes, também pode ser uma ROW.</entry>
+          <entry>O valor a ser localizado no  <emphasis>value_set</emphasis>. 
+	  Trata-se geralmente de um único valor, porém se o  
+	  <emphasis>value_set</emphasis> for um DICTIONARY com chave de 
+	  múltiplos componentes, também pode ser uma ROW.</entry>
         </row>
 
         <row>
           <entry><emphasis>value_set</emphasis></entry>
 
-          <entry>Um conjunto de valores. Isto pode ser uma expressão do
-          conjunto, a função SET, ou um DICTIONARY.</entry>
+          <entry>Um conjunto de valores. Isto pode ser uma expressão do 
+	  conjunto, a função SET, ou um DICTIONARY.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>O operador <emphasis role="bold">IN</emphasis> é um atalho para uma
-  coleção de condições OR . É um operador que buscará uma inclusão no
-  conjunto, resultando em um retorno booleano. O uso de IN é muito mais
+  <para>O operador  <emphasis role="bold">IN</emphasis>  é um atalho para uma 
+  coleção de condições OR . É um operador que buscará uma inclusão no 
+  conjunto, resultando em um retorno booleano. O uso de IN é muito mais 
   eficiente do que sua expressão equivalente OR .</para>
 
   <para>Exemplo:</para>
@@ -84,8 +84,8 @@ OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);
   <link linkend="Logical_Operators">Operadores Lógicos</link>, <link
   linkend="PARSE_Pattern_Value_Types">PATTERN</link>, <link
   linkend="DICTIONARY">DICTIONARY</link>, <link linkend="ROW">ROW</link>,
-  <link linkend="SET">SET</link>, <link
-  linkend="Recordset_Filtering">Conjuntos e Filtros</link>, <link
-  linkend="SET_OF">SET OF</link>, <link linkend="Set_Operators">Operadores
+  <link linkend="SET">SET</link>, <link 
+  linkend="Recordset_Filtering">Conjuntos e Filtros</link>, <link 
+  linkend="SET_OF">SET OF</link>, <link linkend="Set_Operators">Operadores 
   Set</link></para>
 </sect1>

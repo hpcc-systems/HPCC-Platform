@@ -46,7 +46,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -59,8 +59,7 @@
           <row>
             <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo
-            ID</entry>
+            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo</entry>
           </row>
 
           <row>
@@ -78,7 +77,7 @@
           </row>
 
           <row>
-            <entry>Return:<emphasis/></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>Um resultado “meta” que descreve a visualização.</entry>
           </row>
@@ -86,7 +85,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">USStates </emphasis>o método de visualização
+    <para>O método de visualização <emphasis role="bold">USStates </emphasis>
     representa os dados em um mapa dos EUA.</para>
 
     <para>Exemplo:</para>
@@ -139,7 +138,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -152,8 +151,7 @@
           <row>
             <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo
-            ID</entry>
+            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo</entry>
           </row>
 
           <row>
@@ -179,19 +177,17 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">USCounties </emphasis>o método de
-    visualização representa os dados em um mapa dos condados dos EUA.</para>
+    <para>O método de visualização <emphasis role="bold">USCounties </emphasis>
+    representa os dados em um mapa dos condados dos EUA.</para>
 
     <para>Exemplo:</para>
 
     <programlisting format="linespecific">IMPORT Visualizer;
-
   _usCounties := DATASET([    {1073,29.946185501741},
-                                        {1097,0.79566003616637},
-                                        {1117,1.5223596574691},
-                                        {4005,27.311773623042}],
-                                        {STRING FIPS, INTEGER4 weight});
-
+                              {1097,0.79566003616637},
+                              {1117,1.5223596574691},
+                              {4005,27.311773623042}],
+                              {STRING FIPS, INTEGER4 weight});
   data_usCounties := OUTPUT(_usCounties, NAMED('choro_usCounties'));
   data_usCounties;
   viz_uscounties := Visualizer.Choropleth.USCounties('usCounties',, 'choro_usCounties');
@@ -239,14 +235,14 @@
           <row>
             <entry><emphasis>region</emphasis></entry>
 
-            <entry>Código europeu de 2 letras ( GB, IE, etc.)</entry>
+            <entry>Código Europeu de Duas Letras ( GB, IE, etc.)</entry>
           </row>
 
           <row>
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU</entry>
           </row>
 
           <row>
@@ -259,8 +255,7 @@
           <row>
             <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo
-            ID</entry>
+            <entry>Nome da colunas de mapeamento &lt;--&gt;ID do campo</entry>
           </row>
 
           <row>
@@ -286,7 +281,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">Euro </emphasis>O método de visualização
+    <para>O método de visualização  <emphasis role="bold">Euro </emphasis>
     representa os dados em um mapa da Europa. Os <emphasis
     role="bold">métodos</emphasis> EuroIE <emphasis role="bold">e</emphasis>
     EuroGB são fornecidos como exemplos. Para criar outros métodos específicos

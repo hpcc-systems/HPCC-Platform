@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="BEGINCplus_Structure">
@@ -11,7 +11,7 @@
   role="bold">) := BEGINC++<indexterm>
       <primary>BEGINC++</primary>
     </indexterm></emphasis><emphasis role="bold">
-  </emphasis><emphasis/></para>
+  </emphasis><emphasis></emphasis></para>
 
   <para><emphasis> code</emphasis><emphasis role="bold"> </emphasis></para>
 
@@ -21,9 +21,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
@@ -41,8 +41,8 @@
         <row>
           <entry><emphasis>parameterlist</emphasis></entry>
 
-          <entry>Uma lista separada por vírgulas com os parâmetros a serem
-          passados para a <emphasis>função</emphasis>.</entry>
+          <entry>Uma lista separada por vírgulas com os parâmetros a serem 
+	  passados para a <emphasis>função</emphasis>.</entry>
         </row>
 
         <row>
@@ -54,16 +54,16 @@
     </tgroup>
   </informaltable>
 
-  <para>A estrutura <emphasis role="bold">BEGINC++ </emphasis>possibilita a
-  adição de código C++ em linha à sua ECL. Isso é útil quando o processamento
-  de strings ou bits seria complicado na ECL e mais fácil em C++. Normalmente,
-  é usado para código que será executado uma única vez. Para código C++ usado
-  mais frequentemente, uma melhor solução seria criar um plugin (consulte a
-  discussão <emphasis role="bold">Implementação de serviços
+  <para>A estrutura  <emphasis role="bold">BEGINC++ </emphasis>possibilita a 
+  adição de código C++ em linha à sua ECL. Isso é útil quando o processamento 
+  de strings ou bits seria complicado na ECL e mais fácil em C++. Normalmente, 
+  é usado para código que será executado uma única vez. Para código C++ usado 
+  mais frequentemente, uma melhor solução seria criar um plugin (consulte a 
+  discussão  <emphasis role="bold">Implementação de serviços 
   externos</emphasis> ).</para>
 
-  <para>A implementação deve ser codificada como segura para linha de execução
-  (thread). Todas as chamadas para bibliotecas externas devem ser feitas para
+  <para>A implementação deve ser codificada como segura para linha de execução 
+  (thread). Todas as chamadas para bibliotecas externas devem ser feitas para 
   as versões dessas bibliotecas que são seguras para linha de execução.</para>
 
   <para>Utilizando este form, você pode usar EMBED ao invés de BEGINC++ para
@@ -72,11 +72,11 @@
 
   <para><programlisting>myFunction(string name) := EMBED(C++ [: options]) 
   ... text 
-ENDEMBED</programlisting></para>
+  ENDEMBED</programlisting></para>
 
-  <para><emphasis role="bold">ATENÇÃO: Esse recurso pode gerar corrupção de
-  memória e/ou problemas de segurança. Portanto, recomendamos cautela e uma
-  consideração detalhada. Consulte o Suporte Técnico antes de
+  <para><emphasis role="bold">ATENÇÃO: Esse recurso pode criar corrupção de 
+  memória e/ou problemas de segurança, por isso é necessário muito cuidado e 
+  prudência - Consulte o Suporte Técnico antes de 
   usar.</emphasis></para>
 
   <sect2 id="ECL_to_Cplus_Mapping">
@@ -88,8 +88,8 @@ ENDEMBED</programlisting></para>
 typedef unsigned size32_t;
 typedef wchar_t UChar; [ unsigned short in linux ]</programlisting>
 
-    <para>A lista a seguir descreve os mapeamentos da ECL para o C++. Para C++
-    incorporado, os parâmetros são sempre convertidos em minúsculas, com
+    <para>A lista a seguir descreve os mapeamentos da ECL para o C++. Para C++ 
+    incorporado, os parâmetros são sempre convertidos em minúsculas, com 
     maiúsculas nas conjunções (veja abaixo).</para>
 
     <programlisting><emphasis role="bold">ECL                  C++ [Linux in brackets]</emphasis>
@@ -116,12 +116,11 @@ QSTRING&lt;nn&gt; xyz      char * xyz
 UNICODE&lt;nn&gt; xyz      UChar * xyz
 SET OF ... xyz       bool isAllXyz, size32_t lenXyz, void *  xyz</programlisting>
 
-    <para>Observe que strings de comprimento desconhecido são passadas de
-    forma diferente das que têm tamanho conhecido. Uma string de comprimento
-    variável é passada como um número de caracteres e não como tamanho (ou
-    seja, qstring/unicode), seguido por um pointer para os dados, desta forma
+    <para>Observe que strings de comprimento desconhecido são passadas de 
+    forma diferente das que têm tamanho conhecido. Uma string de comprimento 
+    variável é passada como um número de caracteres e não como tamanho (ou 
+    seja, qstring/unicode), seguido por um pointer para os dados, desta forma 
     (size32_t é um UNSIGNED4):</para>
-
     <programlisting>STRING  ABC -&gt; size32_t lenAbc, const char * abc;
 UNICODE ABC -&gt; size32_t lenABC, const UChar * abc;</programlisting>
 
@@ -136,17 +135,17 @@ LINKCOUNTED DATASET(r)  ABC -&gt; size32_t countAbc, const byte * * abc
   The rows are accessed as x[0], x[1], x[2]
 </programlisting>
 
-    <para>OBSERVAÇÃO: strings de comprimento variável em um registro são
-    armazenadas como um número de 4 bytes de caracteres, seguido pelos dados
+    <para>OBSERVAÇÃO: strings de comprimento variável em um registro são 
+    armazenadas como um número de 4 bytes de caracteres, seguido pelos dados 
     da string.</para>
 
-    <para>Os conjuntos são passados como um conjunto de parâmetros (all, size,
+    <para>Os conjuntos são passados como um conjunto de parâmetros (all, size, 
     pointer):</para>
 
     <programlisting>SET OF UNSIGNED4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting>
 
-    <para>Os tipos de retorno são processados como funções C++ retornando os
-    mesmos tipos, com algumas exceções. As exceções têm alguns parâmetros
+    <para>Os tipos de retorno são processados como funções C++ retornando os 
+    mesmos tipos, com algumas exceções. As exceções têm alguns parâmetros 
     iniciais adicionais onde os resultados serão retornados:</para>
 
     <programlisting><emphasis role="bold">ECL                C++ [Linux in brackets]</emphasis>
@@ -170,7 +169,6 @@ LINKCOUNTED DATASET(r)
 STREAMED DATASET(r) 
                    returns a pointer to an IRowStream interface 
                    (see the eclhelper.hpp include file for the definition)</programlisting>
-
     <para>Por exemplo,</para>
 
     <programlisting>STRING process(STRING value, INTEGER4 len)</programlisting>
@@ -205,46 +203,46 @@ isUpper('JIM');
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt"/>
+        <colspec align="left" colwidth="122.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis role="bold">#option pure</emphasis></entry>
 
-            <entry>Por padrão, supõe-se que as funções C++ incorporadas tenham
-            efeitos colaterais. Isso significa que o código gerado não será
-            tão eficiente como poderia, pois as chamadas não serão
-            compartilhadas. A adição de #option dentro do
-            <emphasis>code</emphasis> C++ incorporado faz como que ele seja
-            tratado como uma função pura, sem efeitos colaterais.</entry>
+            <entry>Por padrão, supõe-se que as funções C++ incorporadas tenham 
+	    efeitos colaterais. Isso significa que o código gerado não será 
+	    tão eficiente como poderia, pois as chamadas não serão 
+	    compartilhadas. A adição de #option dentro do 
+	    <emphasis>code</emphasis>  C++ incorporado faz como que ele seja
+	    tratado como uma função pura, sem efeitos colaterais.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">#option once</emphasis></entry>
 
-            <entry>Indica que a função não tem efeitos colaterais e é avaliada
-            no tempo de execução da query, mesmo se os parâmetros forem
-            constantes, o que permite que o otimizador faça chamadas mais
-            eficientes à função em alguns casos</entry>
+            <entry>Indica que a função não tem efeitos colaterais e é avaliada 
+	    no tempo de execução da query, mesmo se os parâmetros forem 
+	    constantes, o que permite que o otimizador faça chamadas mais 
+	    eficientes à função em alguns casos</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">#option action</emphasis></entry>
 
-            <entry>Indica efeitos colaterais, o que exige que o otimizador
-            mantenha todas as chamadas à função.</entry>
+            <entry>Indica efeitos colaterais, o que exige que o otimizador 
+	    mantenha todas as chamadas à função.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">#body</emphasis></entry>
 
-            <entry>Delimita o início do código executável. Todo o
-            <emphasis>code</emphasis> que precede #body (como #include) é
-            gerado fora da definição da função. Todo o código subsequente é
-            gerado dentro da definição da função.&lt;/ns:clipboard
-            &gt;</entry>
+            <entry>Delimita o início do código executável. Todo o 
+            <emphasis>code</emphasis>  que precede #body (como #include) é 
+	    gerado fora da definição da função. Todo o código subsequente é 
+	    gerado dentro da definição da função.
+	    </entry>
           </row>
         </tbody>
       </tgroup>
@@ -377,7 +375,8 @@ out3 := NORMALIZE(processed, extractResult3(LEFT), TRANSFORM(RIGHT));
 SEQUENTIAL(OUTPUT(out1),OUTPUT(out2),OUTPUT(out3));
 </programlisting>
 
-    <para>Ver também: Implementação de Serviços Externos, Estrutura
-    EMBED</para>
+    <para>Ver também: <link linkend="External_Service_Implementation">
+    Implementação de Serviços Externos</link>, 
+    <link linkend="EMBED_Structure">Estrutura EMBED</link></para>
   </sect2>
 </sect1>

@@ -11,14 +11,14 @@
   <para/>
 
   <sect1 id="VizMultiDArea">
-    <title>Área</title>
+    <title>Área (Area)</title>
 
-    <para><emphasis role="bold">Visualizer.MuiltD.Área(<indexterm>
-        <primary>Visualizer.MultiD.Área</primary>
+    <para><emphasis role="bold">Visualizer.MuiltD.Area(<indexterm>
+        <primary>Visualizer.MultiD.Area</primary>
       </indexterm><indexterm>
-        <primary>MultiD.Área</primary>
+        <primary>MultiD.Area</primary>
       </indexterm><indexterm>
-        <primary>Área</primary>
+        <primary>Area</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -45,7 +45,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -84,7 +84,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Área
+    <para>O método de visualização <emphasis role="bold"> Área (Area) </emphasis>
     exibe dados quantitativos na forma gráfica. A área entre o eixo e cada
     linha é mostrada e pode ser destacada através de sombreamento ou uso de
     cores. Isso é normalmente usado para comparar duas ou mais
@@ -110,7 +110,7 @@
   </sect1>
 
   <sect1 id="VizMultiDBar">
-    <title>Barras</title>
+    <title>Barras (Bar)</title>
 
     <para><emphasis role="bold">Visualizer.MuiltD.Bar(<indexterm>
         <primary>Visualizer.MultiD.Bar</primary>
@@ -144,7 +144,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -175,7 +175,7 @@
           </row>
 
           <row>
-            <entry>Return:<emphasis/></entry>
+            <entry>Return:</emphasis></entry>
 
             <entry>Um resultado “meta” que descreve a visualização.</entry>
           </row>
@@ -183,7 +183,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Barras
+    <para>O método de visualização <emphasis role="bold"> Barras (Bars) </emphasis>
     exibe um gráfico contendo barras horizontais retangulares onde cada
     comprimento representa o valor dos dados.</para>
 
@@ -207,7 +207,7 @@
   </sect1>
 
   <sect1 id="VizMultiDColumn">
-    <title>Colunas</title>
+    <title>Colunas (Column)</title>
 
     <para><emphasis role="bold">Visualizer.MuiltD.Column(<indexterm>
         <primary>Visualizer.MultiD.Column</primary>
@@ -241,7 +241,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -267,7 +267,7 @@
           <row>
             <entry><emphasis>properties</emphasis></entry>
 
-            <entry>Propriedades de Visualização Consulte <link
+            <entry>Propriedades de Visualização Consulte<link
             linkend="VizDermProp">Propriedades de Visualização</link></entry>
           </row>
 
@@ -280,7 +280,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Colunas
+     <para>O método de visualização <emphasis role="bold"> Colunas (Column)</emphasis>
     exibe um gráfico contendo barras verticais retangulares onde cada
     comprimento representa o valor dos dados.</para>
 
@@ -290,21 +290,21 @@
   ds := DATASET([ {'English', 5, 43, 41, 92},
                   {'History', 17, 43, 83, 93},
                   {'Geography', 7, 45, 52, 83},
-                  {'Chemistry', 16, 73, 52, 83},
-                  {'Spanish', 26, 83, 11, 72},
-                  {'Bioligy', 66, 60, 85, 6},
-                  {'Physics', 46, 20, 53, 7},
-                  {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
-  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
-  data_exams;
-  
-  viz_Column := Visualizer.MultiD.Column('column',, 'MultiD__test');
-  viz_Column;</programlisting>
+		  {'Chemistry', 16, 73, 52, 83},
+		  {'Spanish', 26, 83, 11, 72},
+		  {'Bioligy', 66, 60, 85, 6},
+		  {'Physics', 46, 20, 53, 7},
+		  {'Math', 98, 30, 23, 13}],
+		  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+		  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+		  data_exams;
+		  
+		  viz_Column := Visualizer.MultiD.Column('column',, 'MultiD__test');
+		  viz_Column;</programlisting>
   </sect1>
 
   <sect1 id="VizMultiDHexBin">
-    <title>Hexágono</title>
+    <title>HexBin</title>
 
     <para><emphasis role="bold">Visualizer.MuiltD.HexBin(<indexterm>
         <primary>Visualizer.MultiD.HexBin</primary>
@@ -338,7 +338,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -364,7 +364,7 @@
           <row>
             <entry><emphasis>properties</emphasis></entry>
 
-            <entry>Propriedades de Visualização Consulte <link
+            <entry>Propriedades de Visualização Consulte<link
             linkend="VizDermProp">Propriedades de Visualização</link></entry>
           </row>
 
@@ -377,7 +377,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Hexágono
+    <para>O método de visualização <emphasis role="bold">HexBin </emphasis>
     exibe um gráfico com caixas hexagonais indicando duas ou mais variáveis
     contínuas entre si. A categorização hexagonal é útil para agregar valores
     de dados em uma exibição mais ampla. Por exemplo, em vez de mostrar
@@ -404,7 +404,7 @@
   </sect1>
 
   <sect1 id="VizMultiDLine">
-    <title>Linha</title>
+    <title>Linha (Line)</title>
 
     <para><emphasis role="bold">Visualizer.MuiltD.Line(<indexterm>
         <primary>Visualizer.MultiD.Line</primary>
@@ -438,7 +438,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -464,7 +464,7 @@
           <row>
             <entry><emphasis>properties</emphasis></entry>
 
-            <entry>Propriedades de Visualização Consulte <link
+            <entry>Propriedades de Visualização Consulte<link
             linkend="VizDermProp">Propriedades de Visualização</link></entry>
           </row>
 
@@ -477,7 +477,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Linha
+    <para>O método de visualização <emphasis role="bold"> Linha (Line) </emphasis>
     exibe um gráfico de linha que usa pontos conectados por linhas para
     mostrar a mudança dos valores.</para>
 
@@ -490,18 +490,17 @@
                   {'Chemistry', 16, 73, 52, 83},
                   {'Spanish', 26, 83, 11, 72},
                   {'Bioligy', 66, 60, 85, 6},
-                  {'Physics', 46, 20, 53, 7},
-                  {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+		  {'Physics', 46, 20, 53, 7},
+		  {'Math', 98, 30, 23, 13}],
+		  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
-  
   viz_line := Visualizer.MultiD.Line('line',, 'MultiD__test');
   viz_line;</programlisting>
   </sect1>
 
   <sect1 id="VizMultiDScatter">
-    <title>Dispersão</title>
+    <title>Dispersão (Scatter)</title>
 
     <para><emphasis role="bold">Visualizer.MuiltD.Scatter(<indexterm>
         <primary>Visualizer.MultiD.Scatter</primary>
@@ -534,8 +533,8 @@
           <row>
             <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+           <entry>Localização do conjunto de resultados (WUID, Arquivo 
+	    Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -574,30 +573,32 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold"> método de visualização </emphasis>Scatter
-    (Dispersão) exibe um gráfico de dispersão usando os eixos horizontal e
-    vertical para representar os pontos dos dados.</para>
+    <para>O método de visualização <emphasis role="bold">Dispersão (Scatter) </emphasis>
+     exibe um gráfico de dispersão usando os eixos horizontal e
+      vertical para representar os pontos dos dados.</para>
 
     <para>Exemplo:</para>
 
     <programlisting format="linespecific">IMPORT Visualizer;                  
-  ds := DATASET([ {'English', 5, 43, 41, 92},
-                  {'History', 17, 43, 83, 93},
-                  {'Geography', 7, 45, 52, 83},
-                  {'Chemistry', 16, 73, 52, 83},
-                  {'Spanish', 26, 83, 11, 72},
-                  {'Bioligy', 66, 60, 85, 6},
-                  {'Physics', 46, 20, 53, 7},
-                  {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
-  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
-  data_exams;
-  viz_scatter := Visualizer.MultiD.Scatter('scatter',, 'MultiD__test');
-  viz_scatter;</programlisting>
+    ds := DATASET([ {'English', 5, 43, 41, 92},
+                    {'History', 17, 43, 83, 93},
+		    {'Geography', 7, 45, 52, 83},
+		    {'Chemistry', 16, 73, 52, 83},
+		    {'Spanish', 26, 83, 11, 72},
+		    {'Bioligy', 66, 60, 85, 6},
+		    {'Physics', 46, 20, 53, 7},
+		    {'Math', 98, 30, 23, 13}],
+		    {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+    data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+    data_exams;
+    viz_scatter := Visualizer.MultiD.Scatter('scatter',, 'MultiD__test');
+    viz_scatter;
+    
+    </programlisting>
   </sect1>
 
   <sect1 id="VizMultiDStep">
-    <title>Step (Escada ou Degrau)</title>
+    <title>Escada ou Degrau (Step)</title>
 
     <para><emphasis role="bold">Visualizer.MuiltD.Step(<indexterm>
         <primary>Visualizer.MultiD.Step</primary>
@@ -631,7 +632,7 @@
             <entry><emphasis>dataSource</emphasis></entry>
 
             <entry>Localização do conjunto de resultados (WUID, Arquivo
-            lógico, resultado da consulta Roxie), padrão para a WU</entry>
+            Lógico, Resultado da Consulta Roxie), padrão para a WU atual</entry>
           </row>
 
           <row>
@@ -670,25 +671,27 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold"> método de visualização </emphasis> Step
-    (Escada ou Degrau) mostra um gráfico de escada constituído por linhas em
-    intervalor ou “degraus” horizontais.</para>
+    <para>O método de visualização <emphasis role="bold"> Step (Escada ou Degrau) </emphasis>
+     mostra um gráfico de escada constituído por linhas em 
+     intervalor ou “degraus” horizontais.</para>
 
     <para>Exemplo:</para>
 
     <programlisting format="linespecific">IMPORT Visualizer;                  
-  ds := DATASET([ {'English', 5, 43, 41, 92},
-                  {'History', 17, 43, 83, 93},
-                  {'Geography', 7, 45, 52, 83},
-                  {'Chemistry', 16, 73, 52, 83},
-                  {'Spanish', 26, 83, 11, 72},
-                  {'Bioligy', 66, 60, 85, 6},
-                  {'Physics', 46, 20, 53, 7},
-                  {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
-  data_exams := OUTPUT(ds, NAMED('MultiD__test'));
-  data_exams;
-  viz_step := Visualizer.MultiD.Step('step',, 'MultiD__test');
-  viz_step;</programlisting>
+    ds := DATASET([ {'English', 5, 43, 41, 92},
+                    {'History', 17, 43, 83, 93},
+		    {'Geography', 7, 45, 52, 83},
+		    {'Chemistry', 16, 73, 52, 83},
+		    {'Spanish', 26, 83, 11, 72},
+		    {'Bioligy', 66, 60, 85, 6},
+		    {'Physics', 46, 20, 53, 7},
+		    {'Math', 98, 30, 23, 13}],
+		    {STRING subject, INTEGER4 year1, INTEGER4 year2, 
+		    INTEGER4 year3, INTEGER4 year4});
+data_exams := OUTPUT(ds, NAMED('MultiD__test'));
+data_exams;
+viz_step := Visualizer.MultiD.Step('step',, 'MultiD__test');
+viz_step;
+</programlisting>
   </sect1>
 </chapter>

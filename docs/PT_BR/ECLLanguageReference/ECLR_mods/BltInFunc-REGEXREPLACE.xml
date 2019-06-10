@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="REGEXREPLACE">
@@ -15,9 +15,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.60pt"/>
+        <colspec colwidth="80.60pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -35,17 +35,17 @@
           <row>
             <entry><emphasis>replacement</emphasis></entry>
 
-            <entry>O texto de substituição. Nesta string, $0 refere-se à
-            substring que correspondeu com o padrão <emphasis>regex</emphasis>
-            , e $1, $2, $3... corresponde com o primeiro, segundo, terceiro...
-            grupos no padrão.</entry>
+            <entry>O texto de substituição. Nesta string, $0 refere-se à 
+	    substring que correspondeu com o padrão  <emphasis>regex</emphasis> 
+	    , e $1, $2, $3... corresponde com o primeiro, segundo, terceiro... 
+	    grupos no padrão.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">NOCASE</emphasis></entry>
 
-            <entry>Opcional. Especifica uma busca sem distinção entre
-            maiúsculas e minúsculas.</entry>
+            <entry>Opcional. Especifica uma busca sem distinção entre 
+	    maiúsculas e minúsculas.</entry>
           </row>
 
           <row>
@@ -57,29 +57,29 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">REGEXREPLACE </emphasis> usa
+  <para>A função  <emphasis role="bold">REGEXREPLACE </emphasis> usa 
   <emphasis>regex<indexterm>
       <primary>regex</primary>
-    </indexterm></emphasis> para analisar o <emphasis>texto</emphasis> e
-  localizar correspondências, a fim de em seguida substituí-las com a string
-  de <emphasis>substituição.</emphasis> A <emphasis>regex</emphasis> uma
-  expressão Perl regular padrão<indexterm>
+    </indexterm></emphasis>  para analisar o  <emphasis>texto</emphasis>  e 
+    localizar correspondências, a fim de em seguida substituí-las com a string 
+    de  <emphasis>substituição.</emphasis> A <emphasis>regex</emphasis> uma 
+    expressão Perl regular padrão<indexterm>
       <primary>Perl regular expression</primary>
-    </indexterm>. Usamos bibliotecas de terceiros para suportar isso.
-  Portanto, para texto de código único consulte os documentos Boost em
-  <emphasis>text</emphasis> <ulink
-  url="http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html">http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html</ulink>.
-  Observe que a versão da biblioteca Boost pode variar de acordo com sua
-  distribuição. Para <emphasis>texto</emphasis> unicode, consulte os
-  documentos ICU nas seções “Regular Expression Metacharacters”
-  (Metacaracteres de expressão regular) e “Regular Expression Operators”
+    </indexterm>. Usamos bibliotecas de terceiros para suportar isso. 
+    Portanto, para texto de código único consulte os documentos Boost em 
+    <emphasis>text</emphasis> <ulink
+  url="http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html">http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html</ulink>. 
+  Observe que a versão da biblioteca Boost pode variar de acordo com sua 
+  distribuição. Para  <emphasis>texto</emphasis> unicode, consulte os 
+  documentos ICU nas seções “Regular Expression Metacharacters” 
+  (Metacaracteres de expressão regular) e “Regular Expression Operators” 
   (Operadores de expressão regular) em <emphasis
   role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
-  e os links indicados lá, especificamente a seção “UnicodeSet patterns”
-  (Padrões UnicodeSet) em http://userguide.icu-project.org/strings/unicodeset.
+   e os links indicados lá, especificamente a seção “UnicodeSet patterns” 
+   (Padrões UnicodeSet) em http://userguide.icu-project.org/strings/unicodeset.
   <emphasis
-  role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
-  Nós usamos a versão 2.6, que deve suportar todos os recursos
+  role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>. 
+  Nós usamos a versão 2.6, que deve suportar todos os recursos 
   listados.</para>
 
   <para>Exemplo:</para>

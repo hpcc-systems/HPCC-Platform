@@ -1,24 +1,24 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_EXPORT">
   <title>#EXPORT</title>
 
-  <para><emphasis role="bold">#EXPORT( </emphasis><emphasis>symbol,
+  <para><emphasis role="bold">#EXPORT( </emphasis><emphasis>symbol, 
   data</emphasis> <emphasis role="bold">);</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="76.35pt"/>
+        <colspec colwidth="76.35pt" />
 
-        <colspec colwidth="276.45pt"/>
+        <colspec colwidth="276.45pt" />
 
         <tbody>
           <row>
             <entry><emphasis>symbol</emphasis></entry>
 
-            <entry>O nome de uma variável de modelo previamente
-            declarada.</entry>
+            <entry>O nome de uma variável de modelo previamente 
+	    declarada.</entry>
           </row>
 
           <row>
@@ -32,11 +32,11 @@
 
   <para>A statement <emphasis role="bold">#EXPORT </emphasis><indexterm>
       <primary>#EXPORT</primary>
-    </indexterm>produz XML em formato texto de <emphasis>dados</emphasis>
-  especificados e substitui no lugar do <emphasis>symbol</emphasis>. Isso
-  permite o formato LOADXML(symbol,name) para instanciar um escopo XML com
-  base nas informações de <emphasis>dados</emphasis> a serem
-  processadas.</para>
+    </indexterm>produz XML em formato texto de <emphasis>dados</emphasis>  
+    especificados e substitui no lugar do  <emphasis>symbol</emphasis>. Isso 
+    permite o formato LOADXML(symbol,name) para instanciar um escopo XML com 
+    base nas informações de  <emphasis>dados</emphasis>  a serem 
+    processadas.</para>
 
   <para>A saída XML é gerada no seguinte formato:</para>
 
@@ -51,12 +51,12 @@
   &lt;/Data&gt;
 </programlisting>
 
-  <para>IFBLOCKs são simplesmente expandidos no XML. Tipos RECORD aninhados
-  têm um atributo isRecord definido como 1 e são seguidos pelos campos que
-  contêm e por uma tag Field sem nome com o atributo isEnd definido como 1.
-  Essa representação é usada (em vez de objetos aninhados) para que seja
-  possível processá-la por uma declaração #FOR. Os tipos de datasets
-  secundários também são expandidos de forma semelhante e têm um atributo
+  <para>IFBLOCKs são simplesmente expandidos no XML. Tipos RECORD aninhados 
+  têm um atributo isRecord definido como 1 e são seguidos pelos campos que 
+  contêm e por uma tag Field sem nome com o atributo isEnd definido como 1. 
+  Essa representação é usada (em vez de objetos aninhados) para que seja 
+  possível processá-la por uma declaração #FOR. Os tipos de datasets 
+  secundários também são expandidos de forma semelhante e têm um atributo 
   isDataset definido como 1 no campo.</para>
 
   <para>Exemplo:</para>

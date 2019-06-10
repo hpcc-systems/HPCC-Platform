@@ -59,11 +59,17 @@
 
     <para>A ESDL dinâmica adota uma abordagem de desenvolvimento da primeira interface. Ela aproveita a linguagem ESDL para criar uma interface comum "contract" de modo que ambos os desenvolvedores de consultas Roxie e de interface Web possam aderir. O objetivo é permitir que os desenvolvedores criem serviços Web de produção com interfaces limpas que capazes de evoluir e crescer ao longo do tempo sem interromper as aplicações existentes.</para>
 
-    <para>O suporte de versões embutido do ESDL ajuda a garantir que aplicações implementadas e compiladas continuem a operar mesmo com mudanças na interface do serviço implementado para novas funcionalidades.</para>
+    <para>O suporte a versões integradas do ESDL ajuda a garantir que aplicações 
+    compiladas e implantadas continuem operando enquanto são feitas alterações na 
+    interface do serviço implementado para nova funcionalidade.</para>
 
-    <para>A capacidade do ESDL de definir e reutilizar estruturas comuns ajuda a manter as interfaces consistentes entre os métodos.</para>
+    <para>A capacidade do ESDL de definir e reutilizar estruturas comuns ajuda a 
+    manter interfaces consistentes entre os métodos.</para>
 
-    <para>O serviço ESDL dinâmico foi desenvolvido para dimensionar horizontalmente, e ganchos são fornecidos para adicionar processos de registro (logging) e segurança personalizados para ajudar a criar serviços Web totalmente "prontos para produção".</para>
+    <para>O serviço Dynamic ESDL foi desenvolvido para dimensionar horizontalmente, 
+    e ganchos são fornecidos para adicionar processos de registro (logging) 
+    e segurança personalizados para ajudar a criar web services totalmente 
+    "prontos para produção".</para>
 
     <para>Depois que um serviço é implementado, desenvolvedores de aplicações e usuários finais podem utilizá-lo usando REST, JSON, XML, SOAP ou postagens codificadas por formulário. A ESDL dinâmica oferece acesso rápido e fácil a um WSDL, formulários dinâmicos, amostras de busca e de respostas, e interfaces de testes para permitir que os desenvolvedores testem as mudanças lógicas, as alterações de dados ou os novos recursos, além de interagirem com o serviço diretamente usando SOAP, XML ou JSON.</para>
   </chapter>
@@ -165,6 +171,10 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_count.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_count_var.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -196,6 +206,11 @@
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_ver.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+                
+   <xi:include href="DynamicESDL/DESDL-Mods/ESDLping_min_ver.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                
 
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLdepr_ver.xml"
                 xpointer="element(/1)"

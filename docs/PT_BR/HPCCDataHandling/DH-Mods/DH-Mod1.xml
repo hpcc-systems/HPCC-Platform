@@ -1,89 +1,89 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter>
   <title>Componentes de Manipulação de Dados</title>
 
-  <para>Este <emphasis role="bold">Módulo</emphasis> dos documentos é usado
-  para permitir a inclusão de seções de processamento de dados em vários
+  <para>Este  <emphasis role="bold">Módulo</emphasis>  dos documentos é usado 
+  para permitir a inclusão de seções de processamento de dados em vários 
   livros.</para>
 
   <sect1 id="Data_Handling_Terms">
     <title>Terminologia de Manipulação de Dados</title>
 
-    <para>Um <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> é a
-    transferência de um arquivo de dados de um local (como a zona de entrada
-    de arquivos) para um cluster. O termo spray foi adotado devido à natureza
-    da transferência dos arquivos – o arquivo é particionado entre todos os
+    <para>Um  <emphasis>spray</emphasis>  ou  <emphasis>importação</emphasis>  é a 
+    transferência de um arquivo de dados de um local (como a zona de entrada 
+    de arquivos) para um cluster. O termo spray foi adotado devido à natureza 
+    da transferência dos arquivos – o arquivo é particionado entre todos os 
     nós em um cluster.</para>
 
-    <para>Um <emphasis>despray</emphasis> , ou <emphasis>exportação</emphasis>
-    , é a transferência de um arquivo de dados de um cluster para um único
-    local da máquina (como uma zona de entrada de arquivo). O termo despray
-    foi adotado em função da natureza da transferência dos arquivos – o
-    arquivo é então remontado a partir de suas peças em todos os nós no
+    <para>Um  <emphasis>despray</emphasis> , ou  <emphasis>exportação</emphasis> 
+    , é a transferência de um arquivo de dados de um cluster para um único 
+    local da máquina (como uma zona de entrada de arquivo). O termo despray 
+    foi adotado em função da natureza da transferência dos arquivos – o 
+    arquivo é então remontado a partir de suas peças em todos os nós no 
     cluster e colocado em um único arquivo no destino.</para>
 
-    <para>Uma <emphasis>cópia </emphasis> é a replicação de um arquivo de
+    <para>Uma  <emphasis>cópia </emphasis> é a replicação de um arquivo de 
     dados de um cluster para outro cluster no mesmo ambiente.</para>
 
-    <para>Uma <emphasis>Cópia remota </emphasis> é a replicação de um arquivo
+    <para>Uma  <emphasis>Cópia remota </emphasis> é a replicação de um arquivo 
     de dados de um cluster para outro cluster em um ambiente diferente.</para>
 
-    <para>Uma <emphasis>Zona de entrada de arquivo</emphasis> (ou zona de
-    chegada) é um local de armazenamento físico definido no ambiente do seu
-    sistema. É possível definir um ou mais desses locais. Um daemon
-    (DaFileSrv) precisa estar em execução no servidor para possibilitar sprays
+    <para>Uma  <emphasis>Zona de entrada de arquivo</emphasis>  (ou Landing Zone) 
+    é um local de armazenamento físico definido no ambiente do seu 
+    sistema. É possível definir um ou mais desses locais. Um daemon 
+    (DaFileSrv) precisa estar em execução no servidor para possibilitar sprays 
     e desprays do arquivo.</para>
   </sect1>
 
   <sect1 id="Working_with_a_data_file">
     <title>Trabalhando com arquivo de dados</title>
 
-    <para>Depois de começar a trabalhar com seu HPCC System, é recomendado
-    processar alguns dados reais; esta seção mostra como carregar dados no
+    <para>Depois de começar a trabalhar com seu HPCC System, é recomendado 
+    processar alguns dados reais; esta seção mostra como carregar dados no 
     HPCC System.</para>
 
     <sect2 id="Cautions_and_Warnings">
       <title>Antes de começarmos</title>
 
-      <para>Depois de começar a trabalhar com seu HPCC System, é recomendado
-      processar alguns dados reais; esta seção mostra como carregar dados no
-      HPCC System. Um HPCC System de produção típico teria uma capacidade de
-      dados maior do que um sistema de desenvolvimento. O tamanho dos arquivos
-      com os quais você deseja trabalhar é limitado pelo tamanho do seu
+      <para>Depois de começar a trabalhar com seu HPCC System, é recomendado 
+      processar alguns dados reais; esta seção mostra como carregar dados no 
+      HPCC System. Um HPCC System de produção típico teria uma capacidade de 
+      dados maior do que um sistema de desenvolvimento. O tamanho dos arquivos 
+      com os quais você deseja trabalhar é limitado pelo tamanho do seu 
       sistema.</para>
     </sect2>
 
     <sect2 id="Uploading_a_file">
       <title>Enviando um arquivo</title>
 
-      <para>Para arquivos de dados menores, com tamanho máximo de 2GB, você
+      <para>Para arquivos de dados menores, com tamanho máximo de 2GB, você 
       pode usar o utilitário upload/download file no ECL Watch.</para>
 
       <orderedlist>
         <listitem>
-          <para>Em seu navegador, acesse o URL do <emphasis role="bold">ECL
-          Watch</emphasis> de exemplo exibido, http://nnn.nnn.nnn.nnn:8010,
-          onde nnn.nnn.nnn.nnn é o endereço IP do servidor ESP.</para>
+          <para>Em seu navegador, acesse o URL do  <emphasis role="bold">ECL 
+	  Watch</emphasis>  de exemplo exibido, http://nnn.nnn.nnn.nnn:8010, 
+	  onde nnn.nnn.nnn.nnn é o endereço IP do servidor ESP.</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
-                <colspec colwidth="49.50pt"/>
+                <colspec colwidth="49.50pt" />
 
-                <colspec/>
+                <colspec />
 
                 <tbody>
                   <row>
                     <entry><inlinegraphic
-                    fileref="../../images/caution.png"/></entry>
+                    fileref="../../images/caution.png" /></entry>
 
-                    <entry>Seu endereço IP poderá ser diferente dos endereços
-                    fornecidos nas imagens de exemplo. Use o endereço IP
-                    fornecido pela <emphasis role="bold">sua</emphasis>
-                    instalação.</entry>
+                    <entry>Seu endereço IP poderá ser diferente dos endereços 
+		    fornecidos nas imagens de exemplo. Use o endereço IP 
+		    fornecido pela  <emphasis role="bold">sua</emphasis>
+                     instalação.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -91,9 +91,12 @@
         </listitem>
 
         <listitem>
-          <para>Na página do ECL Watch, clique no link <emphasis
-          role="bold">Upload/Download File </emphasis> localizado no menu ao
-          lado esquerdo.</para>
+          <para>Na página inicial do ECL Watch, pressione o link do ícone  <emphasis
+          role="bold">Files</emphasis>  na parte superior, 
+	  pressione o botão <emphasis role="bold">Landing 
+	  Zones</emphasis>  no submenu e clique no botão 
+	  de ação  <emphasis role="bold">Upload</emphasis> , 
+	  conforme ilustrado na imagem a seguir.</para>
 
           <para><figure>
               <title>Upload/download</title>
@@ -101,41 +104,37 @@
               <mediaobject>
                 <imageobject>
                   <imagedata fileref="../../images/LZimg03-1.jpg"
-                             vendor="eclwatchSS"/>
+                             vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
-            </figure></para>
-
-          <para><phrase> </phrase>Após clicar no link Upload/Download File,
-          você será direcionado para a página de zona de entrada de arquivos;
-          lá é possível <emphasis role="bold">procurar</emphasis> em seu
-          computador o arquivo a ser enviado:</para>
+            </figure>Uma caixa de diálogo de arquivo de sistema é exibida. 
+	    Navegue e selecione o arquivo a ser enviado e pressione o botão 
+	     <emphasis role="bold">Open</emphasis>
+          .</para>
 
           <para><figure>
-              <title>Zonas de Entrada</title>
+              <title>Zonas de Entrada (Dropzones)</title>
 
               <mediaobject>
                 <imageobject>
                   <imagedata fileref="../../images/LZimg04.jpg"
-                             vendor="eclwatchSS"/>
+                             vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
             </figure></para>
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Browse</emphasis> para
-          navegar pelos arquivos em seu computador local, selecione o arquivo
-          a ser enviado e clique no botão <emphasis
-          role="bold">Open</emphasis> .</para>
-
-          <para>O arquivo selecionado deverá aparecer <emphasis role="bold">no
-          campo “Selecione um arquivo para enviar!”</emphasis> .</para>
+          <para>Depois de escolher o arquivo para envio, você será 
+	  redirecionado para a caixa de diálogo 
+          <emphasis role="bold">File Uploader</emphasis> , na qual é 
+	  possível escolher uma zona de entrada de arquivo, máquina 
+	  e/ou pasta para o envio do arquivo.</para>
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Upload Now</emphasis>
-          para concluir o envio do arquivo.</para>
+          <para>Pressione o botão  <emphasis role="bold">Start</emphasis>  
+	  para concluir o envio do arquivo.</para>
         </listitem>
       </orderedlist>
     </sect2>
@@ -143,22 +142,21 @@
     <sect2 id="Uploading_files_w_secure_client">
       <title>Enviando um arquivo com uma Cópia de Segurança</title>
 
-      <para>Para enviar um arquivo maior para processamento para sua máquina
-      virtual, será necessária uma ferramenta com suporte para o protocolo de
-      cópia de segurança. Nesta seção, abordaremos o uso do WinSCP. Há outras
-      ferramentas disponíveis, mas os passos são similares.</para>
+      <para>Para carregar um arquivo grande para processamento em seu sistema,
+       você precisará de uma ferramenta que suporte o protocolo de cópia s
+       egura (SCP). Existem várias ferramentas gratuitas disponíveis e as 
+       etapas são bastante semelhantes.</para>
 
       <para><orderedlist>
           <listitem>
-            <para>Abra a ferramenta WinSCP e faça login no nó da zona de
-            entrada de arquivo usando o nome de usuário e senha
-            fornecidos.</para>
+            <para>Abra a ferramenta SCP e faça o login no nó da Landing Zone 
+	    usando o nome de usuário e a senha fornecidos.</para>
 
             <para><informaltable colsep="1" rowsep="1">
                 <tgroup cols="2">
-                  <colspec colwidth="80pt"/>
+                  <colspec colwidth="80pt" />
 
-                  <colspec colwidth="100pt"/>
+                  <colspec colwidth="100pt" />
 
                   <tbody>
                     <row>
@@ -175,35 +173,25 @@
                   </tbody>
                 </tgroup>
               </informaltable></para>
+
+            <para>Assegure-se de estar usando o protocolo seguro, SFTP, 
+	    conectado ao IP ou nome de host da sua Zona de Entrada de arquivo 
+	    através da porta 22 em sua ferramenta SCP.</para>
           </listitem>
 
           <listitem>
-            <para>Depois de fazer login, o sistema irá navegar automaticamente
-            até a pasta da zona de entrada de arquivo.
-            (/var/lib/LexisNexis/mydropzone)</para>
+            <para>Uma vez logado, defina o destino para a pasta da zona de entrada de arquivo. 
+	    (/var/lib/HPCCSystems/mydropzone)</para>
           </listitem>
 
           <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Navegue onde seu arquivo local está na parte esquerda da
-            janela.</para>
-
-            <para><figure>
-                <title>WinSCP</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="../../images/LZimg05.jpg"/>
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+            <para>Navegue onde seu arquivo local está na parte esquerda da 
+	    janela.</para>
           </listitem>
 
           <listitem>
-            <para>Selecione o arquivo de dados para envio e copie-o para a
-            zona de entrada de arquivos usando o recurso de arrastar e
-            soltar.</para>
+            <para>Selecione o arquivo de dados para enviar e copiá-lo para 
+	    sua zona de entrada de arquivos.</para>
           </listitem>
         </orderedlist></para>
     </sect2>
@@ -212,7 +200,7 @@
   <sect1 id="Data_Handling_Methods">
     <title>Métodos de Manipulação de Dados</title>
 
-    <para>Há várias maneiras de fazer o spray, despray ou copiar arquivos de
+    <para>Há várias maneiras de fazer o spray, despray ou copiar arquivos de 
     dados:</para>
 
     <itemizedlist>
@@ -223,36 +211,36 @@
       <listitem>
         <para>O utilitário de linha de comando DFU Plus</para>
 
-        <para>Consulte o manual <emphasis>Ferramentas de cliente</emphasis>
-        para obter mais detalhes</para>
+        <para>Consulte o manual  <emphasis>Ferramentas do Cliente</emphasis>  
+	para obter mais detalhes</para>
       </listitem>
 
       <listitem>
-        <para>Como usar o código ECL e as funções de biblioteca
-        FileServices.</para>
+        <para>Como usar o código ECL e as funções de biblioteca 
+	FileServices.</para>
 
-        <para>Consulte a <emphasis>Referência a linguagem ECL</emphasis> para
-        obter detalhes.</para>
+        <para>Consulte a  <emphasis>Referência a linguagem ECL</emphasis>  para 
+	obter detalhes.</para>
       </listitem>
     </itemizedlist>
 
     <sect2 id="LZ_Spray" role="brk">
-      <title>Spray de Arquivos</title>
+      <title>Spray de Arquivos </title>
 
-      <para>Uma maneira de fazer o spray de arquivos para seus clusters é
-      através da página <emphasis role="bold">Zona de entrada de
-      arquivo</emphasis> no ECL Watch. <orderedlist>
+      <para>Uma maneira de fazer o spray de arquivos para seus clusters é 
+      através da página  <emphasis role="bold">Zona de entrada de 
+      arquivo (Landing Zone)</emphasis>  no ECL Watch. <orderedlist>
           <listitem>
-            <para>Selecione o arquivo na zona de entrada de arquivos marcando
-            a caixa ao lado dele.</para>
+            <para>Selecione o arquivo na zona de entrada de arquivos marcando 
+	    a caixa ao lado dele.</para>
           </listitem>
 
           <listitem>
-            <para>Selecione a opção adequada para o tipo de spray desejado no
-            menu suspenso.</para>
+            <para>Selecione a opção adequada para o tipo de spray desejado no 
+	    menu suspenso.</para>
 
-            <para>Por exemplo, para fazer o spray de um arquivo delimitado,
-            selecione o botão de ação <emphasis
+            <para>Por exemplo, para fazer o spray de um arquivo delimitado, 
+	    selecione o botão  <emphasis
             role="bold">Delimited</emphasis> .</para>
 
             <para><figure>
@@ -260,7 +248,7 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="../../images/IMDB_01.jpg"/>
+                    <imagedata fileref="../../images/IMDB_01.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -271,27 +259,27 @@
           </listitem>
 
           <listitem>
-            <para>Pressione o botão <emphasis role="bold">Spray</emphasis>
-            para realizar o spray do(s) arquivo(s).</para>
+            <para>Pressione o botão <emphasis role="bold">Spray</emphasis>  
+	    para realizar o spray do(s) arquivo(s).</para>
           </listitem>
         </orderedlist></para>
 
       <sect3 id="multi-fileSpray">
         <title>Spray de múltiplos arquivos</title>
 
-        <para>É possível optar por realizar o spray de mais de um arquivo com
-        o recurso de spray de múltiplos arquivos. Isso é útil para realizar o
-        spray de vários arquivos do mesmo tipo usando as mesmas opções de
-        spray.</para>
+        <para>É possível optar por realizar o spray de mais de um arquivo com 
+	o recurso de spray de múltiplos arquivos. Isso é útil para realizar o 
+	spray de vários arquivos do mesmo tipo usando as mesmas opções de 
+	spray.</para>
 
-        <para>Arquivos (de comprimento) fixo podem ter diferentes tamanhos de
-        registro e arquivos XML podem ter diferentes nomes de linha que
-        precisam ser especificados individualmente para cada arquivo. Para
-        especificar essas diferenças, selecione os arquivos para os quais você
-        deseja fazer o spray e o tipo de spray. Você então verá os arquivos
-        listados. Caso estiver utilizando tipos fixo de spray ou XML, insira
-        as informações de tamanho de registro ou nome da linha. Marque todas
-        as outras opções relevantes e faça o spray.</para>
+        <para>Arquivos (de comprimento) fixo podem ter diferentes tamanhos de 
+	registro e arquivos XML podem ter diferentes nomes de linha que 
+	precisam ser especificados individualmente para cada arquivo. Para 
+	especificar essas diferenças, selecione os arquivos para os quais você 
+	deseja fazer o spray e o tipo de spray. Você então verá os arquivos 
+	listados. Caso estiver utilizando tipos fixo de spray ou XML, insira 
+	as informações de tamanho de registro ou nome da linha. Marque todas 
+	as outras opções relevantes e faça o spray.</para>
       </sect3>
     </sect2>
   </sect1>
@@ -303,26 +291,27 @@
       <listitem>
         <para>Faça login no ECL Watch para o ambiente.</para>
 
-        <para>A URL é o endereço IP no qual o ESP Server é instalado seguido
-        da porta à qual o serviço WsSMC está vinculado. A porta padrão é 8010.
-        Por exemplo:<programlisting>http://&lt;ESPserverIP&gt;:8010/</programlisting></para>
+        <para>A URL é o endereço IP no qual o ESP Server é instalado seguido 
+	da porta à qual o serviço WsSMC está vinculado. A porta padrão é 8010. 
+	Por exemplo:<programlisting>http://&lt;ESPserverIP&gt;:8010/</programlisting></para>
       </listitem>
 
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Clique no ícone <emphasis role="bold"> Files</emphasis> e
-        selecione <emphasis role="bold">Logical Files</emphasis>.</para>
+        <para>Clique no hiperlink <emphasis role="bold"> Files</emphasis> 
+	clique no ícone Files e depois clique em  
+	<emphasis role="bold">Logical Files</emphasis>.</para>
 
-        <para>A página Logical Files é aberta, mostrando todos os arquivos com
-        registros lógicos no sistema de arquivos distribuídos do servidor
-        Dali.</para>
+        <para>A página Arquivos lógicos é aberta, mostrando todos 
+	os arquivos com registros lógicos no sistema de arquivos 
+	distribuídos do servidor Dali.</para>
 
         <para><graphic fileref="../../images/DHMan-3.jpg"
-        vendor="eclwatchSS"/></para>
+        vendor="eclwatchSS" /></para>
 
-        <para>Nesta página, é possível realizar o despray ou copiar qualquer
-        arquivo.</para>
+        <para>Nesta página, é possível realizar o despray ou copiar qualquer 
+	arquivo.</para>
       </listitem>
     </itemizedlist>
 
@@ -331,25 +320,25 @@
 
       <itemizedlist>
         <listitem>
-          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no
-          link <emphasis role="bold">Landing Zones (Zona de entrada de
-          arquivos)</emphasis> localizados no submenu de navegação.</para>
+          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no 
+	  link <emphasis role="bold">Landing Zones (Zona de entrada de 
+	  arquivos)</emphasis> localizados no submenu de navegação.</para>
         </listitem>
 
         <listitem>
-          <para>Clique na seta ao lado da zona de entrada de arquivos para
-          ampliar a lista.</para>
+          <para>Clique na seta ao lado da zona de entrada de arquivos para 
+	  ampliar a lista.</para>
 
           <para>Os arquivos na zona de entrada são exibidos.</para>
         </listitem>
 
         <listitem>
-          <para>Marque as caixas de seleção dos arquivos para os quais você
-          deseja fazer o spray e depois pressione o botão de ação Spray:
-          <emphasis role="bold">Botão de ação </emphasis> Fixed</para>
+          <para>Marque as caixas de seleção dos arquivos para os quais você 
+	  deseja fazer o spray e depois pressione o botão Spray: 
+	  <emphasis role="bold">Botão </emphasis> Fixed</para>
 
-          <para>A caixa de diálogo <emphasis role="bold">Fixed
-          Spray</emphasis> é mostrada.</para>
+          <para>A caixa de diálogo  <emphasis role="bold">Spray Fixed</emphasis> 
+	  é mostrada.</para>
         </listitem>
 
         <listitem>
@@ -357,9 +346,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt"/>
+                <colspec colwidth="122.40pt" />
 
-                <colspec colwidth="333.00pt"/>
+                <colspec colwidth="333.00pt" />
 
                 <tbody>
                   <row>
@@ -370,36 +359,36 @@
                   <row>
                     <entry><emphasis role="bold">Group</emphasis></entry>
 
-                    <entry>Selecione o nome do cluster para o qual você deseja
-                    fazer o spray. Só é possível selecionar um cluster no seu
-                    ambiente.</entry>
+                    <entry>Selecione o nome do cluster para o qual você deseja 
+		    fazer o spray. Só é possível selecionar um cluster no seu 
+		    ambiente.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Selecione a fila.</entry>
+                    <entry>Selecione a fila para o spray.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Scope</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Scope</emphasis></entry>
 
                     <entry>O prefixo do arquivo lógico</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Name</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Name</emphasis></entry>
 
-                    <entry>O nome de arquivo lógico a ser criado. Ele é
-                    pré-preenchido com o nome do arquivo de origem na zona de
-                    entrada de arquivos, mas pode ser alterado.</entry>
+                    <entry>O nome de arquivo lógico a ser criado. Ele é 
+		    pré-preenchido com o nome do arquivo de origem na zona de 
+		    entrada de arquivos, mas pode ser alterado.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Record
-                    Length</emphasis></entry>
+                    <entry><emphasis role="bold">Record 
+		    Length</emphasis></entry>
 
                     <entry>O tamanho de cada registro.</entry>
                   </row>
@@ -412,41 +401,49 @@
                   <row>
                     <entry><emphasis role="bold">Overwrite</emphasis></entry>
 
-                    <entry>Marque esta caixa para substituir arquivos de mesmo
-                    nome.</entry>
+                    <entry>Marque esta caixa para substituir arquivos de mesmo 
+		    nome.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                    <entry><para>Marque essa caixa para criar cópias de backup
-                    de todas as partes do arquivo no diretório de backup (por
-                    convenção, na unidade secundária do nó seguindo no
-                    cluster).</para><para><emphasis role="bold">Essa opção só
-                    está disponível em sistemas onde a replicação tiver sido
-                    ativada.</emphasis></para></entry>
+                    <entry><para>Marque essa caixa para criar cópias de backup 
+		    de todas as partes do arquivo no diretório de backup (por 
+		    convenção, na unidade secundária do nó seguindo no 
+		    cluster).</para><para><emphasis role="bold">Essa opção só 
+		    está disponível em sistemas onde a replicação tiver sido 
+		    ativada.</emphasis></para></entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
-                    <entry>Marque esta caixa para compactar os
-                    arquivos.</entry>
+                    <entry>Marque esta caixa para compactar os 
+		    arquivos.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Expire in (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias restantes 
+		    para o arquivo ser removido automaticamente. Se omitido, 
+		    o padrão é -1 (sem data de validade).</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">No Split</emphasis></entry>
 
-                    <entry>Marque esta caixa para impedir a divisão de partes
-                    do arquivo em várias partes de destino.</entry>
+                    <entry>Marque esta caixa para impedir a divisão de partes 
+		    do arquivo em várias partes de destino.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Fail if no source
-                    file</emphasis></entry>
+                    <entry><emphasis role="bold">Fail if no source 
+		    file</emphasis></entry>
 
-                    <entry>Marque essa caixa para permitir que o spray falhe
-                    se nenhum arquivo de origem for encontrado.</entry>
+                    <entry>Marque essa caixa para permitir que o spray falhe 
+		    se nenhum arquivo de origem for encontrado.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -457,10 +454,10 @@
           <para>Pressione o botão <emphasis role="bold">Spray
           </emphasis>.</para>
 
-          <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
-          exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          <para>Uma aba  <emphasis role="bold">DFU Workunit</emphasis> é 
+	  exibida para cada job. É possível ver o andamento de cada operação 
+	  de spray na aba. Se uma workunit, as informações relacionadas à 
+	  causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -470,25 +467,25 @@
 
       <itemizedlist>
         <listitem>
-          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no
-          link<emphasis role="bold"> Landing Zones (Zona de entrada de
-          arquivos)</emphasis> localizados no submenu de navegação.</para>
+          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no 
+	  link<emphasis role="bold"> Landing Zones (Zona de entrada de 
+	  arquivos)</emphasis> localizados no submenu de navegação.</para>
         </listitem>
 
         <listitem>
-          <para>Clique na seta ao lado da zona de entrada de arquivos para
-          ampliar a lista.</para>
+          <para>Clique na seta ao lado da zona de entrada de arquivos para 
+	  ampliar a lista.</para>
 
           <para>Os arquivos na zona de entrada são exibidos.</para>
         </listitem>
 
         <listitem>
-          <para>Marque as caixas de seleção dos arquivos para os quais você
-          deseja fazer o spray e depois pressione o botão de ação Spray
-          <emphasis role="bold">Delimited</emphasis> .</para>
+          <para>Marque as caixas de seleção dos arquivos para os quais você 
+	  deseja fazer o spray e depois pressione o botão 
+	  Spray: <emphasis role="bold">Botão Delimited</emphasis> .</para>
 
-          <para>A página <emphasis role="bold">Spray Delimited</emphasis> será
-          exibida.</para>
+          <para>A página  <emphasis role="bold">Spray Delimited</emphasis>  será 
+	  exibida.</para>
         </listitem>
 
         <listitem>
@@ -496,9 +493,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="1*"/>
+                <colspec colwidth="1*" />
 
-                <colspec colwidth="3*"/>
+                <colspec colwidth="3*" />
 
                 <tbody>
                   <row>
@@ -509,31 +506,32 @@
                   <row>
                     <entry><emphasis role="bold">Group</emphasis></entry>
 
-                    <entry>Selecione o nome do cluster para o qual você deseja
-                    fazer o spray. Só é possível selecionar um cluster no seu
-                    ambiente.</entry>
+                    <entry>Selecione o nome do cluster para o qual você deseja 
+		    fazer o spray. Só é possível selecionar um cluster no seu 
+		    ambiente.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Selecione a fila.</entry>
+                    <entry>Selecione a fila 
+		    para o spray.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Scope</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Scope</emphasis></entry>
 
                     <entry>O prefixo do arquivo lógico</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Name</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Name</emphasis></entry>
 
-                    <entry>O nome de arquivo lógico a ser criado. Ele é
-                    pré-preenchido com o nome do arquivo de origem na zona de
-                    entrada de arquivos, mas pode ser alterado.</entry>
+                    <entry>O nome de arquivo lógico a ser criado. Ele é 
+		    pré-preenchido com o nome do arquivo de origem na zona de 
+		    entrada de arquivos, mas pode ser alterado.</entry>
                   </row>
 
                   <row>
@@ -548,8 +546,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Max Record
-                    Length</emphasis></entry>
+                    <entry><emphasis role="bold">Max Record 
+		    Length</emphasis></entry>
 
                     <entry>O tamanho do maior registro no arquivo.</entry>
                   </row>
@@ -557,13 +555,13 @@
                   <row>
                     <entry><emphasis role="bold">Separators</emphasis></entry>
 
-                    <entry>O(s) caractere(s) usados como separadores no
-                    arquivo de origem.</entry>
+                    <entry>O(s) caractere(s) usados como separadores no 
+		    arquivo de origem.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Omit
-                    Separator</emphasis></entry>
+                    <entry><emphasis role="bold">Omit 
+		    Separator</emphasis></entry>
 
                     <entry>Marque essa caixa para omitir o separador.</entry>
                   </row>
@@ -571,82 +569,85 @@
                   <row>
                     <entry><emphasis role="bold">Escape</emphasis></entry>
 
-                    <entry>Uma string terminada em nulo que contém caracteres
-                    escape do CSV.</entry>
+                    <entry>Uma string terminada em nulo que contém caracteres 
+		    escape do CSV.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Line
-                    Terminators</emphasis></entry>
+                    <entry><emphasis role="bold">Line 
+		    Terminators</emphasis></entry>
 
-                    <entry>O(s) caractere(s) usados como terminadores de
-                    linhas no arquivo de origem.</entry>
+                    <entry>O(s) caractere(s) usados como terminadores de linhas no arquivo de origem.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Quote</emphasis></entry>
 
-                    <entry>O caractere usado como aspas no arquivo de
-                    origem.</entry>
+                    <entry>O caractere usado como aspas no arquivo de origem.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Overwrite</emphasis></entry>
 
-                    <entry>Marque esta caixa para substituir arquivos de mesmo
-                    nome.</entry>
+                    <entry>Marque esta caixa para substituir arquivos de mesmo nome.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">No Split</emphasis></entry>
 
-                    <entry>Marque esta caixa para impedir a divisão de partes
-                    do arquivo em várias partes de destino.</entry>
+                    <entry>Marque esta caixa para impedir a divisão de partes 
+		    do arquivo em várias partes de destino.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Fail if no source
-                    file</emphasis></entry>
+                    <entry><emphasis role="bold">Fail if no source 
+		    file</emphasis></entry>
 
-                    <entry>Marque essa caixa para permitir que o spray falhe
-                    se nenhum arquivo de origem for encontrado.</entry>
+                    <entry>Marque essa caixa para permitir que o spray falhe 
+		    se nenhum arquivo de origem for encontrado.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                    <entry><para>Marque essa caixa para criar cópias de backup
-                    de todas as partes do arquivo no diretório de backup (por
-                    convenção, na unidade secundária do nó seguindo no
-                    cluster).</para><para><emphasis role="bold">Essa opção só
-                    está disponível em sistemas onde a replicação tiver sido
-                    ativada.</emphasis></para></entry>
+                    <entry><para>Marque essa caixa para criar cópias de backup 
+		    de todas as partes do arquivo no diretório de backup (por 
+		    convenção, na unidade secundária do nó seguindo no 
+		    cluster).</para><para><emphasis role="bold">Essa opção só 
+		    está disponível em sistemas onde a replicação tiver sido 
+		    ativada.</emphasis></para></entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
-                    <entry>Marque esta caixa para compactar os
-                    arquivos.</entry>
+                    <entry>Marque esta caixa para compactar os 
+		    arquivos.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Quoted
-                    Terminator</emphasis></entry>
+                    <entry><emphasis role="bold">Expire in (days)</emphasis></entry>
 
-                    <entry>Marque essa caixa para indicar que o caractere
-                    delimitador pode ser incluído em campo em aspas. Caso não
-                    seja marcada, ela permitir um particionamento mais rápido
-                    do arquivo (evitando uma varredura completa do
-                    arquivo).</entry>
+                    <entry>Um valor inteiro indicando o número de dias restantes para 
+		    o arquivo ser removido automaticamente. Se omitido, o padrão é -1 
+		    (sem data de validade).</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Record Structure
-                    Present</emphasis></entry>
+                    <entry><emphasis role="bold">Quoted Terminator</emphasis></entry>
 
-                    <entry>Sinalizador que indica se a estrutura do registro
-                    deve ser derivada do cabeçalho do arquivo.</entry>
+                    <entry>Marque essa caixa para indicar que o caractere delimitador 
+		    pode ser incluído em campo em aspas. Caso não seja marcada, ela 
+		    permitir um particionamento mais rápido do arquivo (evitando uma
+		     varredura completa do arquivo).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Record Structure 
+		    Present</emphasis></entry>
+
+                    <entry>Sinalizador que indica se a estrutura do registro 
+		    deve ser derivada do cabeçalho do arquivo.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -657,10 +658,10 @@
           <para>Pressione o botão <emphasis role="bold">Spray</emphasis>
           .</para>
 
-          <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
-          exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          <para>Uma aba  <emphasis role="bold">DFU Workunit</emphasis> é 
+	  exibida para cada job. É possível ver o andamento de cada operação 
+	  de spray na aba. Se uma workunit, as informações relacionadas à 
+	  causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -670,25 +671,25 @@
 
       <itemizedlist>
         <listitem>
-          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no
-          link <emphasis role="bold">Landing Zones (Zona de entrada de
-          arquivos)</emphasis> localizados no submenu de navegação.</para>
+          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no 
+	  link <emphasis role="bold">Landing Zones (Zona de entrada de 
+	  arquivos)</emphasis> localizados no submenu de navegação.</para>
         </listitem>
 
         <listitem>
-          <para>Clique na seta ao lado da zona de entrada de arquivos para
-          ampliar a lista.</para>
+          <para>Clique na seta ao lado da zona de entrada de arquivos para 
+	  ampliar a lista.</para>
 
           <para>Os arquivos na zona de entrada são exibidos.</para>
         </listitem>
 
         <listitem>
-          <para>Marque as caixas de seleção dos arquivos para os quais você
-          deseja fazer o spray e depois pressione o botão de ação
-          Spray<emphasis role="bold"> XML</emphasis>.</para>
+          <para>Marque as caixas de seleção dos arquivos para os quais você 
+	  deseja fazer o spray e depois pressione o botão 
+	  Spray:<emphasis role="bold"> Botão </emphasis>XML.</para>
 
-          <para>A caixa de diálogo <emphasis role="bold">Spray XML</emphasis>
-          será exibida.</para>
+          <para>A caixa de diálogo  <emphasis role="bold">Spray XML</emphasis>  
+	  será exibida.</para>
         </listitem>
 
         <listitem>
@@ -696,9 +697,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt"/>
+                <colspec colwidth="122.40pt" />
 
-                <colspec colwidth="333.00pt"/>
+                <colspec colwidth="333.00pt" />
 
                 <tbody>
                   <row>
@@ -709,31 +710,31 @@
                   <row>
                     <entry><emphasis role="bold">Group</emphasis></entry>
 
-                    <entry>Selecione o nome do cluster para o qual você deseja
-                    fazer o spray. Só é possível selecionar um cluster no seu
-                    ambiente.</entry>
+                    <entry>Selecione o nome do cluster para o qual você deseja 
+		    fazer o spray. Só é possível selecionar um cluster no seu 
+		    ambiente.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Selecione a fila.</entry>
+                    <entry>Selecione a fila para o spray.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Scope</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Scope</emphasis></entry>
 
                     <entry>O prefixo do arquivo lógico</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Name</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Name</emphasis></entry>
 
-                    <entry>O nome de arquivo lógico a ser criado. Ele é
-                    pré-preenchido com o nome do arquivo de origem na zona de
-                    entrada de arquivos, mas pode ser alterado.</entry>
+                    <entry>O nome de arquivo lógico a ser criado. Ele é 
+		    pré-preenchido com o nome do arquivo de origem na zona de 
+		    entrada de arquivos, mas pode ser alterado.</entry>
                   </row>
 
                   <row>
@@ -754,8 +755,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Max Record
-                    Length</emphasis></entry>
+                    <entry><emphasis role="bold">Max Record 
+		    Length</emphasis></entry>
 
                     <entry>O tamanho do maior registro no arquivo.</entry>
                   </row>
@@ -763,41 +764,48 @@
                   <row>
                     <entry><emphasis role="bold">Overwrite</emphasis></entry>
 
-                    <entry>Marque esta caixa para substituir arquivos de mesmo
-                    nome.</entry>
+                    <entry>Marque esta caixa para substituir arquivos de mesmo 
+		    nome.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">No Split</emphasis></entry>
 
-                    <entry>Marque esta caixa para impedir a divisão de partes
-                    do arquivo em várias partes de destino.</entry>
+                    <entry>Marque esta caixa para impedir a divisão de partes 
+		    do arquivo em várias partes de destino.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Fail if no source
-                    file</emphasis></entry>
+                    <entry><emphasis role="bold">Expire in (days)</emphasis></entry>
 
-                    <entry>Marque essa caixa para permitir que o spray falhe
-                    se nenhum arquivo de origem for encontrado.</entry>
+                    <entry>Um valor inteiro indicando o número de dias restantes 
+		    para o arquivo ser removido automaticamente. Se omitido, o 
+		    padrão é -1 (sem data de validade).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Fail if no source file</emphasis></entry>
+
+                    <entry>Marque essa caixa para permitir que o spray falhe 
+		    se nenhum arquivo de origem for encontrado.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                    <entry><para>Marque essa caixa para criar cópias de backup
-                    de todas as partes do arquivo no diretório de backup (por
-                    convenção, na unidade secundária do nó seguindo no
-                    cluster).</para><para><emphasis role="bold">Essa opção só
-                    está disponível em sistemas onde a replicação tiver sido
-                    ativada.</emphasis></para></entry>
+                    <entry><para>Marque essa caixa para criar cópias de backup 
+		    de todas as partes do arquivo no diretório de backup (por 
+		    convenção, na unidade secundária do nó seguindo no 
+		    cluster).</para><para><emphasis role="bold">Essa opção só 
+		    está disponível em sistemas onde a replicação tiver sido 
+		    ativada.</emphasis></para></entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
-                    <entry>Marque esta caixa para compactar os
-                    arquivos.</entry>
+                    <entry>Marque esta caixa para compactar os 
+		    arquivos.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -808,10 +816,10 @@
           <para>Pressione o botão <emphasis role="bold">Spray</emphasis>
           .</para>
 
-          <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
-          exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          <para>Uma aba  <emphasis role="bold">DFU Workunit</emphasis> é 
+	  exibida para cada job. É possível ver o andamento de cada operação 
+	  de spray na aba. Se uma workunit, as informações relacionadas à 
+	  causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -821,22 +829,22 @@
 
       <itemizedlist>
         <listitem>
-          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no
-          link <emphasis role="bold">Landing Zones (Zona de entrada de
-          arquivos)</emphasis> localizados no submenu de navegação.</para>
+          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no 
+	  link <emphasis role="bold">Landing Zones (Zona de entrada de 
+	  arquivos)</emphasis> localizados no submenu de navegação.</para>
         </listitem>
 
         <listitem>
-          <para>Clique na seta ao lado da zona de entrada de arquivos para
-          ampliar a lista.</para>
+          <para>Clique na seta ao lado da zona de entrada de arquivos para 
+	  ampliar a lista.</para>
 
           <para>Os arquivos na zona de entrada são exibidos.</para>
         </listitem>
 
         <listitem>
-          <para>Marque as caixas de seleção dos arquivos para os quais você
-          deseja fazer o spray e depois pressione o botão de ação
-          Spray<emphasis role="bold"> JSON </emphasis> .</para>
+          <para>Marque as caixas de seleção dos arquivos para os quais você 
+	  deseja fazer o spray e depois pressione o botão 
+	  Spray:<emphasis role="bold"> Botão </emphasis> JSON.</para>
 
           <para>A caixa de diálogo é exibida.</para>
         </listitem>
@@ -846,9 +854,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt"/>
+                <colspec colwidth="122.40pt" />
 
-                <colspec colwidth="333.00pt"/>
+                <colspec colwidth="333.00pt" />
 
                 <tbody>
                   <row>
@@ -859,39 +867,40 @@
                   <row>
                     <entry><emphasis role="bold">Group</emphasis></entry>
 
-                    <entry>Selecione o nome do cluster para o qual você deseja
-                    fazer o spray. Só é possível selecionar um cluster no seu
-                    ambiente.</entry>
+                    <entry>Selecione o nome do cluster para o qual você deseja 
+		    fazer o spray. Só é possível selecionar um cluster no seu 
+		    ambiente.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Selecione a fila.</entry>
+                    <entry>Selecione a fila 
+		    para o spray.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Scope</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Scope</emphasis></entry>
 
                     <entry>O prefixo do arquivo lógico</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Name</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Name</emphasis></entry>
 
-                    <entry>O nome de arquivo lógico a ser criado. Ele é
-                    pré-preenchido com o nome do arquivo de origem na zona de
-                    entrada de arquivos, mas pode ser alterado.</entry>
+                    <entry>O nome de arquivo lógico a ser criado. Ele é 
+		    pré-preenchido com o nome do arquivo de origem na zona de 
+		    entrada de arquivos, mas pode ser alterado.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Row Path </emphasis></entry>
 
-                    <entry>O especificador de caminho para o conteúdo JSON. O
-                    padrão usa o conteúdo de nível de raiz como um conjunto de
-                    objetos a ser tratado como linhas.</entry>
+                    <entry>O especificador de caminho para o conteúdo JSON. O 
+		    padrão usa o conteúdo de nível de raiz como um conjunto de 
+		    objetos a ser tratado como linhas.</entry>
                   </row>
 
                   <row>
@@ -906,8 +915,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Max Record
-                    Length</emphasis></entry>
+                    <entry><emphasis role="bold">Max Record 
+		    Length</emphasis></entry>
 
                     <entry>O tamanho do maior registro no arquivo.</entry>
                   </row>
@@ -915,41 +924,49 @@
                   <row>
                     <entry><emphasis role="bold">Overwrite</emphasis></entry>
 
-                    <entry>Marque esta caixa para substituir arquivos de mesmo
-                    nome.</entry>
+                    <entry>Marque esta caixa para substituir arquivos de mesmo 
+		    nome.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">No Split</emphasis></entry>
 
-                    <entry>Marque esta caixa para impedir a divisão de partes
-                    do arquivo em várias partes de destino.</entry>
+                    <entry>Marque esta caixa para impedir a divisão de partes 
+		    do arquivo em várias partes de destino.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Fail if no source
-                    file</emphasis></entry>
+                    <entry><emphasis role="bold">Fail if no source 
+		    file</emphasis></entry>
 
-                    <entry>Marque essa caixa para permitir que o spray falhe
-                    se nenhum arquivo de origem for encontrado.</entry>
+                    <entry>Marque essa caixa para permitir que o spray falhe 
+		    se nenhum arquivo de origem for encontrado.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                    <entry><para>Marque essa caixa para criar cópias de backup
-                    de todas as partes do arquivo no diretório de backup (por
-                    convenção, na unidade secundária do nó seguindo no
-                    cluster).</para><para><emphasis role="bold">Essa opção só
-                    está disponível em sistemas onde a replicação tiver sido
-                    ativada.</emphasis></para></entry>
+                    <entry><para>Marque essa caixa para criar cópias de backup 
+		    de todas as partes do arquivo no diretório de backup (por 
+		    convenção, na unidade secundária do nó seguindo no
+		    cluster).</para><para><emphasis role="bold">Essa opção só
+		    está disponível em sistemas onde a replicação tiver sido
+		    ativada.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Expire in (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias 
+		    restantes para o arquivo ser removido automaticamente. 
+		    Se omitido, o padrão é -1 (sem data de validade).</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
-                    <entry>Marque esta caixa para compactar os
-                    arquivos.</entry>
+                    <entry>Marque esta caixa para compactar os 
+		    arquivos.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -960,10 +977,10 @@
           <para>Pressione o botão <emphasis role="bold">Spray</emphasis>
           .</para>
 
-          <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
-          exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          <para>Uma aba  <emphasis role="bold">DFU Workunit</emphasis>  é 
+	  exibida para cada job. É possível ver o andamento de cada operação 
+	  de spray na aba. Se uma workunit, as informações relacionadas à 
+	  causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -973,25 +990,25 @@
 
       <itemizedlist>
         <listitem>
-          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no
-          link <emphasis role="bold">Landing Zones (Zona de entrada de
-          arquivos)</emphasis> localizados no submenu de navegação.</para>
+          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no 
+	  link <emphasis role="bold">Landing Zones (Zona de entrada de 
+	  arquivos)</emphasis> localizados no submenu de navegação.</para>
         </listitem>
 
         <listitem>
-          <para>Clique na seta ao lado da zona de entrada de arquivos para
-          ampliar a lista.</para>
+          <para>Clique na seta ao lado da zona de entrada de arquivos para 
+	  ampliar a lista.</para>
 
           <para>Os arquivos na zona de entrada são exibidos.</para>
         </listitem>
 
         <listitem>
-          <para>Marque as caixas de seleção dos arquivos para os quais você
-          deseja fazer o spray e depois pressione o botão de ação Spray:
-          <emphasis role="bold">Botão de ação Variável </emphasis>.</para>
+          <para>Marque as caixas de seleção dos arquivos para os quais você 
+	  deseja fazer o spray e depois pressione o botão Spray: 
+	  <emphasis role="bold">Botão  </emphasis>Variable.</para>
 
-          <para>A caixa de diálogo Spray <emphasis role="bold">
-          variável</emphasis> é mostrada.</para>
+          <para>A caixa de diálogo Spray <emphasis role="bold"> 
+	  variável</emphasis> é mostrada.</para>
         </listitem>
 
         <listitem>
@@ -999,9 +1016,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt"/>
+                <colspec colwidth="122.40pt" />
 
-                <colspec colwidth="333.00pt"/>
+                <colspec colwidth="333.00pt" />
 
                 <tbody>
                   <row>
@@ -1012,31 +1029,31 @@
                   <row>
                     <entry><emphasis role="bold">Group</emphasis></entry>
 
-                    <entry>Selecione o nome do cluster para o qual você deseja
-                    fazer o spray. Só é possível selecionar um cluster no seu
-                    ambiente.</entry>
+                    <entry>Selecione o nome do cluster para o qual você deseja 
+		    fazer o spray. Só é possível selecionar um cluster no seu 
+		    ambiente.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Selecione a fila.</entry>
+                    <entry>Selecione a fila para o spray.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Scope</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Scope</emphasis></entry>
 
                     <entry>O prefixo do arquivo lógico</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Name</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Name</emphasis></entry>
 
-                    <entry>O nome de arquivo lógico a ser criado. Ele é
-                    pré-preenchido com o nome do arquivo de origem na zona de
-                    entrada de arquivos, mas pode ser alterado.</entry>
+                    <entry>O nome de arquivo lógico a ser criado. Ele é 
+		    pré-preenchido com o nome do arquivo de origem na zona de 
+		    entrada de arquivos, mas pode ser alterado.</entry>
                   </row>
 
                   <row>
@@ -1045,52 +1062,59 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Source
-                    Type</emphasis></entry>
+                    <entry><emphasis role="bold">Source 
+		    Type</emphasis></entry>
 
-                    <entry>Selecione o tipo de fonte na lista suspensa.
-                    Valores: recfmv, recfmvb, Variable, ou Variable
-                    Big-endian.n.</entry>
+                    <entry>Selecione o tipo de fonte na lista suspensa. 
+		    Valores: recfmv, recfmvb, Variable, ou Variable 
+		    Big-endian.n.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Overwrite</emphasis></entry>
 
-                    <entry>Marque esta caixa para substituir arquivos de mesmo
-                    nome.</entry>
+                    <entry>Marque esta caixa para substituir arquivos de mesmo 
+		    nome.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">No Split</emphasis></entry>
 
-                    <entry>Marque esta caixa para impedir a divisão de partes
-                    do arquivo em várias partes de destino.</entry>
+                    <entry>Marque esta caixa para impedir a divisão de partes 
+		    do arquivo em várias partes de destino.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Fail if no source
-                    file</emphasis></entry>
+                    <entry><emphasis role="bold">Fail if no source 
+		    file</emphasis></entry>
 
-                    <entry>Marque essa caixa para permitir que o spray falhe
-                    se nenhum arquivo de origem for encontrado.</entry>
+                    <entry>Marque essa caixa para permitir que o spray falhe 
+		    se nenhum arquivo de origem for encontrado.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                    <entry><para>Marque essa caixa para criar cópias de backup
-                    de todas as partes do arquivo no diretório de backup (por
-                    convenção, na unidade secundária do nó seguindo no
-                    cluster).</para><para><emphasis role="bold">Essa opção só
-                    está disponível em sistemas onde a replicação tiver sido
-                    ativada.</emphasis></para></entry>
+                    <entry><para>Marque essa caixa para criar cópias de backup 
+		    de todas as partes do arquivo no diretório de backup (por 
+		    convenção, na unidade secundária do nó seguindo no cluster).</para>
+		    <para><emphasis role="bold">Essa opção só está disponível em 
+		    sistemas onde a replicação tiver sido ativada.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Expire in (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias restantes 
+		    para o arquivo ser removido automaticamente. Se omitido, o 
+		    padrão é -1 (sem data de validade).</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
-                    <entry>Marque esta caixa para compactar os
-                    arquivos.</entry>
+                    <entry>Marque esta caixa para compactar os 
+		    arquivos.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1101,10 +1125,10 @@
           <para>Pressione o botão <emphasis role="bold">Spray</emphasis>
           .</para>
 
-          <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
-          exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          <para>Uma aba  <emphasis role="bold">DFU Workunit</emphasis>  é 
+	  exibida para cada job. É possível ver o andamento de cada operação 
+	  de spray na aba. Se uma workunit, as informações relacionadas à 
+	  causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -1114,25 +1138,25 @@
 
       <itemizedlist>
         <listitem>
-          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no
-          link <emphasis role="bold">Landing Zones (Zona de entrada de
-          arquivos)</emphasis> localizados no submenu de navegação.</para>
+          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no 
+	  link <emphasis role="bold">Landing Zones (Zona de entrada de 
+	  arquivos)</emphasis> localizados no submenu de navegação.</para>
         </listitem>
 
         <listitem>
-          <para>Clique na seta ao lado da zona de entrada de arquivos para
-          ampliar a lista.</para>
+          <para>Clique na seta ao lado da zona de entrada de arquivos para 
+	  ampliar a lista.</para>
 
           <para>Os arquivos na zona de entrada são exibidos.</para>
         </listitem>
 
         <listitem>
-          <para>Marque as caixas de seleção dos arquivos para os quais você
-          deseja fazer o spray e depois pressione o botão de ação Spray
-          <emphasis role="bold">BLOB </emphasis>:</para>
+          <para>Marque as caixas de seleção dos arquivos para os quais você 
+	  deseja fazer o spray e depois pressione o botão 
+	  Spray: <emphasis role="bold">Botão  </emphasis>BLOB.</para>
 
-          <para>A caixa de diálogo Spray <emphasis role="bold">
-          BLOB</emphasis> é mostrada.</para>
+          <para>A caixa de diálogo Spray <emphasis role="bold"> 
+	  BLOB</emphasis>  é mostrada.</para>
         </listitem>
 
         <listitem>
@@ -1140,9 +1164,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt"/>
+                <colspec colwidth="122.40pt" />
 
-                <colspec colwidth="333.00pt"/>
+                <colspec colwidth="333.00pt" />
 
                 <tbody>
                   <row>
@@ -1153,33 +1177,33 @@
                   <row>
                     <entry><emphasis role="bold">Group</emphasis></entry>
 
-                    <entry>Selecione o nome do cluster para o qual você deseja
-                    fazer o spray. Só é possível selecionar um cluster no seu
-                    ambiente.</entry>
+                    <entry>Selecione o nome do cluster para o qual você deseja 
+		    fazer o spray. Só é possível selecionar um cluster no seu 
+		    ambiente.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Selecione a fila.</entry>
+                    <entry>Selecione a fila para o spray.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Name</emphasis></entry>
+                    <entry><emphasis role="bold">Target 
+		    Name</emphasis></entry>
 
-                    <entry>O nome do destino lógico a ser criado. Required. É
-                    necessário informar um nome de destino.</entry>
+                    <entry>O nome do destino lógico a ser criado. Required. É 
+		    necessário informar um nome de destino.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Source
-                    Path</emphasis></entry>
+                    <entry><emphasis role="bold">Source 
+		    Path</emphasis></entry>
 
-                    <entry>O caminho até o arquivo. Ele é pré-preenchido com o
-                    nome dos arquivos de origem selecionados na zona de
-                    entrada de arquivos, mas pode ser alterado. Compatível com
-                    elementos curingas.</entry>
+                    <entry>O caminho até o arquivo. Ele é pré-preenchido com o 
+		    nome dos arquivos de origem selecionados na zona de 
+		    entrada de arquivos, mas pode ser alterado. Compatível com 
+		    elementos curingas.</entry>
                   </row>
 
                   <row>
@@ -1188,8 +1212,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Blob
-                    Prefix</emphasis></entry>
+                    <entry><emphasis role="bold">Blob 
+		    Prefix</emphasis></entry>
 
                     <entry>O prefixo do arquivo.</entry>
                   </row>
@@ -1197,41 +1221,48 @@
                   <row>
                     <entry><emphasis role="bold">Overwrite</emphasis></entry>
 
-                    <entry>Marque esta caixa para substituir arquivos de mesmo
-                    nome.</entry>
+                    <entry>Marque esta caixa para substituir arquivos de mesmo 
+		    nome.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">No Split</emphasis></entry>
 
-                    <entry>Marque esta caixa para impedir a divisão de partes
-                    do arquivo em várias partes de destino.</entry>
+                    <entry>Marque esta caixa para impedir a divisão de partes 
+		    do arquivo em várias partes de destino.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                    <entry><para>Marque essa caixa para criar cópias de backup
-                    de todas as partes do arquivo no diretório de backup (por
-                    convenção, na unidade secundária do nó seguindo no
-                    cluster).</para><para><emphasis role="bold">Essa opção só
-                    está disponível em sistemas onde a replicação tiver sido
-                    ativada.</emphasis></para></entry>
+                    <entry><para>Marque essa caixa para criar cópias de backup 
+		    de todas as partes do arquivo no diretório de backup (por 
+		    convenção, na unidade secundária do nó seguindo no 
+		    cluster).</para><para><emphasis role="bold">Essa opção só 
+		    está disponível em sistemas onde a replicação tiver sido 
+		    ativada.</emphasis></para></entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
-                    <entry>Marque esta caixa para compactar os
-                    arquivos.</entry>
+                    <entry>Marque esta caixa para compactar os arquivos.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Fail if no source
-                    file</emphasis></entry>
+                    <entry><emphasis role="bold">Expire in (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias restantes para 
+		    o arquivo ser removido automaticamente. Se omitido, o padrão 
+		    é -1 (sem data de validade).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Fail if no source 
+		    file</emphasis></entry>
 
                     <entry>Marque essa caixa para permitir que o spray falhe
-                    se nenhum arquivo de origem for encontrado.</entry>
+		    se nenhum arquivo de origem for encontrado.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1242,10 +1273,10 @@
           <para>Pressione o botão <emphasis role="bold">Spray</emphasis>
           .</para>
 
-          <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
-          exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          <para>Uma aba  <emphasis role="bold">DFU Workunit</emphasis>  é 
+	  exibida para cada job. É possível ver o andamento de cada operação 
+	  de spray na aba. Se uma workunit, as informações relacionadas à 
+	  causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -1255,51 +1286,51 @@
 
       <itemizedlist>
         <listitem>
-          <para>Localize o(s) arquivo(s) para o despray na lista de arquivos e
-          depois pressione o botão de ação <emphasis
-          role="bold">Despray</emphasis> .</para>
+          <para>Localize o(s) arquivo(s) para o despray na lista de arquivos e 
+	  depois pressione o botão de ação <emphasis 
+	  role="bold">Despray</emphasis> .</para>
 
           <para><graphic fileref="../../images/DHMan-3a.jpg"
-          vendor="eclwatchSS"/></para>
+          vendor="eclwatchSS" /></para>
         </listitem>
 
         <listitem>
-          <para>Insira informações sobre o <emphasis
-          role="bold">destino</emphasis> .</para>
+          <para>Insira informações sobre o <emphasis 
+	  role="bold">destino</emphasis>.</para>
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.40pt"/>
+                <colspec align="left" colwidth="122.40pt" />
 
-                <colspec colwidth="333.00pt"/>
+                <colspec colwidth="333.00pt" />
 
                 <tbody>
                   <row>
                     <entry><emphasis role="bold">Drop Zone</emphasis></entry>
 
-                    <entry>Use a lista suspensa para selecionar a máquina para
-                    a qual será realizado o despray. Os itens na lista são
-                    zonas de entrada de arquivos definidos na configuração do
-                    sistema.</entry>
+                    <entry>Use a lista suspensa para selecionar a máquina para 
+		    a qual será realizado o despray. Os itens na lista são 
+		    zonas de entrada de arquivos definidos na configuração do 
+		    sistema.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">IP Address</emphasis></entry>
 
-                    <entry>Isso é pré-preenchido com base na máquina
-                    selecionada.</entry>
+                    <entry>Isso é pré-preenchido com base na máquina 
+		    selecionada.</entry>
                   </row>
 
                   <row>
                     <entry><emphasis role="bold">Path</emphasis></entry>
 
-                    <entry>Informe o caminho de arquivo completo do destino
-                    incluindo nome de arquivo e extensão.</entry>
+                    <entry>Informe o caminho de arquivo completo do destino 
+		    incluindo nome de arquivo e extensão.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Split
-                    Prefix</emphasis></entry>
+                    <entry><emphasis role="bold">Split 
+		    Prefix</emphasis></entry>
 
                     <entry>Prefixo</entry>
                   </row>
@@ -1307,16 +1338,16 @@
                   <row>
                     <entry><emphasis role="bold">Overwrite</emphasis></entry>
 
-                    <entry>Marque essa caixa para substituir um arquivo com
-                    mesmo nome, se existir.</entry>
+                    <entry>Marque essa caixa para substituir um arquivo com 
+		    mesmo nome, se existir.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Use Single
-                    Connection</emphasis></entry>
+                    <entry><emphasis role="bold">Use Single 
+		    Connection</emphasis></entry>
 
-                    <entry>Marque essa caixa para usar uma conexão de rede
-                    única para despray.</entry>
+                    <entry>Marque essa caixa para usar uma conexão de rede 
+		    única para despray.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1324,63 +1355,63 @@
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Despray</emphasis>
+          <para>Pressione o botão  <emphasis role="bold">Despray</emphasis>
           .</para>
 
-          <para>Uma aba DFU Workunit é exibida para cada job. É possível ver o
-          andamento de cada operação de despray na guia. Se uma workunit, as
-          informações relacionadas à causa da falha também são
-          exibidas.</para>
+          <para>Uma aba DFU Workunit é exibida para cada job. É possível ver o 
+	  andamento de cada operação de despray na guia. Se uma workunit, as 
+	  informações relacionadas à causa da falha também são 
+	  exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
 
     <sect2 id="Copy" role="brk">
-      <title><emphasis role="bold">Copiar</emphasis></title>
+      <title><emphasis role="bold">Copy</emphasis></title>
 
       <itemizedlist>
         <listitem>
-          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no
-          link Landing Zones (Zona de entrada de arquivos) localizados no
-          submenu de navegação.</para>
+          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no 
+	  link Landing Zones (Zona de entrada de arquivos) localizados no 
+	  submenu de navegação.</para>
         </listitem>
 
         <listitem>
-          <para>Selecione o(s) arquivo(s) para copiar na lista de arquivos e
-          depois clique no botão <emphasis role="bold">Copy
-          </emphasis>.</para>
+          <para>Selecione o(s) arquivo(s) para copiar na lista de arquivos e 
+	  depois clique no botão  <emphasis role="bold">Copy 
+	  </emphasis>.</para>
         </listitem>
 
         <listitem>
-          <para>Preencha as <emphasis role="bold">informações de </emphasis>
-          Destino <emphasis role="bold"> e </emphasis>Opções</para>
+          <para>Preencha as informações de <emphasis role="bold">Destination</emphasis>  e 
+          <emphasis role="bold">Options </emphasis>.</para>
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="122.40pt"/>
+              <colspec colwidth="122.40pt" />
 
-              <colspec colwidth="333.00pt"/>
+              <colspec colwidth="333.00pt" />
 
               <tbody>
                 <row>
                   <entry align="right"><emphasis
-                  role="bold">.</emphasis></entry>
+                  role="bold">Target:</emphasis></entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Group</emphasis></entry>
 
-                  <entry>Selecione o nome do cluster para o qual você vai
-                  fazer a cópia. Só é possível selecionar um cluster no seu
-                  ambiente.</entry>
+                  <entry>Selecione o nome do cluster para o qual você vai 
+		  fazer a cópia. Só é possível selecionar um cluster no seu 
+		  ambiente.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Target Name</emphasis></entry>
 
-                  <entry>O nome de arquivo lógico a ser criado. Ele é
-                  pré-preenchido com o nome do arquivo de origem na zona de
-                  entrada de arquivos, mas pode ser alterado.</entry>
+                  <entry>O nome de arquivo lógico a ser criado. Ele é 
+		  pré-preenchido com o nome do arquivo de origem na zona de 
+		  entrada de arquivos, mas pode ser alterado.</entry>
                 </row>
 
                 <row>
@@ -1391,34 +1422,34 @@
                 <row>
                   <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                  <entry><para>Marque essa caixa para criar cópias de backup
-                  de todas as partes do arquivo no diretório de backup (por
-                  convenção, na unidade secundária do nó seguindo no
-                  cluster).</para><para><emphasis role="bold">Essa opção só
-                  está disponível em sistemas onde a replicação tiver sido
-                  ativada.</emphasis></para></entry>
+                  <entry><para>Marque essa caixa para criar cópias de backup 
+		  de todas as partes do arquivo no diretório de backup (por 
+		  convenção, na unidade secundária do nó seguindo no 
+		  cluster).</para><para><emphasis role="bold">Essa opção só 
+		  está disponível em sistemas onde a replicação tiver sido 
+		  ativada.</emphasis></para></entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Wrap</emphasis></entry>
 
-                  <entry>Marque essa caixa para manter o número de partes
-                  inalterado e encapsular se o cluster de destino for menor do
-                  que o original.</entry>
+                  <entry>Marque essa caixa para manter o número de partes 
+		  inalterado e encapsular se o cluster de destino for menor do 
+		  que o original.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">No Split</emphasis></entry>
 
-                  <entry>Marque esta caixa para impedir a divisão de partes do
-                  arquivo em várias partes de destino.</entry>
+                  <entry>Marque esta caixa para impedir a divisão de partes do 
+		  arquivo em várias partes de destino.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Overwrite</emphasis></entry>
 
-                  <entry>Marque esta caixa para substituir arquivos de mesmo
-                  nome.</entry>
+                  <entry>Marque esta caixa para substituir arquivos de mesmo 
+		  nome.</entry>
                 </row>
 
                 <row>
@@ -1428,19 +1459,19 @@
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Retain Superfile
-                  Structure</emphasis></entry>
+                  <entry><emphasis role="bold">Retain Superfile 
+		  Structure</emphasis></entry>
 
-                  <entry>Marque essa caixa para preservar a estrutura do super
-                  arquivo.</entry>
+                  <entry>Marque essa caixa para preservar a estrutura do super 
+		  arquivo.</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Preserve
-                  Compression</emphasis></entry>
+                  <entry><emphasis role="bold">Preserve 
+		  Compression</emphasis></entry>
 
-                  <entry>Marque essa caixa para preservar a compactação do
-                  arquivo original ao copiar</entry>
+                  <entry>Marque essa caixa para preservar a compactação do 
+		  arquivo original ao copiar</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1448,13 +1479,13 @@
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Copy
-          </emphasis>.</para>
+          <para>Pressione o botão  <emphasis role="bold">Copy 
+	  </emphasis>.</para>
 
-          <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
-          exibida para cada job. É possível ver o andamento de cada operação
-          de cópia na aba. Se uma workunit falhar, as informações relacionadas
-          à causa da falha também são exibidas.</para>
+          <para>Uma aba  <emphasis role="bold">DFU Workunit</emphasis>  é 
+	  exibida para cada job. É possível ver o andamento de cada operação 
+	  de cópia na aba. Se uma workunit, as informações relacionadas 
+	  à causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -1462,34 +1493,34 @@
     <sect2 id="Remote_Copy" role="brk">
       <title><emphasis role="bold">Cópia Remota</emphasis></title>
 
-      <para>A cópia remota permite copiar dados de um cluster fora do seu
+      <para>A cópia remota permite copiar dados de um cluster fora do seu 
       ambiente para um dentro do seu ambiente.</para>
 
       <itemizedlist>
         <listitem>
-          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no
-          link Landing Zones (Zona de entrada de arquivos) localizados no
-          submenu de navegação.</para>
+          <para>Clique no ícone <emphasis role="bold">Files</emphasis> e no 
+	  link Landing Zones (Zona de entrada de arquivos) localizados no 
+	  submenu de navegação.</para>
         </listitem>
 
         <listitem>
-          <para>Clique no link <emphasis role="bold">Remote Copy
+          <para>Clique no link  <emphasis role="bold">Remote Copy
           </emphasis></para>
 
-          <para>A página <emphasis role="bold">Copy File </emphasis> é
-          exibida.</para>
+          <para>A página  <emphasis role="bold">Copy File </emphasis> é 
+	  exibida.</para>
         </listitem>
 
         <listitem>
-          <para>Preencha as informações de <emphasis role="bold">Fonte,
-          Destino</emphasis> e <emphasis role="bold">Opções
-          </emphasis>.</para>
+          <para>Preencha as informações de  <emphasis role="bold">Fonte, 
+	  Destino</emphasis> e <emphasis role="bold">Opções 
+	  </emphasis>.</para>
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="122.40pt"/>
+              <colspec colwidth="122.40pt" />
 
-              <colspec colwidth="333.00pt"/>
+              <colspec colwidth="333.00pt" />
 
               <tbody>
                 <row>
@@ -1506,15 +1537,15 @@
                 <row>
                   <entry><emphasis role="bold">User ID</emphasis></entry>
 
-                  <entry>O nome do usuário usado para ser autenticado no
-                  ambiente remoto (se necessário)</entry>
+                  <entry>O nome do usuário usado para ser autenticado no 
+		  ambiente remoto (se necessário)</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Password</emphasis></entry>
 
-                  <entry>A senha para autenticação no ambiente remoto (se
-                  necessária)</entry>
+                  <entry>A senha para autenticação no ambiente remoto (se 
+		  necessária)</entry>
                 </row>
 
                 <row>
@@ -1531,9 +1562,9 @@
                 <row>
                   <entry><emphasis role="bold">Group</emphasis></entry>
 
-                  <entry>Selecione o nome do cluster para o qual você vai
-                  fazer a cópia. Só é possível selecionar um cluster no seu
-                  ambiente.</entry>
+                  <entry>Selecione o nome do cluster para o qual você vai 
+		  fazer a cópia. Só é possível selecionar um cluster no seu 
+		  ambiente.</entry>
                 </row>
 
                 <row>
@@ -1550,27 +1581,27 @@
                 <row>
                   <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                  <entry><para>Marque essa caixa para criar cópias de backup
-                  de todas as partes do arquivo no diretório de backup (por
-                  convenção, na unidade secundária do nó seguindo no
-                  cluster).</para><para><emphasis role="bold">Essa opção só
-                  está disponível em sistemas onde a replicação tiver sido
-                  ativada.</emphasis></para></entry>
+                  <entry><para>Marque essa caixa para criar cópias de backup 
+		  de todas as partes do arquivo no diretório de backup (por 
+		  convenção, na unidade secundária do nó seguindo no 
+		  cluster).</para><para><emphasis role="bold">Essa opção só 
+		  está disponível em sistemas onde a replicação tiver sido 
+		  ativada.</emphasis></para></entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Wrap</emphasis></entry>
 
-                  <entry>Marque essa caixa para manter o número de partes
-                  inalterado e encapsular se o cluster de destino for menor do
-                  que o original.</entry>
+                  <entry>Marque essa caixa para manter o número de partes 
+		  inalterado e encapsular se o cluster de destino for menor do 
+		  que o original.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Overwrite</emphasis></entry>
 
-                  <entry>Marque esta caixa para substituir arquivos de mesmo
-                  nome.</entry>
+                  <entry>Marque esta caixa para substituir arquivos de mesmo 
+		  nome.</entry>
                 </row>
 
                 <row>
@@ -1582,16 +1613,16 @@
                 <row>
                   <entry><emphasis role="bold">No Split</emphasis></entry>
 
-                  <entry>Marque esta caixa para impedir a divisão de partes do
-                  arquivo em várias partes de destino.</entry>
+                  <entry>Marque esta caixa para impedir a divisão de partes do 
+		  arquivo em várias partes de destino.</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Retain Superfile
-                  Structure</emphasis></entry>
+                  <entry><emphasis role="bold">Retain Superfile 
+		  Structure</emphasis></entry>
 
-                  <entry>Marque essa caixa para preservar a estrutura do super
-                  arquivo.</entry>
+                  <entry>Marque essa caixa para preservar a estrutura do super 
+		  arquivo.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1602,18 +1633,18 @@
           <para>Pressione o botão <emphasis role="bold">Submit
           </emphasis>.</para>
 
-          <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
-          exibida. É possível ver o andamento das operações de cópia na aba.
-          Se uma workunit falhar, as informações relacionadas à causa da falha
-          também são exibidas.</para>
+          <para>Uma aba  <emphasis role="bold">DFU Workunit</emphasis> é 
+	  exibida. É possível ver o andamento das operações de cópia na aba. 
+	  Se uma workunit falhar, as informações relacionadas à causa da falha 
+	  também são exibidas.</para>
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Refresh </emphasis>
-          periodicamente até o status da solicitação indicar <emphasis
-          role="bold">Finished </emphasis> ou clique no hiperlink <emphasis
-          role="bold">View Progress</emphasis> para ver um indicador de
-          progresso.</para>
+          <para>Pressione o botão <emphasis role="bold">Refresh </emphasis> 
+	  periodicamente até o status da solicitação indicar <emphasis 
+	  role="bold">Finished </emphasis> ou clique no hiperlink  <emphasis
+          role="bold">View Progress</emphasis>  para ver um indicador de 
+	  progresso.</para>
         </listitem>
       </itemizedlist>
     </sect2>

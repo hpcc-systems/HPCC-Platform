@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Type_Casting">
@@ -11,26 +11,14 @@
         <primary>Explicit Casting</primary>
       </indexterm></title>
 
-    <para>O uso mais comum de tipos de valor é converter explicitamente de um
-    tipo para outro em expressões. Para isso, basta colocar o tipo de valor
-    pretendido entre parênteses. Isso cria um operador de conversão.<indexterm>
+    <para>O uso mais comum de tipos de valor é converter explicitamente de um tipo para outro em expressões. Para isso, basta colocar o tipo de valor pretendido entre parênteses. Isso cria um operador de conversão.<indexterm>
         <primary>casting operator</primary>
-      </indexterm> Em seguida, coloque o operador de conversão imediatamente à
-    esquerda da expressão a ser convertida.</para>
+      </indexterm> Em seguida, coloque o operador de conversão imediatamente à esquerda da expressão a ser convertida.</para>
 
-    <para>Os dados serão convertidos do formato original para o novo formato
-    (para manter o mesmo padrão de bits, consulte a função incorporada
-    <emphasis role="bold">TRANSFER</emphasis> ).</para>
+    <para>Os dados serão convertidos do formato original para o novo formato (para manter o mesmo padrão de bits, consulte a função incorporada  <emphasis
+    role="bold">TRANSFER</emphasis> ).</para>
 
-    <programlisting>MyBoolean := (BOOLEAN) IF(SomeAttribute &gt; 10,1,0);
-          // casts the INTEGER values 1 and 0 to a BOOLEAN TRUE or FALSE
-MyString := (STRING1) IF(SomeAttribute &gt; 10,1,0);
-          // casts the INTEGER values 1 and 0 to a 1-character string
-          // containing '1' or '0'
-MyValue := (INTEGER) MAP(MyString = '1' =&gt; MyString, '0');
-          // casts the STRING values '1' and '0' to an INTEGER 1 or 0
-MySet := (SET OF INTEGER1) [1,2,3,4,5,6,7,8,9,10];
-          //casts from a SET OF INTEGER8 (the default) to SET OF INTEGER1</programlisting>
+    <programlisting>MyBoolean := (BOOLEAN) IF(SomeAttribute &gt; 10,1,0); // casts the INTEGER values 1 and 0 to a BOOLEAN TRUE or FALSE MyString := (STRING1) IF(SomeAttribute &gt; 10,1,0); // casts the INTEGER values 1 and 0 to a 1-character string // containing '1' or '0' MyValue := (INTEGER) MAP(MyString = '1' =&gt; MyString, '0'); // casts the STRING values '1' and '0' to an INTEGER 1 or 0 MySet := (SET OF INTEGER1) [1,2,3,4,5,6,7,8,9,10]; //casts from a SET OF INTEGER8 (the default) to SET OF INTEGER1</programlisting>
   </sect2>
 
   <sect2 id="Implicit_Casting">
@@ -38,36 +26,20 @@ MySet := (SET OF INTEGER1) [1,2,3,4,5,6,7,8,9,10];
         <primary>Implicit Casting</primary>
       </indexterm></title>
 
-    <para>Durante a avaliação da expressão, podem ocorrer conversões
-    implícitas para diversos tipos de valores para avaliar corretamente a
-    expressão. A conversão implícita significa sempre a promoção de um tipo de
-    valor para outro: INTEGER para STRING ou INTEGER para REAL. Os tipos
-    BOOLEAN não podem ser envolvidos em expressões de modo misto. Por exemplo,
-    ao avaliar uma expressão usando valores INTEGER e REAL, o INTEGER será
-    promovido para REAL no momento em que os dois valores são misturados e o
-    resultado será um valor REAL.</para>
+    <para>Durante a avaliação da expressão, podem ocorrer conversões implícitas para diversos tipos de valores para avaliar corretamente a expressão. A conversão implícita significa sempre a promoção de um tipo de valor para outro: INTEGER para STRING ou INTEGER para REAL. Os tipos BOOLEAN não podem ser envolvidos em expressões de modo misto. Por exemplo, ao avaliar uma expressão usando valores INTEGER e REAL, o INTEGER será promovido para REAL no momento em que os dois valores são misturados e o resultado será um valor REAL.</para>
 
-    <para>INTEGER e REAL podem ser misturados livremente nas expressões. No
-    ponto de contato entre eles, a expressão será tratada como REAL.
-    <emphasis>Até</emphasis> esse ponto de contato, a expressão poderá ser
-    avaliada com o comprimento INTEGER. A divisão de valores INTEGER promove
-    implicitamente os dois operandos para REAL antes da divisão.</para>
+    <para>INTEGER e REAL podem ser livremente misturados em expressões. No ponto de contato entre eles, a expressão é tratada como REAL.
+    <emphasis>Até</emphasis>  esse ponto de contato, a expressão poderá ser avaliada com o comprimento INTEGER. A divisão de valores INTEGER promove implicitamente os dois operandos para REAL antes da divisão.</para>
 
     <para>Esta expressão: (1+2+3+4)*(1.0*5)</para>
 
-    <para>é avaliada como:
-    (REAL)((INTEGER)1+(INTEGER)2+(INTEGER)3+(INTEGER)4)*(1.0*(REAL)5)</para>
+    <para>é avaliada como: (REAL)((INTEGER)1+(INTEGER)2+(INTEGER)3+(INTEGER)4)*(1.0*(REAL)5)</para>
 
     <para>e: 5/2+4+5 é avaliada como: (REAL)5/(REAL)2+(REAL)4+(REAL)5</para>
 
-    <para>ao passo que: '5' + 4 é avaliado como: 5 + (STRING)4
-    //concatenação</para>
+    <para>ao passo que: '5' + 4 é avaliado como: 5 + (STRING)4 //concatenação</para>
 
-    <para>Os operadores de comparação são tratados como qualquer outra
-    expressão de modo misto. Funções incorporadas que recebem vários valores e
-    que podem retornar um ou mais desses valores (como MAP ou IF) são tratadas
-    como expressões de modo misto e retornam o tipo básico comum. Esse tipo
-    comum deve ser acessível às conversões implícitas padrão.</para>
+    <para>Os operadores de comparação são tratados como qualquer outra expressão de modo misto. Funções incorporadas que recebem vários valores e que podem retornar um ou mais desses valores (como MAP ou IF) são tratadas como expressões de modo misto e retornam o tipo básico comum. Esse tipo comum deve ser acessível às conversões implícitas padrão.</para>
   </sect2>
 
   <sect2 id="Type_Transfer">
@@ -75,15 +47,10 @@ MySet := (SET OF INTEGER1) [1,2,3,4,5,6,7,8,9,10];
         <primary>Type Transfer</primary>
       </indexterm></title>
 
-    <para>A conversão de tipos converte dados do seu formato original para o
-    novo formato. Para manter o mesmo padrão de bits, você deve usar a função
-    incorporada <emphasis role="bold">TRANSFER</emphasis> ou a sintaxe de
-    transferência de tipo, que é semelhante à sintaxe de conversão de tipos,
-    com a adição de colchetes angulares
-    (&gt;<emphasis>valuetype</emphasis>&lt;).</para>
+    <para>A conversão de tipos converte dados do seu formato original para o novo formato. Para manter o mesmo padrão de bits, você deve usar a função incorporada  <emphasis
+    role="bold">TRANSFER</emphasis>  ou a sintaxe de transferência de tipo, que é semelhante à sintaxe de conversão de tipos, com a adição de colchetes angulares (&gt;<emphasis>valuetype</emphasis>&lt;).</para>
 
-    <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer value 65
-STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlisting>
+    <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer value 65 STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlisting>
   </sect2>
 
   <sect2 id="Casting_Rules">
@@ -93,11 +60,11 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="3">
-        <colspec colwidth="90pt"/>
+        <colspec colwidth="90pt" />
 
-        <colspec colwidth="95.00pt"/>
+        <colspec colwidth="95.00pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -121,8 +88,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>STRING</entry>
 
-            <entry>Representação ASCII ou EBCDIC do valor, incluindo casas
-            decimais e sinal</entry>
+            <entry>Representação ASCII ou EBCDIC do valor, incluindo casas decimais e sinal</entry>
           </row>
 
           <row>
@@ -130,8 +96,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>STRING</entry>
 
-            <entry>Representação ASCII ou EBCDIC do valor, incluindo casas
-            decimais e sinal; pode ser expressa em notação científica</entry>
+            <entry>Representação ASCII ou EBCDIC do valor, incluindo decimal e sinal - pode ser expressa em notação científica</entry>
           </row>
 
           <row>
@@ -139,11 +104,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>STRING</entry>
 
-            <entry>Representação ASCII ou EBCDIC com quaisquer caracteres não
-            existentes aparecendo como código de controle SUBstitute (0x1A em
-            ASCII ou 0x3F em EBCDIC) e quaisquer caracteres ASCII ou EBCDIC
-            inválidos aparecendo como o ponto de código de substituição
-            (0xFFFD)</entry>
+            <entry>Representação ASCII ou EBCDIC com quaisquer caracteres não existentes aparecendo como código de controle SUBstitute (0x1A em ASCII ou 0x3F em EBCDIC) e quaisquer caracteres ASCII ou EBCDIC inválidos aparecendo como o ponto de código de substituição (0xFFFD)</entry>
           </row>
 
           <row>
@@ -151,11 +112,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>STRING</entry>
 
-            <entry>Representação ASCII ou EBCDIC com quaisquer caracteres não
-            existentes aparecendo como código de controle SUBstitute (0x1A em
-            ASCII ou 0x3F em EBCDIC) e quaisquer caracteres ASCII ou EBCDIC
-            inválidos aparecendo como o ponto de código de substituição
-            (0xFFFD)</entry>
+            <entry>Representação ASCII ou EBCDIC com quaisquer caracteres não existentes aparecendo como código de controle SUBstitute (0x1A em ASCII ou 0x3F em EBCDIC) e quaisquer caracteres ASCII ou EBCDIC inválidos aparecendo como o ponto de código de substituição (0xFFFD)</entry>
           </row>
 
           <row>
@@ -179,8 +136,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>UNICODE</entry>
 
-            <entry>Representação UNICODE do valor, incluindo casas decimais e
-            sinal</entry>
+            <entry>Representação UNICODE do valor, incluindo casas decimais e sinal</entry>
           </row>
 
           <row>
@@ -188,8 +144,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>UNICODE</entry>
 
-            <entry>Representação UNICODE do valor, incluindo casas decimais e
-            sinal; pode ser expressa em notação científica</entry>
+            <entry>Representação UNICODE do valor, incluindo decimal e sinal - pode ser expressa em notação científica</entry>
           </row>
 
           <row>
@@ -205,8 +160,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>UTF8</entry>
 
-            <entry>Representação UNICODE do valor, incluindo casas decimais e
-            sinal</entry>
+            <entry>Representação UNICODE do valor, incluindo casas decimais e sinal</entry>
           </row>
 
           <row>
@@ -214,8 +168,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>UTF8</entry>
 
-            <entry>Representação UTF8 do valor, incluindo casas decimais e
-            sinal; pode ser expressa em notação científica</entry>
+            <entry>A representação UTF8 do valor, incluindo decimal e sinal - pode ser expressa em notação científica</entry>
           </row>
 
           <row>
@@ -223,8 +176,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>REAL</entry>
 
-            <entry>O valor será convertido sem perda de precisão quando o
-            valor for maior que 15 dígitos significativos</entry>
+            <entry>O valor será convertido sem perda de precisão quando o valor for maior que 15 dígitos significativos</entry>
           </row>
 
           <row>
@@ -232,8 +184,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>REAL4</entry>
 
-            <entry>O valor será convertido sem perda de precisão quando o
-            valor for maior que 7 dígitos significativos</entry>
+            <entry>O valor será convertido sem perda de precisão quando o valor for maior que 7 dígitos significativos</entry>
           </row>
 
           <row>
@@ -241,8 +192,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>REAL</entry>
 
-            <entry>Parte de sinal, inteiro e casas decimais do valor da
-            string</entry>
+            <entry>Parte de sinal, inteiro e casas decimais do valor da string</entry>
           </row>
 
           <row>
@@ -250,8 +200,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>REAL</entry>
 
-            <entry>O valor será convertido sem perda de precisão quando o
-            valor for maior que 15 dígitos significativos</entry>
+            <entry>O valor será convertido sem perda de precisão quando o valor for maior que 15 dígitos significativos</entry>
           </row>
 
           <row>
@@ -259,8 +208,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>REAL4</entry>
 
-            <entry>O valor será convertido sem perda de precisão quando o
-            valor for maior que 7 dígitos significativos</entry>
+            <entry>O valor será convertido sem perda de precisão quando o valor for maior que 7 dígitos significativos</entry>
           </row>
 
           <row>
@@ -284,8 +232,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>DECIMAL</entry>
 
-            <entry>Parte de sinal, inteiro e casas decimais do valor da
-            string</entry>
+            <entry>Parte de sinal, inteiro e casas decimais do valor da string</entry>
           </row>
 
           <row>
@@ -411,10 +358,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
       </tgroup>
     </informaltable>
 
-    <para><emphasis role="bold"> </emphasis>As regras de conversão de STRING
-    de e para qualquer outro tipo numérico também se aplicam igualmente a
-    todos os tipos de string. Todas as regras de conversão se aplicam
-    igualmente a conjuntos (usando a sintaxe SET OF <emphasis>type</emphasis>
-    ).</para>
+    <para><emphasis role="bold"> </emphasis>As regras de conversão de STRING de e para qualquer outro tipo numérico também se aplicam igualmente a todos os tipos de string. Todas as regras de conversão se aplicam igualmente a conjuntos (usando a sintaxe SET OF 
+    <emphasis>type</emphasis> ).</para>
   </sect2>
 </sect1>

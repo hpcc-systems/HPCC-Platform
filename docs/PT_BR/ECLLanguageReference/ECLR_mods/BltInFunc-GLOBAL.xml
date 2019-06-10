@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GLOBAL">
@@ -14,14 +14,14 @@
     </indexterm> | </emphasis><emphasis> </emphasis><emphasis
   role="bold">MANY<indexterm>
       <primary>MANY</primary>
-    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">]
-  )</emphasis></para>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">] 
+    )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.30pt"/>
+        <colspec colwidth="80.30pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -33,30 +33,30 @@
           <row>
             <entry><emphasis role="bold">FEW</emphasis></entry>
 
-            <entry>Opcional. Indica que a expressão resultará em menos de
-            10.000 registros. Isso permite otimização para gerar um resultado
-            significativamente mais rápido.</entry>
+            <entry>Opcional. Indica que a expressão resultará em menos de 
+	    10.000 registros. Isso permite otimização para gerar um resultado 
+	    significativamente mais rápido.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">MANY</emphasis></entry>
 
-            <entry>Opcional. Indica que a expressão resultará em vários
-            registros.</entry>
+            <entry>Opcional. Indica que a expressão resultará em vários 
+	    registros.</entry>
           </row>
 
           <row>
             <entry>Return:</entry>
 
-            <entry>GLOBAL pode retornar valores scalar ou conjuntos de
-            registro.</entry>
+            <entry>GLOBAL pode retornar valores scalar ou conjuntos de 
+	    registro.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">GLOBAL </emphasis> avalia a
-  <emphasis>expressão</emphasis> em um escopo global de forma semelhante a do
+  <para>A função  <emphasis role="bold">GLOBAL </emphasis> avalia a 
+  <emphasis>expressão</emphasis>  em um escopo global de forma semelhante a do 
   serviço de fluxo de trabalho GLOBAL <indexterm>
       <primary>GLOBAL workflow service</primary>
     </indexterm> , mas sem a necessidade de definir outro atributo.</para>
@@ -84,6 +84,6 @@ END;
 EXPORT central_records := PROJECT(nada, tra(left));
 </programlisting>
 
-  <para>Ver também: <link linkend="GLOBAL_workflow_service">Serviço de Fluxo
+  <para>Ver também: <link linkend="GLOBAL_workflow_service">Serviço de Fluxo 
   de Trabalho GLOBAL</link></para>
 </sect1>

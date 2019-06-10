@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TOJSON">
@@ -13,14 +13,14 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="77.95pt"/>
+        <colspec colwidth="77.95pt" />
 
         <tbody>
           <row>
             <entry><emphasis>record</emphasis></entry>
 
-            <entry>A linha (registro) de dados a ser convertida para o formato
-            JSON .</entry>
+            <entry>A linha (registro) de dados a ser convertida para o formato 
+	    JSON .</entry>
           </row>
 
           <row>
@@ -32,10 +32,10 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold"> TOJSON </emphasis> retorna uma única
-  string com os dados no <emphasis>registro</emphasis> formatados novamente
-  como JSON. Se a estrutura RECORD do <emphasis>registro</emphasis> tiver
-  XPATHs definidos, eles seriam então usados; caso contrário, os nomes de
+  <para>A função <emphasis role="bold"> TOJSON </emphasis> retorna uma única 
+  string com os dados no  <emphasis>registro</emphasis>  formatados novamente 
+  como JSON. Se a estrutura RECORD do  <emphasis>registro</emphasis>  tiver 
+  XPATHs definidos, eles seriam então usados; caso contrário, os nomes de 
   campo em caixa baixa serão usados como nomes de tag JSON .</para>
 
   <para>Exemplo:</para>

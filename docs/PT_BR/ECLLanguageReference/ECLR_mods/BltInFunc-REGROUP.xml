@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="REGROUP">
@@ -8,91 +8,82 @@
       <primary>REGROUP</primary>
     </indexterm><indexterm>
       <primary>REGROUP function</primary>
-    </indexterm>(</emphasis><emphasis>recset,…,recset</emphasis> <emphasis
-  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
-  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
-  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
-  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
-  )</emphasis></para>
+    </indexterm>(</emphasis><emphasis>recset,...,recset</emphasis> <emphasis 
+    role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool 
+    </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ 
+    (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, 
+    ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] 
+    )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="77.85pt"/>
+        <colspec colwidth="77.85pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry>recset</entry>
 
-            <entry>Um conjunto agrupado de registros. Cada recset deve ser
-            exatamente do mesmo tipo e deve conter o mesmo número de
-            grupos.</entry>
+            <entry>Um conjunto agrupado de registros. Cada recset deve ser 
+	    exatamente do mesmo tipo e deve conter o mesmo número de 
+	    grupos.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de resultado
-            não é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de resultado 
+	    não é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Especifica a importância da ordem do registro de
-            resultado.</entry>
+            <entry>Especifica a importância da ordem do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Quando for “False” (Falso), especifica que a ordem do
-            registro de resultado não é importante. Quando for “True’
-            (Verdadeiro), especifica a ordem padrão do registro de
-            resultado.</entry>
+            <entry>Quando for “False” (Falso), especifica que a ordem do 
+	    registro de resultado não é importante. Quando for “True’ 
+	    (Verdadeiro), especifica a ordem padrão do registro de 
+	    resultado.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada é
-            importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada é 
+	    importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada não
-            é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada não 
+	    é importante.</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
           </row>
-
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Opcional. Tenta avaliar essa atividade usando
-            <emphasis>numthreads</emphasis> threads</entry>
+            <entry>Opcional. Tenta avaliar essa atividade usando 
+	    <emphasis>numthreads</emphasis> threads</entry>
           </row>
-
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Opcional. Substitui o algoritmo usado para essa
-            atividade.</entry>
+            <entry>Opcional. Substitui o algoritmo usado para essa 
+	    atividade.</entry>
           </row>
-
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
-            parte da lista de algoritmos compatíveis com as opções STABLE e
-            UNSTABLE da função SORT.</entry>
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer 
+	    parte da lista de algoritmos compatíveis com as opções STABLE e 
+	    UNSTABLE da função SORT.</entry>
           </row>
 
           <row>
@@ -104,11 +95,11 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">REGROUP </emphasis> combina os
-  <emphasis>recsets </emphasis> agrupados em um único conjunto de registros
-  agrupado. Isto é obtido combinando cada grupo no primeiro
-  <emphasis>recset</emphasis> com os grupos na mesma posição ordinal dentro de
-  cada <emphasis>recset</emphasis> subsequente.</para>
+  <para>A função  <emphasis role="bold">REGROUP </emphasis> combina os  
+  <emphasis>recsets </emphasis> agrupados em um único conjunto de registros 
+  agrupado Isto é obtido combinando cada grupo no primeiro 
+  <emphasis>recset</emphasis>  com os grupos na mesma posição ordinal dentro de 
+  cada  <emphasis>recset</emphasis> subsequente.</para>
 
   <para>Exemplo:</para>
 
@@ -149,6 +140,6 @@ OUTPUT(j3);
 OUTPUT(combined);
 </programlisting>
 
-  <para>Ver também: <link linkend="GROUP">GROUP</link>, <link
+  <para>Ver também: <link linkend="GROUP">GROUP</link>, <link 
   linkend="COMBINE">COMBINE</link></para>
 </sect1>

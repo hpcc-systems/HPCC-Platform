@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DICTIONARY">
@@ -6,7 +6,7 @@
       <primary>DICTIONARY</primary>
     </indexterm></title>
 
-  <para><emphasis>attr</emphasis> <emphasis role="bold">:=
+  <para><emphasis>attr</emphasis> <emphasis role="bold">:= 
   DICTIONARY(</emphasis> <emphasis>dataset, structure</emphasis> <emphasis
   role="bold">);</emphasis></para>
 
@@ -15,68 +15,68 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
           <entry><emphasis>attr</emphasis></entry>
 
-          <entry>O nome da estrutura DICTIONARY a ser usada posteriormente em
-          outras definições.</entry>
+          <entry>O nome da estrutura DICTIONARY a ser usada posteriormente em 
+	  outras definições.</entry>
         </row>
 
         <row>
           <entry><emphasis>dataset</emphasis></entry>
 
-          <entry>O nome de um DATASET ou conjunto de registros de onde derivar
-          o DICTIONARY. Isso pode ser definido em linha (semelhante a um
-          DATASET em linha).</entry>
+          <entry>O nome de um DATASET ou conjunto de registros de onde derivar 
+	  o DICTIONARY. Isso pode ser definido em linha (semelhante a um 
+	  DATASET em linha).</entry>
         </row>
 
         <row>
           <entry><emphasis>structure</emphasis></entry>
 
-          <entry>A estrutura RECORD (muitas vezes, definida em linha) que
-          especifica o layout dos campos. O(s) primeiro(s) campo(s) é(são)
-          campo(s)-chave, seguido(s) opcionalmente pelo operador "resultados
-          em" (=&gt;) e campos adicionais de carga útil. Isso é semelhante à
-          versão da carga útil de um INDEX. A carga útil pode especificar
-          campos individuais ou pode usar o nome do <emphasis>dataset
-          </emphasis> para incluir todos os campos não chave no
-          payload.</entry>
+          <entry>A estrutura RECORD (muitas vezes, definida em linha) que 
+	  especifica o layout dos campos. O(s) primeiro(s) campo(s) é(são) 
+	  campo(s)-chave, seguido(s) opcionalmente pelo operador "resultados 
+	  em" (=&gt;) e campos adicionais de carga útil. Isso é semelhante à 
+	  versão da carga útil de um INDEX. A carga útil pode especificar 
+	  campos individuais ou pode usar o nome do <emphasis>dataset 
+	  </emphasis>  para incluir todos os campos não chave no 
+	  payload.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>Um <emphasis role="bold">DICTIONARY</emphasis> permite verificar
-  eficientemente se um determinado valor de dados está em uma lista (usando o
-  operador IN) ou simplesmente mapear dados. Isso é semelhante a um LOOKUP
+  <para>Um  <emphasis role="bold">DICTIONARY</emphasis>  permite verificar 
+  eficientemente se um determinado valor de dados está em uma lista (usando o 
+  operador IN) ou simplesmente mapear dados. Isso é semelhante a um LOOKUP 
   JOIN que pode ser usado em qualquer contexto.</para>
 
   <sect2 id="DICTIONARY_Definition">
     <title>Definição DICTIONARY</title>
 
-    <para>A declaração DICTIONARY define um conjunto de registros únicos
-    derivados do parâmetro <emphasis>dataset</emphasis> e indexado pelo(s)
-    primeiro(s) campo(s) nomeado(s) no parâmetro
-    <emphasis>structure</emphasis> . O DICTIONARY contém um registro para cada
-    valor único no(s) campo(s)-chave. Você pode acessar um registro individual
-    anexando colchetes ([ ]) ao nome do <emphasis>attr</emphasis> do
-    DICTIONARY, que contém o(s) valor(es) do(s) campo(s)-chave que
+    <para>A declaração DICTIONARY define um conjunto de registros únicos 
+    derivados do parâmetro  <emphasis>dataset</emphasis>  e indexado pelo(s) 
+    primeiro(s) campo(s) nomeado(s) no parâmetro 
+    <emphasis>structure</emphasis> . O DICTIONARY contém um registro para cada 
+    valor único no(s) campo(s)-chave. Você pode acessar um registro individual 
+    anexando colchetes ([ ]) ao nome do  <emphasis>attr</emphasis> do 
+    DICTIONARY, que contém o(s) valor(es) do(s) campo(s)-chave que 
     identifica(m) o registro específico a ser acessado.</para>
   </sect2>
 
   <sect2 id="Child_DICTIONARY">
     <title>DICTIONARY como Tipo de Valor</title>
 
-    <para>A segunda forma do DICTIONARY é um tipo de valor com o parâmetro
-    <emphasis>structure</emphasis> especificando a estrutura RECORD dos dados.
-    Esse tipo de dados permite especificar um DICTIONARY como um dataset
-    secundário, de forma semelhante a como DATASET pode ser usado para definir
-    um dataset secundário. Isso também pode ser usado para passar um
+    <para>A segunda forma do DICTIONARY é um tipo de valor com o parâmetro 
+    <emphasis>structure</emphasis>  especificando a estrutura RECORD dos dados. 
+    Esse tipo de dados permite especificar um DICTIONARY como um dataset 
+    secundário, de forma semelhante a como DATASET pode ser usado para definir 
+    um dataset secundário. Isso também pode ser usado para passar um 
     DICTIONARY como parâmetro.</para>
 
     <para>Exemplo:</para>

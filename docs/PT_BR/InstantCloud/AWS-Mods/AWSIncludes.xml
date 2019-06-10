@@ -23,7 +23,8 @@
       </listitem>
 
       <listitem>
-        <para>Anote sua  <emphasis role="bold">Access Key ID</emphasis>  e sua <emphasis role="bold"> Secrete Access Key</emphasis></para>
+        <para>Anote sua  <emphasis role="bold">Access Key ID</emphasis>  e sua 
+	<emphasis role="bold"> Secret Access Key</emphasis></para>
 
         <para><figure>
             <title>Credenciais</title>

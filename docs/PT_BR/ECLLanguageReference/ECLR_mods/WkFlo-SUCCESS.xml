@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SUCCESS">
@@ -14,9 +14,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.65pt"/>
+        <colspec colwidth="79.65pt" />
 
-        <colspec colwidth="273.15pt"/>
+        <colspec colwidth="273.15pt" />
 
         <tbody>
           <row>
@@ -34,20 +34,20 @@
           <row>
             <entry><emphasis>handler</emphasis></entry>
 
-            <entry>A ação a ser executada se a expressão for
-            bem-sucedida.</entry>
+            <entry>A ação a ser executada se a expressão for 
+	    bem-sucedida.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>O serviço <emphasis role="bold">SUCCESS </emphasis>executa a
-  <emphasis>manipulação</emphasis> do atributo quanto a
-  <emphasis>expressão</emphasis> falha. O SUCCESS é executado em paralelo com
+  <para>O serviço  <emphasis role="bold">SUCCESS </emphasis>executa a 
+  <emphasis>manipulação</emphasis>  do atributo quanto a 
+  <emphasis>expressão</emphasis>  falha. O SUCCESS é executado em paralelo com 
   o retorno bem-sucedido do resultado. Esse serviço implicitamente faz com que
-  o <emphasis>atributo</emphasis> seja avaliado em um escopo global em vez de
-  escopo de função. Disponível apenas se os serviços de fluxo de trabalho
-  estiverem ativados (consulte #OPTION(workflow)).</para>
+   o  <emphasis>atributo</emphasis>  seja avaliado em um escopo global em vez de 
+   escopo de função. Disponível apenas se os serviços de fluxo de trabalho 
+   estiverem ativados (consulte #OPTION(workflow)).</para>
 
   <para>Exemplo:</para>
 
@@ -58,6 +58,6 @@
                     SystemsPersonel.email,'yeah.htm'));
 </programlisting>
 
-  <para>Ver também: <link linkend="FAILURE">FAILURE</link>, <link
+  <para>Ver também: <link linkend="FAILURE">FAILURE</link>, <link 
   linkend="RECOVERY">RECOVERY</link></para>
 </sect1>

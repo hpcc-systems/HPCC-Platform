@@ -26,8 +26,9 @@
 
           <para>Abra o ECL Watch em seu navegador usando a seguinte URL:</para>
 
-          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp 
-          </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP do ESP Server e pppp é a porta. A porta padrão é 8010)</emphasis></para>
+          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+          </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP do seu 
+	  servidor ESP e pppp é a porta. A porta padrão é 8010)</emphasis></para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -217,7 +218,13 @@
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Name Prefix</emphasis></entry>
+                      <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                      <entry>Selecione a fila para o spray. </entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Target Scope</emphasis></entry>
 
                       <entry>O prefixo do arquivo lógico. Neste caso, 
                       <emphasis role="bold">certification</emphasis></entry>
@@ -265,6 +272,14 @@
                       <entry><emphasis role="bold">No Split</emphasis></entry>
 
                       <entry>Marque esta caixa para impedir a divisão de partes do arquivo em várias partes de destino.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Expire in (days)</emphasis></entry>
+
+                      <entry>Um valor inteiro indicando o número de dias restantes para o 
+		      arquivo ser removido automaticamente. Se omitido, o padrão é -1 
+		      (sem data de validade).</entry>
                     </row>
 
                     <row>

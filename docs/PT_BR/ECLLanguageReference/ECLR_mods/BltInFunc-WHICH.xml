@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WHICH">
@@ -8,14 +8,14 @@
       <primary>WHICH</primary>
     </indexterm><indexterm>
       <primary>WHICH Function</primary>
-    </indexterm>(</emphasis><emphasis>condition,…,condition</emphasis><emphasis
+    </indexterm>(</emphasis><emphasis>condition,...,condition</emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.20pt"/>
+        <colspec colwidth="78.20pt" />
 
-        <colspec colwidth="274.60pt"/>
+        <colspec colwidth="274.60pt" />
 
         <tbody>
           <row>
@@ -27,16 +27,16 @@
           <row>
             <entry>Return:</entry>
 
-            <entry>WHICH retorna um único valor.</entry>
+            <entry>WHICH  retorna um único valor.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">WHICH </emphasis> avalia quais das
-  listas de <emphasis>condições</emphasis> retornaram como “true”
-  (verdadeiras) e retorna sua posição ordinal na lista de
-  <emphasis>condições</emphasis>. Se nenhuma retornar como verdadeira, é
+  <para>A função  <emphasis role="bold">WHICH </emphasis> avalia quais das 
+  listas de  <emphasis>condições</emphasis>  retornaram como “true” 
+  (verdadeiras) e retorna sua posição ordinal na lista de  
+  <emphasis>condições</emphasis>. Se nenhuma retornar como verdadeira, é 
   indicado zero (0). Trata-se do oposto da função REJECTED<indexterm>
       <primary>REJECTED function</primary>
     </indexterm>.</para>
@@ -48,7 +48,7 @@
   //Accept is 0 for everyone but those named Fred or Sue
 </programlisting>
 
-  <para>Ver também: <link linkend="REJECTED">REJECTED</link>, <link
-  linkend="MAP">MAP</link>, <link linkend="CHOOSE">CHOOSE</link>, <link
+  <para>Ver também: <link linkend="REJECTED">REJECTED</link>, <link 
+  linkend="MAP">MAP</link>, <link linkend="CHOOSE">CHOOSE</link>, <link 
   linkend="IF">IF</link>, <link linkend="CASE">CASE</link></para>
 </sect1>

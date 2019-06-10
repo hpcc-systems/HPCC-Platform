@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RECORDOF">
@@ -13,40 +13,40 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
           <entry><emphasis>recordset</emphasis></entry>
 
-          <entry>O conjunto de registros de dados cuja estrutura RECORD será
-          usada. Pode ser um DATASET ou qualquer conjunto de registros
-          derivado. Se o atributo LOOKUP for usado, isso pode ser um nome de
-          arquivo.</entry>
+          <entry>O conjunto de registros de dados cuja estrutura RECORD será 
+	  usada. Pode ser um DATASET ou qualquer conjunto de registros 
+	  derivado. Se o atributo LOOKUP for usado, isso pode ser um nome de 
+	  arquivo. </entry>
         </row>
 
         <row>
           <entry><emphasis role="bold">LOOKUP</emphasis></entry>
 
-          <entry>Opcional. Especifica que o layout de arquivo deve ser
-          consultado no tempo de compilação. Consulte <emphasis>Resolução de
-          layout de arquivo no tempo </emphasis> de compilação <emphasis>no
-          Guia do Programador</emphasis> para obter mais detalhes.</entry>
+          <entry>Opcional. Especifica que o layout de arquivo deve ser 
+	  consultado no tempo de compilação. Consulte  <emphasis>Resolução de 
+	  layout de arquivo no tempo de compilação</emphasis>no  
+	  <emphasis>Guia do Programador</emphasis>  para obter mais detalhes.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>A declaração <emphasis role="bold">RECORDOF </emphasis> especifica o
-  uso de apenas o layout de registro do <emphasis>recordset </emphasis> em
-  situações onde seria necessário herdar a estrutura dos campos, mas não seus
-  valores padrão, como declarações de DATASET secundário dentro de estruturas
+  <para>A declaração  <emphasis role="bold">RECORDOF </emphasis> especifica o 
+  uso de apenas o layout de registro do  <emphasis>recordset </emphasis> em 
+  situações onde seria necessário herdar a estrutura dos campos, mas não seus 
+  valores padrão, como declarações de DATASET secundário dentro de estruturas 
   RECORD.</para>
 
-  <para>Essa função permite que você mantenha as estruturas RECORD locais no
-  DATASET, cujo layout são definidos por essas estruturas, e ainda consiga
+  <para>Essa função permite que você mantenha as estruturas RECORD locais no 
+  DATASET, cujo layout são definidos por essas estruturas, e ainda consiga 
   referenciar a estrutura (sem valores padrão) onde necessário.</para>
 
   <para>Exemplo:</para>

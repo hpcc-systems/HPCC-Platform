@@ -11,7 +11,7 @@
       <para>Abra o ECL Watch em seu navegador usando o seguinte URL:</para>
 
       <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
-      </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP  do seu ESP Server e pppp é a porta.  A porta padrão é 8010)</emphasis></para>
+      </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP do seu servidor ESP e pppp é a porta. A porta padrão é 8010)</emphasis></para>
 
       <informaltable colsep="1" frame="all" rowsep="1">
         <?dbfo keep-together="always"?>
@@ -230,7 +230,7 @@
         .</para>
 
         <para><figure>
-            <title>Link mythor</title>
+            <title>mythor link</title>
 
             <mediaobject>
               <imageobject>
@@ -343,7 +343,7 @@
       </listitem>
 
       <listitem>
-        <para>Pressione o botão <emphasis role="bold">Submit</emphasis>  para iniciar o preflight</para>
+        <para>Pressione o botão <emphasis role="bold">Submit</emphasis>  para iniciar o preflight.</para>
       </listitem>
     </orderedlist>
 

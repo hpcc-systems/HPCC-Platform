@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Function_Attributes__Parameter_Passing">
@@ -8,46 +8,46 @@
       <primary><emphasis role="bold">Parameter Passing</emphasis></primary>
     </indexterm>)</title>
 
-  <para>Todos os tipos básicos de Definição também podem se tornar funções.
-  Para isso, basta ajustá-las para aceitar passagem de parâmetros (argumentos
+  <para>Todos os tipos básicos de Definição também podem se tornar funções. 
+  Para isso, basta ajustá-las para aceitar passagem de parâmetros (argumentos 
   <indexterm>
       <primary>argumento</primary>
-    </indexterm>). O recurso de receber parâmetros não altera a natureza
-  essencial do tipo da Definição, mas simplesmente aumenta a sua
-  flexibilidade.</para>
+    </indexterm>). O recurso de receber parâmetros não altera a natureza 
+    essencial do tipo da Definição, mas simplesmente aumenta a sua 
+    flexibilidade.</para>
 
-  <para>As definições de parâmetros aparecem sempre entre parênteses, anexadas
-  ao nome da Definição. Você pode definir a função para receber quantos
-  parâmetros forem necessários para criar a funcionalidade desejada. Basta
+  <para>As definições de parâmetros aparecem sempre entre parênteses, anexadas 
+  ao nome da Definição. Você pode definir a função para receber quantos 
+  parâmetros forem necessários para criar a funcionalidade desejada. Basta 
   separar cada definição de parâmetro sucessiva com uma vírgula.</para>
 
   <para>O formato das definições de parâmetros é o seguinte:</para>
 
   <para>DefinitionName<emphasis role="bold">( [
   </emphasis><emphasis>ValueType</emphasis><emphasis role="bold"> ]
-  </emphasis><emphasis>AliasName</emphasis><emphasis role="bold"> [
+  </emphasis><emphasis>AliasName</emphasis><emphasis role="bold"> [ 
   =</emphasis><emphasis>DefaultValue</emphasis><emphasis role="bold"> ] ) :=
   </emphasis>expression<emphasis role="bold">;</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
           <entry><emphasis>ValueType</emphasis></entry>
 
-          <entry>Opcional. Especifica o tipo dos dados passados. Se omitido, o
-          padrão é INTEGER: (veja <emphasis role="bold">Tipos de
-          valores<indexterm>
+          <entry>Opcional. Especifica o tipo dos dados passados. Se omitido, o 
+	  padrão é INTEGER: (veja <emphasis role="bold">Tipos de 
+	  valores<indexterm>
               <primary><emphasis role="bold">Value Types</emphasis></primary>
-            </indexterm></emphasis>). Isso também pode incluir a palavra-chave
-          CONST (ver <emphasis role="bold">CONST<indexterm>
+            </indexterm></emphasis>). Isso também pode incluir a palavra-chave 
+	    CONST (ver <emphasis role="bold">CONST<indexterm>
               <primary>CONST</primary>
-            </indexterm></emphasis>) para indicar que o valor passado será
-          tratado sempre como constante.</entry>
+            </indexterm></emphasis>) para indicar que o valor passado será 
+	    tratado sempre como constante.</entry>
         </row>
 
         <row>
@@ -59,16 +59,16 @@
         <row>
           <entry><emphasis>DefaultValue</emphasis></entry>
 
-          <entry>Opcional. Fornece o valor a ser usado na expressão se o
-          parâmetro for omitido. O <emphasis>DefaultValue</emphasis> poderá
-          ser a palavra-chave ALL se o ValueType for SET (consulte a
-          palavra-chave <emphasis role="bold">SET<indexterm>
+          <entry>Opcional. Fornece o valor a ser usado na expressão se o 
+	  parâmetro for omitido. O  <emphasis>DefaultValue</emphasis>  poderá 
+	  ser a palavra-chave ALL se o ValueType for SET (consulte a 
+	  palavra-chave  <emphasis role="bold">SET<indexterm>
               <primary>SET</primary>
-            </indexterm></emphasis> ) para indicar todos os valores possíveis
-          para esse tipo de conjunto, ou colchetes vazios<indexterm>
+            </indexterm></emphasis> ) para indicar todos os valores possíveis 
+	    para esse tipo de conjunto, ou colchetes vazios<indexterm>
               <primary>colchetes</primary>
-            </indexterm> ([ ]) para indicar que não há nenhum valor possível
-          para esse tipo de conjunto.</entry>
+            </indexterm>  ([ ]) para indicar que não há nenhum valor possível 
+	    para esse tipo de conjunto.</entry>
         </row>
 
         <row>
@@ -83,35 +83,33 @@
   <sect2 id="Simple_Value_Type_Parameters">
     <title>Parâmetros simples de tipo de valor</title>
 
-    <para>Se <emphasis>ValueType</emphasis> opcional for um dos tipos simples
-    (BOOLEAN, INTEGER, REAL, DECIMAL, STRING, QSTRING, UNICODE, DATA,
-    VARSTRING ou VARUNICODE), o <emphasis>ValueType</emphasis> poderá incluir
-    a palavra-chave CONST (consulte <emphasis role="bold">CONST</emphasis>)
-    para indicar que o valor passado será tratado sempre como constante
-    (normalmente, usado apenas em protótipos da ECL para funções
+    <para>Se  <emphasis>ValueType</emphasis>  opcional for um dos tipos simples 
+    (BOOLEAN, INTEGER, REAL, DECIMAL, STRING, QSTRING, UNICODE, DATA, 
+    VARSTRING ou VARUNICODE), o  <emphasis>ValueType</emphasis>  poderá incluir 
+    a palavra-chave CONST (consulte  <emphasis role="bold">CONST</emphasis>) 
+    para indicar que o valor passado será tratado sempre como constante 
+    (normalmente, usado apenas em protótipos da ECL para funções 
     externas).</para>
 
-    <programlisting>ValueDefinition := 15;
-FirstFunction(INTEGER x=5) := x + 5;
-          //takes an integer parameter named "x" and "x" is used in the
-          //arithmetic expression to indicate the usage of the parameter
-          
-SecondDefinition := FirstFunction(ValueDefinition);
-          // The value of SecondDefinition is 20
-          
-ThirdDefinition := FirstFunction();
-          // The value of ThirdDefinition is 10, omitting the parameter</programlisting>
+    <programlisting>ValueDefinition := 15; 
+    FirstFunction(INTEGER x=5) := x + 5; 
+    //takes an integer parameter named "x" and "x" is used in the 
+    //arithmetic expression to indicate the usage of the parameter 
+    SecondDefinition := FirstFunction(ValueDefinition); 
+    // The value of SecondDefinition is 20 
+    ThirdDefinition := FirstFunction(); 
+    // The value of ThirdDefinition is 10, omitting the parameter</programlisting>
   </sect2>
 
   <sect2 id="SET_Parameters">
     <title>Parâmetros SET</title>
 
-    <para>O <emphasis>DefaultValue</emphasis> para parâmetros SET <indexterm>
+    <para>O  <emphasis>DefaultValue</emphasis>  para parâmetros SET <indexterm>
         <primary>SET parameters</primary>
-      </indexterm> pode ser um conjunto padrão de valores, a palavra-chave ALL
-    para indicar todos os valores possíveis para esse tipo de conjunto ou
-    colchetes vazios ([ ]) para indicar que não há nenhum valor possível para
-    esse tipo de conjunto (um conjunto vazio).</para>
+      </indexterm>  pode ser um conjunto padrão de valores, a palavra-chave ALL 
+      para indicar todos os valores possíveis para esse tipo de conjunto ou 
+      colchetes vazios ([ ]) para indicar que não há nenhum valor possível para 
+      esse tipo de conjunto (um conjunto vazio).</para>
 
     <programlisting>SET OF INTEGER1 SetValues := [5,10,15,20];
 
@@ -124,10 +122,10 @@ OUTPUT(IsInSetFunction(,5)); // true</programlisting>
   <sect2 id="Passing_DATASET_Parameters">
     <title>Passagem de Parâmetros DATASET</title>
 
-    <para>A passagem de um DATASET ou de um conjunto de registros derivado
+    <para>A passagem de um DATASET ou de um conjunto de registros derivado 
     como parâmetro pode ser feita usando a seguinte sintaxe:</para>
 
-    <para><emphasis>DefinitionName</emphasis><emphasis role="bold">(
+    <para><emphasis>DefinitionName</emphasis><emphasis role="bold">( 
     DATASET<indexterm>
         <primary>DATASET parameter</primary>
       </indexterm>(</emphasis><emphasis> recstruct </emphasis><emphasis
@@ -135,33 +133,30 @@ OUTPUT(IsInSetFunction(,5)); // true</programlisting>
     role="bold"> ) := </emphasis><emphasis>expression</emphasis><emphasis
     role="bold">;</emphasis></para>
 
-    <para><emphasis> recstruct</emphasis> é obrigatório e atribui um nome à
-    estrutura de RECORD que define o layout dos campos no parâmetro passado
-    DATASET. Como alternativa, <emphasis>recstruct</emphasis> pode usar a
-    função RECORDOF. <emphasis> AliasName</emphasis> é obrigatório, atribui um
-    nome ao dataset a ser usado na função e é utilizado em
-    <emphasis>expression </emphasis> da Definição para indicar em que local da
-    operação o parâmetro passado será usado. Para ver mais exemplos, consulte
-    a discussão sobre <emphasis role="bold">DATASET como Value Type</emphasis>
+    <para> <emphasis> recstruct</emphasis>  é obrigatório e atribui um nome à 
+    estrutura de RECORD que define o layout dos campos no parâmetro passado 
+    DATASET. Como alternativa,  <emphasis>recstruct</emphasis>  pode usar a 
+    função RECORDOF. <emphasis> AliasName</emphasis>  é obrigatório, atribui um 
+    nome ao dataset a ser usado na função e é utilizado em 
+    <emphasis>expression </emphasis> da Definição para indicar em que local da 
+    operação o parâmetro passado será usado. Para ver mais exemplos, consulte 
+    a discussão sobre  <emphasis role="bold">DATASET como Value Type</emphasis>  
     na documentação de DATASET.</para>
 
-    <programlisting>MyRec := {STRING1 Letter};
-    
-SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
-
-FilteredDS(DATASET(MyRec) ds) := ds(Letter NOT IN ['A','C','E']);
-           //passed dataset referenced as "ds" in expression
-
-OUTPUT(FilteredDS(SomeFile));</programlisting>
+    <programlisting>MyRec := {STRING1 Letter}; 
+    SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec); 
+    FilteredDS(DATASET(MyRec) ds) := ds(Letter NOT IN ['A','C','E']); 
+    //passed dataset referenced as "ds" in expression 
+    OUTPUT(FilteredDS(SomeFile));</programlisting>
   </sect2>
 
   <sect2 id="Passing_DICTIONARY_Parameters">
     <title>Passagem de Parâmetros DICTIONARY</title>
 
-    <para>A passagem de um DICTIONARY como parâmetro pode ser feita usando a
+    <para>A passagem de um DICTIONARY como parâmetro pode ser feita usando a 
     seguinte sintaxe:</para>
 
-    <para><emphasis>DefinitionName</emphasis><emphasis role="bold">(
+    <para><emphasis>DefinitionName</emphasis><emphasis role="bold">( 
     DICTIONARY<indexterm>
         <primary>DICTIONARY parameter</primary>
       </indexterm>(</emphasis><emphasis> structure </emphasis><emphasis
@@ -169,13 +164,13 @@ OUTPUT(FilteredDS(SomeFile));</programlisting>
     role="bold"> ) := </emphasis><emphasis>expression</emphasis><emphasis
     role="bold">;</emphasis></para>
 
-    <para>O parâmetro obrigatório <emphasis>structure</emphasis> é a estrutura
-    de RECORD que define o layout dos campos no parâmetro DICTIONARY passado
-    (normalmente, definido em linha). <emphasis> AliasName</emphasis> atribui
-    um nome ao DICTIONARY para uso na função e é utilizado em
-    <emphasis>expression</emphasis> da Definição para indicar em que local da
-    operação o parâmetro passado será usado. Consulte a discussão sobre
-    <emphasis role="bold">DICTIONARY como Value Type</emphasis> na
+    <para>O parâmetro obrigatório  <emphasis>structure</emphasis>  é a estrutura 
+    de RECORD que define o layout dos campos no parâmetro DICTIONARY passado 
+    (normalmente, definido em linha).  <emphasis> AliasName</emphasis>  atribui 
+    um nome ao DICTIONARY para uso na função e é utilizado em 
+    <emphasis>expression</emphasis>  da Definição para indicar em que local da 
+    operação o parâmetro passado será usado.  Consulte a discussão sobre  
+    <emphasis role="bold">DICTIONARY como Value Type</emphasis> na 
     documentação de DICTIONARY.</para>
 
     <programlisting>rec := RECORD
@@ -210,12 +205,12 @@ MyDCTfunc(DsDCT,'Brown');      //Seth</programlisting>
   <sect2 id="Passing_Typeless_Parameters">
     <title>Passagem de Parâmetros Typeless</title>
 
-    <para>É possível passar parâmetros de qualquer tipo usando a palavra-chave
+    <para>É possível passar parâmetros de qualquer tipo usando a palavra-chave 
     ANY <indexterm>
         <primary>ANY</primary>
-      </indexterm> como o tipo do valor passado:</para>
+      </indexterm>  como o tipo do valor passado:</para>
 
-    <para><emphasis>DefinitionName</emphasis> <emphasis role="bold">(
+    <para><emphasis>DefinitionName</emphasis> <emphasis role="bold">( 
     ANY</emphasis> <emphasis>AliasName</emphasis> <emphasis role="bold"> ) :=
     </emphasis><emphasis>expression</emphasis><emphasis
     role="bold">;</emphasis></para>
@@ -245,42 +240,42 @@ MyFunc(ds1,ds2);  //returns 4 records: '1', '2', '3', and '4'
   <sect2 id="Passing_Function_Parameters">
     <title>Passagem de Parâmetros Function</title>
 
-    <para>A passagem de uma Função como tipo de parâmetro pode ser feita
-    usando uma das seguintes opções de sintaxe como
-    <emphasis>ValueType</emphasis> do parâmetro:</para>
+    <para>A passagem de uma Função como tipo de parâmetro pode ser feita 
+    usando uma das seguintes opções de sintaxe como 
+    <emphasis>ValueType</emphasis>  do parâmetro:</para>
 
     <para><emphasis>FunctionName</emphasis>(<emphasis
-    role="bold"/><emphasis>parameters</emphasis><emphasis
-    role="bold"/>)<emphasis/></para>
+    role="bold"></emphasis><emphasis>parameters</emphasis><emphasis
+    role="bold"></emphasis>)<emphasis></emphasis></para>
 
     <para><emphasis>PrototypeName</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt"/>
+        <colspec align="left" colwidth="122.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>FunctionName</emphasis></entry>
 
-            <entry>O nome de uma função cujo tipo pode ser passado como
-            parâmetro.</entry>
+            <entry>O nome de uma função cujo tipo pode ser passado como 
+	    parâmetro.</entry>
           </row>
 
           <row>
             <entry><emphasis>parameters</emphasis></entry>
 
-            <entry>As definições de parâmetros para o parâmetro
+            <entry>As definições de parâmetros para o parâmetro 
             <emphasis>FunctionName</emphasis> .</entry>
           </row>
 
           <row>
             <entry><emphasis>PrototypeName</emphasis></entry>
 
-            <entry>O nome de uma função previamente definida para uso como
-            tipo de função que pode ser passado como parâmetro.</entry>
+            <entry>O nome de uma função previamente definida para uso como 
+	    tipo de função que pode ser passado como parâmetro.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -344,16 +339,16 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
   <sect2 id="Passing_NAMED_Parameters">
     <title>Passagem de Parâmetros NAMED</title>
 
-    <para>Normalmente, a passagem de valores para uma função definida para
-    receber vários parâmetros, muitos dos quais têm valores padrão (e,
-    portanto, podem ser omitidos), é feita "contando vírgulas" para garantir
-    que os valores escolhidos sejam passados ao parâmetro correto,
-    considerando a posição do parâmetro na lista. Esse método não é prático
+    <para>Normalmente, a passagem de valores para uma função definida para 
+    receber vários parâmetros, muitos dos quais têm valores padrão (e, 
+    portanto, podem ser omitidos), é feita "contando vírgulas" para garantir 
+    que os valores escolhidos sejam passados ao parâmetro correto, 
+    considerando a posição do parâmetro na lista. Esse método não é prático 
     quando há muitos parâmetros opcionais.</para>
 
-    <para>O método mais fácil é usar a seguinte sintaxe de parâmetro NAMED,
-    que elimina a necessidade de incluir vírgulas incômodas como espaços
-    reservados para que os valores sejam passados aos parâmetros
+    <para>O método mais fácil é usar a seguinte sintaxe de parâmetro NAMED, 
+    que elimina a necessidade de incluir vírgulas incômodas como espaços 
+    reservados para que os valores sejam passados aos parâmetros 
     corretos:</para>
 
     <para>Attr := FunctionName<emphasis role="bold">( [ NAMED<indexterm>
@@ -364,23 +359,24 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt"/>
+        <colspec align="left" colwidth="122.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
-            <entry><emphasis>NAMED</emphasis></entry>
+            <entry><emphasis role="bold">NAMED</emphasis></entry>
 
-            <entry>Opcional. Obrigatório apenas quando <emphasis>AliasName
-            </emphasis> conflita com uma palavra reservada.</entry>
+            <entry>Opcional. Obrigatório apenas quando  <emphasis>AliasName
+            </emphasis> conflita com uma palavra reservada. </entry>
           </row>
 
           <row>
             <entry><emphasis>AliasName</emphasis></entry>
 
-            <entry>Os nomes do parâmetro na definição da função da
-            Definição.</entry>
+            <entry>Os nomes do parâmetro na definição da função da 
+	    Definição. Este deve ser um rótulo válido (consulte  <link
+            linkend="Attribute_Name_Rules">Definition Name Rules</link>)</entry>
           </row>
 
           <row>
@@ -392,9 +388,9 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
       </tgroup>
     </informaltable>
 
-    <para>Essa sintaxe é usada na chamada das funções e permite passar valores
-    para parâmetros específicos pelo seu <emphasis>AliasName</emphasis>,
-    independentemente de sua posição na lista. Todos os parâmetros passados
+    <para>Essa sintaxe é usada na chamada das funções e permite passar valores 
+    para parâmetros específicos pelo seu <emphasis>AliasName</emphasis>, 
+    independentemente de sua posição na lista. Todos os parâmetros passados 
     sem nome atribuído devem preceder todos os parâmetros NAMED.</para>
 
     <programlisting>outputRow(BOOLEAN showA = FALSE, BOOLEAN showB = FALSE,

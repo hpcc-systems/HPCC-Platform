@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FROMXML">
@@ -14,15 +14,15 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="77.95pt"/>
+        <colspec colwidth="77.95pt" />
 
         <tbody>
           <row>
             <entry><emphasis>record</emphasis></entry>
 
-            <entry>A estrutura RECORD a ser gerada. Cada campo deve
-            especificar o XPATH para os dados que devem ser contidos na
-            <emphasis>xmlstring</emphasis> .</entry>
+            <entry>A estrutura RECORD a ser gerada. Cada campo deve 
+	    especificar o XPATH para os dados que devem ser contidos na 
+	    <emphasis>xmlstring</emphasis> .</entry>
           </row>
 
           <row>
@@ -34,15 +34,15 @@
           <row>
             <entry>ONFAIL</entry>
 
-            <entry>Opcional. Especifica um transform para manusear os erros no
-            XML.</entry>
+            <entry>Opcional. Especifica um transform para manusear os erros no 
+	    XML.</entry>
           </row>
 
           <row>
             <entry><emphasis>transform</emphasis></entry>
 
-            <entry>Uma estrutura TRANSFORM correspondente à estrutura do
-            registro do primeiro parâmetro.</entry>
+            <entry>Uma estrutura TRANSFORM correspondente à estrutura do 
+	    registro do primeiro parâmetro.</entry>
           </row>
 
           <row>
@@ -54,9 +54,9 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">FROMXML </emphasis>retorna uma única
-  linha (registro) no formato <emphasis>record</emphasis> da
-  <emphasis>xmlstring</emphasis> especificada. Isso pode ser usado onde quer
+  <para>A função  <emphasis role="bold">FROMXML  </emphasis>retorna uma única 
+  linha (registro) no formato  <emphasis>record</emphasis>  da 
+  <emphasis>xmlstring</emphasis> especificada. Isso pode ser usado onde quer 
   que uma linha única possa ser usada (semelhante à função ROW ).</para>
 
   <para>Exemplo:</para>

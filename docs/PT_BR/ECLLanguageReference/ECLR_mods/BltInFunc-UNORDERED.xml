@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="UNORDERED">
@@ -13,9 +13,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="82.95pt"/>
+        <colspec colwidth="82.95pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -27,10 +27,10 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">UNICODEORDER </emphasis> é utilizada
-  para indicar a ordem do <emphasis>Dataset</emphasis> não é importra. Isso
-  permitirá que o gerador de código aplique otimizações adicionais em futuras
-  versões.</para>
+  <para>A função  <emphasis role="bold">UNICODEORDER  </emphasis> é utilizada 
+  para indicar a ordem do  <emphasis>Dataset</emphasis> não é importa. Isso 
+  permitirá que o gerador de código aplique otimizações adicionais em futuras 
+   versões.</para>
 
   <para>Exemplo:</para>
 

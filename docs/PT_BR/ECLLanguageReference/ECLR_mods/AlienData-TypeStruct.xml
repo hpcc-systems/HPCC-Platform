@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TYPE_Structure" role="nobrk">
@@ -7,17 +7,17 @@
   <para><emphasis>TypeName</emphasis><emphasis role="bold"> := TYPE<indexterm>
       <primary><emphasis role="bold">TYPE</emphasis></primary>
     </indexterm></emphasis><emphasis role="bold">
-  </emphasis><emphasis/></para>
+  </emphasis><emphasis></emphasis></para>
 
   <para><emphasis>functions;</emphasis></para>
 
-  <para><emphasis/><emphasis role="bold">END;</emphasis></para>
+  <para><emphasis></emphasis><emphasis role="bold">END;</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
@@ -38,19 +38,19 @@
     </tgroup>
   </informaltable>
 
-  <para>A estrutura <emphasis role="bold">TYPE </emphasis>define uma série de
-  <emphasis>funções</emphasis> que são invocadas de forma implícita quando o
-  <emphasis>TypeName</emphasis> é subsequentemente usado em uma estrutura
+  <para>A estrutura  <emphasis role="bold">TYPE </emphasis>define uma série de  
+  <emphasis>funções</emphasis>  que são invocadas de forma implícita quando o 
+  <emphasis>TypeName</emphasis>  é subsequentemente usado em uma estrutura 
   RECORD <indexterm>
       <primary>RECORD structure</primary>
-    </indexterm> como tipo de valor. Os parâmetros podem ter sido
-  especificados para o atributo da estrutura TYPE , que podem então ser usados
-  em qualquer definição da <emphasis>função</emphasis> . Para especificar os
-  parâmetros, basta anexá-los ao <emphasis>TypeName</emphasis> usado na
-  estrutura RECORD para definir o tipo de valor para o campo.</para>
+    </indexterm> como tipo de valor. Os parâmetros podem ter sido 
+    especificados para o atributo da estrutura TYPE , que podem então ser usados 
+    em qualquer definição da <emphasis>função</emphasis>. Para especificar os 
+    parâmetros, basta anexá-los ao  <emphasis>TypeName</emphasis>  usado na 
+    estrutura RECORD para definir o tipo de valor para o campo.</para>
 
-  <para>Uma estrutura TYPE pode conter apenas definições de função contidas na
-  lista de Funções especiais disponíveis (consulte <emphasis
+  <para>Uma estrutura TYPE pode conter apenas definições de função contidas na 
+  lista de Funções especiais disponíveis (consulte  <emphasis 
   role="bold">Funções especiais da estrutura TYPE </emphasis>).</para>
 
   <para>Exemplo:</para>

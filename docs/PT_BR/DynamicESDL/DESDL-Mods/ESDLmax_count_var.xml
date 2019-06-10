@@ -2,15 +2,21 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_max_count_var">
-  <title><emphasis role="bold">max_count_var</emphasis></title>
+  <title>max_count_var</title>
 
   <para><indexterm>
       <primary>max_count_var</primary>
-    </indexterm>O atributo max_count_var é usado para especificar a quantidade máxima de itens em um dataset (ESParray).</para>
+    </indexterm>O atributo max_count_var é usado para especificar 
+    uma variável (um Atributo ECL) contendo o valor dos itens máximos 
+    esperados em um conjunto de dados (ESParray).</para>
 
   <para><emphasis role="bold">Exemplo:</emphasis></para>
 
   <programlisting>[max_count_var("iesp.Constants.JD.MaxRecords")] ESParray &lt;ESPstruct MYRecord, Record&gt; Records;   </programlisting>
 
-  <para>O Roxie definirá a constante iesp.Constants.JD.MaxRecords e realizará alterações de maneira independente, sem afetar o ESP.</para>
+  <para>O desenvolvedor do ECL define a constante iesp.Constants.JD.MaxRecords em 
+  vez de codificar o valor da contagem máxima no ESDL. </para>
+
+  <para>Ver também: <link linkend="ESParray">ESParray</link>, <link
+  linkend="ESDL_Attributes_max_count">max_count</link></para>
 </sect1>

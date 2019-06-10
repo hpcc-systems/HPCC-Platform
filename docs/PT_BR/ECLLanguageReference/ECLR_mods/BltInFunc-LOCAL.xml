@@ -33,7 +33,12 @@
     </tgroup>
   </informaltable>
 
-  <para>A função  <emphasis role="bold">LOCAL </emphasis> especifica que todas as operações subsequentes nos  <emphasis>dados</emphasis>  são executadas localmente em cada nó (semelhante ao uso da opção LOCAL em uma função). Ela é geralmente usada em uma operação ALLNODES . <emphasis role="bold">Essa função está disponível para uso apenas no <indexterm>
+  <para>A função  <emphasis role="bold">LOCAL </emphasis> especifica que todas 
+  as operações subsequentes nos   <emphasis>dados</emphasis> são 
+  executadas localmente em cada nó (semelhante ao uso da opção 
+  LOCAL em uma função). Ela é geralmente usada em uma operação 
+  ALLNODES . <emphasis role="bold">Essa função está disponível 
+  para uso apenas no <indexterm>
       <primary>Roxie</primary>
     </indexterm>.</emphasis></para>
 

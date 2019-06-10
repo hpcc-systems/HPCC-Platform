@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CASE">
@@ -9,16 +9,16 @@
     </indexterm><indexterm>
       <primary>CASE function</primary>
     </indexterm>(</emphasis><emphasis>expression, caseval =&gt; value,
-  </emphasis><emphasis role="bold">[</emphasis><emphasis>… , caseval =&gt;
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>… , caseval =&gt; 
   value </emphasis><emphasis role="bold">]</emphasis><emphasis>
   </emphasis><emphasis role="bold">[,</emphasis><emphasis> elsevalue
   </emphasis><emphasis role="bold">] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.75pt"/>
+        <colspec colwidth="79.75pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -30,56 +30,56 @@
           <row>
             <entry><emphasis>caseval</emphasis></entry>
 
-            <entry>Um valor a ser comparado com o resultado da
-            expressão.</entry>
+            <entry>Um valor a ser comparado com o resultado da 
+	    expressão.</entry>
           </row>
 
           <row>
             <entry>=&gt;</entry>
 
-            <entry>O operador "resulta em" - válido somente em CHOOSESETS,
-            CASE e MAP.</entry>
+            <entry>O operador "resulta em" - válido apenas em CASE, 
+	    MAP e CHOOSESETS.</entry>
           </row>
 
           <row>
             <entry><emphasis>value</emphasis></entry>
 
-            <entry>O valor a ser retornado. Isso pode ser qualquer expressão
-            ou ação.</entry>
+            <entry>O valor a ser retornado. Isso pode ser qualquer expressão 
+	    ou ação.</entry>
           </row>
 
           <row>
             <entry><emphasis>elsevalue</emphasis></entry>
 
-            <entry>Opcional. O valor a ser retornado quando o resultado da
-            expressão não corresponde a nenhum dos valores
-            <emphasis>caseval</emphasis> . Pode ser omitido se todos os
-            valores de retorno forem ações (o padrão então seria nenhuma
-            ação), ou se todos os valores de retorno forem conjuntos de
-            registro (o padrão então seria um conjunto de registros
-            vazio).</entry>
+            <entry>Opcional. O valor a ser retornado quando o resultado da 
+	    expressão não corresponde a nenhum dos valores 
+	    <emphasis>caseval</emphasis>. Pode ser omitido se todos os 
+	    valores de retorno forem ações (o padrão então seria nenhuma 
+	    ação), ou se todos os valores de retorno forem conjuntos de 
+	    registro (o padrão então seria um conjunto de registros 
+	    vazio).</entry>
           </row>
 
           <row>
             <entry>Return:</entry>
 
-            <entry>CASE retorna um único valor, um conjunto de valores, um
-            conjunto de registros ou uma ação.</entry>
+            <entry>CASE retorna um único valor, um conjunto de valores, um 
+	    conjunto de registros ou uma ação.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">CASE </emphasis>avalia a
-  <emphasis>expressão</emphasis> e retorna o <emphasis>valor</emphasis> cujo
-  <emphasis>caseval </emphasis>corresponde ao resultado da <emphasis>expressão
-  </emphasis>. Se não houver correspondência, ela retorna o
+  <para>A função  <emphasis role="bold">CASE </emphasis>avalia a 
+  <emphasis>expressão</emphasis>  e retorna o  <emphasis>valor</emphasis>cujo 
+  <emphasis>caseval  </emphasis>corresponde ao resultado da  <emphasis>expressão 
+  </emphasis>. Se não houver correspondência, ela retorna o 
   <emphasis>elsevalue</emphasis>.</para>
 
-  <para>Deverá haver a quantidade de parâmetros de <emphasis>caseval
-  </emphasis>=&gt; <emphasis>value</emphasis> necessária para especificar
-  todos os valores esperados da <emphasis>expressão</emphasis> (deve haver
-  pelo menos um). Todos os parâmetros do <emphasis>valor </emphasis> de
+  <para>Deverá haver a quantidade de parâmetros de  <emphasis>caseval  
+  </emphasis>=&gt; <emphasis>value</emphasis> necessária para especificar 
+  todos os valores esperados da  <emphasis>expressão</emphasis> (deve haver 
+  pelo menos um). Todos os parâmetros do  <emphasis>valor </emphasis> de 
   retorno devem ser do mesmo tipo.</para>
 
   <para>Exemplo:</para>

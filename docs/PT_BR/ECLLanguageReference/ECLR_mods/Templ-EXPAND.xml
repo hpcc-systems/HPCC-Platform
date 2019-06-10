@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_EXPAND">
@@ -11,23 +11,23 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="75.45pt"/>
+        <colspec colwidth="75.45pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>token</emphasis></entry>
 
-            <entry>O nome do parâmetro MACRO cujo valor de constante de string
-            especificado será expandido.</entry>
+            <entry>O nome do parâmetro MACRO cujo valor de constante de string 
+	    especificado será expandido.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A declaração <emphasis role="bold">#EXPAND </emphasis> substitui e
-  analisa o texto da string do <emphasis>token</emphasis> especificado na
+  <para>A declaração  <emphasis role="bold">#EXPAND </emphasis> substitui e 
+  analisa o texto da string do  <emphasis>token</emphasis> especificado na 
   MACRO.</para>
 
   <para>Exemplo:</para>

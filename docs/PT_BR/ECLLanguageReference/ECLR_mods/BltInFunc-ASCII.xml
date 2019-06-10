@@ -4,7 +4,7 @@
 <sect1 id="ASCII">
   <title>ASCII</title>
 
-  <para><emphasis role="bold">ASCII<indexterm>
+  <para role="syntax"><emphasis role="bold">ASCII<indexterm>
       <primary>ASCII</primary>
     </indexterm><indexterm>
       <primary>ASCII function</primary>
@@ -16,7 +16,7 @@
       <tgroup cols="2">
         <colspec colwidth="78.75pt" />
 
-        <colspec colwidth="310.05pt" />
+        <colspec />
 
         <tbody>
           <row>

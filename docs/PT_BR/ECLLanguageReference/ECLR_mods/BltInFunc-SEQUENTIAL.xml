@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SEQUENTIAL">
@@ -14,32 +14,32 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="82.95pt"/>
+        <colspec colwidth="82.95pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>definitionname</emphasis></entry>
 
-            <entry>Opcional. O nome da ação, que transforma a ação em uma
-            definição, consequentemente não é executado até que definitionname
-            seja usado como uma ação.</entry>
+            <entry>Opcional. O nome da ação, que transforma a ação em uma 
+	    definição, consequentemente não é executado até que definitionname 
+	    seja usado como uma ação.</entry>
           </row>
 
           <row>
             <entry><emphasis>actionlist</emphasis></entry>
 
-            <entry>Uma lista delimitada por vírgula das ações a serem
-            executadas na ordem. Podem ser ações ECL ou ações
-            externas.</entry>
+            <entry>Uma lista delimitada por vírgula das ações a serem 
+	    executadas na ordem. Podem ser ações ECL ou ações 
+	    externas.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A ação <emphasis role="bold">SEQUENTIAL </emphasis> executa os itens
-  da <emphasis>actionlist</emphasis> na ordem em que aparecem na
+  <para>A ação  <emphasis role="bold">SEQUENTIAL </emphasis> executa os itens 
+  da  <emphasis>actionlist</emphasis>  na ordem em que aparecem na 
   <emphasis>actionlist</emphasis>.</para>
 
   <para>Exemplo:</para>

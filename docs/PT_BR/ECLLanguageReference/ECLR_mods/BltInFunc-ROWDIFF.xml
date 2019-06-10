@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ROWDIER">
@@ -15,33 +15,33 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.45pt"/>
+        <colspec colwidth="80.45pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>left</emphasis></entry>
 
-            <entry>O registro left, ou uma estrutura de registro
-            aninhado.</entry>
+            <entry>O registro left, ou uma estrutura de registro 
+	    aninhado.</entry>
           </row>
 
           <row>
             <entry><emphasis>RIGHT</emphasis></entry>
 
-            <entry>O registro right, ou uma estrutura de registro
-            aninhado.</entry>
+            <entry>O registro right, ou uma estrutura de registro 
+	    aninhado.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">COUNT</emphasis></entry>
 
-            <entry>Opcional. Especifica o retorno de um conjuinto delimitado
-            por vírgula de zeros e um (0,1), indicando quais campos
-            coincidiram (0) e quais não (1). Se omitido, retornará um conjunto
-            delimitado por vírgula dos nomes de campo não
-            correspondentes.</entry>
+            <entry>Opcional. Especifica o retorno de um conjuinto delimitado 
+	    por vírgula de zeros e um (0,1), indicando quais campos 
+	    coincidiram (0) e quais não (1). Se omitido, retornará um conjunto 
+	    delimitado por vírgula dos nomes de campo não 
+	    correspondentes.</entry>
           </row>
 
           <row>
@@ -53,10 +53,10 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">ROWDIF </emphasis>F é válida somente
-  para uso dentro da estrutura TRANSFORM de uma operação JOIN, e é usada como
-  a expressão que define o resultado de um campo da string. Os campos são
-  correspondidos por nome e apenas os campos de mesmo nome são incluídos no
+  <para>A função  <emphasis role="bold">ROWDIF </emphasis>F é válida somente 
+  para uso dentro da estrutura TRANSFORM de uma operação JOIN, e é usada como 
+  a expressão que define o resultado de um campo da string. Os campos são 
+  correspondidos por nome e apenas os campos de mesmo nome são incluídos no 
   resultado.</para>
 
   <para>Exemplo:</para>
@@ -98,6 +98,6 @@ OUTPUT(JOIN(in1, in2, LEFT.id = RIGHT.id, t1(LEFT,RIGHT)));
 //3  age                                     0,0,0,0,1  0,0,0
 </programlisting>
 
-  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
+  <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura 
   TRANSFORM</link>, <link linkend="JOIN">JOIN</link></para>
 </sect1>

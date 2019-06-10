@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DEPRECATED">
@@ -14,9 +14,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.65pt"/>
+        <colspec colwidth="79.65pt" />
 
-        <colspec colwidth="273.15pt"/>
+        <colspec colwidth="273.15pt" />
 
         <tbody>
           <row>
@@ -34,20 +34,20 @@
           <row>
             <entry><emphasis>message</emphasis></entry>
 
-            <entry>Opcional. O texto a ser anexado ao aviso se o atributo for
-            usado.</entry>
+            <entry>Opcional. O texto a ser anexado ao aviso se o atributo for 
+	    usado.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>O serviço <emphasis role="bold">DEPRECATED </emphasis> exibirá um
-  aviso quando <emphasis> attribute</emphasis> for usado em código que
-  instancia uma tarefa ou durante uma verificação de sintaxe. O uso pretendido
+  <para>O serviço  <emphasis role="bold">DEPRECATED </emphasis> exibirá um 
+  aviso quando <emphasis> attribute</emphasis>  for usado em código que 
+  instancia uma tarefa ou durante uma verificação de sintaxe. O uso pretendido 
   se limita a definições de atributos que foram suplantados.</para>
 
-  <para>Quando usado em um atributo de estrutura (RECORD, TRANSFORM, FUNCTION,
-  etc.), deve ser posicionado entre a palavra-chave END e o seu caractere de
+  <para>Quando usado em um atributo de estrutura (RECORD, TRANSFORM, FUNCTION, 
+  etc.), deve ser posicionado entre a palavra-chave END e o seu caractere de 
   ponto e vírgula.</para>
 
   <para>Exemplo:</para>

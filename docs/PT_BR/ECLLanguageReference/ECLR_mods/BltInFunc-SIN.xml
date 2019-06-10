@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SIN">
@@ -13,16 +13,16 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.65pt"/>
+        <colspec colwidth="78.65pt" />
 
-        <colspec colwidth="274.15pt"/>
+        <colspec colwidth="274.15pt" />
 
         <tbody>
           <row>
             <entry><emphasis>angle</emphasis></entry>
 
-            <entry>O valor radiano REAL para o qual será localizado o
-            seno.</entry>
+            <entry>O valor radiano REAL para o qual será localizado o 
+	    seno.</entry>
           </row>
 
           <row>
@@ -34,7 +34,7 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">SIN </emphasis> retorna o seno do
+  <para>A função  <emphasis role="bold">SIN </emphasis> retorna o seno do  
   <emphasis>ângulo</emphasis>.</para>
 
   <para>Exemplo:</para>

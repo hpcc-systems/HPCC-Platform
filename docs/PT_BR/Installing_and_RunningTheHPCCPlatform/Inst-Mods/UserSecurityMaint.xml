@@ -66,7 +66,7 @@
     <itemizedlist>
       <listitem>
         <para><emphasis
-        role="bold">http://nnn.nnn.nnn.nnn:pppp</emphasis><emphasis
+        role="bold">http://nnn.nnn.nnn.nnn:pppp </emphasis><emphasis
         role="bold"> (onde nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a porta. A porta padrão é 8010)<emphasis>.
         </emphasis></emphasis></para>
       </listitem>
@@ -106,7 +106,7 @@
               fileref="../../images/caution.png" /></entry>
 
               <entry><para><emphasis role="bold">OBSERVAÇÃO:</emphasis> É preciso ter cautela ao determinar qualquer configuração de permissão para  <emphasis role="bold">negar</emphasis>
-              . A permissão mais restrita sempre se aplica. </para></entry>
+               acesso. A permissão mais restrita sempre se aplica. </para></entry>
             </row>
           </tbody>
         </tgroup>
@@ -115,32 +115,25 @@
     <sect3 id="My_Account_Info" role="brk">
       <title>Informações sobre sua conta</title>
 
-      <para>Para obter mais informações sobre sua conta no ECL Watch, clique no link  <emphasis role="bold">LOGGED IN AS:</emphasis> localizado no topo da página do ECL Watch .</para>
+      <para>Para obter mais informações sobre sua conta no ECL Watch, clique no link 
+      do nome do usuário abaixo de  <emphasis role="bold">LOGGED IN AS:</emphasis> localizado no topo da página do ECL Watch .</para>
 
       <para><graphic fileref="../../images/ECLWMyAccount.jpg"
-      vendor="eclwatchSS" /> <orderedlist>
+      vendor="eclwatchSS" /> <itemizedlist>
           <listitem>
-            <para>Clique no link  <emphasis role="bold">LOGGED IN AS:</emphasis>
-            </para>
-
-            <para>A aba User Details será exibida com as informações de sua conta.<graphic fileref="../../images/ECLWUserDetails.jpg"
+            <para>A aba  <emphasis role="bold">User Details</emphasis>  será exibida com as informações de sua conta.<graphic
+            fileref="../../images/ECLWUserDetails.jpg"
             vendor="eclwatchSS" /></para>
           </listitem>
 
           <listitem>
-            <para>Confirme o User Name que você usou para entrar no sistema.</para>
-
-            <para>Observe que são necessários direitos de administrador para gerenciar usuários e permissões.</para>
-
-            <para>Verifique se você está usando uma conta com direitos de administrador se precisar gerenciar usuários ou permissões.</para>
+            <para>Se desejar, você pode mudar sua senha aqui. </para>
           </listitem>
 
           <listitem>
             <para>Verifique a data de validade da senha ou se a senha está prestes a expirar.</para>
-
-            <para>Se desejar, você também pode mudar sua senha aqui.</para>
           </listitem>
-        </orderedlist></para>
+        </itemizedlist></para>
     </sect3>
 
     <sect3 id="UsingSecurity_SettingAndModifyingUserPermissions" role="brk">
@@ -199,7 +192,7 @@
           </listitem>
 
           <listitem>
-            <para>Insira um  <emphasis role="bold">User ID</emphasis>.  </para>
+            <para>Insira um  <emphasis role="bold">Username</emphasis>.  </para>
 
             <para>Este é o login que será usado no ECL Watch, ECL IDE, WsECL, etc.</para>
           </listitem>
@@ -248,14 +241,14 @@
 
         <orderedlist>
           <listitem>
-            <para>Clique na  <emphasis role="bold">aba<emphasis>
-             Users</emphasis></emphasis>.</para>
+            <para>Clique na  <emphasis role="bold">aba <emphasis>
+            Users</emphasis></emphasis>.</para>
 
             <para>Os usuários serão exibidos em uma lista.</para>
           </listitem>
 
           <listitem>
-            <para>Selecione o(s) usuário(s) que deseja modificar. Selecione o(s) usuário(s) que deseja modificar. Clique no link <emphasis
+            <para>Selecione o(s) usuário(s) que deseja modificar. Clique no link <emphasis
             role="bold">Username</emphasis> para abrir a aba de detalhes do usuário.</para>
 
             <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação 
@@ -282,7 +275,7 @@
           </listitem>
 
           <listitem>
-            <para>Pressione o botão <emphasis role="bold">Save</emphasis>
+            <para>Pressione o botão  <emphasis role="bold">Save</emphasis>
             .</para>
 
             <para>Uma mensagem de confirmação será exibida.</para>
@@ -297,7 +290,7 @@
 
         <orderedlist>
           <listitem>
-            <para>Clique na  <emphasis role="bold">aba<emphasis>
+            <para>Clique na  <emphasis role="bold">aba <emphasis>
             Users</emphasis></emphasis>.</para>
 
             <para>Os usuários serão exibidos em uma lista.</para>
@@ -305,9 +298,9 @@
 
           <listitem>
             <para>Selecione o(s) usuário(s) que deseja modificar. Clique no link <emphasis
-            role="bold">User Name</emphasis> para abrir a aba de detalhes do usuário.&gt;  </para>
+            role="bold">Username</emphasis> para abrir a aba de detalhes do usuário.</para>
 
-            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação
+            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação 
             <emphasis role="bold">Open</emphasis> .</para>
 
             <para><graphic fileref="../../images/Perm008.jpg" />Uma aba será aberta para cada usuário selecionado. Cada aba de usuário contém várias sub-abas.</para>
@@ -358,7 +351,7 @@
             <para>Selecione o(s) usuário(s) que deseja mudar a função. Clique no link 
             <emphasis role="bold">Username</emphasis>  para abrir a aba de detalhes do usuário.</para>
 
-            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação 
+            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão 
             <emphasis role="bold">Open</emphasis> .</para>
 
             <para><graphic fileref="../../images/Perm008.jpg" />Uma aba será aberta para cada usuário selecionado. Cada aba de usuário contém várias sub-abas.</para>
@@ -405,7 +398,7 @@
 
         <para><orderedlist>
             <listitem>
-              <para>Clique no  <emphasis role="bold">hiperlink<emphasis>
+              <para>Clique na  <emphasis role="bold">aba <emphasis>
               Users</emphasis></emphasis>.</para>
 
               <para>Os usuários serão exibidos em uma lista.</para>
@@ -415,7 +408,7 @@
               <para>Selecione o(s) usuário(s) que deseja remover. Clique no link 
               <emphasis role="bold">Username</emphasis>  para abrir a aba de detalhes do usuário.</para>
 
-              <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação  <emphasis role="bold">Open</emphasis> .</para>
+              <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão  <emphasis role="bold">Open</emphasis> .</para>
 
               <para><graphic fileref="../../images/Perm008.jpg" />Uma aba será aberta para cada usuário selecionado. Cada aba de usuário contém várias sub-abas.</para>
             </listitem>
@@ -452,16 +445,16 @@
         <orderedlist>
           <listitem>
             <para>Clique na  <emphasis role="bold">aba <emphasis>
-            Users.</emphasis></emphasis>  </para>
+            Users</emphasis></emphasis>.</para>
 
             <para>Os usuários serão exibidos em uma lista.</para>
           </listitem>
 
           <listitem>
-            <para>Selecione o(s) usuário(s) que deseja modificar. Clique no link  <emphasis
-            role="bold">Username</emphasis>  para abrir a aba de detalhes do usuário.</para>
+            <para>Selecione o(s) usuário(s) que deseja modificar. Clique no link <emphasis
+            role="bold">Username</emphasis> para abrir a abaa de detalhes do usuário.</para>
 
-            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão de ação 
+            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão 
             <emphasis role="bold">Open</emphasis> . <graphic
             fileref="../../images/Perm008.jpg" /></para>
 
@@ -479,8 +472,8 @@
             <para>Altere a senha nos campos  <emphasis
             role="bold">Password</emphasis>  e  <emphasis role="bold">Retype new Password</emphasis>  na aba de detalhes do usuário conforme solicitado (caso tenha selecionado mais de um usuário, repita o procedimento para cada um dos demais).  </para>
 
-            <para><emphasis role="bold">Observação</emphasis>: O  <emphasis
-            role="bold">Username</emphasis>  não pode ser alterado.</para>
+            <para><emphasis role="bold">Observação</emphasis>: O <emphasis
+            role="bold">Username</emphasis> não pode ser alterado.</para>
           </listitem>
 
           <listitem>
@@ -499,7 +492,7 @@
 
         <para><orderedlist>
             <listitem>
-              <para>Clique na aba  <emphasis role="bold">Users</emphasis>
+              <para>Clique na aba <emphasis role="bold">User </emphasis>
               .</para>
 
               <para>Os usuários serão exibidos em uma lista.</para>
@@ -528,7 +521,7 @@
       <sect4>
         <title>Configurando permissões para um usuário individual:</title>
 
-        <para>No submenu de navegação, clique no ícone<emphasis role="bold"> Operations</emphasis> e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
+        <para>No submenu de navegação, clique no ícone <emphasis role="bold"> Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
 
         <orderedlist>
           <listitem>
@@ -542,7 +535,7 @@
             <para>Selecione o(s) usuário(s) que deseja modificar. Clique no link <emphasis
             role="bold">Username</emphasis> cpara abrir a guia de detalhes do usuário.</para>
 
-            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do Username. Isso ativará os botões de ação para Users. Pressione o botão de ação 
+            <para>Para selecionar vários usuários, marque a caixa de seleção ao lado do User Name. Isso ativará os botões de ação para Users. Pressione o botão 
             <emphasis role="bold">Open</emphasis> .</para>
           </listitem>
 
@@ -592,7 +585,7 @@
                       fileref="../../images/caution.png" /></entry>
 
                       <entry><para><emphasis role="bold">OBSERVAÇÃO:</emphasis> É preciso ter cautela ao determinar qualquer configuração de permissão para  <emphasis
-                      role="bold">negar</emphasis>  um direito. A permissão mais restrita sempre se aplica. </para></entry>
+                      role="bold">negar</emphasis>  o acesso. A permissão mais restrita sempre se aplica. </para></entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -641,7 +634,7 @@
       <sect4 id="UsingSecurity_ToAddNewGroup">
         <title>Adicionando um novo grupo:</title>
 
-        <para>No submenu de navegação, clique no ícone  <emphasis role="bold">Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> </para>
+        <para>No submenu de navegação, clique no ícone  <emphasis role="bold">Operations</emphasis>  e em seguida no link  <emphasis role="bold">Security</emphasis> .</para>
 
         <para><orderedlist>
             <listitem>
@@ -683,7 +676,7 @@
 
               <para>A aba <emphasis role="bold"> Available Groups Permissios</emphasis>  exibe todas as permissões disponíveis; a seleção a partir da guia Permissões disponíveis aplica as permissões à guia Permissão de grupo ativo.</para>
 
-              <para>Você pode definir as permissões e adicionar membros a esse grupo nas respectivas sub-abas do grupo.</para>
+              <para>Você pode definir as permissões e adicionar membros a esse grupo nas respectivas subabas do grupo.</para>
             </listitem>
           </orderedlist></para>
       </sect4>
@@ -731,19 +724,19 @@
             </listitem>
 
             <listitem>
-              <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> .</para>
+              <para>Pressione o botão  <emphasis role="bold">Open</emphasis> .</para>
 
               <para>Isso abrirá uma nova aba para o grupo.</para>
 
-              <para>As sub-abas exibem: <emphasis
+              <para>As subabas exibem: <emphasis
               role="bold"></emphasis>Summary <emphasis
               role="bold">, </emphasis>Members,  <emphasis role="bold">Active Group Permissions</emphasis>, e  <emphasis
               role="bold">Available Group Permission</emphasis>.</para>
             </listitem>
 
             <listitem>
-              <para>Selecione a aba  <emphasis role="bold">Members</emphasis>
-              </para>
+              <para>Selecione a aba <emphasis role="bold">Members</emphasis>
+              .</para>
 
               <para>A aba Members exibirá uma lista de todos os usuários no sistema. Aqueles que pertencem ao grupo selecionado terão a caixa de seleção marcada ao lado.</para>
             </listitem>
@@ -765,7 +758,7 @@
 
         <para><orderedlist>
             <listitem>
-              <para>Clique na aba  <emphasis role="bold">Groups</emphasis>
+              <para>Clique no hiperlink <emphasis role="bold">Groups</emphasis>
               .</para>
             </listitem>
 
@@ -774,14 +767,15 @@
             </listitem>
 
             <listitem>
-              <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> .</para>
+              <para>Pressione o botão  <emphasis role="bold">Open</emphasis> .</para>
 
               <para>Isso abrirá uma nova aba para o grupo.</para>
 
               <para>A aba Grupos possui diversas sub-abas: <emphasis
-              role="bold">Summary</emphasis>, <emphasis
-              role="bold"> Members</emphasis>,  <emphasis role="bold">Active Group Permissions, </emphasis> e <emphasis role="bold">
-               Available Group Permissions</emphasis>.</para>
+              role="bold">Resumo (Summary)</emphasis>, <emphasis
+              role="bold">Members</emphasis>, <emphasis role="bold">Configurando e modificando 
+	      grupos de permissões</emphasis> and <emphasis role="bold">
+              Selecione a subaba Available Group Permissions.</emphasis>.</para>
             </listitem>
 
             <listitem>
@@ -834,7 +828,7 @@
           </listitem>
 
           <listitem>
-            <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> .</para>
+            <para>Pressione o botão  <emphasis role="bold">Open</emphasis> .</para>
 
             <para>Isso abrirá uma nova aba para o grupo. <graphic
             fileref="../../images/Perm010b.jpg" vendor="eclwatchSS" /></para>
@@ -959,7 +953,7 @@
         </listitem>
 
         <listitem>
-          <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> . Uma aba será aberta para cada usuário ou grupo.</para>
+          <para>Pressione o botão  <emphasis role="bold">Open</emphasis> . Uma aba será aberta para cada usuário ou grupo.</para>
         </listitem>
 
         <listitem>
@@ -1051,7 +1045,7 @@
               <row>
                 <entry></entry>
 
-                <entry>Apagar metadados do histórico do arquivo </entry>
+                <entry>Apagar metadados do histórico do arquivo</entry>
 
                 <entry>Completo</entry>
               </row>
@@ -1382,8 +1376,8 @@
   <sect2 id="FeaturePermissions_FileAccessControl">
     <title><emphasis role="bold">Controle de Acesso a Arquivos</emphasis></title>
 
-    <para>A tecnologia do  <emphasis role="bold">servidor LDAP Dali</emphasis>
-     do HPCC permite configurar permissões de acesso seguro às pastas de arquivo de dados (ou escopos de arquivo). Isso é controlado pelo uso dos recursos de escopo de arquivos.</para>
+    <para>A tecnologia LDAP  <emphasis role="bold">Dali Server</emphasis>
+     do HPCC fornece a capacidade de definir permissões de acesso seguro para pastas de arquivos de dados (ou escopos de arquivos). Isso é controlado pelo uso dos recursos de escopo de arquivos.</para>
 
     <para>Um UO denominado  <emphasis role="bold">Files</emphasis>  é criado automaticamente quando o servidor Dali é inicializado. Para proteger as pastas de dados, crie escopos de arquivo para essa pasta e aplique os direitos para cada escopo.</para>
 
@@ -1415,7 +1409,8 @@
     role="bold">/var/lib/HPCCSystems/hpcc-data/thor/collectionx/securedata
     </emphasis></para>
 
-    <para>Além disso, logo abaixo poderia ter uma unidade denominada collectionx que contém duas unidades: publicdata e securedata.</para>
+    <para>Todos os componentes e ferramentas do HPCC respeitam a segurança de acesso ao arquivo LDAP. 
+    As seguintes exceções são consideradas como “em nível de sistema” ou para usuários administrativos:</para>
 
     <itemizedlist>
       <listitem>
@@ -1472,12 +1467,12 @@
       </listitem>
 
       <listitem>
-        <para>Digite no o nome exato do escopo que deseja adicionar.
-        <emphasis role="bold">Digite no campo </emphasis> Name <graphic
+        <para>Digite no campo 
+        <emphasis role="bold">Name</emphasis>  o nome exato do escopo que deseja adicionar. <graphic
         fileref="../../images/Perm06-B.jpg" vendor="eclwatchSS" /></para>
 
-        <para> o nome exato do escopo que deseja adicionar. <emphasis
-        role="bold">Digite uma breve descrição no campo <emphasis> Description.</emphasis></emphasis></para>
+        <para>Digite uma breve descrição no campo  <emphasis
+        role="bold">Description<emphasis> .</emphasis></emphasis></para>
       </listitem>
 
       <listitem>
@@ -1540,7 +1535,7 @@
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Adicionar</emphasis> .</para>
+          <para>Pressione o botão <emphasis role="bold">Add</emphasis> .</para>
         </listitem>
 
         <listitem>
@@ -1603,7 +1598,7 @@
 
     <itemizedlist>
       <listitem>
-        <para>A Autenticação de recursos para workunit permite configurar permissões para controlar se os usuários podem visualizar suas próprias WUs e/ou as WUs de outros usuários.</para>
+        <para>A Autenticação de recursos para tarefas permite configurar permissões para controlar se os usuários podem visualizar suas próprias WUs e/ou as WUs de outros usuários.</para>
       </listitem>
 
       <listitem>
@@ -1616,16 +1611,16 @@
     <para>Em outras palavras, se alguém tiver permissão para ver as WUs no escopo  <emphasis>johndoe </emphasis>, mas não tem permissão para ver as WUs de outros usuários nas permissões de Autenticação de recursos, esse usuário terá o acesso à visualização de WUs no escopo <emphasis> johndoe</emphasis>
      negado.</para>
 
-    <para>Por outro lado, se o usuário tiver permissão de acesso à visualização de WUs de outros usuários, mas não tiver permissão de acesso ao escopo  <emphasis>johndoe </emphasis> da WU<emphasis>
+    <para>Por outro lado, se o usuário tiver permissão para acessar as WUs de outras pessoas, mas não tiver acesso ao escopo da  <emphasis>WU  </emphasis>johndoe<emphasis>
     </emphasis>, esse usuário poderá ver outras WUs nesse escopo.</para>
 
     <para><emphasis role="bold">Observação:</emphasis> Caso não tenha acesso à WU, você nunca poderá visualizá-la ou sequer saber da sua existência.</para>
 
-    <para>Por padrão, uma WU enviada possui o escopo da ID do usuário. Por exemplo, a WU que JohnDoe enviou possui o valor  <emphasis>scope=johndoe</emphasis>  na WU. Este valor em uma WU permite que ESP e seus serviços LDAP verifiquem as permissões e as coloquem em vigor.</para>
+    <para>Por padrão, uma WU enviada possui o escopo da ID do usuário. Por exemplo, a WU que JohnDoe enviou possui o valor  <emphasis>scope=johndoe</emphasis> da WU. Esse valor em uma WU permite que o ESP e seus serviços usem o LDAP para verificar permissões e impô-las.</para>
 
     <para>Você pode substituir o escopo padrão usando o código ECL:</para>
 
-    <para><programlisting>#workunit(‘scope’,’MyScopeValue’);</programlisting></para>
+    <para><programlisting>#workunit('scope','MyScopeValue');</programlisting></para>
 
     <sect3 id="Securing_Workunit_Scopes">
       <title>Protegendo os escopos dos workunits</title>
@@ -1634,7 +1629,12 @@
       role="bold">Workunits</emphasis>  (a menos que ele já exista).  Se uma OU de escopo específico não existir no LDAP (p.ex., o escopo johndoe usado no exemplo anterior), as permissões da OU primária serão usadas.  Todos os escopos da WU estão localizados abaixo da OU das 
       <emphasis>workunit</emphasis> , tanto de forma implícita quanto explícita.</para>
 
-      <para>Se uma OU de escopo específico não existir no LDAP (p.ex., o escopo johndoe usado no exemplo anterior), as permissões da OU primária serão usadas. Em outras palavras, o escopo de  <emphasis>johndoe</emphasis>  está implicitamente abaixo da OU  <emphasis>workunit</emphasis>  mesmo não estando listado de maneira explícita na estrutura do LDAP ; consequentemente, ele usaria as permissões concedidas às  <emphasis>workunit primárias</emphasis></para>
+      <para>Se uma OU de escopo específico não existir no LDAP (por exemplo, 
+      o escopo johndoe usado no exemplo anterior), as permissões da WU pai serão usadas. 
+      Em outras palavras, o escopo de  <emphasis>johndoe</emphasis>  está implicitamente 
+      abaixo da OU  <emphasis>workunit</emphasis>  mesmo não estando listado de maneira 
+      explícita na estrutura do LDAP ; consequentemente, ele usaria as permissões concedidas às 
+       <emphasis>workunit primárias</emphasis></para>
     </sect3>
 
     <sect3 id="Workunits_Feature_Permissions">
@@ -1683,8 +1683,8 @@
 
     <orderedlist>
       <listitem>
-        <para>Clique na <emphasis role="bold"> aba </emphasis>
-        Permissions.</para>
+        <para>Clique na aba <emphasis role="bold">Permissions</emphasis>
+        .</para>
 
         <para>Os recursos específicos serão exibidos.</para>
       </listitem>
@@ -1698,7 +1698,7 @@
       </listitem>
 
       <listitem>
-        <para>Pressione o botão  <emphasis role="bold">Add</emphasis> .</para>
+        <para>Pressione o botão <emphasis role="bold">Add</emphasis> .</para>
       </listitem>
 
       <listitem>
@@ -1708,15 +1708,16 @@
 
       <listitem>
         <para>Digite no o nome exato do escopo que deseja adicionar.
-        <emphasis role="bold">Digite no campo Name</emphasis>  o nome exato do escopo que deseja adicionar. <graphic
+        <emphasis role="bold">Digite no campo </emphasis> Name <graphic
         fileref="../../images/PermW04.jpg" vendor="eclwatchSS" /></para>
 
-        <para>Digite uma breve descrição no campo  <emphasis
-        role="bold">Description<emphasis> .</emphasis></emphasis></para>
+        <para> o nome exato do escopo que deseja adicionar. <emphasis
+        role="bold">Digite uma breve descrição no campo <emphasis> 
+	Description.</emphasis></emphasis></para>
       </listitem>
 
       <listitem>
-        <para>Pressione o botão  <emphasis role="bold">Add</emphasis> .</para>
+        <para>Pressione o botão <emphasis role="bold">Add</emphasis> .</para>
 
         <para>O novo escopo será exibido na lista.</para>
       </listitem>
@@ -1735,7 +1736,7 @@
         <listitem>
           <para>Selecione um grupo no qual deseja aplicar o escopo marcando a caixa ao lado do nome do grupo.</para>
 
-          <para>Pressione o botão de ação  <emphasis role="bold">Open</emphasis> . Você pode selecionar múltiplos grupos; uma guia será aberta para cada um deles.</para>
+          <para>Pressione o botão  <emphasis role="bold">Open</emphasis> . Você pode selecionar múltiplos grupos; uma guia será aberta para cada um deles.</para>
         </listitem>
 
         <listitem>
@@ -1765,7 +1766,7 @@
         </listitem>
 
         <listitem>
-          <para>Nessa aba, clique na sub-aba  <emphasis role="bold">User Permissions</emphasis> .</para>
+          <para>Nessa aba, clique na subaba  <emphasis role="bold">User Permissions</emphasis> .</para>
         </listitem>
 
         <listitem>
@@ -1821,7 +1822,9 @@
       </listitem>
 
       <listitem>
-        <para>Acesse a página de permissão para Arquivos físicos.</para>
+        <para>Acesse a página de permissão para Arquivos físicos. 
+	As configurações dos arquivos físicos especificam as permissões
+	padrão para os arquivos que não possuem um escopo especificado de forma explícita.</para>
       </listitem>
 
       <listitem>

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="../../images/redswooshWithLogo3.jpg"/>
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg" />
       </imageobject>
     </mediaobject>
 
@@ -21,12 +21,12 @@
 
       <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas da Reed Elsevier Properties Inc., usadas sob licença. Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas. Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
 
-      <para/>
+      <para></para>
     </legalnotice>
 
     <releaseinfo>© 2015 HPCC Systems<superscript>®</superscript>. Todos os direitos reservados.</releaseinfo>
 
-    <date><emphasis role="bold"/></date>
+    <date><emphasis role="bold"></emphasis></date>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
@@ -36,13 +36,13 @@
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="../../images/LN_Rightjustified.jpg"/>
+        <imagedata fileref="../../images/LN_Rightjustified.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
 
   <chapter id="ECL_Compiler">
-    <title><emphasis role="bold">Compilador ECL</emphasis></title>
+    <title>Compilador ECL</title>
 
     <para>O compilador ECL é o componente compilador do HPCC. Ele é incorporado e incluído no momento da instalação do HPCC. O compilador é o componente responsável pela compilação do código ECL.</para>
 
@@ -53,21 +53,21 @@
         <?dbfo keep-together="always"?>
 
         <tgroup cols="2">
-          <colspec colwidth="49.50pt"/>
+          <colspec colwidth="49.50pt" />
 
-          <colspec/>
+          <colspec />
 
           <tbody>
             <row>
               <entry><inlinegraphic
-              fileref="../../images/OSSgr3.png"/></entry>
+              fileref="../../images/OSSgr3.png" /></entry>
 
               <entry>Para compilar e executar o código ECL localmente em sua máquina Windows, é preciso ter o compilador Microsoft Visual Studio 2008 C++ (edição Express ou Professional). Ele está disponível em  <ulink
               url="http://www.microsoft.com/express/Downloads/#2008-Visual-CPP">http://www.microsoft.com/express/Downloads/#2008-Visual-CPP</ulink></entry>
             </row>
           </tbody>
         </tgroup>
-      </informaltable><!--  ***this whole thing should be comment!
+      </informaltable><!--  ***this whole thing should be a comment!
       /sect2 id="configuration-manager"/
         <title>Dependencies and packages</title>
 
@@ -97,12 +97,20 @@
          ***END OF COMMENT***   --></para>
 
     <sect1 id="Stand-Alone-ECL-Compiler">
-      <title><emphasis>Utilizando o Compilador ECL como opção Stand Alone
-      </emphasis></title>
+      <title>Utilizando o Compilador ECL como opção Stand Alone</title>
 
-      <para>O compilador ECL é geralmente usado por meio do ECL IDE ou Eclipse, com o plugin ECL para Eclipse; porém, é possível usar o compilador ECL de forma independente para criar programas ou workunits também independentes. O compilador ECL pode ler o código ECL a partir da entrada padrão ou de um arquivo de entrada especificado. Ele compila o código em um programa executável (como o arquivo 'EXE' no Windows). O programa resultante, quando executado, realiza a tarefa e grava os resultados no local padrão. Alternativamente, o resultado poderia ser redirecionado para um arquivo ou canal em outro processo. Com o compilador ECL, você não precisa de um cluster de supercomputador para desenvolver e executar códigos ECL .</para>
+      <para>O compilador ECL é normalmente usado através do ECL IDE, no entanto, 
+      você pode usar o compilador ECL de maneira independente, para criar 
+      programas autônomos ou workunits. O compilador ECL pode ler o código 
+      ECL a partir da entrada padrão ou de um arquivo de entrada especificado. 
+      Ele compila o código em um programa executável (como o arquivo 'EXE' no Windows). 
+      O programa resultante, quando executado, realiza a tarefa e grava os 
+      resultados no local padrão. Alternativamente, o resultado poderia ser 
+      redirecionado para um arquivo ou canal em outro processo. Com o 
+      compilador ECL, você não precisa de um cluster de supercomputador 
+      para desenvolver e executar códigos ECL .</para>
 
-      <para>Executar o compilador ECL sem nenhuma opção (ou especificar --ajuda) exibirá a sintaxe.</para>
+      <para>Executar o compilador ECL sem nenhuma opção (ou specifying --help) exibirá a sintaxe.</para>
 
       <para><programlisting>C:\eclcc&gt;eclcc -help
 </programlisting></para>
@@ -115,9 +123,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt"/>
+            <colspec align="left" colwidth="125.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -145,15 +153,9 @@
               </row>
 
               <row>
-                <entry>-checkDirty</entry>
-
-                <entry>Faz com que o eclcc gere um aviso para qualquer atributo que tenha sido modificado (conforme o resultado do status git) O uso dessa função exige que o git esteja instalado e disponível no caminho.</entry>
-              </row>
-
-              <row>
                 <entry>-foption[=value]</entry>
 
-                <entry>Define uma opção ecl. Ver #OPTION em  <emphasis>Referência de Linguagem ECL</emphasis>  para obter detalhes.</entry>
+                <entry>Defina uma opção ecl. Veja #OPTION na  <emphasis>Referência a Linguagem ECL</emphasis>  para detalhes.</entry>
               </row>
 
               <row>
@@ -171,13 +173,13 @@
               <row>
                 <entry>-platform=hthor</entry>
 
-                <entry>Gera código para cluster hthor</entry>
+                <entry>Gerar código para o cluster hthor</entry>
               </row>
 
               <row>
                 <entry>-platform=roxie</entry>
 
-                <entry>Gera código para cluster roxie (padrão)</entry>
+                <entry>Gerar código para o cluster Roxie (padrão)</entry>
               </row>
 
               <row>
@@ -193,13 +195,14 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec colwidth="49.50pt"/>
+            <colspec colwidth="49.50pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry><inlinegraphic fileref="../../images/tip.jpg"/></entry>
+                <entry><inlinegraphic
+                fileref="../../images/tip.jpg" /></entry>
 
                 <entry><emphasis role="bold">OBSERVAÇÃO: </emphasis>Se houver espaços no caminho que você especificar, coloque-os em aspas. Por exemplo: -L"C:\Program Files"</entry>
               </row>
@@ -213,9 +216,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt"/>
+            <colspec align="left" colwidth="125.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -249,6 +252,13 @@
               </row>
 
               <row>
+                <entry>-qa</entry>
+
+                <entry>Salva o archive da consulta ECL como parte da 
+		workunit</entry>
+              </row>
+
+              <row>
                 <entry>-wu</entry>
 
                 <entry>Gera informações de workunit somente em arquivo xml</entry>
@@ -259,7 +269,7 @@
 
       <?hard-pagebreak ?>
 
-      <para/>
+      <para></para>
 
       <para>Opções C++:</para>
 
@@ -267,9 +277,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt"/>
+            <colspec align="left" colwidth="125.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -285,7 +295,7 @@
               </row>
 
               <row>
-                <entry>-g</entry>
+                <entry>-g, --debug</entry>
 
                 <entry>Habilita símbolos debug no código gerado</entry>
               </row>
@@ -294,12 +304,6 @@
                 <entry>-Wc, xx</entry>
 
                 <entry>Passa a opção xx para o compilador c++</entry>
-              </row>
-
-              <row>
-                <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
-
-                <entry>Substitui a definição do “nome” global do atributo</entry>
               </row>
 
               <row>
@@ -327,6 +331,12 @@
               </row>
 
               <row>
+                <entry>-save-temps</entry>
+
+                <entry>Não exclua arquivos intermediários</entry>
+              </row>
+
+              <row>
                 <entry>-shared</entry>
 
                 <entry>Gera objeto compartilhado da workunit em vez de um executável independente</entry>
@@ -337,21 +347,87 @@
 
       <?dbfo-need height="3in"?>
 
-      <para>Outras Opções:</para>
+      <para>Opções de resolução de arquivos:</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt"/>
+            <colspec align="left" colwidth="125.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
+                <entry>-dfs=ip</entry>
+
+                <entry>Use o ip especificado para resolução de nomes de 
+		arquivos DFS</entry>
+              </row>
+
+              <row>
+                <entry>-scope=prefix</entry>
+
+                <entry>Use o prefixo de escopo especificado na resolução de 
+		nomes de arquivos DFS</entry>
+              </row>
+
+              <row>
+                <entry>-user=id</entry>
+
+                <entry>Use nome de usuário especificado na resolução de 
+		nomes de arquivos DFS</entry>
+              </row>
+
+              <row>
+                <entry>-password=xxx</entry>
+
+                <entry>Use a senha especificada na resolução de nomes de 
+		arquivos DFS (em branco para o prompt)</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <?hard-pagebreak ?>
+
+      <para>Outras opções (lista disponível através do eclcc -help -v):</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>-aoption[=value]</entry>
+
+                <entry>Definir uma opção de aplicação</entry>
+              </row>
+
+              <row>
                 <entry>--allow=str</entry>
 
-                <entry>Permite o recurso de nomeação (e.g., cpp, pipe, all)<para/><para><emphasis role="bold">cpp</emphasis>: Permite código incorporado no ECL (p.ex., c++, JAVA, Javascript, Python, R, etc.)</para><para><emphasis role="bold">pipe</emphasis>: Permite que o comando PIPE envie dados para um programa externo.</para><para><emphasis role="bold">all</emphasis>: Permite todos os recursos</para></entry>
+                <entry>Permite o recurso de nomeação (e.g., cpp, pipe, all)<para>
+		<emphasis role="bold">cpp</emphasis>: Permite código incorporado no ECL 
+		(p.ex., c++, JAVA, Javascript, Python, R, etc.)</para><para><emphasis 
+		role="bold">pipe</emphasis>: Permite que o comando PIPE envie dados 
+		para um programa externo.</para><para><emphasis role="bold">userECL:</emphasis> 
+		Permitir código que não é encontrado através dos caminhos de inclusão do 
+		ecl</para><para><emphasis role="bold">datafile</emphasis>: 
+		Permitir acesso a arquivos de dados do ECL. </para><para><emphasis
+                role="bold">extern</emphasis>: Permitir acesso a uma função de serviço 
+		externo</para><para><emphasis
+                role="bold">all</emphasis>: Permite todos os recursos</para></entry>
+              </row>
+
+              <row>
+                <entry>-allowsigned</entry>
+
+                <entry>Permite acesso apenas aos recursos de um código assinado</entry>
               </row>
 
               <row>
@@ -367,6 +443,28 @@
               </row>
 
               <row>
+                <entry>-checkDirty</entry>
+
+                <entry>Faz com que o eclcc gere um aviso para qualquer atributo 
+		que tenha sido modificado (conforme o resultado do status git) 
+		O uso dessa função exige que o git esteja instalado e disponível no caminho.</entry>
+              </row>
+
+              <row>
+                <entry>--component</entry>
+
+                <entry>Define o nome do componente pelo qual está sendo 
+		executado</entry>
+              </row>
+
+              <row>
+                <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
+
+                <entry>Substitui a definição do ‘name’ global do 
+		atributo</entry>
+              </row>
+
+              <row>
                 <entry>--deny=all</entry>
 
                 <entry>Não permite o uso de todos os recursos nomeados que não foram especificados como permitidos usando – allow</entry>
@@ -377,6 +475,20 @@
 
                 <entry>Não permite o uso do recurso nomeado<para><emphasis
                 role="bold">cpp</emphasis>: Não permite o código incorporado no ECL (p.ex., c++, JAVA, Javascript, Python, R, etc.)</para><para><emphasis role="bold">pipe</emphasis>: Não permite que o comando PIPE envie dados para um programa externo.</para></entry>
+              </row>
+
+              <row>
+                <entry>--expand &lt;path&gt;</entry>
+
+                <entry>Expanda o conteúdo de um arquivo para o diretório especificado. 
+		O conteúdo da consulta enviada será enviado para o stdout.</entry>
+              </row>
+
+              <row>
+                <entry>--fastsyntax</entry>
+
+                <entry>Atrasa a expansão de funções durante a análise. 
+		Pode acelerar o processamento de algumas consultas</entry>
               </row>
 
               <row>
@@ -402,11 +514,45 @@
 
                 <entry>Usa semântica de importação antiga (descontinuada)</entry>
               </row>
+            </tbody>
+          </tgroup>
+        </informaltable><!-- GP-HPCC-19224 --></para>
+
+      <?hard-pagebreak ?>
+
+      <para>Outras opções (continuação):</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>--leakcheck</entry>
+
+                <entry>Limpar a memória desde a verificação de vazamentos de memória</entry>
+              </row>
 
               <row>
                 <entry>--keywords</entry>
 
                 <entry>Gera as listas de palavras reservadas do ECL para stdout (formato XML)</entry>
+              </row>
+
+              <row>
+                <entry>-legacyimport</entry>
+
+                <entry>Usa semântica de importação antiga (descontinuada)</entry>
+              </row>
+
+              <row>
+                <entry>-legacywhen</entry>
+
+                <entry>Usa semânticas antigas when/side-effects (descontinuada)</entry>
               </row>
 
               <row>
@@ -419,6 +565,64 @@
                 <entry>--logdetail=<emphasis>n</emphasis></entry>
 
                 <entry>Define o nível de detalhe no arquivo de log</entry>
+              </row>
+
+              <row>
+                <entry>--maxErrors=&lt;n&gt;</entry>
+
+                <entry>Limita o número de erros, abortando no nth (padrão = 5)</entry>
+              </row>
+
+              <row>
+                <entry>--metacache=x</entry>
+
+                <entry>Especifica diretório para armazenar informações meta distribuídas do 
+		indexador eclcc. Para desativar o indexador, defina como um valor vazio usando 
+		"--metacache =". Se omitido, o local padrão será .eclcc/metacache.</entry>
+              </row>
+
+              <row>
+                <entry>--nologfile</entry>
+
+                <entry>Não grava nenhum arquivo de log</entry>
+              </row>
+
+              <row>
+                <entry>--nogpg</entry>
+
+                <entry>Não executa gpg para verificar assinaturas em código assinado</entry>
+              </row>
+
+              <row>
+                <entry>--nosourcepath</entry>
+
+                <entry>Compila como se a origem fosse stdin</entry>
+              </row>
+
+              <row>
+                <entry>--nostdinc</entry>
+
+                <entry>Não inclui o diretório atual em -I</entry>
+              </row>
+
+              <row>
+                <entry>-pch</entry>
+
+                <entry>Gera cabeçalho pré-compilado para eclinclude4.hpp</entry>
+              </row>
+
+              <row>
+                <entry>-P &lt;path&gt;</entry>
+
+                <entry>Especifica o caminho dos arquivos de 
+		resultado (apenas com a opção -b)</entry>
+              </row>
+
+              <row>
+                <entry>-showpaths</entry>
+
+                <entry>Escreve informações sobre os caminhos de 
+		busca que o eclcc está usando</entry>
               </row>
 
               <row>
@@ -440,6 +644,16 @@
               </row>
 
               <row>
+                <entry>-wxxxx=level</entry>
+
+                <entry>Define a severidade de um código ou categoria de 
+		aviso específicos. <para>As opções válidas para o nível são: 
+		all | ignore | log | warning | error | fail</para> <emphasis
+                role="bold">-wall</emphasis> define a severidade padrão 
+		para todos os avisos</entry>
+              </row>
+
+              <row>
                 <entry>--version</entry>
 
                 <entry>Informação de versão de saída</entry>
@@ -454,7 +668,7 @@
           </tgroup>
         </informaltable></para>
 
-      <para/>
+      <para></para>
     </sect1>
 
     <sect1 id="compiled_options">
@@ -468,9 +682,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt"/>
+            <colspec align="left" colwidth="125.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -601,7 +815,7 @@
 
         <programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;HELLO&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting>
 
-        <para/>
+        <para></para>
       </sect2>
     </sect1>
   </chapter>

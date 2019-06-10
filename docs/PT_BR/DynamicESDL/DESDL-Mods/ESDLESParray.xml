@@ -1,13 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESParray">
-  <title><emphasis role="bold">ESParray</emphasis></title>
+  <title>ESParray</title>
 
   <para><indexterm>
       <primary>ESParray</primary>
-    </indexterm>Uma estrutura para matrizes não vinculadas. As matrizes são
-  compatíveis com heranças e podem ser aninhadas.</para>
+    </indexterm>Uma estrutura para matrizes não vinculadas. As matrizes são 
+    compatíveis com heranças e podem ser aninhadas.</para>
+
+  <para>Tanto [max_count_var (k)] ou [max_count_var (k)] é 
+  necessário para um ESPArray quando k&gt; 1.</para>
 
   <para><emphasis role="bold">Exemplo:</emphasis></para>
 
@@ -21,7 +24,7 @@
   
      int Age;
  };
-  
+ [max_count(20)] 
  ESParray&lt;ESPstruct NameBlock, Name&gt; Names;
 
    </programlisting>
@@ -42,4 +45,8 @@
     &lt;Age&gt;33&lt;/Age&gt;
   &lt;/Name&gt;
 &lt;/Names&gt;</programlisting></para>
+
+  <para>See Also: <link
+  linkend="ESDL_Attributes_max_count_var">max_count_var</link>, <link
+  linkend="ESDL_Attributes_max_count">max_count</link></para>
 </sect1>

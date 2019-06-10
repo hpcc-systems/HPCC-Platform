@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Type_Sturcture_Special_Functions">
@@ -12,14 +12,14 @@
       </indexterm> </emphasis><emphasis>LogicalType </emphasis><emphasis
     role="bold">LOAD<indexterm>
         <primary><emphasis role="bold">LOAD</emphasis></primary>
-      </indexterm>(</emphasis><emphasis>PhysicalType alias) :=
-    expression;</emphasis></para>
+      </indexterm>(</emphasis><emphasis>PhysicalType alias) := 
+      expression;</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt"/>
+        <colspec align="left" colwidth="122.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -31,14 +31,14 @@
           <row>
             <entry><emphasis>PhysicalType</emphasis></entry>
 
-            <entry>O tipo de valor do parâmetro de entrada para a
-            função.</entry>
+            <entry>O tipo de valor do parâmetro de entrada para a 
+	    função.</entry>
           </row>
 
           <row>
             <entry><emphasis>alias</emphasis></entry>
 
-            <entry>O nome da entrada a ser usada na
+            <entry>O nome da entrada a ser usada na 
             <emphasis>expressão</emphasis>.</entry>
           </row>
 
@@ -51,9 +51,9 @@
       </tgroup>
     </informaltable>
 
-    <para><emphasis role="bold">LOAD </emphasis>define a função de retorno do
-    acionamento a ser aplicada aos bytes do registro para criar o valor de
-    dados a ser usado no cálculo. Esta função define como o sistema faz a
+    <para><emphasis role="bold">LOAD </emphasis>define a função de retorno do 
+    acionamento a ser aplicada aos bytes do registro para criar o valor de 
+    dados a ser usado no cálculo. Esta função define como o sistema faz a 
     leitura dos dados do disco.</para>
   </sect2>
 
@@ -63,14 +63,14 @@
     <para><emphasis role="bold">EXPORT </emphasis><emphasis>PhysicalType
     </emphasis><emphasis role="bold">STORE<indexterm>
         <primary><emphasis role="bold">STORE</emphasis></primary>
-      </indexterm>(</emphasis><emphasis>LogicalType alias) :=
-    expression;</emphasis></para>
+      </indexterm>(</emphasis><emphasis>LogicalType alias) := 
+      expression;</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt"/>
+        <colspec align="left" colwidth="122.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -82,14 +82,14 @@
           <row>
             <entry><emphasis>LogicalType</emphasis></entry>
 
-            <entry>O tipo de valor do parâmetro de entrada para a
-            função.</entry>
+            <entry>O tipo de valor do parâmetro de entrada para a 
+	    função.</entry>
           </row>
 
           <row>
             <entry><emphasis>alias</emphasis></entry>
 
-            <entry>O nome da entrada a ser usada na
+            <entry>O nome da entrada a ser usada na 
             <emphasis>expressão</emphasis>.</entry>
           </row>
 
@@ -102,9 +102,9 @@
       </tgroup>
     </informaltable>
 
-    <para><emphasis role="bold">STORE</emphasis> define a função de retorno do
-    acionamento a ser aplicada ao valor calculado para armazená-la no
-    registro. Esta função define como o sistema grava os dados no
+    <para><emphasis role="bold">STORE</emphasis>  define a função de retorno do 
+    acionamento a ser aplicada ao valor calculado para armazená-la no 
+    registro. Esta função define como o sistema grava os dados no 
     disco.</para>
   </sect2>
 
@@ -115,27 +115,27 @@
         <primary><emphasis role="bold">INTEGER</emphasis></primary>
       </indexterm> PHYSICALLENGTH<indexterm>
         <primary><emphasis role="bold">PHYSICALLENGTH</emphasis></primary>
-      </indexterm>(</emphasis><emphasis>type alias) :=
-    expression;</emphasis></para>
+      </indexterm>(</emphasis><emphasis>type alias) := 
+      expression;</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt"/>
+        <colspec align="left" colwidth="122.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>type</emphasis></entry>
 
-            <entry>O tipo de valor do parâmetro de entrada para a
-            função.</entry>
+            <entry>O tipo de valor do parâmetro de entrada para a 
+	    função.</entry>
           </row>
 
           <row>
             <entry><emphasis>alias</emphasis></entry>
 
-            <entry>O nome da entrada a ser usada na
+            <entry>O nome da entrada a ser usada na 
             <emphasis>expressão</emphasis>.</entry>
           </row>
 
@@ -148,9 +148,9 @@
       </tgroup>
     </informaltable>
 
-    <para><emphasis role="bold">PHYSICALLENGTH </emphasis> define a função de
-    retorno do acionamento para determinar os requisitos de armazenagem do
-    formato lógico no formato físico especificado. Esta função define quantos
+    <para><emphasis role="bold">PHYSICALLENGTH </emphasis> define a função de 
+    retorno do acionamento para determinar os requisitos de armazenagem do 
+    formato lógico no formato físico especificado. Esta função define quantos 
     bytes os dados ocupam no disco.</para>
   </sect2>
 
@@ -163,23 +163,23 @@
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt"/>
+        <colspec align="left" colwidth="122.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>expression</emphasis></entry>
 
-            <entry>Uma constante inteira que define o comprimento físico
-            máximo dos dados.</entry>
+            <entry>Uma constante inteira que define o comprimento físico 
+	    máximo dos dados.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para><emphasis role="bold">MAXLENGTH </emphasis> define a função de
-    retorno do acionamento para determinar o comprimento físico máximo dos
+    <para><emphasis role="bold">MAXLENGTH </emphasis> define a função de 
+    retorno do acionamento para determinar o comprimento físico máximo dos 
     dados de comprimento variável.</para>
   </sect2>
 
@@ -190,27 +190,27 @@
         <primary><emphasis role="bold">BOOLEAN</emphasis></primary>
       </indexterm> GETISVALID<indexterm>
         <primary><emphasis role="bold">GETISVALID</emphasis></primary>
-      </indexterm>(</emphasis><emphasis>PhysicalType alias) :=
-    expression;</emphasis></para>
+      </indexterm>(</emphasis><emphasis>PhysicalType alias) := 
+      expression;</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt"/>
+        <colspec align="left" colwidth="122.40pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>PhysicalType</emphasis></entry>
 
-            <entry>O tipo de valor do parâmetro de entrada para a
-            função.</entry>
+            <entry>O tipo de valor do parâmetro de entrada para a 
+	    função.</entry>
           </row>
 
           <row>
             <entry><emphasis>alias</emphasis></entry>
 
-            <entry>O nome da entrada a ser usada na
+            <entry>O nome da entrada a ser usada na 
             <emphasis>expressão</emphasis>.</entry>
           </row>
 
@@ -223,8 +223,8 @@
       </tgroup>
     </informaltable>
 
-    <para><emphasis role="bold">GETISVALID </emphasis>define a função de
-    retorno do acionamento para determinar quais valores de dados estão no
+    <para><emphasis role="bold">GETISVALID </emphasis>define a função de 
+    retorno do acionamento para determinar quais valores de dados estão no 
     formato físico especificado.</para>
 
     <para>Exemplo:</para>
@@ -246,7 +246,7 @@ EXPORT dstring(STRING del) := TYPE
   EXPORT STRING STORE(STRING s) := s + del;
 END;</programlisting>
 
-    <para>See Also: <link linkend="TYPE_Structure">Estrutura
+    <para>See Also: <link linkend="TYPE_Structure">Estrutura 
     TYPE</link></para>
   </sect2>
 </sect1>

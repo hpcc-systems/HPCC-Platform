@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="COSH">
@@ -13,16 +13,16 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.25pt"/>
+        <colspec colwidth="79.25pt" />
 
-        <colspec colwidth="309.55pt"/>
+        <colspec colwidth="309.55pt" />
 
         <tbody>
           <row>
             <entry><emphasis>angle</emphasis></entry>
 
-            <entry>O valor radiano REAL para o qual o coseno hiperbólico deve
-            ser localizado.</entry>
+            <entry>O valor radiano REAL para o qual o coseno hiperbólico deve 
+	    ser localizado.</entry>
           </row>
 
           <row>
@@ -34,8 +34,8 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">COSH </emphasis> retorna o coseno
-  hiperbólico do <emphasis>ângulo</emphasis>.</para>
+  <para>A função  <emphasis role="bold">COSH </emphasis> retorna o coseno 
+  hiperbólico do  <emphasis>ângulo</emphasis>.</para>
 
   <para>Exemplo:</para>
 

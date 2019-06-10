@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_ONWARNING">
@@ -11,16 +11,16 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="74.65pt"/>
+        <colspec colwidth="74.65pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>code</emphasis></entry>
 
-            <entry>O número exibido na coluna “Code" da caixa de ferramentas
-            de erros de sintaxe do ECL IDE.</entry>
+            <entry>O número exibido na coluna “Code" da caixa de ferramentas 
+	    de erros de sintaxe do ECL IDE.</entry>
           </row>
 
           <row>
@@ -32,13 +32,13 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A declaração <emphasis role="bold">#ONWARNING </emphasis> permite
-  especificar globalmente como processar avisos específicos. Você pode tratar
-  a declaração como aviso, promovê-la a um erro ou ignorá-la. Avisos úteis
-  podem ficar perdidos em um grande número de outros menos úteis. Esse recurso
+  <para>A declaração  <emphasis role="bold">#ONWARNING </emphasis> permite 
+  especificar globalmente como processar avisos específicos. Você pode tratar 
+  a declaração como aviso, promovê-la a um erro ou ignorá-la. Avisos úteis 
+  podem ficar perdidos em um grande número de outros menos úteis. Esse recurso 
   permite limpar a "confusão".</para>
 
-  <para>O serviço de fluxo de trabalho de ONWARNING substitui todos os
+  <para>O serviço de fluxo de trabalho de ONWARNING substitui todos os 
   tratamentos globais de avisos especificados por #ONWARNING.</para>
 
   <para>Exemplo:</para>

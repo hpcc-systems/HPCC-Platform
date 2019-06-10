@@ -7,23 +7,23 @@
   <para>O pacote de Visualização é um complemento de código público à
   plataforma do HPCC que permite criar visualizações dos resultados das
   consultas gravadas no ECL.</para>
-
+  
   <para>As visualizações são um meio importante de transmissão das informações
   dos dados massivos Uma boa representação visual pode ajudar a gerar uma
   análise acionável. Uma representação visualmente abrangente das informações
   pode ajudar a tornar o obscuro em algo mais óbvio.</para>
-
+  
   <para>As visualizações são um meio importante de transmissão das informações
-  dos dados massivos O processamento de big data é apenas uma parte da
-  solução; também é preciso compreender a complexidade dos dados. Os métodos
+  dos dados massivos O processamento de big data é apenas uma parte 
+  da solução; também é preciso compreender a complexidade dos dados. Os métodos
   de visualização dos dados simplificam aquilo que é complexo.</para>
-
-  <para>O pacote Visualização aumenta a funcionalidade da plataforma do HPCC
-  permitindo a esquematização dos dados em diagramas, gráficos e mapas para
-  adicionar uma representação visual que possa ser facilmente
+  
+  <para>O pacote de Visualização aumenta a funcionalidade da plataforma HPCC
+  permitindo a esquematização dos dados em diagramas, 
+  gráficos e mapas para adicionar uma representação visual que possa ser facilmente
   compreendida.</para>
-
-  <para>Além disso, a estrutura de visualização subjacente suporta recursos
+  
+  <para>Além disso, a estrutura de visualização subjacente suporta recursos 
   avançados para permitir a combinação de gráficos para criar painéis
   interativos.</para>
 
@@ -37,8 +37,8 @@
 
     <para><programlisting>ecl bundle install https://github.com/hpcc-systems/Visualizer.git</programlisting></para>
 
-    <para>Para usar o comando "ecl bundle install &amp;lt;git url&amp;gt;", é
-    preciso ter o git instalado e configurado em seu sistema. O Git precisa
+    <para>Para usar o comando  "ecl bundle install &lt;git url&gt;", é 
+    preciso ter o git instalado e configurado em seu sistema. O Git precisa 
     estar acessível ao usuário (no caminho).</para>
 
     <para/>
@@ -107,32 +107,32 @@ viz_bubble;
   <sect1 id="VizViewing">
     <title>Exibindo a Visualização</title>
 
-    <para>Após executar uma consulta com a visualização incluída, a
-    visualização pode ser vista no ECL Watch. As visualizações são adicionadas
-    às tarefas como <emphasis>recursos</emphasis> adicionais e podem ser
-    vistas na guia <emphasis role="bold">Resources </emphasis> localizada na
-    página Detalhes da Workunit.</para>
+    <para>Após executar uma consulta com a visualização incluída, a 
+    visualização pode ser vista no ECL Watch. As visualizações são adicionadas 
+    às tarefas como <emphasis>recursos</emphasis> adicionais e podem ser 
+    vistas na aba <emphasis role="bold">Resources </emphasis> localizada na 
+    página Workunit Details.</para>
 
-    <para>Abra a workunit seleciona a aba <emphasis
+    <para>Abra a workunit e seleciona a aba  <emphasis
     role="bold">Resources</emphasis> .</para>
 
     <para><graphic fileref="../../images/viz07.jpg"/></para>
   </sect1>
 
   <sect1 id="VizDermProp">
-    <title>Propriedades de Aparência</title>
+    <title>Propriedades de Visualização</title>
 
     <para>A camada de aparência fornece um meio de configurar a maneira pela
     qual uma visualização é exibida. Por exemplo, você pode alterar a
     palletteID para um novo esquema de cores. Após executar uma consulta com a
     visualização incluída, a visualização pode ser vista no ECL Watch.</para>
-
-    <para>O <emphasis role="bold">Editor de visualização</emphasis> permite
+    
+    <para>O <emphasis role="bold">Editor de Visualização</emphasis> permite
     alterar a aparência da visualização após ela ter sido executada. As mesmas
     propriedades podem ser especificadas no ECL no momento em que a
     visualização for criada.</para>
 
-    <para>Você pode definir propriedades em seu código ECL ou posteriormente
+   <para>As propriedades podem ser definidas em seu código ECL ou posteriormente
     no ECL Watch:</para>
 
     <orderedlist>
@@ -157,7 +157,7 @@ viz_bubble;
 
       <listitem>
         <para>Pressione o botão <emphasis role="bold">Save</emphasis>
-        .<emphasis role="bold"/></para>
+	.<emphasis role="bold"/></para>
       </listitem>
     </orderedlist>
 

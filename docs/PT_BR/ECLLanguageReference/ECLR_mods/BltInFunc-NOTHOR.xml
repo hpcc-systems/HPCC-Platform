@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NOTHOR">
@@ -14,9 +14,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="83.15pt"/>
+        <colspec colwidth="83.15pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -34,14 +34,14 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A diretiva de compilador <emphasis role="bold">NOTHOR </emphasis>
-  indica que a <emphasis>ação</emphasis> não deve ser executada no thor, mas
-  em linha e em um contexto global. O NOTHOR permite realizar apenas operações
-  de dataset bastante simples, como a filtragem de registros ou um simples
+  <para>A diretiva de compilador  <emphasis role="bold">NOTHOR </emphasis> 
+  indica que a  <emphasis>ação</emphasis>  não deve ser executada no thor, mas 
+  em linha e em um contexto global. O NOTHOR permite realizar apenas operações 
+  de dataset bastante simples, como a filtragem de registros ou um simples 
   PROJETO PROJECT.</para>
 
-  <para>O NOTHOR precisa ser usado em operações que usam as transações de
-  superarquivo (como o exemplo abaixo), onde o compilador não reconhece o
+  <para>O NOTHOR precisa ser usado em operações que usam as transações de 
+  superarquivo (como o exemplo abaixo), onde o compilador não reconhece o 
   contexto apropriado.</para>
 
   <para>Exemplo:</para>

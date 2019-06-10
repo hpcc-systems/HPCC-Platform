@@ -18,39 +18,38 @@
   <para/>
 
   <sect1 id="Viz2dlistl">
-    <title>Métodos de Visualização Bidimensional</title>
+    <title>Métodos Bidimensionais</title>
 
-    <para>Este MÓDULO contém uma seleção de visualizações de dados
-    bidimensionais.</para>
+    <para>Contém uma seleção de visualizações de dados 
+    multidimensionais.</para>
 
-    <para><link linkend="VizBubble">Bolha</link></para>
+    <para><link linkend="VizBubble">Bolha (Bubble)</link></para>
 
-    <para><link linkend="VizPie">Pizza</link></para>
+    <para><link linkend="VizPie">Pizza (Pie)</link></para>
 
-    <para><link linkend="VizSummary">Resumo</link></para>
+    <para><link linkend="VizSummary">Resumo (Summary)</link></para>
 
-    <para><link linkend="VizWordCloud">Nuvem de palavras</link></para>
+    <para><link linkend="VizWordCloud">Nuvem de palavras (WordCloud)</link></para>
   </sect1>
 
   <sect1 id="VizNDList">
     <title>Métodos de Visualização Bidimensional</title>
 
-    <para>Este MÓDULO contém uma seleção de visualizações de dados
-    multidimensionais.</para>
+    <para>Contém uma seleção de visualizações de dados multidimensionais.</para>
 
-    <para><link linkend="VizMultiDArea">Área</link></para>
+    <para><link linkend="VizMultiDArea">Área (Area)</link></para>
 
-    <para><link linkend="VizMultiDBar">Barras</link></para>
+    <para><link linkend="VizMultiDBar">Barras (Bar)</link></para>
 
-    <para><link linkend="VizMultiDColumn">Colunas</link></para>
+    <para><link linkend="VizMultiDColumn">Colunas (Column)</link></para>
 
-    <para><link linkend="VizMultiDHexBin">Hexágono</link></para>
+    <para><link linkend="VizMultiDHexBin">HexBin</link></para>
 
-    <para><link linkend="VizMultiDLine">Linha</link></para>
+    <para><link linkend="VizMultiDLine">Linha (Linha)</link></para>
 
-    <para><link linkend="VizMultiDScatter">Dispersão</link></para>
+    <para><link linkend="VizMultiDScatter">Dispersão (Scatter)</link></para>
 
-    <para><link linkend="VizMultiDStep">Escada ou Degrau</link></para>
+    <para><link linkend="VizMultiDStep">Escada ou Degrau (Step)</link></para>
 
     <para/>
   </sect1>
@@ -58,9 +57,9 @@
   <sect1 id="VizGeoList">
     <title>Método de Visualização Geoespacial</title>
 
-    <para><link linkend="VizUSStates">Estados dos EUA</link></para>
+    <para><link linkend="VizUSStates">USStates</link></para>
 
-    <para><link linkend="VizUSCounties">Condados dos EUA</link></para>
+    <para><link linkend="VizUSCounties">USCounties</link></para>
 
     <para><link linkend="VizEuro">Euro</link></para>
 
@@ -79,9 +78,9 @@
   <sect1 id="VizGeneralList">
     <title>Método de Visualização Geoespacial</title>
 
-    <para><link linkend="VizGrid">Grade</link></para>
+    <para><link linkend="VizGrid">Grade (Grid)</link></para>
 
-    <para><link linkend="VizHandsonGrid">Grade Handson</link></para>
+    <para><link linkend="VizHandsonGrid">Grade Handson (Handson Grid)</link></para>
 
     <para/>
 

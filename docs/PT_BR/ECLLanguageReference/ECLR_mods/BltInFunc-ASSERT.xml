@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ASSERT">
@@ -16,9 +16,9 @@
 
   <para><emphasis role="bold">ASSERT( </emphasis><emphasis>recset, condition
   </emphasis><emphasis role="bold">[ </emphasis><emphasis>, message
-  </emphasis><emphasis role="bold">] [ </emphasis>, <emphasis role="bold">FAIL
-  ] [ </emphasis>, <emphasis role="bold">CONST ] [, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  </emphasis><emphasis role="bold">] [ </emphasis>, <emphasis role="bold">FAIL 
+  ] [ </emphasis>, <emphasis role="bold">CONST ] [, UNORDERED | 
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, 
   STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
   </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis><emphasis
@@ -26,9 +26,9 @@
       <primary>ASSERT function</primary>
     </indexterm></para>
 
-  <para><emphasis role="bold">ASSERT( </emphasis><emphasis>recset,
-  assertlist</emphasis><emphasis role="bold"> [, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  <para><emphasis role="bold">ASSERT( </emphasis><emphasis>recset, 
+  assertlist</emphasis><emphasis role="bold"> [, UNORDERED | 
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, 
   STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
   </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis><emphasis
@@ -36,82 +36,82 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.65pt"/>
+        <colspec colwidth="80.65pt" />
 
-        <colspec colwidth="308.15pt"/>
+        <colspec colwidth="308.15pt" />
 
         <tbody>
           <row>
             <entry><emphasis>condition</emphasis></entry>
 
-            <entry>A expressão lógica que deve sempre ser “true”
-            (verdadeira).</entry>
+            <entry>A expressão lógica que deve sempre ser “true” 
+	    (verdadeira).</entry>
           </row>
 
           <row>
             <entry><emphasis>mensagem</emphasis></entry>
 
-            <entry>Opcional. O erro a ser exibido na workunit. Se omitida, uma
-            mensagem será gerada a partir da localização aproximada no código
-            e da condição que está sendo verificada.</entry>
+            <entry>Opcional. O erro a ser exibido na workunit. Se omitida, uma 
+	    mensagem será gerada a partir da localização aproximada no código 
+	    e da condição que está sendo verificada.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">FAIL</emphasis></entry>
 
-            <entry>Opcional. Especifica que uma exceção foi gerada,
-            finalizando imediatamente a workunit.</entry>
+            <entry>Opcional. Especifica que uma exceção foi gerada, 
+	    finalizando imediatamente a workunit.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">CONST</emphasis></entry>
 
-            <entry>Opcional. Especifica que a condição é avaliada durante a
-            geração do código.</entry>
+            <entry>Opcional. Especifica que a condição é avaliada durante a 
+	    geração do código.</entry>
           </row>
 
           <row>
             <entry><emphasis>recset</emphasis></entry>
 
-            <entry>O conjunto de registros para o qual a condição deve ser
-            verificada em relação a cada registro.</entry>
+            <entry>O conjunto de registros para o qual a condição deve ser 
+	    verificada em relação a cada registro.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de resultado
-            não é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de resultado 
+	    não é importante.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Especifica a importância da ordem do registro de
-            resultado.</entry>
+            <entry>Especifica a importância da ordem do registro de 
+	    resultado.</entry>
           </row>
 
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Quando for “False” (Falso), especifica que a ordem do
-            registro de resultado não é importante. Quando for “True’
-            (Verdadeiro), especifica a ordem padrão do registro de
-            resultado.</entry>
+            <entry>Quando for “False” (Falso), especifica que a ordem do 
+	    registro de resultado não é importante. Quando for “True’ 
+	    (Verdadeiro), especifica a ordem padrão do registro de 
+	    resultado.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada é
-            importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada é 
+	    importante.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Opcional. Especifica que a ordem do registro de entrada não
-            é importante.</entry>
+            <entry>Opcional. Especifica que a ordem do registro de entrada não 
+	    é importante.</entry>
           </row>
 
           <row>
@@ -130,39 +130,39 @@
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Opcional. Substitui o algoritmo usado para essa
-            atividade.</entry>
+            <entry>Opcional. Substitui o algoritmo usado para essa 
+	    atividade.</entry>
           </row>
 
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
-            parte da lista de algoritmos compatíveis com as opções STABLE e
-            UNSTABLE da função SORT.</entry>
+            <entry>O algoritmo a ser usado para essa atividade. Precisa fazer 
+	    parte da lista de algoritmos compatíveis com as opções STABLE e 
+	    UNSTABLE da função SORT.</entry>
           </row>
 
           <row>
             <entry><emphasis>assertlist</emphasis></entry>
 
-            <entry>Uma lista delimitada por vírgula de ações ASSERTs da
-            primeira forma, usada para verificar várias condições em relação a
-            cada registro no <emphasis>recset</emphasis>.</entry>
+            <entry>Uma lista delimitada por vírgula de ações ASSERTs da 
+	    primeira forma, usada para verificar várias condições em relação a 
+	    cada registro no <emphasis>recset</emphasis>.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A ação <emphasis role="bold">ASSERT </emphasis> avalia a
-  <emphasis>condição</emphasis>, e se essa condição for falsa, a ação
-  publicará a <emphasis>mensagem</emphasis> na workunit. Se a opção FAIL
+  <para>A ação  <emphasis role="bold">ASSERT </emphasis> avalia a 
+  <emphasis>condição</emphasis>, e se essa condição for falsa, a ação 
+  publicará a <emphasis>mensagem</emphasis>  na workunit. Se a opção FAIL 
   estiver presente, a workunit será finalizada imediatamente.</para>
 
-  <para>O form um é a form scalar que avalia a <emphasis>condição</emphasis>
-  uma vez. O form dois avalia a <emphasis>condição</emphasis> uma vez para
-  cada registro no <emphasis>recset</emphasis>. O form três é uma variante do
-  form dois que aninha diversos ASSERTs do form um para que cada condição seja
-  verificada em relação a cada registro no <emphasis>recset</emphasis>.</para>
+  <para>O form um é a form scalar que avalia a <emphasis>condição</emphasis>  
+  uma vez. O form dois avalia a <emphasis>condição</emphasis> uma vez para 
+  cada registro no <emphasis>recset</emphasis>. O form três é uma variante do 
+  form dois que aninha diversos ASSERTs do form um para que cada condição seja 
+  verificada em relação a cada registro no  <emphasis>recset</emphasis>.</para>
 
   <para>Exemplo:</para>
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
@@ -30,13 +30,13 @@
         role="bold">[</emphasis>&lt;options&gt;<emphasis
         role="bold">]</emphasis></title>
 
-        <para/>
+        <para></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt"/>
+            <colspec align="left" colwidth="125.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -96,8 +96,8 @@
               <row>
                 <entry>bind-service</entry>
 
-                <entry>Configura serviço baseado em ESDL no ESP de destino
-                (com ligação ESP existente).</entry>
+                <entry>Configura serviço baseado em ESDL no ESP de destino 
+		(com ligação ESP existente).</entry>
               </row>
 
               <row>
@@ -109,22 +109,22 @@
               <row>
                 <entry>unbind-service</entry>
 
-                <entry>Remove serviço baseado em ESDL com ligação no ESP de
-                destino.</entry>
+                <entry>Remove serviço baseado em ESDL com ligação no ESP de 
+		destino.</entry>
               </row>
 
               <row>
                 <entry>bind-method</entry>
 
-                <entry>Configura método associado com ligação ESDL
-                existente.</entry>
+                <entry>Configura método associado com ligação ESDL 
+		existente.</entry>
               </row>
 
               <row>
                 <entry>unbind-method</entry>
 
-                <entry>Remove método de uma ligação ESDL em um ESP de
-                destino.</entry>
+                <entry>Remove método de uma ligação ESDL em um ESP de 
+		destino.</entry>
               </row>
 
               <row>
@@ -132,30 +132,36 @@
 
                 <entry>Obtém a ligação ESDL.</entry>
               </row>
+
+              <row>
+                <entry>get</entry>
+
+                <entry>Obtém a definição ESDL.</entry>
+              </row>
             </tbody>
           </tgroup>
         </informaltable>
 
-        <para/>
+        <para></para>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_xml" role="brk">
         <title>esdl xml</title>
 
-        <para><emphasis role="bold">esdl xml [options] filename.ecm
-        [&lt;outdir&gt;] </emphasis></para>
+        <para><emphasis role="bold">esdl xml [options] filename.ecm 
+	[&lt;outdir&gt;] </emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt"/>
+            <colspec colwidth="80.50pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
                 <entry><emphasis>filename.ecm</emphasis></entry>
 
-                <entry>O arquivo que contém as definições ESDL</entry>
+                <entry>O arquivo que contém as definições ESDL </entry>
               </row>
 
               <row>
@@ -185,10 +191,10 @@
           </tgroup>
         </informaltable>
 
-        <para>Gera XML a partir da definição ESDL. Esse XML é uma entidade
-        intermediária usada pelo mecanismo ESDL para criar as definições de
-        serviço de tempo de execução. Este comando é raramente usado por si
-        próprio.</para>
+        <para>Gera XML a partir da definição ESDL. Esse XML é uma entidade 
+	intermediária usada pelo mecanismo ESDL para criar as definições de 
+	serviço de tempo de execução. Este comando é raramente usado por si 
+	próprio.</para>
 
         <para>Exemplos:</para>
 
@@ -199,28 +205,28 @@
       <sect2 id="CT_ESDL_CLI_esdl_ecl" role="brk">
         <title>esdl ecl</title>
 
-        <para><emphasis role="bold">esdl ecl sourcePath outputPath
-        [options].</emphasis></para>
+        <para><emphasis role="bold">esdl ecl sourcePath outputPath 
+	[options].</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt"/>
+            <colspec colwidth="80.50pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
                 <entry><emphasis>sourcePath</emphasis></entry>
 
-                <entry>O caminho absoluto do arquivo da definição ESDL que
-                contém a definição EsdlService para o serviço.</entry>
+                <entry>O caminho absoluto do arquivo da definição ESDL que 
+		contém a definição EsdlService para o serviço.</entry>
               </row>
 
               <row>
                 <entry><emphasis>outputPath</emphasis></entry>
 
-                <entry>O caminho absoluto para o local onde o resultado ECL
-                será gravado.</entry>
+                <entry>O caminho absoluto para o local onde o resultado ECL 
+		será gravado.</entry>
               </row>
 
               <row>
@@ -232,37 +238,37 @@
               <row>
                 <entry><emphasis>--includes</emphasis></entry>
 
-                <entry>Se estiver presente, processa todos os arquivos
-                incluídos</entry>
+                <entry>Se estiver presente, processa todos os arquivos 
+		incluídos</entry>
               </row>
 
               <row>
                 <entry><emphasis>--rollup</emphasis></entry>
 
-                <entry>Se estiver presente, acumula todas as inclusões
-                processadas em um único arquivo de resultados do ECL.</entry>
+                <entry>Se estiver presente, acumula todas as inclusões 
+		processadas em um único arquivo de resultados do ECL.</entry>
               </row>
 
               <row>
                 <entry><emphasis>-cde </emphasis></entry>
 
-                <entry>Especifica o diretório de arquivos do componente do
-                HPCC (localização dos arquivos xslt).</entry>
+                <entry>Especifica o diretório de arquivos do componente do 
+		HPCC (localização dos arquivos xslt).</entry>
               </row>
 
               <row>
                 <entry><emphasis>--ecl-imports </emphasis></entry>
 
-                <entry>Lista de importação, delimitada por vírgula, a ser
-                anexada ao resultado do ECL. Cada entrada gera um
-                demonstrativo IMPORT correspondente.</entry>
+                <entry>Lista de importação, delimitada por vírgula, a ser 
+		anexada ao resultado do ECL. Cada entrada gera um 
+		demonstrativo IMPORT correspondente.</entry>
               </row>
 
               <row>
                 <entry><emphasis>--ecl-header</emphasis></entry>
 
-                <entry>Texto a ser incluído no cabeçalho ou no arquivo de
-                destino (gerado) – deve ser um ECL válido.</entry>
+                <entry>Texto a ser incluído no cabeçalho ou no arquivo de 
+		destino (gerado) – deve ser um ECL válido.</entry>
               </row>
 
               <row>
@@ -274,9 +280,9 @@
           </tgroup>
         </informaltable>
 
-        <para>Isso gera estruturas do ECL a partir da definição ESDL. Essas
-        estruturas criam a interface (pontos de entrada e de saída) da
-        consulta Roxie.</para>
+        <para>Isso gera estruturas do ECL a partir da definição ESDL. Essas 
+	estruturas criam a interface (pontos de entrada e de saída) da 
+	consulta Roxie.</para>
 
         <para>Exemplos:</para>
 
@@ -287,40 +293,40 @@
       <sect2 id="CT_ESDL_CLI_esdl_xsd" role="brk">
         <title>esdl xsd</title>
 
-        <para><emphasis role="bold">esdl xsd sourcePath serviceName
-        [options]</emphasis></para>
+        <para><emphasis role="bold">esdl xsd sourcePath serviceName 
+	[options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="200pt"/>
+            <colspec align="left" colwidth="200pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
                 <entry><emphasis>sourcePath</emphasis></entry>
 
-                <entry>O caminho absoluto do arquivo da definição ESDL que
-                contém a definição EsdlService para o serviço.</entry>
+                <entry>O caminho absoluto do arquivo da definição ESDL que 
+		contém a definição EsdlService para o serviço.</entry>
               </row>
 
               <row>
                 <entry><emphasis>serviceName</emphasis></entry>
 
-                <entry>Nome do serviço ESDL definido em um dado arquivo
-                ESDL.</entry>
+                <entry>Nome do serviço ESDL definido em um dado arquivo 
+		ESDL.</entry>
               </row>
 
               <row>
-                <entry><emphasis> --version &lt;version
-                number&gt;</emphasis></entry>
+                <entry><emphasis> --version &lt;version 
+		number&gt;</emphasis></entry>
 
                 <entry>Restringe à versão de interface</entry>
               </row>
 
               <row>
-                <entry><emphasis>--method &lt;method name&gt;[;&lt;method
-                name&gt;]* </emphasis></entry>
+                <entry><emphasis>--method &lt;method name&gt;[;&lt;method 
+		name&gt;]* </emphasis></entry>
 
                 <entry>Restringe à lista de método(s) específico(s)</entry>
               </row>
@@ -329,86 +335,86 @@
                 <entry><emphasis>--xslt &lt;xslt file path&gt;
                 </emphasis></entry>
 
-                <entry>Caminho para o arquivo '/xslt/esxdl2xsd.xslt' para
-                transformar EsdlDef em XSD</entry>
+                <entry>Caminho para o arquivo '/xslt/esxdl2xsd.xslt' para 
+		transformar EsdlDef em XSD</entry>
               </row>
 
               <row>
-                <entry><emphasis>--preprocess-output &lt;raw output
-                directory&gt; : </emphasis></entry>
+                <entry><emphasis>--preprocess-output &lt;raw output 
+		directory&gt; : </emphasis></entry>
 
-                <entry>Resultados pré-processados do arquivo XML para um
-                diretório especificado antes de aplicar a transformação
-                XSLT</entry>
+                <entry>Resultados pré-processados do arquivo XML para um 
+		diretório especificado antes de aplicar a transformação 
+		XSLT</entry>
               </row>
 
               <row>
                 <entry><emphasis>--annotate &lt;all | none&gt;
                 </emphasis></entry>
 
-                <entry>Sinalizador orientado para todas as anotações ou para
-                nenhuma. Por padrão, as anotações são geradas para
-                Enumerações. Definir o sinalizador para “nenhum” também
-                desabilitará essa função. Definir para “todas” habilita
-                anotações adicionais, como recolhido, cols, form_ui, html_head
-                e linhas.</entry>
+                <entry>Sinalizador orientado para todas as anotações ou para 
+		nenhuma. Por padrão, as anotações são geradas para 
+		Enumerações. Definir o sinalizador para “nenhum” também 
+		desabilitará essa função. Definir para “todas” habilita 
+		anotações adicionais, como recolhido, cols, form_ui, html_head 
+		e linhas.</entry>
               </row>
 
               <row>
                 <entry><emphasis> --noopt </emphasis></entry>
 
-                <entry>Desativa a imposição de atributos “opcionais” nos
-                elementos. Se -noopt não for especificado, todos os elementos
-                contendo “opcional” serão incluídos nos resultados. Por
-                padrão, o filtro “opcional” está ativado.</entry>
+                <entry>Desativa a imposição de atributos “opcionais” nos 
+		elementos. Se -noopt não for especificado, todos os elementos 
+		contendo “opcional” serão incluídos nos resultados. Por 
+		padrão, o filtro “opcional” está ativado.</entry>
               </row>
 
               <row>
                 <entry><emphasis>-opt,--optional &lt;param value&gt;
                 </emphasis></entry>
 
-                <entry>Valor a ser usado para o filtro de tag opcional ao
-                coletar dependências. Por exemplo, especificar “interno”
-                quando alguns objetos da definição ESDL apresentam o atributo
-                opcional (“interno”) assegura que eles aparecerão no XSD, caso
-                contrário eles seriam filtrados.</entry>
+                <entry>Valor a ser usado para o filtro de tag opcional ao 
+		coletar dependências. Por exemplo, especificar “interno” 
+		quando alguns objetos da definição ESDL apresentam o atributo 
+		opcional (“interno”) assegura que eles aparecerão no XSD, caso 
+		contrário eles seriam filtrados.</entry>
               </row>
 
               <row>
-                <entry><emphasis>-tns,--target-namespace &lt;target
-                namespace&gt; </emphasis></entry>
+                <entry><emphasis>-tns,--target-namespace &lt;target 
+		namespace&gt; </emphasis></entry>
 
-                <entry>O namespace de destino foi especificado para
-                transformação através do parâmetro 'tnsParam' usado no
-                resultado final do XSD.</entry>
+                <entry>O namespace de destino foi especificado para 
+		transformação através do parâmetro  'tnsParam' usado no 
+		resultado final do XSD.</entry>
               </row>
 
               <row>
                 <entry><emphasis>-n &lt;int&gt; .</emphasis></entry>
 
-                <entry>Número de vezes que a transformação é executada após
-                carregar o XSLT. O padrão é 1</entry>
+                <entry>Número de vezes que a transformação é executada após 
+		carregar o XSLT. O padrão é 1</entry>
               </row>
 
               <row>
                 <entry><emphasis>--show-inheritance</emphasis></entry>
 
-                <entry>Desabilita o recurso recolher. O recolhimento otimiza o
-                resultado XML removendo estruturas usadas apenas para herança,
-                e recolhe seus elementos na forma de elementos secundários.
-                Isso simplifica o estilo da página. Por padrão, essa opção
-                está ativada.</entry>
+                <entry>Desabilita o recurso recolher. O recolhimento otimiza o 
+		resultado XML removendo estruturas usadas apenas para herança, 
+		e recolhe seus elementos na forma de elementos secundários. 
+		Isso simplifica o estilo da página. Por padrão, essa opção 
+		está ativada.</entry>
               </row>
 
               <row>
                 <entry><emphasis>--no-arrayof</emphasis></entry>
 
-                <entry>Elimina o uso do elemento arrrayof. O arrayof otimiza o
-                resultado XML para incluir definições da estrutura
-                'ArrayOf...' para os elementos EsdlArray que não possuem o
-                atributo item_tag. Trabalha conjuntamente com um estilo de
-                página otimizado que não é capaz de gerar essas definições
-                sozinho. Por padrão, esse recurso está habilitado.</entry>
+                <entry>Elimina o uso do elemento arrrayof. O arrayof otimiza o 
+		resultado XML para incluir definições da estrutura 
+		'ArrayOf...' para os elementos EsdlArray que não possuem o 
+		atributo item_tag. Trabalha conjuntamente com um estilo de 
+		página otimizado que não é capaz de gerar essas definições 
+		sozinho. Por padrão, esse recurso está habilitado.</entry>
               </row>
 
               <row>
@@ -443,40 +449,40 @@
       <sect2 id="CT_ESDL_CLI_esdl_wsdl" role="brk">
         <title>esdl wsdl</title>
 
-        <para><emphasis role="bold">esdl wsdl sourcePath serviceName
-        [options]</emphasis></para>
+        <para><emphasis role="bold">esdl wsdl sourcePath serviceName 
+	[options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="200pt"/>
+            <colspec align="left" colwidth="200pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
                 <entry><emphasis>sourcePath</emphasis></entry>
 
-                <entry>O caminho absoluto do arquivo da definição ESDL que
-                contém a definição EsdlService para o serviço.</entry>
+                <entry>O caminho absoluto do arquivo da definição ESDL que 
+		contém a definição EsdlService para o serviço.</entry>
               </row>
 
               <row>
                 <entry><emphasis>serviceName</emphasis></entry>
 
-                <entry>Nome do serviço ESDL definido em um dado arquivo
-                ESDL.</entry>
+                <entry>Nome do serviço ESDL definido em um dado arquivo 
+		ESDL.</entry>
               </row>
 
               <row>
-                <entry><emphasis> --version &lt;version
-                number&gt;</emphasis></entry>
+                <entry><emphasis> --version &lt;version 
+		number&gt;</emphasis></entry>
 
                 <entry>Restringe à versão de interface</entry>
               </row>
 
               <row>
-                <entry><emphasis>--method &lt;method name&gt;[;&lt;method
-                name&gt;]* </emphasis></entry>
+                <entry><emphasis>--method &lt;method name&gt;[;&lt;method 
+		name&gt;]* </emphasis></entry>
 
                 <entry>Restringe à lista de método(s) específico(s)</entry>
               </row>
@@ -485,93 +491,93 @@
                 <entry><emphasis>--xslt &lt;xslt file path&gt;
                 </emphasis></entry>
 
-                <entry>Caminho para o arquivo '/xslt/esxdl2xsd.xslt' para
-                transformar EsdlDef em XSD</entry>
+                <entry>Caminho para o arquivo '/xslt/esxdl2xsd.xslt' para 
+		transformar EsdlDef em XSD</entry>
               </row>
 
               <row>
-                <entry><emphasis>--preprocess-output &lt;raw output
-                directory&gt; : </emphasis></entry>
+                <entry><emphasis>--preprocess-output &lt;raw output 
+		directory&gt; : </emphasis></entry>
 
-                <entry>Resultados pré-processados do arquivo XML para um
-                diretório especificado antes de aplicar a transformação
-                XSLT</entry>
+                <entry>Resultados pré-processados do arquivo XML para um 
+		diretório especificado antes de aplicar a transformação 
+		XSLT</entry>
               </row>
 
               <row>
                 <entry><emphasis>--annotate &lt;all | none&gt;
                 </emphasis></entry>
 
-                <entry>Sinalizador orientado para todas as anotações ou para
-                nenhuma. Por padrão, as anotações são geradas para
-                Enumerações. Definir o sinalizador para “nenhum” também
-                desabilitará essa função. Definir para “todas” habilita
-                anotações adicionais, como recolhido, cols, form_ui, html_head
-                e linhas.</entry>
+                <entry>Sinalizador orientado para todas as anotações ou para 
+		nenhuma. Por padrão, as anotações são geradas para 
+		Enumerações. Definir o sinalizador para “nenhum” também 
+		desabilitará essa função. Definir para “todas” habilita 
+		anotações adicionais, como recolhido, cols, form_ui, html_head 
+		e linhas.</entry>
               </row>
 
               <row>
                 <entry><emphasis> --noopt </emphasis></entry>
 
-                <entry>Desativa a imposição de atributos “opcionais” nos
-                elementos. Se -noopt não for especificado, todos os elementos
-                contendo “opcional” serão incluídos nos resultados. Por
-                padrão, o filtro “opcional” está ativado.</entry>
+                <entry>Desativa a imposição de atributos “opcionais” nos 
+		elementos. Se -noopt não for especificado, todos os elementos 
+		contendo “opcional” serão incluídos nos resultados. Por 
+		padrão, o filtro “opcional” está ativado.</entry>
               </row>
 
               <row>
                 <entry><emphasis>-opt,--optional &lt;param value&gt;
                 </emphasis></entry>
 
-                <entry>Valor a ser usado para o filtro de tag opcional ao
-                coletar dependências. Por exemplo, especificar “interno”
-                quando alguns objetos da definição ESDL apresentam o atributo
-                opcional (“interno”) assegura que eles aparecerão no XSD, caso
-                contrário eles seriam filtrados.</entry>
+                <entry>Valor a ser usado para o filtro de tag opcional ao 
+		coletar dependências. Por exemplo, especificar “interno” 
+		quando alguns objetos da definição ESDL apresentam o atributo 
+		opcional (“interno”) assegura que eles aparecerão no XSD, caso 
+		contrário eles seriam filtrados.</entry>
               </row>
 
               <row>
-                <entry><emphasis>-tns,--target-namespace &lt;target
-                namespace&gt; </emphasis></entry>
+                <entry><emphasis>-tns,--target-namespace &lt;target 
+		namespace&gt; </emphasis></entry>
 
-                <entry>O namespace de destino foi especificado para
-                transformação através do parâmetro 'tnsParam' usado no
-                resultado final do XSD.</entry>
+                <entry>O namespace de destino foi especificado para 
+		transformação através do parâmetro  'tnsParam' usado no 
+		resultado final do XSD.</entry>
               </row>
 
               <row>
                 <entry><emphasis>-n &lt;int&gt; .</emphasis></entry>
 
-                <entry>Número de vezes que a transformação é executada após
-                carregar o XSLT. O padrão é 1</entry>
+                <entry>Número de vezes que a transformação é executada após 
+		carregar o XSLT. O padrão é 1</entry>
               </row>
 
               <row>
                 <entry><emphasis>--show-inheritance</emphasis></entry>
 
-                <entry>Desabilita o recurso recolher. O recolhimento otimiza o
-                resultado XML removendo estruturas usadas apenas para herança,
-                e recolhe seus elementos na forma de elementos secundários.
-                Isso simplifica o estilo da página. Por padrão, essa opção
-                está ativada.</entry>
+                <entry>Desabilita o recurso recolher. O recolhimento otimiza o 
+		resultado XML removendo estruturas usadas apenas para herança, 
+		e recolhe seus elementos na forma de elementos secundários. 
+		Isso simplifica o estilo da página. Por padrão, essa opção 
+		está ativada.</entry>
               </row>
 
               <row>
                 <entry><emphasis>--no-arrayof</emphasis></entry>
 
-                <entry>Elimina o uso do elemento arrrayof. O arrayof otimiza o
-                resultado XML para incluir definições da estrutura
-                'ArrayOf...' para os elementos EsdlArray que não possuem o
-                atributo item_tag. Trabalha conjuntamente com um estilo de
-                página otimizado que não é capaz de gerar essas definições
-                sozinho. Por padrão, esse recurso está habilitado.</entry>
+                <entry>Elimina o uso do elemento arrrayof. O arrayof otimiza o 
+		resultado XML para incluir definições da estrutura 
+		'ArrayOf...' para os elementos EsdlArray que não possuem o 
+		atributo item_tag. Trabalha conjuntamente com um estilo de 
+		página otimizado que não é capaz de gerar essas definições 
+		sozinho. Por padrão, esse recurso está habilitado.</entry>
               </row>
 
               <row>
                 <entry><emphasis>--wsdladdress </emphasis></entry>
 
-                <entry>Define o endereço de localização do arquivo de
-                resultado WSDL</entry>
+                <entry>Define o endereço de localização do arquivo de 
+		resultado WSDL</entry>
               </row>
 
               <row>
@@ -612,44 +618,44 @@
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt"/>
+              <colspec align="left" colwidth="125.55pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
                   <entry>filename</entry>
 
-                  <entry>O arquivo ESDL (*.ecm, *.esdl, ou *.xml) que contém
-                  as definições de serviço.</entry>
+                  <entry>O arquivo ESDL (*.ecm, *.esdl, ou *.xml) que contém 
+		  as definições de serviço.</entry>
                 </row>
 
                 <row>
                   <entry>servicename</entry>
 
-                  <entry>O nome do serviço a ser publicado. É opcional caso a
-                  definição ESDL contenha apenas um serviço.</entry>
+                  <entry>O nome do serviço a ser publicado. É opcional caso a 
+		  definição ESDL contenha apenas um serviço.</entry>
                 </row>
 
                 <row>
                   <entry>--overwrite</entry>
 
-                  <entry>Substitui a última versão desta definição
-                  ESDL</entry>
+                  <entry>Substitui a última versão desta definição 
+		  ESDL</entry>
                 </row>
 
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>O endereço IP ou nome do host do servidor ESP que
-                  está executando os serviços do ECL Watch</entry>
+                  <entry>O endereço IP ou nome do host do servidor ESP que 
+		  está executando os serviços do ECL Watch</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>A porta dos serviços do ECL Watch (o padrão é
-                  8010)</entry>
+                  <entry>A porta dos serviços do ECL Watch 
+		  (o padrão é 8010)</entry>
                 </row>
 
                 <row>
@@ -665,62 +671,57 @@
                 </row>
 
                 <row>
-                  <entry>--version &lt;ver&gt;</entry>
-
-                  <entry>Versão do serviço ESDL</entry>
-                </row>
-
-                <row>
                   <entry>--help</entry>
 
-                  <entry>mostra as informações de uso para um determinado
-                  comando</entry>
+                  <entry>mostra as informações de uso para 
+		  um determinado comando</entry>
                 </row>
 
                 <row>
                   <entry>-v, --verbose</entry>
 
-                  <entry>Saída de informações adicionais de
-                  rastreamento</entry>
+                  <entry>Saída de informações adicionais 
+		  de rastreamento</entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable></para>
 
-        <para>Publica uma definição de serviço ESDL no armazenamento de dados
-        do sistema.</para>
+        <para>Publica uma definição de serviço ESDL no 
+	armazenamento de dados do sistema.</para>
 
         <para>Exemplos:</para>
 
-        <programlisting>esdl publish mathservice.ecm mathservice -s nnn.nnn.nnn.nnn --port 8010
+        <programlisting>esdl publish MathService.ecm 
+	MathService -s nnn.nnn.nnn.nnn --port 8010
 </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_list-definitions" role="brk">
         <title>esdl list-definitions</title>
 
-        <para><emphasis role="bold">esdl list-definitions
-        [<emphasis>options</emphasis>]</emphasis></para>
+        <para><emphasis role="bold">esdl list-definitions 
+	[<emphasis>options</emphasis>]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt"/>
+            <colspec align="left" colwidth="125.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
                 <entry>-s, --server</entry>
 
-                <entry>O endereço IP ou nome do host do servidor ESP que está
-                executando os serviços do ECL Watch</entry>
+                <entry>O endereço IP ou nome do host do servidor ESP 
+		que está executando os serviços do ECL Watch</entry>
               </row>
 
               <row>
                 <entry>--port</entry>
 
-                <entry>A porta dos serviços do ECL Watch (o padrão é
-                8010)</entry>
+                <entry>A porta dos serviços do ECL Watch (o padrão é 
+		8010)</entry>
               </row>
 
               <row>
@@ -744,69 +745,62 @@
               <row>
                 <entry>--help</entry>
 
-                <entry>mostra as informações de uso para um determinado
-                comando</entry>
+                <entry>mostra as informações de uso para um determinado 
+		comando</entry>
               </row>
 
               <row>
                 <entry>-v, --verbose</entry>
 
-                <entry>Saída de informações adicionais de rastreamento</entry>
+                <entry>Saída de informações adicionais de 
+		rastreamento</entry>
               </row>
             </tbody>
           </tgroup>
         </informaltable>
 
-        <para>Este comando lista as definições publicadas</para>
-
-        <para><emphasis role="bold">Exemplo:</emphasis></para>
+        <para>Este comando lista as definições 
+	publicadas</para><para><emphasis 
+	role="bold">Exemplo:</emphasis></para>
 
         <programlisting>esdl list-definitions -s nnn.nnn.nnn.nnn --port 8010
 </programlisting>
 
-        <para/>
+        <para></para>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_delete" role="brk">
         <title>esdl delete</title>
 
-        <para><emphasis role="bold">esdl delete
-        &lt;ESDLServiceDefinitionName&gt; &lt;ESDLServiceDefinitionVersion&gt;
-        [<emphasis>options</emphasis>]</emphasis></para>
+        <para><emphasis role="bold">esdl delete 
+	&lt;ESDLDefinitionID&gt; [<emphasis>options</emphasis>]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt"/>
+            <colspec align="left" colwidth="140.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry>ESDLServiceDefinitionName</entry>
+                <entry>ESDLDefinitionID</entry>
 
-                <entry>O nome de definição do serviço ESDL a ser
-                removido</entry>
-              </row>
-
-              <row>
-                <entry>ESDLServiceDefinitionVersion</entry>
-
-                <entry>A versão da definição do serviço ESDL a ser
-                removida</entry>
+                <entry>O ID da definição do serviço ESDL a ser
+		 removido</entry>
               </row>
 
               <row>
                 <entry>-s, --server</entry>
 
-                <entry>O endereço IP ou nome do host do servidor ESP que está
-                executando os serviços do ECL Watch</entry>
+                <entry>O endereço IP ou nome do host do servidor ESP que está 
+		executando os serviços do ECL Watch</entry>
               </row>
 
               <row>
                 <entry>--port</entry>
 
                 <entry>A porta dos serviços do ECL Watch (o padrão é
-                8010)</entry>
+		 8010)</entry>
               </row>
 
               <row>
@@ -830,8 +824,8 @@
               <row>
                 <entry>--help</entry>
 
-                <entry>mostra as informações de uso para um determinado
-                comando</entry>
+                <entry>mostra as informações de uso para um determinado 
+		comando</entry>
               </row>
 
               <row>
@@ -843,31 +837,31 @@
           </tgroup>
         </informaltable>
 
-        <para>Use este comando para remover uma definição do serviço ESDL. Se
-        a definição do serviço estiver vinculada, é necessário desvincular
-        antes de usar o comando para removê-la.</para>
+        <para>Use este comando para remover uma definição do serviço ESDL. Se 
+	a definição do serviço estiver vinculada, é necessário desvincular 
+	antes de usar o comando para removê-la.</para>
 
         <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-        <programlisting>esdl delete mathservice 2 -s nnn.nnn.nnn.nnn --port 8010
+        <programlisting>esdl delete MathService.2 -s nnn.nnn.nnn.nnn --port 8010
 </programlisting>
 
-        <para><emphasis role="bold"/></para>
+        <para><emphasis role="bold"></emphasis></para>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_bind-service" role="brk">
         <title>esdl bind-service</title>
 
-        <para><emphasis role="bold">esdl bind-service
-        &lt;TargetESPProcessName&gt; &lt;TargetESPBindingPort |
-        TargetESPServiceName&gt; &lt;ESDLDefinitionId&gt;
-        (&lt;ESDLServiceName&gt;) [command options]</emphasis></para>
+        <para><emphasis role="bold">esdl bind-service 
+	&lt;TargetESPProcessName&gt; &lt;TargetESPBindingPort&gt; 
+	&lt;ESDLDefinitionId&gt; 
+	(&lt;ESDLServiceName&gt;) [command options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt"/>
+            <colspec align="left" colwidth="140.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -879,29 +873,29 @@
               <row>
                 <entry>TargetESPBindingPort | TargetESPServiceName</entry>
 
-                <entry>A porta da ligação ESP de destino ou o nome do serviço
-                ESP de destino</entry>
+                <entry>A porta da ligação ESP de destino ou o nome do serviço 
+		ESP de destino</entry>
               </row>
 
               <row>
                 <entry>ESDLDefinitionId</entry>
 
-                <entry>O nome e a versão da definição ESDL para qual o serviço
-                será vinculado (já devem ter sido definidos no Dali)</entry>
+                <entry>O nome e a versão da definição ESDL para qual o serviço 
+		será vinculado (já devem ter sido definidos no Dali)</entry>
               </row>
 
               <row>
                 <entry>ESDLServiceName</entry>
 
-                <entry>Nome do serviço ESDL (como definido na Definição ESDL).
-                Obrigatório se a definição ESDL tiver vários serviços</entry>
+                <entry>Nome do serviço ESDL (como definido na Definição ESDL). 
+		Obrigatório se a definição ESDL tiver vários serviços</entry>
               </row>
 
               <row>
                 <entry>--config &lt;file | XML&gt;</entry>
 
-                <entry>Configuração XML (em linha ou como referência do
-                arquivo)</entry>
+                <entry>Configuração XML (em linha ou como referência do 
+		arquivo)</entry>
               </row>
 
               <row>
@@ -913,15 +907,15 @@
               <row>
                 <entry>-s, --server</entry>
 
-                <entry>O endereço IP ou nome do host do servidor ESP que está
-                executando os serviços do ECL Watch</entry>
+                <entry>O endereço IP ou nome do host do servidor ESP que está 
+		executando os serviços do ECL Watch</entry>
               </row>
 
               <row>
                 <entry>--port</entry>
 
-                <entry>A porta dos serviços do ECL Watch (o padrão é
-                8010)</entry>
+                <entry>A porta dos serviços do ECL Watch (o padrão é 
+		8010)</entry>
               </row>
 
               <row>
@@ -945,8 +939,8 @@
               <row>
                 <entry>--help</entry>
 
-                <entry>mostra as informações de uso para um determinado
-                comando</entry>
+                <entry>mostra as informações de uso para um determinado 
+		comando</entry>
               </row>
 
               <row>
@@ -958,23 +952,24 @@
           </tgroup>
         </informaltable>
 
-        <para><emphasis role="bold"/></para>
+        <para><emphasis role="bold"></emphasis></para>
 
-        <para>Use este comando para vincular um serviço ESP baseado em Dynamic
-        ESDL a uma definição ESDL .</para>
+        <para>Use este comando para vincular um serviço ESP baseado em Dynamic 
+	ESDL a uma definição ESDL .</para>
 
-        <para>Para vincular um serviço ESDL , forneça o nome do processo ESP
-        de destino (processo ESP que hospedará o serviço ESP, como definido na
-        definição ESDL.)</para>
+        <para>Para vincular um serviço ESDL , forneça o nome do processo ESP 
+	de destino (processo ESP que hospedará o serviço ESP, como definido na 
+	definição ESDL.)</para>
 
-        <para>Também é preciso fornecer a porta na qual este serviço está
-        configurado para ser executado (Ligação ESP) ou o nome do serviço que
-        está sendo vinculado.</para>
+        <para>Também é preciso fornecer a porta na qual este serviço está 
+	configurado para ser executado (Ligação ESP) ou o nome do serviço que 
+	está sendo vinculado.</para>
 
-        <para>Também existe a opção de fornecer informações de configuração
-        diretamente em linha ou usando um arquivo de configuração XML na
-        seguinte sintaxe:</para>
+        <para>Também existe a opção de fornecer informações de configuração 
+	diretamente em linha ou usando um arquivo de configuração XML na 
+	seguinte sintaxe:</para>
 
+        
         <programlisting format="linespecific">&lt;Methods&gt;
   &lt;Method name="myMthd1" 
   url="&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
@@ -984,28 +979,30 @@
 
         <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-        <programlisting format="linespecific">esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml 
-                  -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting format="linespecific">esdl bind-service myesp 8003 
+	MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010
+	</programlisting>
 
         <sect3>
           <title>Configurando os métodos ESDL binding</title>
 
-          <para>Os métodos de vinculação DESDL podem, opcionalmente, fornecer
-          informações contextuais à consulta ECL de destino. Essas informações
-          são configuradas anexando os elementos secundários à parte de Método
-          (&lt;Method&gt;...&lt;/Method&gt;) da ligação ESDL .</para>
+          <para>Os métodos de vinculação DESDL podem, opcionalmente, fornecer 
+	  informações contextuais à consulta ECL de destino. Essas informações 
+	  são configuradas anexando os elementos secundários à parte de Método 
+	  (&lt;Method&gt;...&lt;/Method&gt;) da ligação ESDL .</para>
 
-          <para>Por exemplo, o XML a seguir fornece uma amostra de ligação
-          ESDL.</para>
+          <para>Por exemplo, o XML a seguir fornece uma amostra de ligação 
+	  ESDL.</para>
 
-          <programlisting>&lt;Methods&gt; 
-  &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" querytype="roxie" queryname="AddThis"/&gt; 
-&lt;/Methods&gt;</programlisting>
+          <programlisting>&lt;Methods&gt;
+	   &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" 
+	   querytype="roxie" queryname="AddThis"/&gt; 
+	   &lt;/Methods&gt;</programlisting>
 
-          <para>Se este Método exigisse informação contextual, por exemplo
-          sobre gateway, você poderia incluir a estrutura do gateway
-          (&lt;Gateways&gt;...&lt;/Gateways&gt;) descrita da seguinte
-          forma.</para>
+          <para>Se este Método exigisse informação contextual, por exemplo 
+	  sobre gateway, você poderia incluir a estrutura do gateway  
+	  (&lt;Gateways&gt;...&lt;/Gateways&gt;) descrita da seguinte 
+	  forma.</para>
 
           <programlisting>&lt;Methods&gt;
   &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
@@ -1018,19 +1015,19 @@
   &lt;/Method&gt;
 &lt;/Methods&gt;</programlisting>
 
-          <para>O DESDL ESP não apresenta nenhuma restrição no layout dessa
-          informação, apenas que é um XML válido. Isso oferece flexibilidade
-          para incluir informações contextuais em qualquer formato XML
-          válido.</para>
+          <para>O DESDL ESP não apresenta nenhuma restrição no layout dessa 
+	  informação, apenas que é um XML válido. Isso oferece flexibilidade 
+	  para incluir informações contextuais em qualquer formato XML 
+	  válido.</para>
 
-          <para>Desenvolvedores Roxie (consulta) ECL precisam decidir quais
-          informações irão precisar da busca ESP e projetar como essas
-          informações serão apresentadas na configuração de busca ESP e de
-          ligação ESDL.</para>
+          <para>Desenvolvedores Roxie (consulta) ECL precisam decidir quais 
+	  informações irão precisar da busca ESP e projetar como essas 
+	  informações serão apresentadas na configuração de busca ESP e de 
+	  ligação ESDL.</para>
 
-          <para>No exemplo a seguir, toda busca "AddThis” processada pelo ESP
-          e enviada ao Roxie teria as informações do gateway de amostra no
-          contexto da busca.</para>
+          <para>No exemplo a seguir, toda busca "AddThis” processada pelo ESP 
+	  e enviada ao Roxie teria as informações do gateway de amostra no 
+	  contexto da busca.</para>
 
           <programlisting>&lt;?xml version="1.0" encoding="utf-8"?&gt;
 &lt;soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
@@ -1065,42 +1062,66 @@
 &lt;/soap:Body&gt;
 &lt;/soap:Envelope&gt;</programlisting>
 
-          <para>A consulta ECL absorve essas informações e está livre para
-          fazer o que precisa ser feito com elas. Em algumas instâncias, a
-          consulta precisa enviar uma solicitação para um gateway a fim de
-          processar a busca atual de forma apropriada. Ele pode interrogar as
-          informações contextuais para obter as informações adequadas de
-          conexão do gateway e, em seguida, usar essas informações para criar
-          a verdadeira conexão de solicitação de gateway.</para>
+          <para>A consulta ECL absorve essas informações e está livre para 
+	  fazer o que precisa ser feito com elas. Em algumas instâncias, a 
+	  consulta precisa enviar uma solicitação para um gateway a fim de 
+	  processar a busca atual de forma apropriada. Ele pode interrogar as 
+	  informações contextuais para obter as informações adequadas de 
+	  conexão do gateway e, em seguida, usar essas informações para criar 
+	  a verdadeira conexão de solicitação de gateway.</para>
+        </sect3>
+
+        <sect3>
+          <title>Configurando a ligação ESDL para métodos no Modo Proxy</title>
+
+          <para>Você pode especificar que os métodos de serviço ESDL sejam 
+	  intermediados por proxy para outra instância do ESP. Configure o 
+	  proxy na configuração dinâmica associada ao serviço dESDL.</para>
+
+          <para>Sob a tag Methods, onde você adicionaria tags Method, você 
+	  também pode adicionar tags Proxy, como mostrado aqui:</para>
+
+          <programlisting>&lt;Methods&gt; &lt;Method name="myMethod" 
+	  url="http://10.45.22.1:292/somepath"/&gt; 
+	  &lt;Method name="myMethod2" url="http://10.45.22.1:292/somepath"/&gt; 
+	  &lt;Proxy method="myMethod3" forwardTo="http://10.45.22.1:292" /&gt; 
+	  &lt;Proxy method="myWild*" forwardTo="http://10.45.22.1:292" /&gt; 
+	  &lt;/Methods&gt;</programlisting>
+
+          <para>A tag Proxy também suporta curingas:</para>
+
+          <para><programlisting>&lt;Proxy method="myWild*" forwardTo="http://10.45.22.1:292" /&gt; 
+	  </programlisting>
+	  Este exemplo liga todos os métodos que correspondem ao padrão: myWild *</para>
         </sect3>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_list-bindings" role="brk">
         <title>esdl list-bindings</title>
 
-        <para><emphasis role="bold">esdl list-bindings
-        [options]</emphasis></para>
+        <para><emphasis role="bold">esdl list-bindings 
+	[options]</emphasis></para>
 
-        <para><emphasis role="bold"/><informaltable colsep="1" frame="all"
-            rowsep="1">
+        <para><emphasis role="bold"></emphasis><informaltable colsep="1"
+            frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt"/>
+              <colspec align="left" colwidth="125.55pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>O endereço IP ou nome do host do servidor ESP que
-                  está executando os serviços do ECL Watch</entry>
+                  <entry>O endereço IP ou nome do host do servidor ESP que 
+		  está executando os serviços do ECL Watch</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>A porta dos serviços do ECL Watch (o padrão é
-                  8010)</entry>
+                  <entry>A porta dos serviços do ECL Watch (o padrão é 
+		  8010)</entry>
                 </row>
 
                 <row>
@@ -1124,15 +1145,15 @@
                 <row>
                   <entry>--help</entry>
 
-                  <entry>mostra as informações de uso para um determinado
-                  comando</entry>
+                  <entry>mostra as informações de uso para um determinado 
+		  comando</entry>
                 </row>
 
                 <row>
                   <entry>-v, --verbose</entry>
 
-                  <entry>Saída de informações adicionais de
-                  rastreamento</entry>
+                  <entry>Saída de informações adicionais de 
+		  rastreamento</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1148,40 +1169,34 @@
       <sect2 id="CT_ESDL_CLI_esdl_unbind-service" role="brk">
         <title>esdl unbind-service</title>
 
-        <para><emphasis role="bold">esdl unbind-service &lt;ESPProcessName&gt;
-        &lt;ESPBindingName&gt; [options]</emphasis></para>
+        <para><emphasis role="bold">esdl unbind-service 
+	&lt;ESPBindingID&gt; [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt"/>
+            <colspec align="left" colwidth="140.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry>ESPProcessName</entry>
+                <entry>ESPBindingID</entry>
 
-                <entry>O nome do processo ESP de destino</entry>
-              </row>
-
-              <row>
-                <entry>ESPBindingName</entry>
-
-                <entry>O nome da ligação do ESP</entry>
+                <entry>A ID de ligação ESDL</entry>
               </row>
 
               <row>
                 <entry>-s, --server</entry>
 
-                <entry>O endereço IP ou nome do host do servidor ESP que está
-                executando os serviços do ECL Watch</entry>
+                <entry>O endereço IP ou nome do host do servidor ESP que está 
+		executando os serviços do ECL Watch</entry>
               </row>
 
               <row>
                 <entry>--port</entry>
 
-                <entry>A porta dos serviços do ECL Watch (o padrão é
-                8010)</entry>
+                <entry>A porta dos serviços do ECL Watch (o padrão é 
+		8010)</entry>
               </row>
 
               <row>
@@ -1205,8 +1220,8 @@
               <row>
                 <entry>--help</entry>
 
-                <entry>mostra as informações de uso para um determinado
-                comando</entry>
+                <entry>mostra as informações de uso para um determinado 
+		comando</entry>
               </row>
 
               <row>
@@ -1218,73 +1233,54 @@
           </tgroup>
         </informaltable>
 
-        <para>Use este comando para desvincular as ligações baseadas em
-        serviço ESDL .</para>
+        <para>Use este comando para desvincular as ligações baseadas em 
+	serviço ESDL .</para>
 
-        <para>Para desvincular uma determinada ligação ESDL, forneça o nome do
-        processo ESP e a ligação ESP que compõe a ligação ESDL .</para>
+        <para>Para desvincular uma determinada ligação ESDL, forneça o nome do 
+	processo ESP e o ID de ligação ESDL</para>
 
-        <para>As ligações ESDL disponíveis para serem desvinculadas podem ser
-        encontradas ao usar o comando "esdl list-bindings"</para>
+        <para>As ligações ESDL disponíveis para serem desvinculadas podem ser 
+	encontradas ao usar o comando "esdl list-bindings"</para>
 
         <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-        <programlisting>esdl unbind-service myesp myServiceBinding </programlisting>
+        <programlisting>esdl unbind-service myesp.8003.MathService </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esd_bind-method" role="brk">
         <title>esdl bind-method</title>
 
-        <para><emphasis role="bold">esdl bind-method
-        &lt;TargetESPProcessName&gt; &lt;TargetESPBindingName&gt;
-        &lt;TargetServiceName&gt; &lt;TargetServiceDefVersion&gt;
-        &lt;TargetMethodName&gt; [options]</emphasis></para>
+        <para><emphasis role="bold">esdl bind-method 
+	&lt;TargetESDLBindingID&gt; 
+	&lt;TargetMethodName&gt; 
+	[options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt"/>
+            <colspec align="left" colwidth="140.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry>TargetESPProcessName</entry>
+                <entry>TargetESDLBindingID</entry>
 
-                <entry>O nome do processo ESP de destino</entry>
-              </row>
-
-              <row>
-                <entry>TargetESPBindingName</entry>
-
-                <entry>Nome da ligação ESP de destino</entry>
-              </row>
-
-              <row>
-                <entry>TargetServiceName</entry>
-
-                <entry>Nome do serviço a ser vinculado (já deve ter sido
-                definido no dali.)</entry>
-              </row>
-
-              <row>
-                <entry>TargetServiceDefVersion</entry>
-
-                <entry>A versão da definição ESDL do serviço de destino (deve
-                estar presente no dali)</entry>
+                <entry>O id da ligação ESDL de destino 
+		(deve existir em Dali)</entry>
               </row>
 
               <row>
                 <entry>TargetMethodName</entry>
 
-                <entry>O nome do método de destino (deve existir na definição
-                ESDL de serviço)</entry>
+                <entry>O nome do método de destino (deve existir na definição 
+		ESDL de serviço)</entry>
               </row>
 
               <row>
                 <entry>--config &lt;file | XML&gt;</entry>
 
-                <entry>Configuração XML (em linha ou como referência do
-                arquivo)</entry>
+                <entry>Configuração XML (em linha ou como referência do 
+		arquivo)</entry>
               </row>
 
               <row>
@@ -1296,15 +1292,15 @@
               <row>
                 <entry>-s, --server</entry>
 
-                <entry>O endereço IP ou nome do host do servidor ESP que está
-                executando os serviços do ECL Watch</entry>
+                <entry>O endereço IP ou nome do host do servidor ESP que está 
+		executando os serviços do ECL Watch</entry>
               </row>
 
               <row>
                 <entry>--port</entry>
 
-                <entry>A porta dos serviços do ECL Watch (o padrão é
-                8010)</entry>
+                <entry>A porta dos serviços do ECL Watch (o padrão é 
+		8010)</entry>
               </row>
 
               <row>
@@ -1328,8 +1324,8 @@
               <row>
                 <entry>--help</entry>
 
-                <entry>mostra as informações de uso para um determinado
-                comando</entry>
+                <entry>mostra as informações de uso para um determinado 
+		comando</entry>
               </row>
 
               <row>
@@ -1341,87 +1337,73 @@
           </tgroup>
         </informaltable>
 
-        <para>Use este comando para publicar o ligações baseadas em serviço
-        ESDL .</para>
+        <para>Use este comando para publicar o ligações baseadas em serviço 
+	ESDL .</para>
 
-        <para>Para vincular um serviço ESDL , forneça o nome do processo ESP
-        de destino (processo ESP que hospedará o serviço ESP, como definido na
-        definição ESDL.)</para>
+        <para>Para vincular um serviço ESDL , forneça o nome do processo ESP 
+	de destino (processo ESP que hospedará o serviço ESP, como definido 
+	na definição ESDL.)</para>
 
-        <para>Também é preciso fornecer a porta na qual este serviço está
-        configurado para ser executado (Ligação ESP) ou o nome do serviço que
-        está sendo vinculado.</para>
+        <para>Também é preciso fornecer a porta na qual este serviço está 
+	configurado para ser executado (Ligação ESP) ou o nome do serviço que 
+	está sendo vinculado.</para>
 
-        <para>Também existe a opção de fornecer informações de configuração
-        diretamente em linha ou usando um arquivo de configuração XML na
-        seguinte sintaxe:</para>
+        <para>Também existe a opção de fornecer informações de configuração 
+	diretamente em linha ou usando um arquivo de configuração XML 
+	na seguinte sintaxe:</para>
 
-        <programlisting>&lt;Methods&gt;
-  &lt;Method name="myMthd1" 
-  url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
-  &lt;Method name="myMthd2" 
-  url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
-&lt;/Methods&gt;</programlisting>
+        <programlisting>&lt;Methods&gt; 
+	&lt;Method name="myMthd1" 
+	url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt; 
+	&lt;Method name="myMthd2" 
+	url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt; 
+	&lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-        <programlisting>esdl bind-service myesp 8003 MathSvc.1 
-        MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting>esdl bind-method myesp.8003.MathService 
+	AddThis --config myMethods.xml</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_unbind-method" role="brk">
         <title>esdl unbind-method</title>
 
-        <para><emphasis role="bold">esdl unbind-method &lt;ESPProcessName&gt;
-        &lt;ESPBindingName&gt; &lt;ESDLServiceName&gt; &lt;MethodName&gt;
-        [options]</emphasis></para>
+        <para><emphasis role="bold">esdl unbind-method 
+	&lt;ESDLBindingID&gt;  &lt;MethodName&gt; 
+	[options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt"/>
+            <colspec align="left" colwidth="140.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry>ESPProcessName</entry>
+                <entry>ESDLBindingID</entry>
 
-                <entry>O nome do processo ESP de destino</entry>
-              </row>
-
-              <row>
-                <entry>ESPBindingName</entry>
-
-                <entry>O nome da ligação ESP de destino associado a este
-                serviço.</entry>
-              </row>
-
-              <row>
-                <entry>ESDLServiceName</entry>
-
-                <entry>O nome do serviço ESDL associado com o método de
-                destino.</entry>
+                <entry>O ID da ligação ESDL</entry>
               </row>
 
               <row>
                 <entry>MethodName</entry>
 
-                <entry>O nome do método de destino (deve existir na definição
-                ESDL de serviço)</entry>
+                <entry>O nome do método de destino (deve existir na definição 
+		ESDL de serviço)</entry>
               </row>
 
               <row>
                 <entry>-s, --server</entry>
 
-                <entry>O endereço IP ou nome do host do servidor ESP que está
-                executando os serviços do ECL Watch</entry>
+                <entry>O endereço IP ou nome do host do servidor ESP que está 
+		executando os serviços do ECL Watch</entry>
               </row>
 
               <row>
                 <entry>--port</entry>
 
-                <entry>A porta dos serviços do ECL Watch (o padrão é
-                8010)</entry>
+                <entry>A porta dos serviços do ECL Watch (o padrão é 
+		8010)</entry>
               </row>
 
               <row>
@@ -1445,8 +1427,8 @@
               <row>
                 <entry>--help</entry>
 
-                <entry>mostra as informações de uso para um determinado
-                comando</entry>
+                <entry>mostra as informações de uso para um determinado 
+		comando</entry>
               </row>
 
               <row>
@@ -1458,53 +1440,50 @@
           </tgroup>
         </informaltable>
 
-        <para>Use este comando para desvincular uma configuração de método
-        associada com uma determinada ligação ESDL .</para>
-
-        <para>Para desvincular um método, forneça o nome do processo ESP de
-        destino (o ESP que hospeda o serviço.)</para>
-
-        <para>Também é preciso fornecer a ligação ESP na qual este serviço
-        está configurado para ser executado, o nome do serviço ESDL, e o nome
-        do método que está sendo desvinculado.</para>
+        <para>Use este comando para desvincular uma configuração de método 
+	associada a uma determinada ligação ESDL. 
+	Para desvincular um método, forneça o 
+	ID da ligação ESDL e o nome do método que você está desvinculando.</para>
 
         <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-        <programlisting>esdl unbind-method myesp myespbinding WsMyService mymethod </programlisting>
+        <programlisting>esdl unbind-method myesp.8003.MathService AddThis </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_get-binding" role="brk">
         <title>esdl list-bindings</title>
 
-        <para><emphasis role="bold">esdl get-binding &lt;ESDLBindingId&gt;
-        [options]</emphasis></para>
+        <para><emphasis role="bold">esdl get-binding &lt;ESDLBindingId&gt; 
+	[options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt"/>
+            <colspec align="left" colwidth="140.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
                 <entry>ESDLBindingId</entry>
 
-                <entry>A id de vinculação ESDL de destino
-                &lt;espprocessname&gt;.&lt;espbindingname&gt;</entry>
+                <entry>O ID de ligação de ESDL de destino 
+		&lt;ESPProcessName&gt;. 
+		&lt;Port&gt;. 
+		&lt;ServiceName&gt;</entry>
               </row>
 
               <row>
                 <entry>-s, --server</entry>
 
-                <entry>O endereço IP ou nome do host do servidor ESP que está
-                executando os serviços do ECL Watch</entry>
+                <entry>O endereço IP ou nome do host do servidor ESP que está 
+		executando os serviços do ECL Watch</entry>
               </row>
 
               <row>
                 <entry>--port</entry>
 
-                <entry>A porta dos serviços do ECL Watch (o padrão é
-                8010)</entry>
+                <entry>A porta dos serviços do ECL Watch (o padrão é 
+		8010)</entry>
               </row>
 
               <row>
@@ -1528,8 +1507,8 @@
               <row>
                 <entry>--help</entry>
 
-                <entry>mostra as informações de uso para um determinado
-                comando</entry>
+                <entry>mostra as informações de uso para um determinado 
+		comando</entry>
               </row>
 
               <row>
@@ -1541,21 +1520,18 @@
           </tgroup>
         </informaltable>
 
-        <para>Use este comando para obter ligações baseadas em serviço DESDL
-        .</para>
+        <para>Use este comando para obter ligações baseadas em serviço DESDL 
+	.</para>
 
-        <para>Para especificar a configuração de serviço baseada em DESDL de
-        destino, forneça o processo ESP de destino (nome do processo esp ou
-        endereço IP da máquina) que hospeda o serviço.</para>
-
-        <para>Também é preciso fornecer a porta na qual este serviço está
-        configurado para ser executado e o nome do serviço.</para>
+        <para>Para especificar a configuração de serviço baseada em DESDL de 
+	destino, forneça o ID de destino da ligação ESDL, que normalmente está 
+	no formato &lt;ESPProcessName&gt;. &lt;Port&gt;. &lt;ServiceName&gt;</para>
 
         <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-        <programlisting>esdl get-binding myesp.dESDL_Service -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting>esdl get-binding myesp.8003.MathService -s nnn.nnn.nnn.nnn -p 8010</programlisting>
 
-        <para/>
+        <para></para>
       </sect2>
     </sect1>
   </chapter>

@@ -95,11 +95,39 @@
       <programlisting>http://ip:port/WsEcl/submit/query/<emphasis role="bold">&lt;targetCluster&gt;</emphasis>/<emphasis
           role="bold">&lt;query&gt;</emphasis>?_jobname=<emphasis role="bold">&lt;jobname&gt;</emphasis></programlisting>
 
-      <para>Isso é útil para o teste de consultas. Também é adequado para
-      oferecer acesso em tempo real aos usuários. Além disso é possível usar o
-      modo de proxy para ignorar a formatação de resposta WsECL e formatar
-      diretamente a resposta SOAP do Roxie. Consulte <link
+<para>Isso é útil para o teste de consultas. Também é adequado para 
+      oferecer acesso em tempo real aos usuários. Além disso é possível usar o 
+      modo de proxy para ignorar a formatação de resposta WsECL e formatar 
+      diretamente a resposta SOAP do Roxie. Consulte <link 
       linkend="proxymode">WsECL e Modo proxy</link></para>
+
+      <sect3>
+        <title>Formulário WsECL</title>
+
+        <para>O serviço WsECL fornece um formulário interface para sua c
+	onsultas publicadas. Esta formulário também fornece algumas 
+	opções que são úteis em solução de problemas ou otimização 
+	das consultas. </para>
+
+        <para><graphic
+        fileref="../../images/wseclCreateWUOption.jpg" /></para>
+
+        <para>Você pode optar por “chamar” uma consulta (por padrão) 
+	ou criar uma workunit. </para>
+
+        <para>Normalmente, você fornece entradas para os parâmetros 
+	de consultar, então envia. Esse procedimento faz a consulta e 
+	obtém os resultados imediatamente.
+        </para>
+
+        <para>Se você quiser examina a consulta com maiores detalhes, 
+	você fornece os parâmetros de entrada, selecione 
+	<emphasis role="bold">Create Workunit</emphasis>, 
+	então envie. Isso também fornece resultados, mas cria uma 
+	workunit que poder ser analisa posteriormente no ECL Watch. 
+	Isso possibilita a visualização gráfica da workunit, tempo, 
+	variações e outros detalhes. </para>
+      </sect3>
     </sect2>
 
     <sect2>
@@ -135,8 +163,11 @@
         <para>onde <emphasis>nnn.nnn.nnn.nnn</emphasis> é o endereço IP (ou
         nome do DNS) desse servidor ESP com a ligação para o WsECL.</para>
 
-        <para>8002 é a porta padrão. Se você modificou uma configuração de
-        porta, use a porta selecionada para essa finalidade.</para>
+        <para>8002 é a porta padrão. Se você modificou uma configuração de 
+	porta, use a porta selecionada para essa finalidade. 
+	Com a versão 7.0 do HPCC, você precisará inserir suas 
+	credenciais para efetuar o login na interface e sua sessão será 
+	bloqueada após um período de inatividade (configurável).</para>
 
         <para>A sintaxe e a funcionalidade do próprio protocolo SOAP também
         estão fora do escopo deste documento. A lista a seguir de recursos
@@ -291,9 +322,9 @@
     <sect2>
       <title>Acesso Direto VIA JSON</title>
 
-      <para>Para obter uma resposta JSONP , adicione a decoração <emphasis
-      role="bold">&amp;jsonp=&lt;myfunction&gt;</emphasis> ao URL. Isso
-      retorna uma resposta json encapsulada em JavaScript:</para>
+      <para>Para obter uma resposta JSONP, adicione  <emphasis
+      role="bold">&amp;jsonp=&lt;myfunction&gt;</emphasis>  a URL.
+      Isso retorna uma resposta json encapsulada em JavaScript:</para>
 
       <para><programlisting>myfunction("{"data_1": "hello world", "data_2": ["the","sun","is","up"]}");</programlisting></para>
     </sect2>

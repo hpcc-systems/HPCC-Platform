@@ -4,7 +4,7 @@
 <sect1 id="ASIN">
   <title>ASIN</title>
 
-  <para><emphasis role="bold">ASIN<indexterm>
+  <para role="syntax"><emphasis role="bold">ASIN<indexterm>
       <primary>ASIN</primary>
     </indexterm><indexterm>
       <primary>ASIN function</primary>
@@ -15,7 +15,7 @@
       <tgroup cols="2">
         <colspec colwidth="79.65pt" />
 
-        <colspec colwidth="309.15pt" />
+        <colspec />
 
         <tbody>
           <row>

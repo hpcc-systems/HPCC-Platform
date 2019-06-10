@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WHEN_Function">
@@ -14,15 +14,15 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="122.40pt"/>
+          <colspec colwidth="122.40pt" />
 
-          <colspec/>
+          <colspec />
 
           <tbody>
             <row>
               <entry><emphasis>trigger</emphasis></entry>
 
-              <entry>Um dataset ou ação que inicializa a
+              <entry>Um dataset ou ação que inicializa a 
               <emphasis>ação</emphasis>.</entry>
             </row>
 
@@ -35,35 +35,35 @@
             <row>
               <entry><emphasis role="bold">BEFORE</emphasis></entry>
 
-              <entry>Opcional. Especifica uma <emphasis>ação</emphasis> que
-              deve ser executada antes da leitura da entrada.</entry>
+              <entry>Opcional. Especifica uma  <emphasis>ação</emphasis>  que 
+	      deve ser executada antes da leitura da entrada.</entry>
             </row>
 
             <row>
               <entry><emphasis role="bold">SUCCESS</emphasis></entry>
 
-              <entry>Opcional. Especifica uma <emphasis>ação</emphasis>
-              especifica uma ação que só deve ser executada mediante ao
-              SUCCESS do <emphasis>trigger</emphasis> (p.ex., quando os
-              LIMITES não são excedidos).</entry>
+              <entry>Opcional. Especifica uma <emphasis>ação</emphasis> 
+	      especifica uma ação que só deve ser executada mediante ao 
+	      SUCCESS do <emphasis>trigger</emphasis>  (p.ex., quando os 
+	      LIMITES não são excedidos).</entry>
             </row>
 
             <row>
               <entry><emphasis role="bold">FAILURE</emphasis></entry>
 
-              <entry>Opcional. Especifica uma <emphasis>ação</emphasis> que só
-              deve ser executada mediante a FALHA FAILURE do
-              <emphasis>acionador</emphasis> (p.ex., quando o LIMITE LIMIT é
-              excedido).</entry>
+              <entry>Opcional. Especifica uma  <emphasis>ação</emphasis>  que só 
+	      deve ser executada mediante a FALHA FAILURE do 
+              <emphasis>trigger</emphasis> (p.ex., quando o LIMITE LIMIT é 
+	      excedido).</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
 
-    <para>A função <emphasis role="bold">WHEN </emphasis> associa uma
-    <emphasis>ação</emphasis> a um <emphasis>acionador </emphasis> (dataset ou
-    ação) para que quando o <emphasis>acionador</emphasis> for executado, a
-    <emphasis>ação</emphasis> também seja executada. Isso permite o
+    <para>A função  <emphasis role="bold">WHEN </emphasis> associa uma 
+    <emphasis>ação</emphasis>  a um  <emphasis>acionador </emphasis> (dataset ou 
+    ação) para que quando o  <emphasis>acionador</emphasis>  for executado, a 
+    <emphasis>ação</emphasis>  também seja executada. Isso permite o 
     agendamento de tarefas com base em acionadores.</para>
 
     <para>Exemplo:</para>
@@ -86,7 +86,7 @@ OUTPUT(z);
 </programlisting>
   </informalexample>
 
-  <para>Ver também: <link linkend="FUNCTION_Structure">Estrutura
+  <para>Ver também: <link linkend="FUNCTION_Structure">Estrutura 
   FUNCTION</link>, <link linkend="WHEN">WHEN</link>, <link
   linkend="WAIT">WAIT</link></para>
 </sect1>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FUNCTION_Structure">
@@ -13,8 +13,8 @@
       <primary>FUNCTION</primary>
     </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
 
-  <para><emphasis role="bold"/><emphasis>code</emphasis> <emphasis
-  role="bold"/></para>
+  <para><emphasis role="bold"></emphasis><emphasis>code</emphasis> <emphasis
+  role="bold"></emphasis></para>
 
   <para><emphasis role="bold"> RETURN</emphasis>
   <emphasis>retval</emphasis>;</para>
@@ -23,17 +23,16 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
           <entry><emphasis>resulttype</emphasis></entry>
 
-          <entry>O tipo do valor de retorno da função. Se omitido, o tipo será
-          obtido implicitamente da expressão <emphasis>retval</emphasis>
-          .</entry>
+          <entry>O tipo do valor de retorno da função. Se omitido, o tipo será 
+	  obtido implicitamente da expressão  <emphasis>retval</emphasis> .</entry>
         </row>
 
         <row>
@@ -45,18 +44,18 @@
         <row>
           <entry><emphasis>parameterlist</emphasis></entry>
 
-          <entry>Uma lista separada por vírgulas com os parâmetros a serem
-          passados para a <emphasis>função</emphasis>. Estão disponíveis para
-          todos os atributos definidos no <emphasis>code</emphasis> da
-          FUNCTION.</entry>
+          <entry>Uma lista separada por vírgulas com os parâmetros a serem 
+	  passados para a <emphasis>função</emphasis>. Estão disponíveis para 
+	  todos os atributos definidos no <emphasis>code</emphasis> da 
+	  FUNCTION.</entry>
         </row>
 
         <row>
           <entry><emphasis>code</emphasis></entry>
 
-          <entry>As definições de atributos locais que compõem a função. Os
-          atributos não podem ser EXPORT ou SHARED, mas podem incluir ações
-          (como OUTPUT).</entry>
+          <entry>As definições de atributos locais que compõem a função. Os 
+	  atributos não podem ser EXPORT ou SHARED, mas podem incluir ações 
+	  (como OUTPUT).</entry>
         </row>
 
         <row>
@@ -71,8 +70,8 @@
         <row>
           <entry><emphasis>retval</emphasis></entry>
 
-          <entry>O valor, a expressão, o conjunto de registros, a linha
-          (registro) ou a ação a ser retornada.</entry>
+          <entry>O valor, a expressão, o conjunto de registros, a linha 
+	  (registro) ou a ação a ser retornada.</entry>
         </row>
       </tbody>
     </tgroup>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_LOOP-_BREAK">
@@ -17,7 +17,8 @@
     </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
 
   <para><emphasis role="bold">[ </emphasis><emphasis>statements
-  </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold"/></para>
+  </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold">
+  </emphasis></para>
 
   <para><emphasis role="bold">#END<indexterm>
       <primary>#END</primary>
@@ -25,16 +26,16 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="81.50pt"/>
+        <colspec colwidth="81.50pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>statements</emphasis></entry>
 
-            <entry>As declarações de modelos a serem executadas a cada
-            vez.</entry>
+            <entry>As declarações de modelos a serem executadas a cada 
+	    vez.</entry>
           </row>
 
           <row>
@@ -52,9 +53,9 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A estrutura <emphasis role="bold">#LOOP </emphasis> itera executando
-  <emphasis>statements</emphasis> a cada passagem pelo loop até que uma
-  declaração #BREAK seja executada. Se não ocorrer um #BREAK, o #LOOP iterará
+  <para>A estrutura  <emphasis role="bold">#LOOP </emphasis> itera executando  
+  <emphasis>statements</emphasis>  a cada passagem pelo loop até que uma 
+  declaração #BREAK seja executada. Se não ocorrer um #BREAK, o #LOOP iterará 
   infinitamente.</para>
 
   <para>Exemplo:</para>

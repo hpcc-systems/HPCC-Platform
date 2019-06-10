@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FAILURE">
@@ -14,9 +14,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.65pt"/>
+        <colspec colwidth="79.65pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -40,13 +40,13 @@
       </tgroup>
     </informaltable></para>
 
-  <para>O serviço <emphasis role="bold">FAILURE </emphasis>executa a
-  <emphasis>manipulação</emphasis> do atribute quanto a
-  <emphasis>expressão</emphasis> falha. Teoricamente, FAILURE executa em
-  paralelo com o retorno com falha do resultado. Esse serviço implicitamente
-  faz com que o <emphasis>atributo</emphasis> seja avaliado em um escopo
-  global em vez de escopo de função. Disponível apenas se os serviços de fluxo
-  de trabalho estiverem ativados (consulte #OPTION(workflow)).</para>
+  <para>O serviço  <emphasis role="bold">FAILURE </emphasis>executa a 
+  <emphasis>manipulação</emphasis>  do atribute quanto a 
+  <emphasis>expressão</emphasis>  falha. Teoricamente, FAILURE executa em 
+  paralelo com o retorno com falha do resultado. Esse serviço implicitamente 
+  faz com que o  <emphasis>atributo</emphasis>  seja avaliado em um escopo
+   global em vez de escopo de função. Disponível apenas se os serviços de fluxo 
+   de trabalho estiverem ativados (consulte #OPTION(workflow)).</para>
 
   <para>Exemplo:</para>
 
@@ -57,6 +57,6 @@
                     SystemsPersonel.email,'ouch.htm'));
 </programlisting>
 
-  <para>Ver também: <link linkend="SUCCESS">SUCCESS</link>, <link
+  <para>Ver também: <link linkend="SUCCESS">SUCCESS</link>, <link 
   linkend="RECOVERY">RECOVERY</link></para>
 </sect1>

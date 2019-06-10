@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TRUNCATE">
@@ -11,9 +11,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.10pt"/>
+        <colspec colwidth="79.10pt" />
 
-        <colspec colwidth="273.70pt"/>
+        <colspec colwidth="273.70pt" />
 
         <tbody>
           <row>
@@ -33,7 +33,7 @@
 
   <para>A <emphasis role="bold"> função </emphasis> TRUNCATE <indexterm>
       <primary>TRUNCATE Function</primary>
-    </indexterm> retorna a parte inteira de
+    </indexterm>  retorna a parte inteira de 
   <emphasis>real_value</emphasis>.</para>
 
   <para>Exemplo:</para>
@@ -42,6 +42,6 @@
 INTEGER4 MyVal := TRUNCATE(SomeRealValue); // MyVal is 3
 </programlisting>
 
-  <para>Ver também: <link linkend="ROUND">ROUND</link>, <link
+  <para>Ver também: <link linkend="ROUND">ROUND</link>, <link 
   linkend="ROUNDUP">ROUNDUP</link></para>
 </sect1>

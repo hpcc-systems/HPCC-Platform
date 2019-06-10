@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SIZEOF">
@@ -16,25 +16,25 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.00pt"/>
+        <colspec colwidth="78.00pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>data</emphasis></entry>
 
-            <entry>O nome de um dataset, uma estrutura RECORD, o nome de um
-            campo totalmente qualificado, ou uma expressão de string
-            constante.</entry>
+            <entry>O nome de um dataset, uma estrutura RECORD, o nome de um 
+	    campo totalmente qualificado, ou uma expressão de string 
+	    constante.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">MAX</emphasis></entry>
 
-            <entry>Especifica que os dados são de comprimento variável (que
-            contêm datasets secundários) e que o valor a ser retornado possui
-            tamanho máximo.</entry>
+            <entry>Especifica que os dados são de comprimento variável (que 
+	    contêm datasets secundários) e que o valor a ser retornado possui 
+	    tamanho máximo.</entry>
           </row>
 
           <row>
@@ -46,9 +46,9 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">SIZEOF </emphasis> retorna o número
-  total de bytes definido para armazenar a estrutura de dados ou campo
-  especificados. <emphasis>data</emphasis> Estrutura ou Campo.</para>
+  <para>A função  <emphasis role="bold">SIZEOF </emphasis> retorna o número 
+  total de bytes definido para armazenar a estrutura de 
+  <emphasis>dados</emphasis>  ou campos especificados.</para>
 
   <para>Exemplo:</para>
 

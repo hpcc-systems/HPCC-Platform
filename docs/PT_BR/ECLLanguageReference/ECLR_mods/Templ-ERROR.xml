@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_ERROR">
@@ -11,25 +11,25 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="81.55pt"/>
+        <colspec colwidth="81.55pt" />
 
-        <colspec colwidth="271.25pt"/>
+        <colspec colwidth="271.25pt" />
 
         <tbody>
           <row>
             <entry><emphasis>ERROR ( errorcode , errormessage )
             ;</emphasis></entry>
 
-            <entry>Uma constante de string que contém a mensagem a ser
-            exibida.</entry>
+            <entry>Uma constante de string que contém a mensagem a ser 
+	    exibida.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A declaração <emphasis role="bold">#ERROR </emphasis> interrompe
-  imediatamente o processamento na tarefa e exibe <emphasis>
-  errormessage</emphasis>. Essa declaração pode ser usada fora de um escopo
+  <para>A declaração  <emphasis role="bold">#ERROR </emphasis> interrompe 
+  imediatamente o processamento da workunit e exibe <emphasis> 
+  errormessage</emphasis>. Essa declaração pode ser usada fora de um escopo 
   XML e não exige um LOADXML anterior para instanciar um escopo XML.</para>
 
   <para>Exemplo:</para>

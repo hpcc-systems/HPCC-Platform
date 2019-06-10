@@ -49,7 +49,7 @@
 
       <para/>
 
-      <para><emphasis role="redbold"/></para>
+      
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -60,7 +60,7 @@
                 xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-    <corpname>SSystems</corpname>
+    <corpname>HPCC Systems</corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
@@ -76,10 +76,10 @@
   <chapter id="InstaCloud_Intro">
     <title>Introdução</title>
 
-    <para>Este guia fornece informações e orientação sobre como executar a
-    plataforma HPCC Systems<superscript>®</superscript> dentro do Amazon Web
-    Services (AWS) Elastic Cloud (EC2) usando a página Instant Cloud para AWS
-    .</para>
+    <para>Este guia fornece detalhes e orientações sobre como executar a plataforma 
+    HPCC Systems <superscript>®</superscript> dentro de um 
+    Elastic Cloud (EC2) da Amazon Web Services (AWS) 
+    usando a página Instant Cloud for AWS.</para>
 
     <para>Isso permite <emphasis role="bold">instanciar</emphasis> e executar
     clusters do HPCC Systems de diferentes tamanhos em tempo real.</para>
@@ -162,29 +162,29 @@
         </listitem>
 
         <listitem>
-          <para>Uma estação de trabalho com conexão à Internet para acessar o
-          Amazon Web Services; A estação de trabalho pode ser um:</para>
+           <para>Uma estação de trabalho com conexão à Internet para acessar o 
+	  Amazon Web Services; Pode ser também uma estação de trabalho </para>
 
           <para><itemizedlist>
               <listitem>
-                <para><emphasis>PC (Computador) Windows ou </emphasis></para>
+                <para><emphasis>Windows PC </emphasis></para>
               </listitem>
 
               <listitem>
-                <para><emphasis>Linux com o Eclipse IDE e o plugin ECL para
-                Eclipse (disponível em breve)</emphasis></para>
+                <para><emphasis> ou Linux com  ECL IDE ou VS Code, ou
+                </emphasis></para>
               </listitem>
 
               <listitem>
-                <para><emphasis>Mac<superscript/> com o Eclipse IDE e o plugin
-                ECL para Eclipse (disponível em breve)</emphasis></para>
+                <para><emphasis>uma estação Mac<superscript>®</superscript>  
+		com o ECL IDE ou o VS Code </emphasis></para>
               </listitem>
             </itemizedlist></para>
         </listitem>
 
         <listitem>
-          <para>Um navegador de Internet (Firefox, Internet Explorer, ou
-          Chrome)</para>
+          <para>Um navegador Web (Firefox, Internet Explorer, 
+	  Safari ou Chrome)</para>
         </listitem>
       </itemizedlist>
 
@@ -409,8 +409,8 @@
           </listitem>
 
           <listitem>
-            <para>Pressione o botão <emphasis role="bold">Launch
-            Cluster</emphasis> .</para>
+            <para>Pressione o botão  <emphasis role="bold">Launch 
+	    Cluster</emphasis>.</para>
 
             <para>A janela <emphasis role="bold">Cluster Launch Log
             </emphasis> será exibida. Essa janela mostra os detalhes durante a
@@ -445,9 +445,9 @@
             Clusters</emphasis> para ver os clusters que estão sendo
             executados.</para>
 
-            <para>Essa lista possui links para a página do ECL Watch, para a
-            página Iniciar Log, para o arquivo de configuração do cluster,
-            para a lista de IPs, e para a chave SSH.</para>
+            <para>Essa lista possui links para a página do ECL Watch, 
+	    para a página Log, para o arquivo de configuração do cluster, 
+	    para a lista de IPs, e para a chave SSH.</para>
 
             <para>Também possui um link que permite <emphasis
             role="bold">Encerrar</emphasis> a instanciação do cluster.</para>
@@ -563,7 +563,7 @@
 --></para>
 
         <sect3 id="IC_ViewClusters">
-          <title>Visualizar Clusters</title>
+          <title>View Clusters</title>
 
           <para>Através da página <emphasis role="bold">View
           Clusters</emphasis> você pode acessar a Data/Hora de inicialização
@@ -630,8 +630,8 @@
               </listitem>
 
               <listitem>
-                <para>Clique no link <emphasis role="bluebold">arquivo pem
-                </emphasis> para baixar a chave.</para>
+                <para>Clique no link <emphasis role="bluebold">file1, file2
+                </emphasis> clique no link arquivo pem para baixar a chave.</para>
 
                 <para>Este arquivo deve ser armazenado em um lugar
                 seguro.</para>
@@ -680,6 +680,15 @@
         <para>O ECL IDE precisa ser instalado apenas uma vez. Pule esta seção
         caso ele já tenha sido instalado.</para>
 
+<para><variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>O ECL IDE funciona somente em ambientes Windows.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
         <para><orderedlist>
             <listitem>
               <para>Em um navegador da Internet, conecte-se ao ECL Watch
@@ -714,7 +723,7 @@
               <?dbfo keep-together="always"?>
 
               <para>No menu ECL Watch Advanced, selecione o link <emphasis
-              role="bold">Additional Resources </emphasis>.</para>
+              role="bold">Downloads</emphasis>.</para>
 
               <para><figure>
                   <title>Página ECL Watch Resource</title>
@@ -729,23 +738,25 @@
 
               <para>Siga o link para a página do portal de download do HPCC
               System.</para>
+<para>Como alternativa, você pode usar seu navegador para ir diretamente para  <ulink
+              url="https://hpccsystems.com/download">https://hpccsystems.com/download</ulink></para>
             </listitem>
 
             <listitem>
-              <para>Clique no link <emphasis role="bold">ECL IDE </emphasis>.
-              (ao lado direito da coluna Download, abaixo do título Free
-              Community Edition)</para>
+              <para>Siga as instruções nessa página para fazer o download do 
+              <emphasis role="bold">ECL IDE e as Ferramentas do Cliente 
+	      para Windows</emphasis>.</para>
+
             </listitem>
 
             <listitem>
-              <para>Siga as instruções na página da Internet para instalar o
-              ECL IDE.</para>
+              <para>Instale o  <emphasis role="bold">IDE ECL e as 
+	      Ferramentas Cliente para Windows</emphasis>.</para>
             </listitem>
 
             <listitem>
-              <para>Instale o ECL IDE, seguindo os prompts no programa de
-              instalação. Após o ECL IDE ter sido instalado com sucesso, você
-              pode prosseguir.</para>
+              <para>Depois que o ECL IDE for instalado com sucesso, você 
+	      poderá continuar.</para>
             </listitem>
           </orderedlist></para>
       </sect2>
@@ -1126,11 +1137,11 @@ OUTPUT(L);</programlisting></para>
             <?dbfo keep-together="always"?>
 
             <para>No ECL Watch, clique no ícone <emphasis
-            role="bold">Files</emphasis> e no link <emphasis
-            role="bold">Landing Zones</emphasis> localizados no submenu de
+            role="bold">File</emphasis> e em <emphasis
+            role="bold">Landing Zones</emphasis> no submenu de
             navegação.</para>
 
-            <para>Pressione o botão de ação <emphasis role="bold">Upload
+            <para>Pressione o botão <emphasis role="bold">Upload
             </emphasis>.</para>
 
             <para><figure>
@@ -1149,20 +1160,10 @@ OUTPUT(L);</programlisting></para>
             <para>Uma caixa de diálogo será aberta. <emphasis
             role="bold">Navegue</emphasis> e selecione o arquivo a ser enviado
             e pressione o botão <emphasis role="bold">Open</emphasis> .
-            <figure>
-                <title>O arquivo selecionado deve aparecer no</title>
 
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/LZimg04a.jpg"
-                               vendor="eclwatchSS"/>
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-
-            <para>campo <emphasis role="bold"> File Name</emphasis> . O
-            arquivo de dados possui o seguinte nome: <emphasis
-            role="bold">2of12.txt.</emphasis>.</para>
+            <para>O arquivo selecionado deve aparecer no campo  <emphasis
+            role="bold">File Name</emphasis>. O arquivo de dados possui o seguinte nome: 
+            <emphasis role="bold">2of12.txt</emphasis>.</para>
           </listitem>
 
           <listitem>
@@ -1178,8 +1179,8 @@ OUTPUT(L);</programlisting></para>
 
         <para>Para usar o arquivo de dados em seu Thor do HPCC System, é
         preciso fazer o "spray” (distribuir) desse arquivo para todos os nós.
-        O <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> um
-        spray ou importação é a transferência de um arquivo de dados de um
+        O <emphasis>spray</emphasis> ou <emphasis>importação</emphasis>
+        é a transferência de um arquivo de dados de um
         local (como a zona de entrada de arquivos) para diversas partes do
         arquivo ou nós em um cluster.</para>
 
@@ -1198,13 +1199,13 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Clique no hiperlink <emphasis
-            role="bold">Arquivos</emphasis> e no link <emphasis
-            role="bold">Zona de entrada de arquivos</emphasis> localizados no
-            submenu de navegação. Selecione a zona de entrada de arquivos
-            apropriada (caso haja mais de uma zona de entrada de arquivos).
-            Clique na seta à esquerda da sua zona de entrada de arquivos para
-            expandir.</para>
+            <para>Clique no 
+	    ícone <emphasis role="bold">Files</emphasis> e no link <emphasis 
+	    role="bold">Landing Zones (Zona de entrada de arquivos)</emphasis> localizados no 
+	    submenu de navegação. Selecione a zona de entrada de arquivos 
+	    apropriada (caso haja mais de uma zona de entrada de arquivos). 
+	    Clique na seta à esquerda da sua zona de entrada de arquivos para 
+	    expandir.</para>
           </listitem>
 
           <listitem>
@@ -1238,7 +1239,7 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Preencha o Targer Scope como <emphasis>
+            <para>Preencha o Target Scope (Escopo de destino) como <emphasis>
             thor</emphasis>.</para>
           </listitem>
 
@@ -1274,8 +1275,8 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Não se esqueça de marcar a <emphasis role="bold"> caixa
-            </emphasis> Overwrite.</para>
+            <para>Não se esqueça de verificar que a caixa<emphasis role="bold"
+	    >Overwrite</emphasis>  esteja marcada.</para>
 
             <para>Se disponível, certifique-se de que a caixa <emphasis
             role="bold">Replicate</emphasis> esteja marcada. (A opção replicar
@@ -1363,15 +1364,14 @@ OUTPUT(ValidWords)
             </listitem>
 
             <listitem>
-              <para>Pressione o botão <emphasis
-              role="bold">Submit</emphasis><emphasis role="bold">
-              </emphasis>.</para>
+               <para>Pressione o botão <emphasis
+	      role="bold"> Submit</emphasis><emphasis role="bold"> </emphasis>.</para>
             </listitem>
 
             <listitem>
-              <para>Quando o envio estiver concluído, selecione a <emphasis
-              role="bold"> </emphasis>guia Workunit e em seguida a guia
-              Results.</para>
+              <para>Quando o envio estiver concluído, selecione a 
+	      aba Workunit<emphasis role="bold"> 
+	      </emphasis>e em seguida a aba Result.</para>
             </listitem>
 
             <listitem>
@@ -1385,10 +1385,10 @@ OUTPUT(ValidWords)
   <chapter id="InstaCloud_DataHandling_Chap">
     <title>Data Handling (Processamento dos Dados)</title>
 
-    <para>Esta seção explica o processamento de dados em uma configuração AWS.
-    Informações adicionais sobre o processamento de dados em uma plataforma
-    HPCC Systems estão disponíveis no manual <emphasis>Data Handling
-    (Processamento dos Dados)</emphasis> manual.</para>
+    <para>Esta seção explica o processamento de dados em uma configuração AWS. 
+    Informações adicionais sobre o processamento de dados em uma plataforma 
+    HPCC Systems estão disponíveis no manual  <emphasis>Data Handling
+    </emphasis>  (Processamento de dados).</para>
 
     <sect1 id="InstaCloud_UsingS3Buckets" role="nobrk">
       <title>Utilizando o S3 buckets</title>
@@ -1478,18 +1478,18 @@ OUTPUT(ValidWords)
       <sect2 id="InstaCloud_CreatingUsingS3Buckets">
         <title>Criando e utilizando S3 Buckets</title>
 
-        <para>Para armazenar dados no S3, é preciso criar um bucket exclusivo
-        para todo o sistema s3. Uma vez criado, esse bucket existirá mesmo ao
-        fechar as instâncias dos servidores.</para>
+        <para>Para armazenar dados no S3, é preciso criar um bucket exclusivo 
+	para todo o sistema s3. Uma vez criado, esse bucket existirá mesmo ao 
+	fechar as instâncias dos servidores.</para>
 
-        <para>Você pode fazer o despray (consolidar dados dos nós) de um
-        arquivo do Thor para a zona de entrada de arquivos, e depois copiar
-        para um bucket do S3 para um armazenamento constante. Mais tarde, você
-        pode copiar os arquivos do bucket do S3 para a zona de entrada de
-        arquivos e fazer o spray do arquivo para o cluster Thor. Informações
-        adicionais sobre o processamento de dados em uma plataforma HPCC
-        Systems estão disponíveis no manual <emphasis> Processamento de
-        dados</emphasis> .</para>
+        <para>Você pode fazer o despray (consolidar dados dos nós) de um 
+	arquivo do Thor para a zona de entrada de arquivos, e depois copiar 
+	para um bucket do S3 para um armazenamento constante. Mais tarde, você 
+	pode copiar os arquivos do bucket do S3 para a zona de entrada de 
+	arquivos e fazer o spray do arquivo para o cluster Thor. Informações 
+	adicionais sobre o processamento de dados em uma plataforma HPCC 
+	Systems estão disponíveis no manual  <emphasis>
+	Data Handling</emphasis> (Manipulação de dados).</para>
 
         <sect3 id="InstaCloud_CreateABucket">
           <title>Criar um bucket</title>
@@ -1533,14 +1533,14 @@ OUTPUT(ValidWords)
         </listitem>
 
         <listitem>
-          <para><emphasis role="bold">Exemplo</emphasis> da teoria dos seis
-          graus de separação (de Kevin bacon).</para>
+          <para><emphasis role="bold">O exemplo</emphasis> da Teoria dos Seis
+          graus de separação de Kevin Bacon.</para>
         </listitem>
 
         <listitem>
-          <para>Ler <emphasis role="bold">Como usar o Gerenciador de
-          Configurações</emphasis> para aprender como configurar uma
-          plataforma do HPCC usando a Visão avançada.</para>
+          <para>Leia  <emphasis role="bold">Como usar o Gerenciador de 
+	  Configurações</emphasis>  para aprender como configurar uma 
+	  plataforma do HPCC usando a Advanced View (Visualização Avançada).</para>
         </listitem>
 
         <listitem>

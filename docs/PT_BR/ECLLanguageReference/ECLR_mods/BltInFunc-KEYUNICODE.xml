@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="KEYUNICODE">
@@ -13,9 +13,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="78.25pt"/>
+      <colspec colwidth="78.25pt" />
 
-      <colspec colwidth="310.55pt"/>
+      <colspec colwidth="310.55pt" />
 
       <tbody>
         <row>
@@ -33,15 +33,15 @@
     </tgroup>
   </informaltable>
 
-  <para>A função <emphasis role="bold">KEYUNICODE </emphasis> retorna um valor
-  de DADOS DATA derivado do parâmetro da <emphasis>string</emphasis> de modo
-  que uma comparação destes valores de dados é equivalente a uma comparação
-  sensível à localidade dos valores Unicode que os geraram – e, por ser um
-  simples memcmp(), é significativamente mais rápido. Os valores da
-  <emphasis>string</emphasis> que estão sendo gerados precisam ser da mesma
-  localidade ou os resultados serão imprevisíveis. Esta função é especialmente
-  útil se você estiver realizando várias comparações em um campo UNICODE de um
-  dataset grande – sugerimos gerar um campo de chave e realizar as comparações
+  <para>A função  <emphasis role="bold">KEYUNICODE </emphasis> retorna um valor 
+  DATA derivado do parâmetro  <emphasis>string</emphasis>, de modo 
+  que uma comparação destes valores de dados seja equivalente a uma comparação 
+  sensível à localidade dos valores Unicode que os geraram - e, sendo um 
+  simples memcmp(), é significativamente mais rápido. Os valores da 
+  <emphasis>string</emphasis>  que estão sendo gerados precisam ser da mesma 
+  localidade ou os resultados serão imprevisíveis. Esta função é especialmente 
+  útil se você estiver realizando várias comparações em um campo UNICODE de um 
+  dataset grande – sugerimos gerar um campo de chave e realizar as comparações 
   neste campo.</para>
 
   <para>Exemplo:</para>

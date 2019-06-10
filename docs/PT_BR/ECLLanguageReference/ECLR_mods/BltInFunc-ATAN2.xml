@@ -7,8 +7,8 @@
   <para><emphasis role="bold">ATAN2<indexterm>
       <primary>ATAN2</primary>
     </indexterm><indexterm>
-      <primary></primary>
-    </indexterm>(</emphasis><emphasis></emphasis><emphasis
+      <primary>ATAN2 function</primary>
+    </indexterm>(</emphasis><emphasis>y, x</emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">

@@ -78,7 +78,8 @@
         role="bold">WHEN </emphasis>, o evento e a workunit são registrados na Lista de agendamento. Quando um evento é acionado, a workunit é compilada e executada. Quando a workunit é concluída, o ECL Scheduler (Agendador ECL) a remove da Lista de agendamento.</para>
 
         <para>Por exemplo, se você enviar uma workunit usando <emphasis
-        role="bold">WHEN(‘Event1’,’MyEvent’, COUNT(2)) </emphasis>no local adequado, ela será executada duas vezes (o valor de  <emphasis
+        role="bold">WHEN('Event1','MyEvent', COUNT(2)) </emphasis>no 
+	local adequado, ela será executada duas vezes (o valor de <emphasis
         role="bold">COUNT</emphasis>) antes que o ECL Scheduler (Agendador ECL) a remova da lista de agendamento e que a workunit seja marcada como concluída.</para>
       </sect2>
     </sect1>

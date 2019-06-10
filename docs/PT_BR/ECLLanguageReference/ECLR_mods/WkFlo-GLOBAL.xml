@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GLOBAL_workflow_service">
@@ -16,9 +16,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.80pt"/>
+        <colspec colwidth="78.80pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -36,36 +36,37 @@
           <row>
             <entry><emphasis>cluster</emphasis></entry>
 
-            <entry>Opcional. Uma constante de string que especifica o nome do
-            cluster de supercomputadores onde será criado o atributo. Isso
-            possibilita usar o atributo em um cluster menor, quando ele deve
-            ser criado em um cluster maior para permitir um uso mais eficiente
-            dos recursos. Se omitida, o atributo será criado no cluster em
-            execução no momento.</entry>
+            <entry>Opcional. Uma constante de string que especifica o nome do 
+	    cluster de supercomputadores onde será criado o atributo. Isso 
+	    possibilita usar o atributo em um cluster menor, quando ele deve 
+	    ser criado em um cluster maior para permitir um uso mais eficiente 
+	    dos recursos. Se omitida, o atributo será criado no cluster em 
+	    execução no momento.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">FEW</emphasis></entry>
 
-            <entry>Opcional. Quando a expressão é um dataset ou conjunto de
-            recursos, FEW especifica que o dataset resultante é armazenado
-            totalmente dentro da workunit. Se não especificada, o dataset será
-            armazenado como um arquivo THOR e a workunit conterá apenas o nome
-            arquivo.</entry>
+            <entry>Opcional. Quando a expressão é um dataset ou conjunto de 
+	    recursos, FEW especifica que o dataset resultante é armazenado 
+	    totalmente dentro da workunit. Se não especificada, o dataset será 
+	    armazenado como um arquivo THOR e a workunit conterá apenas o nome 
+	    arquivo.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>O serviço <emphasis role="bold"> GLOBAL </emphasis>faz com que
-  <emphasis>atributo</emphasis> seja avaliado no escopo global, em vez de no
-  escopo que o abrange, de forma semelhante à função GLOBAL(), ou seja, não
-  dentro de um filtro/transformação, etc. Ele poderá ser avaliado várias vezes
-  na mesma tarefa, se usado de vários itens do fluxo do trabalho, mas
+  <para>O serviço <emphasis role="bold"> GLOBAL  </emphasis>faz com que 
+  <emphasis>atributo</emphasis>  seja avaliado no escopo global, em vez de no 
+  escopo que o abrange, de forma semelhante à função GLOBAL(), ou seja, não 
+  dentro de um filtro/transformação, etc.  Ele poderá ser avaliado várias vezes 
+  na mesma tarefa, se usado de vários itens do fluxo do trabalho, mas 
   compartilhará o código com o contexto onde for usado.</para>
 
-  <para>GLOBAL opera de forma diferente de INDEPENDENT, pois INDEPENDENT é
-  executado apenas uma vez e GLOBAL é executado uma vez em cada item de fluxo
+
+  <para>GLOBAL opera de forma diferente de INDEPENDENT, pois INDEPENDENT é 
+  executado apenas uma vez e GLOBAL é executado uma vez em cada item de fluxo 
   de trabalho que o usa.</para>
 
   <para>Exemplo:</para>
