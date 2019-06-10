@@ -10125,6 +10125,13 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
             }
         }
     }
+
+    //Allow an explicit dataset type definition combined with a row value.  Implicitly convert the row to a dataset.
+    if (type && ::isDatasetType(type) && expr->isDatarow())
+    {
+        expr.setown(createDataset(no_datasetfromrow, LINK(expr)));
+        etype = expr->queryType();
+    }
     
     // type cast if necessary
     if (type && etype)
