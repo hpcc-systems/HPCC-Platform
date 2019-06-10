@@ -1,7 +1,6 @@
 
 var DojoWebpackPlugin = require("dojo-webpack-plugin");
 var CopyWebpackPlugin = require("copy-webpack-plugin");
-var UglifyJsPlugin = require("uglifyjs-webpack-plugin");
 
 var path = require("path");
 var webpack = require("webpack");
@@ -88,23 +87,6 @@ module.exports = function (env) {
         resolveLoader: {
             modules: ["node_modules"]
         },
-        mode: isProduction ? "production" : "development",
-        optimization: {
-            // runtimeChunk: "single",
-            minimizer: [
-                // we specify a custom UglifyJsPlugin here to get source maps in production
-                new UglifyJsPlugin({
-                    cache: true,
-                    parallel: true,
-                    uglifyOptions: {
-                        compress: isProduction,
-                        mangle: isProduction,
-                        output: { comments: !isProduction }
-                    },
-                    sourceMap: false
-                })
-            ]
-        },
-        devtool: false
+        mode: isProduction ? "production" : "development"
     }
 };
