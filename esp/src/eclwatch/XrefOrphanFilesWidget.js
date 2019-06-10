@@ -66,9 +66,9 @@ define([
                         }),
                         Name: { label: this.i18n.Name, width: 100, sortable: false },
                         Modified: { label: this.i18n.Modified, width: 30, sortable: true },
-                        PartsFound: { label: this.i18n.PartsFound, width: 30, sortable: false },
-                        TotalParts: { label: this.i18n.TotalParts, width: 30, sortable: false },
-                        Size: { label: this.i18n.Size, width: 30, sortable: false }
+                        PartsFound: { label: this.i18n.PartsFound, width: 30, sortable: false, className: 'justify-right'},
+                        TotalParts: { label: this.i18n.TotalParts, width: 30, sortable: false, className: 'justify-right'},
+                        Size: { label: this.i18n.Size, width: 30, sortable: false, className: 'justify-right'},
                     }
                 }, domID);
 
