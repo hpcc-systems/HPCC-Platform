@@ -84,6 +84,7 @@
 #define DFTERR_InvalidFilePath                  8111
 #define DFTERR_NoMatchingDropzonePath           8112
 #define DFTERR_LocalhostAddressUsed             8113
+#define DFTERR_InvalidSuperindexCopy            8114
 
 //Internal errors
 #define DFTERR_UnknownFormatType                8190
@@ -155,6 +156,7 @@
 #define DFTERR_InvalidFilePath_Text             "Invalid file path: '%s'. For security reason it is forbidden to use '%s' or '%s' to build a path!"
 #define DFTERR_NoMatchingDropzonePath_Text      "No Drop Zone on '%s' configured at '%s'."
 #define DFTERR_LocalhostAddressUsed_Text        "Localhost address used in remote file name: '%s'"
+#define DFTERR_InvalidSuperindexCopy_Text       "Source file %s is a super index file but copying as a simple logical file"
 
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%" I64F "d expected %" I64F "d) at %s of block %d"

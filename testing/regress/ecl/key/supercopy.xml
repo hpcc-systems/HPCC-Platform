@@ -1,0 +1,20 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><result>Copy superfile as logical file: Pass</result></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><result>Copy superfile as superfle: Pass</result></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><result>Copy superindex as logical file: Fail</result></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><result>Copy superindex as superfle: Pass</result></Row>
+</Dataset>
