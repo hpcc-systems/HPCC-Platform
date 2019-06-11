@@ -78,9 +78,12 @@ protected:
     {
         pipeCommand.setown(cmd);
         ActPrintLog("open: %s", cmd);
-        if (!pipe->run(pipeTrace, cmd, globals->queryProp("@externalProgDir"), true, true, true, 0x10000)) // 64K error buffer
-            throw MakeActivityException(this, TE_FailedToCreateProcess, "Failed to create process in %s for : %s", globals->queryProp("@externalProgDir"), cmd);
         pipeFinished = false;
+        if (!pipe->run(pipeTrace, cmd, globals->queryProp("@externalProgDir"), true, true, true, 0x10000)) // 64K error buffer
+        {
+            // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
+            WARNLOG(TE_FailedToCreateProcess, "Failed to create process in %s for : %s", globals->queryProp("@externalProgDir"), cmd);
+        }
         registerSelfDestructChildProcess(pipe->getProcessHandle());
         pipeStream->setStream(pipe->getOutputStream());
         readTransformer->setStream(pipeStream);
@@ -89,7 +92,7 @@ protected:
     {
         pipe->closeInput();
     }
-    void verifyPipe()
+    virtual void verifyPipe()
     {
         if (!pipeFinished)
         {
@@ -107,7 +110,7 @@ protected:
                         char error[512];
                         size32_t sz = pipe->readError(sizeof(error), error);
                         if (sz && sz!=(size32_t)-1)
-                            stdError.append(", stderr: '").append(sz, error).append("'");
+                            stdError.append(sz, error).append("'");
                     }
                     catch (IException *e)
                     {
@@ -115,7 +118,10 @@ protected:
                         e->Release();
                     }
                 }
-                throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get());
+                if (START_FAILURE == retcode) // PIPE process didn't start at all, START_FAILURE is our own error code
+                    throw MakeActivityException(this, TE_PipeReturnedFailure, "Process failed to start: %s - PIPE(%s)", stdError.str(), pipeCommand.get());
+                else
+                    throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get());
             }
         }
     }
@@ -350,6 +356,23 @@ public:
     ~CPipeThroughSlaveActivity()
     {
         ::Release(pipeWriter);
+    }
+    virtual void verifyPipe() override
+    {
+        if (!pipeFinished)
+        {
+            // If verifyPipe catches exception starting pipe program, clear follow-on errors from pipeWriter thread
+            try
+            {
+                PARENT::verifyPipe();
+            }
+            catch (IException *e)
+            {
+                retcode = 0;
+                ::Release(pipeWriter->checkError());
+                throw;
+            }
+        }
     }
     virtual void start() override
     {

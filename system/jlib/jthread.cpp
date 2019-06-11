@@ -1326,6 +1326,40 @@ static void CheckAllowedProgram(const char *prog,const char *allowed)
     throw MakeStringException(-1,"Unauthorized pipe program(%s)",head.str());
 }
 
+class CPipeProcessException : public CSimpleInterfaceOf<IPipeProcessException>
+{
+    int errCode;
+    StringAttr msg;
+    MessageAudience audience;
+public:
+    CPipeProcessException(int _errCode, const char *_msg, MessageAudience _audience = MSGAUD_user) : errCode(_errCode), msg(_msg), audience(_audience)
+    {
+    }
+    virtual int errorCode() const override { return errCode; }
+    virtual StringBuffer & errorMessage(StringBuffer &str) const override
+    {
+        if (msg)
+            str.append(msg).append(", ");
+        return str.append(strerror(errCode));
+    }
+    MessageAudience errorAudience() const { return audience; }
+};
+
+IPipeProcessException *createPipeErrnoException(int code, const char *msg)
+{
+    return new CPipeProcessException(code, msg);
+}
+
+IPipeProcessException *createPipeErrnoExceptionV(int code, const char *msg, ...)
+{
+    StringBuffer eStr;
+    va_list args;
+    va_start(args, msg);
+    eStr.limited_valist_appendf(1024, msg, args);
+    va_end(args);
+    return new CPipeProcessException(code, eStr.str());
+}
+
 
 class CSimplePipeStream: implements ISimpleReadStream, public CInterface
 {
@@ -2022,7 +2056,14 @@ public:
                 ::setenv(envVars.item(idx), envValues.item(idx), 1);
             }
             execvp(argv[0],argv);
-            _exit(START_FAILURE);    // must be _exit!!     
+            if (haserror)
+            {
+                Owned<IException> e = createPipeErrnoExceptionV(errno, "exec failed: %s", prog.get());
+                StringBuffer eStr;
+                fprintf(stderr, "ERROR: %d: %s", e->errorCode(), e->errorMessage(eStr).str());
+                fflush(stderr);
+            }
+            _exit(START_FAILURE);    // must be _exit!!
         }
         free(argv);
         if (hasinput) 
@@ -2116,7 +2157,7 @@ public:
                 break;
             if (errno!=EINTR) {
                 aborted = true;
-                throw makeErrnoExceptionV(errno,"Pipe: read failed (size %d)", sz);
+                throw createPipeErrnoExceptionV(errno,"Pipe: read failed (size %d)", sz);
             }
         }
         return aborted?((size32_t)-1):((size32_t)sizeRead);
@@ -2147,7 +2188,7 @@ public:
             if (aborted) 
                 break;
             if (errno!=EINTR) {
-                throw makeErrnoExceptionV(errno, "Pipe: write failed (size %d)", sz);
+                throw createPipeErrnoExceptionV(errno, "Pipe: write failed (size %d)", sz);
             }
         }
         return aborted?((size32_t)-1):((size32_t)sizeWritten);
@@ -2174,7 +2215,7 @@ public:
                 break;
             if (errno!=EINTR) {
                 aborted = true;
-                throw makeErrnoExceptionV(errno, "Pipe: readError failed (size %d)", sz);
+                throw createPipeErrnoExceptionV(errno, "Pipe: readError failed (size %d)", sz);
             }
         }
         return aborted?((size32_t)-1):((size32_t)sizeRead);

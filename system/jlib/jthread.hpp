@@ -263,6 +263,13 @@ interface ISimpleReadStream;
 
 #define START_FAILURE (199) // return code if program cannot be started
 
+interface IPipeProcessException : extends IException
+{
+};
+
+extern jlib_decl IPipeProcessException *createPipeErrnoException(int code, const char *msg);
+extern jlib_decl IPipeProcessException *createPipeErrnoExceptionV(int code, const char *msg, ...);
+
 interface IPipeProcess: extends IInterface
 {
     virtual bool run(const char *title,const char *prog, const char *dir,

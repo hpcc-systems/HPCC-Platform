@@ -1016,7 +1016,11 @@ void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
 void throwPipeProcessError(unsigned err, char const * preposition, char const * program, IPipeProcess * pipe)
 {
     StringBuffer msg;
-    msg.append("Error piping ").append(preposition).append(" (").append(program).append("): process failed with code ").append(err);
+    msg.append("Error piping ").append(preposition).append(" (").append(program).append("): ");
+    if (START_FAILURE == err) // PIPE process didn't start at all, START_FAILURE is our own error code
+        msg.append("process failed to start");
+    else
+        msg.append("process failed with code ").append(err);
     if(pipe->hasError())
     {
         try
@@ -1414,7 +1418,10 @@ protected:
         pipeCommand.setown(cmd);
         pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
         if(!pipe->run(NULL, cmd, ".", false, true, true, 0x10000))
-            throw MakeStringException(2, "Could not run pipe process %s", cmd);
+        {
+            // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
+            WARNLOG(2, "Could not run pipe process %s", cmd);
+        }
         Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
         readTransformer->setStream(pipeReader.get());
     }
@@ -1603,7 +1610,15 @@ public:
         // called from puller thread
         if(recreate)
             openPipe(helper.getNameFromRow(row));
-        writeTransformer->writeTranslatedText(row, pipe);
+        try
+        {
+            writeTransformer->writeTranslatedText(row, pipe);
+        }
+        catch (IException *e)
+        {
+            ReleaseRoxieRow(row);
+            throw;
+        }
         ReleaseRoxieRow(row);
         if(recreate)
         {
@@ -1643,28 +1658,42 @@ public:
 private:
     bool waitForPipe()
     {
-        if (firstRead)
+        Owned<IPipeProcessException> pipeException;
+        try
         {
-            pipeOpened.wait();
-            firstRead = false;
+            if (firstRead)
+            {
+                pipeOpened.wait();
+                firstRead = false;
+            }
+            if (!pipe)
+                return false;  // done
+            if (!readTransformer->eos())
+                return true;
         }
-        if (!pipe)
-            return false;  // done
-        if (!readTransformer->eos())
-            return true;
+        catch (IPipeProcessException *e)
+        {
+            pipeException.setown(e);
+        }
         verifyPipe();
+        if (pipeException) // NB: verifyPipe may throw error based on pipe prog. output 1st.
+            throw pipeException.getClear();
         if (recreate && !inputExhausted)
             pipeOpened.wait();
         return false;
     }
-
     void openPipe(char const * cmd)
     {
         pipeCommand.setown(cmd);
         pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
         if(!pipe->run(NULL, cmd, ".", true, true, true, 0x10000))
-            throw MakeStringException(2, "Could not run pipe process %s", cmd);
-        writeTransformer->writeHeader(pipe);
+        {
+            // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
+            WARNLOG(2, "Could not run pipe process %s", cmd);
+        }
+        else
+            writeTransformer->writeHeader(pipe);
+
         Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
         readTransformer->setStream(pipeReader.get());
         pipeOpened.signal();
@@ -1732,24 +1761,38 @@ public:
 
     virtual void execute()
     {
-        for (;;)
+        Owned<IPipeProcessException> pipeException;
+        try
         {
-            const void *row = input->nextRow();
-            if (!row)
+            for (;;)
             {
-                row = input->nextRow();
+                OwnedConstRoxieRow row(input->nextRow());
                 if (!row)
-                    break;
+                {
+                    row.setown(input->nextRow());
+                    if (!row)
+                        break;
+                }
+                processed++;
+                if (recreate)
+                    openPipe(helper.getNameFromRow(row));
+                writeTransformer->writeTranslatedText(row, pipe);
+                if (recreate)
+                {
+                    closePipe();
+                    verifyPipe();
+                }
             }
-            processed++;
-            if(recreate)
-                openPipe(helper.getNameFromRow(row));
-            writeTransformer->writeTranslatedText(row, pipe);
-            ReleaseRoxieRow(row);
-            if(recreate)
+            if (!recreate)
                 closePipe();
         }
-        closePipe();
+        catch (IPipeProcessException *e)
+        {
+            pipeException.setown(e);
+        }
+        verifyPipe();
+        if (pipeException) // NB: verifyPipe may throw error based on pipe prog. output 1st.
+            throw pipeException.getClear();
         if (helper.getSequence() >= 0)
         {
             WorkunitUpdate wu = agent.updateWorkUnit();
@@ -1767,19 +1810,30 @@ private:
     {
         pipeCommand.setown(cmd);
         pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
-        if(!pipe->run(NULL, cmd, ".", true, false, true, 0x10000))
-            throw MakeStringException(2, "Could not run pipe process %s", cmd);
-        writeTransformer->writeHeader(pipe);
+        if (!pipe->run(NULL, cmd, ".", true, false, true, 0x10000))
+        {
+            // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
+            WARNLOG(2, "Could not run pipe process %s", cmd);
+        }
+        else
+            writeTransformer->writeHeader(pipe);
     }
 
     void closePipe()
     {
         writeTransformer->writeFooter(pipe);
         pipe->closeInput();
-        unsigned err = pipe->wait();
-        if(err && !(helper.getPipeFlags() & TPFnofail))
-            throwPipeProcessError(err, "to", pipeCommand.get(), pipe);
-        pipe.clear();
+    }
+
+    void verifyPipe()
+    {
+        if (pipe)
+        {
+            unsigned err = pipe->wait();
+            if(err && !(helper.getPipeFlags() & TPFnofail))
+                throwPipeProcessError(err, "to", pipeCommand.get(), pipe);
+            pipe.clear();
+        }
     }
 };
 
