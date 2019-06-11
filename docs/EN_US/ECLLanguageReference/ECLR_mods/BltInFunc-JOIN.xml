@@ -710,6 +710,15 @@
     <para>The <emphasis>joincondition</emphasis>, LIMIT, and ATMOST determine
     how this is done.</para>
 
+    <para>An implicit limit of 10000 is added when there is no LIMIT specified
+    <emphasis role="bold">AND</emphasis> the following is true:</para>
+
+    <para>There is no ATMOST limit specified <emphasis
+    role="bold">AND</emphasis> it is not a LEFT ONLY JOIN <emphasis
+    role="bold">AND</emphasis> <emphasis role="bold">(</emphasis>there is
+    either no KEEP limit specified OR the JOIN has a postfilter<emphasis
+    role="bold">)</emphasis>.</para>
+
     <para><emphasis role="bold">3. Determine what matches to pass to
     </emphasis><emphasis role="bold">transform</emphasis><emphasis
     role="bold">.</emphasis></para>
