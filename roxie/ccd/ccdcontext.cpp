@@ -3716,7 +3716,7 @@ public:
             addExceptionToWorkunit(wu, SeverityError, "user", code, text, filename, lineno, column, 0);
         }
         if (isAbort)
-            rtlFailOnAssert();      // minimal implementation
+            throw makeStringException(MSGAUD_user, code, text);
     }
     IUserDescriptor *queryUserDescriptor()
     {

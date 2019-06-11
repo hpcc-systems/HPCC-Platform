@@ -1484,7 +1484,7 @@ void EclAgent::addWuAssertFailure(unsigned code, const char * text, const char *
 {
     addException(SeverityError, "user", code, text, filename, lineno, column, false, false);
     if (isAbort)
-        rtlFailOnAssert();      // minimal implementation
+        throw makeStringException(MSGAUD_user, code, text);
 }
 
 IUserDescriptor *EclAgent::queryUserDescriptor()
