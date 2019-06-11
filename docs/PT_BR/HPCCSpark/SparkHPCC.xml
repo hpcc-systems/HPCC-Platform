@@ -1,0 +1,908 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <bookinfo>
+    <title>Integração HPCC/Spark</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>HPCC/Spark Instalação e Configuração</title>
+
+    <para>O plug-in Spark do HPCC Systems, hpccsystems-plugin-spark integra o
+    Spark a sua plataforma HPCC System. Uma vez instalado e configurado, o
+    componente Sparkthor gerencia o cluster Spark Integrado. Ele configura,
+    inicia e interrompe dinamicamente o cluster do Spark Integrado ao iniciar
+    ou interromper a plataforma do HPCC Systems.</para>
+
+    <sect1 role="nobrk">
+      <title>Instalação do Spark</title>
+
+      <para>Para adicionar a integração do Spark ao seu cluster HPCC System,
+      você deve ter um cluster HPCC executando a versão 7.0.0 ou posterior. O
+      Java 8 também é necessário. Você precisará configurar o componente
+      Sparkthor. O componente Sparkthor precisa estar associado a um cluster
+      Thor existente válido. Os nós escravos Spark serão criados ao lado de
+      cada escravo Thor. O nó do Integrated Spark Master será designado
+      durante a configuração, junto com quaisquer outros recursos do nó do
+      Spark. Em seguida, o componente Sparkthor gerará um cluster Spark
+      Integrado na inicialização. Você também terá um conector jar SPARK-HPCC
+      disponível.</para>
+
+      <para>Para obter o componente Spark Integrado, os pacotes e plug-ins
+      estão disponíveis no portal da web HPCC Systems
+      <superscript>®</superscript> : <ulink
+      url="https://hpccsystems.com/download/free-community-edition">https://hpccsystems.com/download/</ulink></para>
+
+      <para>Faça o download do pacote hpccsystems-plugin-spark no HPCC Systems
+      Portal.</para>
+
+      <sect2 id="installing-SparkPlugin">
+        <title>Instalando o Plug-in de Spark</title>
+
+        <para>O processo de instalação e o pacote a ser feito o download
+        variam de acordo com o sistema operacional que você planeja usar. Os
+        pacotes de instalação não serão instalados com sucesso se suas
+        dependências não estiverem presentes no sistema de destino. Para
+        instalar o pacote, siga as instruções de instalação
+        apropriadas:</para>
+
+        <sect3 id="Spark_CentOS">
+          <title>CentOS/Red Hat</title>
+
+          <para>Para sistemas baseados em RPM, você pode instalar usando o
+          yum.</para>
+
+          <para><programlisting>sudo yum install &lt;hpccsystems-plugin-spark&gt;  </programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Ubuntu/Debian</title>
+
+          <para>Para instalar um pacote Ubuntu/Debian, use:</para>
+
+          <programlisting>sudo dpkg -i &lt;hpccsystems-plugin-spark&gt;  </programlisting>
+
+          <para>Após instalar o pacote, execute o seguinte para atualizar
+          quaisquer dependências.</para>
+
+          <para><programlisting>sudo apt-get install -f </programlisting></para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Você precisa copiar e instalar o plug-in em todos os nós.
+              Isso pode ser feito usando o script install-cluster.sh fornecido
+              com o HPCC. Use o comando a seguir:</para>
+
+              <programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh &lt;hpccsystems-plugin-spark&gt;</programlisting>
+
+              <para>Mais detalhes, incluindo outras opções que podem ser
+              usadas com este comando, estão incluídos no apêndice Instalando
+              e executando a plataforma HPCC, também disponível no portal da
+              web HPCC Systems <superscript>®</superscript> .</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Spark_Configuration">
+      <title>Configuração do Spark</title>
+
+      <para>Para configurar seu HPCC System para integrar o Spark, instale o
+      pacote hpccsystems-plugin-spark e modifique o ambiente existente
+      (arquivo) para adicionar o componente Sparkthor.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Caso esteja em execução, pare o HPCC System usando este
+          comando em uma janela de terminal:</para>
+
+          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
+                      xpointer="element(/1)"
+                      xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png"/></entry>
+
+                    <entry>Este comando pode ser usado para confirmar que os
+                    processos do HPCC foram
+                    interrompidos:<para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Inicie o serviço do Gerenciador de
+          Configurações.<programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+
+          <para><graphic fileref="images/gs_img_configmgrStart.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <para>Deixe esta janela aberta. Se desejar, você pode
+          minimizá-la.</para>
+        </listitem>
+
+        <listitem>
+          <para>Usando um navegador de Internet, acesse a interface do
+          Gerenciador de Configurações:</para>
+
+          <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Marque a caixa Advanced View e selecione o arquivo de ambiente
+          a ser editado.</para>
+        </listitem>
+
+        <listitem>
+          <para>Ative o acesso de gravação (caixa de seleção na parte superior
+          direita da página)</para>
+        </listitem>
+
+        <listitem>
+          <para>Clique com o botão direito no painel Navigator no lado
+          esquerdo.</para>
+
+          <para>Escolha <emphasis role="bold">New Components</emphasis> e
+          escolha <emphasis role="bold">Sparkthor</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Configure os atributos da sua instância do Spark:</para>
+
+          <para><informaltable colsep="1" id="Th.t1" rowsep="1">
+              <tgroup align="left" cols="4">
+                <colspec colwidth="155pt"/>
+
+                <colspec colwidth="2*"/>
+
+                <colspec colwidth="1*"/>
+
+                <colspec colwidth="0.5*"/>
+
+                <thead>
+                  <row>
+                    <entry>atributo</entry>
+
+                    <entry>decrição</entry>
+
+                    <entry>default</entry>
+
+                    <entry>obrigatório</entry>
+                  </row>
+                </thead>
+
+                <tbody>
+                  <row>
+                    <entry>name</entry>
+
+                    <entry>Nome para este processo</entry>
+
+                    <entry>mysparkthor</entry>
+
+                    <entry>obrigatório</entry>
+                  </row>
+
+                  <row>
+                    <entry>ThorClusterName</entry>
+
+                    <entry>Cluster Thor para se conectarem a *</entry>
+
+                    <entry>mythor*</entry>
+
+                    <entry>obrigatório</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_EXECUTOR_CORES</entry>
+
+                    <entry>Número de núcleos para executores</entry>
+
+                    <entry>1</entry>
+
+                    <entry>opcional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_EXECUTOR_MEMORY</entry>
+
+                    <entry>Memória por executor</entry>
+
+                    <entry>1G</entry>
+
+                    <entry>opcional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_MASTER_WEBUI_PORT</entry>
+
+                    <entry>Porta base a ser usada para a interface da web
+                    principal</entry>
+
+                    <entry>8080</entry>
+
+                    <entry>opcional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_MASTER_PORT</entry>
+
+                    <entry>Porta base a ser usada para a master</entry>
+
+                    <entry>7077</entry>
+
+                    <entry>opcional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_WORKER_CORES</entry>
+
+                    <entry>Número de núcleos para workers</entry>
+
+                    <entry>1</entry>
+
+                    <entry>opcional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_WORKER_MEMORY</entry>
+
+                    <entry>Memória por worker</entry>
+
+                    <entry>1G</entry>
+
+                    <entry>opcional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_WORKER_PORT</entry>
+
+                    <entry>Porta base a ser usada para o worker</entry>
+
+                    <entry>7071</entry>
+
+                    <entry>opcional</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>* ThorClusterName segmenta um cluster Thor existente. Ao
+          configurar, você deve escolher um cluster Thor válido existente para
+          o cluster Spark Integrado espelhar.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png"/></entry>
+
+                    <entry>OBSERVAÇÃO: Você deve deixar pelo menos dois
+                    núcleos abertos para o HPCC fornecer o Spark com dados. O
+                    número de núcleos e memória alocados para o Spark
+                    dependerá da carga de trabalho. Não tente alocar muitos
+                    recursos para o Spark, onde você poderia ter problemas com
+                    o HPCC e o Spark conflitando em busca de recursos.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Especifique um Nó Mestre do Spark; Selecione a aba Instances.
+          Clique com o botão direito do mouse na tabela Instances e escolha
+          <emphasis role="bold">Add Instances </emphasis></para>
+
+          <para>Adicione a instância do seu nó mestre do Spark.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png"/></entry>
+
+                    <entry>OBSERVAÇÃO: Você só pode ter uma ocorrência
+                    principal do Spark</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Salve o arquivo do ambiente. Saia do configmgr (Ctrl+C). Copie
+          o arquivo de ambiente do diretório de origem para o diretório
+          /etc/HPCCSystems.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt"/>
+
+                <colspec/>
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png"/></entry>
+
+                    <entry>Certifique-se de que o sistema não esteja em
+                    execução antes de tentar mover o arquivo
+                    environment.xml.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para><programlisting>sudo cp /etc/HPCCSystems/source/&lt;new environment file.xml&gt; /etc/HPCCSystems/environment.xml</programlisting>e
+          distribua o arquivo do ambiente para todos os nós em seu
+          cluster</para>
+
+          <para>Você pode optar por usar o script hpcc-push.sh fornecido para
+          implantar o novo arquivo de ambiente. Por exemplo:</para>
+
+          <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt; </programlisting>
+        </listitem>
+      </orderedlist>
+
+      <para>Agora você pode iniciar seu cluster do Sistema HPCC e verificar se
+      o Sparkthor está ativo.</para>
+
+      <?hard-pagebreak ?>
+
+      <para>Para iniciar seu sistema HPCC.</para>
+
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+      <para>Usando um navegador, vá para a sua instância do Integrated Master
+      Spark (a instância que você adicionou acima) em execução na porta 8080
+      do seu Sistema HPCC.</para>
+
+      <para>Por exemplo, http: //nnn.nnn.nnn.nnn: 8080, em que nnn.nnn.nnn.nnn
+      é o endereço IP do nó do Integrated Spark Master.</para>
+
+      <programlisting>https://192.168.56.101:8080</programlisting>
+
+      <sect2 id="Addl_Spark_Config">
+        <title>Opções de configuração Cluster Integrado do Spark.</title>
+
+        <para>Além das opções de configuração disponíveis através do
+        gerenciador de configuração do HPCC Systems, existem opções para casos
+        extremos e configurações mais avançadas. Para personalizar o ambiente
+        de cluster do Spark Integrado e fazer uso dessas opções adicionais,
+        utilize o script <emphasis role="bold">endscript</emphasis> .</para>
+
+        <programlisting>/etc/HPCCSystems/externals/spark-hadoop/spark-env.sh</programlisting>
+
+        <para>Para obter mais informações sobre as opções do Spark Cluster,
+        consulte as páginas a seguir.</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><ulink
+            url="https://spark.apache.org/docs/latest/spark-standalone.html#cluster-launch-scripts ">https://spark.apache.org/docs/latest/spark-standalone.html#cluster-launch-scripts</ulink></para>
+          </listitem>
+
+          <listitem>
+            <para><ulink
+            url="https://spark.apache.org/docs/latest/configuration.html#environment-variables ">https://spark.apache.org/docs/latest/configuration.html#environment-variables</ulink></para>
+          </listitem>
+        </itemizedlist>
+
+        <sect3 id="ExampleUseCases">
+          <title>Exemplo de Casos de Uso</title>
+
+          <itemizedlist>
+            <listitem>
+              <para>O Spark atualmente requer que o Java 8 seja executado. Em
+              um sistema em que a instalação padrão do Java não é o Java 8. A
+              variável de ambiente JAVA_HOME pode ser usada para definir a
+              versão do Spark Java para o Java 8.</para>
+            </listitem>
+
+            <listitem>
+              <para>Geralmente, quando um job é executado em um cluster Spark,
+              ele assume a propriedade de todos os nós de trabalho. Em um
+              ambiente de cluster compartilhado, isso pode não ser o ideal.
+              Usando o atributo SPARK_MASTER_OPTS, é possível definir um
+              limite para o número de nós de trabalho que um job pode
+              utilizar.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>O conector Spark HPCC Systems</title>
+
+    <sect1 id="overview" role="nobrk">
+      <title>Visão geral</title>
+
+      <para>O conector distribuído Spark-HPCCSystems é uma biblioteca Java que
+      facilita o acesso de um cluster do Spark aos dados armazenados em um
+      cluster do HPCC Systems. A biblioteca de conectores emprega o recurso de
+      leitura de arquivos remotos padrão do HPCC Systems para ler dados de
+      conjuntos de dados sequenciais ou indexados do HPCC.</para>
+
+      <para>Os dados em um cluster HPCC são particionados horizontalmente, com
+      dados em cada nó do cluster. Depois de configurados, os dados do HPCC
+      estão disponíveis para acesso em paralelo pelo cluster do Spark.</para>
+
+      <para>No repositório do GitHub (<ulink
+      url="https://github.com/hpcc-systems/Spark-HPCC">https://github.com/hpcc-systems/Spark-HPCC</ulink>)
+      você pode encontrar o código-fonte e exemplos. Existem vários artefatos
+      na pasta DataAccess/src/main/java de interesse primário. A classe
+      <emphasis>org.hpccsystems.spark.HpccFile</emphasis> é a fachada de um
+      arquivo em um cluster HPCC. O
+      <emphasis>org.hpccsystems.spark.HpccRDD</emphasis> é um conjunto
+      resiliente de dados distribuído derivado dos dados no cluster HPCC e é
+      criado pelo método
+      <emphasis>org.hpccsystems.spark.HpccFile.getRDD</emphasis> (…). A classe
+      <emphasis>HpccFile</emphasis> suporta o carregamento de dados para
+      construir um objeto <emphasis>Dataset&lt;Row&gt;</emphasis> para a
+      interface Spark. Isso primeiro carregará os dados em um RDD &lt;Row&gt;
+      e, em seguida, converterá esse RDD em um DataSet &lt;Row&gt; por meio
+      dos mecanismos internos do Spark.</para>
+
+      <para>Existem vários artefatos adicionais de algum interesse. A classe
+      <emphasis>org.hpccsystems.spark.ColumnPruner</emphasis> é fornecida para
+      permitir a recuperação somente das colunas de interesse do cluster HPCC.
+      O artefato <emphasis>targetCluster</emphasis> permite especificar o
+      cluster HPCC no qual o arquivo de destino existe. A classe
+      <emphasis>org.hpccsystems.spark.thor.FileFilter</emphasis> é fornecida
+      para facilitar a filtragem de registros de interesse do cluster
+      HPCC.</para>
+
+      <para>O repositório git inclui dois exemplos na pasta
+      Examples/src/main/scala. Os exemplos
+      (<emphasis>org.hpccsystems.spark_examples.Dataframe_Iris_LR</emphasis> e
+      <emphasis>org.hpccsystems.spark_examples.Iris_LR</emphasis>) são Scala
+      Objects com uma função main(). Ambos os exemplos usam o conjunto de
+      dados clássico da Iris. O conjunto de dados pode ser obtido de uma
+      variedade de fontes, incluindo o repositório HPCC-Systems/ecl-ml.
+      IrisDs.ecl (pode ser encontrado na pasta <ulink
+      url="https://github.com/hpcc-systems/ecl-ml/blob/master/ML/Tests/Explanatory/IrisDS.ecl">https://github.com/hpcc-systems/ecl-ml/blob/master/ML/Tests/Explanatory/IrisDS.ecl</ulink>)
+      pode ser executado para gerar o conjunto de dados Iris no HPCC. Um passo
+      a passo dos exemplos é fornecido na seção Exemplos.</para>
+
+      <para>O conector distribuído Spark-HPCCSystems também suporta o PySpark.
+      Ele usa as mesmas classes/API que o Java.</para>
+
+      <sect2 id="SparkSupportHPCCECLWatch" role="brk">
+        <title>Suporte Spark no ECL Watch</title>
+
+        <para>Como parte dos HPCC Systems, o conector Spark pode ser
+        monitorado a partir da interface ECL Watch. Consulte o manual do
+        <emphasis>ECL Watch</emphasis> para obter mais informações sobre o uso
+        da ferramenta.</para>
+
+        <para>O cluster do <emphasis role="bold">SparkThor</emphasis> é
+        listado na página ECL Watch System Servers. Para acessar a página
+        Systems Servers:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>No ECL Watch, clique no ícone/link de operações</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique na aba System Servers</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><graphic fileref="images/ECLWA-SprkThor.jpg"/></para>
+
+        <para>Isso reporta informações para o nó principal do cluster Spark
+        integrado. Aqui você pode verificar se o cluster está ativo e em
+        execução e executar a verificação prévia selecionando o cluster do
+        SparkThor e pressionando o botão Submit na parte inferior da
+        página.</para>
+
+        <para>Clique no ícone do disco ao lado do cluster do SparkThor para
+        acessar seus registros.</para>
+
+        <para>Clique no ícone azul de informações para visualizar informações
+        mais integradas do cluster do Spark.</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="primary-classes">
+      <title>Classes Primárias</title>
+
+      <para>A classe <emphasis>HpccFile</emphasis> e as classes
+      <emphasis>HpccRDD</emphasis> são discutidas em mais detalhes abaixo.
+      Essas são as classes principais usadas para acessar dados de um cluster
+      HPCC. A classe <emphasis>HpccFile</emphasis> suporta o carregamento de
+      dados para construir um objeto <emphasis>Dataset&lt;Row&gt;</emphasis>
+      para a interface Spark. Isso primeiro carregará os dados em um RDD
+      &lt;Row&gt; e, em seguida, converterá esse RDD em um DataSet &lt;Row&gt;
+      por meio dos mecanismos internos do Spark.</para>
+
+      <para>A classe <emphasis>org.hpccsystems.spark.HpccFile</emphasis>
+      possui vários construtores. Todos os construtores recebem informações
+      sobre o cluster e o nome do dataset de interesse. As classes JAPI
+      WS-Client são usadas para acessar informações detalhadas do arquivo. Uma
+      definição usada para selecionar as colunas a serem retornadas e uma
+      definição para selecionar as linhas a serem retornadas também podem ser
+      fornecidas. Eles são discutidos abaixo na seção <emphasis>Classes
+      Adicionais de Interesse</emphasis> . A classe tem dois métodos de
+      interesse primário: o método <emphasis>getRDD(…)</emphasis> e o método
+      <emphasis>getDataframe(…)</emphasis> , que são ilustrados na seção
+      <emphasis>Exemplo</emphasis> .</para>
+
+      <para>O método <emphasis>HpccFile</emphasis> class
+      <emphasis>getRecordDefinition()</emphasis> pode ser usado para recuperar
+      uma definição do arquivo. O método <emphasis>getFileParts()</emphasis>
+      pode ser usado para ver como o arquivo é particionado no cluster HPCC.
+      Esses métodos retornam as mesmas informações que podem ser encontradas
+      na aba DEF da página de detalhes do conjunto de dados do ECL Watch e na
+      aba PARTS respectivamente.</para>
+
+      <para>A classe <emphasis>org.hpccsystems.spark.HpccRDD</emphasis>
+      estende a classe de modelo <emphasis>RDD&lt;Record&gt;</emphasis> . A
+      classe emprega a <emphasis>org.hpccsystems.spark.HpccPart</emphasis>
+      para as partições Spark. A classe
+      <emphasis>org.hpccsystems.spark.Record</emphasis> é usada como o
+      contêiner para os campos do cluster HPCC. A classe
+      <emphasis>Record</emphasis> pode criar uma instância
+      <emphasis>Row</emphasis> com um esquema.</para>
+
+      <para>Os objetos de partição <emphasis>HpccRDD</emphasis> HpccPart leem
+      cada um blocos de dados do cluster HPCC independentemente uns dos
+      outros. A leitura inicial busca o primeiro bloco de dados, solicita o
+      segundo bloco de dados e retorna o primeiro registro. Quando o bloco
+      estiver esgotado, o próximo bloco deverá estar disponível no soquete e
+      uma nova solicitação de leitura será emitida.</para>
+
+      <para>O <emphasis>HpccFileWriter</emphasis> é outra classe primária
+      usada para gravar dados em um cluster HPCC. Tem um único construtor com
+      a seguinte assinatura:</para>
+
+      <programlisting>public HpccFileWriter(String connectionString, String user, String pass) throws Exception { </programlisting>
+
+      <para>O primeiro parâmetro <emphasis>connectionString</emphasis> contém
+      as mesmas informações que o <emphasis>HpccFile</emphasis>. Deve estar no
+      seguinte formato: {http|https}://{ECLWATCHHOST}:{ECLWATCHPORT}</para>
+
+      <para>O construtor tentará se conectar ao HPCC. Esta conexão será então
+      usada para quaisquer chamadas subsequentes para o
+      <emphasis>saveToHPCC</emphasis>.</para>
+
+      <programlisting>public long saveToHPCC(SparkContext sc, RDD&lt;Row&gt; scalaRDD, String clusterName, 
+                        String fileName) throws Exception {</programlisting>
+
+      <para>O método <emphasis>saveToHPCC</emphasis> suporta apenas os tipos
+      RDD &lt;row&gt;. Você pode precisar modificar sua representação de dados
+      para usar essa funcionalidade. No entanto, essa representação de dados é
+      usada pelo Spark SQL e pelo HPCC. Isso só é suportado escrevendo em uma
+      configuração co-localizada. Assim, o Spark e o HPCC devem ser instalados
+      nos mesmos nós. A leitura suporta apenas a leitura de dados de um
+      cluster HPCC remoto.</para>
+
+      <para>O <emphasis>clusterName</emphasis> , conforme usado no caso acima,
+      é o cluster desejado para gravar dados, por exemplo, no cluster Thor
+      "mythor". Atualmente, há suporte apenas para gravação em clusters do
+      Thor. A gravação em um cluster Roxie não é suportada e retornará uma
+      exceção. O nome do arquivo usado no exemplo acima está no formato HPCC,
+      por exemplo: "~example::text".</para>
+
+      <para>Internamente, o método saveToHPCC gerará múltiplos jobs do Spark.
+      Atualmente, isso gera dois jobs. O primeiro trabalho mapeia o local das
+      partições no cluster do Spark para fornecer essas informações ao HPCC. O
+      segundo job faz a gravação real dos arquivos. Há também algumas chamadas
+      internamente ao ESP para lidar com coisas como iniciar o processo de
+      gravação chamando <emphasis>DFUCreateFile</emphasis> e publicando o
+      arquivo depois que ele foi escrito chamando
+      <emphasis>DFUPublishFile</emphasis>.</para>
+    </sect1>
+
+    <sect1 id="additional-classes-of-interest">
+      <title>Classes Adicionais de Interesse</title>
+
+      <para>As principais classes de interesse para esta seção são a remoção
+      de colunas e a filtragem de arquivos. Além disso, há uma classe auxiliar
+      para remapear informações de IP quando necessário, e isso também é
+      discutido abaixo.</para>
+
+      <para>As informações de seleção da coluna são fornecidas como uma string
+      para o objeto <emphasis>org.hpccsystems.spark.ColumnPruner</emphasis> .
+      A string é uma lista de nomes de campos separados por vírgulas. Um campo
+      de interesse pode conter um conjunto de dados de linha ou filho e a
+      notação de nome pontilhada é usada para oferecer suporte à seleção de
+      campos filho individuais. O <emphasis>ColumnPruner</emphasis> analisa a
+      cadeia em uma instância da classe <emphasis>TargetColumn</emphasis> raiz
+      que contém as colunas de destino de nível superior. Um
+      <emphasis>TargetColumn</emphasis> pode ser um campo simples ou pode ser
+      um dataset filho e, portanto, ser um objeto raiz para o layout do
+      registro filho.</para>
+
+      <para>O filtro de linha é implementado na classe
+      <emphasis>org.hpccsystems.spark.thor.FileFilter</emphasis> . Uma
+      instância de <emphasis>FileFilter</emphasis> é restrita a partir de uma
+      matriz de objetos
+      <emphasis>org.hpccsystems.spark.thor.FieldFilter</emphasis> . Cada
+      instância de <emphasis>FieldFilter</emphasis> é composta de um nome de
+      campo (em notação pontuada para nomes compostos) e uma matriz de objetos
+      <emphasis>org.hpccsystems.spark.thor.FieldFilterRange</emphasis> . Cada
+      instância de <emphasis>FieldFilterRange</emphasis> pode ser um intervalo
+      aberto, ou fechado ou um valor único. O registro é selecionado quando
+      pelo menos um <emphasis>FieldFilterRange</emphasis> corresponde para
+      cada uma das instâncias do <emphasis>FieldFilter</emphasis> na
+      matriz.</para>
+
+      <para>Os valores <emphasis>FieldFilterRange</emphasis> podem ser stings
+      ou números. Existem métodos fornecidos para construir os seguintes
+      testes de intervalo: igual, não igual, menor que, menor que ou igual a,
+      maior que, e maior que ou igual a. Além disso, um teste de inclusão de
+      conjunto é suportado para cadeias de caracteres. Se o arquivo for um
+      índice, os campos de filtro, que são campos-chave, são utilizados para
+      uma pesquisa de índice. Qualquer campo de filtro não mencionado é
+      tratado como desconhecido.</para>
+
+      <para>A arquitetura de implantação usual para os Clusters HPCC consiste
+      em uma coleção de nós em uma rede. As informações de gerenciamento de
+      arquivos incluem os endereços IP dos nós que contêm as partições do
+      arquivo. As classes do conector Spark-HPCC usam esses endereços IP para
+      estabelecer conexões de soquete para a leitura remota. Um cluster HPCC
+      pode ser implantado como um cluster virtual com endereços IP privados.
+      Isso funciona para os componentes do cluster porque eles estão todos na
+      mesma LAN privada. No entanto, os nós do cluster Spark podem não estar
+      na mesma LAN. Nesse caso, a classe
+      <emphasis>org.hpccsystems.spark.RemapInfo</emphasis> é usada para
+      definir as informações necessárias para alterar o endereçamento. Existem
+      duas opções que podem ser usadas. A primeira opção é que cada nó escravo
+      do Thor pode receber um IP visível para o cluster do Spark. Esses
+      endereços devem ser um intervalo contíguo. A segunda opção é atribuir um
+      IP e um intervalo contíguo de números de porta. O objeto
+      <emphasis>RemapInfo</emphasis> é fornecido como um parâmetro.</para>
+    </sect1>
+
+    <sect1 id="examples">
+      <title>Exemplos</title>
+
+      <para>Vamos percorrer os dois exemplos abaixo, utilizando um ambiente
+      Spark. Além disso, o repositório fornece programas de teste (na pasta
+      DataAccess/src/test) que podem ser executados como exemplos
+      independentes.  </para>
+
+      <para>Esses programas de teste devem ser executados a partir de um IDE
+      de desenvolvimento, como o Eclipse, por meio do aplicativo Spark-submit,
+      enquanto os exemplos abaixo são dependentes do shell do Spark.</para>
+
+      <para>Os exemplos a seguir assumem um Spark Shell. Você pode usar o
+      comando spark-submit se você pretende compilar e empacotar esses
+      exemplos. Para conectar corretamente seu shell ao cluster Spark
+      Integrado, forneça os seguintes parâmetros ao iniciá-lo:</para>
+
+      <programlisting>bin/spark-shell  \
+ --master=&lt;spark://{remotesparkhost-IP}:{sparkport}&gt; --conf="spark.driver.host={localhost-ip}" </programlisting>
+
+      <sect2 id="iris_lr">
+        <title>Iris_LR</title>
+
+        <para>Este exemplo pressupõe que você tenha o Spark Shell em execução.
+        O próximo passo é estabelecer o seu HpccFile e seu RDD para esse
+        arquivo. Você precisa do nome do arquivo, do protocolo (http ou
+        https), do nome ou IP do ESP, da porta do ESP (normalmente 8010) e da
+        sua conta de usuário e senha. O valor <emphasis>sc</emphasis> é o
+        objeto <emphasis>SparkContext</emphasis> fornecido pelo shell.</para>
+
+        <programlisting> val espcon = new Connection("http", "myeclwatchhost", "8010");
+ espcon.setUserName("myuser");
+ espcon.setPassword("mypass");
+ val file = new HpccFile("myfile",espcon);
+</programlisting>
+
+        <para>Agora temos um RDD dos dados. Na verdade, nada aconteceu nesse
+        ponto porque o Spark executa uma avaliação lenta e ainda não há nada
+        para acionar uma avaliação.</para>
+
+        <para>O Spark MLLib possui um pacote de regressão logística. A
+        Regressão Logística MLLib espera que os dados sejam fornecidos como
+        registros formatados em Ponto Rotulado. Isso é comum em implementações
+        de treinamento supervisionado no MLLib. Precisamos de rótulos de
+        coluna, então criamos uma matriz de nomes. Em seguida, fazemos um RDD
+        de ponto rotulado a partir do nosso RDD. Isso também é apenas uma
+        definição. Finalmente, definimos a Regressão Logística que queremos
+        executar. Os nomes das colunas são os nomes dos campos na definição de
+        registro ECL do arquivo, incluindo o nome “class”, que é o nome do
+        campo que contém o código de classificação.</para>
+
+        <programlisting> val names = Array("petal_length","petal_width", "sepal_length", 
+                   "sepal_width")
+ var lpRDD = myRDD.makeMLLibLabeledPoint("class", names)
+ val lr = new LogisticRegressionWithLBFGS().setNumClasses(3)</programlisting>
+
+        <para>A próxima etapa é definir o modelo, que é uma ação e fará com
+        que o Spark avalie as definições.</para>
+
+        <programlisting> val iris_model = lr.run(lpRDD)</programlisting>
+
+        <para>Agora nós temos um modelo. Utilizaremos esse modelo para pegar o
+        dataset original e usar o modelo para produzir novos rótulos. A
+        maneira correta de fazer isso é ter amostrado aleatoriamente alguns
+        dados em espera. Vamos usar o conjunto de dados original porque é mais
+        fácil mostrar como usar o conector. Em seguida, pegamos nossos dados
+        originais e usamos uma função de mapeamento definida em linha para
+        criar um novo registro com o valor de previsão e a classificação
+        original.</para>
+
+        <programlisting>  val predictionAndLabel = lpRDD.map {
+   case LabeledPoint(label, features) =&gt;
+     val prediction = iris_model.predict(features)
+   (prediction, label)
+ }</programlisting>
+
+        <para>A classe <emphasis>MulticlassMetrics</emphasis> agora pode ser
+        usada para produzir uma matriz de confusão.</para>
+
+        <programlisting> val metrics = new MulticlassMetrics(predictionAndLabel)
+ metrics.confusionMatrix</programlisting>
+      </sect2>
+
+      <sect2 id="dataframe_iris_lr">
+        <title>Dataframe_Iris_LR</title>
+
+        <para>O Dataframe_Iris_LR é semelhante ao Iris_LR, exceto que um
+        Dataframe é usado e as novas classes do ML Spark são usadas em vez das
+        antigas classes MLLib. Como o ML não está completamente pronto,
+        voltamos para uma classe MLLib para criar nossa matriz de
+        confusão.</para>
+
+        <para>Uma vez que o shell Spark é criado, precisamos das classes de
+        importação.</para>
+
+        <para><programlisting> import org.hpccsystems.spark.HpccFile
+ import org.apache.spark.sql.Dataset
+ import org.apache.spark.ml.feature.VectorAssembler
+ import org.apache.spark.ml.classification.LogisticRegression
+ import org.apache.spark.mllib.evaluation.MulticlassMetrics</programlisting></para>
+
+        <para>O próximo passo é estabelecer o objeto
+        <emphasis>HpccFile</emphasis> e criar o Dataframe. O valor do
+        <emphasis>spark</emphasis> é um objeto
+        <emphasis>SparkSession</emphasis> fornecido pelo shell e é no lugar do
+        objeto <emphasis>SparkContext</emphasis> .</para>
+
+        <programlisting> val espcon = new Connection("http", "myeclwatchhost", "8010");
+ espcon.setUserName("myuser");
+ espcon.setPassword("mypass");
+ val file = new HpccFile("myfile",espcon);
+</programlisting>
+
+        <para>As classes Spark <emphasis>ml</emphasis> Machine Learning usam
+        classes de contêiner de dados diferentes. No caso da Regressão
+        Logística, precisamos transformar nossas linhas de dados em uma linha
+        com uma coluna chamada “features" contendo os recursos e uma coluna
+        chamada “label" contendo o rótulo de classificação. Recall that our
+        row has “class”, “sepal_width”, “sepal_length”, “petal_width”, and
+        “petal_length” as the column names. Esse tipo de transformação pode
+        ser realizado com uma classe <emphasis>VectorAssembler</emphasis>
+        .</para>
+
+        <programlisting> val assembler = new VectorAssembler()
+ assembler.setInputCols(Array("petal_length","petal_width",
+                              "sepal_length", "sepal_width"))
+ assembler.setOutputCol("features")
+ val iris_fv = assembler.transform(my_df)
+                              .withColumnRenamed("class", "label")</programlisting>
+
+        <para>Agora que os dados (<emphasis>iris_fv</emphasis>) estão prontos,
+        definimos nosso modelo e ajustamos os dados.</para>
+
+        <programlisting> val lr = new LogisticRegression()
+ val iris_model = lr.fit(iris_fv</programlisting>
+
+        <para>Agora queremos aplicar nossa previsão e avaliar os resultados.
+        Como observado anteriormente, usaríamos um conjunto de dados de
+        validação para realizar a avaliação. Nós vamos ser preguiçosos e
+        apenas usar os dados originais para evitar a tarefa de amostragem.
+        Usamos a função <emphasis>transform(…)</emphasis> para o modelo para
+        adicionar a previsão. A função adiciona uma coluna chamada
+        “prediction” e define um novo conjunto de dados. A nova implementação
+        de Aprendizado de Máquina não possui capacidade de métricas para
+        produzir uma matriz de confusão, portanto, vamos pegar nosso conjunto
+        de dados com a coluna <emphasis>prediction</emphasis> e criar um novo
+        RDD com um conjunto de dados para uma classe
+        <emphasis>MulticlassMetrics</emphasis> .</para>
+
+        <programlisting> val with_preds = iris_model.transform(iris_fv)
+ val predictionAndLabel = with_preds.rdd.map(
+ r =&gt; (r.getDouble(r.fieldIndex("prediction")),
+ r.getDouble(r.fieldIndex("label"))))
+ val metrics = new MulticlassMetrics(predictionAndLabel)
+ metrics.confusionMatrix</programlisting>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

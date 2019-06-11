@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ECLExample_Anagram1" role="nobrk">
+  
+
+  <title>Exemplo ECL: Anagram1</title>
+
+  
+
+  <para>Este exemplo pega uma STRING e gera todos os anagramas possíveis a partir dela. Este código serve de base para um segundo exemplo que analisa quais destas são palavras reais usando um arquivo de dados da lista de palavras.</para>
+
+  <para><orderedlist>
+      <listitem>
+        <para>Abra o ECL IDE (Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
+        <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis role="bold"> &gt;&gt;</emphasis> ECL IDE ) e conecte-se ao seu HPCC.</para>
+      </listitem>
+
+      <listitem>
+        <para>Abra uma nova janela no Compilador ( <emphasis role="bold">CTRL+N</emphasis> ) e escreva o seguinte código:<programlisting>STRING Word := 'FRED' :STORED('Word'); R := RECORD STRING SoFar {MAXLENGTH(200)}; STRING Rest {MAXLENGTH(200)}; END; Init := DATASET([{'',Word}],R); R Pluck1(DATASET(R) infile) := FUNCTION R TakeOne(R le, UNSIGNED1 c) := TRANSFORM SELF.SoFar := le.SoFar + le.Rest[c]; SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..]; // Boundary Conditions handled automatically END; RETURN NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)); END; L := LOOP(Init,LENGTH(TRIM(Word)),Pluck1(ROWS(LEFT))); OUTPUT(L);</programlisting></para>
+      </listitem>
+
+      <listitem>
+        <para>Selecione <emphasis role="bold">thor</emphasis> selecione thor como seu cluster de destino.</para>
+      </listitem>
+
+      <listitem>
+        <para>Pressione o botão de verificação de sintaxe localizado na barra de ferramentas principal (ou pressione F7)</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Pressione o botão <emphasis role="bold">Submit</emphasis>  (ou as teclas ctrl+enter).</para>
+
+        <para><figure>
+            <title>Tarefa concluída</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/vmimg11a.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure>A marcação na cor verde indica uma conclusão bem-sucedida.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Clique na aba do número da workunit e, em seguida, na aba Result 1 para ver os resultados.</para>
+
+        <para><figure>
+            <title>Resultado do job concluído</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/vmimg11b.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+    </orderedlist></para>
+
+  <?hard-pagebreak ?>
+</sect2>

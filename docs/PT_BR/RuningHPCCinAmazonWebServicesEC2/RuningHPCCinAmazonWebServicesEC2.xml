@@ -1,0 +1,3316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <title>Executando a Plataforma Thor HPCC Systems com Amazon Web
+  Services</title>
+
+  <bookinfo>
+    <title>Executando a Plataforma Thor HPCC Systems com AWS</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname><emphasis role="redbold">Beta </emphasis> Equipe de
+      documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems é uma marca comercial registrada da LexisNexis Risk
+      Data Management Inc.</para>
+
+      <para>Amazon Web Services, AWS, Amazon EC 2, EC 2, Amazon Elastic
+      Compute Cloud, Amazon S3, Amazon Simple Storage Service, são marcas
+      comerciais, marcas registradas ou identidades visuais da AWS nos EUA
+      e/ou em outros países.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas. T</para>
+
+      <para>odos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+
+      <para/>
+
+      <para>
+        <emphasis role="redbold">BETA 2</emphasis>
+      </para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/AWS_COVER_LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introdução</title>
+
+    <para>Este guia fornece informações e orientação sobre como executar o
+    Cluster Thor da plataforma HPCC Systems dentro de um Amazon Web Services
+    (AWS) Elastic Cloud (EC2).</para>
+
+    <para>Isso permite que você <emphasis role="bold">instancie</emphasis> e
+    execute instantaneamente clusters Thor de HPCC Systems de diferentes
+    tamanhos.</para>
+
+    <para>O procedimento é útil para:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Prova de conceito</para>
+      </listitem>
+
+      <listitem>
+        <para>Experimentação</para>
+      </listitem>
+
+      <listitem>
+        <para>Aprendizagem</para>
+      </listitem>
+
+      <listitem>
+        <para>Usar a plataforma HPCC Systems sem estar sujeito a custos
+        administrativos e de hardware.</para>
+      </listitem>
+
+      <listitem>
+        <para>Criar e utilizar um cluster do HPCC Systems imediatamente, sem
+        precisar comprar ou instalar um novo hardware.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>É possível criar um cluster pequeno para tarefas menores ou clusters
+    maiores para grandes atividades. Essa flexibilidade permite combinar custo
+    e poder de processamento para a tarefa em questão.</para>
+
+    <para>Instanciar nós EC2 temporários permite “locar” a capacidade
+    computacional sem assumir compromissos a longo prazo. Dessa forma, você
+    paga por utilização em vez de desembolsar um valor fixo alto logo no
+    início.</para>
+
+    <para><emphasis role="bold">Lembre-se de que você deve encerrar quaisquer
+    instâncias desnecessárias para evitar pagar por um tempo de computação
+    desnecessário.</emphasis></para>
+
+    <para>Estamos trabalhando com a Amazon para aprimorar os processos de
+    configuração. <emphasis role="bold">Em breve, teremos um guia que mostrará
+    como executar um cluster do HPCC Systems em um ambiente do tipo Amazon
+    Elastic Map Reduce (EMR).</emphasis> Esperamos que esse método seja mais
+    robusto e fácil de configurar e operar. Além disso, o HPCC Systems está
+    desenvolvendo seu próprio Enterprise Cloud, mas esse projeto ainda não
+    está pronto para ser lançado.</para>
+
+    <sect1>
+      <title>Pré-requisitos e Suposições</title>
+
+      <para>Você vai precisar de:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Uma conta Amazon Web Services com EC2 habilitado</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma estação de trabalho com conexão à Internet para acessar o
+          Amazon Web Services; A estação de trabalho pode ser um:</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para><emphasis>PC (Computador) Windows ou </emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis>Um computador Linux com o Eclipse IDE e o
+                plugin ECL para Eclipse (disponível em breve). Um
+                computador</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis>Mac<superscript>*</superscript> com Eclipse
+                IDE e o plugin ECL para Eclipse (disponível em
+                breve)</emphasis></para>
+              </listitem>
+            </itemizedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Um navegador de Internet (Firefox, Internet Explorer, ou
+          Chrome)</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma ferramenta SSH, como PuTTY</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma ferramenta de geração e conversão de chaves, como
+          PuTTYGen</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma ferramenta de cópia de segurança (tais como WinSCP)</para>
+        </listitem>
+
+        <listitem>
+          <para>Familiaridade com navegação em sistemas de arquivo
+          Linux</para>
+        </listitem>
+      </itemizedlist>
+
+      <!--***eclipse info needs to be added-->
+
+      <para><footnote label="*">
+          <para>Alguns componentes necessários ainda não foram criados para a
+          plataforma Mac (por exemplo, o compilador ECLCC). Por enquanto, você
+          pode usar um emulador do Windows ou uma VM em um Mac.</para>
+        </footnote></para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+                <entry>Para obter instruções detalhadas da Amazon sobre
+                PuTTY/pcsp/ PUTTYGen, acesse: <para><ulink
+                url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink></para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect1>
+
+    <sect1>
+      <title>Início Rápido/Visão Geral</title>
+
+      <para><emphasis role="bold">Esta seção é um resumo dos detalhes deste
+      guia.</emphasis> Depois de concluir as etapas detalhadas a seguir, você
+      poderá usar este resumo para refrescar sua memória
+      posteriormente.</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+                <entry>Sugerimos a <emphasis role="bold">leitura</emphasis>
+                completa deste documento antes de começar.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Esta seção fornece etapas simples para executar um cluster Thor do
+      HPCC Systems dentro do Elastic Cloud (EC2) da Amazon Web Services (AWS).
+      Ele pressupõe que você saiba como usar o AWS, como se conectar a
+      instâncias do EC2, como usar os comandos bash do Linux e como usar o ssh
+      de seu computador específico para uma instância do EC2. Consulte a seção
+      <emphasis role="bold">Etapas Detalhadas</emphasis> para obter instruções
+      passo a passo.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Prepare o grupo de segurança e configure as portas abertas.
+          Você só precisa fazer isso uma vez para cada cluster.</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Faça o login no AWS Management Console da Amazon (<ulink
+              url="http://aws.amazon.com">http://aws.amazon.com</ulink>) e
+              selecione a aba EC2.</para>
+            </listitem>
+
+            <listitem>
+              <para>Crie um grupo de segurança e chame-o de <emphasis
+              role="bold">HPCC</emphasis>. O nome do grupo de segurança pode
+              ser qualquer coisa que você escolher, mas, para essas
+              instruções, usaremos o HPCC. Sugerimos um nome exclusivo do
+              grupo de segurança para cada cluster que você pretende
+              usar.</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique em <emphasis role="bold">Show/Hide </emphasis> no
+              canto superior direito e mostre o ID do grupo</para>
+            </listitem>
+
+            <listitem>
+              <para>Use a seguinte URL:<itemizedlist>
+                  <listitem>
+                    <para><emphasis role="bold">SSH</emphasis></para>
+
+                    <para>Para comunicação entre nós e para alcançar nós para
+                    configuração e resolução de problemas</para>
+                  </listitem>
+
+                  <listitem>
+                    <para><emphasis role="bold">TCP ports 8002, 8008, 8010,
+                    8015, 8145, 8050, 9876 </emphasis>(para acesso
+                    externo)</para>
+
+                    <para>Eles são para WsECL, ECL Direct, ECL Watch,
+                    Gerenciador de Configuração, WsAttributes, Roxie Config e
+                    Roxie Queries, respectivamente.</para>
+                  </listitem>
+
+                  <listitem>
+                    <para><emphasis role="bold">Portas TCP 1-65535</emphasis>
+                    (apenas para acesso interno)</para>
+
+                    <para>Digite o ID do grupo para o grupo do HPCC na caixa
+                    de texto Source.</para>
+                  </listitem>
+
+                  <listitem>
+                    <para><emphasis role="bold">Portas UDP 1-65535</emphasis>
+                    (apenas para acesso interno)</para>
+
+                    <para>Digite o ID do grupo para o grupo do HPCC na caixa
+                    de texto Source.</para>
+                  </listitem>
+
+                  <listitem>
+                    <para><emphasis role="bold">Solicitação </emphasis> PING
+                    (somente para acesso interno)</para>
+
+                    <para>Adicione uma regra ICMP custon para a solicitação de
+                    eco.</para>
+
+                    <para>Digite o ID do grupo para o grupo do HPCC na caixa
+                    de texto Source.</para>
+                  </listitem>
+
+                  <listitem>
+                    <para><emphasis role="bold">Resposta </emphasis> PING
+                    (somente para acesso interno)</para>
+
+                    <para>Adicione uma regra ICMP custon para a resposta de
+                    eco.</para>
+
+                    <para>Digite o ID do grupo para o grupo do HPCC na caixa
+                    de texto Source.</para>
+                  </listitem>
+                </itemizedlist></para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis role="bold">Apply Rule
+              Changes</emphasis> .</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+      </itemizedlist>
+
+      <?hard-pagebreak ?>
+
+      <itemizedlist>
+        <listitem>
+          <para>Iniciar instâncias do Elastic Cloud (EC2)</para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Faça o login no AWS Management Console da Amazon (<ulink
+                url="http://aws.amazon.com">http://aws.amazon.com</ulink>) e
+                selecione a aba EC2.</para>
+
+                <para>Conecte-se à região <emphasis role="bluebold">US East
+                (Virginia)</emphasis> (no canto superior esquerdo do console).
+                Isso é necessário para que os scripts de dados do usuário
+                funcionem corretamente. Não importa qual zona de
+                disponibilidade dentro da região à qual você se conecta (a, b,
+                c, etc).</para>
+              </listitem>
+
+              <listitem>
+                <para>Lançar os nós LTS do Ubuntu 10.04 de 64 bits para seu
+                cluster. Você pode usar também:</para>
+
+                <itemizedlist>
+                  <listitem>
+                    <para><emphasis role="bluebold">ami-fbbf7892</emphasis>
+                    (Amazon Instance Store: economical, but non-persistent)
+                    <emphasis role="bold">Recomendado</emphasis></para>
+                  </listitem>
+
+                  <listitem>
+                    <para><emphasis role="bluebold">ami-63be790a
+                    </emphasis>(Amazon EBS: persistent storage, but higher
+                    cost)</para>
+
+                    <para>Você pode usar o armazenamento do EBS, mas espera um
+                    desempenho pior, já que o EBS não está ajustado para
+                    acesso sequencial. Consulte <link linkend="ebs_answer">na
+                    seção FAQ</link> ) para obter mais detalhes.</para>
+
+                    <para>Devido às limitações de arquivos muito grandes em
+                    determinados fuse drivers, não recomendamos os fuse
+                    drivers no momento. Em vez disso, sugerimos que você
+                    aproveite uma montagem EBS para sua zona de pouso. Você
+                    pode anexar e montar um volume EBS muito grande no nó que
+                    contém sua zona de entrada de arquivo.</para>
+                  </listitem>
+                </itemizedlist>
+              </listitem>
+
+              <listitem>
+                <para>Escolha o número de instâncias. Nos nossos exemplos,
+                usamos 10. Selecione o tipo de instância <emphasis
+                role="bluebold">Large (m1.large)</emphasis>. Escolha qualquer
+                zona de disponibilidade. Não importa qual zona você escolhe
+                aqui, mas elas devem ser consistentes dentro do seu
+                cluster.</para>
+              </listitem>
+
+              <listitem>
+                <para>Faça o download do script de dados do usuário mais
+                recente disponível no URL listado abaixo. Abra-o em um editor
+                de texto, copie e cole o texto (não a URL) na caixa de script
+                de dados do usuário.</para>
+
+                <para><ulink
+                url="http://s3.amazonaws.com/hpccsystems-installs/userdatascripts.html ">http://s3.amazonaws.com/hpccsystems-installs/userdatascripts.html
+                </ulink></para>
+
+                <para>Observação: Alguns usuários do Firefox estão relatando
+                que seus nós não estão sendo instalados corretamente devido a
+                erros introduzidos no script de dados do usuário. Se você
+                encontrar esse erro, tente usar o Chrome.</para>
+              </listitem>
+
+              <listitem>
+                <para>Use um par de chaves existente ou crie um novo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Use o grupo de segurança do HPCC criado
+                anteriormente.</para>
+              </listitem>
+
+              <listitem>
+                <para>Liberem seus nós.</para>
+
+                <para>Agora você tem um cluster não configurado com o software
+                da Plataforma HPCC instalado. Continue para configurar seu
+                cluster</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+      </itemizedlist>
+
+      <?hard-pagebreak ?>
+
+      <itemizedlist>
+        <listitem>
+          <para>Colete os endereços IP privados para seus nós</para>
+
+          <para>Se você tiver um pequeno número de nós, poderá coletar essas
+          informações usando a interface do AWS Management Console.</para>
+
+          <para>Para clusters maiores, use o script <emphasis
+          role="bold">ips</emphasis> fornecido. Consulte <link
+          linkend="Collect">Coletando os Endereços IP Privados</link> para
+          obter detalhes.</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/ips</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Configurando seus sistemas HPCC Thor Cluster</para>
+
+          <orderedlist>
+            <listitem>
+              <para>SSH no primeiro nó do cluster usando o nome de usuário:
+              <emphasis role="bluebold">ubuntu</emphasis> <itemizedlist>
+                  <listitem>
+                    <para>Linux ou Mac:</para>
+
+                    <para><programlisting>ssh --i /&lt;pathto&gt;/&lt;identityfile.pem&gt; ubuntu@&lt;PUBLIC_DNS&gt; </programlisting></para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Windows</para>
+
+                    <para>Use PuTTY, Pageant e PuttyGen para o SSH no
+                    nó.</para>
+
+                    <para>Consulte <ulink
+                    url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink>
+                    para obter mais detalhes.</para>
+                  </listitem>
+                </itemizedlist></para>
+            </listitem>
+
+            <listitem>
+              <para>Inicie o Gerenciador de Configurações utilizando esse
+              comando:</para>
+
+              <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
+            </listitem>
+
+            <listitem>
+              <para>Em um navegador Web, acesse http://<emphasis
+              role="bluebold">&lt;PUBLIC_DNS&gt;:8015</emphasis> (onde
+              &lt;PUBLIC_DNS&gt; é o nome DNS público do nó a partir do qual
+              você iniciou o Gerenciador de Configurações).</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bold">Generate new environment
+              ...</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Insira <emphasis
+              role="bluebold">hpcc_config_01.xml</emphasis> como nome do
+              arquivo e pressione o botão <emphasis
+              role="bold">Next</emphasis> .</para>
+            </listitem>
+
+            <listitem>
+              <para>Digite os endereços IP privados de todos os seus nós
+              delimitados por um ponto e vírgula e, em seguida, pressione o
+              <emphasis role="bold">Next</emphasis> .</para>
+            </listitem>
+
+            <listitem>
+              <para>Aceite os padrões para um cluster Thor (cluster de
+              fabricação de dados).</para>
+            </listitem>
+
+            <listitem>
+              <para>Deixe o Roxie definido como <emphasis
+              role="bold">0</emphasis> e pressione o botão <emphasis
+              role="bold">Next</emphasis> .</para>
+            </listitem>
+
+            <listitem>
+              <para>A página Summary é exibida.</para>
+
+              <para>Esta página contém informações importantes, incluindo as
+              funções que cada servidor executará. Além dos nós do Thor,
+              existem processos de suporte alocados para outros nós. Veja a
+              lista de processos de suporte na seção <emphasis>Etapas
+              Detalhadas</emphasis> para mais informações.</para>
+            </listitem>
+
+            <listitem>
+              <para>Anote os nomes DNS (públicos) <emphasis
+              role="bold">externos</emphasis> ou endereços IP <emphasis
+              role="bold">externos </emphasis> para o ECLWatch (ESP Service) e
+              a Landing Zone (MyDropZone).</para>
+
+              <para>Você pode derivar isso do nome DNS público exibido no
+              Console da AWS. Por exemplo, o nome DNS <emphasis
+              role="bold">ec2- <emphasis
+              role="bluebold">50-16-37-76</emphasis> .compute-1.amazonaws.com
+              se </emphasis> traduz no endereço IP de <emphasis
+              role="bluebold">50.16.37.76</emphasis>.</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+      </itemizedlist>
+
+      <?hard-pagebreak ?>
+
+      <itemizedlist>
+        <listitem>
+          <para/>
+
+          <orderedlist continuation="continues" inheritnum="inherit">
+            <listitem override="11">
+              <para>Se você estiver usando uma AMI de armazenamento de
+              instâncias, conforme recomendado, deverá informar à plataforma
+              Thor de sistemas HPCC, onde está localizado o armazenamento da
+              instância. Na janela do navegador do Gerenciador de
+              Configurações:</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Pressione o botão <emphasis role="bold">Advanced View
+                  </emphasis>.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Marque a caixa de seleção <emphasis role="bold">Write
+                  Access </emphasis> na parte superior para ativar o modo de
+                  gravação.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Clique no link <emphasis
+                  role="bold">Directories</emphasis> à esquerda.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Prefira as seguintes entradas de diretório com
+                  <emphasis role="bluebold">/mnt<parameter/></emphasis></para>
+
+                  <blockquote>
+                    <para><informaltable frame="none" rowsep="0">
+                        <tgroup cols="1">
+                          <tbody>
+                            <row>
+                              <entry>temp</entry>
+                            </row>
+
+                            <row>
+                              <entry>data</entry>
+                            </row>
+
+                            <row>
+                              <entry>data2</entry>
+                            </row>
+
+                            <row>
+                              <entry>data3</entry>
+                            </row>
+
+                            <row>
+                              <entry>mirror</entry>
+                            </row>
+
+                            <row>
+                              <entry>query</entry>
+                            </row>
+                          </tbody>
+                        </tgroup>
+                      </informaltable></para>
+                  </blockquote>
+                </listitem>
+
+                <listitem>
+                  <para>Clique no link <emphasis role="bold">Drop
+                  Zone</emphasis> à esquerda e mude a entrada <emphasis
+                  role="bold">Directory</emphasis> para <emphasis
+                  role="bluebold">/mnt/mydropzone<phrase>.</phrase></emphasis></para>
+                </listitem>
+
+                <listitem>
+                  <para>Clique no ícone <emphasis role="bold">Save</emphasis>
+                  no topo.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Feche esta janela ou aba do navegador.</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+
+            <listitem>
+              <para>Retorne à janela do console que você usou para iniciar o
+              Gerenciador de Configurações e pressione <emphasis
+              role="bold">ctrl+c</emphasis> para finalizar o processo do
+              Config Manager.</para>
+            </listitem>
+
+            <listitem>
+              <para>Copie o arquivo xml de origem para o local ativo.</para>
+
+              <programlisting>sudo -u hpcc cp /etc/HPCCSystems/source/hpcc_config_01.xml \ 
+/etc/HPCCSystems/environment.xml</programlisting>
+            </listitem>
+
+            <listitem>
+              <para>Use o script <emphasis
+              role="bluebold">hpcc-push.sh</emphasis> para copiar o arquivo de
+              configuração do ambiente deste nó para todos os nós no arquivo
+              environment.xml ativo.</para>
+
+              <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh \ 
+/etc/HPCCSystems/environment.xml
+ /etc/HPCCSystems/environment.xml</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Use o script hpcc-run.sh abaixo para iniciar todos os
+              componentes nos nós.</para>
+
+              <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl 
+start hpccsystems-platform.target</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Em um navegador da Internet, conecte-se ao ECL Watch
+              usando http://<emphasis
+              role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (onde
+              &lt;PUBLIC_DNS&gt; é o nome do DNS público do seu servidor
+              ESP).</para>
+            </listitem>
+
+            <listitem>
+              <para>Se você não instalou o ECL IDE (ou o Eclipse IDE e o ECL
+              Plugin), você deve instalá-lo agora a partir do link Recursos no
+              ECl Watch. <emphasis role="bold">Observação</emphasis> : Um
+              plug-in para o Eclipse IDE está em versão beta limitada para
+              Linux e Windows e estará disponível em breve.</para>
+            </listitem>
+          </orderedlist>
+
+          <para>Agora você está pronto para usar sua plataforma HPCC Thor.
+          Você pode seguir as amostras básicas encontradas posteriormente
+          neste guia ou tentar algumas das sugestões no capítulo <link
+          linkend="NextSteps">Próximas Etapas. </link></para>
+
+          <para><emphasis role="bold">Lembre-se de que você deve encerrar
+          quaisquer instâncias desnecessárias para evitar pagar por um tempo
+          de computação desnecessário.</emphasis></para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+  </chapter>
+
+  <chapter id="Collect">
+    <title>Passos Detalhados</title>
+
+    <sect1 role="nobrk">
+      <title>Criar Chaves; Configurar grupos de segurança e portas TCP</title>
+
+      <para>Nesta seção, você criará chaves de segurança SSH, configurará seus
+      grupos de segurança e as portas de configuração a serem usadas antes de
+      iniciar a Amazon Machine Image (AMI).</para>
+
+      <para>Você usará as chaves SSH para autenticar ao conectar-se a partir
+      de sua estação de trabalho e para comunicação entre nós. Você também
+      configurará regras de firewall para que seu grupo de segurança da AWS
+      abra portas para acesso externo e comunicação entre nós.</para>
+
+      <para><emphasis role="bold">Este processo só é necessário na primeira
+      vez que você está configurando sua conta.</emphasis> Posteriormente,
+      você poderá reutilizar esses itens ao <emphasis
+      role="bold">instanciar</emphasis> um novo cluster.</para>
+
+      <sect2>
+        <title>Criar chaves de instância do EC2</title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Faça o login no AWS Management Console.</para>
+
+            <para><emphasis role="bold"><ulink
+            url="http://aws.amazon.com/console/">http://aws.amazon.com/console/</ulink></emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione <emphasis role="bold">o (EC2)</emphasis> na lista
+            suspensa no topo.</para>
+
+            <para><figure>
+                <title>Amazon Elastic Compute Cloud (EC2)</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_01.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para><emphasis role="bold">Observação</emphasis>: A interface do
+            AWS Management Console e outras telas podem ser alteradas sem
+            aviso prévio. No entanto, a maioria das funcionalidades deve
+            permanecer a mesma.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique no link <emphasis role="bold">Key Pairs</emphasis> à
+            esquerda.</para>
+
+            <para><figure>
+                <title>Pares de Chave</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_02.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no link <emphasis role="bold">Create Key
+            Pair</emphasis> .</para>
+
+            <para><figure>
+                <title>Criar um Par de chaves.</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_03.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+
+        <para><?hard-pagebreak ?></para>
+
+        <orderedlist continuation="continues" numeration="arabic">
+          <listitem>
+            <para>Nomeie-o como <emphasis role="bluebold">HPCC_Key </emphasis>
+            e pressione o botão <emphasis role="bold">Create</emphasis> .
+            (Você pode dar a ele qualquer nome válido, mas para este exemplo,
+            usamos <emphasis role="bluebold">HPCC_Key</emphasis>).</para>
+
+            <para><figure>
+                <title>HPCC_Key</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_04.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>O console oferece automaticamente o arquivo
+            HPCC_Key.pem para download.</para>
+
+            <para><figure>
+                <title>HPCC_Key.pem</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_05.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Salve o arquivo em sua máquina local e registre o local onde
+            você o salvou.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <tgroup cols="2">
+                  <colspec colwidth="80 pt"/>
+
+                  <colspec colwidth="260.40pt"/>
+
+                  <tbody>
+                    <row>
+                      <entry>Localização</entry>
+
+                      <entry/>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+
+            <para>Você usará esse arquivo posteriormente para se conectar aos
+            nós com seu cliente SSH e seu cliente SCP/SFTP.</para>
+          </listitem>
+
+          <listitem>
+            <para>Leia e feche todas as janelas de mensagens.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>A chave deve agora aparecer na sua lista de pares de chaves.
+            <figure>
+                <title>Lista de Pares de Chaves</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_KeyPairsList.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 role="brk">
+        <title role="brk">Crie um Grupo de Segurança e abra portas TCP/UDP
+        nele</title>
+
+        <para>Sugerimos um nome exclusivo do grupo de segurança para cada
+        cluster que você pretende usar.</para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Clique no link Grupos de Segurança à esquerda.</para>
+
+            <para><figure>
+                <title>Grupos de Segurança</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_07.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no link Create Security Group no topo da
+            página.</para>
+
+            <para><figure>
+                <title>Criar Grupos de Segurança</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_08.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Forneça os seguintes detalhes:</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <tgroup cols="2">
+                  <colspec colwidth="80 pt"/>
+
+                  <colspec colwidth="260.40pt"/>
+
+                  <tbody>
+                    <row>
+                      <entry>Nome</entry>
+
+                      <entry>HPCC</entry>
+                    </row>
+
+                    <row>
+                      <entry>Decrição</entry>
+
+                      <entry>High Performance Computing Cluster</entry>
+                    </row>
+
+                    <row>
+                      <entry>VPC</entry>
+
+                      <entry>No VPC</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis role="bold">Yes,
+            Create</emphasis> . <figure>
+                <title>Criar Grupo de Segurança</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_09.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>O grupo de segurança é exibido na lista.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione o Grupo de Segurança do HPCC (se ainda não estiver
+            selecionado).</para>
+
+            <para>Você deve ver os detalhes abaixo. Você pode precisar
+            redimensionar o quadro inferior.</para>
+
+            <para><figure>
+                <title>Grupos de Segurança</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_06.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Abra a porta SSH</title>
+
+        <para>Isso permite que você se conecte a seus nós usando SSH (via
+        linha de comando no Linux ou Putty no Windows).</para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Selecione a aba <emphasis role="bold">Inbound</emphasis>
+            .</para>
+          </listitem>
+
+          <listitem>
+            <para>Na lista suspensa <emphasis role="bold">Create a new
+            rule</emphasis> , selecione <emphasis role="bluebold">
+            SSH.</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Deixe os valores Source como <emphasis
+            role="bluebold">0.0.0.0/0</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Add Rule</emphasis>
+            .</para>
+
+            <para><figure>
+                <title>Adicionar Regra</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_10.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>A regra é exibida na lista à direita.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Abra portas TCP adicionais (8002, 8008, 8010, 8015, 8145, 8050
+        e 9876) para serviços HPCC</title>
+
+        <para>Isso permite acesso externo aos serviços do HPCC usando uma
+        interface baseada em navegador e o ECL IDE em sua máquina
+        local.</para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="189.50pt"/>
+
+              <colspec colwidth="35.50pt"/>
+
+              <tbody>
+                <row>
+                  <entry>WsECL</entry>
+
+                  <entry>8002</entry>
+                </row>
+
+                <row>
+                  <entry>ECL Direct</entry>
+
+                  <entry>8008</entry>
+                </row>
+
+                <row>
+                  <entry>ECL Watch</entry>
+
+                  <entry>8010</entry>
+                </row>
+
+                <row>
+                  <entry>Configuration Manager</entry>
+
+                  <entry>8015</entry>
+                </row>
+
+                <row>
+                  <entry>WsAtrtributes</entry>
+
+                  <entry>8145</entry>
+                </row>
+
+                <row>
+                  <entry>Roxie Config</entry>
+
+                  <entry>8050</entry>
+                </row>
+
+                <row>
+                  <entry>Roxie</entry>
+
+                  <entry>9876</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Na lista suspensa <emphasis role="bold">Create a new
+            rule</emphasis> , selecione <emphasis role="bluebold">Custom TCP
+            rule</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Defina o intervalo de portas para <emphasis
+            role="bluebold">8002</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Add Rule</emphasis>
+            .</para>
+          </listitem>
+
+          <listitem>
+            <para>Repita as três etapas anteriores para as portas <emphasis
+            role="bluebold">8008, 8010, 8015, 8145, 8050 e
+            9876</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Apply Rule
+            Changes</emphasis> .</para>
+
+            <para><figure>
+                <title>Aplicar alteração de regra</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_11.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Abra portas TCP para comunicação entre nós</title>
+
+        <para>Essas portas estão abertas <emphasis
+        role="bold">apenas</emphasis> para os IPs no seu grupo de segurança da
+        AWS. Em outras palavras, eles não permitem o acesso de instâncias
+        externas ou outras instâncias da AWS.</para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Na lista suspensa <emphasis role="bold">Create a new
+            rule</emphasis> , selecione <emphasis role="bluebold">Custom TCP
+            rule</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Defina o intervalo de portas para <emphasis
+            role="bluebold">1-65535</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Na caixa de entrada <emphasis role="bold">Source</emphasis>
+            , digite <emphasis role="bluebold">HPCC</emphasis> e aguarde a
+            exibição da lista suspensa. Quando aparecer, selecione seu grupo
+            de segurança como a fonte.</para>
+
+            <para><figure>
+                <title>Selecione o grupo de segurança como fonte</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_12.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Add Rule</emphasis>
+            .</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Apply Rule
+            Changes</emphasis> .</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Abra portas UDP para comunicação entre nós</title>
+
+        <para>Essas portas estão abertas <emphasis
+        role="bold">apenas</emphasis> para os IPs no seu grupo de segurança da
+        AWS. Em outras palavras, eles não permitem o acesso de instâncias
+        externas ou outras instâncias da AWS.</para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Na lista suspensa <emphasis role="bold">Create a new
+            rule</emphasis> , selecione <emphasis role="bluebold">Custom UDP
+            rule</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Defina o Port Range para <emphasis
+            role="bluebold">1-65535</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Na caixa de entrada <emphasis role="bold">Source</emphasis>
+            , digite <emphasis role="bluebold">HPCC</emphasis> e aguarde a
+            exibição da lista suspensa. Quando aparecer, selecione seu grupo
+            de segurança como a fonte.</para>
+
+            <para><figure>
+                <title>Selecione o grupo de segurança como fonte</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_12a.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Add Rule</emphasis>
+            .</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Apply Rule
+            Changes</emphasis> .</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Abrir o acesso ao ping</title>
+
+        <para>Essas portas estão abertas <emphasis
+        role="bold">apenas</emphasis> para os IPs no seu grupo de segurança da
+        AWS. Em outras palavras, eles não permitem o acesso de fora ou de
+        outras instâncias da AWS. Os scripts usam o Ping para verificar a
+        disponibilidade de um nó antes de tentar uma ação.</para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Na lista suspensa Create a new rule, selecione <emphasis
+            role="bluebold">Custom ICMP rule</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Na lista suspensa de tipos, selecione <emphasis
+            role="bluebold">Echo Request</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Na caixa de entrada <emphasis role="bold">Source</emphasis>
+            , digite <emphasis role="bluebold">HPCC</emphasis> e aguarde a
+            exibição da lista suspensa. Quando aparecer, selecione seu grupo
+            de segurança como a fonte.</para>
+
+            <para><figure>
+                <title>Selecione Security Group</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_12c.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>, pressione o botão <emphasis role="bold">Add Rule
+            </emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Na lista suspensa Create a new rule, selecione <emphasis
+            role="bluebold">Custom ICMP rule</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Na lista suspensa de tipos, selecione <emphasis
+            role="bluebold">Echo Reply</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Na caixa de entrada <emphasis role="bold">Source</emphasis>
+            , digite <emphasis role="bluebold">HPCC</emphasis> e aguarde a
+            exibição da lista suspensa. Quando aparecer, selecione seu grupo
+            de segurança como a fonte.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Adicionar Regra
+            </emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Apply Rule Changes
+            </emphasis>.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Iniciar instâncias do Ubuntu 10.04 AMI</title>
+
+      <para>Nesta seção, iniciaremos um conjunto de máquinas Ubuntu 10.04 que
+      serão usadas em sua plataforma Thor do HPCC Systems.</para>
+
+      <sect2>
+        <title>Iniciar instâncias do Ubuntu 10.04 AMI</title>
+
+        <para>Uma AMI (Amazon Machine Image) é uma imagem de máquina
+        pré-configurada contendo um sistema operacional e outras
+        configurações.</para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Na lista suspensa Region à esquerda, selecione <emphasis
+            role="bluebold">US East (Virginia)</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no link <emphasis role="bold">Instances</emphasis> à
+            esquerda e pressione o botão <emphasis role="bold">Launch
+            Instance</emphasis> .</para>
+
+            <para><figure>
+                <title>Iniciar instância</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_13.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>O assistente de Criação de nova instância é exibido.</para>
+
+            <para><figure>
+                <title>Criar uma nova instância</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_13a.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione <emphasis role="bold">Launch Classic
+            Wizard</emphasis> e depois pressione o botão <emphasis
+            role="bold">Continue</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione a aba <emphasis role="bold">Community
+            AMIs</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Na lista suspensa Viewing, selecione <emphasis
+            role="bluebold">All Images</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Digite o ID da AMI na caixa de pesquisa.</para>
+
+            <para><itemizedlist>
+                <listitem>
+                  <para><emphasis role="bluebold">ami-fbbf7892</emphasis>
+                  (Amazon Instance Store: economical, but non-persistent)
+                  <emphasis role="bold">Recomendado</emphasis></para>
+                </listitem>
+
+                <listitem>
+                  <para><emphasis role="bluebold">ami-63be790a
+                  </emphasis>(Amazon EBS: persistent storage, but higher
+                  cost)</para>
+
+                  <para>Você pode usar o armazenamento do EBS, mas espera um
+                  desempenho pior, já que o EBS não está ajustado para acesso
+                  sequencial. Consulte <link linkend="ebs_answer">na seção
+                  FAQ</link> ) para obter mais detalhes. Devido às limitações
+                  de arquivos muito grandes em determinados fuse drivers, não
+                  recomendamos os fuse drivers no momento. Em vez disso,
+                  sugerimos que você aproveite uma montagem EBS para sua zona
+                  de pouso. Você pode anexar e montar um volume EBS muito
+                  grande no nó que contém sua zona de entrada de
+                  arquivo.</para>
+                </listitem>
+              </itemizedlist><figure>
+                <title>AMI Id</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_14.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>Você pode ter que esperar um minuto ou dois para que o
+            sistema encontre a AMI. Se você não conseguir encontrar a AMI,
+            verifique se escolheu <emphasis role="bluebold">US East
+            (Virginia)</emphasis> como sua região. Região é selecionada em
+            Navegação no AWS Management Console.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Select</emphasis> ao
+            lado da AMI.</para>
+
+            <para>O Assistente para Instâncias de Solicitação é iniciado. Você
+            usará essa ferramenta da AWS para definir suas instâncias do
+            sistema.</para>
+          </listitem>
+
+          <listitem>
+            <para>Em <emphasis role="bold">Instance Detail</emphasis>, forneça
+            o número de instâncias que você deseja iniciar.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Use as configurações padrão para todo o resto.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <tgroup cols="2">
+                  <colspec colwidth="76.35pt"/>
+
+                  <colspec colwidth="351.90pt"/>
+
+                  <tbody>
+                    <row>
+                      <entry>Availability Zone</entry>
+
+                      <entry>no preference</entry>
+                    </row>
+
+                    <row>
+                      <entry>Instance Type</entry>
+
+                      <entry>Selecione o tamanho apropriado da instância. Nós
+                      sugerimos <emphasis role="bold">Large</emphasis> para
+                      uso típico</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+
+            <para><figure>
+                <title>Instance Type</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_15.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão <emphasis role="bold">Continue
+            </emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Vá para a página da Web no URL abaixo. Esta página lista
+            todos os scripts de dados do usuário disponíveis. Faça o download
+            daquele que deseja utilizar.</para>
+
+            <para><programlisting>http://s3.amazonaws.com/hpccsystems-installs/userdatascripts.html</programlisting></para>
+
+            <para>O script de dados do usuário escolhido determinará qual
+            versão da plataforma do HPCC deve ser instanciada. Versões mais
+            antigas permanecerão disponíveis para que você possa recriar
+            qualquer versão de uma plataforma. Isso permite que você continue
+            usando a versão com a qual está familiarizado e atualize quando
+            quiser.</para>
+
+            <para>Observação: Alguns usuários do Firefox estão relatando que
+            seus nós não estão sendo instalados corretamente devido a erros
+            introduzidos no script de dados do usuário. Se você encontrar esse
+            erro, tente usar o Chrome.</para>
+          </listitem>
+
+          <listitem>
+            <para>Abra o script em qualquer editor de texto e copie o
+            texto.</para>
+          </listitem>
+
+          <listitem>
+            <para>Em <emphasis role="bold">Advanced Instance
+            Options</emphasis>, cole o texto do script de dados do usuário na
+            caixa de texto de dados do usuário.</para>
+
+            <para>O script <emphasis>userdata.sh</emphasis> executa as
+            seguintes ações:</para>
+
+            <informaltable frame="none" rowsep="0">
+              <tgroup cols="1">
+                <tbody>
+                  <row>
+                    <entry>Cria o usuário <emphasis>hpcc</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry>Troca de chaves para o usuário hpcc</entry>
+                  </row>
+
+                  <row>
+                    <entry>Instalar dependências dos pacotes</entry>
+                  </row>
+
+                  <row>
+                    <entry>Instala a versão estável mais recente do pacote da
+                    plataforma HPCC</entry>
+                  </row>
+
+                  <row>
+                    <entry>Atualiza o owner de <emphasis
+                    role="bold">/mnt</emphasis> para instância de
+                    armazenamento</entry>
+                  </row>
+
+                  <row>
+                    <entry>Atualiza o proprietário e as permissões de alguns
+                    outros arquivos e pastas</entry>
+                  </row>
+
+                  <row>
+                    <entry>Instala pacotes suplementares para o HPCC</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Mantenha as configurações padrão para todo o resto e
+            pressione o botão <emphasis role="bold">Continue</emphasis>
+            .</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <tgroup cols="2">
+                  <colspec colwidth="190 pt"/>
+
+                  <colspec colwidth="117.00pt"/>
+
+                  <tbody>
+                    <row>
+                      <entry>0Kernel ID</entry>
+
+                      <entry>O padrão</entry>
+                    </row>
+
+                    <row>
+                      <entry>Ram Disk ID</entry>
+
+                      <entry>O padrão</entry>
+                    </row>
+
+                    <row>
+                      <entry>Monitoring</entry>
+
+                      <entry>Desmarque</entry>
+                    </row>
+
+                    <row>
+                      <entry>Termination Protection</entry>
+
+                      <entry>Desmarque</entry>
+                    </row>
+
+                    <row>
+                      <entry>Shutdown Behavior</entry>
+
+                      <entry>Stop</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Na configuração <emphasis role="bold">Key/Value</emphasis> ,
+            digite <emphasis role="bluebold">HPCC_Node</emphasis> como nome e
+            pressione o botão <emphasis role="bold">Continue</emphasis>
+            .</para>
+          </listitem>
+
+          <listitem>
+            <para>Na aba <emphasis role="bold">Create Key Pair</emphasis> ,
+            selecione <emphasis role="bold">Choose from your existing Key
+            Pairs</emphasis>, selecione o <emphasis
+            role="bluebold">HPCC_Key</emphasis> na lista suspensa e, em
+            seguida, pressione o botão <emphasis
+            role="bold">Continue</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Em <emphasis role="bold">Configure Firewall</emphasis>,
+            selecione o grupo de segurança <emphasis
+            role="bluebold">HPCC</emphasis> e, em seguida, pressione o botão
+            <emphasis role="bold">Continue</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Em <emphasis role="bold">Review</emphasis>, revise suas
+            configurações e pressione o botão <emphasis
+            role="bold">Launch</emphasis> .</para>
+
+            <para><figure>
+                <title>Iniciar</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_16a.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+
+        <para>Agora você tem um cluster não configurado com o software da
+        Plataforma HPCC instalado. Continue para configurar seu
+        cluster.</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic fileref="images/warning.png"/></entry>
+
+                  <entry>Neste exemplo, estamos iniciando 10 nós. Para
+                  instanciar mais de 20 nós, você deve solicitar permissão da
+                  Amazon. Veja <ulink
+                  url="http://aws.amazon.com/contact-us/ec2-request/ ">http://aws.amazon.com/contact-us/ec2-request/</ulink>
+                  para detalhes. Além disso, sua conta deve ser verificada
+                  antes que a Amazon permita que você ative
+                  instâncias.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Visualizando suas instâncias</title>
+
+      <para>Clique em <emphasis role="bold">View your instances na página de
+      Instâncias</emphasis> e aguarde até que o status da sua instância esteja
+      em <emphasis>execução</emphasis>.</para>
+
+      <para><figure>
+          <title>Visualizar instâncias</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/AWS_17.jpg"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Observe nos detalhes da instância (quadro inferior) que cada
+      instância tem um endereço IP privado e público que pode ser derivado das
+      entradas DNS privadas e públicas (suas entradas serão diferentes). Você
+      precisará dos IPs privados posteriormente ao usar o HPCC Configuration
+      Manager.</para>
+
+      <para><figure>
+          <title>Detalhes da Instância</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/AWS_18.jpg"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Observe que a convenção de nomenclatura usa o IP no nome. Por
+      exemplo:</para>
+
+      <blockquote>
+        <para>Private DNS = ip-10-82-210-192.ec2.internal</para>
+
+        <para>Private IP = 10.82.210.192</para>
+
+        <para>Public DNS = ec2-75-101-212-180.compute-1.amazonaws.com</para>
+      </blockquote>
+
+      <para/>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+              <entry>IPs privados são para comunicações entre nós. Os nomes
+              DNS públicos são para comunicação com um nó de fora da nuvem.
+              <emphasis role="bold">Você precisará dos IPs privados
+              posteriormente ao usar o HPCC Configuration Manager. Você também
+              precisará saber o nome DNS público do seu nó ESP e seu nó Zona
+              de Entrada de Arquivo.</emphasis></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect1>
+
+    <sect1>
+      <title>Colete os endereços IP privados de seus nós.</title>
+
+      <para>As instâncias do EC2 recebem endereços IP aleatórios e geralmente
+      não são contíguos. O HPCC Configuration Manager precisa de uma lista de
+      IPs como critérios de entrada.</para>
+
+      <para>Se você tiver apenas alguns nós, poderá coletar essas informações
+      a partir da interface do AWS Management Console, no entanto, isso seria
+      demorado em grandes clusters. Para ajudar a coletar essas informações, o
+      script de dados do usuário instalou um script para essa
+      finalidade.</para>
+
+      <para>Para usar o script, você precisará:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Suas chaves de acesso da AWS (ambas Access Key ID e Secret
+          Access Key).</para>
+
+          <para>Você pode encontrá-los nas configurações da sua conta no AWS
+          Management Console</para>
+        </listitem>
+
+        <listitem>
+          <para>A região que você inciou a partir de (geralmente
+          us-east-1)</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Para usar o script:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>SSH no primeiro nó de suas instâncias.<itemizedlist>
+              <listitem>
+                <para>Linux ou Mac:</para>
+
+                <para><programlisting>ssh --i /&lt;pathto&gt;/&lt;identityfile.pem&gt; ubuntu@&lt;PUBLIC_DNS&gt; </programlisting></para>
+              </listitem>
+
+              <listitem>
+                <para>Windows</para>
+
+                <para>Use PuTTY, Pageant e PuttyGen para o SSH no nó.</para>
+
+                <para>Consulte <ulink
+                url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink>
+                para obter mais detalhes.</para>
+              </listitem>
+            </itemizedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>No console, execute este comando:</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/ips</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Siga as instruções até que o script seja concluído.</para>
+
+          <para>Quando o script é concluído, os endereços IP são listados na
+          janela do console e também salvos em um arquivo denominado <emphasis
+          role="bold">ips.txt</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie a lista de IPs e depois cole no HPCC Configuration
+          Manager (veja a próxima seção)</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Configurar seu Cluster Thor HPCC System</title>
+
+      <para>Neste ponto, seus nós estão em execução e os pacotes da plataforma
+      HPCC Systems e todas as dependências estão instaladas. Nesta seção, você
+      usará o Gerenciador de Configuração do HPCC (HPCC's Configuration
+      Manage) para configurar sua plataforma Thor do HPCC Systems.</para>
+
+      <para>Se você estiver usando o PuTTY, deverá usar o PuTTYgen para
+      converter o arquivo .PEM em um arquivo .PPK, adicioná-lo à sessão do
+      PuTTY ou adicionar a chave ao Pageant.</para>
+
+      <para>Consulte <ulink
+      url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink>
+      para obter mais detalhes.</para>
+
+      <sect2>
+        <title>SSH para o primeiro nó e Inicie o Gerenciador de Configurações
+        (Configuration Manager)</title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>SSH no primeiro nó de suas instâncias.<itemizedlist>
+                <listitem>
+                  <para>Linux ou Mac:</para>
+
+                  <para><programlisting>ssh --i /&lt;pathto&gt;/&lt;identityfile.pem&gt; ubuntu@&lt;PUBLIC_DNS&gt; </programlisting></para>
+                </listitem>
+
+                <listitem>
+                  <para>Windows</para>
+
+                  <para>Use PuTTY, Pageant e PuttyGen para o SSH no nó.</para>
+
+                  <para>Consulte <ulink
+                  url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink>
+                  para obter mais detalhes.</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+
+          <listitem>
+            <para>Entre como usuário: <emphasis
+            role="bluebold">ubuntu.</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>No prompt de comando, digite o seguinte comando para iniciar
+            o Gerenciador de Configurações.</para>
+
+            <para><emphasis/><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting><emphasis/></para>
+          </listitem>
+
+          <listitem>
+            <para>Deixe a janela do console aberta até que você esteja pronto
+            para finalizar o Gerenciador de Configurações (Configuration
+            Manager). Se desejar, você pode minimizá-la.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2>
+        <title>Acesse a interface do Assistente do Configuration Manager para
+        gerar seu arquivo de configuração do ambiente HPCC</title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Em um navegador da Web, vá para http://<emphasis
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8015</emphasis> (onde
+            PUBLIC_DNS é o nome DNS público do nó no qual você iniciou o
+            Gerenciador de Configuração).</para>
+          </listitem>
+
+          <listitem>
+            <para>Na primeira página do assistente, selecione <emphasis
+            role="bold">Generate new environment using
+            wizard</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Insira <emphasis
+            role="bluebold">hpcc_config_01.xml</emphasis> como nome do arquivo
+            e pressione o botão <emphasis role="bold">Next</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Na próxima página do assistente, insira os endereços IP
+            <emphasis role="bold">privados</emphasis> de seus nós delimitados
+            por um ponto e vírgula e, em seguida, pressione o botão <emphasis
+            role="bold">Next</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <para>Na próxima página do assistente, aceite os padrões para um
+            cluster Thor (cluster de fabricação de dados).</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Deixe o Roxie definido como
+            0.</emphasis> Para obter detalhes sobre o uso de um cluster Roxie,
+            consulte o manual <emphasis>Instalando e Executando a Plataforma
+            HPCC</emphasis> . Detalhes sobre a execução de um cluster Roxie na
+            AWS aparecerão em um manual futuro.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis role="bold">Next</emphasis>
+            .</para>
+
+            <para>A página Summary é exibida. Esta página contém informações
+            valiosas sobre sua configuração, incluindo quais funções cada
+            servidor executará. Além dos nós Thor, há processos de suporte que
+            são alocados para outros nós em sua instanciação.</para>
+
+            <para><figure>
+                <title>Página de Resumo</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_19.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Anote o endereço IP interno para o ECLWatch (Serviço ESP) e
+            a Zona de Entrada de Arquivo (MyDropZone).</para>
+
+            <para>Você identificará o nó usando seu IP interno. Você também
+            precisará do nome DNS externo ou do endereço IP externo
+            posteriormente. Você pode ver o nome DNS no AWS Management
+            Console.</para>
+
+            <para>Para derivar o IP <emphasis role="bold">externo</emphasis>
+            do nome do DNS público exibido no AWS Console, observe a parte
+            numérica. Por exemplo, o nome DNS <emphasis role="bold">ec2-
+            <emphasis role="bluebold">50-16-37-76</emphasis>
+            .compute-1.amazonaws.com se </emphasis> traduz no endereço IP de
+            <emphasis role="bluebold">50.16.37.76</emphasis>.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <tgroup cols="3">
+                  <colspec colwidth="126.00pt"/>
+
+                  <colspec colwidth="189.00pt"/>
+
+                  <colspec colwidth="189.00pt"/>
+
+                  <tbody>
+                    <row>
+                      <entry>Name</entry>
+
+                      <entry>IP interno</entry>
+
+                      <entry>Nome DNS externo ou IP</entry>
+                    </row>
+
+                    <row>
+                      <entry>ESP Server</entry>
+
+                      <entry/>
+
+                      <entry/>
+                    </row>
+
+                    <row>
+                      <entry>LZ Server</entry>
+
+                      <entry/>
+
+                      <entry/>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Se você escolheu a AMI para armazenamento persistente
+            (Amazon EBS), pressione o botão <emphasis
+            role="bold">Finish</emphasis> .</para>
+
+            <para>Uma mensagem indicando sucesso é exibida.</para>
+
+            <para><figure>
+                <title>Sucesso</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_20.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Se você estiver usando uma AMI de armazenamento de
+            instâncias, conforme recomendado, deverá informar à plataforma
+            Thor de sistemas HPCC, onde está localizado o armazenamento da
+            instância. Na janela do navegador do Gerenciador de
+            Configurações:</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Pressione o botão <emphasis role="bold">Advanced View
+                </emphasis>.</para>
+              </listitem>
+
+              <listitem>
+                <para>Marque a caixa de seleção <emphasis role="bold">Write
+                Access </emphasis> na parte superior para ativar o modo de
+                gravação.</para>
+              </listitem>
+
+              <listitem>
+                <para>Clique no link <emphasis
+                role="bold">Directories</emphasis> à esquerda.</para>
+              </listitem>
+
+              <listitem>
+                <para>Prefira as seguintes entradas de diretório com <emphasis
+                role="bluebold">/mnt<parameter/></emphasis></para>
+
+                <blockquote>
+                  <para><informaltable frame="none" rowsep="0">
+                      <tgroup cols="1">
+                        <tbody>
+                          <row>
+                            <entry>temp</entry>
+                          </row>
+
+                          <row>
+                            <entry>data</entry>
+                          </row>
+
+                          <row>
+                            <entry>data2</entry>
+                          </row>
+
+                          <row>
+                            <entry>data3</entry>
+                          </row>
+
+                          <row>
+                            <entry>mirror</entry>
+                          </row>
+
+                          <row>
+                            <entry>query</entry>
+                          </row>
+                        </tbody>
+                      </tgroup>
+                    </informaltable></para>
+                </blockquote>
+              </listitem>
+
+              <listitem>
+                <para>Clique no link <emphasis role="bold">Drop
+                Zone</emphasis> à esquerda e mude a entrada <emphasis
+                role="bold">Directory</emphasis> para <emphasis
+                role="bluebold">/mnt/mydropzone<phrase>.</phrase></emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Clique no ícone <emphasis role="bold">Save</emphasis> no
+                topo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Feche esta janela ou aba do navegador.</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Propague o arquivo de configuração para todos os nós</title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Retornar para a janela do console usada para iniciar o
+          Gerenciador de Configurações.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pressione <emphasis role="bold">ctrl+c</emphasis> para
+          finalizar o Configuration Manager.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie o arquivo xml de origem para o local ativo.</para>
+
+          <para><programlisting>sudo cp /etc/HPCCSystems/source/hpcc_config_01.xml /etc/HPCCSystems/environment.xml</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Use o script <emphasis role="bluebold">hpcc-push.sh</emphasis>
+          para copiar o arquivo de configuração do ambiente deste nó para
+          todos os nós no arquivo environment.xml ativo.</para>
+
+          <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh \ -s 
+/etc/HPCCSystems/environment.xml -t /etc/HPCCSystems/environment.xml</programlisting></para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Inicie sua plataforma Thor</title>
+
+      <para>Na janela do console:</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Use o <emphasis role="bluebold">hpcc-run.sh</emphasis> abaixo
+          para iniciar todos os componentes nos nós.</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl start hpccsystems-platform.target</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Em um navegador da Internet, conecte-se ao ECL Watch usando
+          http://<emphasis role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis>
+          (onde PUBLIC_DNS é o nome do DNS público do seu servidor
+          ESP).</para>
+
+          <para><figure>
+              <title>ECL Watch</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/AWS_21.jpg" vendor="eclwatchSS"/>
+
+                  <!--Check this why does roxie display?***
+-->
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Executando ECL</title>
+
+    <para/>
+
+    <sect1 id="ECL-on-a-single-node-system" role="nobrk">
+      <title>Executando o ECL no seu cluster Thor do HPCC Systems</title>
+
+      <para>Agora que a plataforma está em execução, você pode criar e
+      executar alguns ECL<footnote>
+          <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+          role="bold">C</emphasis>ontrol <emphasis
+          role="bold">L</emphasis>anguage (ECL) é uma linguagem de programação
+          declarativa e centrada em dados usada para gerenciar todos os
+          aspectos da junção, classificação e compilação de dados massivos que
+          realmente diferenciam o HPCC das demais tecnologias na sua
+          capacidade de fornecer análise de dados flexíveis em escala
+          massiva</para>
+        </footnote> Codifique usando o ECL IDE, o compilador ECL da linha de
+      comando, ou a ferramenta ECLPlus.</para>
+
+      <sect2>
+        <title>Instalar o ECL IDE e HPCC Client Tools</title>
+
+        <para>O ECL IDE precisa ser instalado apenas uma vez. Pule esta seção
+        caso ele já tenha sido instalado.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Em um navegador da Internet, conecte-se ao ECL Watch
+              usando http://<emphasis
+              role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (onde
+              PUBLIC_DNS é o nome do DNS público do seu servidor ESP).</para>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt"/>
+
+                    <colspec/>
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png"/></entry>
+
+                        <entry>Seu endereço IP poderá ser diferente dos
+                        endereços fornecidos nas imagens de exemplo. Favor
+                        usar o endereço IP do <emphasis
+                        role="bold">seu</emphasis> nó.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Na página ECL Watch, clique no link <emphasis
+              role="bold">Resources </emphasis> no menu à esquerda.</para>
+
+              <para><figure>
+                  <title>Página de Recursos do ECL Watch</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/GS_1311.JPG"
+                                 vendor="eclwatchSS"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <para>Siga o link para a página do portal de download do HPCC
+              System.</para>
+            </listitem>
+
+            <listitem>
+              <para>Clique no link <emphasis role="bold">ECL IDE and Client
+              Tools </emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Siga as instruções na página para instalar o ECL
+              IDE.</para>
+            </listitem>
+
+            <listitem>
+              <para>Instale o ECL IDE, seguindo as instruções no programa de
+              instalação. Após o ECL IDE ter sido instalado com sucesso, você
+              pode prosseguir.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Executando o programa ECL do ECL IDE</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Abra o ECL IDE em sua estação de trabalho Windows, a
+              partir do menu Iniciar. (<emphasis role="bold">Start</emphasis>
+              &gt;&gt; <emphasis role="bold">All Programs</emphasis> &gt;&gt;
+              <emphasis role="bold"> HPCCSystems</emphasis> &gt;&gt; <emphasis
+              role="bold">ECL IDE</emphasis> ).</para>
+
+              <informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png"/></entry>
+
+                      <entry>Você pode criar um atalho em sua área de trabalho
+                      para acessar rapidamente o ECL IDE.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+
+            <listitem>
+              <para>Na janela de Login, pressione o botão <emphasis
+              role="bold">Preferences</emphasis> .</para>
+            </listitem>
+
+            <listitem>
+              <para>No controle de entrada do <emphasis
+              role="bold">Servidor</emphasis> , digite o nome DNS público do
+              seu servidor ESP ou o <emphasis
+              role="bluebold">&lt;PUBLIC_IP&gt;</emphasis> (onde PUBLIC_IP é o
+              endereço IP público do seu servidor ESP) e pressione o botão
+              <emphasis role="bold">OK</emphasis> .</para>
+
+              <para><figure>
+                  <title>Janela de Login</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_IDE_Preferences.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Digite a <emphasis role="bold">Login ID (ID do
+              Login)</emphasis> e <emphasis role="bold"> senha</emphasis>
+              fornecidas na caixa de diálogo Login.</para>
+
+              <informaltable colsep="1" rowsep="1">
+                <tgroup cols="2">
+                  <colspec colwidth="80pt"/>
+
+                  <colspec colwidth="100pt"/>
+
+                  <tbody>
+                    <row>
+                      <entry>Login ID</entry>
+
+                      <entry><emphasis
+                      role="bluebold">hpccdemo</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Password</entry>
+
+                      <entry><emphasis
+                      role="bluebold">hpccdemo</emphasis></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+
+              <figure>
+                <title>Janela de Login</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg06a.JPG"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>
+            </listitem>
+
+            <listitem>
+              <para>Abra uma nova <emphasis role="bold">Janela do
+              compilador</emphasis> (CTRL+N) e escreva o seguinte
+              código:</para>
+
+              <para><programlisting>OUTPUT('Hello World');
+</programlisting></para>
+
+              <para>Isso também poderia ser escrito como:</para>
+
+              <para><programlisting>'Hello World';
+</programlisting>Na segunda listagem de programa, a palavra-chave OUTPUT é
+              ocultada. Isso ocorre possivelmente porque a linguagem é
+              declarativa e a ação OUTPUT é implícita.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bluebold">thor</emphasis> como
+              seu cluster de destino.</para>
+
+              <para><emphasis role="bold">Thor</emphasis> é o componente da
+              Refinaria de dados do seu HPCC. Trata-se de um cluster de
+              computador massivamente paralelo baseado em disco, otimizado
+              para classificar, manipular e transformar uma quantidade massiva
+              de dados.</para>
+
+              <para><figure>
+                  <title>Selecionar destino</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg10.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Pressione o botão de verificação de sintaxe localizado na
+              barra de ferramentas principal (ou pressione F7).</para>
+
+              <para><figure>
+                  <title>Verificação de sintaxe</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg09.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure>Uma verificação se sintaxe bem-sucedida exibe a
+              mensagem "No Errors”.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Pressione o botão <emphasis role="bold">Submit</emphasis>
+              (ou as teclas ctrl+enter).</para>
+
+              <para><figure>
+                  <title>Tarefa concluída</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg11.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure>A marcação na cor verde indica uma conclusão
+              bem-sucedida.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Clique na aba do número da workunit e, em seguida, na aba
+              Result 1 para ver os resultados.</para>
+
+              <para><figure>
+                  <title>Resultado do job concluído</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg12.JPG"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Mais exemplos ECL</title>
+
+    <para>Esta seção contém exemplos adicionais de ECL que podem ser usados em
+    sua plataforma Thor do HPCC. Eles podem ser executados em um sistema de nó
+    único ou em um cluster maior com vários nós.</para>
+
+    <sect1 role="nobrk">
+      <title>Exemplo ECL: Anagram1</title>
+
+      <para>Este exemplo pega uma STRING e gera todos os anagramas possíveis a
+      partir dela. Este código serve de base para um segundo exemplo que
+      analisa quais destas são palavras reais usando um arquivo de dados da
+      lista de palavras.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Abra o ECL IDE (<emphasis role="bold">Start </emphasis>
+            &gt;&gt; <emphasis role="bold"> All Programs</emphasis> &gt;&gt;
+            <emphasis role="bold">HPCC Systems</emphasis> &gt;&gt; ECL IDE ) e
+            faça o login no HPCC.</para>
+          </listitem>
+
+          <listitem>
+            <para>Abra uma nova <emphasis role="bold">Janela do
+            compilador</emphasis> (CTRL+N) e escreva o seguinte
+            código:<programlisting>STRING Word := 'FRED' :STORED('Word'); R := RECORD STRING SoFar {MAXLENGTH(200)}; 
+STRING Rest {MAXLENGTH(200)}; END; Init := DATASET([{'',Word}],R);
+ R Pluck1(DATASET(R) infile) := FUNCTION R TakeOne(R le, UNSIGNED1 c)
+ := TRANSFORM SELF.SoFar := le.SoFar + le.Rest[c]; 
+SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..]; // 
+Boundary Conditions handled automatically END; 
+RETURN NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)); END; 
+L := LOOP(Init,LENGTH(TRIM(Word)),Pluck1(ROWS(LEFT))); OUTPUT(L);</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione <emphasis role="bold">thor</emphasis> selecione
+            Roxie como seu cluster de destino.</para>
+          </listitem>
+
+          <listitem>
+            <para>Pressione o botão de verificação de sintaxe localizado na
+            barra de ferramentas principal (ou pressione F7)</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis role="bold">Submit</emphasis>
+            (ou as teclas ctrl+enter).</para>
+
+            <para><figure>
+                <title>Tarefa concluída</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11a.JPG"/>
+                  </imageobject>
+                </mediaobject>
+              </figure>A marcação na cor verde indica uma conclusão
+            bem-sucedida.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Clique na aba do número da workunit e, em seguida, na aba
+            Result 1 para ver os resultados.</para>
+
+            <para><figure>
+                <title>Resultado do job concluído</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11b.JPG"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist></para>
+
+      <?hard-pagebreak ?>
+    </sect1>
+
+    <sect1>
+      <title>Anagram2</title>
+
+      <para>Neste exemplo, vamos baixar um arquivo de dados de código público
+      de palavras do dicionário, spray.<footnote>
+          <para>Um <emphasis>spray</emphasis> ou <emphasis>
+          importação</emphasis> é a transferência de um arquivo de dados de um
+          local (como a zona de entrada de arquivos) para um cluster da
+          Refinaria de dados. O termo spray foi adotado devido à natureza da
+          transferência dos arquivos – o arquivo é particionado entre todos os
+          nós em um cluster.</para>
+        </footnote> Esse arquivo para nosso cluster Thor, e em seguida validar
+      os anagramas em comparação com esse arquivo para determinar quais
+      palavras são válidas. A etapa de validação usa um JOIN da lista de
+      anagramas para o arquivo do dicionário. O uso de um índice e de uma
+      junção com chave seria mais eficiente, mas isso serve apenas como um
+      simples exemplo.</para>
+
+      <sect2>
+        <title>Fazer o download da Lista de Palavras</title>
+
+        <para>Vamos baixar a lista de palavras em <ulink
+        url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Faça o download o pacote <emphasis>Official 12 Dicts
+              </emphasis>. Os arquivos estão disponíveis no formato tar.gz ou
+              ZIP.</para>
+            </listitem>
+
+            <listitem>
+              <para>Extraia o arquivo <emphasis
+              role="bold">2of12.txt</emphasis> para uma pasta em sua máquina
+              local.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="Load_the_Incoming_Data">
+        <title>Carregar o arquivo de dicionário para sua Zona de Entrada de
+        Arquivo</title>
+
+        <para>Nesta etapa, você copiará os arquivos de dados para um local
+        onde eles possam ser distribuídos aos nós de seu cluster Thor do HPCC.
+        Uma zona de entrada de arquivos é um local de armazenagem anexado ao
+        seu HPCC. Ela possui um utilitário em execução para facilitar o
+        spraying (processo de distribuir dados aos nós) para um
+        cluster.</para>
+
+        <para>Para arquivos de dados menores, com tamanho máximo de 2GB, você
+        pode usar o utilitário enviar/baixar arquivo no ECL Watch. Este
+        arquivo de dados possui apenas 400 kb (aproximadamente).</para>
+
+        <para>Em seguida, você distribuirá (ou fará o spray) o dataset para
+        todos os nós no cluster Thor do HPCC. O poder do HPCC vem da sua
+        capacidade de atribuir vários processadores para trabalhar nas
+        diferentes partes do arquivo de dados em paralelo. Até mesmo na VM
+        Edition, que possui apenas um nó único, os dados precisam ser
+        distribuídos aos nós do cluster.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Em um navegador da Internet, conecte-se ao ECL Watch usando
+            http://<emphasis
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (onde
+            PUBLIC_DNS é o nome do DNS público do seu servidor ESP).</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt"/>
+
+                  <colspec/>
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png"/></entry>
+
+                      <entry>Seu endereço IP poderá ser diferente dos
+                      endereços fornecidos nas imagens de exemplo. Use o
+                      endereço IP fornecido pela <emphasis
+                      role="bold">sua</emphasis> instalação.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Na página do ECL Watch, clique no link <emphasis
+            role="bluebold">Upload/Download File </emphasis> localizado no
+            menu ao lado esquerdo.</para>
+
+            <para><figure>
+                <title>Upload/download</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Depois de clicar no botão Upload, você pode <emphasis
+            role="bold">procurar</emphasis> um arquivo para fazer o
+            upload:</para>
+
+            <para><figure>
+                <title>Emissor de Arquivo</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04a.jpg"
+                               vendor="eclwatchSS"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Selecione o arquivo para enviar! O arquivo selecionado deve
+            aparecer no campo <emphasis role="bold">File Name</emphasis> . O
+            arquivo de dados possui o seguinte nome: <emphasis
+            role="bold">2of12.txt</emphasis>.</para>
+
+            <para>Verifique o arquivo, as pastas, as informações da zona de
+            pouso e pressione o botão <emphasis role="bold">Start</emphasis>
+            .</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Spray_the_Data_to_THOR" role="brk">
+        <title>Spray do arquivo de dados para o seu <emphasis>Thor
+        Cluster</emphasis></title>
+
+        <para>Para usar o arquivo de dados em seu Thor do HPCC System, é
+        preciso fazer o "spray” (distribuir) desse arquivo para todos os nós.
+        Um <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> é a
+        transferência de um arquivo de dados de um local (como a zona de
+        entrada de arquivos) para diversas partes do arquivo ou nós em um
+        cluster.</para>
+
+        <para>O arquivo distribuído passa a ter um <emphasis>nome de arquivo
+        lógico</emphasis> como segue<emphasis role="bold">:
+        ~thor::word_list_csv </emphasis> O sistema mantém uma lista de
+        arquivos lógicos e as localizações dos arquivos físicos
+        correspondentes das partes do arquivo.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Em um navegador da Internet, conecte-se ao ECL Watch usando
+            http://<emphasis
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (onde
+            PUBLIC_DNS é o nome do DNS público do seu servidor ESP).</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no link Spray Delimited no menu DFU File à
+            esquerda.</para>
+
+            <para><figure>
+                <title>Spray Delimitado</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/IMDB_01.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>A página <emphasis role="bold">DFU Spray
+            Delimited</emphasis> será exibida.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecione mydropzone na lista suspensa Source <emphasis
+            role="bold">Machine/dropzone</emphasis> .</para>
+
+            <para>O endereço IP é preenchido automaticamente e o Caminho local
+            é parcialmente preenchido com o nome da pasta padrão na Zona de
+            entrada de arquivos. Observação: A Community Edition normalmente
+            possui apenas uma zona de pouso definida.</para>
+          </listitem>
+
+          <listitem>
+            <para>Complete o Caminho Local para incluir o nome completo do
+            arquivo ou use o botão <emphasis role="bold">Choose
+            File</emphasis> para selecionar o arquivo de uma lista de arquivos
+            na pasta. O arquivo é <emphasis
+            role="bold">2of12.txt</emphasis>.<emphasis role="bold"/></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Preencha os demais parâmetros (caso ainda não tenham sido
+            preenchidos).</para>
+
+            <para><itemizedlist>
+                <listitem>
+                  <para>Máximo tamanho do registro 8192</para>
+                </listitem>
+
+                <listitem>
+                  <para>Separador \,</para>
+                </listitem>
+
+                <listitem>
+                  <para>Terminador de linhas \n,\r\n</para>
+                </listitem>
+
+                <listitem>
+                  <para>Aspas: '</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+
+          <listitem>
+            <para>Preencha o rótulo usando o nome do arquivo lógico desejado:
+            thor::word_list_csv<emphasis role="bold"> </emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Não se esqueça de verificar que a caixa <emphasis
+            role="bold">Overwrite</emphasis> esteja marcada. Se disponível,
+            certifique-se de que a caixa <emphasis
+            role="bold">Replicate</emphasis> esteja marcada. (A opção replicar
+            está disponível apenas em sistemas em que a replicação tenha sido
+            ativada.)</para>
+
+            <para><figure>
+                <title>Spray de Arquivos</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1000.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para><emphasis role="bold">Observação:</emphasis> A opção
+            <emphasis role="bold">Replicate</emphasis> só está disponível em
+            sistemas onde a replicação tiver sido ativada.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Pressione o botão <emphasis
+            role="bold">Submit</emphasis><emphasis role="bold">
+            </emphasis>.</para>
+
+            <para><figure>
+                <title>Visualizando Progresso</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1001.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no link <emphasis role="bold">View
+            Progress</emphasis> .</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>A página de progresso da Workunit é exibida.</para>
+
+            <figure>
+              <title>Progresso da Workunit</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/VM1002.jpg"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Executar o ECL no Thor<parameter/></title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Abra uma nova <emphasis role="bold">Janela do
+              compilador</emphasis> (CTRL+N) e escreva o seguinte
+              código:<programlisting>IMPORT Std; layout_word_list := record string word; end; 
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list, 
+CSV(heading(1),separator(','),quote(''))); 
+STRING Word := 'teacher' :STORED('Word'); 
+STRING SortString(STRING input) := FUNCTION OneChar := RECORD STRING c; END; 
+OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM SELF.c := L.c[pos]; 
+END; Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input), 
+MakeSingle(LEFT,COUNTER)); SortedSplit := SORT(Split, c); 
+OneChar Recombine(OneChar L, OneChar R) := TRANSFORM SELF.c := L.c+R.c; END; 
+Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL); 
+RETURN Recombined[1].c; END; 
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word))); 
+R := RECORD STRING SoFar {MAXLENGTH(200)}; STRING Rest {MAXLENGTH(200)}; END; 
+Init := DATASET([{'',CleanedWord}],R); R Pluck1(DATASET(R) infile) := FUNCTION 
+R TakeOne(R le, UNSIGNED1 c) := TRANSFORM SELF.SoFar := le.SoFar + le.Rest[c]; 
+SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..]; // Boundary Conditions // handled automatically END; 
+RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER))); END; 
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT))); 
+ValidWords := JOIN(L,File_Word_List, LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT)); 
+OUTPUT(CleanedWord); COUNT(ValidWords); OUTPUT(ValidWords)
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bold">thor</emphasis> como seu
+              cluster de destino.</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão de verificação de sintaxe localizado na
+              barra de ferramentas principal (ou pressione F7)</para>
+            </listitem>
+
+            <listitem>
+              <para>Pressione o botão <emphasis
+              role="bold">Submit</emphasis><emphasis role="bold">
+              </emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Quando o envio estiver concluído, selecione a aba
+              Workunit<emphasis role="bold"> </emphasis>e em seguida a aba
+              Result.</para>
+            </listitem>
+
+            <listitem>
+              <para>Examine o resultado.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Manipulação de Dados</title>
+
+    <para>Esta seção explica o processamento de dados em uma configuração AWS.
+    Informações adicionais sobre o processamento de dados em uma plataforma
+    HPCC Systems estão disponíveis no manual <emphasis>Data Handling
+    (Manipulação dos Dados)</emphasis> manual.</para>
+
+    <sect1 role="nobrk">
+      <title>Utilizando o S3 buckets</title>
+
+      <para>Os buckets do S3 fornecem um meio de armazenamento constante
+      dentro do Amazon Web Services. Você precisa configurar uma conta no AWS
+      para ativar um conjunto de Access Key habilitadas e criar buckets do S3.
+      Após ter criado e ativado seu conjunto de chaves de acesso, e criado um
+      bucket do S3 exclusivo, ambos serão usados em futuras
+      instanciações.</para>
+
+      <sect2>
+        <title>Encontre sua chave de acesso e chave de acesso secreto da
+        Amazon</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>em <emphasis role="bold">aws.amazon.com</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis role="bold">Account</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Selecione <emphasis
+              role="bold">Credenciais</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Na página, procure a seção <emphasis role="bold">Access
+              Credentials</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Anote sua <emphasis role="bold">Access Key ID</emphasis> e
+              sua <emphasis role="bold"> Secrete Access Key</emphasis></para>
+
+              <para><figure>
+                  <title>Credenciais</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_Accesskey.jpg"/>
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>Partes desta imagem foram intencionalmente desfocadas</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="126.00pt"/>
+
+              <colspec colwidth="189.00pt"/>
+
+              <tbody>
+                <row>
+                  <entry>Access Key ID</entry>
+
+                  <entry/>
+                </row>
+
+                <row>
+                  <entry>Secret Access Key</entry>
+
+                  <entry/>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2>
+        <title role="brk">Instalar e configurar pacotes do S3 em seu nó da
+        zona de entrada de arquivos</title>
+
+        <para>Para mover arquivos do – ou para – o armazenamento do S3, os
+        pacotes do S3 devem estar instalados e configurados no nó da sua zona
+        de entrada de arquivos.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Abrir a janela do console e conectar-se ao nó da Zona de
+              Entrada de Arquivos (LZ)</para>
+            </listitem>
+
+            <listitem>
+              <para>Execute esses comandos:</para>
+
+              <para><programlisting>sudo apt-get install s3cmd s3cmd --configure
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Insira sua <emphasis role="bold">Access
+              Key</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Insira sua <emphasis role="bold">Secret Access
+              Key</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Deixe a senha criptografada em branco</para>
+            </listitem>
+
+            <listitem>
+              <para>Deixe o caminho para o programa GPG em branco</para>
+            </listitem>
+
+            <listitem>
+              <para>Responda à pergunta “Use HTTPS?”</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Digite no para melhorar o desempenho</para>
+                </listitem>
+
+                <listitem>
+                  <para>Digite yes se a privacidade de dados for uma
+                  preocupação para você.</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+
+            <listitem>
+              <para>Deixe o servidor proxy em branco</para>
+            </listitem>
+
+            <listitem>
+              <para>Insira <emphasis role="bold">Yes </emphasis>para Test
+              Access</para>
+            </listitem>
+
+            <listitem>
+              <para>Digite <emphasis role="bold">Yes</emphasis> em Save
+              Settings</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2>
+        <title>Criando e utilizando S3 Buckets</title>
+
+        <para>Para armazenar dados no S3, é preciso criar um bucket exclusivo
+        para todo o sistema s3. Uma vez criado, esse bucket existirá mesmo ao
+        fechar as instâncias dos servidores.</para>
+
+        <para>Você pode fazer o despray (consolidar dados dos nós) de um
+        arquivo do Thor para a zona de entrada de arquivos, e depois copiar
+        para um bucket do S3 para um armazenamento constante. Mais tarde, você
+        pode copiar os arquivos do bucket do S3 para a zona de entrada de
+        arquivos e fazer o spray do arquivo para o cluster Thor. Informações
+        adicionais sobre o processamento de dados em uma plataforma HPCC
+        Systems estão disponíveis no manual <emphasis>Data Handling
+        (Manipulação dos Dados)</emphasis> manual.</para>
+
+        <sect3>
+          <title>Criar um bucket</title>
+
+          <para><programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Listar um Buckets</title>
+
+          <para><programlisting>s3cmd ls</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Enviar um arquivo para o bucket</title>
+
+          <para><programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
+</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Obter um arquivo do bucket</title>
+
+          <para><programlisting>s3cmd get s3://your-unique-bucket-name/myfile.csv myfile.csv
+</programlisting>Acesse <ulink
+          url="http://s3tools.org/s3cmd">http://s3tools.org/s3cmd</ulink> para
+          obter mais informações sobre como usar o s3cmd</para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter role="nobrk">
+    <title>Encerrando suas instâncias do AWS</title>
+
+    <para/>
+
+    <sect1 role="nobrk">
+      <title>Encerrando Instâncias</title>
+
+      <para>Se precisar salvar seus dados, primeiro será necessário fazer o
+      despray e salve seu cluster antes de desligar. Informações adicionais
+      sobre o processamento de dados em uma plataforma HPCC Systems estão
+      disponíveis no manual Data Handling (Processamento de dados).
+      <emphasis>Manual</emphasis> Manipulação de Dados</para>
+
+      <para>Para encerrar seu cluster, abra o AWS Management Console,
+      selecione seus nós do EC2 e finalize-os.</para>
+
+      <para>Você pode selecionar vários nós contíguos clicando na primeira
+      linha e depois Shift+ clique na última linha. Você pode selecionar
+      várias linhas não contíguas usando um ctrl + clique em cada uma
+      delas.</para>
+    </sect1>
+  </chapter>
+
+  <chapter id="NextSteps">
+    <title>Próximos passos</title>
+
+    <para>Na página ECL Watch, clique no link <emphasis role="bold">Resources
+    </emphasis> no menu à esquerda.</para>
+
+    <para><figure>
+        <title>Página de Recursos do ECL Watch</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/AWS_ECLWatchNextSteps.jpg"
+                       vendor="eclwatchSS"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para><emphasis role="bold"/></para>
+
+    <para>Para se familiarizar com o que o seu sistema é capaz de fazer,
+    recomendamos realizar as seguintes etapas:<itemizedlist spacing="compact">
+        <listitem>
+          <para>O <emphasis role="bold">Tutorial de dados do
+          HPCC</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">O exemplo</emphasis> da Teoria dos seis
+          graus de separação de Kevin Bacon</para>
+        </listitem>
+
+        <listitem>
+          <para>Ler <emphasis role="bold">Como usar o Gerenciador de
+          Configurações</emphasis> para aprender como configurar uma
+          plataforma do HPCC usando a Advanced View (Visualização
+          Avançada)</para>
+        </listitem>
+
+        <listitem>
+          <para>Use suas novas habilidades para processar seu próprio dataset
+          massivo!</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>O Portal do HPCC Systems ( <ulink
+    url="http://hpccsystems.com">HPCCSystems.com</ulink> ) também é um recurso
+    valioso para obter mais informações, incluindo:</para>
+
+    <itemizedlist spacing="compact">
+      <listitem>
+        <para>Vídeo tutoriais</para>
+      </listitem>
+
+      <listitem>
+        <para>Exemplos adicionais</para>
+      </listitem>
+
+      <listitem>
+        <para>Informe técnico</para>
+      </listitem>
+
+      <listitem>
+        <para>Documentação</para>
+      </listitem>
+
+      <listitem>
+        <para>Fóruns de usuários</para>
+      </listitem>
+    </itemizedlist>
+  </chapter>
+
+  <chapter>
+    <title>Perguntas Frequentes</title>
+
+    <para/>
+
+    <para/>
+
+    <qandaset defaultlabel="number">
+      <qandadiv>
+        <qandaentry>
+          <question id="ebs_answer">
+            <para>Qual é a diferença entre usar instâncias instance-store e
+            instâncias Elastic Block Store (EBS)?</para>
+          </question>
+
+          <answer>
+            <para>As instâncias do EBS usam o Elastic Block Store para seu
+            dispositivo de armazenamento raiz. Isso significa que o sistema
+            operacional e quaisquer dados armazenados usando volumes do EBS
+            persistirão após o término de um nó. Atualmente, não recomendamos
+            o EBS para seus nós, pois ele é ajustado para acesso aleatório.
+            Recomendamos volumes de armazenamento de instância que são
+            ajustados para acesso sequencial. A maior parte do armazenamento
+            de instâncias pode ser encontrada em /mnt/. O dispositivo de
+            armazenamento usado pelo seu sistema raiz é controlado pela AMI
+            (Amazon Machine Image) que você usa.</para>
+
+            <para>Arquivos muito grandes podem ser suportados de várias
+            maneiras. Devido às limitações de arquivos muito grandes em
+            determinados fuse drivers, não recomendamos os fuse drivers no
+            momento. Em vez disso, sugerimos que você aproveite uma montagem
+            EBS para sua zona de pouso. Você pode anexar e montar um volume
+            EBS muito grande no nó que contém sua zona de entrada de
+            arquivo.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Como devo escolher o tamanho das instâncias do meu
+            nó?</para>
+
+            <para><figure>
+                <title>Instâncias do nó</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_15.jpg"/>
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </question>
+
+          <answer>
+            <para>Recomendamos instâncias grandes com um número moderado de
+            nós para começar, até que você tenha uma melhor compreensão de
+            como o cluster será ocioso.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Posso usar uma estação de trabalho Linux em vez do
+            Windows?</para>
+          </question>
+
+          <answer>
+            <para>Sim, você pode usar o Eclipse IDE com o plug-in ECL em vez
+            do ECL IDE. Outra opção é executar o ECL IDE no WINE. Consulte o
+            manual Ferramentas de Cliente para obter mais detalhes</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Posso usar outras regiões no AWS?</para>
+          </question>
+
+          <answer>
+            <para>Neste momento, o User-Data Script é otimizado para a região
+            leste dos EUA. Planejamos dar suporte a outras regiões ao longo do
+            tempo. Você pode fazer o download de binários do hpccsystems.com e
+            instalá-los manualmente em qualquer região que desejar.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Posso usar uma estação de trabalho Mac para acessar meu HPCC
+            Thor na AWS?</para>
+          </question>
+
+          <answer>
+            <para>Alguns componentes necessários ainda não foram criados para
+            a plataforma Mac (por exemplo, o compilador ECLCC). Por enquanto,
+            você pode usar um emulador do Windows ou uma VM em um Mac.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Como determino quantos nós para instanciar?</para>
+          </question>
+
+          <answer>
+            <para>Essa é uma pergunta difícil de responder sem experiência
+            direta com seus dados. A resposta é regida pelo tamanho dos dados,
+            pela complexidade dos dados e pela complexidade da ECL que você
+            escreve. Além disso, você deve considerar a rapidez com que sua
+            empresa precisa dos resultados.</para>
+
+            <para>Quando contemplamos um novo projeto, executamos testes com
+            dados de amostra para responder a essas perguntas. Nós
+            recomendamos que você faça o mesmo.</para>
+
+            <!--What is the maximum number of nodes I can run?-->
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Posso usar uma AMI que use outro sistema operacional?</para>
+          </question>
+
+          <answer>
+            <para>Sim, mas apenas as imagens que usam o Ubuntu 10.04 foram
+            certificadas neste momento.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Onde posso obter suporte?</para>
+          </question>
+
+          <answer>
+            <para>O suporte de pares está disponível nos Fóruns no Portal de
+            Sistemas HPCC.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Onde posso buscar mais informações?</para>
+          </question>
+
+          <answer>
+            <para>Visite o Portal de Sistemas HPCC em <ulink
+            url="http://hpccsystems.com">http://hpccsystems.com</ulink>. Neste
+            site, você encontrará white papers, exemplos de código, vídeos e
+            fóruns nos quais poderá fazer perguntas ou ler perguntas postadas
+            por outras pessoas.</para>
+          </answer>
+        </qandaentry>
+      </qandadiv>
+    </qandaset>
+
+    <para/>
+  </chapter>
+</book>
