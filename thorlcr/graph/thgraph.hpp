@@ -327,7 +327,7 @@ public:
 
     CGraphBase &queryOwner() const { return *owner; }
     CGraphBase *queryResultsGraph() const { return resultsGraph; }
-    IGraphTempHandler *queryTempHandler() const;
+    IGraphTempHandler *queryTempHandler(bool assert=true) const;
     CJobBase &queryJob() const;
     CJobChannel &queryJobChannel() const;
     unsigned getInputs() const { return inputs.ordinality(); }
@@ -627,7 +627,7 @@ public:
     CJobBase &queryJob() const { return job; }
     CJobChannel &queryJobChannel() const { return jobChannel; }
     unsigned queryJobChannelNumber() const;
-    IGraphTempHandler *queryTempHandler() const { assertex(tmpHandler.get()); return tmpHandler; }
+    IGraphTempHandler *queryTempHandler(bool assert=true) const { if (assert) assertex(tmpHandler.get()); return tmpHandler; }
     CGraphBase *queryOwner() { return owner; }
     CGraphBase *queryParent() { return parent?parent:this; }
     IMPServer &queryMPServer() const;
@@ -878,7 +878,7 @@ public:
     bool queryUseCheckpoints() const;
     bool queryPausing() const { return pausing; }
     bool queryResumed() const { return resumed; }
-    IGraphTempHandler *queryTempHandler() const { return tmpHandler; }
+    IGraphTempHandler *queryTempHandler(bool assert=true) const { if (assert) assertex(tmpHandler.get()); return tmpHandler; }
     ILoadedDllEntry &queryDllEntry() const { return *querySo; }
     IUserDescriptor *queryUserDescriptor() const { return userDesc; }
     virtual IConstWorkUnit &queryWorkUnit() const { throwUnexpected(); }
