@@ -132,6 +132,7 @@ enum WuAttr : unsigned
     WaState,
     WaCluster,
     WaCriticalSection,
+    WaPerformanceIssue,
     WaMax
 };
 inline WuAttr & operator++(WuAttr & x) { assert(x<WaMax); x = (WuAttr)(x+1); return x; }

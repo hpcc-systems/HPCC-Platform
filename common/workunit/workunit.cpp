@@ -1231,6 +1231,22 @@ private:
 public:
     GraphScopeIterator(const IConstWorkUnit * wu, const ScopeFilter & _filter) : graphIter(&wu->getGraphs(GraphTypeAny)), filter(_filter)
     {
+        Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
+        ForEach(*exceptions)
+        {
+            IConstWUException & exception = exceptions->query();
+            if (exception.getSeverity()==SeverityInformation)
+            {
+                SCMStringBuffer src;
+                exception.getExceptionSource(src);
+                if (strcmp(src.str(), "Workunit Analyser")==0)
+                {
+                    SCMStringBuffer msg;
+                    exception.getExceptionMessage(msg);
+                    performanceIssues.setValue(exception.queryScope(), msg.str());
+                }
+            }
+        }
     }
 
     virtual bool first() override
@@ -1306,6 +1322,9 @@ public:
                     if (attr != WaNone)
                         visitor.noteAttribute(attr, cur.queryProp("@value"));
                 }
+                StringAttr * issue = performanceIssues.getValue(scopeId.str());
+                if (issue)
+                    visitor.noteAttribute(WaPerformanceIssue, issue->str());
             }
             if (whichProperties & PThints)
             {
@@ -1707,6 +1726,7 @@ protected:
     const ScopeFilter & filter;
     Owned<IConstWUGraphIterator> graphIter;
     Owned<IPropertyTree> curGraph;
+    MapStringTo<StringAttr, const char *> performanceIssues;
     IArrayOf<IPropertyTreeIterator> treeIters;
     UnsignedArray scopeLengths;
     UnsignedArray stateStack;
