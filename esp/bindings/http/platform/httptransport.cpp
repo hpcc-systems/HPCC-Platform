@@ -817,6 +817,7 @@ int CHttpMessage::send()
     }
     catch (IException *e) 
     {
+        setPersistentEligible(false);
         StringBuffer estr;
         DBGLOG("In CHttpMessage::send(%d) -- Exception(%d, %s) writing to socket(%d).", __LINE__, e->errorCode(), e->errorMessage(estr).str(), m_socket.OShandle());
         e->Release();
@@ -824,6 +825,7 @@ int CHttpMessage::send()
     }
     catch(...)
     {
+        setPersistentEligible(false);
         ERRLOG("In CHttpMessage::send(%d) -- Unknown exception writing to socket(%d).", __LINE__, m_socket.OShandle());
         return -1;
     }
@@ -850,6 +852,7 @@ int CHttpMessage::send()
                 }
                 catch (IException *e) 
                 {
+                    setPersistentEligible(false);
                     StringBuffer estr;
                     LOG(MCexception(e), "In CHttpMessage::send(%d) -- Exception(%d, %s) writing to socket(%d).", __LINE__, e->errorCode(), e->errorMessage(estr).str(), m_socket.OShandle());
                     e->Release();
@@ -858,6 +861,7 @@ int CHttpMessage::send()
                 }
                 catch(...)
                 {
+                    setPersistentEligible(false);
                     ERRLOG("In CHttpMessage::send(%d) -- Unknown exception writing to socket(%d).", __LINE__, m_socket.OShandle());
                     retcode = -1;
                     break;
@@ -889,14 +893,16 @@ int CHttpMessage::startSend()
     }
     catch (IException *e) 
     {
+        setPersistentEligible(false);
         StringBuffer estr;
-        DBGLOG("In CHttpMessage::send() -- Exception(%d, %s) writing to socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket.OShandle());
+        DBGLOG("In CHttpMessage::startSend() -- Exception(%d, %s) writing to socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket.OShandle());
         e->Release();
         return -1;
     }
     catch(...)
     {
-        ERRLOG("In CHttpMessage::send() -- Unknown exception writing to socket(%d).", m_socket.OShandle());
+        setPersistentEligible(false);
+        ERRLOG("In CHttpMessage::startSend() -- Unknown exception writing to socket(%d).", m_socket.OShandle());
         return -1;
     }
 
@@ -914,14 +920,16 @@ int CHttpMessage::sendChunk(const char *chunk)
     }
     catch (IException *e) 
     {
+        setPersistentEligible(false);
         StringBuffer estr;
-        DBGLOG("In CHttpMessage::send() -- Exception(%d, %s) writing to socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket.OShandle());
+        DBGLOG("In CHttpMessage::sendChunk() -- Exception(%d, %s) writing to socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket.OShandle());
         e->Release();
         return -1;
     }
     catch(...)
     {
-        ERRLOG("In CHttpMessage::send() -- Unknown exception writing to socket(%d).", m_socket.OShandle());
+        setPersistentEligible(false);
+        ERRLOG("In CHttpMessage::sendChunk() -- Unknown exception writing to socket(%d).", m_socket.OShandle());
         return -1;
     }
 
@@ -940,14 +948,16 @@ int CHttpMessage::sendFinalChunk(const char *chunk)
     }
     catch (IException *e) 
     {
+        setPersistentEligible(false);
         StringBuffer estr;
-        DBGLOG("In CHttpMessage::send() -- Exception(%d, %s) writing to socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket.OShandle());
+        DBGLOG("In CHttpMessage::sendFinalChunk() -- Exception(%d, %s) writing to socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket.OShandle());
         e->Release();
         return -1;
     }
     catch(...)
     {
-        ERRLOG("In CHttpMessage::send() -- Unknown exception writing to socket(%d).", m_socket.OShandle());
+        setPersistentEligible(false);
+        ERRLOG("In CHttpMessage::sendFinalChunk() -- Unknown exception writing to socket(%d).", m_socket.OShandle());
         return -1;
     }
 
