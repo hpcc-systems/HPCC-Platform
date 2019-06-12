@@ -268,7 +268,7 @@ interface IPipeProcessException : extends IException
 };
 
 extern jlib_decl IPipeProcessException *createPipeErrnoException(int code, const char *msg);
-extern jlib_decl IPipeProcessException *createPipeErrnoExceptionV(int code, const char *msg, ...);
+extern jlib_decl IPipeProcessException *createPipeErrnoExceptionV(int code, const char *msg, ...) __attribute__((format(printf, 2, 3)));
 
 interface IPipeProcess: extends IInterface
 {
