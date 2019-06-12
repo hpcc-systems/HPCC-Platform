@@ -66,7 +66,7 @@ public:
     void createException(IWorkUnit * we);
 
     void set(stat_type _cost, const char * msg, ...) __attribute__((format(printf, 3, 4)));
-    void setScope(const char *_scope) { scope.set(scope); }
+    void setScope(const char *_scope) { scope.set(_scope); }
     stat_type getCost() const         { return cost; }
 
 private:
