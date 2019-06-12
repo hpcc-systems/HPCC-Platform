@@ -2000,6 +2000,10 @@ id_t ExpressionIRPlayer::doProcessExpr(IHqlExpression * expr)
     case no_selfref:
     case no_right:
         break;
+    case no_field:
+        info.id = expr->queryId();
+        info.name = expr->queryName();
+        break;
     default:
         info.name = expr->queryName();
         break;
