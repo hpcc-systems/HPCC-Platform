@@ -561,28 +561,49 @@ public:
         return configureLogTransform(bindingId, logTransformName, configTree, overwrite, message);
     }
 
-    void preserveBindingContent(IPTree* src, IPTree* dst, IPTree* exclusion) const
+    void mergePTreeWithExclusion(IPTree* src, IPTree* dst, IPTree* exclusion, bool overwriteAttributes = false) const
     {
         if (src)
         {
             Owned<IPTreeIterator> children(src->getElements("*"));
-
             ForEach(*children)
             {
                 auto child = &children->query();
-
                 if (child != exclusion)
                     dst->addPropTree(child->queryName(), LINK(child));
             }
 
             Owned<IAttributeIterator> attributes(src->getAttributes());
-
             ForEach(*attributes)
             {
-                if (!dst->hasProp(attributes->queryName()))
+                if (overwriteAttributes || !dst->hasProp(attributes->queryName()))
                     dst->addProp(attributes->queryName(), attributes->queryValue());
             }
         }
+    }
+
+    bool checkEsdlConfigLevel(IPTree*& methodsConfig, const char* root, const char* child, IPTree*& node)
+    {
+        node = nullptr;
+        if (methodsConfig && (isEmptyString(root) || streq(methodsConfig->queryName(), root)))
+        {
+            node = methodsConfig;
+            if (!isEmptyString(child))
+            {
+                switch (node->getCount(child))
+                {
+                case 0:
+                    methodsConfig = nullptr;
+                    break;
+                case 1:
+                    methodsConfig = node->queryBranch(child);
+                    break;
+                default:
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     virtual int bindService(const char* bindingName,
@@ -795,42 +816,29 @@ public:
         esdldeftree->setProp("@id", lcId.str());
         esdldeftree->setProp("@esdlservice", esdlServiceName);
 
-#define IDENTIFY_ESDL_ENTRY(node, root, child) \
-	IPTree* node = nullptr; \
-    if (methodsConfig && (isEmptyString(root) || streq(methodsConfig->queryName(), root))) \
-    { \
-        node = methodsConfig; \
-        if (!isEmptyString(child)) \
-        { \
-            switch (node->getCount(child)) \
-            { \
-            case 0: \
-                methodsConfig = nullptr; \
-                break; \
-            case 1: \
-                methodsConfig = node->queryBranch(child); \
-                break; \
-            default: \
-                message.setf("Could not configure Service '%s' with multiple %s elements", esdlServiceName, child); \
-                return -1; \
-            } \
-        } \
-    }
-
-        IDENTIFY_ESDL_ENTRY(srcBinding, ESDL_BINDING_ENTRY, ESDL_DEF_ENTRY);
-        IDENTIFY_ESDL_ENTRY(srcDefinition, ESDL_DEF_ENTRY, ESDL_METHODS_ENTRY);
-        IDENTIFY_ESDL_ENTRY(srcMethods, "", "");
+        IPTree *srcBinding, *srcDefinition, *srcMethods;
+        if (!checkEsdlConfigLevel(methodsConfig, ESDL_BINDING_ENTRY, ESDL_DEF_ENTRY, srcBinding))
+        {
+            message.setf("Could not configure Service '%s' with multiple %s elements", esdlServiceName, ESDL_DEF_ENTRY);
+            return -1;
+        }
+        if (!checkEsdlConfigLevel(methodsConfig, ESDL_DEF_ENTRY, ESDL_METHODS_ENTRY, srcDefinition))
+        {
+            message.setf("Could not configure Service '%s' with multiple %s elements", esdlServiceName, ESDL_METHODS_ENTRY);
+            return -1;
+        }
+        srcMethods = methodsConfig;
 
         if (srcMethods)
             esdldeftree->addPropTree(ESDL_METHODS_ENTRY, LINK(srcMethods));
         else
             esdldeftree->addPropTree(ESDL_METHODS_ENTRY);
-        preserveBindingContent(srcDefinition, esdldeftree, srcMethods);
+        mergePTreeWithExclusion(srcDefinition, esdldeftree, srcMethods);
         if (esdldeftree->getCount("LogTransforms") == 0) // legacy behavior
             esdldeftree->addPropTree("LogTransforms");
 
         bindingtree->addPropTree(ESDL_DEF_ENTRY, LINK(esdldeftree));
-        preserveBindingContent(srcBinding, bindingtree, srcDefinition);
+        mergePTreeWithExclusion(srcBinding, bindingtree, srcDefinition);
 
         bindings->addPropTree(ESDL_BINDING_ENTRY, LINK(bindingtree));
 

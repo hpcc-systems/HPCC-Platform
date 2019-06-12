@@ -32,7 +32,7 @@ enum ESDLConfigInfoType
     ESDLLogTransform = 1,
 };
 
-IPropertyTree * fetchConfigInfo(Owned<IPropertyTree> configTree,
+IPropertyTree * fetchConfigInfo(IPropertyTree* configTree,
                                 StringBuffer & espProcName,
                                 StringBuffer & espBindingName,
                                 StringBuffer & esdlDefId,
@@ -40,7 +40,7 @@ IPropertyTree * fetchConfigInfo(Owned<IPropertyTree> configTree,
 {
     IPropertyTree * methodstree = NULL;
 
-    if (!configTree.get())
+    if (nullptr == configTree)
     {
         throw MakeStringException(-1,"Empty config detected");
     }
@@ -115,7 +115,7 @@ IPropertyTree * fetchConfigInfo(Owned<IPropertyTree> configTree,
         if (!methodstree) //if we didn't already find the methods section of the config, let's look at the root
         {
             if (stricmp(rootname.str(), "Methods") == 0)
-                methodstree = configTree.getLink();
+                methodstree = LINK(configTree);
         }
     }
     return methodstree;
