@@ -26,6 +26,7 @@
     <xsl:param name="diffmode" select="'Monitor'"/>
     <xsl:param name="diffaction" select="'Run'"/>
     <xsl:param name="listCategories" select="false()"/>
+    <xsl:param name="cass_consistency" select="'LOCAL_QUORUM'"/>
     <xsl:variable name="docname" select="/esxdl/@name"/>
     <xsl:param name="skipResponseTag" select="substring($responseType, string-length($responseType) - 1)='Ex'"/>
 
@@ -268,11 +269,11 @@ END;
 // we start to throttle, and maxRetries controls how many times inserts that fail because Cassandra is too busy
 // will be retried.
 
-monitorStoreRec getStoredMonitor(string id) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace(csndKeySpaceFrom))
+monitorStoreRec getStoredMonitor(string id) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace(csndKeySpaceFrom)<xsl:if test="$cass_consistency">, consistency('<xsl:value-of select="$cass_consistency"/>')</xsl:if>)
   SELECT monitorId, result from monitor WHERE monitorId=? LIMIT 1;
 ENDEMBED;
 
-updateMonitor(dataset(monitorStoreRec) values) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace(csndKeySpaceTo), maxFutures(100), maxRetries(10))
+updateMonitor(dataset(monitorStoreRec) values) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace(csndKeySpaceTo), maxFutures(100), maxRetries(10)<xsl:if test="$cass_consistency">, consistency('<xsl:value-of select="$cass_consistency"/>')</xsl:if>)
   INSERT INTO monitor (monitorId, result) values (?,?);
 ENDEMBED;
 

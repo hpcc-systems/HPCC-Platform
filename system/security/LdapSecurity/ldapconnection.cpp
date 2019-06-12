@@ -4228,8 +4228,11 @@ public:
         
         attrs[ind++] = &cn_attr;
         attrs[ind++] = &oc_attr;
-        if (groupOwner && *groupOwner)
-            attrs[ind++] = &owner_attr;
+        if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
+        {
+            if (groupOwner && *groupOwner)
+                attrs[ind++] = &owner_attr;
+        }
         if (groupDesc && *groupDesc)
             attrs[ind++] = &desc_attr;
         attrs[ind] = NULL;
@@ -6128,7 +6131,20 @@ private:
         LdapUtils::normalizeDn(basedn ? basedn : m_ldapconfig->getResourceBasedn(rtype), m_ldapconfig->getBasedn(), basednbuf);
         basednbuf.toLowerCase();//Will look something like "ou=files,ou=dataland_ecl,dc=internal,dc=sds". Lowercase ensures proper strstr with StringArray elements below
 
-        char *attrs[] = {"canonicalName", NULL};
+        //Extract OU path from basedn ("ou=files,ou=dataland_ecl")
+        StringBuffer baseOU(basednbuf);
+        {
+            const char * pDC = strstr(baseOU.str(), ",dc=");
+            if (pDC)
+                baseOU.setLength(pDC - baseOU.str());//strip out trailing "dc=" portion
+        }
+
+        char *attrs[2];
+        if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
+            attrs[0] = "canonicalName";
+        else
+            attrs[0] = "entrydn";//389DirectoryServer
+        attrs[1] = nullptr;
 
         //Call LDAP to get the complete OU tree underneath basdnbuf
         CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_SUBTREE, "objectClass=*", attrs);
@@ -6146,24 +6162,51 @@ private:
                     const char* val = vals.queryCharValue(0);
                     if(val)//this check probably isn't necessary since hasValues(), but could prevent a core
                     {
-                        //Build filescope from everything below the file scope basedn
-                        StringArray OUarray;
-                        OUarray.appendList(val,"/",true);//create StringArray of OU elements. LDAP returns them in the form "internal.sds/files/dataland_ecl/hpccinternal/roxieuser
-
-                        //Find index of first StringArray item NOT in base search string (basednbuf)
-                        int curr = 1;//skip the first element, which are the combined domains. So "dc=internal,dc=sds" will appear here as "internal.sds"
-                        int end = OUarray.ordinality();
-                        for (; curr < end; curr++)
+                        StringArray OUarray;//array to contain OU elements, most nested first (ie  roxieuser, hpccinternal)
+                        if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
                         {
-                            VStringBuffer theOU("ou=%s,",OUarray.item(curr));
-                            theOU.toLowerCase();//Lowercase to ensure proper strstr within basednbuf
-                            if (nullptr == strstr(basednbuf.str(), theOU.str()))//search baseDN for OU substring
-                                break;//found first element not in baseDN
+                            //Build filescope from everything below the basedn
+                            OUarray.appendList(val,"/",true);//create StringArray of OU elements. LDAP returns them in the form "internal.sds/files/dataland_ecl/hpccinternal/roxieuser
+
+                            //Remove all domain and basedn elements
+                            OUarray.remove(0, false);//remove domain element
+                            while (OUarray.ordinality())
+                            {
+                                VStringBuffer theOU("ou=%s,", OUarray.item(0));
+                                theOU.toLowerCase();//Lowercase to ensure proper strstr within basednbuf
+                                if (nullptr != strstr(basednbuf.str(), theOU.str()))//search baseDN for OU substring
+                                    OUarray.remove(0, false);//remove baseDn element
+                                else
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            //389DirectoryServer, attribute returned in the form "ou=roxieuser,ou=hpccinternal,ou=files,ou=dataland_ecl,dc=risk,dc=regn,dc=net"
+                            StringBuffer ouStr(val);
+                            ouStr.toLowerCase();
+
+                            //strip out trailing "dc=" portion
+                            const char * pDC = strstr(ouStr.str(), ",dc=");
+                            if (pDC)
+                                ouStr.setLength(pDC - ouStr.str());
+
+                            ouStr.replaceString(baseOU, nullptr);//strip out baseDN (ou=files,ou=dataland_ecl)
+                            StringArray tmpOUarray;
+                            if (!ouStr.isEmpty())
+                            {
+                                ouStr.replaceString("ou=", nullptr);//strip out all "ou=" strings
+                                tmpOUarray.appendList(ouStr, ",");//create array of OU entries
+
+                                //Populate OUarray in opposite order
+                                for (int curr = tmpOUarray.ordinality() - 1; curr >= 0; curr--)
+                                    OUarray.append(tmpOUarray.item(curr));
+                            }
                         }
 
                         //build OU string with remaining elements in the form "hpccinternal::roxieuser"
                         StringBuffer sb;
-                        for (; curr < end; curr++)
+                        for (int curr = 0; curr < OUarray.ordinality(); curr++)
                         {
                             sb.appendf("%s%s", sb.isEmpty() ? "" : "::", OUarray.item(curr));
                         }

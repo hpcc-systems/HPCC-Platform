@@ -416,23 +416,25 @@ public:
     {
         // Errors from compiler tend to look like this:
         // "('invalid syntax', ('<embed>', 3, 12, '     sfsf ss fs dfs f sfs\n'))"
-        const char pattern [] = "\\(\\'(.*)\\', \\(\\'.*\\', ([0-9]*), ([0-9]*), (.*)\\)\\)";
+        const char pattern [] = "\\('(.*)', \\('.*', ([0-9]*), ([0-9]*), (.*)\\)\\)";
         // Hopefully there are no embedded quotes in the error message or the filename
-        std::regex regex(pattern);
-        std::cmatch matches;
-        if (std::regex_match(error, matches, regex))
+        rtlCompiledStrRegex r;
+        size32_t outlen;
+        char * out = NULL;
+        r.setPattern(pattern, false);
+        r->replace(outlen, out, strlen(error), error, 2, "$2");
+        if (outlen < strlen(error))
         {
-            assertex(matches.size()==5);  // matches 0 is the whole string
-            std::string err = matches.str(1);
-            unsigned line = atoi(matches.str(2).c_str());
-            unsigned col = atoi(matches.str(3).c_str());
-            std::string extra = matches.str(4);
+            unsigned line = atoi(out);
+            rtlFree(out);
             if (line > leadingLines)
                 line--;
-            return ret.appendf("(%u, %u): %s: %s", line, col, err.c_str(), extra.c_str());
+            r->replace(outlen, out, strlen(error), error, 13, ", $3): $1: $4");
+            ret.appendf("(%d", line);
         }
-        else
-            return ret.append(error);
+        ret.append(outlen, out);
+        rtlFree(out);
+        return ret;
     }
     PyObject *compileScript(const char *text, const char *parameters)
     {

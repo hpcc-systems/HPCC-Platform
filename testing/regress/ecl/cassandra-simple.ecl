@@ -155,19 +155,19 @@ ENDEMBED;
 
 // Returning scalars
 
-string testCassandraString() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
+string testCassandraString() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'), consistency('ONE'))
   SELECT name from tbl1 LIMIT 1;
 ENDEMBED;
 
-dataset(childrec) testCassandraStringParam(string filter) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
+dataset(childrec) testCassandraStringParam(string filter) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),consistency('LOCAL_ONE'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
-dataset(childrec) testCassandraStringSetParam(set of string filter) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
+dataset(childrec) testCassandraStringSetParam(set of string filter) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),consistency('one'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 where name IN ?;
 ENDEMBED;
 
-integer testCassandraInt() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
+integer testCassandraInt() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),consistency('local_one'))
   SELECT value from tbl1 LIMIT 1;
 ENDEMBED;
 

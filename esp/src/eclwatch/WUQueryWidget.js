@@ -257,6 +257,11 @@ define([
                     retVal.StartDate = date.add(now, "day", retVal.LastNDays * -1).toISOString();
                     retVal.EndDate = now.toISOString();
                 }
+                if (retVal.Type === "archived workunits") {
+                    lang.mixin(retVal, {
+                        timeOutSeconds: 300
+                    });
+                }
                 return retVal;
             },
 

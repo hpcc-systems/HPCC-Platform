@@ -78,7 +78,7 @@ private:
     StringAttr  respMsg;
     StringAttr  authStatus = AUTH_STATUS_NA;
     StringAttr  authenticationMethod;
-    AuthType    domainAuthType;
+    AuthType    domainAuthType = AuthPerRequestOnly;
     AuthError   authError = EspAuthErrorNone;
 
     ESPSerializationFormat respSerializationFormat;

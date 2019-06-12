@@ -475,14 +475,13 @@ double RtlRealTypeInfo::value(const void * self) const
 
 size32_t RtlRealTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
 {
-    builder.ensureCapacity(length+offset, queryName(field));
     double val = source.getRealResult(field);
     return buildReal(builder, offset, field, val);
 }
 
 size32_t RtlRealTypeInfo::buildReal(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, double val) const
 {
-    byte *dest = builder.getSelf() + offset;
+    byte *dest = builder.ensureCapacity(length+offset, queryName(field)) + offset;
     if (length == 4)
         *(float *) dest = (float) val;
     else
