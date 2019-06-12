@@ -548,6 +548,25 @@
       <para>The Spark-HPCCSystems Distributed Connector also supports PySpark.
       It uses the same classes/API as Java does.</para>
 
+      <sect2 role="brk">
+        <title>Special considerations</title>
+
+        <sect3>
+          <title>Unsigned Value Overflow</title>
+
+          <para>Java does not support an unsigned integer type so reading
+          UNSIGNED8 values from HPCC data can cause an integer overflow in
+          Java. UNSIGNED8 values are often used as unique identifiers in
+          datasets, in which case overflowing would be acceptable as the
+          overflowed value will still be unique. </para>
+
+          <para>The Spark-HPCC connector allows unsigned values to overflow in
+          Java and will not report a exception. The caller is responsible for
+          interpreting the value based on the recdef <emphasis
+          role="bold">isunsigned</emphasis> flag.</para>
+        </sect3>
+      </sect2>
+
       <sect2 id="SparkSupportHPCCECLWatch" role="brk">
         <title>Spark support in ECL Watch</title>
 
