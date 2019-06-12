@@ -32,10 +32,12 @@
 #include "hqlgram.h"
 
 #if !defined(BISON_MAJOR_VER) || BISON_MAJOR_VER == 2
-#define YY_DECL int HqlLex::doyyFlex(YYSTYPE & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState)
+#define YYSTYPE attribute
 #else
-#define YY_DECL int HqlLex::doyyFlex(ECLYYSTYPE & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState)
+#define ECLYYSTYPE attribute
 #endif
+
+#define YY_DECL int HqlLex::doyyFlex(attribute & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState)
 
 #define register
 
@@ -70,7 +72,7 @@ extern void hex2str(char * target, const char * digits, unsigned len);
 #define RETURNHARD(sym) \
         setupdatepos; return sym;
 
-int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText)
+int HqlLex::lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText)
 {
     if ((tokenText[0] == '$') && tokenText[1]==0)
         return '$';

@@ -35,6 +35,10 @@
 //The following allows the stack of shifted states to expand.  It indicates memcpy of the data is valid.
 #define YYSTYPE_IS_TRIVIAL 1
 
+// Workaround Bison unconditionally #defining YYSTYPE as ECLYYSTYPE, which generates warnings when we use attribute instead
+#undef YYSTYPE
+#define YYSTYPE attribute
+
 #include "platform.h"
 #include <stdio.h>
 #include <stdlib.h>
