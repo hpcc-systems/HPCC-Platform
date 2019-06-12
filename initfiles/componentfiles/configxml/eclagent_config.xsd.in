@@ -263,6 +263,15 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+
+    <xs:attribute name="analyzeWorkunit" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tab>Eclagent</tab>
+          <tooltip>eclAgent analyzes workunit post-execution</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="httpCallerIdHeader" type="xs:string" use="optional" default="HPCC-Caller-Id">
       <xs:annotation>
         <xs:appinfo>

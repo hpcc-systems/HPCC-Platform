@@ -23,13 +23,6 @@
 #include "jstatcodes.h"
 #include "wuattr.hpp"
 
-struct WuAnalyseOptions
-{
-    stat_type minInterestingTime = msecs2StatUnits(10);// ignore anything under 10 millisecond
-    stat_type minCost = seconds2StatUnits(1);          // only interested in costs of > 1s
-    stat_type skewThreshold = statSkewPercent(20);     // minimum interesting skew measurment
-};
-
 class AActivityRule : public CInterface
 {
 public:

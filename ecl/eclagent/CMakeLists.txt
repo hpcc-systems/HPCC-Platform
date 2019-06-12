@@ -34,6 +34,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/common/wuanalysis
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
@@ -43,7 +44,8 @@ ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 HPCC_ADD_EXECUTABLE ( eclagent ${SRCS} )
 install ( TARGETS eclagent RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( eclagent
-      hthor           
+      hthor
+      wuanalysis
       ${CPPUNIT_LIBRARIES}
     )
 

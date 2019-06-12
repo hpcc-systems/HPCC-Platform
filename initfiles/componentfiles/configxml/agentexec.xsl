@@ -96,6 +96,10 @@
         <xsl:value-of select="@traceLevel"/>
       </xsl:attribute>
 
+      <xsl:attribute name="analyzeWorkunit">
+        <xsl:value-of select="@analyzeWorkunit"/>
+      </xsl:attribute>
+
       <xsl:attribute name="thorConnectTimeout">
         <xsl:value-of select="@thorConnectTimeout"/>
       </xsl:attribute>

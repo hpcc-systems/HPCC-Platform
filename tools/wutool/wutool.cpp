@@ -199,7 +199,8 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
     }
     else if (stricmp(action, "analyse")==0)
     {
-        analyseWorkunit(&w);
+        WuAnalyseOptions options; // TODO: allow options to be set from from command line parameters
+        analyseAndPrintIssues(&w, options);
     }
     else if (stricmp(action, "dump")==0)
     {

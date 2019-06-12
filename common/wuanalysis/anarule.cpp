@@ -63,9 +63,9 @@ public:
 
             IWuEdge * inputEdge = activity.queryInput(0);
             if (inputEdge && (inputEdge->getStatRaw(StNumRowsProcessed, StSkewMax) < rowsMaxSkew))
-                result.set(cost, "DISTRIBUTE output skew is worse than input skew");
+                result.set(cost, "DISTRIBUTE output skew is worse than input skew (%s)", activity.queryName());
             else
-                result.set(cost, "Significant skew in DISTRIBUTE output");
+                result.set(cost, "Significant skew in DISTRIBUTE output (%s)", activity.queryName());
             return true;
         }
         return false;

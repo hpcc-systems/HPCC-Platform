@@ -19,39 +19,14 @@
 #define ANAWU_HPP
 
 #include "anacommon.hpp"
-#include "workunit.hpp"
-#include "eclhelper.hpp"
 
-interface IWuScope
+struct WuAnalyseOptions
 {
-    virtual stat_type getStatRaw(StatisticKind kind, StatisticKind variant = StKindNone) const = 0;
-    virtual unsigned getAttr(WuAttr kind) const = 0;
-    virtual void getAttr(StringBuffer & result, WuAttr kind) const = 0;
+    stat_type minInterestingTime = msecs2StatUnits(10);// ignore anything under 10 millisecond
+    stat_type minCost = seconds2StatUnits(1);          // only interested in costs of > 1s
+    stat_type skewThreshold = statSkewPercent(20);     // minimum interesting skew measurment
 };
 
-interface IWuActivity;
-interface IWuEdge : public IWuScope
-{
-    virtual IWuActivity * querySource() = 0;
-    virtual IWuActivity * queryTarget() = 0;
-};
-
-interface IWuActivity : public IWuScope
-{
-    virtual const char * queryName() const = 0;
-    virtual IWuEdge * queryInput(unsigned idx) = 0;
-    virtual IWuEdge * queryOutput(unsigned idx) = 0;
-    inline IWuActivity * queryInputActivity(unsigned idx)
-    {
-        IWuEdge * edge = queryInput(idx);
-        return edge ? edge->querySource() : nullptr;
-    }
-    inline ThorActivityKind queryThorActivityKind()
-    {
-        return (ThorActivityKind) getAttr(WaKind);
-    }
-};
-
-void WUANALYSIS_API analyseWorkunit(IConstWorkUnit * wu);
-
+void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options);
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options);
 #endif
