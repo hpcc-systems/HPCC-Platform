@@ -1143,8 +1143,8 @@ public:
         bool multiclustermerge = false;
         bool useserverreplicate = false;
         Owned<IFileDescriptor> multifdesc;
-        Owned<IFileDescriptor> foreignfdesc;
         Owned<IFileDescriptor> auxfdesc;        // used for multicopy
+        Owned<IFileDescriptor> srcFdesc;
         DFUstate  finalstate = DFUstate_finished;
         try {
             DFUcmd cmd = wu->getCommand();
@@ -1199,13 +1199,21 @@ public:
                     if (!tmp.length())
                         throw MakeStringException(-1,"Source file not specified");
                     foreigncopy = false;
-                    if ((cmd==DFUcmd_copy)||multiclustermerge) {
+                    if ((cmd==DFUcmd_copy)||multiclustermerge)
+                    {
                         foreigndalinode.setown(getForeignDali(source));
                         foreigncopy = foreigndalinode.get()!=NULL;
-                        if (foreigncopy) {
+                        if (foreigncopy)
+                        {
+                            CDfsLogicalFileName lfn;
+                            lfn.set(tmp);
+                            lfn.setForeign(foreigndalinode->endpoint(),true);
+                            tmp = lfn.get();
+
                             StringBuffer fu;
                             StringBuffer fp;
-                            if (source->getForeignUser(fu,fp)) {
+                            if (source->getForeignUser(fu,fp))
+                            {
                                  foreignuserdesc.setown(createUserDescriptor());
                                  foreignuserdesc->set(fu.str(),fp.str());
                             }
@@ -1213,46 +1221,44 @@ public:
                                 foreignuserdesc.set(userdesc);
                         }
                     }
-                    if (foreigncopy) {
-                        foreignfdesc.setown(queryDistributedFileDirectory().getFileDescriptor(tmp.str(),foreignuserdesc,foreigndalinode));
-                        if (!foreignfdesc) {
-                            StringBuffer s;
-                            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",tmp.str(),foreigndalinode->endpoint().getUrlStr(s).str());
-                        }
-                        kind.set(foreignfdesc->queryProperties().queryProp("@kind"));
-                        oldRoxiePrefix.set(foreignfdesc->queryProperties().queryProp("@roxiePrefix"));
-                        iskey = strsame("key", kind);
-                        if (destination->getWrap()||iskey)
-                            destination->setNumPartsOverride(foreignfdesc->numParts());
-                        if (options->getPush()) {// need to set ftslave location
+                    srcFile.setown(fdir.lookup(tmp.str(),userdesc,
+                            (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert)));
+
+                    if (!srcFile)
+                        throw MakeStringException(-1,"Source file %s could not be found",tmp.str());
+
+                    srcName.set(tmp);
+                    srcFdesc.setown(srcFile->getFileDescriptor());
+                    iskey = isFileKey(srcFile);
+                    if ((cmd==DFUcmd_copy) && (srcFile->querySuperFile() != nullptr) && iskey)
+                        throwError1(DFTERR_InvalidSuperindexCopy, srcName.str());
+
+                    oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
+                    kind.set(srcFile->queryAttributes().queryProp("@kind"));
+
+                    // keys default wrap for copy
+                    if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))
+                        destination->setNumPartsOverride(srcFile->numParts());
+
+                    if (options->getSubfileCopy())
+                        opttree->setPropBool("@compress",srcFile->isCompressed());
+
+                    if (foreigncopy)
+                    {
+                        if (options->getPush())
+                        {
+                            // need to set ftslave location
                             StringBuffer progpath;
                             StringBuffer workdir;
-                            INode *n = foreignfdesc->queryNode(0);
-                            if (n&&getRemoteRunInfo("FTSlaveProcess", "ftslave", NULL, n->endpoint(), progpath, workdir, foreigndalinode, 1000*60*5)) {
+                            INode *n = srcFdesc->queryNode(0);
+                            if (n&&getRemoteRunInfo("FTSlaveProcess", "ftslave", NULL, n->endpoint(), progpath, workdir, foreigndalinode, 1000*60*5))
+                            {
                                 opttree->setProp("@slave",progpath.str());
                             }
                         }
-                        if (options->getSubfileCopy())
-                            opttree->setPropBool("@compress",foreignfdesc->isCompressed());
                     }
-                    else {
-                        srcFile.setown(fdir.lookup(tmp.str(),userdesc,
-                              (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert)));
-                        if (!srcFile)
-                            throw MakeStringException(-1,"Source file %s could not be found",tmp.str());
-                        oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
-                        iskey = isFileKey(srcFile);
-                        kind.set(srcFile->queryAttributes().queryProp("@kind"));
-                        if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))    // keys default wrap for copy
-                            destination->setNumPartsOverride(srcFile->numParts());
-                        if (options->getSubfileCopy())
-                            opttree->setPropBool("@compress",srcFile->isCompressed());
-                    }
-                    if (destination->getMultiCopy()&&!destination->getWrap()) {
-                        Owned<IFileDescriptor> tmpfd = foreigncopy?foreignfdesc.getLink():srcFile->getFileDescriptor();
-                        auxfdesc.setown(createMultiCopyFileDescriptor(tmpfd,destination->getNumParts(0)));
-                    }
-                    srcName.set(tmp.str());
+                    if (destination->getMultiCopy()&&!destination->getWrap())
+                        auxfdesc.setown(createMultiCopyFileDescriptor(srcFdesc,destination->getNumParts(0)));
                 }
                 break;
             }
@@ -1328,11 +1334,9 @@ public:
                                 bool dstCompressed = false;
                                 if (srcFile)
                                     dstCompressed = srcFile->isCompressed();
-                                else
-                                {
-                                    IFileDescriptor * srcDesc = (auxfdesc.get() ? auxfdesc.get() : foreignfdesc.get());
-                                    dstCompressed = srcDesc && srcDesc->isCompressed();
-                                }
+                                else if (auxfdesc)
+                                    dstCompressed = auxfdesc->isCompressed();
+
                                 if (dstCompressed)
                                     fdesc->queryProperties().setPropBool("@blockCompressed",true);
                             }
@@ -1405,28 +1409,27 @@ public:
             case DFUcmd_copymerge:
             case DFUcmd_copy:
                 {
-                    if (!replicating) {
+                    if (!replicating)
+                    {
                         Owned<IFileDescriptor> patchf;
                         Owned<IFileDescriptor> olddstf;
-                        if (diffNameSrc.get()||diffNameDst.get()) {
-                            Owned<IFileDescriptor> newf;
+                        if (diffNameSrc.get()||diffNameDst.get())
+                        {
                             Owned<IFileDescriptor> oldf;
-                            if (foreigncopy)
-                                newf.set(foreignfdesc);
-                            else
-                                newf.setown(srcFile->getFileDescriptor());
                             oldf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameSrc,foreigncopy?foreignuserdesc:userdesc,foreigncopy?foreigndalinode:NULL));
-                            if (!oldf.get()) {
+                            if (!oldf.get())
+                            {
                                 StringBuffer s;
                                 throw MakeStringException(-1,"Old key file %s could not be found in source",diffNameSrc.get());
                             }
                             olddstf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameDst,userdesc,NULL));
-                            if (!olddstf.get()) {
+                            if (!olddstf.get())
+                            {
                                 StringBuffer s;
                                 throw MakeStringException(-1,"Old key file %s could not be found in destination",diffNameDst.get());
                             }
                             patchf.setown(createFileDescriptor());
-                            doKeyDiff(oldf,newf,patchf);
+                            doKeyDiff(oldf,srcFdesc,patchf);
                         }
                         runningconn.setown(setRunning(runningpath.str()));
                         bool needrep = options->getReplicate();
@@ -1447,7 +1450,7 @@ public:
                         if (needrep)
                             feedback.repmode=cProgressReporter::REPbefore;
                         if (foreigncopy)
-                            checkPhysicalFilePermissions(foreignfdesc,userdesc,false);
+                            checkPhysicalFilePermissions(srcFdesc,userdesc,false);
                         if (patchf) { // patch assumes only 1 cluster
                             // need to create dstpatchf
                             StringBuffer gname;
@@ -1486,7 +1489,7 @@ public:
                         }
                         else if (foreigncopy||auxfdesc)
                         {
-                            IFileDescriptor * srcDesc = (auxfdesc.get() ? auxfdesc.get() : foreignfdesc.get());
+                            IFileDescriptor * srcDesc = (auxfdesc.get() ? auxfdesc.get() : srcFdesc.get());
                             fsys.import(srcDesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
 
                             if (!abortnotify.abortRequested())
@@ -1510,7 +1513,7 @@ public:
                                         multifdesc->getClusterGroupName(0,cname,&queryNamedGroupStore());
                                     (multiclusterinsert?srcFile:dstFile)->addCluster(cname.str(),multifdesc->queryPartDiskMapping(0));
                                 }
-                                Audit(multiclusterinsert?"COPY":"COPYMERGE",userdesc,srcFile?srcFile->queryLogicalName():NULL,dstName.get());
+                                Audit(multiclusterinsert?"COPY":"COPYMERGE",userdesc,srcFile?srcName.str():NULL,dstName.get());
                             }
                         }
                         else {
@@ -1520,7 +1523,7 @@ public:
                                     replicating = true;
                                 else
                                     dstFile->attach(dstName.get(),userdesc);
-                                Audit("COPY",userdesc,srcFile?srcFile->queryLogicalName():NULL,dstName.get());
+                                Audit("COPY",userdesc,srcFile?srcName.str():NULL,dstName.get());
                             }
                         }
                         runningconn.clear();
@@ -1548,7 +1551,7 @@ public:
                     runningconn.clear();
                     if (!abortnotify.abortRequested()) {
                         dstFile->attach(dstName.get(),userdesc);
-                        Audit("MOVE",userdesc,srcFile?srcFile->queryLogicalName():NULL,dstName.get());
+                        Audit("MOVE",userdesc,srcFile?srcName.str():NULL,dstName.get());
                     }
                 }
                 break;
@@ -1570,6 +1573,7 @@ public:
                         newfile.clear();
                         StringBuffer fromname(srcName);
                         srcFile.clear();
+                        srcFdesc.clear();
                         queryDistributedFileDirectory().renamePhysical(fromname.str(),toname.str(),userdesc,NULL);
                         StringBuffer timetaken;
                         timetaken.appendf("%dms",msTick()-start);
@@ -1600,12 +1604,11 @@ public:
                         break;
                     }
                     setFileRepeatOptions(*srcFile,repcluster.str(),repeatlast,onlyrepeated);
-                    Owned<IFileDescriptor> fdesc = srcFile->getFileDescriptor();
-                    fdesc->ensureReplicate();
-                    fsys.replicate(fdesc.get(), mode, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                    srcFdesc->ensureReplicate();
+                    fsys.replicate(srcFdesc.get(), mode, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
                     runningconn.clear();
                     if (!abortnotify.abortRequested()) {
-                        Audit("REPLICATE",userdesc,srcFile?srcFile->queryLogicalName():NULL,NULL);
+                        Audit("REPLICATE",userdesc,srcFile?srcName.str():NULL,NULL);
                         // srcFile->queryPartDiskMapping(0).maxCopies = 2;   // ** TBD ?
                     }
                 }
@@ -1655,7 +1658,7 @@ public:
                     checkSourceTarget(fdesc);
                     fsys.exportFile(srcFile, fdesc, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
                     if (!abortnotify.abortRequested()) {
-                        Audit("EXPORT",userdesc,srcFile?srcFile->queryLogicalName():NULL,NULL);
+                        Audit("EXPORT",userdesc,srcFile?srcName.str():NULL,NULL);
                     }
                     runningconn.clear();
                 }
