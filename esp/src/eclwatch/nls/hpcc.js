@@ -599,6 +599,7 @@ define({root:
     ReplicateOffset: "Replicate Offset",
     RepresentsASubset: "represent a subset of the total number of matches. Using a correct filter may reduce the number of matches.",
     RequestSchema: "Request Schema",
+    RequiredForFixedSpray: "Required for fixed spray",
     RequiredForXML: "Required for spraying XML",
     Reschedule: "Reschedule",
     Reset: "Reset",
