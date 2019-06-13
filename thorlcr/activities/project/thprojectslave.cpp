@@ -130,7 +130,10 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
                 recordCount = _recordCount;
             }
             else
+            {
                 ReleaseThorRow(_in);
+                recordCount = 0;
+            }
         }
         OwnedConstThorRow in;
         unsigned __int64 recordCount;
@@ -140,8 +143,13 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
     {
         CPrefetchProjectSlaveActivity &parent;
         CThreadedPersistent threaded;
-        rowcount_t recordCount;
-        bool full, blocked, stopped, eoi, eog, eoq;
+        rowcount_t recordCount = 0;
+        bool full = false;
+        bool blocked = false;
+        bool stopped = true;
+        bool eog = true;
+        bool eoi = true;
+        bool eoq = true;
         QueueOf<PrefetchInfo, true> prefetchQueue;
         CriticalSection crit;
         Semaphore blockedSem, fullSem;
