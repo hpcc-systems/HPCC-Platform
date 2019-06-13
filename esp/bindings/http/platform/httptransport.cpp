@@ -630,7 +630,7 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
             DBGLOG("length of content read = %d", m_content.length());
     }
 
-    if (getEspLogRequests() || getEspLogLevel()>LogNormal)
+    if (getEspLogRequests() == LogRequestsAlways)
         logMessage(LOGCONTENT, "HTTP content received:\n");
     return 0;
 }
@@ -802,7 +802,7 @@ int CHttpMessage::send()
     int retcode = 0;
 
     // If m_content is empty but m_content_stream is set, the stream will not be logged here.
-    if (getEspLogResponses() || getEspLogLevel(queryContext())>LogNormal)
+    if (getEspLogResponses())
     {
         logMessage(headers.str(), "Sending out HTTP headers:\n", "Authorization:[~\r\n]*", "Authorization: (hidden)");
         if(m_content_length > 0 && m_content.length() > 0)
@@ -1897,7 +1897,7 @@ int CHttpRequest::processHeaders(IMultiException *me)
         lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN + 1, me);
     }
 
-    if (getEspLogRequests() || getEspLogLevel()>LogNormal)
+    if (getEspLogRequests() == LogRequestsAlways)
         logMessage(LOGHEADERS, "HTTP request headers received:\n");
 
     if(m_content_length > 0 && m_MaxRequestEntityLength > 0 && m_content_length > m_MaxRequestEntityLength && (!isUpload(false)))
@@ -2447,7 +2447,7 @@ int CHttpResponse::receive(bool alwaysReadContent, IMultiException *me)
             DBGLOG("length of content read = %d", m_content.length());
     }
     
-    if ((getEspLogRequests() || getEspLogLevel()>LogNormal))
+    if (getEspLogRequests() == LogRequestsAlways)
         logMessage(LOGCONTENT, "HTTP response content received:\n");
     return 0;
 

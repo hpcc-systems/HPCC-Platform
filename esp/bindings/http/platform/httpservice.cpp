@@ -64,7 +64,7 @@ CEspHttpServer::~CEspHttpServer()
             //has been logged and it should not be logged here.
             ctx->setProcessingTime();
             if ((ctx->queryHasException() || (ctx->queryProcessingTime() > getSlowProcessingTime())) &&
-                !getEspLogRequests() && (getEspLogLevel() <= LogNormal))
+                (getEspLogRequests() == LogRequestsWithIssuesOnly))
             {
                 StringBuffer logStr;
                 logStr.appendf("%s %s", m_request->queryMethod(), m_request->queryPath());
@@ -73,7 +73,12 @@ CEspHttpServer::~CEspHttpServer()
                 if (paramStr && *paramStr)
                     logStr.appendf("?%s", paramStr);
 
-                DBGLOG("Request[%s]", logStr.str());
+                if (ctx->queryHasException())
+                    DBGLOG("Request with exception. Request[%s]", logStr.str());
+                else
+                    DBGLOG("Request with long processing time: %u seconds. Request[%s]",
+                        (unsigned) (ctx->queryProcessingTime() * 0.001), logStr.str());
+
                 if (m_request->isSoapMessage())
                 {
                     StringBuffer requestStr;

@@ -120,9 +120,10 @@ esp_http_decl void getEspUrlParams(IEspContext& ctx, StringBuffer& params, const
 esp_http_decl void addEspNativeArray(StringBuffer& schema, const char* xsdType, const char* arrayType);
 esp_http_decl void checkRequest(IEspContext& ctx);
 
+esp_http_decl LogRequest readLogRequest(char const* req);
 esp_http_decl LogLevel getEspLogLevel(IEspContext* );
 esp_http_decl LogLevel getEspLogLevel();
-esp_http_decl bool getEspLogRequests();
+esp_http_decl LogRequest getEspLogRequests();
 esp_http_decl bool getEspLogResponses();
 esp_http_decl LogLevel getTxSummaryLevel();
 esp_http_decl bool getTxSummaryResourceReq();

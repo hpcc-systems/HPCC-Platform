@@ -261,7 +261,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     // load options
     const char* level = m_cfg->queryProp("@logLevel");
     m_options.logLevel = level ? atoi(level) : LogMin;
-    m_options.logReq = m_cfg->getPropBool("@logRequests", true);
+    m_options.logReq = readLogRequest(m_cfg->queryProp("@logRequests"));
     m_options.logResp = m_cfg->getPropBool("@logResponses", false);
     m_options.txSummaryLevel = m_cfg->getPropInt("@txSummaryLevel", LogMin);
     m_options.txSummaryResourceReq = m_cfg->getPropBool("@txSummaryResourceReq", false);
@@ -517,7 +517,6 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         }
     }
 }
-
 
 void CEspConfig::sendAlert(int severity, char const * descr, char const * subject) const
 {

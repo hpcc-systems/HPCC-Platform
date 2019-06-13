@@ -258,7 +258,7 @@
               formOptionsAccess="false"
               httpConfigAccess="true"
               logLevel="1"
-              logRequests="false"
+              logRequests="never"
               logResponses="false"
               txSummaryLevel="1"
               txSummaryResourceReq="false"
