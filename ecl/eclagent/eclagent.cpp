@@ -554,9 +554,12 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
         debugContext->debugInitialize(wuid, wu->queryJobName(), true);
     }
     Owned<IWorkUnit> w = updateWorkUnit();
-    if (_queryXML)
-        w->setXmlParams(_queryXML);
-    updateSuppliedXmlParams(w);
+    if (w)
+    {
+        if (_queryXML)
+            w->setXmlParams(_queryXML);
+        updateSuppliedXmlParams(w);
+    }
 }
 
 EclAgent::~EclAgent()
