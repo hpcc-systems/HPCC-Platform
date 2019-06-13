@@ -5654,6 +5654,7 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId, 
 {
     unsigned numPages = PAGES(_size + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
 
+    bool retryOnFailure = true; // if this fails release memory and try again
     for (;;)
     {
         rowManager->checkLimit(numPages, maxSpillCost);
@@ -5664,12 +5665,15 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId, 
             return new (memory) HugeHeaplet(this, allocatorCache, _size, allocatorId);
 
         rowManager->restoreLimit(numPages);
-        if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
+
+        if (!retryOnFailure)
         {
             if (maxSpillCost == SpillAllCost)
                 rowManager->reportMemoryUsage(false);
             throwHeapExhausted(allocatorId, numPages);
         }
+
+        retryOnFailure = rowManager->releaseCallbackMemory(maxSpillCost, true);
     }
 }
 
@@ -5714,6 +5718,7 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
     }
 
     unsigned numPages = newPages - oldPages;
+    bool retryOnFailure = true; // if this fails release memory and try again
     for (;;)
     {
         // NOTE: we request permission only for the difference between the old
@@ -5775,12 +5780,14 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
         //If the allocation fails, then try and free some memory by calling the callbacks
 
         rowManager->restoreLimit(numPages);
-        if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
+        if (!retryOnFailure)
         {
             if (maxSpillCost == SpillAllCost)
                 rowManager->reportMemoryUsage(false);
             throwGlobalHeapExhausted(activityId, newPages, oldPages);
         }
+
+        retryOnFailure = rowManager->releaseCallbackMemory(maxSpillCost, true);
     }
 }
 
@@ -5808,6 +5815,7 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
     //The latter is done outside the lock, to reduce the window for contention.
     ChunkedHeaplet * donorHeaplet;
     char * chunk;
+    bool retryOnFailure = true; // if this fails release memory and try again
     for (;;)
     {
         {
@@ -5871,8 +5879,11 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
 
         //Could check if activeHeaplet was now set (and therefore allocated by another thread), and if so restart
         //the function, but unlikley to be worthwhile
-        if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
+        if (!retryOnFailure)
             throwHeapExhausted(allocatorId, 1);
+
+        //Release some memory, but only try to release again if some memory was released this time
+        retryOnFailure = rowManager->releaseCallbackMemory(maxSpillCost, true);
     }
 
     if (memTraceLevel >= 3 && (memTraceLevel >= 5 || chunkSize > 32000))
@@ -5926,6 +5937,7 @@ unsigned CChunkedHeap::doAllocateRowBlock(unsigned allocatorId, unsigned maxSpil
     //The latter is done outside the spinblock, to reduce the window for contention.
     ChunkedHeaplet * donorHeaplet;
     unsigned allocated = 0;
+    bool retryOnFailure = true; // if this fails release memory and try again
     for (;;)
     {
         {
@@ -5986,8 +5998,10 @@ unsigned CChunkedHeap::doAllocateRowBlock(unsigned allocatorId, unsigned maxSpil
 
         //Could check if activeHeaplet was now set (and therefore allocated by another thread), and if so restart
         //the function, but grabbing the spin lock would be inefficient.
-        if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
+        if (!retryOnFailure)
             throwHeapExhausted(allocatorId, 1);
+
+        retryOnFailure = rowManager->releaseCallbackMemory(maxSpillCost, true);
     }
 
     if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
