@@ -55,5 +55,13 @@
         </Addresses>
       </Guest>
     </Guests>
+    <KeyDates diff_match="Year+Month+Day+Descr" diff_monitor="KeyDates">
+      <KeyDate>
+        <Year/>
+        <Month/>
+        <Day/>
+        <Descr/>
+      </KeyDate>
+    </KeyDates>
   </OrganizationInfoResponse>
 </ResultMonitoringTemplate>
