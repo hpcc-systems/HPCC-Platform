@@ -1231,7 +1231,7 @@ private:
                         else if (type->isLinkCounted())
                         {
                             // a 32-bit record count, and a pointer to an array of record pointers
-                            IEngineRowAllocator *childAllocator = builder.queryAllocator()->createChildRowAllocator(type->queryChildType());
+                            Owned<IEngineRowAllocator> childAllocator = builder.queryAllocator()->createChildRowAllocator(type->queryChildType());
                             assertex(childAllocator);  // May not be available when using serialized types (but unlikely to want to create linkcounted children remotely either)
 
                             size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
