@@ -366,12 +366,12 @@ CJobChannel &CGraphElementBase::queryJobChannel() const
     return owner->queryJobChannel();
 }
 
-IGraphTempHandler *CGraphElementBase::queryTempHandler() const
+IGraphTempHandler *CGraphElementBase::queryTempHandler(bool assert) const
 {
     if (resultsGraph)
-        return resultsGraph->queryTempHandler();
+        return resultsGraph->queryTempHandler(assert);
     else
-        return queryJob().queryTempHandler();
+        return queryJob().queryTempHandler(assert);
 }
 
 void CGraphElementBase::releaseIOs()
@@ -1982,7 +1982,9 @@ void CGraphBase::doExecuteChild(size32_t parentExtractSz, const byte *parentExtr
         executeChildGraphs(parentExtractSz, parentExtract);
     else
         execute(parentExtractSz, parentExtract, false, false);
-    queryTempHandler()->clearTemps();
+    IGraphTempHandler *tempHandler = queryTempHandler(false);
+    if (tempHandler)
+        tempHandler->clearTemps();
 }
 
 void CGraphBase::executeChild(size32_t & retSize, void * &ret, size32_t parentExtractSz, const byte *parentExtract)

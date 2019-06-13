@@ -1618,39 +1618,43 @@ void CJobMaster::saveSpills()
 
     unsigned numSavedSpills = 0;
     // stash away spills ready for resume, make them owned by workunit in event of abort/delete
-    Owned<IFileUsageIterator> iter = queryTempHandler()->getIterator();
-    ForEach(*iter)
+    IGraphTempHandler *tempHandler = queryTempHandler(false);
+    if (tempHandler)
     {
-        CFileUsageEntry &entry = iter->query();
-        StringAttr tmpName = entry.queryName();
-        if (WUGraphComplete == workunit->queryNodeState(queryGraphName(), entry.queryGraphId()))
+        Owned<IFileUsageIterator> iter = tempHandler->getIterator();
+        ForEach(*iter)
         {
-            IArrayOf<IGroup> groups;
-            StringArray clusters;
-            fillClusterArray(*this, tmpName, clusters, groups);
-            Owned<IFileDescriptor> fileDesc = queryThorFileManager().create(*this, tmpName, clusters, groups, true, TDXtemporary|TDWnoreplicate);
-            fileDesc->queryProperties().setPropBool("@pausefile", true); // JCSMORE - mark to keep, may be able to distinguish via other means
-            fileDesc->queryProperties().setProp("@kind", "flat");
+            CFileUsageEntry &entry = iter->query();
+            StringAttr tmpName = entry.queryName();
+            if (WUGraphComplete == workunit->queryNodeState(queryGraphName(), entry.queryGraphId()))
+            {
+                IArrayOf<IGroup> groups;
+                StringArray clusters;
+                fillClusterArray(*this, tmpName, clusters, groups);
+                Owned<IFileDescriptor> fileDesc = queryThorFileManager().create(*this, tmpName, clusters, groups, true, TDXtemporary|TDWnoreplicate);
+                fileDesc->queryProperties().setPropBool("@pausefile", true); // JCSMORE - mark to keep, may be able to distinguish via other means
+                fileDesc->queryProperties().setProp("@kind", "flat");
 
-            IPropertyTree &props = fileDesc->queryProperties();
-            props.setPropBool("@owned", true);
-            bool blockCompressed=true; // JCSMORE, should come from helper really
-            if (blockCompressed)
-                props.setPropBool("@blockCompressed", true);
+                IPropertyTree &props = fileDesc->queryProperties();
+                props.setPropBool("@owned", true);
+                bool blockCompressed=true; // JCSMORE, should come from helper really
+                if (blockCompressed)
+                    props.setPropBool("@blockCompressed", true);
 
-            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fileDesc);
+                Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fileDesc);
 
-            // NB: This is renaming/moving from temp path
+                // NB: This is renaming/moving from temp path
 
-            StringBuffer newName;
-            queryThorFileManager().addScope(*this, tmpName, newName, true, true);
-            verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory(grp_unknown)));
+                StringBuffer newName;
+                queryThorFileManager().addScope(*this, tmpName, newName, true, true);
+                verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory(grp_unknown)));
 
-            file->attach(newName,userDesc);
+                file->attach(newName,userDesc);
 
-            Owned<IWorkUnit> wu = &queryWorkUnit().lock();
-            wu->addFile(newName, &clusters, entry.queryUsage(), entry.queryKind(), queryGraphName());
-            ++numSavedSpills;
+                Owned<IWorkUnit> wu = &queryWorkUnit().lock();
+                wu->addFile(newName, &clusters, entry.queryUsage(), entry.queryKind(), queryGraphName());
+                ++numSavedSpills;
+            }
         }
     }
     PROGLOG("Paused, %d spill(s) saved.", numSavedSpills);
