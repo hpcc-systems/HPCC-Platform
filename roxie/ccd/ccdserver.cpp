@@ -20612,8 +20612,11 @@ public:
         cond = helper.getCondition();
         if (cond)
         {
-            inputTrue->start(parentExtractSize, parentExtract, paused);
-            startJunction(junctionTrue);
+            if (inputTrue)
+            {
+                inputTrue->start(parentExtractSize, parentExtract, paused);
+                startJunction(junctionTrue);
+            }
             if (streamFalse)
                 streamFalse->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
         }
@@ -20624,7 +20627,8 @@ public:
                 inputFalse->start(parentExtractSize, parentExtract, paused);
                 startJunction(junctionFalse);
             }
-            streamTrue->stop();
+            if (streamTrue)
+                streamTrue->stop();
         }
         unusedStopped = true;
 
@@ -20632,7 +20636,7 @@ public:
 
     virtual void stop()
     {
-        if (!unusedStopped || cond)
+        if (streamTrue && (!unusedStopped || cond))
             streamTrue->stop();
         if (streamFalse && (!unusedStopped || !cond))
             streamFalse->stop();
@@ -20642,7 +20646,8 @@ public:
     virtual unsigned __int64 queryLocalCycles() const
     {
         __int64 localCycles = totalCycles.totalCycles;
-        localCycles -= inputTrue->queryTotalCycles();
+        if (inputTrue) // if conditional input cannot assume inputTrue
+            localCycles -= inputTrue->queryTotalCycles();
         if (inputFalse)
             localCycles -= inputFalse->queryTotalCycles();
         if (localCycles < 0) 
@@ -20677,7 +20682,8 @@ public:
     virtual void reset()
     {
         CRoxieServerActivity::reset();
-        inputTrue->reset();
+        if (inputTrue)
+            inputTrue->reset();
         if (inputFalse)
             inputFalse->reset();
         resetJunction(junctionTrue);
