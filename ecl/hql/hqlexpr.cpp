@@ -596,7 +596,7 @@ ISourcePath * createSourcePath(const char *value)
 {
     if (!value)
         return NULL;
-    CriticalBlock crit(*sourcePathCS);
+    HqlCriticalBlock crit(*sourcePathCS);
     return (ISourcePath *)LINK(sourcePaths->addAtom(value));
 }
 
@@ -607,7 +607,7 @@ ISourcePath * createSourcePath(size32_t len, const char *value)
     char * nullTerminated = (char *)alloca(len+1);
     memcpy(nullTerminated, value, len);
     nullTerminated[len] = 0;
-    CriticalBlock crit(*sourcePathCS);
+    HqlCriticalBlock crit(*sourcePathCS);
     return (ISourcePath*)LINK(sourcePaths->addAtom(nullTerminated));
 }
 
@@ -3923,9 +3923,7 @@ void CHqlExpression::beforeDispose()
 #endif
     if (observed)
     {
-#ifdef HQLEXPR_MULTI_THREADED
-        CriticalBlock block(*exprCacheCS);
-#endif
+        HqlCriticalBlock block(*exprCacheCS);
         if (observed)
             exprCache->removeExact(this);
     }
@@ -3976,9 +3974,7 @@ IHqlExpression * CHqlExpression::commonUpExpression()
 
     IHqlExpression * match;
     {
-#ifdef HQLEXPR_MULTI_THREADED
-        CriticalBlock block(*exprCacheCS);
-#endif
+        HqlCriticalBlock block(*exprCacheCS);
         match = exprCache->addOrFind(*this);
 #ifndef GATHER_COMMON_STATS
         if (match == this)
@@ -8681,7 +8677,7 @@ void CHqlRemoteScope::ensureSymbolsDefined(HqlLookupContext & ctx)
 
 void CHqlRemoteScope::preloadSymbols(HqlLookupContext & ctx, bool forceAll)
 {
-    CriticalBlock block(generalCS);
+    HqlCriticalBlock block(generalCS);
     if (!loadedAllSymbols)
     {
         if (text)
@@ -9054,7 +9050,7 @@ inline bool canMergeDefinition(IHqlExpression * expr)
 
 IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    CriticalBlock block(cs);
+    HqlCriticalBlock block(cs);
     OwnedHqlExpr resolved = CHqlScope::lookupSymbol(searchId, lookupFlags, ctx);
     if (resolved)
     {
@@ -9144,7 +9140,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned look
 //This function is only likely to be called when gathering implicit modules for the legacy option
 void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
 {
-    CriticalBlock block(cs);
+    HqlCriticalBlock block(cs);
     if (mergedAll)
         return;
 
@@ -13727,7 +13723,7 @@ extern HQL_API IHqlExpression * createNullExpr(ITypeInfo * type)
             unsigned size = type->getSize();
             unsigned isSigned = type->isSigned() ? 0 : 1;
 
-            CriticalBlock block(*nullIntCS);
+            HqlCriticalBlock block(*nullIntCS);
             IHqlExpression * null = nullIntValue[size][isSigned];
             if (!null)
             {
@@ -14775,7 +14771,7 @@ extern HQL_API void unlockTransformMutex()
 
 unsigned getExpressionCRC(IHqlExpression * expr)
 {
-    CriticalBlock procedure(*crcCS);
+    HqlCriticalBlock procedure(*crcCS);
     return expr->getCachedEclCRC();
 }
 

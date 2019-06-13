@@ -134,7 +134,7 @@ IHqlExpression * getSizetConstant(unsigned size)
     if (size >= SIZET_CACHE_SIZE)
         return createConstant(sizetType->castFrom(false, (__int64)size));
 
-    CriticalBlock block(*sizetCacheCs);
+    HqlCriticalBlock block(*sizetCacheCs);
     IHqlExpression * match = sizetCache[size];
     if (!match)
         match = sizetCache[size] = createConstant(sizetType->castFrom(false, (__int64)size));
@@ -173,7 +173,7 @@ HQL_API IHqlExpression * getFixedSizeAttr(unsigned size)
         return createExprAttribute(_propSize_Atom, LINK(sizeExpr), LINK(sizeExpr), LINK(sizeExpr));
     }
 
-    CriticalBlock block(*sizetCacheCs);     // reuse the critical section
+    HqlCriticalBlock block(*sizetCacheCs);     // reuse the critical section
     IHqlExpression * match = fixedAttrSizeCache[size];
     if (!match)
     {

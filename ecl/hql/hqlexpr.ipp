@@ -19,6 +19,7 @@
 
 //The following needs to be defined to allow multi-threaded access to the expressions
 //Required inside esp and other areas for parsing record definitions etc.
+//On x64 increases processing time by 3-4%, so left enabled.  Other platforms might benefit from disabling.
 #define HQLEXPR_MULTI_THREADED
 
 #define NUM_PARALLEL_TRANSFORMS 1
@@ -50,6 +51,18 @@ typedef byte transformdepth_t;
 #define TRANSFORM_DEPTH_SAVE_MATCH_EXPR     0x100
 
 #define RELEASE_TRANSFORM_EXTRA(depth, extra)   { if (!(depth & TRANSFORM_DEPTH_NOLINK)) ::Release(extra); }
+
+class NullCriticalBlock
+{
+public:
+    inline NullCriticalBlock(CriticalSection &) {}
+};
+
+#ifdef HQLEXPR_MULTI_THREADED
+typedef CriticalBlock HqlCriticalBlock;
+#else
+typedef NullCriticalBlock HqlCriticalBlock;
+#endif
 
 class CHqlExprMeta;
 
