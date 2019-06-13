@@ -5,6 +5,7 @@ import "dojo/i18n";
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as arrayUtil from "dojo/_base/array";
 import * as domClass from "dojo/dom-class";
+import * as domStyle from "dojo/dom-style";
 import * as Stateful from "dojo/Stateful";
 import * as query from "dojo/query";
 import * as json from "dojo/json";
@@ -526,4 +527,49 @@ export function override(method) {
     proxy.overrides = true;
 
     return proxy;
+}
+
+export interface IMaximizeState {
+    parentNode: HTMLElement;
+    nextElementSibling: HTMLElement;
+    stylePosition: string;
+    stubResize: (size?: { l: number, t: number, w: number, h: number }) => void;
+    widgetResize: (size?: { l: number, t: number, w: number, h: number }) => void;
+}
+export function maximizeWidget(widget: any, max: boolean, prev?: IMaximizeState): IMaximizeState | undefined {
+    var stub = registry.byId("stub");
+    if (stub.domNode !== widget.domNode) {
+        if (max) {
+            var retVal: IMaximizeState = {
+                parentNode: widget.domNode.parentNode,
+                nextElementSibling: widget.domNode.nextElementSibling,
+                stylePosition: domStyle.set(widget.domNode, "position"),
+                stubResize: stub.resize,
+                widgetResize: widget.resize
+            };
+            widget.domNode.style.setProperty("position", "relative", "important");
+
+            stub.domNode.insertBefore(widget.domNode, stub.domNode.firstChild);
+
+            stub.resize = function () {
+                widget.resize();
+            };
+
+            widget.resize = function () {
+                retVal.widgetResize.call(widget, { l: 0, t: 0, w: window.innerWidth, h: window.innerHeight });
+            };
+
+            widget.resize();
+
+            return retVal;
+        } else {
+            widget.resize = prev.widgetResize;
+            stub.resize = prev.stubResize;
+
+            prev.parentNode.insertBefore(widget.domNode, prev.nextElementSibling);
+            domStyle.set(widget.domNode, "position", prev.stylePosition);
+
+            stub.resize();
+        }
+    }
 }

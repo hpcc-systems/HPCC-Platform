@@ -7,6 +7,7 @@
             </select>
             <div id="${id}Reset" data-dojo-attach-event="onClick:_onReset" data-dojo-type="dijit.form.Button">${i18n.Reset}</div>
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
+            <div class="right" data-dojo-attach-event="onChange:_onMaximize" data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
             <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
         </div>
         <div style="padding:0px; overflow:hidden" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.BorderContainer">
