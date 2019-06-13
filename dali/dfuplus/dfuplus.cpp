@@ -70,7 +70,6 @@ public:
         else
             listenep.getUrlStr(eps);
 #endif
-        enableDafsAuthentication(requireauthenticate);
         server.setown(createRemoteFileServer());
         server->setThrottle(ThrottleStd, 0); // disable throttling
         server->setThrottle(ThrottleSlow, 0); // disable throttling

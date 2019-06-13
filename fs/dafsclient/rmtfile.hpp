@@ -66,8 +66,6 @@ extern DAFSCLIENT_API void disconnectRemoteIoOnExit(IFileIO *fileio,bool set=tru
 extern DAFSCLIENT_API bool resetRemoteFilename(IFile *file, const char *newname); // returns false if not remote
 
 
-extern DAFSCLIENT_API void enableAuthentication(bool set=true); // default enabled for clients, disabled for server
-
 extern DAFSCLIENT_API bool asyncCopyFileSection(const char *uuid,   // from genUUID - must be same for subsequent calls
                             IFile *from,                        // expected to be remote
                             RemoteFilename &to,

@@ -319,24 +319,6 @@ const char *ThrottleStrings[] =
 
 static const char *getThrottleClassText(ThrottleClass throttleClass) { return ThrottleStrings[throttleClass]; }
 
-typedef byte OnceKey[16];
-
-static void genOnce(OnceKey &key)
-{
-    static __int64 inc=0;
-    *(unsigned *)&key[0] = getRandom();
-    *(__int64 *)&key[4] = ++inc;
-    *(unsigned *)&key[12] = getRandom();
-}
-
-static void mergeOnce(OnceKey &key,size32_t sz,const void *data)
-{
-    assertex(sz<=sizeof(OnceKey));
-    const byte *p = (const byte *)data;
-    while (sz)
-        key[--sz] ^= *(p++);
-}
-
 //---------------------------------------------------------------------------
 
 
@@ -1961,7 +1943,6 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         CRemoteFileServer *parent;
         Owned<ISocket> socket;
         StringAttr peerName;
-        Owned<IAuthenticatedUser> user;
         MemoryBuffer msg;
         bool selecthandled;
         size32_t left;
@@ -1974,8 +1955,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 
         IMPLEMENT_IINTERFACE;
 
-        CRemoteClientHandler(CRemoteFileServer *_parent,ISocket *_socket,IAuthenticatedUser *_user,atomic_t &_globallasttick, bool _calledByRowService)
-            : socket(_socket), user(_user), globallasttick(_globallasttick), calledByRowService(_calledByRowService)
+        CRemoteClientHandler(CRemoteFileServer *_parent,ISocket *_socket,atomic_t &_globallasttick, bool _calledByRowService)
+            : socket(_socket), globallasttick(_globallasttick), calledByRowService(_calledByRowService)
         {
             previdx = (unsigned)-1;
             StringBuffer peerBuf;
@@ -2719,31 +2700,6 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 
     IArrayOf<CRemoteClientHandler> clients;
 
-    class cImpersonateBlock
-    {
-        CRemoteClientHandler &client;
-    public:
-        cImpersonateBlock(CRemoteClientHandler &_client)
-            : client(_client)
-        {
-            if (client.user.get()) {
-                if (TF_TRACE)
-                    PROGLOG("Impersonate user: %s",client.user->username());
-                client.user->impersonate();
-            }
-        }
-        ~cImpersonateBlock()
-        {
-            if (client.user.get()) {
-                if (TF_TRACE)
-                    PROGLOG("Stop impersonating user: %s",client.user->username());
-                client.user->revert();
-            }
-        }
-    };
-
-#define IMPERSONATE_USER(client) cImpersonateBlock ublock(client)
-
     void validateSSLSetup()
     {
         if (!securitySettings.certificate)
@@ -2902,7 +2858,6 @@ public:
 
     bool cmdOpenFileIO(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         Owned<StringAttrItem> name = new StringAttrItem;
         byte mode;
         byte share;
@@ -3052,7 +3007,6 @@ public:
 
     void cmdExists(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
@@ -3064,7 +3018,6 @@ public:
 
     void cmdRemove(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
@@ -3092,7 +3045,6 @@ public:
 
     void cmdRename(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr fromname;
         msg.read(fromname);
         StringAttr toname;
@@ -3106,7 +3058,6 @@ public:
 
     void cmdMove(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr fromname;
         msg.read(fromname);
         StringAttr toname;
@@ -3120,7 +3071,6 @@ public:
 
     void cmdCopy(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr fromname;
         msg.read(fromname);
         StringAttr toname;
@@ -3133,7 +3083,6 @@ public:
 
     void cmdAppend(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client, CClientStats &stats)
     {
-        IMPERSONATE_USER(client);
         int handle;
         __int64 pos;
         __int64 len;
@@ -3152,7 +3101,6 @@ public:
 
     void cmdIsFile(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
@@ -3164,7 +3112,6 @@ public:
 
     void cmdIsDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
@@ -3176,7 +3123,6 @@ public:
 
     void cmdIsReadOnly(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
@@ -3188,7 +3134,6 @@ public:
 
     void cmdSetReadOnly(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         bool set;
         msg.read(name).read(set);
@@ -3202,7 +3147,6 @@ public:
 
     void cmdSetFilePerms(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         unsigned fPerms;
         msg.read(name).read(fPerms);
@@ -3215,7 +3159,6 @@ public:
 
     void cmdGetTime(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
@@ -3236,7 +3179,6 @@ public:
 
     void cmdSetTime(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         bool creategot;
         CDateTime createTime;
@@ -3265,7 +3207,6 @@ public:
 
     void cmdCreateDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
@@ -3277,7 +3218,6 @@ public:
 
     void cmdGetDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         StringAttr mask;
         bool includedir;
@@ -3349,7 +3289,6 @@ public:
 
     void cmdMonitorDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         StringAttr mask;
         bool includedir;
@@ -3379,7 +3318,6 @@ public:
 
     void cmdCopySection(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr uuid;
         StringAttr fromFile;
         StringAttr toFile;
@@ -3537,7 +3475,6 @@ public:
 
     void cmdTreeCopy(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler, bool usetmp=false)
     {
-        IMPERSONATE_USER(client);
         RemoteFilename src;
         src.deserialize(msg);
         RemoteFilename dst;
@@ -3559,7 +3496,6 @@ public:
 
     void cmdGetCRC(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
@@ -3627,7 +3563,6 @@ public:
 
     void cmdExtractBlobElements(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        IMPERSONATE_USER(client);
         StringAttr prefix;
         StringAttr filename;
         msg.read(prefix).read(filename);
@@ -3639,17 +3574,6 @@ public:
         reply.append((unsigned)RFEnoerror).append(n);
         for (unsigned i=0;i<n;i++)
             extracted.item(i).serialize(reply);
-    }
-
-    void cmdUnlock(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
-    {
-        // this is an attempt to authenticate when we haven't got authentication turned on
-        if (TF_TRACE_CLIENT_STATS)
-        {
-            StringBuffer s(client.queryPeerName());
-            PROGLOG("Connect from %s",s.str());
-        }
-        throw createDafsException(RFSERR_InvalidCommand, nullptr);
     }
 
     void cmdStreamGeneral(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
@@ -4072,7 +3996,6 @@ public:
             case RFCsettrace:
             case RFCgetinfo:
             case RFCfirewall:
-            case RFCunlock:
             case RFCStreamRead:
             case RFCStreamReadTestSocket:
             case RFCStreamReadJSON:
@@ -4135,7 +4058,6 @@ public:
                 MAPCOMMAND(RFCsettrace, cmdSetTrace);
                 MAPCOMMAND(RFCgetinfo, cmdGetInfo);
                 MAPCOMMAND(RFCfirewall, cmdFirewall);
-                MAPCOMMANDCLIENT(RFCunlock, cmdUnlock, *client);
                 MAPCOMMANDCLIENT(RFCcopysection, cmdCopySection, *client);
                 MAPCOMMANDCLIENTTHROTTLE(RFCtreecopy, cmdTreeCopy, *client, &slowCmdThrottler);
                 MAPCOMMANDCLIENTTHROTTLE(RFCtreecopytmp, cmdTreeCopyTmp, *client, &slowCmdThrottler);
@@ -4492,106 +4414,10 @@ public:
         sendDaFsBuffer(socket, reply, testSocketFlag);
     }
 
-    bool checkAuthentication(ISocket *socket, IAuthenticatedUser *&ret)
-    {
-        ret = NULL;
-        if (!AuthenticationEnabled)
-            return true;
-        MemoryBuffer reqbuf;
-        MemoryBuffer reply;
-        MemoryBuffer encbuf; // because aesEncrypt clears input
-        initSendBuffer(reply);
-        receiveDaFsBuffer(socket, reqbuf, 1);
-        RemoteFileCommandType typ=0;
-        if (reqbuf.remaining()<sizeof(RemoteFileCommandType))
-            return false;
-        reqbuf.read(typ);
-        if (typ!=RFCunlock)
-        {
-            processUnauthenticatedCommand(typ,socket,reqbuf);
-            return false;
-        }
-        if (reqbuf.remaining()<sizeof(OnceKey))
-            return false;
-        OnceKey oncekey;
-        reqbuf.read(sizeof(oncekey),&oncekey);
-        IpAddress ip;
-        socket->getPeerAddress(ip);
-        byte ipdata[16];
-        ip.getNetAddress(sizeof(ipdata),&ipdata);
-        mergeOnce(oncekey,sizeof(ipdata),&ipdata); // this is clients key
-        OnceKey mykey;
-        genOnce(mykey);
-        reply.append(RFEnoerror); // errcode
-        aesEncrypt(&oncekey,sizeof(oncekey),&mykey,sizeof(oncekey),encbuf);
-        reply.append(encbuf.length()).append(encbuf);
-        sendDaFsBuffer(socket, reply); // send my oncekey
-        reqbuf.clear();
-        receiveDaFsBuffer(socket, reqbuf, 1);
-        if (reqbuf.remaining()>sizeof(RemoteFileCommandType)+sizeof(size32_t))
-        {
-            reqbuf.read(typ);
-            if (typ==RFCunlockreply)
-            {
-                size32_t bs;
-                reqbuf.read(bs);
-                if (bs<=reqbuf.remaining())
-                {
-                    MemoryBuffer userbuf;
-                    aesDecrypt(&mykey,sizeof(mykey),reqbuf.readDirect(bs),bs,userbuf);
-                    byte n;
-                    userbuf.read(n);
-                    if (n>=2)
-                    {
-                        StringAttr user;
-                        StringAttr password;
-                        userbuf.read(user).read(password);
-                        Owned<IAuthenticatedUser> iau = createAuthenticatedUser();
-                        if (iau->login(user,password))
-                        {
-                            initSendBuffer(reply.clear());
-                            reply.append(RFEnoerror);
-                            sendDaFsBuffer(socket, reply); // send OK
-                            ret = iau;
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        reply.clear();
-        appendErr(reply, RFSERR_AuthenticateFailed);
-        sendDaFsBuffer(socket, reply); // send OK
-        return false;
-    }
-
     void runClient(ISocket *sock, bool rowService) // rowService used to distinguish client calls
     {
         cCommandProcessor::cCommandProcessorParams params;
-        IAuthenticatedUser *user=NULL;
-        bool authenticated = false;
-        try
-        {
-            if (checkAuthentication(sock,user))
-                authenticated = true;
-        }
-        catch (IException *e)
-        {
-            e->Release();
-        }
-        if (!authenticated)
-        {
-            try
-            {
-                sock->Release();
-            }
-            catch (IException *e)
-            {
-                e->Release();
-            }
-            return;
-        }
-        params.client = new CRemoteClientHandler(this, sock, user, globallasttick, rowService);
+        params.client = new CRemoteClientHandler(this, sock, globallasttick, rowService);
         {
             CriticalBlock block(sect);
             clients.append(*LINK(params.client));
@@ -4894,7 +4720,6 @@ protected:
                 server->run(sslCfg, socket, nullptr, nullptr);
             }
         };
-        enableDafsAuthentication(false);
         Owned<IRemoteFileServer> server = createRemoteFileServer();
         serverThread.setown(new CServerThread(QUERYINTERFACE(server.getClear(), CRemoteFileServer), socket.getClear()));
     }

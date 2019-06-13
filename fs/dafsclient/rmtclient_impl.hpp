@@ -139,7 +139,6 @@ extern DAFSCLIENT_API size32_t receiveDaFsBufferSize(ISocket * socket, unsigned 
 extern DAFSCLIENT_API void receiveDaFsBuffer(ISocket * socket, MemoryBuffer & tgt, unsigned numtries=1, size32_t maxsz=0x7fffffff);
 extern DAFSCLIENT_API void cleanupDaFsSocket(ISocket *sock);
 extern DAFSCLIENT_API byte traceFlags;
-extern DAFSCLIENT_API bool AuthenticationEnabled;
 #define TF_TRACE (traceFlags&1)
 #define TF_TRACE_PRE_IO (traceFlags&2)
 #define TF_TRACE_FULL (traceFlags&4)
@@ -167,8 +166,6 @@ protected: friend class CRemoteFileIO;
 
     void sendRemoteCommand(MemoryBuffer & src, MemoryBuffer & reply, bool retry=true, bool lengthy=false, bool handleErrCode=true);
     void sendRemoteCommand(MemoryBuffer & src, bool retry);
-    void throwUnauthenticated(const IpAddress &ip,const char *user,unsigned err=0);
-    void sendAuthentication(const IpAddress &serverip);
 public:
     CRemoteBase(const SocketEndpoint &_ep, const char * _filename);
     CRemoteBase(const SocketEndpoint &_ep, DAFSConnectCfg _connectMethod, const char * _filename);

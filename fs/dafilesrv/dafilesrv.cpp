@@ -51,7 +51,6 @@ void usage()
     printf("    dafilesrv -R                                  -- run remote (linux daemon, windows standalone)\n");
     printf("    dafilesrv -install                            -- install windows service\n");
     printf("    dafilesrv -remove                             -- remove windows service\n\n");
-    printf("    add -A to enable authentication to the above\n");
     printf("    add -I <instance name> to specify an instance name\n");
     printf("    add -NOSSL to disable SSL sockets, even when specified in configuration\n\n");
     printf("    additional optional args:\n");
@@ -357,7 +356,6 @@ int main(int argc,char **argv)
     // bit of a kludge for windows - if .exe not specified then not daemon
     bool locallisten = false;
     const char *logdir=NULL;
-    bool requireauthenticate = false;
     StringBuffer logDir;
     StringBuffer componentName;
 
@@ -402,10 +400,6 @@ int main(int argc,char **argv)
 #else
             isdaemon = true;
 #endif
-        }
-        else if (stricmp(argv[i],"-A")==0) {
-            i++;
-            requireauthenticate = true;
         }
         else if ((argv[i][0]=='-')&&(toupper(argv[i][1])=='T')&&(!argv[i][2]||isdigit(argv[i][2]))) {
             if (argv[i][2])
@@ -642,7 +636,6 @@ int main(int argc,char **argv)
             bool started;
             DAFSConnectCfg connectMethod;
             SocketEndpoint listenep;
-            bool requireauthenticate;
             unsigned maxThreads;
             unsigned maxThreadsDelayMs;
             unsigned maxAsyncCopy;
@@ -731,26 +724,6 @@ int main(int argc,char **argv)
             {
                 // Get params from HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DaFileSrv\Parameters
                 
-                int requireauthenticate=0;
-                HKEY hkey;
-                if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,
-                                 "SYSTEM\\CurrentControlSet\\Services\\DaFileSrv\\Parameters",
-                                 0,
-                                 KEY_QUERY_VALUE,
-                                 &hkey) == ERROR_SUCCESS) {
-                    DWORD dwType = 0;
-                    DWORD dwSize = sizeof(requireauthenticate);
-                    RegQueryValueEx(hkey,
-                                    "RequireAuthentication",
-                                    NULL,
-                                    &dwType,
-                                    (BYTE*)&requireauthenticate,
-                                    &dwSize);
-                    RegCloseKey(hkey);
-                }
-
-                enableDafsAuthentication(requireauthenticate!=0);
-
                 StringBuffer eps;
                 if (listenep.isNull())
                     eps.append(listenep.port);
@@ -775,7 +748,6 @@ int main(int argc,char **argv)
 
                 const char * verstring = remoteServerVersionString();
                 PROGLOG("Version: %s", verstring);
-                PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
                 if (dedicatedRowServicePort)
                     PROGLOG("Row service(%s) port = %u", rowServiceConfiguration, dedicatedRowServicePort);
                 PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Running");
@@ -826,8 +798,6 @@ int main(int argc,char **argv)
 
     const char * verstring = remoteServerVersionString();
 
-    enableDafsAuthentication(requireauthenticate);
-
     StringBuffer eps;
     if (listenep.isNull())
         eps.append(listenep.port);
@@ -850,7 +820,6 @@ int main(int argc,char **argv)
     PROGLOG("Dali File Server socket security model: %s", secMethod.str());
 
     PROGLOG("Version: %s", verstring);
-    PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
     if (dedicatedRowServicePort)
         PROGLOG("Row service port = %u%s", dedicatedRowServicePort, dedicatedRowServiceSSL ? " SECURE" : "");
 

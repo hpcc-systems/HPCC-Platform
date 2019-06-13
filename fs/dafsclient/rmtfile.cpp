@@ -1782,11 +1782,6 @@ bool resetRemoteFilename(IFile *file, const char *newname)
 }
 
 
-void enableAuthentication(bool set)
-{
-    enableDafsAuthentication(set);
-}
-
 extern bool clientAsyncCopyFileSection(const char *uuid,
                         IFile *from,                        // expected to be remote
                         RemoteFilename &to,

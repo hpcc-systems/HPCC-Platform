@@ -635,7 +635,6 @@ protected:
                 server->run(sslCfg, socket, nullptr, nullptr);
             }
         };
-        enableDafsAuthentication(false);
         Owned<IRemoteFileServer> server = createRemoteFileServer();
         serverThread.setown(new CServerThread(QUERYINTERFACE(server.getClear(), IRemoteFileServer), socket.getClear()));
     }
