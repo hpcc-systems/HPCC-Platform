@@ -19429,6 +19429,11 @@ public:
         defaultRight.clear();
         defaultLeft.clear();
         ReleaseRoxieRows(rightset);
+        if (left)
+        {
+            ReleaseRoxieRow(left);
+            left = nullptr;
+        }
         matchedRight.kill();
         CRoxieServerTwoInputActivity::reset();
     }
