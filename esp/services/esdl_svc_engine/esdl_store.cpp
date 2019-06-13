@@ -37,6 +37,7 @@ static const char* ESDL_BINDINGS_ROOT_PATH="/ESDL/Bindings/";
 static const char* ESDL_BINDING_PATH="/ESDL/Bindings/Binding";
 static const char* ESDL_BINDING_ENTRY="Binding";
 static const char* ESDL_CHANGE_PATH="/ESDL/Subscription/Change";
+static const char* ESDL_METHODS_ENTRY="Methods";
 
 extern bool trimXPathToParentSDSElement(const char *element, const char * xpath, StringBuffer & parentNodeXPath);
 
@@ -560,6 +561,51 @@ public:
         return configureLogTransform(bindingId, logTransformName, configTree, overwrite, message);
     }
 
+    void mergePTreeWithExclusion(IPTree* src, IPTree* dst, IPTree* exclusion, bool overwriteAttributes = false) const
+    {
+        if (src)
+        {
+            Owned<IPTreeIterator> children(src->getElements("*"));
+            ForEach(*children)
+            {
+                auto child = &children->query();
+                if (child != exclusion)
+                    dst->addPropTree(child->queryName(), LINK(child));
+            }
+
+            Owned<IAttributeIterator> attributes(src->getAttributes());
+            ForEach(*attributes)
+            {
+                if (overwriteAttributes || !dst->hasProp(attributes->queryName()))
+                    dst->addProp(attributes->queryName(), attributes->queryValue());
+            }
+        }
+    }
+
+    bool checkEsdlConfigLevel(IPTree*& methodsConfig, const char* root, const char* child, IPTree*& node)
+    {
+        node = nullptr;
+        if (methodsConfig && (isEmptyString(root) || streq(methodsConfig->queryName(), root)))
+        {
+            node = methodsConfig;
+            if (!isEmptyString(child))
+            {
+                switch (node->getCount(child))
+                {
+                case 0:
+                    methodsConfig = nullptr;
+                    break;
+                case 1:
+                    methodsConfig = node->queryBranch(child);
+                    break;
+                default:
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     virtual int bindService(const char* bindingName,
                                              IPropertyTree* methodsConfig,
                                              const char* espProcName,
@@ -770,13 +816,30 @@ public:
         esdldeftree->setProp("@id", lcId.str());
         esdldeftree->setProp("@esdlservice", esdlServiceName);
 
-        if (methodsConfig != nullptr)
-            esdldeftree->addPropTree("Methods", LINK(methodsConfig));
-        else
-            esdldeftree->addPropTree("Methods");
+        IPTree *srcBinding, *srcDefinition, *srcMethods;
+        if (!checkEsdlConfigLevel(methodsConfig, ESDL_BINDING_ENTRY, ESDL_DEF_ENTRY, srcBinding))
+        {
+            message.setf("Could not configure Service '%s' with multiple %s elements", esdlServiceName, ESDL_DEF_ENTRY);
+            return -1;
+        }
+        if (!checkEsdlConfigLevel(methodsConfig, ESDL_DEF_ENTRY, ESDL_METHODS_ENTRY, srcDefinition))
+        {
+            message.setf("Could not configure Service '%s' with multiple %s elements", esdlServiceName, ESDL_METHODS_ENTRY);
+            return -1;
+        }
+        srcMethods = methodsConfig;
 
-        esdldeftree->addPropTree("LogTransforms");
+        if (srcMethods)
+            esdldeftree->addPropTree(ESDL_METHODS_ENTRY, LINK(srcMethods));
+        else
+            esdldeftree->addPropTree(ESDL_METHODS_ENTRY);
+        mergePTreeWithExclusion(srcDefinition, esdldeftree, srcMethods);
+        if (esdldeftree->getCount("LogTransforms") == 0) // legacy behavior
+            esdldeftree->addPropTree("LogTransforms");
+
         bindingtree->addPropTree(ESDL_DEF_ENTRY, LINK(esdldeftree));
+        mergePTreeWithExclusion(srcBinding, bindingtree, srcDefinition);
+
         bindings->addPropTree(ESDL_BINDING_ENTRY, LINK(bindingtree));
 
         conn->commit();
