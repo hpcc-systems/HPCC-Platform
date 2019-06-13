@@ -93,6 +93,7 @@ target_link_libraries ( hthor
          thorhelper
          roxiemem
          schedulectrl
+         wuanalysis
     )
 
 IF (USE_OPENSSL)
