@@ -78,6 +78,7 @@ enum DaliClientRole // if changed must update queryRoleName()
     DCR_ScheduleAdmin,
     DCR_Testing,
     DCR_XRef,
+    DCR_EclMinus,
     DCR_Max
 };
 
