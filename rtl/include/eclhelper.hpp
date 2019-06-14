@@ -516,6 +516,10 @@ struct RtlFieldInfo
         return type->toXML(self, selfrow, this, target);
     }
     bool equivalent(const RtlFieldInfo *to) const;
+    const char *queryXPath() const
+    {
+        return xpath ? xpath : name;
+    }
 };
 
 enum
@@ -821,6 +825,8 @@ interface IColumnProvider : extends IInterface
 //V4
     virtual __uint64    getUInt(const char * path) = 0;
     virtual __uint64    readUInt(const char * path, __uint64 _default) = 0;
+
+    virtual const char *readRaw(const char * path, size32_t &sz) const { return nullptr; }
 };
 
 //Member - can extend if new accessor function defined.

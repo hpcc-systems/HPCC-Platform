@@ -162,6 +162,32 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
     }
 }
 
+void CSVSplitter::init(unsigned _maxColumns, size32_t _maxCsvSize, const char *quotes, const char *separators, const char *terminators, const char *escapes, bool preserveWhitespace)
+{
+    reset();
+
+    maxCsvSize = _maxCsvSize;
+    maxColumns = _maxColumns;
+    lengths = new unsigned [maxColumns+1];      // NB: One larger to remove some tests in main loop...
+    data = new const byte * [maxColumns+1];
+
+    unsigned idx;
+    if (quotes)
+        addActionList(matcher, quotes, QUOTE);
+    if (separators)
+        addActionList(matcher, separators, SEPARATOR);
+    if (terminators)
+        addActionList(matcher, terminators, TERMINATOR);
+    if (escapes)
+        addActionList(matcher, escapes, ESCAPE);
+
+    if (preserveWhitespace)
+    {
+        matcher.queryAddEntry(1, " ", WHITESPACE);
+        matcher.queryAddEntry(1, "\t", WHITESPACE);
+    }
+}
+
 void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip, bool unescape)
 {
     size32_t sizeOriginal = (size32_t)(end - start);

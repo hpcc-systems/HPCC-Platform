@@ -2091,7 +2091,10 @@ IFieldFilter * deserializeFieldFilter(const RtlRecord & record, const char * src
         fieldNum = atoi(fieldText.str());
     else
         fieldNum = record.getFieldNum(fieldText);
-    return deserializeFieldFilter(fieldNum, *record.queryType(fieldNum), src);
+    if (((unsigned)-1) == fieldNum)
+        return nullptr;
+    else
+        return deserializeFieldFilter(fieldNum, *record.queryType(fieldNum), src);
 }
 
 IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, MemoryBuffer & in)

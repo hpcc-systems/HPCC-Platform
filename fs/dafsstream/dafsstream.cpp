@@ -50,6 +50,24 @@ static StringAttr defaultCompCompression = "LZ4";
 static const char *DFUFileIdSeparator = "|";
 static const unsigned defaultExpirySecs = 300;
 
+static const char *getReadActivityString(DFUFileType fileType)
+{
+    switch (fileType)
+    {
+        case dft_flat:
+            return "diskread";
+        case dft_index:
+            return "indexread";
+        case dft_csv:
+            return "csvread";
+        case dft_xml:
+            return "xmlread";
+        case dft_json:
+            return "jsonread";
+    }
+    return "unknown";
+}
+
 class CDaFsException : public CSimpleInterfaceOf<IDaFsException>
 {
     DaFsExceptionCode code;
@@ -206,7 +224,22 @@ public:
         if (isFileKey(fileDesc))
             fileType = dft_index;
         else
-            fileType = dft_flat;
+        {
+            const char *kind = fileDesc->queryKind();
+            if (kind)
+            {
+                if (streq("csv", kind))
+                    fileType = dft_csv;
+                else if (streq("xml", kind))
+                    fileType = dft_xml;
+                else if (streq("json", kind))
+                    fileType = dft_json;
+                else
+                    fileType = dft_flat;
+            }
+            else
+                fileType = dft_flat;
+        }
 
         fileDesc->getClusterGroupName(0, groupName);
         grouped = fileDesc->isGrouped();
@@ -855,14 +888,25 @@ public:
             requestNode->setPropBool("outputGrouped", preserveGrouping);
         }
 
+        // JCSMORE these are defaults, but should be picked up from file->queryFileDescriptor()
         switch (file->queryType())
         {
-            case dft_flat:
-                requestNode->setProp("kind", "diskread");
+            case dft_xml:
+                requestNode->setProp("xpath", "/Dataset/Row");
                 break;
+            case dft_json:
+                requestNode->setProp("xpath", "/Row");
+                break;
+        }
+        switch (file->queryType())
+        {
+            case dft_xml:
+            case dft_json:
+            case dft_flat:
+            case dft_csv:
             case dft_index:
             {
-                requestNode->setProp("kind", "indexread");
+                requestNode->setProp("kind", getReadActivityString(file->queryType()));
                 break;
             }
             default:
@@ -970,9 +1014,11 @@ public:
         // this is purely to validate the textFilter
         const RtlRecord *record = &file->queryMeta()->queryRecordAccessor(true);
         Owned<IFieldFilter> rtlFilter = deserializeFieldFilter(*record, textFilter);
-
-        fieldFilters.push_back(textFilter);
-        variableContentDirty = true;
+        if (rtlFilter)
+        {
+            fieldFilters.push_back(textFilter);
+            variableContentDirty = true;
+        }
     }
     virtual void clearFieldFilters() override
     {

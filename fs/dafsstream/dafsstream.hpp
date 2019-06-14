@@ -31,7 +31,7 @@ interface IOutputMetaData;
 namespace dafsstream
 {
 
-enum DFUFileType { dft_none, dft_flat, dft_index };
+enum DFUFileType { dft_none, dft_flat, dft_index, dft_csv, dft_xml, dft_json };
 
 enum DaFsExceptionCode
 {

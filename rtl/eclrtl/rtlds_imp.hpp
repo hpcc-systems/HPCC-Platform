@@ -691,6 +691,8 @@ public:
         buffer = &_buffer;
     }
 
+    void removeBytes(size32_t len);
+
     virtual byte * ensureCapacity(size32_t required, const char * fieldName);
 
     MemoryBufferBuilder &ensureRow()

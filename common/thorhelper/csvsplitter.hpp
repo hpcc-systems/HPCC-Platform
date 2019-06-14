@@ -70,12 +70,13 @@ public:
     void addEscape(const char * text);
 
     void init(unsigned maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators, const char * dfsEscapes);
+    void init(unsigned maxColumns, size32_t maxCsvSize, const char *quotes, const char *separators, const char *terminators, const char *escapes, bool preserveWhitespace);
     void reset();
     size32_t splitLine(size32_t maxLen, const byte * start);
     size32_t splitLine(ISerialStream *stream, size32_t maxRowSize);
 
-    inline unsigned * queryLengths() { return lengths; }
-    inline const byte * * queryData() { return data; }
+    inline unsigned * queryLengths() const { return lengths; }
+    inline const byte * * queryData() const { return data; }
 
 protected:
     void setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip, bool unescape);

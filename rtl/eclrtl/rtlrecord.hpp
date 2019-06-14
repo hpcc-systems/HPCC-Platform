@@ -234,6 +234,7 @@ public:
     const RtlFieldInfo * queryOriginalField(unsigned field) const;
     inline const RtlTypeInfo * queryType(unsigned field) const { return fields[field]->type; }
     const char * queryName(unsigned field) const;
+    const char * queryXPath(unsigned field) const; // NB: returns name if no xpath
     unsigned getFieldNum(const char *fieldName) const;
     const RtlRecord *queryNested(unsigned field) const;
     bool excluded(const RtlFieldInfo *field, const byte *row, byte *conditions) const;
@@ -250,6 +251,7 @@ protected:
     const RtlFieldInfo * const * originalFields;
     const RtlRecord **nestedTables;
     const char **names;
+    const char **xpaths;
     const IfBlockInfo **ifblocks;
     mutable const FieldNameToFieldNumMap *nameMap;
 };
