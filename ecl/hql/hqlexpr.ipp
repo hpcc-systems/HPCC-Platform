@@ -506,10 +506,10 @@ protected:
 class CFileContents : public CInterfaceOf<IFileContents>
 {
 private:
-    bool delayedRead;
-    bool implicitlySigned;
+    bool delayedRead = false;
+    bool implicitlySigned = false;
     enum : byte { unchecked, unknown, dirty, clean } dirtyState = unchecked;
-    timestamp_type ts;
+    timestamp_type ts = 0;
     Linked<IFile> file;
     MemoryAttr fileContents;
     Linked<ISourcePath> sourcePath;

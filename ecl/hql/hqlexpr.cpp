@@ -3287,6 +3287,7 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
         return LINK(expr);
 
     ITypeInfo * exprType = queryUnqualifiedType(qualifiedType);
+    assertex(exprType);
     if (exprType == queryUnqualifiedType(type))
         return LINK(expr);
 
@@ -3299,12 +3300,11 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
         ITypeInfo * childType = type->queryChildType();
         if (!childType)
             return LINK(expr);
-        if (exprType)
-        {
-            ITypeInfo * exprChildType = exprType->queryChildType();
-            if (exprChildType && isSameBasicType(childType, exprChildType))
-                return LINK(expr);
-        }
+
+        ITypeInfo * exprChildType = exprType->queryChildType();
+        if (exprChildType && isSameBasicType(childType, exprChildType))
+            return LINK(expr);
+
         HqlExprArray values;
 
         if (expr->getOperator() == no_list)
@@ -3368,43 +3368,40 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
     }
     else if (type->getStringLen() == UNKNOWN_LENGTH)
     {
-        if (exprType)
+        //Optimize away casts to unknown length if the rest of the type matches.
+        if (exprType->getTypeCode() == tc)
         {
-            //Optimize away casts to unknown length if the rest of the type matches.
-            if (exprType->getTypeCode() == tc)
+            //cast to STRING/DATA/VARSTRING/UNICODE/VARUNICODE means ensure that the expression has this base type.
+            if ((tc == type_data) || (tc == type_qstring))
             {
-                //cast to STRING/DATA/VARSTRING/UNICODE/VARUNICODE means ensure that the expression has this base type.
-                if ((tc == type_data) || (tc == type_qstring))
-                {
+                return LINK(expr);
+            }
+            else if (tc == type_unicode || tc == type_varunicode || tc == type_utf8)
+            {
+                if (type->queryLocale() == exprType->queryLocale())
                     return LINK(expr);
-                }
-                else if (tc == type_unicode || tc == type_varunicode || tc == type_utf8)
-                {
-                    if (type->queryLocale() == exprType->queryLocale())
-                        return LINK(expr);
-                }
-                else if (tc == type_string || tc == type_varstring)
-                {
-                    if ((type->queryCharset() == exprType->queryCharset()) &&
-                        (type->queryCollation() == exprType->queryCollation()))
-                        return LINK(expr);
-                }
-                else if (tc == type_decimal)
-                {
-                    if (type->isSigned() == exprType->isSigned())
-                        return LINK(expr);
-                }
             }
-
-            /*
-            The following might produce better code, but it generally makes things worse.....
-            if ((exprType->getSize() != UNKNOWN_LENGTH) && (isStringType(exprType) || isUnicodeType(exprType)))
+            else if (tc == type_string || tc == type_varstring)
             {
-                Owned<ITypeInfo> stretchedType = getStretchedType(exprType->getStringLen(), type);
-                return ensureExprType(expr, stretchedType, castOp);
+                if ((type->queryCharset() == exprType->queryCharset()) &&
+                    (type->queryCollation() == exprType->queryCollation()))
+                    return LINK(expr);
             }
-            */
+            else if (tc == type_decimal)
+            {
+                if (type->isSigned() == exprType->isSigned())
+                    return LINK(expr);
+            }
         }
+
+        /*
+        The following might produce better code, but it generally makes things worse.....
+        if ((exprType->getSize() != UNKNOWN_LENGTH) && (isStringType(exprType) || isUnicodeType(exprType)))
+        {
+            Owned<ITypeInfo> stretchedType = getStretchedType(exprType->getStringLen(), type);
+            return ensureExprType(expr, stretchedType, castOp);
+        }
+        */
     }
 
     node_operator op = expr->getOperator();
@@ -9921,7 +9918,8 @@ public:
     CHqlForwardScope(IHqlScope * _parentScope, HqlGramCtx * _parentCtx, HqlParseContext & parseCtx);
     ~CHqlForwardScope()
     {
-        assertex(!parentScope);
+        if (parentScope)
+            DBGLOG("Paranoia: CHqlForwardScope parentScope has not been cleared");
     }
     IMPLEMENT_IINTERFACE_USING(CHqlVirtualScope)
 

@@ -213,6 +213,7 @@ CNodeBase::CNodeBase()
     keyHdr = NULL;
     fpos = 0;
     keyLen = 0;
+    keyType = 0;
     keyCompareLen = 0;
     isVariable = false;
 }
