@@ -278,7 +278,7 @@ sub _copy_query($$$;$)
     open(OUT, '>', $destpath) or $self->{engine}->error("Could not write $destpath: $!");
     print(OUT "#option('$_', $self->{ecloptions}->{$_});\n") foreach(sort(keys(%{$self->{ecloptions}})));
     my $needsRLT = ($variant && $variant->{needsRLT} ? 1 : 0);
-    print(OUT "#option('layoutTranslationEnabled', $needsRLT);\n");
+    print(OUT "#option('fieldTranslationEnabled', $needsRLT);\n");
     Regress::Query::print_variant_ecl($variant, \*OUT) if($variant);
     my $setupFileLocation = "$self->{setup_file_location}";
     print(OUT "setupTextFileLocation := '$setupFileLocation';\n");

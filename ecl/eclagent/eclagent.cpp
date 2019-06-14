@@ -695,7 +695,7 @@ RecordTranslationMode EclAgent::getLayoutTranslationMode() const
     if(wu->hasDebugValue("layoutTranslation"))
         wu->getDebugValue("layoutTranslation", val);
     else
-        config->getProp("@layoutTranslationEnabled", val.s);
+        config->getProp("@fieldTranslationEnabled", val.s);
     return getTranslationMode(val.str());
 }
 

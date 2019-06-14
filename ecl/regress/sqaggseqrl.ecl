@@ -17,7 +17,7 @@
 
 #option('foldConstantDatasets', 0);
 #option('pickBestEngine', 0);
-#option('layoutTranslationEnabled', 0);
+#option('layoutTranslation', 0);
 #option('targetClusterType', 'roxie');
 #option('testlcr', true);
 

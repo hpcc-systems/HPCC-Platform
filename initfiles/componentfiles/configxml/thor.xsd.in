@@ -656,6 +656,20 @@
         </xs:annotation>
       </xs:attribute>
     </xs:complexType>
+    <xs:attribute name="fieldTranslationEnabled" use="optional" default="payload">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Enables translation (where possible) of mismatched file layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="false"/>
+          <xs:enumeration value="true"/>
+          <xs:enumeration value="payload"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
     <xs:key name="thorProcessKey1">
       <xs:selector xpath="./ThorMasterProcess|./ThorSlaveProcess"/>
       <xs:field xpath="@name"/>

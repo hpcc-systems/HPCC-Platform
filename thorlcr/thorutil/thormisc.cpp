@@ -1429,6 +1429,8 @@ RecordTranslationMode getTranslationMode(CActivityBase &activity)
 {
     StringBuffer val;
     activity.getOpt("layoutTranslation", val);
+    if (!val.length())
+        globals->getProp("@fieldTranslationEnabled", val);
     return getTranslationMode(val);
 }
 
