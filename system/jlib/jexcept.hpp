@@ -260,5 +260,7 @@ inline IError * createError(int errNo, const char *msg, const char *filename, in
     return createError(CategoryError, SeverityFatal, errNo, msg, filename, lineno, column, pos);
 }
 
+extern jlib_decl const char * querySeverityString(ErrorSeverity errorSeverity);
+
 #endif
 

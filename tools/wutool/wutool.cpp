@@ -174,6 +174,27 @@ public:
         xml.appendf("<attr kind='hint:%s' value='%s'/>", kind, value);
         printf(" %s\n", xml.str());
     }
+    virtual void noteException(IConstWUException & exception) override
+    {
+        StringBuffer xml;
+        SCMStringBuffer source, message, filename, timestamp, scope;
+
+        exception.getExceptionSource(source);
+        exception.getExceptionMessage(message);
+        exception.getTimeStamp(timestamp);
+        exception.getExceptionFileName(filename);
+
+        // TODO: check if anything below needs encoding
+        xml.appendf("<note source='%s' message='%s' timestamp='%s' exceptionCode='%u' severity='%u' cost='%u'",
+                    source.str(), message.str(), timestamp.str(),
+                    exception.getExceptionCode(), exception.getSeverity(), exception.getPriority());
+
+        if (filename.length()>0)
+            xml.appendf("filename='%s' linenumber='%u' column='%u'",
+                        filename.str(), exception.getExceptionLineNo(), exception.getExceptionColumn());
+        xml.append("/>");
+        printf(" %s\n", xml.str());
+    }
 };
 
 
@@ -2166,6 +2187,10 @@ protected:
         virtual void noteProperty(const char * kind, const char * value)
         {
             DBGLOG("  Attr %s=%s", kind, value);
+        }
+        virtual void noteException(IConstWUException & exception) override
+        {
+            noteException(exception);
         }
     };
 

@@ -2698,6 +2698,21 @@ public:
         xml.appendf("<attr kind='hint:%s' value='%s'/>", kind, value);
         printf(" %s\n", xml.str());
     }
+    virtual void noteException(IConstWUException & exception) override
+    {
+        StringBuffer xml;
+        SCMStringBuffer source, message, timestamp, scope;
+
+        exception.getExceptionSource(source);
+        exception.getExceptionMessage(message);
+        exception.getTimeStamp(timestamp);
+
+        xml.appendf("<attr source='%s' message='%s' timestamp='%s' exceptionCode='%u' severity='%u' scope='%s' cost='%u'",
+                    source.str(), message.str(), timestamp.str(),
+                    exception.getExceptionCode(), exception.getSeverity(), exception.queryScope(), exception.getPriority());
+        xml.append("/>");
+        printf(" %s\n", xml.str());
+    }
 };
 
 static void dumpWorkunitAttr(IConstWorkUnit * workunit, const WuScopeFilter & filter)

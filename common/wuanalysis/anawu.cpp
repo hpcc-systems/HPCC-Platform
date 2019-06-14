@@ -298,6 +298,10 @@ public:
     {
         throwUnexpected();
     }
+    virtual void noteException(IConstWUException & exception)
+    {
+        throwUnexpected();
+    }
     IPropertyTree * scope;
 };
 

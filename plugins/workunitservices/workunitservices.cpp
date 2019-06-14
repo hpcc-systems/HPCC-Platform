@@ -757,6 +757,7 @@ public:
 
     virtual void noteAttribute(WuAttr attr, const char * value) {}
     virtual void noteHint(const char * kind, const char * value) {}
+    virtual void noteException(IConstWUException & exception) override {}
 
 protected:
     bool gatherStats()

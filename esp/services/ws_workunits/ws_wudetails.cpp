@@ -37,10 +37,12 @@ public:
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override;
     virtual void noteAttribute(WuAttr attr, const char * value) override;
     virtual void noteHint(const char * kind, const char * value) override;
+    virtual void noteException(IConstWUException & exception) override;
 
     void resetScope();
     void noteScopeType(const StatisticScopeType _sst);
     IArrayOf<IEspWUResponseProperty> & getResponseProperties() { endListAttr(); return EspWUResponseProperties;}
+    IArrayOf<IEspWUResponseNote> &getResponseNotes() { endListAttr(); return EspWUResponseNotes;}
     unsigned __int64 getMaxTimestamp() const { return maxTimestamp;}
 
 private:
@@ -69,6 +71,7 @@ private:
 
     unsigned __int64 maxTimestamp = 0;
     IArrayOf<IEspWUResponseProperty> EspWUResponseProperties;
+    IArrayOf<IEspWUResponseNote> EspWUResponseNotes;
     StatisticScopeType currentStatisticScopeType = SSTnone;
 
     class MultiListValues
@@ -262,6 +265,25 @@ void WUDetailsVisitor::noteHint(const char * kind, const char * value)
 
     EspWUResponseProperties.append(*EspWUResponseProperty.getClear());
 }
+void WUDetailsVisitor::noteException(IConstWUException & exception)
+{
+    Owned<IEspWUResponseNote> EspWUResponseNote = createWUResponseNote("","");
+    SCMStringBuffer source, message;
+    exception.getExceptionSource(source);
+    exception.getExceptionMessage(message);
+
+    EspWUResponseNote->setSource(source.str());
+    EspWUResponseNote->setMessage(message.str());
+    if (exception.getExceptionCode())
+        EspWUResponseNote->setErrorCode(exception.getExceptionCode());
+    else
+        EspWUResponseNote->setErrorCode_null();
+
+    EspWUResponseNote->setSeverity(querySeverityString(exception.getSeverity()));
+
+    EspWUResponseNote->setCost(exception.getPriority());
+    EspWUResponseNotes.append(*EspWUResponseNote.getClear());
+}
 
 // Get StatisticKind or WuAttr from property name and return true
 // When neither possible, return false.
@@ -394,6 +416,7 @@ void WUDetailsVisitor::resetScope()
     extraStatisticsForCurScope = nullptr;
     extraAttributesForCurScope = nullptr;
     EspWUResponseProperties.clear();
+    EspWUResponseNotes.clear();
     endListAttr();
 }
 
@@ -445,6 +468,11 @@ void WUDetails::processRequest(IEspWUDetailsRequest &req, IEspWUDetailsResponse 
         IArrayOf<IEspWUResponseProperty> & properties = wuDetailsVisitor.getResponseProperties();
         if (!properties.empty())
             respScope->setProperties(properties);
+
+        IArrayOf<IEspWUResponseNote> & notes = wuDetailsVisitor.getResponseNotes();
+        if (!notes.empty())
+            respScope->setNotes(notes);
+
         respScopes.append(*respScope.getClear());
 
         wuDetailsVisitor.resetScope();
@@ -536,6 +564,8 @@ void WUDetails::buildWuScopeFilter(IConstWUScopeFilter & requestScopeFilter, ICo
             wuPropertyTypeMask |= PThints;
         if (propertiesToReturn.getAllScopes())
             wuPropertyTypeMask |= PTscope;
+        if (propertiesToReturn.getAllNotes())
+            wuPropertyTypeMask |= PTnotes;
     }
     wuScopeFilter.addOutputProperties(wuPropertyTypeMask);
 
