@@ -1984,7 +1984,6 @@ protected:
     bool isTlk = false;
     bool allowPreload = false;
     unsigned fileCrc = 0;
-    Owned<const IDynamicTransform> translator;
     Owned<IKeyIndex> keyIndex;
     Owned<IKeyManager> keyManager;
 
@@ -2023,7 +2022,6 @@ public:
         isTlk = config.getPropBool("isTlk");
         allowPreload = config.getPropBool("allowPreload");
         fileCrc = config.getPropInt("crc");
-        translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
     }
 };
 
@@ -2031,13 +2029,16 @@ class CRemoteIndexReadActivity : public CRemoteIndexBaseActivity
 {
     typedef CRemoteIndexBaseActivity PARENT;
 
+    Owned<const IDynamicTransform> translator;
     unsigned __int64 chooseN = 0;
 public:
     CRemoteIndexReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
         chooseN = config.getPropInt64("chooseN", defaultFileStreamChooseNLimit);
         outMeta.setown(getTypeInfoOutputMetaData(config, "output", false));
-        if (!outMeta)
+        if (outMeta)
+            translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
+        else
             outMeta.set(inMeta);
     }
 // IRemoteReadActivity impl.
@@ -2056,14 +2057,20 @@ public:
                 while (keyManager->lookup(true))
                 {
                     const byte *keyRow = keyManager->queryKeyBuffer();
-                    retSz = translator->translate(outBuilder, *this, keyRow);
-                    if (retSz)
+                    if (translator)
+                        retSz = translator->translate(outBuilder, *this, keyRow);
+                    else
                     {
-                        const void *ret = outBuilder.getSelf();
-                        outBuilder.finishRow(retSz);
-                        ++processed;
-                        return ret;
+                        retSz = keyManager->queryRowSize();
+                        outBuilder.ensureCapacity(retSz, nullptr);
+                        memcpy(outBuilder.getSelf(), keyRow, retSz);
                     }
+                    dbgassertex(retSz);
+
+                    const void *ret = outBuilder.getSelf();
+                    outBuilder.finishRow(retSz);
+                    ++processed;
+                    return ret;
                 }
                 retSz = 0;
             }
