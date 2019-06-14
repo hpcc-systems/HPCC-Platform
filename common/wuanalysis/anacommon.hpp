@@ -45,6 +45,7 @@ interface IWuEdge : public IWuScope
 interface IWuActivity : public IWuScope
 {
     virtual const char * queryName() const = 0;
+    virtual const char * getFullScopeName(StringBuffer & fullScopeName) const = 0;
     virtual IWuEdge * queryInput(unsigned idx) = 0;
     virtual IWuEdge * queryOutput(unsigned idx) = 0;
     inline IWuActivity * queryInputActivity(unsigned idx)

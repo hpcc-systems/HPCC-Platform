@@ -62,6 +62,20 @@ public:
     virtual void getAttr(StringBuffer & result, WuAttr kind) const;
 
     inline const char * queryName() const { return name; }
+    virtual const char * getFullScopeName(StringBuffer & fullScopeName) const override
+    {
+        // Building full scope name dynamically is good enough as long as there's not too many calls here
+        if (parent)
+        {
+            parent->getFullScopeName(fullScopeName);
+            if (fullScopeName.length())
+                return fullScopeName.append(":").append(name);
+            else
+                return fullScopeName.set(name);
+        }
+        else
+            return fullScopeName.set(name);
+    }
     inline IPropertyTree * queryAttrs() const { return attrs; }
     virtual WuScope * querySource() override;
     virtual WuScope * queryTarget() override;
@@ -317,7 +331,9 @@ void WorkunitAnalyser::check(const char * scope, IWuActivity & activity)
     }
     if (highestCostIssue)
     {
-        highestCostIssue->setScope(scope);
+        StringBuffer fullScopeName;
+        activity.getFullScopeName(fullScopeName);
+        highestCostIssue->setScope(fullScopeName);
         issues.append(*highestCostIssue.getClear());
     }
 }
