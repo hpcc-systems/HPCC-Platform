@@ -47,7 +47,7 @@ struct DaliClient
         if (!serverGroup)
             throw MakeStringException(0, "Could not instantiate IGroup");
 
-        if (!initClientProcess(serverGroup,DCR_Util))
+        if (!initClientProcess(serverGroup,DCR_SwapNode))
             throw MakeStringException(0, "Could not initializing client process");
         setPasswordsFromSDS();
     }

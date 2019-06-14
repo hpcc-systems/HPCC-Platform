@@ -118,7 +118,7 @@ int main( int argc, char **argv )
         SocketEndpointArray epa;
         epa.append(ep);
         Owned<IGroup> group = createIGroup(epa); 
-        initClientProcess(group, DCR_Other);
+        initClientProcess(group, DCR_Testing);
 
 
         // Create the event manager and test controller

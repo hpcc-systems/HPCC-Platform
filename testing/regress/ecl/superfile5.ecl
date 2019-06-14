@@ -24,8 +24,6 @@ import Std.System.Thorlib;
 import Std.File AS FileServices;
 import Std.Str;
 
-#option('slaveDaliClient', true);
-
 rec :=
 RECORD
         integer i;
@@ -65,10 +63,10 @@ SEQUENTIAL(
   FileServices.PromoteSuperFileList([prefix + 't5_superfile1',prefix + 't5_superfile2',prefix + 't5_superfile3',prefix + 't5_superfile4'],prefix + 't5_subfile3'),
   FileServices.PromoteSuperFileList([prefix + 't5_superfile1',prefix + 't5_superfile2',prefix + 't5_superfile3',prefix + 't5_superfile4'],prefix + 't5_subfile4'),
   FileServices.PromoteSuperFileList([prefix + 't5_superfile1',prefix + 't5_superfile2',prefix + 't5_superfile3',prefix + 't5_superfile4'],prefix + 't5_subfile5,' + prefix + 't5_subfile1'),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile1')), NAMED('SF5_RES1')),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile2')), NAMED('SF5_RES2')),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile3')), NAMED('SF5_RES3')),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile4')), NAMED('SF5_RES4')),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile1')), NAMED('SF5_RES1'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile2')), NAMED('SF5_RES2'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile3')), NAMED('SF5_RES3'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile4')), NAMED('SF5_RES4'))),
   FileServices.CreateSuperFile(prefix + 't5_superfile5');
   FileServices.AddSuperFile (prefix + 't5_superfile5', prefix + 't5_subfile1'),
   FileServices.CreateSuperFile(prefix + 't5_superfile5',,true);
@@ -83,22 +81,22 @@ SEQUENTIAL(
   FileServices.PromoteSuperFileList([prefix + 't5_superfile1',prefix + 't5_superfile2',prefix + 't5_superfile3',prefix + 't5_superfile4'],prefix + 't5_subfile4',true),
   OUTPUT(ds1,,prefix + 't5_subfile1'),
   OUTPUT(ds5,,prefix + 't5_subfile5'),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile1')), NAMED('SF5_RES5')),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile2')), NAMED('SF5_RES6')),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile3')), NAMED('SF5_RES7')),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile4')), NAMED('SF5_RES8')),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile1')), NAMED('SF5_RES5'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile2')), NAMED('SF5_RES6'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile3')), NAMED('SF5_RES7'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile4')), NAMED('SF5_RES8'))),
   FileServices.PromoteSuperFileList([prefix + 't5_superfile1',prefix + 't5_superfile2',prefix + 't5_superfile3',prefix + 't5_superfile4'],,false,reverse:=true),
   FileServices.PromoteSuperFileList([prefix + 't5_superfile1',prefix + 't5_superfile2',prefix + 't5_superfile3',prefix + 't5_superfile4'],,true,reverse:=true),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile1')), NAMED('SF5_RES9')),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile2')), NAMED('SF5_RES10')),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile3')), NAMED('SF5_RES11')),
-  OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile4')), NAMED('SF5_RES12')),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile1')), NAMED('SF5_RES9'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile2')), NAMED('SF5_RES10'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile3')), NAMED('SF5_RES11'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.SuperFileContents(prefix + 't5_superfile4')), NAMED('SF5_RES12'))),
   OUTPUT(FileServices.GetSuperFileSubCount(prefix + 't5_superfile1'), NAMED('SF5_RES13')),
   OUTPUT(FileServices.GetSuperFileSubCount(prefix + 't5_superfile2'), NAMED('SF5_RES14')),
   OUTPUT(stripPrefix(FileServices.GetSuperFileSubName(prefix + 't5_superfile1',1)), NAMED('SF5_RES15')),
   OUTPUT(stripPrefix(FileServices.GetSuperFileSubName(prefix + 't5_superfile2',1)), NAMED('SF5_RES16')),
-  OUTPUT(stripPrefixList(FileServices.LogicalFileSuperOwners(prefix + 't5_subfile1')), NAMED('SF5_RES17')),
-  OUTPUT(stripPrefixList(FileServices.LogicalFileSuperOwners(prefix + 't5_subfile2')), NAMED('SF5_RES18')),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.LogicalFileSuperOwners(prefix + 't5_subfile1')), NAMED('SF5_RES17'))),
+  NOTHOR(OUTPUT(stripPrefixList(FileServices.LogicalFileSuperOwners(prefix + 't5_subfile2')), NAMED('SF5_RES18'))),
   OUTPUT('Done')
 );
 

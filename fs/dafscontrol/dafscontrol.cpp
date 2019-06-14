@@ -461,7 +461,7 @@ int main(int argc, char* argv[])
                 break;
             }
             Owned<IGroup> daligroup = createIGroup(epa);
-            initClientProcess(daligroup, DCR_Util );
+            initClientProcess(daligroup, DCR_DaFsControl);
             isdali = true;
             ai++;
         }

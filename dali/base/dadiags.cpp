@@ -256,6 +256,9 @@ public:
                     bool success = querySDSServer().setSDSDebug(arr, reply);
                     mb.append(success).append(reply);
                 }
+                else if (0 == stricmp(id, "whitelist")) {
+                    mb.append(querySessionManager().getWhiteList(buf).str());
+                }
                 else
                     mb.append(StringBuffer("UNKNOWN OPTION: ").append(id).str());
             }

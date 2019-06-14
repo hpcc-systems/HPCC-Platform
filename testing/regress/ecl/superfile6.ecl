@@ -23,8 +23,6 @@ prefix := setup.Files(false, false).QueryFilePrefix;
 
 // Super File added to itself test
 
-#option('slaveDaliClient', true);
-
 string fsuper := prefix+'t6_superfile';
 string fsub := prefix + 't6_subfile';
 

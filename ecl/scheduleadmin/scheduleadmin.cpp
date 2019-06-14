@@ -330,7 +330,7 @@ int main(int argc, char * const * argv)
         else
             usage();
         Owned<IGroup> serverGroup = createIGroup(argv[1], DALI_SERVER_PORT);
-        initClientProcess(serverGroup, DCR_Other); //PG MORE: right value
+        initClientProcess(serverGroup, DCR_ScheduleAdmin);
         task->doit();
         closedownClientProcess();
     }

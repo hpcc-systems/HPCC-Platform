@@ -955,7 +955,7 @@ int main(int argc, char* argv[])
         ep.set(argv[1],DALI_SERVER_PORT);
         epa.append(ep);
         Owned<IGroup> group = createIGroup(epa); 
-        initClientProcess(group,DCR_Other);
+        initClientProcess(group,DCR_Testing);
         if (0) { 
             //test2();
             //testMultiFilename();

@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
     Owned<IGroup> group = createIGroup(epa); 
     try
     {
-        initClientProcess(group,DCR_Dfu);
+        initClientProcess(group, DCR_XRef);
         setPasswordsFromSDS();
         StringArray args, clusters;
         bool backupcheck = false;

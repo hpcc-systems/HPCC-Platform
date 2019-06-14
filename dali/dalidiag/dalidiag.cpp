@@ -40,6 +40,7 @@ void usage(const char *exe)
     printf("-sdsstats           -- SDS statistics\n");
     printf("-sdssubscribers     -- list active SDS subscribers\n");
     printf("-connections        -- list SDS connections\n");
+    printf("-whitelist          -- list white list\n");
     printf("-threads            -- running threads\n");
     printf("-mpqueue            -- list waiting MP queue items\n");
     printf("-clients            -- list connected Dali clients\n");
@@ -520,10 +521,10 @@ int main(int _argc, char* argv[])
     }
     Owned<IGroup> group = createIGroup(epa); 
     assertex(group);
-    //CSystemCapability capability(DCR_Diagnostic, "DALIDIAG");
+    //CSystemCapability capability(DCR_DaliDiag, "DALIDIAG");
     //capability.secure((byte *)CLIENT_ENCRYPT_KEY, strlen(CLIENT_ENCRYPT_KEY));
     assertex(group);
-    initClientProcess(group, DCR_Diagnostic, 0, NULL, NULL, MP_WAIT_FOREVER);
+    initClientProcess(group, DCR_DaliDiag, 0, NULL, NULL, MP_WAIT_FOREVER);
 
     if (argc<2)
     {

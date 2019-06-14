@@ -16,6 +16,10 @@
 ############################################################################## */
 
 #define da_decl DECL_EXPORT
+
+#include <unordered_map>
+#include <unordered_set>
+
 #include "platform.h"
 #include "jlib.hpp"
 #include "jfile.hpp"
@@ -41,32 +45,62 @@ using namespace cryptohelper;
 #pragma warning (disable : 4355)
 #endif
 
+static std::unordered_map<std::string, DaliClientRole> daliClientRoleMap = {
+    { "Private", DCR_Private },
+    { "ThorSlave", DCR_ThorSlave },
+    { "ThorMaster", DCR_ThorMaster },
+    { "EclCCServer", DCR_EclCCServer },
+    { "EclCC", DCR_EclCC },
+    { "EclServer", DCR_EclServer },
+    { "EclScheduler", DCR_EclScheduler },
+    { "EclAgent", DCR_EclAgent },
+    { "AgentExec", DCR_AgentExec },
+    { "DaliServer", DCR_DaliServer },
+    { "SashaServer", DCR_SashaServer },
+    { "DfuServer", DCR_DfuServer },
+    { "EspServer", DCR_EspServer },
+    { "Config", DCR_Config },
+    { "SchedulerAdmin", DCR_ScheduleAdmin },
+    { "RoxieMaster", DCR_RoxyMaster },
+    { "BackupGen", DCR_BackupGen },
+    { "DaFsControl", DCR_DaFsControl },
+    { "SwapNode", DCR_SwapNode },
+    { "DaliAdmin", DCR_DaliAdmin },
+    { "UpdateEnv", DCR_UpdateEnv },
+    { "TreeView", DCR_TreeView },
+    { "DaliDiag", DCR_DaliDiag },
+    { "Testing", DCR_Testing },
+    { "XRef", DCR_XRef }
+};
+
 const char *queryRoleName(DaliClientRole role)
 {
     switch (role) {
     case DCR_Private: return "Private";
-    case DCR_Diagnostic: return "Diagnostic";
     case DCR_ThorSlave: return "ThorSlave";
     case DCR_ThorMaster: return "ThorMaster";
     case DCR_EclCCServer: return "EclCCServer";
-    case DCR_EclCC: return "eclcc";
+    case DCR_EclCC: return "EclCC";
     case DCR_EclServer: return "EclServer";
     case DCR_EclScheduler: return "EclScheduler";
     case DCR_EclAgent: return "EclAgent";
     case DCR_AgentExec: return "AgentExec";
     case DCR_DaliServer:return "DaliServer";
     case DCR_SashaServer: return "SashaServer";
-    case DCR_Util: return "Util";
-    case DCR_Dfu: return "Dfu";
     case DCR_DfuServer: return "DfuServer";
     case DCR_EspServer: return "EspServer";
-    case DCR_WuClient: return "WuClient";
     case DCR_Config: return "Config";
-    case DCR_Scheduler: return "Scheduler";
+    case DCR_ScheduleAdmin: return "SchedulerAdmin";
     case DCR_RoxyMaster: return "RoxieMaster";
-    case DCR_RoxySlave: return "RoxieSlave";
     case DCR_BackupGen: return "BackupGen";
-    case DCR_Other: return "Other";
+    case DCR_DaFsControl: return "DaFsControl";
+    case DCR_SwapNode: return "SwapNode";
+    case DCR_DaliAdmin: return "DaliAdmin";
+    case DCR_UpdateEnv: return "UpdateEnv";
+    case DCR_TreeView: return "TreeView";
+    case DCR_DaliDiag: return "DaliDiag";
+    case DCR_Testing: return "Testing";
+    case DCR_XRef: return "XRef";
     }
     return "Unknown";
 }
@@ -1081,19 +1115,17 @@ public:
 
     bool checkScopeScansLDAP()
     {
-        assertex(!"checkScopeScansLDAP called on client");
-        return true; // actually only used server size
+        throwUnexpectedX("checkScopeScansLDAP called on client");
     }
 
     unsigned getLDAPflags()
     {
-        assertex(!"getLdapFlags called on client");
-        return 0;
+        throwUnexpectedX("getLdapFlags called on client");
     }
 
     void setLDAPflags(unsigned)
     {
-        assertex(!"setLdapFlags called on client");
+        throwUnexpectedX("setLdapFlags called on client");
     }
 
     SessionId startSession(SecurityToken tok, SessionId parentid)
@@ -1116,6 +1148,16 @@ public:
         CMessageBuffer mb;
         mb.append((int)MSR_STOP_SESSION).append(sessid).append(failed);
         queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
+    }
+
+    virtual void refreshWhiteList() override
+    {
+        throwUnexpectedX("refreshWhiteList called on client");
+    }
+
+    virtual StringBuffer &getWhiteList(StringBuffer &out) const override
+    {
+        throwUnexpectedX("getWhiteList called on client");
     }
 
     void onClose(SocketEndpoint &ep)
@@ -1267,9 +1309,246 @@ public:
 };
 
 
+// std::hash specialization for DaliClientRole, used in std::pair for whiteList
+namespace std {
+    template <>
+    struct hash<DaliClientRole> {
+        size_t operator ()(DaliClientRole value) const {
+            return static_cast<size_t>(value);
+        }
+    };
+}
+
+/* NB: Ideally this belongs within common/environment,
+ * however, that would introduce a circular dependency.
+ */
+class CWhiteListHandler
+{
+    struct PairHasher
+    {
+        template <class T1, class T2>
+        std::size_t operator () (std::pair<T1, T2> const &pair) const
+        {
+            std::size_t h1 = std::hash<T1>()(pair.first);
+            std::size_t h2 = std::hash<T2>()(pair.second);
+            return h1 ^ h2;
+        }
+    };
+    std::unordered_set<std::pair<std::string, DaliClientRole>, PairHasher> whiteList;
+    std::unordered_map<std::string, std::string> machineMap;
+    mutable CriticalSection populatedCrit;
+    bool populated = false;
+    bool enabled = true;
+
+    void populateMachineMap(IPropertyTree &environment)
+    {
+        Owned<IPropertyTreeIterator> machineIter = environment.getElements("Hardware/Computer");
+        ForEach(*machineIter)
+        {
+            const IPropertyTree &machine = machineIter->query();
+            const char *name = machine.queryProp("@name");
+            const char *host = machine.queryProp("@netAddress");
+            machineMap.insert({name, host});
+        }
+    }
+    const char *resolveComputer(const char *compName, StringBuffer &result) const
+    {
+        const auto &it = machineMap.find(compName);
+        if (it == machineMap.end())
+            return nullptr;
+        IpAddress ip(it->second.c_str());
+        if (ip.isNull())
+            return nullptr;
+        return ip.getIpText(result);
+    }
+    void addRoles(const IPropertyTree &component, const std::vector<DaliClientRole> &roles)
+    {
+        Owned<IPropertyTreeIterator> instanceIter = component.getElements("Instance");
+        ForEach(*instanceIter)
+        {
+            const char *compName = instanceIter->query().queryProp("@computer");
+            StringBuffer ipSB;
+            const char *ip = resolveComputer(compName, ipSB);
+            if (ip)
+            {
+                for (auto &role: roles)
+                    whiteList.insert({ ip, role });
+            }
+        }
+    }
+    void populate()
+    {
+        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", 0, 0, INFINITE);
+        assertex(conn);
+        populateMachineMap(*conn->queryRoot());
+        enum SoftwareComponentType
+        {
+            RoxieCluster,
+            ThorCluster,
+            EclAgentProcess,
+            DfuServerProcess,
+            EclCCServerProcess,
+            EspProcess,
+            SashaServerProcess,
+            EclSchedulerProcess,
+            DaliServerProcess,
+            BackupNodeProcess,
+            EclServerProcess,
+        };
+        std::unordered_map<std::string, SoftwareComponentType> softwareTypeRoleMap = {
+                { "RoxieCluster", RoxieCluster },
+                { "ThorCluster", ThorCluster },
+                { "EclAgentProcess", EclAgentProcess },
+                { "DfuServerProcess", DfuServerProcess },
+                { "EclCCServerProcess", EclCCServerProcess },
+                { "EspProcess", EspProcess },
+                { "SashaServerProcess", SashaServerProcess },
+                { "EclSchedulerProcess", EclSchedulerProcess },
+                { "DaliServerProcess", DaliServerProcess },
+                { "BackupNodeProcess", BackupNodeProcess },
+                { "EclServerProcess", EclServerProcess },
+        };
+
+        Owned<IPropertyTreeIterator> softwareIter = conn->queryRoot()->getElements("Software/*");
+        ForEach(*softwareIter)
+        {
+            const IPropertyTree &component = softwareIter->query();
+            const char *compProcess = component.queryName();
+            const auto &it = softwareTypeRoleMap.find(compProcess);
+            if (it != softwareTypeRoleMap.end())
+            {
+                switch (it->second)
+                {
+                    case RoxieCluster:
+                    {
+                        Owned<IPropertyTreeIterator> serverIter = component.getElements("RoxieServerProcess");
+                        ForEach(*serverIter)
+                        {
+                            const char *serverCompName = serverIter->query().queryProp("@name");
+                            StringBuffer ipSB;
+                            const char *ip = resolveComputer(serverCompName, ipSB);
+                            if (ip)
+                                whiteList.insert({ ip, DCR_RoxyMaster });
+                        }
+                        break;
+                    }
+                    case ThorCluster:
+                    {
+                        const char *masterCompName = component.queryProp("ThorMasterProcess/@computer");
+                        StringBuffer ipSB;
+                        const char *ip = resolveComputer(masterCompName, ipSB);
+                        if (ip)
+                            whiteList.insert({ ip, DCR_ThorMaster });
+                        break;
+                    }
+                    case EclAgentProcess:
+                        addRoles(component, { DCR_EclAgent, DCR_AgentExec });
+                        break;
+                    case DfuServerProcess:
+                        addRoles(component, { DCR_DfuServer });
+                        break;
+                    case EclCCServerProcess:
+                        addRoles(component, { DCR_EclCCServer, DCR_EclCC });
+                        break;
+                    case EclServerProcess:
+                        addRoles(component, { DCR_EclServer, DCR_EclCC });
+                        break;
+                    case EspProcess:
+                        addRoles(component, { DCR_EspServer });
+                        break;
+                    case SashaServerProcess:
+                        addRoles(component, { DCR_SashaServer, DCR_XRef });
+                        break;
+                    case EclSchedulerProcess:
+                        addRoles(component, { DCR_EclScheduler });
+                        break;
+                    case BackupNodeProcess:
+                        addRoles(component, { DCR_BackupGen });
+                        break;
+                    case DaliServerProcess:
+                        addRoles(component, { DCR_DaliServer, DCR_DaliDiag, DCR_SwapNode, DCR_UpdateEnv, DCR_DaliAdmin, DCR_TreeView, DCR_Testing, DCR_DaFsControl, DCR_XRef, DCR_Config, DCR_ScheduleAdmin });
+                        break;
+                }
+            }
+        }
+        IPropertyTree *whiteListTree = conn->queryRoot()->queryPropTree("WhiteList");
+        if (whiteListTree)
+        {
+            enabled = whiteListTree->getPropBool("@enabled", true); // on by default
+            Owned<IPropertyTreeIterator> whiteListIter = whiteListTree->getElements("Entry");
+            ForEach(*whiteListIter)
+            {
+                const IPropertyTree &entry = whiteListIter->query();
+                StringArray hosts, roles;
+                hosts.appendListUniq(entry.queryProp("@hosts"), ",");
+                roles.appendListUniq(entry.queryProp("@roles"), ",");
+                ForEachItemIn(h, hosts)
+                {
+                    ForEachItemIn(r, roles)
+                    {
+                        const char *roleStr = roles.item(r);
+                        const auto &it = daliClientRoleMap.find(roleStr);
+                        if (it != daliClientRoleMap.end())
+                        {
+                            IpAddress ip(hosts.item(h));
+                            if (!ip.isNull())
+                            {
+                                StringBuffer ipStr;
+                                whiteList.insert({ ip.getIpText(ipStr).str(), it->second });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        populated = true;
+    }
+    void ensurePopulated() const
+    {
+        // should be called within CS
+        if (populated)
+            return;
+        (const_cast <CWhiteListHandler *> (this))->populate();
+    }
+public:
+    bool isWhiteListed(const char *ip, DaliClientRole role) const
+    {
+        CriticalBlock block(populatedCrit);
+        ensurePopulated();
+        const auto &it = whiteList.find({ip, role});
+        if (it != whiteList.end())
+            return true;
+        else if (enabled)
+            return false;
+        else
+        {
+            WARNLOG("Whitelist mechanism is currently disabled");
+            return true;
+        }
+    }
+    StringBuffer &getWhiteList(StringBuffer &out) const
+    {
+        CriticalBlock block(populatedCrit);
+        ensurePopulated();
+        for (auto &it: whiteList)
+            out.append(it.first.c_str()).append(", ").append(queryRoleName(it.second)).append("\n");
+        return out;
+    }
+    void refresh()
+    {
+        /* NB: clear only, so that next usage will re-populated
+         * Do not want to repopulate now, because refresh() is likely called within a update write transaction
+         */
+        CriticalBlock block(populatedCrit);
+        enabled = true;
+        whiteList.clear();
+        machineMap.clear();
+        populated = false;
+    }
+};
+
 class CCovenSessionManager: public CSessionManagerBase, implements ISessionManagerServer, implements ISubscriptionManager
 {
-
     CSessionRequestServer   sessionrequestserver;
     CSessionStateTable      sessionstates;
     CMapProcessToSession    processlookup;
@@ -1279,6 +1558,7 @@ class CCovenSessionManager: public CSessionManagerBase, implements ISessionManag
     atomic_t ldapwaiting;
     Semaphore workthreadsem;
     bool stopping;
+    CWhiteListHandler whiteListHandler;
 
     void remoteAddProcessSession(rank_t dst,SessionId id,INode *node, DaliClientRole role)
     {
@@ -1316,7 +1596,6 @@ public:
     {
         stubTable.kill();
     }
-
 
     void start()
     {
@@ -1624,7 +1903,9 @@ public:
 
     bool authorizeConnection(const INode *client, DaliClientRole role)
     {
-        return true;
+        StringBuffer ipStr;
+        client->endpoint().getIpText(ipStr);
+        return whiteListHandler.isWhiteListed(ipStr, role);
     }
 
 
@@ -1790,6 +2071,16 @@ protected:
         }
     }
 
+    virtual void refreshWhiteList() override
+    {
+        whiteListHandler.refresh();
+    }
+
+    virtual StringBuffer &getWhiteList(StringBuffer &out) const override
+    {
+        return whiteListHandler.getWhiteList(out);
+    }
+
     void onClose(SocketEndpoint &ep)
     {
         StringBuffer clientStr;
@@ -1909,7 +2200,7 @@ public:
 
     void nodeDown(rank_t rank)
     {
-        assertex(!"TBD");
+        throwUnexpectedX("TBD");
     }
 
 };
