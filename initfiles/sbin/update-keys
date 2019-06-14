@@ -1,0 +1,164 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+###<REPLACE>###
+
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+source  ${INSTALL_DIR}/etc/init.d/init-functions
+source  ${INSTALL_DIR}/etc/init.d/export-path
+
+exec 3>&2 2>$LOG_DIR/update-keys_$$.debug
+set -x
+
+usage() {
+    echo ""
+    echo "usage: update-keys [-s <secret> -p <public>] [-g] [-n <concurrent>]"
+    echo "   -n: when specified, denotes the number of concurrent execution threads."
+    echo "       The default is 5."
+    echo "   -s: secret key."
+    echo "   -p: public key."
+    echo "   -g: generate keys."
+    echo ""
+
+    exit 1
+}
+
+createScriptFile() {
+    cat > $SCRIPT_FILE <<SCRIPTFILE
+#~/bin/bash
+IP=\$1
+
+if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
+    echo "\$IP: Host is alive."
+    CAN_SSH="\`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?\`"
+    if [ "\$CAN_SSH" -eq 255 ]; then
+       echo "\$IP: Cannot SSH to host.";
+    else
+       echo "\$IP: Copying $source to $target on \$IP";
+
+       MKD=\$(ssh -i $home/$user/.ssh/id_rsa $user@\$IP "mkdir -p $home/$user/tmp_ssh"; echo \$?)
+       if [ "\$MKD" -eq 0 ]; then
+          echo "\$IP: Success";
+       else
+          echo "\$IP: Failure";
+          exit 1
+       fi
+
+       SCP=\$(scp -r -i $home/$user/.ssh/id_rsa $secret $user@\$IP:$home/$user/tmp_ssh; echo \$?)
+       if [ "\$SCP" -eq 0 ]; then
+          echo "\$IP: Success";
+       else
+          echo "\$IP: Failure";
+          exit 1
+       fi
+       
+       SCP=\$(scp -r -i $home/$user/.ssh/id_rsa $public $user@\$IP:$home/$user/tmp_ssh; echo \$?)
+       if [ "\$SCP" -eq 0 ]; then
+          echo "\$IP: Success";
+       else
+          echo "\$IP: Failure";
+          exit 1
+       fi
+
+       public_file=\$(basename $public)
+       CPY=\$(ssh -i $home/$user/.ssh/id_rsa -t $user@\$IP "cat $home/$user/tmp_ssh/\$public_file > $home/$user/tmp_ssh/authorized_keys; cp -R $home/$user/tmp_ssh/* $home/$user/.ssh; rm -rf $home/$user/tmp_ssh"; echo \$?)
+       if [ "\$CPY" -eq 0 ]; then
+          echo "\$IP: Success";
+       else
+          echo "\$IP: Failure";
+          exit 1
+       fi
+    fi
+else
+    echo "\$IP: Cannot Ping host? (Host Alive?)"
+    exit 1
+fi
+SCRIPTFILE
+
+    chmod +x ${SCRIPT_FILE}
+}
+
+cluster_tools_init
+
+if [ "$(whoami)" != "root" ] && [ "$(whoami)" != "${user}" ]; then
+   echo ""
+   echo "The script must run as root, $user or sudo."
+   echo ""
+   exit 1
+fi
+
+
+secret=
+public=
+generate="false"
+OPTION="-e ${CONFIG_DIR}/${ENV_CONF_FILE} -s ${SECTION:-DEFAULT}"
+
+TEMP=`/usr/bin/getopt -o n:s:p:gh --long help,generate,concurrent:,secret:,public: -n 'update-keys' -- "$@"`
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; end 1 ; fi
+eval set -- "$TEMP"
+while true ; do
+    case "$1" in
+        -n|--concurrent) 
+            if [ -n "$2" ] && [[ $2 =~ ^[0-9]+$ ]]
+            then
+               [ $2 -gt 0 ] &&  $OPTION="${OPTION:+"$OPTION "}-n $2"
+            fi
+            shift 2 ;;
+        -s|--secret) secret="$2"
+            shift 2 ;;
+        -p|--public) public="$2"
+            shift 2 ;;
+        -g|--generate) generate="true"
+            shift ;;
+        -h|--help) usage
+            shift ;;
+        --) shift ; break ;;
+        *) usage ;;
+    esac
+done
+
+if [ $generate == "true" ]; then
+   sudo -u ${user} mkdir -p /tmp/update-keys
+   sudo -u ${user} ssh-keygen -f /tmp/update-keys/id_rsa -N "" -q
+   secret="/tmp/update-keys/id_rsa"
+   public="/tmp/update-keys/id_rsa.pub"
+elif [ -z "$secret"  ] || [ -z "$public" ]; then
+   usage
+fi
+
+SCRIPT_FILE=~/update-keys_$$
+createScriptFile
+
+python_expected_version=2.6
+is_python_installed ${python_expected_version}
+if [ $? -eq 0 ]
+then
+   eval ${INSTALL_DIR}/sbin/cluster_script.py -f ${SCRIPT_FILE} $OPTION
+else
+   echo ""
+   echo "Cannot detect python version ${python_expected_version}+. Will run on the cluster hosts sequentially."
+   echo ""
+   run_cluster ${SCRIPT_FILE} ${exclude}
+fi
+
+## Cleanup ##
+if [ $generate == "true" ]; then
+    rm -rf /tmp/update-keys
+fi
+rm -rf ${SCRIPT_FILE}
+
+set +x
