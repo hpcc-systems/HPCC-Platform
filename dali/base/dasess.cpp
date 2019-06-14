@@ -70,7 +70,8 @@ static std::unordered_map<std::string, DaliClientRole> daliClientRoleMap = {
     { "TreeView", DCR_TreeView },
     { "DaliDiag", DCR_DaliDiag },
     { "Testing", DCR_Testing },
-    { "XRef", DCR_XRef }
+    { "XRef", DCR_XRef },
+    { "EclMinus", DCR_EclMinus },
 };
 
 const char *queryRoleName(DaliClientRole role)
@@ -101,6 +102,7 @@ const char *queryRoleName(DaliClientRole role)
     case DCR_DaliDiag: return "DaliDiag";
     case DCR_Testing: return "Testing";
     case DCR_XRef: return "XRef";
+    case DCR_EclMinus: return "EclMinus";
     }
     return "Unknown";
 }
