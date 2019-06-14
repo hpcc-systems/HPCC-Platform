@@ -968,12 +968,14 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
                 reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED attribute requires a string parameter");
             else
             {
-                IValue *projectedSearchValue = projectedSearch->queryValue();
+                Linked<IValue> projectedSearchValue = projectedSearch->queryValue();
                 if (!projectedSearchValue )
                 {
                     // To relax this we'd need to pass the value as a hidden parameter as we do for the other options and the embed text,
                     // But I really can't see it being useful
                     reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED attribute requires a constant string parameter");
+                    OwnedHqlExpr null = createBlankString();
+                    projectedSearchValue.set(null->queryValue());
                 }
                 IValue *queryText = embedText->queryValue();
                 if (queryText)
@@ -2751,7 +2753,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
     {
         if (fieldSize > MAX_SENSIBLE_FIELD_LENGTH)
             reportWarning(CategoryEfficiency, SeverityError, ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is larger than max sensible size", str(name));
-        else if (fieldSize > MAX_POSSIBLE_FIELD_LENGTH)
+        if (fieldSize > MAX_POSSIBLE_FIELD_LENGTH)
             reportError(ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is too large", str(name));
     }
 

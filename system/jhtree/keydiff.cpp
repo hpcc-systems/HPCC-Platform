@@ -33,7 +33,7 @@
 class RowBuffer
 {
 public:
-    RowBuffer() : rowsize(0), thisrowsize(0), buffsize(0), buffer(0), fpos(0) {}
+    RowBuffer() {}
 
     ~RowBuffer() { free(buffer); }
 
@@ -203,13 +203,13 @@ public:
     }
 
 private:
-    size32_t rowsize;
-    bool isVar;
-    size32_t thisrowsize;
-    size32_t buffsize;
-    void * buffer;
-    char * row;
-    offset_t * fpos;
+    size32_t rowsize = 0;
+    bool isVar = false;
+    size32_t thisrowsize = 0;
+    size32_t buffsize = 0;
+    void * buffer = nullptr;
+    char * row = nullptr;
+    offset_t * fpos = nullptr;
 };
 
 class CKeyReader: public CInterface
@@ -339,8 +339,8 @@ private:
     bool variableWidth;
     bool quickCompressed;
     Owned<IKeyDiffProgressCallback> progressCallback;
-    offset_t progressFrequency;
-    offset_t progressCount;
+    offset_t progressFrequency = 0;
+    offset_t progressCount = 0;
 };
 
 class CKeyFileReader: extends IKeyFileRowReader, public CInterface
@@ -461,9 +461,9 @@ private:
     Owned<IFileIOStream> keyStream;
     Owned<IKeyBuilder> keyBuilder;
     CRC32 crc;
-    size32_t keyedsize;
-    size32_t rowsize;
-    unsigned __int64 reccount;
+    size32_t keyedsize = 0;
+    size32_t rowsize = 0;
+    unsigned __int64 reccount = 0;
 };
 
 class KeyDiffVersion
@@ -641,19 +641,19 @@ private:
 
 private:
     Owned<IFileIOStream> stream;
-    offset_t crcStreamPos;
-    offset_t namesStreamPos;
-    offset_t endStreamPos;
+    offset_t crcStreamPos = 0;
+    offset_t namesStreamPos = 0;
+    offset_t endStreamPos = 0;
     KeyDiffVersion version;
     KeyDiffVersion minPatchVersion;
-    unsigned oldCRC;
-    unsigned newCRC;
-    unsigned patchCRC;
+    unsigned oldCRC = 0;
+    unsigned newCRC = 0;
+    unsigned patchCRC = 0;
     StringBuffer oldIndex;
     StringBuffer newIndex;
-    bool tlkInfo;
+    bool tlkInfo = false;
     StringBuffer newTLK;
-    unsigned tlkCRC;
+    unsigned tlkCRC = 0;
     CRC32 crcHeadVer, crcHeadCRCs, crcHeadNames;
 };
 
@@ -1471,8 +1471,8 @@ private:
     StringAttr oldIndex;
     StringAttr newIndex;
     StringAttr newTLK;
-    bool overwrite;
-    bool ignoreTLK;
+    bool overwrite = false;
+    bool ignoreTLK = false;
     CReadableKeyDiff keydiff;
     Owned<CKeyReader> oldInput;
     Owned<CKeyWriter> newOutput;
@@ -1485,7 +1485,7 @@ private:
     Owned<CTLKGenerator> tlkGen;
     Owned<INodeSender> tlkSender;
     Owned<IKeyDiffProgressCallback> progressCallback;
-    offset_t progressFrequency;
+    offset_t progressFrequency = 0;
 };
 
 IKeyDiffGenerator * createKeyDiffGenerator(char const * oldIndex, char const * newIndex, char const * patch, char const * newTLK, bool overwrite, unsigned compmode)

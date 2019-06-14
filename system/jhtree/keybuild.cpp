@@ -89,12 +89,11 @@ protected:
     unsigned __int64 sequence;
     CRC32StartHT crcStartPosTable;
     CRC32EndHT crcEndPosTable;
-    bool doCrc;
+    bool doCrc = false;
 
 public:
     CKeyBuilderBase(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence) : out(_out)
     {
-        doCrc = false;
         sequence = _startSequence;
         keyHdr.setown(new CKeyHdr());
         keyValueSize = rawSize;

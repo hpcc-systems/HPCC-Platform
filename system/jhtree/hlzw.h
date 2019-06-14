@@ -27,7 +27,7 @@ typedef unsigned short KEYRECSIZE_T;
 class KeyCompressor 
 {
 public:
-    KeyCompressor() : comp(NULL) {}
+    KeyCompressor() {}
     ~KeyCompressor();
     void open(void *blk,int blksize, bool isVariable, bool rowcompression);
     void openBlob(void *blk,int blksize);
@@ -38,13 +38,13 @@ public:
     virtual void close();
     unsigned getCurrentOffset() { return (curOffset+0xf) & 0xfffffff0; }
 protected:
-    bool isVariable;
-    bool isBlob;
-    unsigned curOffset;
-    void *bufp;
-    int bufl;
+    bool isVariable = false;
+    bool isBlob = false;
+    unsigned curOffset = 0;
+    void *bufp = nullptr;
+    int bufl = 0;
     void testwrite(const void *p,size32_t s);
-    ICompressor *comp;
+    ICompressor *comp = nullptr;
 };
 
 #endif
