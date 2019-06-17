@@ -496,6 +496,7 @@ bool CMasterActivity::fireException(IException *_e)
         case TE_SpillAdded:
         case TE_ReadPartialFromPipe:
         case TE_LargeAggregateTable:
+        case TE_RemoteReadFailure:
         {
             if (!notedWarnings->testSet(e->errorCode()))
                 CActivityBase::fireException(e);
