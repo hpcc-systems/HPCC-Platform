@@ -2870,12 +2870,20 @@ bool isInterfaceIp(const IpAddress &ip, const char *ifname)
         close(fd);
         return false;
     }
-    struct ifreq *ifr = ifc.ifc_req;
-    unsigned n = ifc.ifc_len/sizeof(struct ifreq);
     bool match = false;
-    for(unsigned i=0; i<n; i++)
+    struct ifreq *ifr = ifc.ifc_req;
+    int len = 0;
+    for (int i=0; i<ifc.ifc_len;
+#ifdef __APPLE__
+         len = _SIZEOF_ADDR_IFREQ(*ifr),
+#else
+         len = sizeof(struct ifreq),
+#endif
+         ifr = (struct ifreq *) ((char *) ifr + len),
+         i += len
+        )
     {
-        struct ifreq *item = &ifr[i];
+        struct ifreq *item = ifr;
         if (ifname&&*ifname)
             if (!WildMatch(item->ifr_name,ifname))
                 continue;
@@ -2917,7 +2925,7 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
         int len = 0;
         for (int i=0; i<ifc.ifc_len;
 #ifdef __APPLE__
-             len = IFNAMSIZ + ifr->ifr_addr.sa_len,
+             len = _SIZEOF_ADDR_IFREQ(*ifr),
 #else
              len = sizeof(struct ifreq),
 #endif
@@ -2939,7 +2947,10 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
 #else
             IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
 #endif
-            if (ioctl(fd, SIOCGIFFLAGS, item) < 0)
+            struct ifreq flags;
+            memset(&flags, 0, sizeof(flags));
+            strcpy(flags.ifr_name, item->ifr_name);
+            if (ioctl(fd, SIOCGIFFLAGS, &flags) < 0)
             {
                 if (!recursioncheck) {
                     recursioncheck = true;
@@ -2948,8 +2959,8 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
                 }
                 continue;
             }
-            bool isLoopback = iptest.isLoopBack() || ((item->ifr_flags & IFF_LOOPBACK) != 0);
-            bool isUp = (item->ifr_flags & IFF_UP) != 0;
+            bool isLoopback = iptest.isLoopBack() || ((flags.ifr_flags & IFF_LOOPBACK) != 0);
+            bool isUp = (flags.ifr_flags & IFF_UP) != 0;
             if ((isLoopback==useLoopback) && isUp)
             {
                 if (ip.isNull())
@@ -3044,7 +3055,7 @@ IpAddress &localHostToNIC(IpAddress &ip)
 
 bool getInterfaceName(StringBuffer &ifname)
 {
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32)
     return false;
 #else
     IpAddress myIp;
@@ -3067,10 +3078,18 @@ bool getInterfaceName(StringBuffer &ifname)
     }
 
     struct ifreq *ifr = ifc.ifc_req;
-    unsigned n = ifc.ifc_len/sizeof(struct ifreq);
-    for (unsigned i=0; i<n; i++)
+    int len = 0;
+    for (int i=0; i<ifc.ifc_len;
+#ifdef __APPLE__
+         len = _SIZEOF_ADDR_IFREQ(*ifr),
+#else
+         len = sizeof(struct ifreq),
+#endif
+         ifr = (struct ifreq *) ((char *) ifr + len),
+         i += len
+        )
     {
-        struct ifreq *item = &ifr[i];
+        struct ifreq *item = ifr;
         IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
         if (iptest.ipequals(myIp))
         {
@@ -3079,7 +3098,6 @@ bool getInterfaceName(StringBuffer &ifname)
             return true;
         }
     }
-
     close(fd);
     return false;
 #endif
