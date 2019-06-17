@@ -1440,7 +1440,10 @@ class CWhiteListHandler
                         StringBuffer ipSB;
                         const char *ip = resolveComputer(masterCompName, ipSB);
                         if (ip)
+                        {
                             whiteList.insert({ ip, DCR_ThorMaster });
+                            whiteList.insert({ ip, DCR_DaliAdmin });
+                        }
                         break;
                     }
                     case EclAgentProcess:
@@ -1465,7 +1468,7 @@ class CWhiteListHandler
                         addRoles(component, { DCR_EclScheduler });
                         break;
                     case BackupNodeProcess:
-                        addRoles(component, { DCR_BackupGen });
+                        addRoles(component, { DCR_BackupGen, DCR_DaliAdmin });
                         break;
                     case DaliServerProcess:
                         addRoles(component, { DCR_DaliServer, DCR_DaliDiag, DCR_SwapNode, DCR_UpdateEnv, DCR_DaliAdmin, DCR_TreeView, DCR_Testing, DCR_DaFsControl, DCR_XRef, DCR_Config, DCR_ScheduleAdmin });
