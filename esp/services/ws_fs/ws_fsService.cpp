@@ -2490,32 +2490,41 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         StringBuffer fileMask;
         constructFileMask(destTitle.str(), fileMask);
 
+        Owned<IUserDescriptor> udesc=createUserDescriptor();
         const char* srcDali = req.getSourceDali();
-        bool supercopy = req.getSuperCopy();
-        if (supercopy)
+        const char* srcu = req.getSrcusername();
+        if (!isEmptyString(srcDali) && !isEmptyString(srcu))
+        {
+            udesc->set(srcu, req.getSrcpassword());
+        }
+        else
         {
             StringBuffer user, passwd;
             context.getUserID(user);
             context.getPassword(passwd);
-            StringBuffer u(user);
-            StringBuffer p(passwd);
-            Owned<INode> foreigndali;
-            if (srcDali)
-            {
-                SocketEndpoint ep(srcDali);
-                foreigndali.setown(createINode(ep));
-                const char* srcu = req.getSrcusername();
-                if(srcu && *srcu)
-                {
-                    u.clear().append(srcu);
-                    p.clear().append(req.getSrcpassword());
-                }
-            }
-            Owned<IUserDescriptor> udesc=createUserDescriptor();
-            udesc->set(u.str(),p.str());
-            if (!queryDistributedFileDirectory().isSuperFile(srcname,udesc,foreigndali))
+            udesc->set(user, passwd);
+        }
+
+        CDfsLogicalFileName logicalName;
+        logicalName.set(srcname);
+        if (!isEmptyString(srcDali))
+        {
+            SocketEndpoint ep(srcDali);
+            logicalName.setForeign(ep,false);
+        }
+
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalName, udesc);
+        if (!file)
+            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", logicalName.get());
+
+        bool supercopy = req.getSuperCopy();
+        if (supercopy)
+        {
+            if (!file->querySuperFile())
                 supercopy = false;
         }
+        else if (file->querySuperFile() && isFileKey(file))
+            supercopy = true;
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
