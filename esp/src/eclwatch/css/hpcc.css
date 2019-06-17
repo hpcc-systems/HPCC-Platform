@@ -230,6 +230,11 @@ hr.dashedLine {
     cursor: pointer;
 }
 
+.hideNoIcon .dijitNoIcon {
+    width: 0px;
+    height: 0px;
+}
+
 .flat .miniTitlebar .dijitNoIcon {
     width: 0px;
     height: 0px;
@@ -1645,4 +1650,24 @@ span.dijitReset.dijitInline.dijitIcon.fa {
     color:#2D97D6;
     min-width: 16px;
     min-height: 16px;
+}
+
+.eclwatch_DPReport.report-col-count-2 .ddCell:nth-child(4n+3),
+.eclwatch_DPReport.report-col-count-2 .ddCell:nth-child(4n+4),
+.eclwatch_DPReport.report-col-count-3 .ddCell:nth-child(6n+4),
+.eclwatch_DPReport.report-col-count-3 .ddCell:nth-child(6n+5),
+.eclwatch_DPReport.report-col-count-3 .ddCell:nth-child(6n+6),
+.eclwatch_DPReport.report-col-count-4 .ddCell:nth-child(8n+5),
+.eclwatch_DPReport.report-col-count-4 .ddCell:nth-child(8n+6),
+.eclwatch_DPReport.report-col-count-4 .ddCell:nth-child(8n+7),
+.eclwatch_DPReport.report-col-count-4 .ddCell:nth-child(8n+8),
+.eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+6),
+.eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+7),
+.eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+8),
+.eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+9),
+.eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+10) {
+    background:#F3F3F3;
+    -webkit-box-shadow: 0px 0px 0px 6px rgba(243,243,243,1);
+    -moz-box-shadow: 0px 0px 0px 6px rgba(243,243,243,1);
+    box-shadow: 0px 0px 0px 6px rgba(243,243,243,1);
 }

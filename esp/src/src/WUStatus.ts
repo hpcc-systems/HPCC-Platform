@@ -8,7 +8,7 @@ import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
 export class WUStatus extends Graph {
 
-    protected _hpccWU: Workunit;
+    protected _hpccWU: Workunit | undefined;
     protected _hpccWatchHandle: IObserverHandle;
 
     protected _create: Vertex;
@@ -36,7 +36,8 @@ export class WUStatus extends Graph {
         });
         if (this._prevHash !== hash) {
             this._prevHash = hash;
-            this._hpccWU = Workunit.attach({ baseUrl: this.baseUrl() }, this.wuid());
+            const wuid = this.wuid();
+            this._hpccWU = wuid ? Workunit.attach({ baseUrl: this.baseUrl() }, wuid) : undefined;
             this.stopMonitor();
             this.startMonitor();
         }
@@ -56,8 +57,9 @@ export class WUStatus extends Graph {
     }
 
     startMonitor() {
-        if (this.isMonitoring())
+        if (!this._hpccWU || this.isMonitoring())
             return;
+
         this._hpccWatchHandle = this._hpccWU.watch(changes => {
             this.lazyRender();
         }, true);
@@ -92,7 +94,7 @@ export class WUStatus extends Graph {
     }
 
     updateVertexStatus(level: 0 | 1 | 2 | 3 | 4, active: boolean = false) {
-        const completeColor = this._hpccWU.isFailed() ? "darkred" : "darkgreen";
+        const completeColor = this._hpccWU && this._hpccWU.isFailed() ? "darkred" : "darkgreen";
         this._create.text(nlsHPCC.Created);
         this._compile.text(nlsHPCC.Compiled);
         this._execute.text(nlsHPCC.Executed);
@@ -163,7 +165,7 @@ export class WUStatus extends Graph {
 
     update(domNode, element) {
         this.attachWorkunit();
-        switch (this._hpccWU.StateID) {
+        switch (this._hpccWU ? this._hpccWU.StateID : WUStateID.Unknown) {
             case WUStateID.Blocked:
             case WUStateID.Wait:
             case WUStateID.Scheduled:

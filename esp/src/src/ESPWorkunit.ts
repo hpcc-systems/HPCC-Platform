@@ -23,6 +23,96 @@ declare const dojo;
 
 var _workunits = {};
 
+export function getStateIconClass(stateID: number, complete: boolean, archived: boolean): string {
+    if (archived) {
+        return "iconArchived";
+    }
+    switch (stateID) {
+        case 1:
+            if (complete) {
+                return "iconCompleted";
+            }
+            return "iconSubmitted";
+        case 3:
+            return "iconCompleted";
+        case 2:
+        case 11:
+        case 15:
+            return "iconRunning";
+        case 4:
+        case 7:
+            return "iconFailed";
+        case 5:
+        case 8:
+        case 10:
+        case 12:
+        case 13:
+        case 14:
+        case 16:
+            return "iconArchived";
+        case 6:
+            return "iconAborting";
+        case 9:
+            return "iconSubmitted";
+        case 999:
+            return "iconDeleted";
+    }
+    return "iconWorkunit";
+}
+
+export function getStateImageName(stateID: number, complete: boolean, archived: boolean): string {
+    if (archived) {
+        return "workunit_archived.png";
+    }
+    switch (stateID) {
+        case 1:
+            if (complete) {
+                return "workunit_completed.png";
+            }
+            return "workunit_submitted.png";
+        case 2:
+            return "workunit_running.png";
+        case 3:
+            return "workunit_completed.png";
+        case 4:
+            return "workunit_failed.png";
+        case 5:
+            return "workunit_warning.png";
+        case 6:
+            return "workunit_aborting.png";
+        case 7:
+            return "workunit_failed.png";
+        case 8:
+            return "workunit_warning.png";
+        case 9:
+            return "workunit_submitted.png";
+        case 10:
+            return "workunit_warning.png";
+        case 11:
+            return "workunit_running.png";
+        case 12:
+            return "workunit_warning.png";
+        case 13:
+            return "workunit_warning.png";
+        case 14:
+            return "workunit_warning.png";
+        case 15:
+            return "workunit_running.png";
+        case 16:
+            return "workunit_warning.png";
+        case 999:
+            return "workunit_deleted.png";
+    }
+    return "workunit.png";
+}
+export function getStateImage(stateID: number, complete: boolean, archived: boolean): string {
+    return Utility.getImageURL(getStateImageName(stateID, complete, archived));
+}
+
+export function getStateImageHTML(stateID: number, complete: boolean, archived: boolean): string {
+    return Utility.getImageHTML(getStateImageName(stateID, complete, archived));
+}
+
 var Store = declare([ESPRequest.Store], {
     service: "WsWorkunits",
     action: "WUQuery",
@@ -648,91 +738,16 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         return this.State;
     },
     getStateIconClass: function () {
-        if (this.Archived) {
-            return "iconArchived";
-        }
-        switch (this.StateID) {
-            case 1:
-                if (this.isComplete()) {
-                    return "iconCompleted";
-                }
-                return "iconSubmitted";
-            case 3:
-                return "iconCompleted";
-            case 2:
-            case 11:
-            case 15:
-                return "iconRunning";
-            case 4:
-            case 7:
-                return "iconFailed";
-            case 5:
-            case 8:
-            case 10:
-            case 12:
-            case 13:
-            case 14:
-            case 16:
-                return "iconArchived";
-            case 6:
-                return "iconAborting";
-            case 9:
-                return "iconSubmitted";
-            case 999:
-                return "iconDeleted";
-        }
-        return "iconWorkunit";
+        return getStateIconClass(this.StateID, this.isComplete(), this.Archived);
     },
     getStateImageName: function () {
-        if (this.Archived) {
-            return "workunit_archived.png";
-        }
-        switch (this.StateID) {
-            case 1:
-                if (this.isComplete()) {
-                    return "workunit_completed.png";
-                }
-                return "workunit_submitted.png";
-            case 2:
-                return "workunit_running.png";
-            case 3:
-                return "workunit_completed.png";
-            case 4:
-                return "workunit_failed.png";
-            case 5:
-                return "workunit_warning.png";
-            case 6:
-                return "workunit_aborting.png";
-            case 7:
-                return "workunit_failed.png";
-            case 8:
-                return "workunit_warning.png";
-            case 9:
-                return "workunit_submitted.png";
-            case 10:
-                return "workunit_warning.png";
-            case 11:
-                return "workunit_running.png";
-            case 12:
-                return "workunit_warning.png";
-            case 13:
-                return "workunit_warning.png";
-            case 14:
-                return "workunit_warning.png";
-            case 15:
-                return "workunit_running.png";
-            case 16:
-                return "workunit_warning.png";
-            case 999:
-                return "workunit_deleted.png";
-        }
-        return "workunit.png";
+        return getStateImageName(this.StateID, this.isComplete(), this.Archived);
     },
     getStateImage: function () {
-        return Utility.getImageURL(this.getStateImageName());
+        return getStateImage(this.StateID, this.isComplete(), this.Archived);
     },
     getStateImageHTML: function () {
-        return Utility.getImageHTML(this.getStateImageName());
+        return getStateImageHTML(this.StateID, this.isComplete(), this.Archived);
     },
     getProtectedImageName: function () {
         if (this.Protected) {
