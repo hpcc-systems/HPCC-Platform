@@ -20,6 +20,11 @@
 #include "jdebug.hpp"
 #include "jlog.hpp"
 #include <memory>
+#ifdef _WIN32
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
 #define PERSILOG(loglevel, ...) if(static_cast<int>(loglevel) <= static_cast<int>(m_loglevel)) DBGLOG(__VA_ARGS__)
 
@@ -79,7 +84,7 @@ public:
 
     virtual void add(ISocket* sock, SocketEndpoint* ep = nullptr) override
     {
-        if (!sock)
+        if (!sock || sock->OShandle() == INVALID_SOCKET)
             return;
         synchronized block(m_mutex);
         PERSILOG(PersistentLogLevel::PLogNormal, "PERSISTENT: adding socket %d to handler %d", sock->OShandle(), m_id);
@@ -127,6 +132,8 @@ public:
         {
             info->useCount += usesOverOne;
             bool reachedQuota = m_maxReqs > 0 && m_maxReqs <= info->useCount;
+            if(sock->OShandle() == INVALID_SOCKET)
+                keep = false;
             if (keep && !reachedQuota)
             {
                 info->inUse = false;

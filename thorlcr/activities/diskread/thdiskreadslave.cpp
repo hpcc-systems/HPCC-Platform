@@ -302,6 +302,8 @@ void CDiskRecordPartHandler::open()
             else
                 remoteCandidates.push_back(copy);
         }
+        Owned<IException> remoteReadException;
+        StringBuffer remoteReadExceptionPath;
         for (unsigned &copy: remoteCandidates) // only if no local part found above
         {
             RemoteFilename rfn;
@@ -341,6 +343,13 @@ void CDiskRecordPartHandler::open()
 #ifdef _DEBUG
                     EXCLOG(e, nullptr);
 #endif
+                    if (remoteReadException)
+                        e->Release(); // only record 1st
+                    else
+                    {
+                        remoteReadException.setown(e);
+                        remoteReadExceptionPath.set(path);
+                    }
                     e->Release();
                     continue; // try next copy and ultimately failover to local when no more copies
                 }
@@ -348,6 +357,13 @@ void CDiskRecordPartHandler::open()
                 ActPrintLog(&activity, "%s[part=%d]: reading remote dafilesrv file '%s' (logical file = %s)", kindStr, which, path.str(), activity.logicalFilename.get());
                 break;
             }
+        }
+        if (remoteReadException)
+        {
+            VStringBuffer msg("Remote streaming failure, failing over to direct read for: '%s'. ", remoteReadExceptionPath.str());
+            remoteReadException->errorMessage(msg);
+            Owned<IThorException> e2 = MakeActivityWarning(&activity, TE_RemoteReadFailure, "%s", msg.str());
+            activity.fireException(e2);
         }
     }
 

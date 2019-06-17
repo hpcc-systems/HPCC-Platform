@@ -375,7 +375,7 @@ export const FormHelper = declare(null, {
         var t = registry.byId(this.id + timeField).attr("value");
         if (d) {
             if (t) {
-                d.setHours(t.getHours());
+                d.setHours(t.getHours() - d.getTimezoneOffset() / 60);
                 d.setMinutes(t.getMinutes());
                 d.setSeconds(t.getSeconds());
             }

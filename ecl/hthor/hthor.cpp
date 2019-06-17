@@ -8429,6 +8429,9 @@ bool CHThorDiskReadBaseActivity::openNext()
 #ifdef _DEBUG
                                 EXCLOG(e, nullptr);
 #endif
+                                VStringBuffer msg("Remote streaming failure, failing over to direct read for: '%s'. ", file.str());
+                                e->errorMessage(msg);
+                                agent.addWuException(msg.str(), WRN_RemoteReadFailure, SeverityWarning, "hthor");
                                 e->Release();
                                 continue; // try next copy and ultimately failover to local when no more copies
                             }

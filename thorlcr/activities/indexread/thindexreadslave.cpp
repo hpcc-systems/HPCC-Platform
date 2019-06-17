@@ -204,6 +204,8 @@ public:
                         else
                             remoteCandidates.push_back(copy);
                     }
+                    Owned<IException> remoteReadException;
+                    StringBuffer remoteReadExceptionPath;
                     for (unsigned &copy : remoteCandidates) // only if no local part found above
                     {
                         RemoteFilename rfn;
@@ -251,13 +253,26 @@ public:
 #ifdef _DEBUG
                                 EXCLOG(e, nullptr);
 #endif
-                                e->Release();
+                                if (remoteReadException)
+                                    e->Release(); // only record 1st
+                                else
+                                {
+                                    remoteReadException.setown(e);
+                                    remoteReadExceptionPath.set(path);
+                                }
                                 continue; // try next copy and ultimately failover to local when no more copies
                             }
                             ActPrintLog("[part=%d]: reading remote dafilesrv index '%s' (logical file = %s)", partNum, path.str(), logicalFilename.get());
                             partNum = p;
                             return indexLookup.getClear();
                         }
+                    }
+                    if (remoteReadException)
+                    {
+                        VStringBuffer msg("Remote streaming failure, failing over to direct read for: '%s'. ", remoteReadExceptionPath.str());
+                        remoteReadException->errorMessage(msg);
+                        Owned<IThorException> e2 = MakeActivityWarning(this, TE_RemoteReadFailure, "%s", msg.str());
+                        fireException(e2);
                     }
                 }
 

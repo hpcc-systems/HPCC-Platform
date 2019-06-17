@@ -67,11 +67,11 @@ define([
                         }),
                         Name: { label: this.i18n.Name, width: 100, sortable: false },
                         Modified: { label: this.i18n.Modified, width: 30, sortable: true },
-                        Numparts: { label: this.i18n.TotalParts, width: 30, sortable: false },
-                        Size: { label: this.i18n.Size, width: 30, sortable: false },
-                        Partslost: { label: this.i18n.PartsLost, width: 30, sortable: false },
-                        Primarylost: { label: this.i18n.PrimaryLost, width: 30, sortable: false },
-                        Replicatedlost: { label: this.i18n.ReplicatedLost, width: 30, sortable: false }
+                        Numparts: { label: this.i18n.TotalParts, width: 30, sortable: false, className: 'justify-right'},
+                        Size: { label: this.i18n.Size, width: 30, sortable: false, className: 'justify-right'},
+                        Partslost: { label: this.i18n.PartsLost, width: 30, sortable: false, className: 'justify-right'},
+                        Primarylost: { label: this.i18n.PrimaryLost, width: 30, sortable: false, className: 'justify-right'},
+                        Replicatedlost: { label: this.i18n.ReplicatedLost, width: 30, sortable: false, className: 'justify-right'}
                     }
                 }, domID);
 

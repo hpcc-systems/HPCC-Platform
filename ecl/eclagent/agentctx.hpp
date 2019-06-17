@@ -33,6 +33,7 @@
 #define WRN_UnsupportedAlgorithm            5403
 #define WRN_MismatchGroupInfo               5404
 #define WRN_MismatchCompressInfo            5405
+#define WRN_RemoteReadFailure               5406
 
 struct IHThorGraphResult : extends IInterface
 {
