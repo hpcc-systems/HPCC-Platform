@@ -1042,6 +1042,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
         return normalizeThor(expr->queryChild(0));
     case no_setworkflow_cond:
     case no_ensureresult:
+    case no_notify:
         return OptionNo;
     case no_null:
         return OptionMaybe;
