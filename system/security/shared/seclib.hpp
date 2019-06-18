@@ -78,6 +78,23 @@ inline const char * getSecAccessFlagName(SecAccessFlags flag)
     }
 }
 
+inline SecAccessFlags getSecAccessFlag(const char* name)
+{
+    if (isEmptyString(name))
+        return SecAccess_Unavailable;
+    if (strieq(name, "None") || strieq(name, "Deferred"))
+        return SecAccess_None;
+    if (strieq(name, "Access"))
+        return SecAccess_Access;
+    if (strieq(name, "Read"))
+        return SecAccess_Read;
+    if (strieq(name, "Write"))
+        return SecAccess_Write;
+    if (strieq(name, "Full"))
+        return SecAccess_Full;
+    return SecAccess_Unknown;
+}
+
 
 enum SecResourceType : int
 {

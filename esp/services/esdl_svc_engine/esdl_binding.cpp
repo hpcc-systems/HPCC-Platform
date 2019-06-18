@@ -411,10 +411,99 @@ static void ensureMergeOrderedEsdlTransform(Owned<IPropertyTree> &dest, IPropert
     mergePTree(dest, copy);
 }
 
+void EsdlServiceImpl::configureBindingAccessMap(const IPTree* node, const char* service, const char* method, const char* serviceSecurity)
+{
+    StringBuffer methodSecurity;
+    StringArray  accessList;
+    StringBuffer accessName;
+    StringBuffer accessLevel;
+    Owned<MethodAccessMap> methodAccess;
+
+    if (!isEmptyString(serviceSecurity))
+    {
+        // Service and method access requirements are combined by default, but the method may opt
+        // to ignore the service requirements.
+        //
+        // Consider a service level requirement of "{$method}Access" that applies a method-specific
+        // requirement to every method. Some methods, such as Ping or EchoTest, may require no
+        // security. The 'inherited' requirement may be incorrect for other methods, perhaps because
+        // the name is too long. Methods must be able to override the service's settings.
+        if (!node->getPropBool("@override_service_auth_feature", false))
+            methodSecurity.set(serviceSecurity).append(',');
+    }
+    methodSecurity.append(node->queryProp("@auth_feature"));
+    methodSecurity.replaceString("{$service}", service);
+    methodSecurity.replaceString("{$method}", method);
+
+    accessList.appendList(methodSecurity, ",");
+    if (accessList.ordinality() == 0)
+    {
+        // Either the binding's service and method both omit the auth_feature attribute or service
+        // level security is given and the method explicitly overrides it without specifying its
+        // own entries. The binding defers.
+        return;
+    }
+
+    // At least one security entry exists in the binding. The binding will define a method access
+    // map (even if empty) so it can take precedence.
+
+    methodAccess.setown(new MethodAccessMap());
+    m_bindingAccessMaps.setValue(method, methodAccess.getLink());
+    ForEachItemIn(idx, accessList)
+    {
+        auto accessEntry = accessList.item(idx);
+        auto entryLen = strlen(accessEntry);
+        decltype(entryLen) entryIdx = 0;
+        SecAccessFlags flag = SecAccess_Unknown;
+
+        accessName.clear();
+        for (; entryIdx <= entryLen && accessEntry[entryIdx] != ':'; entryIdx++)
+        {
+            if (!isspace(accessEntry[entryIdx]))
+                accessName.append(accessEntry[entryIdx]);
+        }
+        if (strieq(accessName, "None") || strieq(accessName, "Deferred"))
+        {
+            // No map entry is created for this list item, but other list items may still yield
+            // map entries. It is the binding author's responsibility to use "none" logically.
+            continue;
+        }
+        if (':' == accessEntry[entryIdx])
+        {
+            entryIdx++;
+            if (accessName.isEmpty())
+                accessName.setf("%sAccess", service);
+        }
+        else if (isEmptyString(accessName)) // an empty string will have length 1 for the NULL terminator
+            continue;
+
+        accessLevel.clear();
+        for (; entryIdx <= entryLen; entryIdx++)
+        {
+            if (!isspace(accessEntry[entryIdx]))
+                accessLevel.append(accessEntry[entryIdx]);
+        }
+
+        switch (flag = getSecAccessFlag(accessLevel))
+        {
+        case SecAccess_Unknown:
+            DBGLOG("Unknown access level: %s", accessLevel.str());
+            throw MakeStringException(0, "Unknown access level: %s", accessLevel.str());
+        case SecAccess_Unavailable:
+            methodAccess->setValue(accessName, SecAccess_Full);
+            break;
+        default:
+            methodAccess->setValue(accessName, flag);
+            break;
+        }
+    }
+}
+
 void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 {
-    VStringBuffer xpath("Definition[@esdlservice='%s']/Methods", service);
-    IPropertyTree *target_cfg = cfg->queryPropTree(xpath.str());
+    VStringBuffer xpath("Definition[@esdlservice='%s']", service);
+    IPropertyTree* definition_cfg = cfg->queryPropTree(xpath);
+    IPropertyTree *target_cfg = definition_cfg->queryPropTree("Methods");
     DBGLOG("ESDL Binding: configuring method targets for esdl service %s", service);
 
     if (target_cfg)
@@ -456,6 +545,9 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 
         MapStringToMyClass<IEspPlugin> localCppPluginMap;
 
+        StringBuffer serviceSecurity(definition_cfg->queryProp("@auth_feature"));
+        m_bindingAccessMaps.kill();
+
         Owned<IPropertyTreeIterator> iter = m_pServiceMethodTargets->getElements("Target");
         ForEach(*iter)
         {
@@ -463,6 +555,8 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             const char *method = methodCfg.queryProp("@name");
             if (!method || !*method)
                 throw MakeStringException(-1, "ESDL binding - found target method entry without name!");
+
+            configureBindingAccessMap(&methodCfg, service, method, serviceSecurity);
 
             m_methodCRTransformErrors.remove(method);
             m_customRequestTransformMap.remove(method);
@@ -551,6 +645,75 @@ static inline bool isPublishedQuery(EsdlMethodImplType implType)
     return (implType==EsdlMethodImplRoxie || implType==EsdlMethodImplWsEcl);
 }
 
+void EsdlServiceImpl::handleFeatureAuthorization(IEspContext& context, IEsdlDefMethod& esdlDef)
+{
+    auto method = esdlDef.queryName();
+    auto bindingMethodAccessMap = m_bindingAccessMaps.getValue(method);
+    MethodAccessMap* accessMap = nullptr;
+#ifdef DEBUG
+    const char* accessMapSource;
+#endif
+
+    if (bindingMethodAccessMap && bindingMethodAccessMap->get())
+    {
+        // The existence of an access map from the binding gives the binding precedence
+        // over the ESDL definition.
+        accessMap = bindingMethodAccessMap->get();
+#ifdef DEBUG
+        accessMapSource = "binding";
+#endif
+    }
+    else
+    {
+        // The absence of an access map from the binding defers the security specification
+        // to the ESDL definition.
+        accessMap = &const_cast<MethodAccessMap&>(esdlDef.queryAccessMap());
+#ifdef DEBUG
+        accessMapSource = "definition";
+#endif
+    }
+
+    if (accessMap->ordinality() > 0)
+    {
+        if (!context.validateFeaturesAccess(*accessMap, false))
+        {
+            StringBuffer features;
+            HashIterator iter(*accessMap);
+            int index = 0;
+            ForEach(iter)
+            {
+                IMapping &cur = iter.query();
+                const char * key = (const char *)cur.getKey();
+                features.appendf("%s%s:%s", (index++ == 0 ? "" : ", "), key, getSecAccessFlagName(*accessMap->getValue(key)));
+            }
+            const char * user = context.queryUserId();
+            throw MakeStringException(-1, "%s::%s access denied for user '%s' - Method requires: '%s'.", context.queryServiceName(nullptr), method, !isEmptyString(user) ? user : "Anonymous", features.str());
+        }
+#ifdef DEBUG
+        else
+        {
+            StringBuffer features;
+            HashIterator iter(*accessMap);
+            int index = 0;
+            ForEach(iter)
+            {
+                IMapping &cur = iter.query();
+                const char * key = (const char *)cur.getKey();
+                features.appendf("%s%s:%s", (index++ == 0 ? "" : ", "), key, getSecAccessFlagName(*accessMap->getValue(key)));
+            }
+            const char * user = context.queryUserId();
+            ESPLOG(LogMax, "%s::%s access granted for user '%s - ESDL %s feature%s: '%s'.", context.queryServiceName(nullptr), method, !isEmptyString(user) ? user : "Anonymous", accessMapSource, (accessMap->ordinality() > 1 ? "s" : ""), features.str());
+        }
+#endif
+    }
+#ifdef DEBUG
+    else
+    {
+        ESPLOG(LogMax, "%s::%s specifies no feature resources in the ESDL %s", context.queryServiceName(nullptr), method, accessMapSource);
+    }
+#endif
+}
+
 void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                                            IEsdlDefService &srvdef,
                                            IEsdlDefMethod &mthdef,
@@ -572,24 +735,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 
     IEsdlCustomTransform *crt = m_customRequestTransformMap.getValue(mthdef.queryMethodName());
 
-    MapStringTo<SecAccessFlags>&  methaccessmap = const_cast<MapStringTo<SecAccessFlags>&>(mthdef.queryAccessMap());
-    if (methaccessmap.ordinality() > 0)
-    {
-        if (!context.validateFeaturesAccess(methaccessmap, false))
-        {
-            StringBuffer features;
-            HashIterator iter(methaccessmap);
-            int index = 0;
-            ForEach(iter)
-            {
-                IMapping &cur = iter.query();
-                const char * key = (const char *)cur.getKey();
-                features.appendf("%s%s:%s", (index++ == 0 ? "" : ", "), key, getSecAccessFlagName(*methaccessmap.getValue(key)));
-            }
-            const char * user = context.queryUserId();
-            throw MakeStringException(-1, "%s::%s access denied for user '%s' - Method requires: '%s'.", srvdef.queryName(), mthName, (user && *user) ? user : "Anonymous", features.str());
-        }
-    }
+    handleFeatureAuthorization(context, mthdef);
 
     StringBuffer trxid;
     if (!m_bGenerateLocalTrxId)

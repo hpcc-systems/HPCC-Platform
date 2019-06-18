@@ -1009,6 +1009,8 @@ static void parseAccessList(const char * rawServiceAccessList, MapStringTo<SecAc
                 if (currAccessName.isEmpty())
                     currAccessName.setf("%sAccess",  defaultaccessname);
             }
+            else if (isEmptyString(currAccessName)) // an empty string will have length 1 for the NULL terminator
+                continue;
 
             for (;currIndex <= entrylen; currIndex++ )
             {

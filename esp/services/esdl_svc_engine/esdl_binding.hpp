@@ -100,6 +100,9 @@ public:
     StringAttr                  m_namespaceScheme;
     bool                        m_usesURLNameSpace;
     MapStringTo<StringAttr, const char *> m_methodCRTransformErrors;
+    using MethodAccessMap = MapStringTo<SecAccessFlags>;
+    using BindingAccessMap = MapStringTo<Owned<MethodAccessMap> >;
+    BindingAccessMap m_bindingAccessMaps;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -187,6 +190,10 @@ public:
     virtual bool subscribeServiceToDali() override {return false;}
     virtual bool attachServiceToDali() override {return false;}
     virtual bool detachServiceFromDali() override {return false;}
+
+protected:
+    void configureBindingAccessMap(const IPTree* node, const char* service, const char* method, const char* serviceSecurity);
+    void handleFeatureAuthorization(IEspContext& context, IEsdlDefMethod& esdlDef);
 };
 
 #define DEFAULT_ESDLBINDING_URN_BASE "urn:hpccsystems:ws"
