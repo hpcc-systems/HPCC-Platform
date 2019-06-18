@@ -41,9 +41,9 @@ endif()
 include(ExternalProject)
 ExternalProject_Add(
     antlr3c
-    DOWNLOAD_COMMAND tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/libantlr3c/libantlr3c-3.4.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/src/libantlr3c-3.4
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/src/libantlr3c-3.4/configure ${ANTLRcCONFIGURE_COMMAND_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR}/antlr3c 2> antlr.cfg.err
+    DOWNLOAD_COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/libantlr3c ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/src
+    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/src/libantlr3c
+    CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/src/libantlr3c/configure ${ANTLRcCONFIGURE_COMMAND_PARAMS} --prefix=${CMAKE_CURRENT_BINARY_DIR}/antlr3c 2> antlr.cfg.err
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/antlr3c
     BUILD_COMMAND ${CMAKE_MAKE_PROGRAM}
     BUILD_IN_SOURCE 1
@@ -61,7 +61,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/lib/${ANTLR3c_lib}
     DESTINATION ${LIB_DIR}/external
     COMPONENT Runtime
     )
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/src/libantlr3c-3.4/COPYING
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/src/libantlr3c/COPYING
     DESTINATION ${LIB_DIR}/external
     COMPONENT Runtime
     RENAME antlr3c-bsd-license.txt
