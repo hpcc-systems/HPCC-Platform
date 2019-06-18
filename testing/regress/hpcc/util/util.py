@@ -142,7 +142,68 @@ def queryWuid(jobname,  taskId):
                     state = val
     return {'wuid':wuid, 'state':state,  'result':result}
 
-def abortWorkunit(wuid):
+def queryEngineProcess(engine):
+    retVal = []
+    myProc = subprocess.Popen(["ps aux | egrep '"+engine+"' | egrep -v 'grep'"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+    result = myProc.stdout.read() + myProc.stderr.read()
+    results = result.split('\n')
+    for line in results:
+        line = line.replace('\n','')
+        if len(line):
+            items = line.split()
+            if len(items) >= 12:
+                if engine in items[10]:
+                    myProc2 = subprocess.Popen(["sudo readlink -f /proc/" + items[1] + "/exe"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+                    result2 = myProc2.stdout.read().replace ('\n', '')
+                    binPath = os.path.dirname(result2)
+                    if 'slavenum' in line:
+                        ind = [items.index(i) for i in items if i.startswith('slavenum')]
+                        slaveNum = items[ind[0]].split('=')[1]
+                        retVal.append({ 'process' : result2, 'name' : os.path.basename(items[10]), 'slaveNum' : slaveNum, 'pid' : items[1], 'binPath': binPath})
+                    else:
+                        retVal.append({ 'process' : result2, 'name' : os.path.basename(items[10]), 'slaveNum' : '', 'pid' : items[1], 'binPath': binPath})
+    return retVal
+
+def createStackTrace(wuid, proc, taskId):
+    binPath = proc['process']
+    pid = proc['pid']
+    outFile = os.path.expanduser(gConfig.logDir) + '/' + wuid +'-' + proc['name'] + proc['slaveNum'] + '.trace'
+    logging.error("%3d. Create Stack Trace for %s%s (pid:%s) into '%s'", taskId, proc['name'], proc['slaveNum'], pid, outFile)
+    
+    cmd  = 'gdb --batch --quiet -ex "set interactive-mode off" '
+    cmd += '-ex "echo \nBacktrace for all threads\n==========================" -ex "thread apply all bt" '
+    cmd += '-ex "echo \nRegisters:\n==========================\n" -ex "info reg" '
+    cmd += '-ex "echo \nDisassembler:\n==========================\n" -ex "disas" '
+    cmd += '-ex "quit" ' + binPath + ' ' + pid + ' > ' + outFile + ' 2>&1' 
+
+    myProc = subprocess.Popen([ cmd ],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+    result = myProc.stdout.read() + myProc.stderr.read()
+    logging.debug("%3d. Create Stack Trace result:'%s'", taskId, result)
+
+def abortWorkunit(wuid, taskId = -1, engine = None):
+    wuid = wuid.strip()
+    logging.debug("%3d. abortWorkunit(wuid:'%s', engine: '%s')", taskId, wuid, str(engine))
+    logging.debug("%3d. config: generateStackTrace: '%s'", taskId, str(gConfig.generateStackTrace))
+    if (gConfig.generateStackTrace and (engine !=  None)):
+        if isSudoer():
+            if engine.startswith('thor'):
+                hpccProcesses = queryEngineProcess("thormaster")
+                hpccProcesses += queryEngineProcess("thorslave")
+            elif engine.startswith('hthor'):
+                hpccProcesses = queryEngineProcess("eclagent")
+            elif engine.startswith('roxie'):
+                hpccProcesses = queryEngineProcess("roxie")
+                
+            for p in hpccProcesses:
+                createStackTrace(wuid, p, taskId)
+            pass
+        else:
+            err = Error("7100")
+            logging.error("%s. clearOSCache error:%s" % (taskId,  err))
+            logging.error(traceback.format_exc())
+            raise Error(err)
+            pass
+
     shell = Shell()
     cmd = 'ecl'
     defaults=[]
@@ -154,7 +215,7 @@ def abortWorkunit(wuid):
     state=shell.command(cmd, *defaults)(*args)
     return state
 
-def createZAP(wuid,  taskId,  reason=''):
+def createZAP(wuid, taskId,  reason=''):
     retVal = 'Error in create ZAP'
     zapFilePath = os.path.join(os.path.expanduser(gConfig.regressionDir), gConfig.zapDir)
     shell = Shell()
@@ -315,7 +376,7 @@ def isSudoer(testId = -1):
             tryCount -= 1
 
         if retVal == False:
-            logging.error("%3d. isSudoer() result is: '%s'", testId, result)
+            logging.debug("%3d. isSudoer() result is: '%s'", testId, result)
     return retVal
 
 def clearOSCache(testId = -1):
