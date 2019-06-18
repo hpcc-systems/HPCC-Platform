@@ -19,6 +19,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <string>
 
 #include "platform.h"
 #include "jlib.hpp"
