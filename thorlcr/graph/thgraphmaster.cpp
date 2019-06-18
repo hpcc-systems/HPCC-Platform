@@ -1186,7 +1186,7 @@ public:
             IERRLOG("Unable to record exception in workunit: unknown exception");
         }
         if (isAbort)
-            rtlFailOnAssert();      // minimal implementation
+            throw makeStringException(MSGAUD_user, code, text);
     }
     virtual unsigned __int64 getFileOffset(const char *logicalName) override { assertex(false); return 0; }
     virtual unsigned getNodes() override { return jobChannel.queryJob().querySlaves(); }
