@@ -20,6 +20,7 @@
 
 #onwarning (4523, ignore);
 
+import ^ as root;
 optRemoteRead := #IFDEFINED(root.optRemoteRead, false);
 #option('forceRemoteRead', optRemoteRead);
 
