@@ -139,7 +139,15 @@ public:
     inline HqlTransformerBase(HqlTransformerInfo & _info) : info(_info) 
     { 
         beginTime();
-        lockTransformMutex(); 
+        try
+        {
+            lockTransformMutex();
+        }
+        catch (...)
+        {
+            endTime();
+            throw;
+        }
 #ifdef ALLOW_TRANSFORM_TRACING
         if (isTransformTracing())
             printf(">%d>%s\n", queryCurrentTransformDepth(), info.name);
