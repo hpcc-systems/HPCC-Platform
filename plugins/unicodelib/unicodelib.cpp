@@ -96,6 +96,7 @@ static const char * EclDefinition =
 "  boolean UnicodeWildMatch(const unicode src, const unicode _pattern, boolean _noCase) : c, pure,entrypoint='ulUnicodeWildMatch', hole; \n"
 "  boolean UnicodeContains(const unicode src, const unicode _pattern, boolean _noCase) : c, pure,entrypoint='ulUnicodeContains', hole; \n"
 "  unsigned4 UnicodeLocaleEditDistance(const unicode left, const unicode right, const varstring localename) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistance', hole; \n"
+"  unsigned4 UnicodeLocaleEditDistanceV2(const unicode left, const unicode right, const varstring localename, unsigned4 radius) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistanceV2', hole; \n"
 "  boolean UnicodeLocaleEditDistanceWithinRadius(const unicode left, const unicode right, unsigned4 radius,  const varstring localename) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistanceWithinRadius', hole; \n"
 "  unsigned4 UnicodeLocaleWordCount(const unicode text, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWordCount', hole; \n"
 "  unicode UnicodeLocaleGetNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetNthWord';\n"
@@ -1751,6 +1752,12 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeCleanAccents(unsigned & tgtLen, UCh
 
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, char const * localename)
 {
+    return ulUnicodeLocaleEditDistanceV2(leftLen, left, rightLen, right, localename, 0);
+}
+
+
+UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistanceV2(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, char const * localename, unsigned radius)
+{
     BreakIterator* bi = 0;
     if (localename && *localename)
     {
@@ -1762,8 +1769,10 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned lef
     UnicodeString uLeft(false, left, leftLen); // Readonly-aliasing UChar* constructor.
     UnicodeString uRight(false, right, rightLen);
 
-    unsigned distance = nsUnicodelib::unicodeEditDistanceV4(uLeft, uRight, 254, bi);
-    return distance;
+    if (radius == 0)
+        return nsUnicodelib::unicodeEditDistanceV4(uLeft, uRight, 254, bi);
+    else
+        return nsUnicodelib::unicodeEditDistanceV4(uLeft, uRight, radius, bi);
 }
 
 

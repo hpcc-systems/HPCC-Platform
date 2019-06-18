@@ -76,6 +76,7 @@ static const char * EclDefinition =
 "  unsigned integer4 EditDistance(const string l, const string r) : c, time, pure,entrypoint='slEditDistanceV2'; \n"
 "  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,time,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
 "  unsigned integer4 EditDistanceV2(const string l, const string r) : c,time,pure,entrypoint='slEditDistanceV2'; \n"
+"  unsigned integer4 EditDistanceV3(const string l, const string r, unsigned4 radius) : c,time,pure,entrypoint='slEditDistanceV3'; \n"
 "  boolean EditDistanceWithinRadiusV2(const string l, const string r, unsigned4 radius) : c,time,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
 "  string StringGetNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringGetNthWord'; \n"
 "  string StringExcludeLastWord(const string src) : c, pure,entrypoint='slStringExcludeLastWord'; \n"
@@ -951,6 +952,14 @@ STRINGLIB_API unsigned STRINGLIB_CALL slEditDistanceV2(unsigned leftLen, const c
     return nsStringlib::editDistance(leftLen, left, rightLen, right);
 }
 
+
+STRINGLIB_API unsigned STRINGLIB_CALL slEditDistanceV3(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
+{
+    if (radius == 0)
+        return nsStringlib::editDistance(leftLen, left, rightLen, right);
+    else
+        return nsStringlib::editDistanceWithinRadius(leftLen, left, rightLen, right, radius);
+}
 
 STRINGLIB_API bool STRINGLIB_CALL slEditDistanceWithinRadiusV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
 {

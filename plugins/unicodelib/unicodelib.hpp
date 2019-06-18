@@ -98,6 +98,7 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeCleanSpaces80(UChar * tgt, unsigned
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeWildMatch(unsigned srcLen, UChar const * src, unsigned patLen, UChar const * pat, bool noCase);
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeContains(unsigned srcLen, UChar const * src, unsigned patLen, UChar const * pat, bool noCase);
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right,char const * localename);
+UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistanceV2(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right,char const * localename, unsigned radius);
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEditDistanceWithinRadius(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, unsigned radius,char const * localename);
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleWordCount(unsigned textLen, UChar const * text,char const * localename);
 UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleGetNthWord(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, unsigned n, char const * localename);
