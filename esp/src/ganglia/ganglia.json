@@ -21,7 +21,7 @@
       "time":["Hour","Week"]
    },
    {
-        "name": "Sytem Disk and CPU",
+        "name": "System Disk and CPU",
         "metrics" :[
                 ["disk_free", "disk_total"],
                 ["cpu_aidle", "cpu_idle", "cpu_nice", "cpu_num", "cpu_system", "cpu_user", "cpu_wio"]
